@@ -171,3 +171,93 @@ test('waveform zoom reuses reductions and returns to the original raster when en
     expect(result.zoomedUsesOriginal).toBe(true)
     expect(result.returnsToCachedReduction).toBe(true)
 })
+
+test('waveform attacks survive fractional DPR and downward backing-size rounding', async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const { createWaveformRenderer } = await import('/src/editor/canvas/waveform.ts')
+        const { prepareSurface } = await import('/src/editor/canvas/surface.ts')
+        const width = 204.8
+        const height = 1600.2
+        const pixelRatio = 1.25
+        const scale = width / 8
+        const ups = -160 / scale
+        const output = document.createElement('canvas')
+        const source = document.createElement('canvas')
+        source.width = 128
+        source.height = 2000
+        const sourceContext = source.getContext('2d')!
+        const samples: { row: number; alpha: number; error: number }[] = []
+        let actualTilePixels = 0
+
+        // These attacks are far from both tile edges. Without accounting for
+        // backing-size rounding each disappears at the corresponding scroll phase.
+        for (const [row, translation] of [
+            [400, -0.45],
+            [801, -0.4],
+            [1602, -0.3],
+        ] as const) {
+            sourceContext.clearRect(0, 0, source.width, source.height)
+            sourceContext.fillStyle = '#fff'
+            sourceContext.fillRect(0, row, 4, 1)
+            const waveform = {
+                images: [source.toDataURL()],
+                style: { imageRendering: 'pixelated' },
+            }
+            let loaded: () => void = () => {}
+            const ready = new Promise<void>((resolve) => (loaded = resolve))
+            const renderer = createWaveformRenderer(() => loaded())
+            const top = -62.5 - translation / (scale * pixelRatio)
+            const bounds = {
+                l: -4,
+                r: 4,
+                t: top,
+                b: top + height / scale,
+                w: 8,
+                h: height / scale,
+            }
+            const draw = () => {
+                const ctx = prepareSurface(output, width, height, pixelRatio, bounds)!
+                renderer.draw({ ctx, ups, scale, pixelRatio } as EditorDrawContext, waveform, 0, {
+                    min: 0,
+                    max: 9.99,
+                })
+                return ctx
+            }
+            draw()
+            await ready
+            const ctx = draw()
+            const transform = ctx.getTransform()
+            actualTilePixels = 10 * Math.abs(ups) * transform.d
+            const pixels = ctx.getImageData(129, 0, 1, output.height).data
+            let alpha = 0
+            let weightedPosition = 0
+            for (let y = 0; y < output.height; y++) {
+                const value = pixels[y * 4 + 3]!
+                alpha += value
+                weightedPosition += (y + 0.5) * value
+            }
+            const expected =
+                transform.f - actualTilePixels + ((row + 0.5) / 2000) * actualTilePixels
+            samples.push({ row, alpha, error: Math.abs(weightedPosition / alpha - expected) })
+            renderer.clear()
+        }
+        return {
+            backingHeight: output.height,
+            nominalTilePixels: 10 * Math.abs(ups) * scale * pixelRatio,
+            actualTilePixels,
+            samples,
+        }
+    })
+
+    expect(result.backingHeight).toBe(2000)
+    expect(result.nominalTilePixels).toBe(2000)
+    expect(result.actualTilePixels).toBeLessThan(result.nominalTilePixels)
+    for (const { row, alpha, error } of result.samples) {
+        expect(alpha, `attack row ${row} disappeared after backing-size rounding`).toBeGreaterThan(
+            0,
+        )
+        expect(error).toBeLessThanOrEqual(1.25)
+    }
+})

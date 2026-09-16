@@ -250,9 +250,29 @@ inactive changes. FFT checks cover an independent scalar DFT reference,
 opposite-phase stereo, silence, transient timing, both audio endpoints and tile
 boundaries at 44.1/48 kHz, import failures and decoded cache limits.
 
-The complete suite passes 139 unit tests and 78 browser tests, including the
+The complete suite passes 139 unit tests and 93 browser tests, including the
 existing editor interaction and text-alignment checks, plus type checking,
 lint, source formatting and production build.
+
+### Additional review of scaling and cancellation
+
+Reduction selection now uses the actual Canvas transform after backing-size
+rounding. At fractional DPR, estimating that scale from CSS size and requested
+DPR could keep a 2,000-row tile even when it occupied slightly fewer than 2,000
+physical pixels, allowing nearest-neighbor rendering to skip an attack. An
+independent 2,000-row sweep went from five missing attacks to zero. Firefox also
+preserves the tested attacks with at most approximately half a pixel of alignment
+error in the fractional-size case.
+
+Cancellation checks now extend beyond BGM import to chart import, autosave
+restoration, cover/audio utilities and saving. A cancelled chart import could
+previously resume after its final wait and replace a later edit. Cancelled native
+save pickers no longer become fallback downloads, and cancelled pending file
+writes abort their stream before committing. Tests verify the original contents
+of a real browser-managed file remain intact. Ordinary native saves and download
+fallbacks still work. Already-running native decodes, PNG encodes and file commits
+cannot necessarily be interrupted; their late results are discarded where the
+operation has not already committed.
 
 ### Comparison with optimized SVG (`2a96ffa`)
 

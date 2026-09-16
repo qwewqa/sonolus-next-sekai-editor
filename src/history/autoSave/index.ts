@@ -61,9 +61,10 @@ export const useAutoSave = () => {
     if (data) {
         void showModal(LoadingModal, {
             title: () => i18n.value.history.autoSave.title,
-            async *task() {
+            async *task(signal: AbortSignal) {
                 yield () => i18n.value.history.autoSave.importing
                 await timeout(50)
+                signal.throwIfAborted()
 
                 const { filename, levelData } = parseAutoSave(data)
 

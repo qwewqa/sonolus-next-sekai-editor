@@ -17,7 +17,7 @@ const size = ref(400)
 const onSelect = (file: File) => {
     void showModal(LoadingModal, {
         title: () => i18n.value.utilities.coverEditor.title,
-        async *task() {
+        async *task(signal: AbortSignal) {
             yield () => i18n.value.utilities.coverEditor.loading
 
             const url = await new Promise<string>((resolve, reject) => {
@@ -37,10 +37,11 @@ const onSelect = (file: File) => {
 
                 reader.readAsDataURL(file)
             })
+            signal.throwIfAborted()
 
             yield () => i18n.value.utilities.coverEditor.decoding
 
-            image.value = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const decoded = await new Promise<HTMLImageElement>((resolve, reject) => {
                 const image = new Image()
 
                 image.onload = () => {
@@ -52,6 +53,10 @@ const onSelect = (file: File) => {
 
                 image.src = url
             })
+            // An image decode already in progress may finish after dismissal.
+            // Only a live task may publish its result into the utility's model.
+            signal.throwIfAborted()
+            image.value = decoded
         },
     })
 }
@@ -59,9 +64,10 @@ const onSelect = (file: File) => {
 const onGenerate = () => {
     void showModal(LoadingModal, {
         title: () => i18n.value.utilities.coverEditor.title,
-        async *task() {
+        async *task(signal: AbortSignal) {
             yield () => i18n.value.utilities.coverEditor.generating
             await timeout(50)
+            signal.throwIfAborted()
 
             if (!image.value) return
 
@@ -89,6 +95,7 @@ const onGenerate = () => {
             ctx.drawImage(image.value, sx, sy, sw, sh, 0, 0, size.value, size.value)
 
             const blob = await createBlob(canvas)
+            signal.throwIfAborted()
             saveAs(blob, 'cover.png')
         },
     })

@@ -70,7 +70,7 @@ export const createWaveformRenderer = (invalidate: () => void) => {
     return {
         clear,
         draw(
-            { ctx, ups, scale, pixelRatio }: EditorDrawContext,
+            { ctx, ups }: EditorDrawContext,
             waveform: Waveform | undefined,
             offset: number,
             times: Range<number>,
@@ -91,7 +91,10 @@ export const createWaveformRenderer = (invalidate: () => void) => {
                 const href = waveform.images[index]
                 if (href) visible.add(href)
             }
-            const tilePixels = waveformDuration * Math.abs(ups) * scale * pixelRatio
+            // prepareSurface rounds the backing dimensions. Its actual scale
+            // can be slightly below scale * DPR, so use the installed transform
+            // to avoid dropping isolated rows at a reduction threshold.
+            const tilePixels = waveformDuration * Math.abs(ups * ctx.getTransform().d)
             ctx.save()
             ctx.globalAlpha = 0.25
             ctx.translate(0, offset * -ups)
