@@ -6,6 +6,7 @@ import {
     approach,
     computeStageTransform,
     currentLayoutTransform,
+    identityStageScreenTransform,
     identityStageTransform,
     layoutSekaiStage,
     layoutStageLaneByEdges,
@@ -15,18 +16,18 @@ import {
     tiltWidenedEdge,
     tiltWidthFactor,
     transformedVecAt,
+    type StageScreenTransform,
     type StageTransform,
 } from './layout'
 import {
     clamp,
     ease,
-    identityAffineTransform,
     lerp,
+    lerpVec,
     rotateVec,
     transformQuadAffine,
     unlerp,
     vec,
-    type AffineTransform,
     type Quad,
     type Vec,
 } from './math'
@@ -49,6 +50,7 @@ export type StageProps = {
     rightBorderStyle: Transition<number>
     order: number
     noteAlpha: number
+    maskNotes: boolean
     laneAlpha: number
     judgeLineAlpha: number
     yOffset: number
@@ -58,6 +60,7 @@ export type StageProps = {
     xLaneTranslate: number
     yLaneTranslate: number
     centerWeight: number
+    elevation: number
 }
 
 const FULL_WIDTH_HALF_EXTENT = 48
@@ -134,6 +137,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         rightBorderStyle: { start: 0, end: 0, progress: 0 },
         order: stage.order,
         noteAlpha: 1,
+        maskNotes: false,
         laneAlpha: 0,
         judgeLineAlpha: 0,
         yOffset: 0,
@@ -143,12 +147,14 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         xLaneTranslate: 0,
         yLaneTranslate: 0,
         centerWeight: 0,
+        elevation: 0,
     }
 
     const [maskA, maskB, maskFrac] = queryEvents(stage.masks, t, leftLimit)
     if (maskA) {
         props.lane = maskA.lane
         props.width = maskA.size
+        props.maskNotes = maskA.maskNotes
         if (maskB) {
             const p = ease(maskA.ease, maskFrac)
             props.lane = lerp(maskA.lane, maskB.lane, p)
@@ -157,6 +163,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
     } else if (maskB) {
         props.lane = maskB.lane
         props.width = maskB.size
+        props.maskNotes = maskB.maskNotes
     }
 
     const [pivotA, pivotB, pivotFrac] = queryEvents(stage.pivots, t, leftLimit)
@@ -265,18 +272,21 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.xLaneTranslate = transformA.xLaneTranslate
         props.yLaneTranslate = transformA.yLaneTranslate
         props.centerWeight = transformA.centerWeight
+        props.elevation = transformA.elevation
         if (transformB) {
             const p = ease(transformA.ease, transformFrac)
             props.rotate = lerp(transformA.rotate, transformB.rotate, p)
             props.xLaneTranslate = lerp(transformA.xLaneTranslate, transformB.xLaneTranslate, p)
             props.yLaneTranslate = lerp(transformA.yLaneTranslate, transformB.yLaneTranslate, p)
             props.centerWeight = lerp(transformA.centerWeight, transformB.centerWeight, p)
+            props.elevation = lerp(transformA.elevation, transformB.elevation, p)
         }
     } else if (transformB) {
         props.rotate = transformB.rotate
         props.xLaneTranslate = transformB.xLaneTranslate
         props.yLaneTranslate = transformB.yLaneTranslate
         props.centerWeight = transformB.centerWeight
+        props.elevation = transformB.elevation
     }
 
     return props
@@ -286,7 +296,8 @@ export const stagePropsHasTransform = (props: StageProps) =>
     props.rotate !== 0 ||
     props.xLaneTranslate !== 0 ||
     props.yLaneTranslate !== 0 ||
-    props.centerWeight !== 0
+    props.centerWeight !== 0 ||
+    props.elevation !== 0
 
 export const stagePropsTransform = (props: StageProps): StageTransform =>
     stagePropsHasTransform(props)
@@ -297,6 +308,7 @@ export const stagePropsTransform = (props: StageProps): StageTransform =>
               props.yLaneTranslate,
               props.lane,
               props.centerWeight,
+              props.elevation,
           )
         : identityStageTransform
 
@@ -306,6 +318,49 @@ const transitionWeight = (transition: Transition<number>, target: number) => {
     if (transition.end === target) weight += transition.progress
     return weight
 }
+
+const borderStyleWidth = (style: number, normal: number, medium: number, light: number) => {
+    switch (style) {
+        case 0:
+            return normal
+        case 1:
+            return light
+        case 3:
+            return medium
+        default:
+            return 0
+    }
+}
+
+const borderWidth = (style: Transition<number>, normal: number, medium: number, light: number) =>
+    lerp(
+        borderStyleWidth(style.start, normal, medium, light),
+        borderStyleWidth(style.end, normal, medium, light),
+        style.progress,
+    )
+
+const borderSpriteTransition = (style: Transition<number>): Transition<number> => {
+    let start = style.start === 3 ? 0 : style.start
+    let end = style.end === 3 ? 0 : style.end
+    if (start === 2) start = end
+    if (end === 2) end = start
+    return { start, end, progress: start === end ? 0 : style.progress }
+}
+
+const blendBorderLayout = (start: Quad, end: Quad, progress: number): Quad => ({
+    bl: lerpVec(start.bl, end.bl, progress),
+    br: lerpVec(start.br, end.br, progress),
+    tl: lerpVec(start.tl, end.tl, progress),
+    tr: lerpVec(start.tr, end.tr, progress),
+})
+
+const borderBlendAlpha = (alpha: number, progress: number) => {
+    const remaining = 1 - alpha * progress
+    return remaining > 0 ? (alpha * (1 - progress)) / remaining : 0
+}
+
+const isCollapsedBorder = (q: Quad) =>
+    q.bl.x === q.br.x && q.bl.y === q.br.y && q.tl.x === q.tr.x && q.tl.y === q.tr.y
 
 export const resolveJudgeLineStyle = (style: Transition<number>) =>
     style.progress < 0.5 ? style.start : style.end
@@ -327,6 +382,7 @@ export const drawStaticStage = (draw: Draw, skin: PreviewSkin) => {
         rightBorderStyle: { start: 0, end: 0, progress: 0 },
         order: 0,
         noteAlpha: 1,
+        maskNotes: false,
         laneAlpha: 1,
         judgeLineAlpha: 1,
         yOffset: 0,
@@ -336,13 +392,14 @@ export const drawStaticStage = (draw: Draw, skin: PreviewSkin) => {
         xLaneTranslate: 0,
         yLaneTranslate: 0,
         centerWeight: 0,
+        elevation: 0,
     })
 }
 
 export const drawStageWithProps = (draw: Draw, skin: PreviewSkin, props: StageProps) => {
     const transform = stagePropsHasTransform(props)
         ? stageTransformToAffine(stagePropsTransform(props))
-        : identityAffineTransform
+        : identityStageScreenTransform
 
     drawDynamicStage(draw, skin, props, transform)
 }
@@ -351,7 +408,7 @@ export const drawDynamicStage = (
     draw: Draw,
     skin: PreviewSkin,
     props: StageProps,
-    transform: AffineTransform = identityAffineTransform,
+    transform: StageScreenTransform = identityStageScreenTransform,
 ) => {
     const {
         lane,
@@ -360,8 +417,8 @@ export const drawDynamicStage = (
         division,
         judgeLineColor,
         judgeLineStyle,
-        leftBorderStyle,
-        rightBorderStyle,
+        leftBorderStyle: originalLeftBorderStyle,
+        rightBorderStyle: originalRightBorderStyle,
         order,
         laneAlpha,
         judgeLineAlpha,
@@ -375,7 +432,7 @@ export const drawDynamicStage = (
     const spritesA = skin.judgments[judgeLineColor.start] ?? skin.judgments[0]!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const spritesB = skin.judgments[judgeLineColor.end] ?? skin.judgments[0]!
-    const pSprites = judgeLineColor.progress
+    const pSprites = spritesSame ? 0 : judgeLineColor.progress
 
     const wDefault = transitionWeight(judgeLineStyle, 0)
     const wSingleLine = transitionWeight(judgeLineStyle, 1)
@@ -394,82 +451,54 @@ export const drawDynamicStage = (
     const lJl = lane - halfJl
     const rJl = lane + halfJl
 
-    const z = (sub: number) => getZAlt(LAYER_STAGE, order * 17 + sub)
+    const z = (sub: number) => getZAlt(LAYER_STAGE, order * 17 + sub, transform.elevation)
 
     const f = JUDGE_LINE_BORDER_FACTOR
 
-    const drawLeftBorder = (style: number, zKey: ZKey, alpha: number) => {
+    const layoutLaneBorder = (style: number, edge: number, isLeft: boolean): Quad => {
+        const borderW = borderStyleWidth(style, 0.08, 0.04, 0.025)
+        const left = style === 1 ? edge - borderW / 2 : isLeft ? edge - borderW : edge
+        const right = style === 1 ? edge + borderW / 2 : isLeft ? edge : edge + borderW
+        const bottom = layoutStageLaneByEdges(left, right)
+        const top = layoutStageLaneByEdges(
+            tiltWidenedEdge(left, edge + 8 * (left - edge)),
+            tiltWidenedEdge(right, edge + 8 * (right - edge)),
+        )
+        return { bl: bottom.bl, br: bottom.br, tl: top.tl, tr: top.tr }
+    }
+
+    const leftBorderLayout = blendBorderLayout(
+        layoutLaneBorder(originalLeftBorderStyle.start, l, true),
+        layoutLaneBorder(originalLeftBorderStyle.end, l, true),
+        originalLeftBorderStyle.progress,
+    )
+    const rightBorderLayout = blendBorderLayout(
+        layoutLaneBorder(originalRightBorderStyle.start, r, false),
+        layoutLaneBorder(originalRightBorderStyle.end, r, false),
+        originalRightBorderStyle.progress,
+    )
+
+    const drawBorder = (style: number, isLeft: boolean, q: Quad, zKey: ZKey, alpha: number) => {
+        if (alpha <= 0 || isCollapsedBorder(q)) return
         switch (style) {
             case 0:
             case 3: {
-                const scale = style === 3 ? 0.5 : 1
-                const layoutB = layoutStageLaneByEdges(l - 0.08 * scale, l)
-                const layoutT = layoutStageLaneByEdges(
-                    tiltWidenedEdge(l - 0.08 * scale, l - 0.64 * scale),
-                    l,
-                )
-                draw(
-                    skin.stageBorder,
-                    place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-                    zKey,
-                    alpha,
-                )
+                if (!isLeft) q = { bl: q.br, br: q.bl, tl: q.tr, tr: q.tl }
+                draw(skin.stageBorder, place(q), zKey, alpha)
                 break
             }
             case 1: {
-                const layoutB = layoutStageLaneByEdges(l - 0.0125, l + 0.0125)
-                const layoutT = layoutStageLaneByEdges(
-                    tiltWidenedEdge(l - 0.0125, l - 0.1),
-                    tiltWidenedEdge(l + 0.0125, l + 0.1),
-                )
-                draw(
-                    skin.laneDivider,
-                    snapDividerThicknessToScreenPixels(
-                        place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-                    ),
-                    zKey,
-                    alpha,
-                )
+                draw(skin.laneDivider, snapDividerThicknessToScreenPixels(place(q)), zKey, alpha)
                 break
             }
         }
     }
 
+    const drawLeftBorder = (style: number, zKey: ZKey, alpha: number) => {
+        drawBorder(style, true, leftBorderLayout, zKey, alpha)
+    }
     const drawRightBorder = (style: number, zKey: ZKey, alpha: number) => {
-        switch (style) {
-            case 0:
-            case 3: {
-                const scale = style === 3 ? 0.5 : 1
-                const layoutB = layoutStageLaneByEdges(r + 0.08 * scale, r)
-                const layoutT = layoutStageLaneByEdges(
-                    tiltWidenedEdge(r + 0.08 * scale, r + 0.64 * scale),
-                    r,
-                )
-                draw(
-                    skin.stageBorder,
-                    place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-                    zKey,
-                    alpha,
-                )
-                break
-            }
-            case 1: {
-                const layoutB = layoutStageLaneByEdges(r - 0.0125, r + 0.0125)
-                const layoutT = layoutStageLaneByEdges(
-                    tiltWidenedEdge(r - 0.0125, r - 0.1),
-                    tiltWidenedEdge(r + 0.0125, r + 0.1),
-                )
-                draw(
-                    skin.laneDivider,
-                    snapDividerThicknessToScreenPixels(
-                        place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-                    ),
-                    zKey,
-                    alpha,
-                )
-                break
-            }
-        }
+        drawBorder(style, false, rightBorderLayout, zKey, alpha)
     }
 
     const drawDividers = (
@@ -551,69 +580,74 @@ export const drawDynamicStage = (
         }
     }
 
+    const layoutJudgmentBorder = (style: number, edge: number, isLeft: boolean): Quad => {
+        if (style === 1) return layoutJudgmentDivider(edge)
+        const borderW = style === 2 ? 0 : Math.max(0, Math.min(1 / f / 2, width))
+        return perspectiveRect(
+            isLeft ? edge : edge - borderW,
+            isLeft ? edge + borderW : edge,
+            1 - nh + nh / f,
+            1 + nh - nh / f,
+            travel,
+        )
+    }
+
+    const leftJudgmentLayout = blendBorderLayout(
+        layoutJudgmentBorder(originalLeftBorderStyle.start, l, true),
+        layoutJudgmentBorder(originalLeftBorderStyle.end, l, true),
+        originalLeftBorderStyle.progress,
+    )
+    const rightJudgmentLayout = blendBorderLayout(
+        layoutJudgmentBorder(originalRightBorderStyle.start, r, false),
+        layoutJudgmentBorder(originalRightBorderStyle.end, r, false),
+        originalRightBorderStyle.progress,
+    )
+    const leftBorderStyle = borderSpriteTransition(originalLeftBorderStyle)
+    const rightBorderStyle = borderSpriteTransition(originalRightBorderStyle)
+
+    const drawJudgmentBorder = (
+        sprites: JudgmentSpriteSet,
+        style: number,
+        isLeft: boolean,
+        q: Quad,
+        zKey: ZKey,
+        alpha: number,
+    ) => {
+        if (alpha <= 0 || isCollapsedBorder(q)) return
+        switch (style) {
+            case 0:
+            case 3: {
+                if (!isLeft) q = { bl: q.br, br: q.bl, tl: q.tr, tr: q.tl }
+                draw(sprites.edgeLeft, place(q), zKey, alpha)
+                break
+            }
+            case 1: {
+                draw(sprites.edge, snapDividerThicknessToScreenPixels(place(q)), zKey, alpha)
+                break
+            }
+        }
+    }
+
     const drawLeftJudgmentBorder = (
         sprites: JudgmentSpriteSet,
         style: number,
         zKey: ZKey,
         alpha: number,
     ) => {
-        switch (style) {
-            case 0:
-            case 3: {
-                if (width <= 0) return
-                const layout = place(
-                    perspectiveRect(
-                        l,
-                        Math.min(l + 1 / f / 2, lane),
-                        1 - nh + nh / f,
-                        1 + nh - nh / f,
-                        travel,
-                    ),
-                )
-                draw(sprites.edgeLeft, layout, zKey, alpha)
-                break
-            }
-            case 1: {
-                const layout = snapDividerThicknessToScreenPixels(place(layoutJudgmentDivider(l)))
-                draw(sprites.edge, layout, zKey, alpha)
-                break
-            }
-        }
+        drawJudgmentBorder(sprites, style, true, leftJudgmentLayout, zKey, alpha)
     }
-
     const drawRightJudgmentBorder = (
         sprites: JudgmentSpriteSet,
         style: number,
         zKey: ZKey,
         alpha: number,
     ) => {
-        switch (style) {
-            case 0:
-            case 3: {
-                if (width <= 0) return
-                const layout = place(
-                    perspectiveRect(
-                        r,
-                        Math.max(r - 1 / f / 2, lane),
-                        1 - nh + nh / f,
-                        1 + nh - nh / f,
-                        travel,
-                    ),
-                )
-                draw(sprites.edgeLeft, layout, zKey, alpha)
-                break
-            }
-            case 1: {
-                const layout = snapDividerThicknessToScreenPixels(place(layoutJudgmentDivider(r)))
-                draw(sprites.edge, layout, zKey, alpha)
-                break
-            }
-        }
+        drawJudgmentBorder(sprites, style, false, rightJudgmentLayout, zKey, alpha)
     }
 
     const drawGradient = (sprites: JudgmentSpriteSet, zKey: ZKey, alpha: number) => {
-        const bottomL = place(perspectiveRect(lJl, lane, 1 + nh - nh / f, 1 + nh, travel))
-        const bottomR = place(perspectiveRect(rJl, lane, 1 + nh - nh / f, 1 + nh, travel))
+        const bottomL = place(perspectiveRect(lJl, lane, 1 + nh, 1 + nh - nh / f, travel))
+        const bottomR = place(perspectiveRect(rJl, lane, 1 + nh, 1 + nh - nh / f, travel))
         const topL = place(perspectiveRect(lJl, lane, 1 - nh, 1 - nh + nh / f, travel))
         const topR = place(perspectiveRect(rJl, lane, 1 - nh, 1 - nh + nh / f, travel))
         const gradA = alpha * (1 - fw)
@@ -635,7 +669,7 @@ export const drawDynamicStage = (
     const drawSingleLine = (sprites: JudgmentSpriteSet, zKey: ZKey, alpha: number) => {
         const halfThick = nh / f / 2
         const layout = place(perspectiveRect(lJl, rJl, 1 - halfThick, 1 + halfThick, travel))
-        draw(sprites.edge, layout, zKey, alpha)
+        draw(sprites.singleLine, layout, zKey, alpha)
     }
 
     const la = laneAlpha * (1 - fw)
@@ -646,7 +680,7 @@ export const drawDynamicStage = (
         if (leftBorderStyle.start === leftBorderStyle.end) {
             drawLeftBorder(leftBorderStyle.start, z(3), la)
         } else {
-            drawLeftBorder(leftBorderStyle.start, z(3), la * (1 - pLeft))
+            drawLeftBorder(leftBorderStyle.start, z(3), borderBlendAlpha(la, pLeft))
             drawLeftBorder(leftBorderStyle.end, z(4), la * pLeft)
         }
 
@@ -654,7 +688,7 @@ export const drawDynamicStage = (
         if (rightBorderStyle.start === rightBorderStyle.end) {
             drawRightBorder(rightBorderStyle.start, z(3), la)
         } else {
-            drawRightBorder(rightBorderStyle.start, z(3), la * (1 - pRight))
+            drawRightBorder(rightBorderStyle.start, z(3), borderBlendAlpha(la, pRight))
             drawRightBorder(rightBorderStyle.end, z(4), la * pRight)
         }
 
@@ -799,35 +833,29 @@ export const drawDynamicStage = (
         if (spritesSame && leftBorderStyle.start === leftBorderStyle.end) {
             drawLeftJudgmentBorder(spritesA, leftBorderStyle.start, z(5), jaDec)
         } else {
-            const alphaAa = (1 - pSprites) * (1 - pLeft)
-            const alphaAb = (1 - pSprites) * pLeft
-            const alphaBa = pSprites * (1 - pLeft)
-            const alphaBb = pSprites * pLeft
-            if (alphaAa > 0)
-                drawLeftJudgmentBorder(spritesA, leftBorderStyle.start, z(5), jaDec * alphaAa)
-            if (alphaAb > 0)
-                drawLeftJudgmentBorder(spritesA, leftBorderStyle.end, z(7), jaDec * alphaAb)
-            if (alphaBa > 0)
-                drawLeftJudgmentBorder(spritesB, leftBorderStyle.start, z(9), jaDec * alphaBa)
-            if (alphaBb > 0)
-                drawLeftJudgmentBorder(spritesB, leftBorderStyle.end, z(11), jaDec * alphaBb)
+            const alphaAa = borderBlendAlpha(jaDec * (1 - pSprites), pLeft)
+            const alphaAb = jaDec * (1 - pSprites) * pLeft
+            const alphaBa = borderBlendAlpha(jaDec * pSprites, pLeft)
+            const alphaBb = jaDec * pSprites * pLeft
+            if (alphaAa > 0) drawLeftJudgmentBorder(spritesA, leftBorderStyle.start, z(5), alphaAa)
+            if (alphaAb > 0) drawLeftJudgmentBorder(spritesA, leftBorderStyle.end, z(7), alphaAb)
+            if (alphaBa > 0) drawLeftJudgmentBorder(spritesB, leftBorderStyle.start, z(9), alphaBa)
+            if (alphaBb > 0) drawLeftJudgmentBorder(spritesB, leftBorderStyle.end, z(11), alphaBb)
         }
 
         if (spritesSame && rightBorderStyle.start === rightBorderStyle.end) {
             drawRightJudgmentBorder(spritesA, rightBorderStyle.start, z(5), jaDec)
         } else {
-            const alphaAa = (1 - pSprites) * (1 - pRight)
-            const alphaAb = (1 - pSprites) * pRight
-            const alphaBa = pSprites * (1 - pRight)
-            const alphaBb = pSprites * pRight
+            const alphaAa = borderBlendAlpha(jaDec * (1 - pSprites), pRight)
+            const alphaAb = jaDec * (1 - pSprites) * pRight
+            const alphaBa = borderBlendAlpha(jaDec * pSprites, pRight)
+            const alphaBb = jaDec * pSprites * pRight
             if (alphaAa > 0)
-                drawRightJudgmentBorder(spritesA, rightBorderStyle.start, z(5), jaDec * alphaAa)
-            if (alphaAb > 0)
-                drawRightJudgmentBorder(spritesA, rightBorderStyle.end, z(7), jaDec * alphaAb)
+                drawRightJudgmentBorder(spritesA, rightBorderStyle.start, z(5), alphaAa)
+            if (alphaAb > 0) drawRightJudgmentBorder(spritesA, rightBorderStyle.end, z(7), alphaAb)
             if (alphaBa > 0)
-                drawRightJudgmentBorder(spritesB, rightBorderStyle.start, z(9), jaDec * alphaBa)
-            if (alphaBb > 0)
-                drawRightJudgmentBorder(spritesB, rightBorderStyle.end, z(11), jaDec * alphaBb)
+                drawRightJudgmentBorder(spritesB, rightBorderStyle.start, z(9), alphaBa)
+            if (alphaBb > 0) drawRightJudgmentBorder(spritesB, rightBorderStyle.end, z(11), alphaBb)
         }
     }
 
@@ -845,7 +873,7 @@ const drawFallbackStage = (
     draw: Draw,
     skin: PreviewSkin,
     props: StageProps,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
 ) => {
     const { lane, width, pivotLane, division, judgeLineStyle, order } = props
 
@@ -861,30 +889,42 @@ const drawFallbackStage = (
     const halfJl = lerp(width, FULL_WIDTH_HALF_EXTENT, fw)
     const lJl = lane - halfJl
     const rJl = lane + halfJl
-    const zLo = getZAlt(LAYER_STAGE, order * 4)
-    const zMid = getZAlt(LAYER_STAGE, order * 4 + 1)
-    const zHi = getZAlt(LAYER_STAGE, order * 4 + 2)
-    const zSingle = getZAlt(LAYER_STAGE, order * 4 + 3)
+    const zLo = getZAlt(LAYER_STAGE, order * 4, transform.elevation)
+    const zMid = getZAlt(LAYER_STAGE, order * 4 + 1, transform.elevation)
+    const zHi = getZAlt(LAYER_STAGE, order * 4 + 2, transform.elevation)
+    const zSingle = getZAlt(LAYER_STAGE, order * 4 + 3, transform.elevation)
     const la = props.laneAlpha * (1 - fw)
     const ja = props.judgeLineAlpha
+    const leftWidth = borderWidth(props.leftBorderStyle, 0.25, 0.125, 0.025)
+    const rightWidth = borderWidth(props.rightBorderStyle, 0.25, 0.125, 0.025)
 
     if (la > 0) {
-        let layoutB = layoutStageLaneByEdges(l - 0.25, l)
-        let layoutT = layoutStageLaneByEdges(tiltWidenedEdge(l - 0.25, l - 1), l)
-        draw(
-            skin.stageLeftBorder,
-            place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-            zMid,
-            la,
-        )
-        layoutB = layoutStageLaneByEdges(r, r + 0.25)
-        layoutT = layoutStageLaneByEdges(r, tiltWidenedEdge(r + 0.25, r + 1))
-        draw(
-            skin.stageRightBorder,
-            place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
-            zMid,
-            la,
-        )
+        if (leftWidth > 0) {
+            const layoutB = layoutStageLaneByEdges(l - leftWidth, l)
+            const layoutT = layoutStageLaneByEdges(
+                tiltWidenedEdge(l - leftWidth, l - 4 * leftWidth),
+                l,
+            )
+            draw(
+                skin.stageLeftBorder,
+                place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
+                zMid,
+                la,
+            )
+        }
+        if (rightWidth > 0) {
+            const layoutB = layoutStageLaneByEdges(r, r + rightWidth)
+            const layoutT = layoutStageLaneByEdges(
+                r,
+                tiltWidenedEdge(r + rightWidth, r + 4 * rightWidth),
+            )
+            draw(
+                skin.stageRightBorder,
+                place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
+                zMid,
+                la,
+            )
+        }
 
         const eps = 0.001
         const divisionSize = division.end.size

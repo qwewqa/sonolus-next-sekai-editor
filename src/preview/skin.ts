@@ -134,6 +134,7 @@ export type JudgmentSpriteSet = {
     background?: Sprite
     gradient?: Sprite
     edge?: Sprite
+    singleLine?: Sprite
     edgeLeft?: Sprite
     center?: Sprite
 }
@@ -195,7 +196,7 @@ const emptyBodySpriteSet: BodySpriteSet = {
     renderType: 'normalFallback',
 }
 
-const resolveSkin = (get: SpriteGetter): PreviewSkin => {
+export const resolveSkin = (get: SpriteGetter): PreviewSkin => {
     const first = (...names: string[]) => {
         for (const name of names) {
             const sprite = get(name)
@@ -270,6 +271,7 @@ const resolveSkin = (get: SpriteGetter): PreviewSkin => {
         background: first(`Sekai Judgment Background ${color}`, 'Sekai Judgment Background'),
         gradient: get(`Sekai Judgment Gradient ${color}`),
         edge: get(`Sekai Judgment Edge ${color}`),
+        singleLine: first(`Sekai Judgment Single Line ${color}`, `Sekai Judgment Edge ${color}`),
         edgeLeft: first(`Sekai Judgment Edge Left ${color}`, `Sekai Judgment Edge ${color}`),
         center: get(`Sekai Judgment Center ${color}`),
     })

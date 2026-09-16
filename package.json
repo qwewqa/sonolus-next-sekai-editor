@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "tsx --test tests/preview/*.test.ts",
     "dev": "vite --host",
     "build": "vite build",
     "check-type": "vue-tsc --build --force",
@@ -35,6 +36,7 @@
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.63.0",
     "vite": "^8.1.4",

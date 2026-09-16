@@ -78,34 +78,40 @@ export const drawSimLine = (
 
     const adjLeftTravel = approach(adjLeftProgress)
     const adjRightTravel = approach(adjRightProgress)
-    if (
-        Math.abs(adjLeftLane - adjRightLane) < 1e-6 &&
-        Math.abs(adjLeftTravel - adjRightTravel) < 1e-6
-    )
-        return
-
     const leftAffine = stageTransformToAffineOrIdentity(leftTransform)
     const rightAffine = stageTransformToAffineOrIdentity(rightTransform)
+    const leftScale = Math.max(0, leftAffine.a00 * leftAffine.a11 - leftAffine.a01 * leftAffine.a10)
+    const rightScale = Math.max(
+        0,
+        rightAffine.a00 * rightAffine.a11 - rightAffine.a01 * rightAffine.a10,
+    )
 
     let ml
     let mr
     let mlTravel
     let mrTravel
+    let mlScale
+    let mrScale
     if (adjLeftLane <= adjRightLane) {
         ml = applyAffine(leftAffine, perspectiveVec(adjLeftLane, 1, adjLeftTravel))
         mr = applyAffine(rightAffine, perspectiveVec(adjRightLane, 1, adjRightTravel))
         mlTravel = adjLeftTravel
         mrTravel = adjRightTravel
+        mlScale = leftScale
+        mrScale = rightScale
     } else {
         ml = applyAffine(rightAffine, perspectiveVec(adjRightLane, 1, adjRightTravel))
         mr = applyAffine(leftAffine, perspectiveVec(adjLeftLane, 1, adjLeftTravel))
         mlTravel = adjRightTravel
         mrTravel = adjLeftTravel
+        mlScale = rightScale
+        mrScale = leftScale
     }
 
+    if (Math.hypot(mr.x - ml.x, mr.y - ml.y) < 1e-6) return
     const ort = normalizeVecOrZero(orthogonalVec(subVec(mr, ml)))
-    const mlH = DynamicLayout.scaledNoteH * tiltWidthFactor(mlTravel)
-    const mrH = DynamicLayout.scaledNoteH * tiltWidthFactor(mrTravel)
+    const mlH = DynamicLayout.scaledNoteH * tiltWidthFactor(mlTravel) * mlScale
+    const mrH = DynamicLayout.scaledNoteH * tiltWidthFactor(mrTravel) * mrScale
 
     const layout: Quad = {
         bl: vec(ml.x + ort.x * mlH, ml.y + ort.y * mlH),
@@ -123,6 +129,9 @@ export const drawSimLine = (
         LAYER_SIM_LINE,
         (leftTargetTime + rightTargetTime) / 2,
         (leftLane + rightLane) / 2,
+        0,
+        false,
+        Math.min(leftAffine.elevation, rightAffine.elevation),
     )
 
     draw(skin.simLine, layout, z, a)

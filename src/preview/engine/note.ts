@@ -19,9 +19,13 @@ import {
     layoutSlimNoteBody,
     layoutSlimNoteBodyFallback,
     layoutTick,
+    transformBillboard,
+    transformedVecAt,
     type FlickDirectionValue,
+    type StageScreenTransform,
 } from './layout'
-import { clamp, easeInCubic, transformQuadAffine, type AffineTransform, type Quad } from './math'
+import { maskedNoteExtents, type VisualMask } from './mask'
+import { clamp, easeInCubic, transformQuadAffine, type Quad } from './math'
 import { NoteKind, type NoteKindValue } from './model'
 
 type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
@@ -107,8 +111,9 @@ export const drawNote = (
     visualProgress: number,
     direction: FlickDirectionValue,
     targetTime: number,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
     noteAlpha: number,
+    mask?: VisualMask,
 ) => {
     if (
         visualProgress < DynamicLayout.progressStart ||
@@ -116,6 +121,8 @@ export const drawNote = (
     )
         return
     if (noteAlpha <= 0) return
+    if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
+    if (size <= 0) return
 
     const travel = approach(visualProgress)
     const spriteSet = getNoteSpriteSet(skin, kind, isCritical, direction)
@@ -147,10 +154,13 @@ export const drawSlideNoteHead = (
     size: number,
     targetTime: number,
     visualProgress: number,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
     noteAlpha: number,
+    mask?: VisualMask,
 ) => {
     if (noteAlpha <= 0) return
+    if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
+    if (size <= 0) return
 
     const travel = approach(visualProgress)
     const spriteSet = getNoteSpriteSet(skin, kind, isCritical, FlickDirection.upOmni)
@@ -168,14 +178,14 @@ const drawNoteBody = (
     size: number,
     travel: number,
     targetTime: number,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
     noteAlpha: number,
 ) => {
     const body = spriteSet.body
     if (!body.middle) return
 
     const layer = getNoteBodyLayer(kind)
-    const z = getZ(layer, targetTime, lane)
+    const z = getZ(layer, targetTime, lane, 0, false, transform.elevation)
 
     switch (body.renderType) {
         case 'normal': {
@@ -211,15 +221,15 @@ const drawNoteTick = (
     lane: number,
     travel: number,
     targetTime: number,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
     noteAlpha: number,
 ) => {
     if (!sprite) return
 
-    const z = getZ(LAYER_NOTE_TICK, targetTime, lane)
+    const z = getZ(LAYER_NOTE_TICK, targetTime, lane, 0, false, transform.elevation)
     draw(
         sprite,
-        transformQuadAffine(transform, layoutTick(lane, travel)),
+        transformBillboard(transform, layoutTick(lane, travel), transformedVecAt(lane, travel)),
         z,
         Math.min(noteAlpha, 1),
     )
@@ -257,7 +267,7 @@ const drawNoteArrow = (
     targetTime: number,
     direction: FlickDirectionValue,
     now: number,
-    transform: AffineTransform,
+    transform: StageScreenTransform,
     noteAlpha: number,
 ) => {
     const sprite = getArrowSprite(arrow, size, direction)
@@ -266,11 +276,18 @@ const drawNoteArrow = (
     const period = 0.5
     const animationProgress = (((now / period) % 1) + 1) % 1
     const a = Math.min((1 - easeInCubic(animationProgress)) * noteAlpha, 1)
-    const z = getZ(LAYER_NOTE_ARROW, targetTime, lane, direction + (isCritical ? 0 : 6))
+    const z = getZ(
+        LAYER_NOTE_ARROW,
+        targetTime,
+        lane,
+        direction + (isCritical ? 0 : 6),
+        false,
+        transform.elevation,
+    )
 
     const layout = arrow.fallback
         ? layoutFlickArrowFallback(lane, size, direction, travel, animationProgress)
         : layoutFlickArrow(lane, size, direction, travel, animationProgress)
 
-    draw(sprite, transformQuadAffine(transform, layout), z, a)
+    draw(sprite, transformBillboard(transform, layout, transformedVecAt(lane, travel)), z, a)
 }

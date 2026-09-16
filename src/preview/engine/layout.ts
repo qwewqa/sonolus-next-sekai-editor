@@ -1,4 +1,5 @@
 import {
+    applyAffine,
     clamp,
     ease,
     identityAffineTransform,
@@ -101,6 +102,7 @@ export const DynamicLayout = {
     widthOffset: 0,
     laneT: 0,
     laneB: 0,
+    safeLaneT: 0,
     stageLaneT: 0,
     stageLaneB: 0,
     screenPixelSize: 0,
@@ -147,7 +149,11 @@ const toCameraInfo = (camera: CameraChange): CameraInfo => ({
     stageTilt: camera.stageTilt,
 })
 
-export const getCameraInfo = (cameras: CameraChange[], t: number): CameraInfo => {
+export const getCameraInfo = (
+    cameras: CameraChange[],
+    t: number,
+    leftLimit = false,
+): CameraInfo => {
     if (!cameras.length) return defaultCameraInfo()
 
     let lo = 0
@@ -156,7 +162,7 @@ export const getCameraInfo = (cameras: CameraChange[], t: number): CameraInfo =>
     while (lo <= hi) {
         const mid = (lo + hi) >> 1
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        if (cameras[mid]!.time <= t) {
+        if (leftLimit ? cameras[mid]!.time < t : cameras[mid]!.time <= t) {
             index = mid
             lo = mid + 1
         } else {
@@ -228,6 +234,7 @@ export const refreshLayout = (camera: CameraInfo, dynamicStages: boolean) => {
     const tilt = base.stageTilt
 
     DynamicLayout.widthOffset = (1 - tilt) * STAGE_WIDTH_MID
+    DynamicLayout.safeLaneT = (1e-4 - DynamicLayout.widthOffset) / Math.max(tilt, 1e-6)
     const vanishTilt = Math.max(tilt, STAGE_TILT_VANISH_MIN)
     const vanishExt = ((1 - vanishTilt) * STAGE_WIDTH_MID) / vanishTilt
     DynamicLayout.laneT = LANE_T - vanishExt
@@ -430,37 +437,95 @@ export const perspectiveRect = (l: number, r: number, t: number, b: number, trav
     })
 }
 
+export type StageScreenTransform = AffineTransform & { elevation: number }
+
+export const identityStageScreenTransform: StageScreenTransform = {
+    ...identityAffineTransform,
+    elevation: 0,
+}
+
 export type StageTransform = {
     sr: number
     px: number
     py: number
     tx: number
     ty: number
+    projection: StageScreenTransform
 }
 
-export const identityStageTransform: StageTransform = { sr: 0, px: 0, py: 0, tx: 0, ty: 0 }
+export const identityStageTransform: StageTransform = {
+    sr: 0,
+    px: 0,
+    py: 0,
+    tx: 0,
+    ty: 0,
+    projection: identityStageScreenTransform,
+}
 
 export const stageTransformIsIdentity = (st: StageTransform) =>
-    st.sr === 0 && st.tx === 0 && st.ty === 0
+    st.sr === 0 && st.tx === 0 && st.ty === 0 && st.projection.elevation === 0
 
-export const stageTransformToAffineOrIdentity = (st?: StageTransform): AffineTransform =>
-    !st || stageTransformIsIdentity(st) ? identityAffineTransform : stageTransformToAffine(st)
+export const stageTransformToAffineOrIdentity = (st?: StageTransform): StageScreenTransform =>
+    !st || stageTransformIsIdentity(st) ? identityStageScreenTransform : stageTransformToAffine(st)
 
-export const stageTransformToAffine = (st: StageTransform): AffineTransform => {
+export const stageTransformToAffine = (st: StageTransform): StageScreenTransform => {
     const cs = Math.cos(st.sr)
     const sn = Math.sin(st.sr)
+    const p = st.projection
     return {
-        a00: cs,
-        a01: sn,
-        a02: st.px * (1 - cs) - sn * st.py + st.tx,
-        a10: -sn,
-        a11: cs,
-        a12: st.py * (1 - cs) + sn * st.px + st.ty,
+        a00: cs * p.a00 + sn * p.a10,
+        a01: cs * p.a01 + sn * p.a11,
+        a02: cs * p.a02 + sn * p.a12 + st.px * (1 - cs) - sn * st.py + st.tx,
+        a10: -sn * p.a00 + cs * p.a10,
+        a11: -sn * p.a01 + cs * p.a11,
+        a12: -sn * p.a02 + cs * p.a12 + st.py * (1 - cs) + sn * st.px + st.ty,
+        elevation: p.elevation,
+    }
+}
+
+// Keep decorations upright relative to the stage without flattening their geometry.
+export const transformBillboard = (transform: AffineTransform, quad: Quad, anchor: Vec): Quad => {
+    const x = transform.a00 + transform.a11
+    const y = transform.a10 - transform.a01
+    const magnitude = Math.hypot(x, y)
+    const cs = magnitude > 0 ? x / magnitude : 1
+    const sn = magnitude > 0 ? y / magnitude : 0
+    const origin = applyAffine(transform, anchor)
+    const place = (p: Vec): Vec => {
+        const dx = p.x - anchor.x
+        const dy = p.y - anchor.y
+        return vec(origin.x + cs * dx - sn * dy, origin.y + sn * dx + cs * dy)
+    }
+    return { bl: place(quad.bl), br: place(quad.br), tl: place(quad.tl), tr: place(quad.tr) }
+}
+
+export const elevationProjection = (
+    camera: LayoutTransform,
+    elevation: number,
+): StageScreenTransform => {
+    const tilt = camera.stageTilt
+    let amount = elevation * camera.wScale * tilt
+    if (tilt > 0) amount = Math.min(amount, -camera.hScale / tilt)
+    const scaleDelta = (amount * tilt) / camera.hScale
+    const shift = amount * ((1 - tilt) * STAGE_WIDTH_MID - (tilt * camera.t) / camera.hScale)
+    const cs = Math.cos(camera.rotate)
+    const sn = Math.sin(camera.rotate)
+    return {
+        a00: 1 + scaleDelta * sn * sn,
+        a01: scaleDelta * sn * cs,
+        a02: shift * sn,
+        a10: scaleDelta * sn * cs,
+        a11: 1 + scaleDelta * cs * cs,
+        a12: shift * cs,
+        elevation: tilt > 0 ? amount / camera.wScale / tilt : 0,
     }
 }
 
 const stageRotationPivot = (camera: LayoutTransform, judgeDepth: number): Vec =>
-    rotateVec(vec(camera.xTranslate, judgeDepth * camera.hScale + camera.t), -camera.rotate)
+    rotateVec(
+        vec(camera.xTranslate, lerp(judgeDepth, 0, camera.stageTilt) * camera.hScale + camera.t),
+        -camera.rotate,
+    )
 
 export const computeStageTransform = (
     camera: LayoutTransform,
@@ -469,15 +534,20 @@ export const computeStageTransform = (
     yLaneTranslate: number,
     maskLane: number,
     centerWeight = 0,
+    elevation = 0,
 ): StageTransform => {
     const travel = approachAtTilt(1, camera.stageTilt)
     const width = widthFactorAtTilt(travel, camera.stageTilt)
-    const judgeCenter = rotateVec(
-        vec(
-            maskLane * width * camera.wScale + camera.xTranslate,
-            travel * camera.hScale + camera.t,
+    const projection = elevationProjection(camera, elevation)
+    const judgeCenter = applyAffine(
+        projection,
+        rotateVec(
+            vec(
+                maskLane * width * camera.wScale + camera.xTranslate,
+                travel * camera.hScale + camera.t,
+            ),
+            -camera.rotate,
         ),
-        -camera.rotate,
     )
     const baseT = Layout.fieldH * FIELD_T_FACTOR
     const baseH = Layout.fieldH * FIELD_B_FACTOR - baseT
@@ -489,7 +559,7 @@ export const computeStageTransform = (
         ),
         -camera.rotate,
     )
-    const pivot = stageRotationPivot(camera, travel)
+    const pivot = applyAffine(projection, stageRotationPivot(camera, travel))
     const cs = Math.cos(stageRotate)
     const sn = Math.sin(stageRotate)
     const dx = judgeCenter.x - pivot.x
@@ -500,6 +570,7 @@ export const computeStageTransform = (
         py: pivot.y,
         tx: offset.x + (1 - cs) * dx - sn * dy,
         ty: offset.y + (1 - cs) * dy + sn * dx,
+        projection,
     }
 }
 
@@ -513,6 +584,15 @@ export const blendStageTransform = (
     py: lerp(a.py, b.py, frac),
     tx: lerp(a.tx, b.tx, frac),
     ty: lerp(a.ty, b.ty, frac),
+    projection: {
+        a00: lerp(a.projection.a00, b.projection.a00, frac),
+        a01: lerp(a.projection.a01, b.projection.a01, frac),
+        a02: lerp(a.projection.a02, b.projection.a02, frac),
+        a10: lerp(a.projection.a10, b.projection.a10, frac),
+        a11: lerp(a.projection.a11, b.projection.a11, frac),
+        a12: lerp(a.projection.a12, b.projection.a12, frac),
+        elevation: lerp(a.projection.elevation, b.projection.elevation, frac),
+    },
 })
 
 export const layoutSekaiStage = (): Quad => {
@@ -775,14 +855,28 @@ export const layoutTickEffect = (lane: number, yOffset = 0): Quad => {
     }
 }
 
-export const layoutParticleLane = (lane: number, size: number, yOffset = 0): Quad =>
-    perspectiveRect(
-        lane - size,
-        lane + size,
-        DynamicLayout.laneT,
-        DynamicLayout.laneB,
-        approach(1 - yOffset),
-    )
+export const layoutParticleLane = (
+    lane: number,
+    size: number,
+    yOffset = 0,
+    extendDown = true,
+    compensateOvershoot = true,
+): Quad => {
+    const travel = approach(1 - yOffset)
+    let top = Math.max(tiltDepth(DynamicLayout.laneT, travel), DynamicLayout.safeLaneT)
+    let bottom = DynamicLayout.laneB
+    if (extendDown) bottom = lerp(bottom, DynamicLayout.stageLaneB, 0.25 * DynamicLayout.stageTilt)
+    bottom = Math.max(tiltDepth(bottom, travel), top)
+    if (compensateOvershoot) {
+        top = Math.max(top, lerp(DynamicLayout.safeLaneT, bottom, 0.07 / 1.07))
+    }
+    return {
+        bl: transformedVecAt(lane - size, bottom),
+        br: transformedVecAt(lane + size, bottom),
+        tl: transformedVecAt(lane - size, top),
+        tr: transformedVecAt(lane + size, top),
+    }
+}
 
 export const layoutSlotEffect = (lane: number, yOffset = 0): Quad => {
     const travel = approach(1 - yOffset)
