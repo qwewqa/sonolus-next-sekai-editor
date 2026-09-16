@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Gradient } from './color'
+import type { Gradient } from './guideFill'
 
 defineProps<Gradient>()
 </script>

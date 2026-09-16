@@ -3,6 +3,13 @@ import type { NoteParticleSet, PreviewParticle } from '../particle'
 import type { PreviewSkin } from '../skin'
 import { attachEasedFrac } from './chart'
 import { ConnectorVisualState, drawConnector, type ConnectorEndpoint } from './connector'
+import {
+    CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
+    MAX_HIT_EFFECT_DURATION,
+    SLIDE_EFFECT_DESPAWN_DELAY,
+    getFrameIndex,
+    latestVisibleTarget,
+} from './frameIndex'
 import { LAYER_SLOT_EFFECT, LAYER_SLOT_GLOW_EFFECT, getZ, setLayerTime } from './layer'
 import {
     DynamicLayout,
@@ -52,9 +59,8 @@ import {
     stagePropsTransform,
     type StageProps,
 } from './stage'
+import { queryTimeIndex } from './timeIndex'
 import { hideNotesAt, noteDistance, preemptTime } from './timescale'
-
-const CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY = 5
 
 const LINEAR_EFFECT_DURATION = 0.5
 const CIRCULAR_EFFECT_DURATION = 0.6
@@ -67,7 +73,6 @@ const SLOT_GLOW_EFFECT_DURATION = 0.25
 const CONNECTOR_TRAIL_SPAWN_PERIOD = 0.1
 const CONNECTOR_SLOT_SPAWN_PERIOD = 0.2
 const CONNECTOR_LOOP_DURATION = 1
-const MAX_HIT_EFFECT_DURATION = 1
 
 const isUpDirection = (direction: FlickDirectionValue) =>
     direction === FlickDirection.upOmni ||
@@ -157,6 +162,14 @@ export const renderPreviewFrame = (
     )
     const stageAffines: StageScreenTransform[] = stageTransforms.map((transform) =>
         stageTransformToAffineOrIdentity(transform),
+    )
+    const frameIndex = getFrameIndex(chart)
+    const latestTarget = latestVisibleTarget(
+        now,
+        frameIndex.minimumTimescale,
+        Math.max(preemptTime(noteSpeed, 0), ...preempts),
+        DynamicLayout.progressStart,
+        Math.min(0, ...stageProps.map((props) => props.yOffset)),
     )
 
     if (chart.isDynamicStages) {
@@ -288,9 +301,19 @@ export const renderPreviewFrame = (
     const effectiveAttachTail = (note: PreviewNote) =>
         note.isAttached && note.attachTail ? note.attachTail : note
 
+    const historicalStageProps: (Map<number, StageProps> | undefined)[] = []
     const stagePropsAtTime = (stageIndex: number, t: number): StageProps | undefined => {
         const stage = stageIndex >= 0 ? chart.stages[stageIndex] : undefined
-        return stage ? getStageProps(stage, t) : undefined
+        if (!stage) return undefined
+        if (t === now) return stageProps[stageIndex]
+
+        const cache = (historicalStageProps[stageIndex] ??= new Map<number, StageProps>())
+        let props = cache.get(t)
+        if (!props) {
+            props = getStageProps(stage, t)
+            cache.set(t, props)
+        }
+        return props
     }
 
     const basicVisualMaskAt = (note: PreviewNote, t: number): VisualMask => {
@@ -366,7 +389,7 @@ export const renderPreviewFrame = (
     let particleOrder = 0
     const nextParticleZ = (layer = PARTICLE_LAYER): ZKey => [layer, particleOrder++]
 
-    for (const connector of chart.connectors) {
+    for (const { item: connector } of queryTimeIndex(frameIndex.connectors, now, latestTarget)) {
         const { head, tail, segmentHead, segmentTail } = connector
 
         const endTime =
@@ -497,7 +520,7 @@ export const renderPreviewFrame = (
         )
     }
 
-    for (const note of chart.notes) {
+    for (const { item: note } of queryTimeIndex(frameIndex.notes, now, latestTarget)) {
         if (now >= note.targetTime) continue
         if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
         if (groupHidesNotes(note)) continue
@@ -519,11 +542,11 @@ export const renderPreviewFrame = (
         )
     }
 
-    for (const [slideIndex, slide] of chart.slides.entries()) {
+    for (const { item: slide, index: slideIndex } of queryTimeIndex(frameIndex.slides, now, now)) {
         const start = slide.activeHead.targetTime
         const end = slide.activeTail.targetTime
         if (now < start) continue
-        if (now >= end + LINEAR_EFFECT_DURATION + 0.1) continue
+        if (now >= end + SLIDE_EFFECT_DESPAWN_DELAY) continue
 
         const slideInfoAt = (t: number) => {
             let current
@@ -766,7 +789,7 @@ export const renderPreviewFrame = (
         }
     }
 
-    for (const simLine of chart.simLines) {
+    for (const { item: simLine } of queryTimeIndex(frameIndex.simLines, now, latestTarget)) {
         const { left, right } = simLine
         if (now >= Math.min(left.targetTime, right.targetTime)) continue
         if (groupHidesNotes(left) || groupHidesNotes(right)) continue
@@ -793,7 +816,9 @@ export const renderPreviewFrame = (
         )
     }
 
-    for (const [noteIndex, note] of chart.notes.entries()) {
+    for (const { item: note, index: noteIndex } of showEffects
+        ? queryTimeIndex(frameIndex.effects, now, now)
+        : []) {
         const elapsed = now - note.targetTime
         if (elapsed < 0 || elapsed >= MAX_HIT_EFFECT_DURATION) continue
         if (note.isFake) continue

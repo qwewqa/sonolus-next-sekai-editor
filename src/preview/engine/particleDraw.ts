@@ -38,20 +38,39 @@ const buildRandomValues = (rng: () => number): Values => {
     return values
 }
 
+// A particle's random inputs depend only on its seed, not on animation time or
+// layout. Reuse them across frames and bound retention while seeking/playing.
+const randomValues = new Map<number, Values>()
+const RANDOM_VALUES_LIMIT = 1024
+const getRandomValues = (seed: number) => {
+    const key = seed | 0
+    let values = randomValues.get(key)
+    if (!values) {
+        values = buildRandomValues(mulberry32(key))
+        if (randomValues.size >= RANDOM_VALUES_LIMIT) {
+            const oldest = randomValues.keys().next().value
+            if (oldest !== undefined) randomValues.delete(oldest)
+        }
+        randomValues.set(key, values)
+    }
+    return values
+}
+
+// Loaded particle expressions are immutable. Keep their original summation
+// order, including for transforms whose coordinate inputs change every frame.
+const expressionTerms = new WeakMap<ParticleExpression, [string, number][]>()
 const evaluate = (expression: ParticleExpression, values: Values) => {
+    let terms = expressionTerms.get(expression)
+    if (!terms) {
+        terms = Object.entries(expression).filter((entry): entry is [string, number] => !!entry[1])
+        expressionTerms.set(expression, terms)
+    }
     let sum = 0
-    for (const [key, coefficient] of Object.entries(expression)) {
-        if (!coefficient) continue
+    for (const [key, coefficient] of terms) {
         sum += coefficient * (values[key] ?? 0)
     }
     return sum
 }
-
-const evaluateProperty = (property: ParticleProperty, values: Values) => ({
-    from: evaluate(property.from, values),
-    to: evaluate(property.to, values),
-    ease: property.ease,
-})
 
 const easeValue = (ease: string, x: number): number => {
     const easing = easings[ease]
@@ -67,13 +86,10 @@ export const drawParticleEffect = (
     seed: number,
     z: ZKey,
 ) => {
-    const spawnRng = mulberry32(seed)
-    const spawnValues = buildRandomValues(spawnRng)
-
     let rect = layout
     if (effect.transform) {
         const inputs: Values = {
-            ...spawnValues,
+            ...getRandomValues(seed),
             x1: layout.bl.x,
             x2: layout.tl.x,
             x3: layout.tr.x,
@@ -105,9 +121,7 @@ export const drawParticleEffect = (
 
     for (const [groupIndex, group] of effect.groups.entries()) {
         for (let occurrence = 0; occurrence < group.count; occurrence++) {
-            const values = buildRandomValues(
-                mulberry32(hashSeed(seed, groupIndex * 131 + occurrence)),
-            )
+            const values = getRandomValues(hashSeed(seed, groupIndex * 131 + occurrence))
 
             for (const particle of group.particles) {
                 if (!particle.sprite) continue
@@ -148,8 +162,11 @@ export const drawParticleEffect = (
 }
 
 const evaluateAnimated = (property: ParticleProperty, values: Values, frac: number) => {
-    const { from, to, ease } = evaluateProperty(property, values)
-    return lerp(from, to, easeValue(ease, frac))
+    return lerp(
+        evaluate(property.from, values),
+        evaluate(property.to, values),
+        easeValue(property.ease, frac),
+    )
 }
 
 const particlePoint = (

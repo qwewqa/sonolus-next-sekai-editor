@@ -3,13 +3,7 @@ import type { NoteEntity } from '../../../state/entities/slides/note'
 import { beatToTime } from '../../../state/integrals/bpms'
 import { activeColors, damageColor, guideColors } from '../../../utils/colors'
 import { remap } from '../../../utils/math'
-
-export type Gradient = {
-    id: string
-    color: string
-    headAlpha: number
-    tailAlpha: number
-}
+import { getGuideFill, type ConnectorFill } from './guideFill'
 
 export const getColor = (
     id: string,
@@ -17,13 +11,7 @@ export const getColor = (
     segmentTail: NoteEntity,
     tHead: number,
     tTail: number,
-): {
-    fill: {
-        fill: string
-        'fill-opacity': number
-    }
-    gradient?: Gradient
-} => {
+): ConnectorFill => {
     if (segmentHead.connectorType !== 'guide')
         return {
             fill: {
@@ -40,30 +28,22 @@ export const getColor = (
     const tSegmentHead = beatToTime(bpms.value, segmentHead.beat)
     const tSegmentTail = beatToTime(bpms.value, segmentTail.beat)
 
-    return {
-        fill: {
-            fill: `url(#${id})`,
-            'fill-opacity': 1,
-        },
-        gradient: {
-            id,
-            color: guideColors[segmentHead.connectorGuideColor],
-            headAlpha:
-                remap(
-                    tSegmentHead,
-                    tSegmentTail,
-                    segmentHead.connectorGuideAlpha,
-                    segmentTail.connectorGuideAlpha,
-                    tHead,
-                ) * 0.5,
-            tailAlpha:
-                remap(
-                    tSegmentHead,
-                    tSegmentTail,
-                    segmentHead.connectorGuideAlpha,
-                    segmentTail.connectorGuideAlpha,
-                    tTail,
-                ) * 0.5,
-        },
-    }
+    return getGuideFill(
+        id,
+        guideColors[segmentHead.connectorGuideColor],
+        remap(
+            tSegmentHead,
+            tSegmentTail,
+            segmentHead.connectorGuideAlpha,
+            segmentTail.connectorGuideAlpha,
+            tHead,
+        ) * 0.5,
+        remap(
+            tSegmentHead,
+            tSegmentTail,
+            segmentHead.connectorGuideAlpha,
+            segmentTail.connectorGuideAlpha,
+            tTail,
+        ) * 0.5,
+    )
 }

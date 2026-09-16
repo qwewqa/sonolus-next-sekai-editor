@@ -5,7 +5,8 @@ import { isDynamicStages } from '../history/dynamicStages.ts'
 import { groups } from '../history/groups'
 import { stages } from '../history/stages'
 import { i18n } from '../i18n'
-import { time } from '../time'
+import { screenSm } from '../screen'
+import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
 import { controlListeners } from './controls'
 import { useFocusControl } from './controls/focus'
@@ -34,7 +35,7 @@ useAutoSave()
 
 const container: Ref<HTMLDivElement | null> = useTemplateRef('container')
 
-watch(time, () => {
+const updateBounds = () => {
     if (!container.value) return
 
     const rect = container.value.getBoundingClientRect()
@@ -42,30 +43,66 @@ watch(time, () => {
     view.y = rect.y
     view.w = rect.width
     view.h = rect.height
+}
+
+watch(container, (element, _, onCleanup) => {
+    if (!element) return
+
+    const observer = new ResizeObserver(updateBounds)
+    observer.observe(element)
+    updateBounds()
+
+    window.addEventListener('resize', updateBounds)
+    window.addEventListener('scroll', updateBounds, { capture: true, passive: true })
+    window.visualViewport?.addEventListener('resize', updateBounds)
+    window.visualViewport?.addEventListener('scroll', updateBounds)
+
+    onCleanup(() => {
+        observer.disconnect()
+        window.removeEventListener('resize', updateBounds)
+        window.removeEventListener('scroll', updateBounds, true)
+        window.visualViewport?.removeEventListener('resize', updateBounds)
+        window.visualViewport?.removeEventListener('scroll', updateBounds)
+    })
 })
 
-watch([groups, view], () => {
+// Panel layout changes can move the editor without changing its dimensions.
+watch(
+    [
+        screenSm,
+        () => settings.previewPosition,
+        () => settings.showPreview,
+        () => settings.previewWidth,
+        () => settings.previewHeight,
+        () => settings.showSidebar,
+        () => settings.sidebarWidth,
+    ],
+    updateBounds,
+    { flush: 'post' },
+)
+
+watch([groups, () => view.groupId], () => {
     if (!view.groupId) return
     if (groups.value.has(view.groupId)) return
 
     view.groupId = undefined
 })
 
-watch([groups, brushProperties], () => {
+watch([groups, () => brushProperties.value.groupId], () => {
     if (!brushProperties.value.groupId) return
     if (groups.value.has(brushProperties.value.groupId)) return
 
     brushProperties.value.groupId = undefined
 })
 
-watch([stages, view], () => {
+watch([stages, isDynamicStages, () => view.stageId], () => {
     if (!view.stageId) return
     if (isDynamicStages.value && stages.value.has(view.stageId)) return
 
     view.stageId = undefined
 })
 
-watch([stages, brushProperties], () => {
+watch([stages, isDynamicStages, () => brushProperties.value.stageId], () => {
     if (!brushProperties.value.stageId) return
     if (isDynamicStages.value && stages.value.has(brushProperties.value.stageId)) return
 
@@ -114,23 +151,24 @@ const stage = computed(() =>
                     fill="none"
                     v-on="controlListeners"
                 >
-                    <animate
-                        attributeName="stroke-dashoffset"
-                        from="10"
-                        to="0"
-                        dur="1s"
-                        repeatCount="indefinite"
-                    />
-
                     <LevelEditorWaveform />
                     <LevelEditorGrid />
                     <LevelEditorCursor />
                     <LevelEditorEntities />
                     <LevelEditorCreatingEntities />
-                    <LevelEditorHoveredEntities />
-                    <LevelEditorSelectedEntities />
-                    <LevelEditorSelection />
-                    <LevelEditorHover />
+                    <g>
+                        <animate
+                            attributeName="stroke-dashoffset"
+                            from="10"
+                            to="0"
+                            dur="1s"
+                            repeatCount="indefinite"
+                        />
+                        <LevelEditorHoveredEntities />
+                        <LevelEditorSelectedEntities />
+                        <LevelEditorSelection />
+                        <LevelEditorHover />
+                    </g>
                 </svg>
             </template>
 

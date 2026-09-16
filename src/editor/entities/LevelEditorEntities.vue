@@ -132,9 +132,6 @@ const infinities = [
 <script setup lang="ts">
 import { computed } from 'vue'
 import { entityComponents } from '.'
-import { beats, keys } from '..'
-import { selectedEntities } from '../../history/selectedEntities'
-import { cullAllEntities } from '../../history/store'
 import { settings } from '../../settings'
 import type { Entity } from '../../state/entities'
 import { hoveredEntities, view } from '../view'
@@ -143,42 +140,19 @@ import LevelEditorStageMaskEventInfinities from './events/stage/mask/LevelEditor
 import LevelEditorStagePivotEventInfinities from './events/stage/pivot/LevelEditorStagePivotEventInfinities.vue'
 import LevelEditorStageStyleEventInfinities from './events/stage/style/LevelEditorStageStyleEventInfinities.vue'
 import LevelEditorStageTransformEventInfinities from './events/stage/transform/LevelEditorStageTransformEventInfinities.vue'
+import { selectedEntitySet, visibleEntities } from './visible'
 
 const sortedInfinities = computed(() =>
     infinities.sort(([a], [b]) => +view.visibilities[a] - +view.visibilities[b]),
 )
 
-const culledEntities = computed(() => [...cullAllEntities(keys.value.min, keys.value.max)])
-
-const visibleEntities = computed(() =>
-    culledEntities.value.filter((entity) => {
-        switch (entity.type) {
-            case 'bpm':
-            case 'cameraEventJoint':
-            case 'stageMaskEventJoint':
-            case 'stagePivotEventJoint':
-            case 'stageStyleEventJoint':
-            case 'stageTransformEventJoint':
-            case 'timeScale':
-            case 'note':
-                return entity.beat >= beats.value.min && entity.beat <= beats.value.max
-            case 'cameraEventConnection':
-            case 'stageMaskEventConnection':
-            case 'stagePivotEventConnection':
-            case 'stageStyleEventConnection':
-            case 'stageTransformEventConnection':
-                return entity.min.beat <= beats.value.max && entity.max.beat >= beats.value.min
-            case 'connector':
-                return entity.head.beat <= beats.value.max && entity.tail.beat >= beats.value.min
-        }
-    }),
-)
+const hoveredEntitySet = computed(() => new Set(hoveredEntities.value))
 
 const visibleEntityInfos = computed(() => {
+    const selected = selectedEntitySet.value
     let entities = visibleEntities.value.map((entity) => ({
         entity,
-        isSelected: selectedEntities.value.includes(entity),
-        isHovered: hoveredEntities.value.includes(entity),
+        isSelected: selected.has(entity),
         isVisibleByGroup: isEntityVisibleByGroup(entity),
         isVisibleByStage: isEntityVisibleByStage(entity),
         isVisibleByType: view.visibilities[entity.type],
@@ -216,14 +190,13 @@ const visibleEntityInfos = computed(() => {
         v-for="{
             entity,
             isSelected,
-            isHovered,
             isVisibleByGroup,
             isVisibleByStage,
             isVisibleByType,
         } in visibleEntityInfos"
         :key="entity as never"
         :entity="entity as never"
-        :is-highlighted="isSelected || isHovered"
+        :is-highlighted="isSelected || hoveredEntitySet.has(entity)"
         :opacity="isVisibleByGroup && isVisibleByStage && isVisibleByType ? 1 : 0.25"
     />
 </template>
