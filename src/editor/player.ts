@@ -126,7 +126,9 @@ export const togglePreviewPlayback = () => {
 
 const seekPreviewTime = (seconds: number) => {
     if (!settings.playFollow) {
+        const scrolling = view.scrollingY
         focusView(seconds)
+        if (view.scrollingY !== scrolling) previewFollowScroll = view.scrollingY
         return
     }
 
