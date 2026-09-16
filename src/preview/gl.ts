@@ -105,7 +105,33 @@ type Entry = {
     z: ZKey
     order: number
     blend: BlendModeValue
-    data: number[]
+    data: Float32Array
+}
+
+const writeVertex = (
+    data: Float32Array,
+    offset: number,
+    x: number,
+    y: number,
+    u: number,
+    v: number,
+    w: number,
+    texture: number,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+) => {
+    data[offset] = x
+    data[offset + 1] = y
+    data[offset + 2] = u * w
+    data[offset + 3] = v * w
+    data[offset + 4] = w
+    data[offset + 5] = texture
+    data[offset + 6] = r
+    data[offset + 7] = g
+    data[offset + 8] = b
+    data[offset + 9] = a
 }
 
 export const createPreviewRenderer = (
@@ -173,7 +199,10 @@ export const createPreviewRenderer = (
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     }
 
-    let entries: Entry[] = []
+    const entries: Entry[] = []
+    // Keep submission slots separate from the sorted list so every slot is reused once per frame.
+    const entryPool: Entry[] = []
+    let packedData = new Float32Array(0)
 
     const inputs = new Array<number>(8)
     const outputs = new Array<number>(8)
@@ -207,7 +236,7 @@ export const createPreviewRenderer = (
             gl.viewport(0, 0, width, height)
             gl.uniform1f(aspectLocation, aspectRatio)
 
-            entries = []
+            entries.length = 0
         },
 
         draw(sprite, quad, z, a, tint, blend = BlendMode.normal) {
@@ -256,20 +285,23 @@ export const createPreviewRenderer = (
             const g = tint?.g ?? 1
             const b = tint?.b ?? 1
 
-            entries.push({
-                z,
-                order: entries.length,
-                blend,
-                // prettier-ignore
-                data: [
-                    bl.x, bl.y, u0 * wBl, v1 * wBl, wBl, tex, r, g, b, a,
-                    tl.x, tl.y, u0 * wTl, v0 * wTl, wTl, tex, r, g, b, a,
-                    tr.x, tr.y, u1 * wTr, v0 * wTr, wTr, tex, r, g, b, a,
-                    bl.x, bl.y, u0 * wBl, v1 * wBl, wBl, tex, r, g, b, a,
-                    tr.x, tr.y, u1 * wTr, v0 * wTr, wTr, tex, r, g, b, a,
-                    br.x, br.y, u1 * wBr, v1 * wBr, wBr, tex, r, g, b, a,
-                ],
-            })
+            const order = entries.length
+            let entry = entryPool[order]
+            if (!entry) {
+                entry = { z, order, blend, data: new Float32Array(FLOATS_PER_QUAD) }
+                entryPool.push(entry)
+            }
+            entry.z = z
+            entry.blend = blend
+
+            const { data } = entry
+            writeVertex(data, 0, bl.x, bl.y, u0, v1, wBl, tex, r, g, b, a)
+            writeVertex(data, 10, tl.x, tl.y, u0, v0, wTl, tex, r, g, b, a)
+            writeVertex(data, 20, tr.x, tr.y, u1, v0, wTr, tex, r, g, b, a)
+            data.copyWithin(30, 0, 10)
+            data.copyWithin(40, 20, 30)
+            writeVertex(data, 50, br.x, br.y, u1, v1, wBr, tex, r, g, b, a)
+            entries.push(entry)
         },
 
         flush() {
@@ -286,12 +318,20 @@ export const createPreviewRenderer = (
                 return a.order - b.order
             })
 
-            const data = new Float32Array(entries.length * FLOATS_PER_QUAD)
-            for (const [i, entry] of entries.entries()) {
-                data.set(entry.data, i * FLOATS_PER_QUAD)
+            const length = entries.length * FLOATS_PER_QUAD
+            if (length > packedData.length) {
+                packedData = new Float32Array(
+                    Math.max(length, packedData.length * 2, FLOATS_PER_QUAD * 256),
+                )
+                gl.bufferData(gl.ARRAY_BUFFER, packedData.byteLength, gl.DYNAMIC_DRAW)
             }
 
-            gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW)
+            for (let i = 0; i < entries.length; i++) {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                packedData.set(entries[i]!.data, i * FLOATS_PER_QUAD)
+            }
+
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, packedData.subarray(0, length))
 
             const setBlend = (blend: BlendModeValue) => {
                 if (blend === BlendMode.additive) {

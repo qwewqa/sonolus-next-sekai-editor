@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import {
+    computed,
+    onMounted,
+    onUnmounted,
+    ref,
+    shallowRef,
+    useTemplateRef,
+    watch,
+    watchEffect,
+} from 'vue'
 import { view } from '../editor/view'
 import { state } from '../history'
 import { isPlaying } from '../player'
+import type { State } from '../state'
 import { buildPreviewChart } from './engine/chart'
 import { TARGET_ASPECT_RATIO } from './engine/layout'
 import { renderPreviewFrame } from './engine/render'
@@ -26,9 +36,24 @@ const skin = shallowRef<LoadedSkin>()
 const particle = shallowRef<LoadedParticle>()
 const status = ref<'loading' | 'missing' | 'error' | 'ready'>('loading')
 
-const chart = computed(() => buildPreviewChart(state.value, noteSpeed.value))
+// Selection, audio and filename changes share the same chart data. Keep them from
+// rebuilding the preview and its indexes during ordinary editor interactions.
+const chartState = computed<State>((previous) => {
+    const next = state.value
+    if (
+        previous?.store === next.store &&
+        previous.bpms === next.bpms &&
+        previous.groups === next.groups &&
+        previous.stages === next.stages &&
+        previous.isDynamicStages === next.isDynamicStages
+    ) {
+        return previous
+    }
+    return next
+})
+const chart = computed(() => buildPreviewChart(chartState.value, noteSpeed.value))
 
-let renderer: PreviewRenderer | undefined
+const renderer = shallowRef<PreviewRenderer>()
 
 const fetchScp = async (name: string) => {
     const response = await fetch(`${import.meta.env.BASE_URL}resource/${name}`, {
@@ -72,10 +97,11 @@ const loadSkin = async () => {
 }
 
 const uploadTextures = () => {
-    if (!renderer) return
+    if (!renderer.value) return
 
-    if (skin.value) renderer.setTexture(0, skin.value.texture, skin.value.interpolation)
-    if (particle.value) renderer.setTexture(1, particle.value.texture, particle.value.interpolation)
+    if (skin.value) renderer.value.setTexture(0, skin.value.texture, skin.value.interpolation)
+    if (particle.value)
+        renderer.value.setTexture(1, particle.value.texture, particle.value.interpolation)
 }
 
 let rendererCanvas: HTMLCanvasElement | undefined
@@ -83,10 +109,10 @@ let rendererCanvas: HTMLCanvasElement | undefined
 watch([skin, canvas], () => {
     if (!canvas.value || !skin.value) return
 
-    if (!renderer || rendererCanvas !== canvas.value || renderer.isContextLost()) {
-        renderer?.dispose()
+    if (!renderer.value || rendererCanvas !== canvas.value || renderer.value.isContextLost()) {
+        renderer.value?.dispose()
         try {
-            renderer = createPreviewRenderer(canvas.value, antialias.value)
+            renderer.value = createPreviewRenderer(canvas.value, antialias.value)
             rendererCanvas = canvas.value
         } catch (error) {
             console.error('Failed to create preview renderer:', error)
@@ -102,6 +128,7 @@ const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const canvasLeft = ref(0)
 const canvasTop = ref(0)
+const pixelRatio = ref(devicePixelRatio || 1)
 
 let containerWidth = 0
 let containerHeight = 0
@@ -125,14 +152,12 @@ const updateCanvasSize = () => {
 
     const width = Math.min(containerWidth, containerHeight * aspectRatio)
     const height = width / aspectRatio
-    const pixelRatio = devicePixelRatio || 1
+    const ratio = pixelRatio.value
 
-    canvasWidth.value = Math.round(width * pixelRatio) / pixelRatio
-    canvasHeight.value = Math.round(height * pixelRatio) / pixelRatio
-    canvasLeft.value =
-        Math.round(((containerWidth - canvasWidth.value) / 2) * pixelRatio) / pixelRatio
-    canvasTop.value =
-        Math.round(((containerHeight - canvasHeight.value) / 2) * pixelRatio) / pixelRatio
+    canvasWidth.value = Math.round(width * ratio) / ratio
+    canvasHeight.value = Math.round(height * ratio) / ratio
+    canvasLeft.value = Math.round(((containerWidth - canvasWidth.value) / 2) * ratio) / ratio
+    canvasTop.value = Math.round(((containerHeight - canvasHeight.value) / 2) * ratio) / ratio
 }
 
 watch(lockAspectRatio, updateCanvasSize)
@@ -179,13 +204,14 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
 }
 
 let rafId = 0
+let renderFrame: (() => void) | undefined
 
 const getRenderSize = (requestedScale: number) => {
-    if (!renderer) return
+    if (!renderer.value) return
 
     const requestedWidth = canvasWidth.value * requestedScale
     const requestedHeight = canvasHeight.value * requestedScale
-    const { width: maxWidth, height: maxHeight } = renderer.maxViewportSize
+    const { width: maxWidth, height: maxHeight } = renderer.value.maxViewportSize
     const fit = Math.min(1, maxWidth / requestedWidth, maxHeight / requestedHeight)
 
     return {
@@ -194,28 +220,52 @@ const getRenderSize = (requestedScale: number) => {
     }
 }
 
-const onFrame = () => {
-    rafId = requestAnimationFrame(onFrame)
+// Every animation uses chart time, so a paused frame only changes when one of
+// these inputs changes. Coalesce edits and playback updates into one draw.
+watchEffect(
+    () => {
+        const currentRenderer = renderer.value
+        const currentSkin = skin.value
+        if (!currentRenderer || !currentSkin || !canvasWidth.value || !canvasHeight.value) {
+            renderFrame = undefined
+            return
+        }
 
-    if (!renderer || !skin.value || !canvasWidth.value || !canvasHeight.value) return
+        const renderSize = getRenderSize(pixelRatio.value * renderScale.value)
+        if (!renderSize) return
 
-    const scale = (devicePixelRatio || 1) * renderScale.value
-    const renderSize = getRenderSize(scale)
-    if (!renderSize) return
+        const args = [
+            currentRenderer,
+            currentSkin.skin,
+            chart.value,
+            view.cursorTime,
+            renderSize.width,
+            renderSize.height,
+            canvasWidth.value,
+            canvasHeight.value,
+            noteSpeed.value,
+            showEffects.value,
+            particle.value?.particle,
+        ] as const
+        renderFrame = () => {
+            renderPreviewFrame(...args)
+        }
+        if (rafId) return
+        rafId = requestAnimationFrame(() => {
+            rafId = 0
+            renderFrame?.()
+        })
+    },
+    { flush: 'post' },
+)
 
-    renderPreviewFrame(
-        renderer,
-        skin.value.skin,
-        chart.value,
-        view.cursorTime,
-        renderSize.width,
-        renderSize.height,
-        canvasWidth.value,
-        canvasHeight.value,
-        noteSpeed.value,
-        showEffects.value,
-        particle.value?.particle,
-    )
+let pixelRatioQuery: MediaQueryList | undefined
+const onPixelRatioChange = () => {
+    pixelRatio.value = devicePixelRatio || 1
+    updateCanvasSize()
+    pixelRatioQuery?.removeEventListener('change', onPixelRatioChange)
+    pixelRatioQuery = matchMedia(`(resolution: ${pixelRatio.value}dppx)`)
+    pixelRatioQuery.addEventListener('change', onPixelRatioChange)
 }
 
 onMounted(() => {
@@ -223,13 +273,16 @@ onMounted(() => {
 
     void loadSkin()
 
-    rafId = requestAnimationFrame(onFrame)
+    onPixelRatioChange()
+    window.addEventListener('resize', onPixelRatioChange)
 })
 
 onUnmounted(() => {
     resizeObserver.disconnect()
     cancelAnimationFrame(rafId)
-    renderer?.dispose()
+    window.removeEventListener('resize', onPixelRatioChange)
+    pixelRatioQuery?.removeEventListener('change', onPixelRatioChange)
+    renderer.value?.dispose()
 })
 </script>
 

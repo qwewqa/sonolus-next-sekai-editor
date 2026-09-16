@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx --test tests/preview/*.test.ts",
+    "test": "tsx --test tests/preview/*.test.ts tests/editor/*.test.ts",
     "dev": "vite --host",
     "build": "vite build",
     "check-type": "vue-tsc --build --force",
