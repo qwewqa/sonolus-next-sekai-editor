@@ -92,6 +92,7 @@ declare global {
             closes: number
             vertices: number[]
             resolutions: number
+            aspect: number
             errors: string[]
             restore?: () => void
         }
@@ -120,6 +121,7 @@ test.beforeEach(async ({ page }) => {
             closes: 0,
             vertices: [],
             resolutions: 0,
+            aspect: 0,
             errors: [],
         }
         window.addEventListener('error', (event) => window.previewTest.errors.push(event.message))
@@ -127,6 +129,20 @@ test.beforeEach(async ({ page }) => {
         WebGLRenderingContext.prototype.texImage2D = function (...args) {
             if (args.some((arg) => arg instanceof ImageBitmap)) window.previewTest.uploads++
             return Reflect.apply(upload, this, args)
+        }
+        const uniformNames = new WeakMap<WebGLUniformLocation, string>()
+        const getUniformLocation = WebGLRenderingContext.prototype.getUniformLocation
+        WebGLRenderingContext.prototype.getUniformLocation = function (program, name) {
+            const location = getUniformLocation.call(this, program, name)
+            if (location) uniformNames.set(location, name)
+            return location
+        }
+        const uniform1f = WebGLRenderingContext.prototype.uniform1f
+        WebGLRenderingContext.prototype.uniform1f = function (location, value) {
+            if (location && uniformNames.get(location) === 'u_aspect') {
+                window.previewTest.aspect = value
+            }
+            return uniform1f.call(this, location, value)
         }
         const clear = WebGLRenderingContext.prototype.clear
         WebGLRenderingContext.prototype.clear = function (...args) {
@@ -299,4 +315,242 @@ test('unfocused preview defers geometry, compilation and renderer creation until
     expect(await page.evaluate(() => window.previewTest.resolutions)).toBe(1)
     expect(await page.evaluate(() => window.previewTest.uploads)).toBe(before.uploads + 2)
     expect(await page.evaluate(() => window.previewTest.frames)).toBe(before.frames + 1)
+})
+
+test.describe('preview aspect ratios', () => {
+    test.use({ deviceScaleFactor: 1.25 })
+
+    const expectViewport = async (page: Page, ratio: number) => {
+        const dimensions = await page.evaluate(() => {
+            const container = document.querySelector<HTMLElement>('.preview')!
+            const viewport = document.querySelector<HTMLElement>('.preview-viewport')!
+            const canvas = viewport.querySelector('canvas')!
+            const box = (element: HTMLElement) => {
+                const { x, y, width, height } = element.getBoundingClientRect()
+                return { x, y, width, height }
+            }
+            return {
+                container: box(container),
+                viewport: box(viewport),
+                canvas: box(canvas),
+                styleWidth: Number.parseFloat(viewport.style.width),
+                styleHeight: Number.parseFloat(viewport.style.height),
+                backingWidth: canvas.width,
+                backingHeight: canvas.height,
+                aspect: window.previewTest.aspect,
+                pixelRatio: devicePixelRatio,
+            }
+        })
+        const expectedWidth = Math.min(
+            dimensions.container.width,
+            dimensions.container.height * ratio,
+        )
+        // CSSOM serializes declarations with less precision than the JS layout.
+        expect(Math.abs(dimensions.styleWidth - expectedWidth)).toBeLessThan(0.001)
+        expect(dimensions.styleWidth / dimensions.styleHeight).toBeCloseTo(ratio, 4)
+        // CSS layout quantizes fractional coordinates to a small subpixel grid.
+        expect(Math.abs(dimensions.canvas.width - expectedWidth)).toBeLessThan(0.03)
+        expect(Math.abs(dimensions.canvas.height - expectedWidth / ratio)).toBeLessThan(0.03)
+        expect(dimensions.canvas).toEqual(dimensions.viewport)
+        expect(
+            Math.abs(
+                dimensions.viewport.x +
+                    dimensions.viewport.width / 2 -
+                    (dimensions.container.x + dimensions.container.width / 2),
+            ),
+        ).toBeLessThan(0.03)
+        expect(
+            Math.abs(
+                dimensions.viewport.y +
+                    dimensions.viewport.height / 2 -
+                    (dimensions.container.y + dimensions.container.height / 2),
+            ),
+        ).toBeLessThan(0.03)
+        expect(dimensions.aspect).toBeCloseTo(ratio, 10)
+        expect(dimensions.pixelRatio).toBe(1.25)
+        return dimensions
+    }
+
+    test('presets fit and center the selected viewport through resize without idle drawing', async ({
+        page,
+    }) => {
+        const group = page.getByRole('radiogroup', { name: 'Aspect ratio' })
+        await expect(group.getByRole('radio', { name: '16:9', exact: true })).toBeChecked()
+        const uploads = await page.evaluate(() => window.previewTest.uploads)
+        for (const size of [
+            { width: 1600, height: 1000 },
+            { width: 1069, height: 733 },
+        ]) {
+            await page.setViewportSize(size)
+            for (const [label, ratio] of [
+                ['16:9', 16 / 9],
+                ['21:9', 21 / 9],
+                ['4:3', 4 / 3],
+            ] as const) {
+                await group.getByRole('radio', { name: label, exact: true }).check()
+                await settle(page)
+                await expect(group.locator('input:checked')).toHaveCount(1)
+                await expectViewport(page, ratio)
+            }
+        }
+        // The top panel fits by height, unlike the width-limited left panel.
+        await page.evaluate(() => (window.editorTest.settings.previewPosition = 'top'))
+        for (const [label, ratio] of [
+            ['16:9', 16 / 9],
+            ['21:9', 21 / 9],
+            ['4:3', 4 / 3],
+        ] as const) {
+            await group.getByRole('radio', { name: label, exact: true }).check()
+            await settle(page)
+            await expectViewport(page, ratio)
+        }
+        const frames = await page.evaluate(() => window.previewTest.frames)
+        await page.waitForTimeout(150)
+        expect(await page.evaluate(() => window.previewTest.frames)).toBe(frames)
+        expect(await page.evaluate(() => window.previewTest.uploads)).toBe(uploads)
+    })
+
+    test('arrow navigation retains radio focus without invoking editor shortcuts', async ({
+        page,
+    }) => {
+        const group = page.getByRole('radiogroup', { name: 'Aspect ratio' })
+        const initialTime = await page.evaluate(() => window.editorTest.view.cursorTime)
+        await group.getByRole('radio', { name: '16:9', exact: true }).focus()
+        for (const label of ['21:9', '4:3', '16:9']) {
+            await page.keyboard.press('ArrowRight')
+            const selected = group.getByRole('radio', { name: label, exact: true })
+            await expect(selected).toBeChecked()
+            await expect(selected).toBeFocused()
+        }
+        await page.keyboard.press('ArrowLeft')
+        await expect(group.getByRole('radio', { name: '4:3', exact: true })).toBeChecked()
+        await expect(group.getByRole('radio', { name: '4:3', exact: true })).toBeFocused()
+        expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(initialTime)
+    })
+
+    test('quality changes backing resolution without changing the logical aspect or field geometry', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1069, height: 733 })
+        await page.getByRole('radio', { name: '21:9', exact: true }).check()
+        await settle(page)
+        const original = await expectViewport(page, 21 / 9)
+        const vertices = await page.evaluate(() => window.previewTest.vertices)
+        const quality = page.locator('.preview input[type="number"]').nth(1)
+        await quality.fill('0.25')
+        await quality.press('Tab')
+        await settle(page)
+        const reduced = await expectViewport(page, 21 / 9)
+        expect(reduced.backingWidth).toBe(Math.round(original.styleWidth * 1.25 * 0.25))
+        expect(reduced.backingHeight).toBe(Math.round(original.styleHeight * 1.25 * 0.25))
+        expect(reduced.backingWidth).toBeLessThan(original.backingWidth)
+        expect(reduced.backingWidth / reduced.backingHeight).not.toBe(reduced.aspect)
+        expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(vertices)
+    })
+
+    test('slider and checkbox keys change only preview controls without scrolling or starting playback', async ({
+        page,
+    }) => {
+        const readEditor = () =>
+            page.evaluate(async () => {
+                const playerURL = performance
+                    .getEntriesByType('resource')
+                    .find((entry) => new URL(entry.name).pathname === '/src/player.ts')!.name
+                const { isPlaying } = (await import(playerURL)) as typeof import('../../src/player')
+                const { lane, time, cursorTime } = window.editorTest.view
+                return { lane, time, cursorTime, isPlaying: isPlaying.value }
+            })
+        const before = await readEditor()
+        expect(before.isPlaying).toBe(false)
+        const controls = page.locator('.preview-controls')
+        const speed = controls.locator('input[type="range"]').first()
+        await speed.focus()
+        await speed.press('ArrowRight')
+        await expect(speed).toHaveValue('10.05')
+        const quality = controls.locator('input[type="range"]').nth(1)
+        await quality.focus()
+        await quality.press('ArrowUp')
+        await expect(quality).toHaveValue('1.25')
+        for (const name of ['Effects', 'Antialias']) {
+            const checkbox = controls.getByLabel(name, { exact: true })
+            await checkbox.focus()
+            await checkbox.press('Space')
+            await expect(checkbox).not.toBeChecked()
+            await expect(controls).toBeVisible()
+        }
+        await settle(page)
+        expect(await readEditor()).toEqual(before)
+    })
+
+    test('inactive aspect changes render only the latest preset when focus returns', async ({
+        page,
+    }) => {
+        const before = await page.evaluate(() => {
+            Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => false })
+            window.dispatchEvent(new Event('blur'))
+            return { frames: window.previewTest.frames, uploads: window.previewTest.uploads }
+        })
+        await page.getByRole('radio', { name: '21:9', exact: true }).check()
+        await settle(page)
+        await page.getByRole('radio', { name: '4:3', exact: true }).check()
+        await page.setViewportSize({ width: 1069, height: 733 })
+        await settle(page)
+        expect(
+            await page.evaluate(() => ({
+                frames: window.previewTest.frames,
+                uploads: window.previewTest.uploads,
+            })),
+        ).toEqual(before)
+        await page.evaluate(() => {
+            Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => true })
+            window.dispatchEvent(new Event('focus'))
+        })
+        await settle(page)
+        await expectViewport(page, 4 / 3)
+        expect(await page.evaluate(() => window.previewTest.frames)).toBe(before.frames + 1)
+        expect(await page.evaluate(() => window.previewTest.uploads)).toBe(before.uploads)
+    })
+
+    test('controls stay within narrow panels and scroll into view in short top panels', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1069, height: 733 })
+        await page.getByRole('radio', { name: '21:9', exact: true }).check()
+        await settle(page)
+        const controls = page.locator('.preview-controls')
+        const antialias = controls.getByLabel('Antialias', { exact: true })
+        await expect(antialias).toBeInViewport()
+        expect(
+            await controls.evaluate((panel) => {
+                const container = panel.parentElement!.getBoundingClientRect()
+                const bounds = panel.getBoundingClientRect()
+                return (
+                    bounds.left >= container.left &&
+                    bounds.right <= container.right &&
+                    bounds.top >= container.top &&
+                    bounds.bottom <= container.bottom &&
+                    panel.scrollWidth <= panel.clientWidth &&
+                    [...panel.querySelectorAll('input, span')].every((element) => {
+                        const rect = element.getBoundingClientRect()
+                        return rect.left >= bounds.left && rect.right <= bounds.right
+                    })
+                )
+            }),
+        ).toBe(true)
+
+        await page.evaluate(() => {
+            window.editorTest.settings.previewPosition = 'top'
+            window.editorTest.settings.previewHeight = 80
+        })
+        await page.setViewportSize({ width: 1069, height: 400 })
+        await settle(page)
+        expect(await controls.evaluate((panel) => panel.scrollHeight > panel.clientHeight)).toBe(
+            true,
+        )
+        await antialias.scrollIntoViewIfNeeded()
+        await expect(antialias).toBeInViewport()
+        const speed = controls.locator('input[type="number"]').first()
+        await speed.scrollIntoViewIfNeeded()
+        await expect(speed).toBeInViewport()
+    })
 })

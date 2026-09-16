@@ -174,20 +174,85 @@ commit, after cancellation and after commit, alongside cursor/undo invariants.
 The complete suite passes 126 unit tests and 63 browser tests, plus type, lint,
 source-formatting and production-build checks.
 
-### BGM waveform compatibility
+### Timing-focused FFT waveforms
 
-FFT waveform generation reads decoded samples directly instead of depending on
-`OfflineAudioContext.suspend()`, which Firefox does not implement. It retains the
-64-point spectrum, speaker downmixing, Blackman window, smoothing, and brightness
-scale. Browser comparisons against Chromium's native analyser differ by at most
-one opacity level for the tested mono/stereo inputs. Real Firefox also decodes
-audio and generates nonempty FFT waveform tiles successfully.
+FFT generation reads decoded samples directly instead of depending on
+`OfflineAudioContext.suspend()`, which Firefox does not implement. The previous
+64-point, 100-row/s display sampled short, disjoint windows and then smoothed
+their magnitudes over time. It could miss brief attacks and left long visual
+tails. The new display uses centered, overlapping 1,024-sample Hann windows,
+200 rows/s and no temporal smoothing. Its 124 logarithmic frequency bands cover
+50 Hz through 16 kHz, capped at Nyquist. Four additional columns form a peak
+strip covering each 5 ms interval, giving precise timing alongside the wider
+spectral window. Bass detail is still limited by the approximately 21–23 ms
+analysis window at 48/44.1 kHz; interpolated display bands do not add frequency
+resolution.
 
-The implementation reuses small FFT buffers, yields every 256 rows and avoids
-allocating a second full-length audio buffer or scheduling thousands of
-suspend/resume promises. Exact-duration and short clips no longer schedule a
-suspension beyond the audio endpoint. Local computation for 18,001 spectra of a
-three-minute stereo buffer measured 35–41 ms, excluding yields and PNG encoding.
+Stereo channels share one complex transform and combine spectral power instead
+of averaging samples, preserving sounds with opposite channel phases. Fixed
+brightness thresholds keep quiet passages quiet. Pixel-center timestamps,
+zero-padded endpoint windows and half-open peak intervals preserve attacks at
+the beginning, end and tile boundaries. Enlarged rows use nearest-neighbor
+rendering. Zooming out lazily builds cached reduced tiles, retaining the strongest
+alpha in each adjacent row pair. This keeps narrow attacks visible even during
+fractional scrolling; ordinary browser reduction could erase them, including in
+Firefox where `imageSmoothingQuality` is unsupported. The tradeoff is slightly
+thicker/brighter peaks at low zoom, with timing precision limited by screen pixels.
+
+Import reuses FFT, row and tile buffers and yields after approximately 8 ms of
+analysis work, checking every 16 rows. It avoids a second full-length audio buffer.
+The local 151.185-second stereo BGM measured the following in headless Edge:
+
+| Work                           | Previous FFT | Timing-focused FFT |
+| ------------------------------ | -----------: | -----------------: |
+| Complete generation, warm runs |  0.36–0.37 s |        1.07–1.09 s |
+| Decoded RGBA for all 16 tiles  |      2.05 MB |           16.38 MB |
+| Encoded PNG tiles              |      0.39 MB |            4.07 MB |
+
+The new FFT calculation used 620–632 ms of CPU work. The largest analysis slice
+was 8.5–8.7 ms warm and 9.8 ms cold; no main-thread task exceeded 50 ms in that
+run. These are local import measurements, not rendering or hardware GPU timings.
+The clearer raster costs more once during import; scrolling still draws two
+mirrored images per visible tile. Retained decoded tiles are bounded to 16 MiB
+and 32 images, including cached reductions, except when the visible working set
+itself is larger. Visible
+tiles stay resident to avoid repeated eviction and decoding, and offscreen load
+completions do not trigger chart draws. Failed or cancelled PNG generation revokes
+URLs already created for that attempt. Cancelling/replacing a BGM import or
+resetting the chart stops generation at its next yield and prevents stale results
+from replacing newer audio. Discarded BGM drafts release their waveform URLs;
+committed waveforms remain available to undo history.
+
+Installed Firefox 155.0.1 also decoded the actual stereo BGM and generated all 16
+nonempty tiles without uncaught errors. One warm headless run took 1.05 seconds
+for FFT and PNG generation, with a largest 10 ms timer interval of 26 ms. This
+confirms compatibility and cooperative import behavior, not hardware presentation
+performance.
+
+The production Canvas renderer also preserves every tested one-row attack during
+fractional scrolling in Firefox. For the first real BGM tile, its initial cached
+reduction took 4 ms; 100 subsequent draws averaged 0.24 ms with no further
+readbacks. Enlarging the waveform uses the original image again.
+
+### Preview aspect presets
+
+Preview offers the engine's 16:9, 21:9 and 4:3 test aspect ratios, defaulting to
+16:9. The selected viewport is centered inside its panel, while the locked 16:9
+engine field scales uniformly to fit that viewport. The engine's smaller debug
+guide scale is not applied. Logical dimensions preserve the selected ratio;
+backing pixels round independently for DPR and quality, so lower quality does
+not distort geometry. Controls remain outside the fitted viewport so a short
+21:9 viewport cannot clip them.
+
+Regression coverage checks engine field and full-screen geometry, fractional
+DPR, resizing, radio keyboard navigation, quality changes, idle drawing and
+inactive changes. FFT checks cover an independent scalar DFT reference,
+opposite-phase stereo, silence, transient timing, both audio endpoints and tile
+boundaries at 44.1/48 kHz, import failures and decoded cache limits.
+
+The complete suite passes 139 unit tests and 78 browser tests, including the
+existing editor interaction and text-alignment checks, plus type checking,
+lint, source formatting and production build.
 
 ### Comparison with optimized SVG (`2a96ffa`)
 

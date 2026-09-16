@@ -34,7 +34,13 @@ const renderScale = ref(1)
 const showEffects = ref(true)
 
 const antialias = ref(true)
-const lockAspectRatio = ref(true)
+// The same viewport ratios outlined by the engine's test-aspect overlay.
+const aspectRatios = [
+    { label: '16:9', value: TARGET_ASPECT_RATIO },
+    { label: '21:9', value: 21 / 9 },
+    { label: '4:3', value: 4 / 3 },
+] as const
+const aspectRatio = ref<number>(TARGET_ASPECT_RATIO)
 
 const skin = shallowRef<LoadedSkin>()
 const particle = shallowRef<LoadedParticle>()
@@ -195,27 +201,18 @@ const canvasStyle = computed(() => ({
     height: `${canvasHeight.value}px`,
 }))
 
-const MIN_ASPECT_RATIO = 4 / 3
-
 const updateCanvasSize = () => {
     if (!containerWidth || !containerHeight) return
 
-    const containerAspectRatio = containerWidth / containerHeight
-    const aspectRatio = lockAspectRatio.value
-        ? TARGET_ASPECT_RATIO
-        : Math.max(MIN_ASPECT_RATIO, containerAspectRatio)
-
-    const width = Math.min(containerWidth, containerHeight * aspectRatio)
-    const height = width / aspectRatio
-    const ratio = pixelRatio.value
-
-    canvasWidth.value = Math.round(width * ratio) / ratio
-    canvasHeight.value = Math.round(height * ratio) / ratio
-    canvasLeft.value = Math.round(((containerWidth - canvasWidth.value) / 2) * ratio) / ratio
-    canvasTop.value = Math.round(((containerHeight - canvasHeight.value) / 2) * ratio) / ratio
+    // Preserve the exact logical ratio; backing pixels are rounded separately.
+    // Independent CSS width/height rounding would subtly stretch the engine field.
+    canvasWidth.value = Math.min(containerWidth, containerHeight * aspectRatio.value)
+    canvasHeight.value = canvasWidth.value / aspectRatio.value
+    canvasLeft.value = (containerWidth - canvasWidth.value) / 2
+    canvasTop.value = (containerHeight - canvasHeight.value) / 2
 }
 
-watch(lockAspectRatio, updateCanvasSize)
+watch(aspectRatio, updateCanvasSize)
 
 const resizeObserver = new ResizeObserver(([entry]) => {
     if (!entry) return
@@ -250,6 +247,13 @@ const onScaleChange = (event: Event) => {
 const blurInput = (event: Event) => {
     const input = event.currentTarget as HTMLInputElement
     input.blur()
+}
+
+const onAspectChange = (event: Event) => {
+    const input = event.currentTarget as HTMLInputElement
+    // Pointer changes return shortcuts to the editor; keyboard radio navigation
+    // keeps focus so arrow keys can continue through all three choices.
+    if (!input.matches(':focus-visible')) input.blur()
 }
 
 const onSpeedKeydown = (event: KeyboardEvent) => {
@@ -379,58 +383,85 @@ onUnmounted(() => {
                     </button>
                 </template>
             </div>
+        </div>
 
+        <div
+            v-if="status === 'ready' && !isPlaying"
+            class="preview-controls absolute right-1 top-1 flex max-h-[calc(100%-0.5rem)] max-w-[calc(100%-0.5rem)] flex-col items-end gap-1 overflow-y-auto rounded bg-black/40 px-2 py-1 text-xs text-white/75"
+            @keydown.stop
+        >
+            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
+                <span class="w-10 shrink-0">Speed</span>
+                <input
+                    v-model.number="noteSpeed"
+                    class="min-w-0 flex-1"
+                    type="range"
+                    min="1"
+                    max="12"
+                    step="0.05"
+                />
+                <input
+                    class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                    type="number"
+                    min="1"
+                    max="12"
+                    step="0.01"
+                    :value="noteSpeed"
+                    @change="onSpeedChange"
+                    @keydown="onSpeedKeydown"
+                />
+            </div>
+            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
+                <span class="w-10 shrink-0">Quality</span>
+                <input
+                    v-model.number="renderScale"
+                    class="min-w-0 flex-1"
+                    type="range"
+                    min="0.25"
+                    max="2"
+                    step="0.25"
+                />
+                <input
+                    class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                    type="number"
+                    min="0.25"
+                    max="2"
+                    step="0.25"
+                    :value="renderScale"
+                    @change="onScaleChange"
+                    @keydown="onSpeedKeydown"
+                />
+            </div>
             <div
-                v-else-if="!isPlaying"
-                class="absolute right-1 top-1 flex flex-col items-end gap-1 rounded bg-black/40 px-2 py-1 text-xs text-white/75"
+                class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                role="radiogroup"
+                aria-label="Aspect ratio"
             >
-                <div class="flex items-center gap-2">
-                    <span>Speed</span>
-                    <input v-model.number="noteSpeed" type="range" min="1" max="12" step="0.05" />
+                <span>Aspect</span>
+                <label
+                    v-for="ratio in aspectRatios"
+                    :key="ratio.label"
+                    class="flex shrink-0 cursor-pointer items-center gap-1"
+                >
                     <input
-                        class="number-input w-10 rounded bg-black/30 px-1 text-right"
-                        type="number"
-                        min="1"
-                        max="12"
-                        step="0.01"
-                        :value="noteSpeed"
-                        @change="onSpeedChange"
-                        @keydown="onSpeedKeydown"
+                        v-model="aspectRatio"
+                        type="radio"
+                        name="preview-aspect-ratio"
+                        :value="ratio.value"
+                        @change="onAspectChange"
+                        @keydown.stop
                     />
-                </div>
-                <div class="flex items-center gap-2">
-                    <span>Quality</span>
-                    <input
-                        v-model.number="renderScale"
-                        type="range"
-                        min="0.25"
-                        max="2"
-                        step="0.25"
-                    />
-                    <input
-                        class="number-input w-10 rounded bg-black/30 px-1 text-right"
-                        type="number"
-                        min="0.25"
-                        max="2"
-                        step="0.25"
-                        :value="renderScale"
-                        @change="onScaleChange"
-                        @keydown="onSpeedKeydown"
-                    />
-                </div>
-                <label class="flex cursor-pointer items-center gap-2">
-                    <span>Lock 16:9</span>
-                    <input v-model="lockAspectRatio" type="checkbox" @change="blurInput" />
-                </label>
-                <label class="flex cursor-pointer items-center gap-2">
-                    <span>Effects</span>
-                    <input v-model="showEffects" type="checkbox" @change="blurInput" />
-                </label>
-                <label class="flex cursor-pointer items-center gap-2">
-                    <span>Antialias</span>
-                    <input v-model="antialias" type="checkbox" @change="blurInput" />
+                    <span>{{ ratio.label }}</span>
                 </label>
             </div>
+            <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                <span>Effects</span>
+                <input v-model="showEffects" type="checkbox" @change="blurInput" />
+            </label>
+            <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                <span>Antialias</span>
+                <input v-model="antialias" type="checkbox" @change="blurInput" />
+            </label>
         </div>
     </div>
 </template>

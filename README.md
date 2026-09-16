@@ -17,6 +17,13 @@ Place a skin package at `public/resource/skin.scp` and optionally a particle pac
 at `public/resource/particle.scp` to enable the preview. These local assets are
 ignored by Git; see [preview packages](public/resource/README.md).
 
+Preview defaults to note speed 10. Its aspect controls select the engine's 16:9,
+21:9, or 4:3 test viewport, with the playfield scaled uniformly to fit.
+
+FFT waveforms emphasize timing with 5 ms rows, logarithmic frequency bands
+(bass near the center, treble toward the outside), and a narrow peak-amplitude
+strip at the center. Reselect the BGM file to regenerate an existing waveform.
+
 ```sh
 npm test
 npm run check-type
