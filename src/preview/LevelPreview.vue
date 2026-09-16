@@ -23,7 +23,7 @@ import { loadSkinFromScp, type LoadedSkin } from './skin'
 const container = useTemplateRef('container')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 
-const noteSpeed = ref(6)
+const noteSpeed = ref(10)
 
 const renderScale = ref(1)
 

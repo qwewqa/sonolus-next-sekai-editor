@@ -3,6 +3,7 @@
 !eslint.config.js
 !index.html
 !README.md
+!playwright.config.ts
 !tailwind.config.js
 !vite.config.ts
 

@@ -16,28 +16,30 @@ export const computedVisibleEntities = (
     computedArray(() => {
         const { min, max } = getRange()
 
-        return getEntities().filter((entity) => {
-            switch (entity.type) {
-                case 'bpm':
-                case 'cameraEventJoint':
-                case 'stageMaskEventJoint':
-                case 'stagePivotEventJoint':
-                case 'stageStyleEventJoint':
-                case 'stageTransformEventJoint':
-                case 'timeScale':
-                case 'note':
-                    return entity.beat >= min && entity.beat <= max
-                case 'cameraEventConnection':
-                case 'stageMaskEventConnection':
-                case 'stagePivotEventConnection':
-                case 'stageStyleEventConnection':
-                case 'stageTransformEventConnection':
-                    return entity.min.beat <= max && entity.max.beat >= min
-                case 'connector':
-                    return entity.head.beat <= max && entity.tail.beat >= min
-            }
-        })
+        return getEntities().filter((entity) => isEntityInBeatRange(entity, min, max))
     })
+
+export const isEntityInBeatRange = (entity: Entity, min: number, max: number) => {
+    switch (entity.type) {
+        case 'bpm':
+        case 'cameraEventJoint':
+        case 'stageMaskEventJoint':
+        case 'stagePivotEventJoint':
+        case 'stageStyleEventJoint':
+        case 'stageTransformEventJoint':
+        case 'timeScale':
+        case 'note':
+            return entity.beat >= min && entity.beat <= max
+        case 'cameraEventConnection':
+        case 'stageMaskEventConnection':
+        case 'stagePivotEventConnection':
+        case 'stageStyleEventConnection':
+        case 'stageTransformEventConnection':
+            return entity.min.beat <= max && entity.max.beat >= min
+        case 'connector':
+            return entity.head.beat <= max && entity.tail.beat >= min
+    }
+}
 
 export const isHitboxInView = (
     hitbox: EntityHitbox,

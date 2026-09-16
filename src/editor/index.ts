@@ -16,16 +16,15 @@ export const beats = computed(() => ({
     max: timeToBeat(bpms.value, times.value.max),
 }))
 
-// Include outlines whose centers are just outside the viewport (the largest
-// hitbox has a half-height of 0.4, plus 0.1 units of outline padding and a
-// non-scaling stroke extending one CSS pixel past the rectangle).
+// Include artwork whose center lies outside the viewport. Diagonal flick
+// arrows extend 1.2 scene units above their beat, plus a non-scaling stroke.
 export const keys = computedRange(() => ({
     min: beatToKey(
         timeToBeat(
             bpms.value,
             Math.max(
                 0,
-                view.time - (0.5 * view.h + (0.5 * view.w) / settings.width + 1) / settings.pps,
+                view.time - (0.5 * view.h + (1.25 * view.w) / settings.width + 4) / settings.pps,
             ),
         ),
     ),
@@ -34,7 +33,7 @@ export const keys = computedRange(() => ({
             bpms.value,
             Math.max(
                 0,
-                view.time + (0.5 * view.h + (0.5 * view.w) / settings.width + 1) / settings.pps,
+                view.time + (0.5 * view.h + (1.25 * view.w) / settings.width + 4) / settings.pps,
             ),
         ),
     ),
