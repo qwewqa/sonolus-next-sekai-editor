@@ -4,6 +4,7 @@
 !index.html
 !README.md
 !PERFORMANCE.md
+!playwright.config.ts
 !tailwind.config.js
 !vite.config.ts
 

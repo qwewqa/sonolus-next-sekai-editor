@@ -8,25 +8,16 @@ import { i18n } from '../i18n'
 import { screenSm } from '../screen'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
-import { controlListeners } from './controls'
+import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
 import { useFocusControl } from './controls/focus'
 import { useKeyboardControl } from './controls/keyboard'
-import LevelEditorCreatingEntities from './entities/LevelEditorCreatingEntities.vue'
-import LevelEditorEntities from './entities/LevelEditorEntities.vue'
-import LevelEditorCursor from './LevelEditorCursor.vue'
-import LevelEditorGrid from './LevelEditorGrid.vue'
-import LevelEditorHover from './LevelEditorHover.vue'
-import LevelEditorHoveredEntities from './LevelEditorHoveredEntities.vue'
 import LevelEditorHoverMarkers from './LevelEditorHoverMarkers.vue'
 import LevelEditorNotification from './LevelEditorNotification.vue'
 import LevelEditorRangeMarkers from './LevelEditorRangeMarkers.vue'
-import LevelEditorSelectedEntities from './LevelEditorSelectedEntities.vue'
-import LevelEditorSelection from './LevelEditorSelection.vue'
-import LevelEditorWaveform from './LevelEditorWaveform.vue'
 import LevelEditorToolbar from './toolbar/LevelEditorToolbar.vue'
 import { tool } from './tools'
 import { brushProperties } from './tools/brush'
-import { view, viewBox } from './view'
+import { view } from './view'
 
 useFocusControl()
 useKeyboardControl()
@@ -142,34 +133,7 @@ const stage = computed(() =>
 
                 <LevelEditorNotification />
 
-                <svg
-                    class="editor absolute size-full"
-                    :viewBox="`${viewBox.l} ${viewBox.t} ${viewBox.w} ${viewBox.h}`"
-                    font-size="0.5"
-                    stroke="none"
-                    stroke-width="2"
-                    fill="none"
-                    v-on="controlListeners"
-                >
-                    <LevelEditorWaveform />
-                    <LevelEditorGrid />
-                    <LevelEditorCursor />
-                    <LevelEditorEntities />
-                    <LevelEditorCreatingEntities />
-                    <g>
-                        <animate
-                            attributeName="stroke-dashoffset"
-                            from="10"
-                            to="0"
-                            dur="1s"
-                            repeatCount="indefinite"
-                        />
-                        <LevelEditorHoveredEntities />
-                        <LevelEditorSelectedEntities />
-                        <LevelEditorSelection />
-                        <LevelEditorHover />
-                    </g>
-                </svg>
+                <LevelEditorCanvas />
             </template>
 
             <LevelEditorToolbar />
@@ -182,17 +146,3 @@ const stage = computed(() =>
         </div>
     </div>
 </template>
-
-<style scoped>
-.editor :deep(circle),
-.editor :deep(line),
-.editor :deep(path),
-.editor :deep(polygon),
-.editor :deep(rect) {
-    vector-effect: non-scaling-stroke;
-}
-
-.editor :deep(.scale-stroke) {
-    vector-effect: none;
-}
-</style>

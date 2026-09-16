@@ -24,3 +24,16 @@ npm run check-lint
 npm run check-format
 npm run build
 ```
+
+Canvas editor browser regressions run against a local Vite server and do not
+require preview packages:
+
+```sh
+npx playwright install chromium
+npm run test:browser
+```
+
+To use an installed Chromium browser instead, set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable path. See
+[rendering performance](PERFORMANCE.md) for the migration design, visual tradeoffs
+and measurements.
