@@ -1,0 +1,75 @@
+name: Deploy Pages
+
+on:
+    push:
+        branches: ['preview']
+    pull_request:
+        branches: ['preview']
+
+permissions:
+    contents: read
+
+concurrency:
+    group: pages-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        steps:
+            - name: Check out source
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Set up Node
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+            - run: npm ci
+            - run: npm test
+            - run: npm run test:release
+            - run: npm run check-type
+            - run: npm run check-lint
+            - run: npm run check-format
+            - name: Install browser
+              run: npx playwright install --with-deps chromium
+            - run: npm run test:browser
+            - run: npm run build:release
+            - run: npm run test:production
+            - run: npm run check:release
+            - name: Upload browser failure details
+              if: failure()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: browser-failures
+                  path: |
+                      test-results/
+                      test-results-production/
+                  if-no-files-found: ignore
+                  retention-days: 7
+            - name: Upload checked site
+              if: github.event_name == 'push' && github.repository == 'qwewqa/sonolus-next-sekai-editor'
+              uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+              with:
+                  path: dist
+                  retention-days: 30
+
+    deploy:
+        if: github.event_name == 'push' && github.ref == 'refs/heads/preview' && github.repository == 'qwewqa/sonolus-next-sekai-editor'
+        needs: build
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Configure Pages
+              uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+            - name: Deploy checked site
+              id: deployment
+              uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -1,0 +1,19 @@
+{
+    "schemaVersion": 1,
+    "assets": [
+        {
+            "file": "resource/skin.scp",
+            "source": "deployment/assets/skin.scp",
+            "bytes": 1071463,
+            "sha256": "de481f991212d98246ba3cc9c88ead33b0cf02ea3e4bb8fb4db9b64a6b264cbf",
+            "description": "Next SEKAI 01 skin, exact package used during preview verification"
+        },
+        {
+            "file": "resource/particle.scp",
+            "source": "deployment/assets/particle.scp",
+            "bytes": 909304,
+            "sha256": "7cef4b029a99275057a72eb8cd64ac4028c9aefa39d560fac54132b290ee2504",
+            "description": "Next SEKAI particles, exact package used during preview verification"
+        }
+    ]
+}

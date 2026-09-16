@@ -1,6 +1,8 @@
 # Sonolus Next SEKAI Editor
 
-https://next-sekai-editor.sonolus.com
+Public test site: https://next-sekai-editor-test.qwewqa.xyz/
+
+Upstream site: https://next-sekai-editor.sonolus.com
 
 ## Local preview
 
@@ -45,5 +47,25 @@ To use an installed Chromium browser instead, set
 [rendering performance](PERFORMANCE.md) for the migration design, visual tradeoffs
 and measurements.
 
-See the [public deployment plan](DEPLOYMENT_PLAN.md) for the proposed GitHub Pages
-release process, asset packaging, verification and rollback.
+## Public deployment
+
+Pushes to `preview` in `qwewqa/sonolus-next-sekai-editor` run the Pages release
+workflow. Deployment follows successful unit, browser, production, type, lint,
+format and artifact checks. Pull requests run checks without publishing.
+
+To build and smoke-test the exact release artifact locally:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:release
+npm run build:release
+npm run test:production
+npm run check:release
+```
+
+The release build uses the versioned packages in `deployment/assets`, validates
+their checksums, and excludes local `public/resource` files. It includes a
+`release-manifest.json` manifest and license notices. Local development can continue using
+its own packages. See [release assets](deployment/ASSETS.md) for provenance and
+[deployment instructions](DEPLOYMENT_PLAN.md) for hosting setup and rollback.

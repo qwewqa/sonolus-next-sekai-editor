@@ -1,0 +1,25 @@
+Preview resource packages
+=========================
+
+The release contains the exact skin.scp and particle.scp packages used to verify
+the editor preview. Their pinned repository copies, sizes and SHA-256 hashes
+are recorded in deployment/preview-assets.json. The release build verifies these
+copies rather than downloading the current contents of a changing resource URL.
+
+Package metadata attribution:
+- Next SEKAI 01 skin 1.1.0: Burrito#1000; collaborator qwewqa#590353
+  https://coconut.sonolus.com/next-sekai/sonolus/skins/coconut-next-sekai-1
+- Next SEKAI particles 1.0.0-beta: Burrito#1000; collaborator Hyeon2#7895
+  https://coconut.sonolus.com/next-sekai/sonolus/particles/coconut-next-sekai-1
+
+The packages identify https://coconut.sonolus.com/next-sekai as their source and
+2026-09-16T04:30:45.997342+00:00 as their download time. Their data, texture and
+thumbnail payloads were verified byte-for-byte against those public items. See
+deployment/ASSETS.md in the source repository for the inspected metadata and
+public item sources. The packages do not include a separate redistribution
+license. The editor's MIT license does not grant rights to third-party media.
+
+The release deliberately excludes next-sekai-resources.scp, an unused aggregate
+package containing additional skin, background, particle and audio resources.
+Audio and background files already imported by the application remain part of
+the application build; their original files are available in the source tree.
