@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'vue'
 import { createBlob } from './utils/canvas'
+import { timeout } from './utils/promise'
+import { createSpectrumSampler, FFT_BINS } from './waveform/fft'
 
 export type Waveform = {
     images: string[]
@@ -7,10 +9,6 @@ export type Waveform = {
 }
 
 export const waveformDuration = 10
-
-// eslint-disable-next-line no-global-assign, @typescript-eslint/no-unnecessary-condition
-OfflineAudioContext ??= webkitOfflineAudioContext
-declare const webkitOfflineAudioContext: typeof OfflineAudioContext
 
 const createdUrls: string[] = []
 
@@ -75,32 +73,22 @@ export const cleanupWaveform = () => {
 
 const createPixelsFFT = async (buffer: AudioBuffer) => {
     const pps = 100
-
-    const ctx = new OfflineAudioContext(buffer.numberOfChannels, buffer.length, buffer.sampleRate)
-
-    const source = ctx.createBufferSource()
-    source.buffer = buffer
-
-    const analyser = ctx.createAnalyser()
-    analyser.fftSize = 64
-
-    source.connect(analyser)
-    source.start()
-
-    const w = analyser.frequencyBinCount
+    const w = FFT_BINS
     const h = Math.floor(buffer.duration * pps) + 1
-
     const pixels = new Uint8Array(w * h)
+    const sample = createSpectrumSampler(
+        Array.from({ length: buffer.numberOfChannels }, (_, i) => buffer.getChannelData(i)),
+    )
 
     for (let y = 0; y < h; y++) {
-        void ctx.suspend(y / pps).then(() => {
-            analyser.getByteFrequencyData(pixels.subarray(y * w, (y + 1) * w))
-
-            void ctx.resume()
-        })
+        // Match offline-audio suspension's render-quantum alignment without
+        // depending on suspend/resume, which Firefox does not implement.
+        const end = Math.min(buffer.length, Math.ceil(((y / pps) * buffer.sampleRate) / 128) * 128)
+        sample(end, pixels.subarray(y * w, (y + 1) * w))
+        // Keep long music imports responsive without creating a full-length
+        // offline render buffer or thousands of suspension promises.
+        if (y && y % 256 === 0) await timeout(0)
     }
-
-    await ctx.startRendering()
 
     return {
         pps,

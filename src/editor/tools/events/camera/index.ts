@@ -21,8 +21,8 @@ import { interpolate } from '../../../../utils/interpolate'
 import { notify } from '../../../notification'
 import { isSidebarVisible } from '../../../sidebars'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -112,7 +112,7 @@ export const cameraEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -123,7 +123,7 @@ export const cameraEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -151,7 +151,7 @@ export const cameraEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -183,7 +183,7 @@ export const cameraEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (
@@ -294,7 +294,7 @@ export const cameraEvent: Tool = {
                         }),
                     ],
                 }
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -352,7 +352,7 @@ export const cameraEvent: Tool = {
                     beat,
                     cameraLeft: active.entity.cameraLeft + offset(active.lane, lane),
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }

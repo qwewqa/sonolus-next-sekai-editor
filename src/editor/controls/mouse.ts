@@ -1,4 +1,5 @@
 import { settings } from '../../settings'
+import { beginAudioPreviewInteraction } from '../audioPreview'
 import { zoomXIn } from '../commands/zooms/zoomXIn'
 import { zoomXOut } from '../commands/zooms/zoomXOut'
 import { zoomYIn } from '../commands/zooms/zoomYIn'
@@ -40,6 +41,7 @@ const mousedown = (event: MouseEvent) => {
     view.scrollingY = undefined
     view.scrollingX = undefined
     stopPlayer(false)
+    if (!mouseGesture.pointerCount) beginAudioPreviewInteraction()
 
     if (!mouseGesture.pointerCount && event.buttons & 2 && !secondarySwitchBack) {
         secondarySwitchBack = toolName.value

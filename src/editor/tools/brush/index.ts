@@ -30,8 +30,8 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     view,
     xToLane,
@@ -135,12 +135,12 @@ export const brush: Tool = {
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
             apply(modifyEntities(selectedEntities.value, modifiers))
-            panViewAtBeat(yToValidBeat(y))
+            focusEntityAtBeat(yToValidBeat(y))
         } else {
             const [entity] = entities
             if (entity) {
                 apply(modifyEntities(entities, modifiers))
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
             } else {
                 const selectedLength = selectedEntities.value.length
 

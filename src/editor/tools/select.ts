@@ -65,8 +65,8 @@ import {
 import { interpolate } from '../../utils/interpolate'
 import { notify } from '../notification'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     view,
     xToLane,
@@ -136,7 +136,7 @@ export const select: Tool = {
                 hovered: entities,
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.select.selected, `${targets.length}`))
         } else {
@@ -159,7 +159,7 @@ export const select: Tool = {
             }
 
             if (entity) {
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.select.selected, `${targets.length}`))
             } else {
@@ -178,7 +178,7 @@ export const select: Tool = {
 
         const [focus] = entities.filter((entity) => selectedEntities.value.includes(entity))
         if (focus) {
-            panViewAtBeat(focus.beat)
+            focusEntityAtBeat(focus.beat)
 
             notify(
                 interpolate(
@@ -205,7 +205,7 @@ export const select: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.select.moving, '1'))
 
@@ -245,6 +245,7 @@ export const select: Tool = {
                 active.lastBeatOffset = beatOffset
 
                 const creating: Entity[] = []
+                let focusBeat = active.focus.beat
                 for (const entity of active.entities) {
                     const beat = entity.beat + beatOffset
                     if (beat < 0) continue
@@ -260,6 +261,7 @@ export const select: Tool = {
                     if (!result) continue
 
                     creating.push(result)
+                    if (entity === active.focus) focusBeat = result.beat
                 }
 
                 // Selection transforms only change geometry. Pointer movement
@@ -289,7 +291,7 @@ export const select: Tool = {
                 setPreviewEdit(source, () =>
                     moveEntities(source, move, lane, beatOffset, { autoAddGroup: false }),
                 )
-                panViewAtBeat(active.focus.beat + beatOffset)
+                focusEntityAtBeat(focusBeat)
                 break
             }
             case 'select': {
@@ -327,6 +329,14 @@ export const select: Tool = {
                 const beatOffset = yToBeatOffset(y, active.focus.beat)
                 const moved = moveEntities(state.value, active, lane, beatOffset)
                 const selectedEntities = moved.selectedEntities
+                const focus = creates[active.focus.type]?.(
+                    active.onlyType,
+                    active.focus as never,
+                    active.lane,
+                    lane,
+                    active.focus.beat + beatOffset,
+                    active.focus,
+                )
 
                 pushState(
                     interpolate(() => i18n.value.tools.select.moved, `${selectedEntities.length}`),
@@ -336,7 +346,7 @@ export const select: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(active.focus.beat + beatOffset)
+                focusEntityAtBeat(focus?.beat ?? active.focus.beat)
 
                 notify(
                     interpolate(() => i18n.value.tools.select.moved, `${selectedEntities.length}`),

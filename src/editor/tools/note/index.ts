@@ -19,8 +19,8 @@ import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import { quickEdit } from '../../utils/quickEdit'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -111,12 +111,12 @@ export const note: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.note.selected, `${targets.length}`))
             } else {
                 if (entities.every((entity) => selectedEntities.value.includes(entity))) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         quickEdit(defaultNoteProperties.value)
@@ -132,7 +132,7 @@ export const note: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.note.selected, `${entities.length}`))
                 }
@@ -158,7 +158,7 @@ export const note: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (lane > entity.left + 0.5 && lane < entity.left + entity.size - 0.5) {
@@ -242,7 +242,7 @@ export const note: Tool = {
                     creating: [toNoteEntity(active.entity.slideId, object, active.entity)],
                 }
                 previewEdit(active.entity, object)
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -286,7 +286,7 @@ export const note: Tool = {
                     beat,
                     left: active.entity.left + offset(active.lane, lane),
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }

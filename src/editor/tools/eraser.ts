@@ -16,8 +16,8 @@ import { createTransaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
 import { notify } from '../notification'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     view,
     xToLane,
@@ -52,12 +52,12 @@ export const eraser: Tool = {
         const entities = hitAllEntitiesAtPoint(x, y)
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
-            panViewAtBeat(yToValidBeat(y))
+            focusEntityAtBeat(yToValidBeat(y))
             remove(selectedEntities.value)
         } else {
             const [entity] = entities.filter(canRemove)
             if (entity) {
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
                 remove([entity])
             } else {
                 const selectedLength = selectedEntities.value.length

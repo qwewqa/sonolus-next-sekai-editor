@@ -1,15 +1,8 @@
 import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
+import { createWaveformRenderer } from '../../src/editor/canvas/waveform'
 import type { Waveform } from '../../src/waveform'
-
-// The waveform module installs a browser audio compatibility alias at import.
-// Rendering these already-generated tiles does not use an audio context.
-const originalAudio = Object.getOwnPropertyDescriptor(globalThis, 'OfflineAudioContext')
-Object.defineProperty(globalThis, 'OfflineAudioContext', { configurable: true, value: class {} })
-const { createWaveformRenderer } = await import('../../src/editor/canvas/waveform')
-if (originalAudio) Object.defineProperty(globalThis, 'OfflineAudioContext', originalAudio)
-else Reflect.deleteProperty(globalThis, 'OfflineAudioContext')
 
 const fixture = (t: TestContext) => {
     const images: TestImage[] = []

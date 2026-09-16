@@ -14,8 +14,8 @@ import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
 import { notify } from '../../notification'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     view,
     xToLane,
@@ -50,12 +50,12 @@ export const generateSlideNotes: Tool = {
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
             apply(selectedEntities.value.filter((entity) => entity.type === 'note'))
-            panViewAtBeat(yToValidBeat(y))
+            focusEntityAtBeat(yToValidBeat(y))
         } else {
             const [entity] = entities
             if (entity) {
                 apply(entities)
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
             } else {
                 const selectedLength = selectedEntities.value.length
 
