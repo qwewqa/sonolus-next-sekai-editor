@@ -25,6 +25,22 @@ The settings panel can be minimized with its header button and reopened with the
 gear button. It starts minimized on narrow screens and touch devices, and remembers
 your choice across reloads.
 
+Tap the preview to show a compact bottom bar with play/pause and paired 1, 10,
+and 100 ms step buttons, ordered −100/−10/−1/+1/+10/+100. The image shifts upward
+when needed to fit the bar beneath it, or overlaps the bar if space is still limited.
+Narrow panels put the steps in two rows.
+While paused, narrow previews show the timestamp in the top-left corner.
+A tap makes one exact step; holding for a quarter second moves continuously at
+0.1×, 1×, or 10× speed, respectively, forward or backward. Stepping pauses playback,
+and a hold auditions the final position when released. Controls stay visible when
+there is room below the image. When they overlap it, tap the preview to toggle them;
+they never hide automatically during playback.
+Mouse-wheel scrolling over the preview also moves backward or forward, pausing
+playback and auditioning the final position when scrolling stops. Its direction
+matches editor scrolling, and additionally moves the play cursor. With Follow
+enabled, taps smoothly bring the timeline to the configured follow position;
+holding a step button or scrolling the wheel locks the timeline to that position.
+
 FFT waveforms emphasize timing with 5 ms rows, logarithmic frequency bands
 (bass near the center, treble toward the outside), and a narrow peak-amplitude
 strip at the center. Reselect the BGM file to regenerate an existing waveform.

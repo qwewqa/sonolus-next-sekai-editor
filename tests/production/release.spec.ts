@@ -86,6 +86,24 @@ test('release assets, preview, chart editing and FFT audio work in the productio
         await page.setViewportSize({ width: 1600, height: 1000 })
     })
 
+    await test.step('use preview transport at a mobile viewport size', async () => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        const show = page.getByRole('button', { name: 'Show playback controls', exact: true })
+        if (await show.isVisible()) await show.click()
+        const position = page.locator('[aria-label="Preview time"]:visible')
+        await expect(position).toHaveCount(1)
+        await expect(position).toHaveText('00:00.000')
+        await page.getByRole('button', { name: 'Forward 1 ms', exact: true }).click()
+        await expect(position).toHaveText('00:00.001')
+        await page.getByRole('button', { name: 'Back 100 ms', exact: true }).click()
+        await expect(position).toHaveText('00:00.000')
+        await page.getByRole('button', { name: 'Hide playback controls', exact: true }).click({
+            position: { x: 12, y: 12 },
+        })
+        await expect(page.getByRole('button', { name: 'Show preview settings' })).toBeVisible()
+        await page.setViewportSize({ width: 1600, height: 1000 })
+    })
+
     await test.step('import a chart and real stereo audio through file choosers', async () => {
         const opening = page.waitForEvent('filechooser')
         await page.keyboard.press('o')
@@ -134,6 +152,11 @@ test('release assets, preview, chart editing and FFT audio work in the productio
     await test.step('select, edit and save the imported note', async () => {
         const bounds = await page.locator('.editor').boundingBox()
         expect(bounds).not.toBeNull()
+        // Preview Follow can pan the timeline during the transport smoke above.
+        // Return to its start through real input before using chart coordinates.
+        await page.mouse.move(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2)
+        await page.mouse.wheel(0, 10000)
+        await page.waitForTimeout(350) // Allow the editor's 250 ms scroll easing to finish.
         // Default 1000 pixels/s and imported BPM 60 put beat 1/4 above time zero.
         await page.keyboard.press('f')
         await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2 - 250)

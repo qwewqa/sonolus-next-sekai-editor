@@ -25,11 +25,20 @@ import type { PreviewChart } from './engine/model'
 import { renderPreviewFrame } from './engine/render'
 import { createPreviewRenderer, type PreviewRenderer } from './gl'
 import { loadParticleFromScp, type LoadedParticle } from './particle'
+import PreviewTransport from './PreviewTransport.vue'
 import { loadPreviewResource } from './resource'
 import { loadSkinFromScp, type LoadedSkin } from './skin'
 
 const container = useTemplateRef('container')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+const isTransportVisible = ref(false)
+const transportHeight = ref(0)
+const transportWidth = ref(0)
+
+const onTransportResize = (height: number, width: number) => {
+    transportHeight.value = height
+    transportWidth.value = width
+}
 
 const controlsId = useId()
 const prefersCompactControls = matchMedia('(pointer: coarse)').matches
@@ -214,9 +223,34 @@ const pixelRatio = ref(devicePixelRatio || 1)
 let containerWidth = 0
 let containerHeight = 0
 
+const canDockTransport = computed(
+    () =>
+        transportHeight.value > 0 &&
+        // Do not latch visibility using the previous width's unwrapped bar height.
+        Math.abs(transportWidth.value - (canvasWidth.value + canvasLeft.value * 2)) < 0.1 &&
+        canvasTop.value * 2 >= transportHeight.value + 8,
+)
+watch(canDockTransport, (docked) => {
+    if (docked) isTransportVisible.value = true
+})
+const areTransportControlsVisible = computed({
+    get: () => canDockTransport.value || isTransportVisible.value,
+    set: (value: boolean) => {
+        isTransportVisible.value = value
+    },
+})
+
+// Make room below the image by spending spare space above it before overlapping
+// the playfield. Showing controls only repositions the existing canvas.
+const displayedCanvasTop = computed(() =>
+    areTransportControlsVisible.value
+        ? Math.max(0, Math.min(canvasTop.value, canvasTop.value * 2 - transportHeight.value - 8))
+        : canvasTop.value,
+)
+
 const canvasStyle = computed(() => ({
     left: `${canvasLeft.value}px`,
-    top: `${canvasTop.value}px`,
+    top: `${displayedCanvasTop.value}px`,
     width: `${canvasWidth.value}px`,
     height: `${canvasHeight.value}px`,
 }))
@@ -405,8 +439,17 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <PreviewTransport
+            v-if="status === 'ready'"
+            v-model="areTransportControlsVisible"
+            :viewport-bottom="displayedCanvasTop + canvasHeight"
+            :persistent="canDockTransport"
+            @resize="onTransportResize"
+        />
+
         <div
             v-if="status === 'ready' && !isPlaying"
+            v-show="!areTransportControlsVisible || canDockTransport"
             class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden rounded text-xs text-white/75"
             :class="areControlsExpanded ? 'w-64 bg-black/80' : 'w-11 bg-black/40'"
             @keydown.stop

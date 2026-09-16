@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { SkinSpriteName } from '@sonolus/core'
 import { gzipSync } from 'node:zlib'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
@@ -94,6 +94,7 @@ declare global {
             resolutions: number
             aspect: number
             errors: string[]
+            auditions?: number[]
             restore?: () => void
         }
     }
@@ -107,7 +108,9 @@ const settle = (page: Page) =>
         )
     })
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+    const transport = testInfo.titlePath.includes('preview transport')
+    if (transport) await page.clock.install({ time: new Date('2030-01-01T00:00:00Z') })
     await page.route('**/resource/skin.scp', (route) => route.fulfill({ body: resource('skins') }))
     await page.route('**/resource/particle.scp', (route) =>
         route.fulfill({ body: resource('particles') }),
@@ -171,18 +174,546 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await page.evaluate(installEditorFixture)
-    await page.evaluate(() => (window.editorTest.settings.showPreview = true))
+    await page.evaluate((transport) => {
+        if (transport) {
+            window.editorTest.settings.previewPosition = 'top'
+            window.editorTest.settings.previewHeight = 200
+        }
+        window.editorTest.settings.showPreview = true
+    }, transport)
     const preview = page.locator('.preview')
+    if (transport)
+        await preview.getByRole('button', { name: 'Show preview settings', exact: true }).click()
     await expect(preview.getByText('Speed', { exact: true })).toBeVisible()
     await expect(preview.locator('input[type="number"]').first()).toHaveValue('10')
     await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(2)
     await settle(page)
+    if (transport) await page.clock.pauseAt(new Date('2030-01-01T00:01:00Z'))
 })
 
 test.afterEach(async ({ page }) => {
     expect(await page.evaluate(() => window.previewTest.errors), 'uncaught browser errors').toEqual(
         [],
     )
+})
+
+test.describe('preview transport', () => {
+    test.use({ hasTouch: true })
+
+    const cursor = (page: Page) => page.evaluate(() => window.editorTest.view.cursorTime)
+    const wheel = (page: Page, init: WheelEventInit, selector = '.preview-transport-toggle') =>
+        page.locator(selector).evaluate((element, init) => {
+            let bubbled = false
+            const onWheel = () => (bubbled = true)
+            document.addEventListener('wheel', onWheel)
+            const event = new WheelEvent('wheel', { bubbles: true, cancelable: true, ...init })
+            element.dispatchEvent(event)
+            document.removeEventListener('wheel', onWheel)
+            return { prevented: event.defaultPrevented, bubbled }
+        }, init)
+    const installAudio = (page: Page) =>
+        page.evaluate(async () => {
+            const { settings, history, nextTick } = window.editorTest
+            settings.playPreviewDuration = 120
+            settings.waveform = 'off'
+            history.replaceState({
+                ...history.state.value,
+                bgm: {
+                    offset: 0,
+                    buffer: new AudioBuffer({
+                        length: 30 * 8000,
+                        sampleRate: 8000,
+                        numberOfChannels: 1,
+                    }),
+                },
+            })
+            await nextTick()
+            window.previewTest.auditions = []
+            const start = AudioBufferSourceNode.prototype.start
+            AudioBufferSourceNode.prototype.start = function (when = 0, offset = 0, duration) {
+                if (duration !== undefined && this.buffer === history.state.value.bgm.buffer) {
+                    window.previewTest.auditions!.push(offset)
+                }
+                start.call(this, when, offset, duration)
+            }
+        })
+    const auditions = (page: Page) => page.evaluate(() => window.previewTest.auditions)
+    const clock = (page: Page) =>
+        page.evaluate(async () => {
+            const url =
+                performance
+                    .getEntriesByType('resource')
+                    .find((entry) => new URL(entry.name).pathname === '/src/time.ts')?.name ??
+                '/src/time.ts'
+            const { time } = (await import(url)) as typeof import('../../src/time')
+            return { now: performance.now() / 1000, frame: time.value.now }
+        })
+    const pressPointer = async (page: Page, button: Locator) => {
+        await button.evaluate((element) =>
+            element.addEventListener(
+                'pointerdown',
+                (event) => {
+                    ;(element as HTMLElement).dataset.pointerId =
+                        `${(event as PointerEvent).pointerId}`
+                },
+                { once: true },
+            ),
+        )
+        const bounds = (await button.boundingBox())!
+        await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+        await page.mouse.down()
+        return Number(await button.getAttribute('data-pointer-id'))
+    }
+
+    test.beforeEach(async ({ page }) => {
+        await page.getByRole('button', { name: 'Minimize preview settings', exact: true }).tap()
+        await page.getByRole('button', { name: 'Show playback controls', exact: true }).tap()
+        await expect(
+            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+        ).toBeVisible()
+        await page.evaluate(() => {
+            window.editorTest.settings.playFollow = false
+            window.editorTest.settings.playPreviewDuration = 0
+        })
+        // Vue ignores bubbling events timestamped at/before listener creation.
+        // Advance past the panel's mount before sending native keyboard events.
+        await page.clock.runFor(1)
+    })
+
+    test('touch taps and Space/Enter activate each step once without editor shortcuts', async ({
+        page,
+    }) => {
+        for (const milliseconds of [-100, -10, -1, 1, 10, 100]) {
+            await page.evaluate(() => (window.editorTest.view.cursorTime = 3.123456))
+            await page
+                .getByRole('button', {
+                    name: `${milliseconds < 0 ? 'Back' : 'Forward'} ${Math.abs(milliseconds)} ms`,
+                    exact: true,
+                })
+                .tap()
+            expect(await cursor(page)).toBe(3.123456 + milliseconds / 1000)
+        }
+        const step = page.getByRole('button', { name: 'Forward 10 ms', exact: true })
+        for (const key of ['Space', 'Enter']) {
+            const before = await cursor(page)
+            await step.focus()
+            await page.keyboard.down(key)
+            await expect(
+                page.getByRole('button', { name: 'Play preview', exact: true }),
+            ).toBeVisible()
+            await page.keyboard.down(key) // native repeat must not add another tap
+            await page.keyboard.up(key)
+            expect(await cursor(page)).toBe(before + 0.01)
+            await expect(
+                page.getByRole('button', { name: 'Play preview', exact: true }),
+            ).toBeVisible()
+        }
+    })
+
+    test('wheel seeks both ways with normalized units without leaking into editor or settings', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 3.123456
+            window.editorTest.view.time = 4
+        })
+        const before = await page.evaluate(() => ({
+            time: window.editorTest.view.time,
+            lane: window.editorTest.view.lane,
+            selection: window.editorTest.snapshot().selected,
+        }))
+        const preview = (await page.locator('.preview-transport-toggle').boundingBox())!
+        await page.mouse.move(preview.x + 20, preview.y + 100)
+        await page.mouse.wheel(0, 100)
+        await expect.poll(() => cursor(page)).toBe(3.123456 - 0.1)
+        const previewWheelDirection = Math.sign((await cursor(page)) - 3.123456)
+        expect(await wheel(page, { deltaY: -100 })).toEqual({ prevented: true, bubbled: false })
+        expect(await cursor(page)).toBeCloseTo(3.123456, 10)
+        expect(await wheel(page, { deltaY: 3, deltaMode: 1 })).toEqual({
+            prevented: true,
+            bubbled: false,
+        })
+        expect(await cursor(page)).toBeCloseTo(3.075456, 10)
+        const height = await page
+            .locator('.preview-transport-root')
+            .evaluate((el) => el.clientHeight)
+        await wheel(page, { deltaY: 1, deltaMode: 2 })
+        expect(await cursor(page)).toBeCloseTo(3.075456 - height / 1000, 10)
+        await wheel(page, { deltaY: -1, deltaMode: 2 })
+        await page.clock.runFor(150)
+        expect(
+            await page.evaluate(() => ({
+                time: window.editorTest.view.time,
+                lane: window.editorTest.view.lane,
+                selection: window.editorTest.snapshot().selected,
+            })),
+        ).toEqual(before)
+        const position = await cursor(page)
+        for (const init of [{ deltaY: 100, ctrlKey: true }, { deltaX: 100 }]) {
+            expect(await wheel(page, init)).toEqual({ prevented: false, bubbled: true })
+            expect(await cursor(page)).toBe(position)
+        }
+        const editor = (await page.locator('canvas.editor-chart').boundingBox())!
+        await page.mouse.move(editor.x + editor.width / 2, editor.y + editor.height / 2)
+        await page.mouse.wheel(0, 100)
+        await expect
+            .poll(() => page.evaluate(() => window.editorTest.view.time))
+            .not.toBe(before.time)
+        const editorTime = await page.evaluate(() => window.editorTest.view.time)
+        expect(Math.sign(editorTime - before.time)).toBe(previewWheelDirection)
+        expect(await cursor(page), 'editor scrolling retains the preview cursor').toBe(position)
+        await wheel(page, { deltaY: 10000 })
+        expect(await cursor(page)).toBe(0)
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await page.getByRole('button', { name: 'Show preview settings', exact: true }).click()
+        expect(await wheel(page, { deltaY: 100 }, '.preview-controls-body')).toEqual({
+            prevented: false,
+            bubbled: true,
+        })
+        expect(await cursor(page)).toBe(0)
+    })
+
+    test('wheel pauses hidden-panel playback and auditions once after the gesture settles', async ({
+        page,
+    }) => {
+        await installAudio(page)
+        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await page.clock.runFor(3500)
+        await expect(
+            page.getByRole('button', { name: 'Show playback controls', exact: true }),
+        ).toBeVisible()
+        const before = await cursor(page)
+        for (let i = 0; i < 3; i++) {
+            await wheel(page, { deltaY: 100 })
+            await page.clock.runFor(60)
+            expect(await auditions(page)).toEqual([])
+        }
+        expect(await cursor(page)).toBeCloseTo(before - 0.3, 10)
+        await page.clock.runFor(59)
+        expect(await auditions(page)).toEqual([])
+        await page.clock.runFor(1)
+        const stopped = await cursor(page)
+        expect(await auditions(page)).toEqual([stopped])
+        await page.clock.runFor(500)
+        expect(await cursor(page)).toBe(stopped)
+        await page.getByRole('button', { name: 'Show playback controls', exact: true }).click()
+        await expect(page.getByRole('button', { name: 'Play preview', exact: true })).toBeVisible()
+    })
+
+    test('an editor note click supersedes pending wheel audio', async ({ page }) => {
+        await installAudio(page)
+        await wheel(page, { deltaY: 100 })
+        const before = await cursor(page)
+        const note = await page.evaluate(() => window.editorTest.point(-3, 3))
+        await page.mouse.click(note.x, note.y)
+        expect(await auditions(page)).toEqual([1.5])
+        await page.clock.runFor(500)
+        expect(await auditions(page)).toEqual([1.5])
+        expect(await cursor(page)).toBe(before)
+    })
+
+    for (const reason of ['hide', 'blur', 'unmount'] as const) {
+        test(`${reason} cancels wheel audio without a deferred audition`, async ({ page }) => {
+            await installAudio(page)
+            await wheel(page, { deltaY: 100 })
+            const stopped = await cursor(page)
+            if (reason === 'hide') {
+                await page
+                    .getByRole('button', { name: 'Hide playback controls', exact: true })
+                    .click({ position: { x: 12, y: 12 } })
+            } else if (reason === 'blur') {
+                await page.evaluate(() => {
+                    Object.defineProperty(document, 'hasFocus', {
+                        configurable: true,
+                        value: () => false,
+                    })
+                    window.dispatchEvent(new Event('blur'))
+                })
+                expect(await wheel(page, { deltaY: 100 })).toEqual({
+                    prevented: false,
+                    bubbled: true,
+                })
+            } else {
+                await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+            }
+            await page.clock.runFor(500)
+            if (reason === 'blur') {
+                await page.evaluate(() => {
+                    Reflect.deleteProperty(document, 'hasFocus')
+                    window.dispatchEvent(new Event('focus'))
+                })
+                await page.clock.runFor(500)
+            }
+            expect(await auditions(page)).toEqual([])
+            expect(await cursor(page)).toBe(stopped)
+        })
+    }
+
+    test('all hold rates use elapsed time in both directions and stop on pointer release', async ({
+        page,
+    }) => {
+        for (const milliseconds of [-100, -10, -1, 1, 10, 100]) {
+            await page.evaluate(() => (window.editorTest.view.cursorTime = 20.123456))
+            const button = page.getByRole('button', {
+                name: `${milliseconds < 0 ? 'Back' : 'Forward'} ${Math.abs(milliseconds)} ms`,
+                exact: true,
+            })
+            const pointerId = await pressPointer(page, button)
+            const tapped = await cursor(page)
+            expect(tapped).toBe(20.123456 + milliseconds / 1000)
+            await page.clock.runFor(250)
+            const started = (await clock(page)).now
+            await page.clock.runFor(1000)
+            const expected = tapped + (((await clock(page)).frame - started) * milliseconds) / 10
+            expect(await cursor(page)).toBeCloseTo(expected, 9)
+            // A delayed frame catches up by elapsed time without replaying taps.
+            await page.clock.fastForward(500)
+            const caughtUp = tapped + (((await clock(page)).frame - started) * milliseconds) / 10
+            expect(await cursor(page)).toBeCloseTo(caughtUp, 9)
+            expect(
+                await button.evaluate((element, id) => element.hasPointerCapture(id), pointerId),
+            ).toBe(true)
+            await page.mouse.move(1500, 20)
+            await page.mouse.up()
+            const released = await cursor(page)
+            await page.clock.runFor(500)
+            expect(await cursor(page)).toBe(released)
+            expect(
+                await button.evaluate((element, id) => element.hasPointerCapture(id), pointerId),
+            ).toBe(false)
+        }
+    })
+
+    test('Follow eases taps but locks held and wheel seeking without trailing timeline motion', async ({
+        page,
+    }) => {
+        const offset = await page.evaluate(() => {
+            const { settings, view } = window.editorTest
+            settings.playFollow = true
+            settings.playFollowPosition = 75
+            view.cursorTime = 5.123456
+            view.time = 10
+            view.scrollingY = undefined
+            return (-0.25 * view.h) / settings.pps
+        })
+        const read = () =>
+            page.evaluate(() => ({
+                cursor: window.editorTest.view.cursorTime,
+                timeline: window.editorTest.view.time,
+                scroll: window.editorTest.view.scrollingY?.type ?? null,
+            }))
+        await pressPointer(page, page.getByRole('button', { name: 'Forward 10 ms', exact: true }))
+        const tapped = await read()
+        expect(tapped.cursor).toBe(5.123456 + 0.01)
+        expect(tapped.timeline).toBe(10)
+        expect(tapped.scroll).toBe('ease')
+        await page.clock.runFor(100)
+        const easing = await read()
+        expect(easing.timeline).toBeLessThan(tapped.timeline)
+        expect(easing.timeline).toBeGreaterThan(easing.cursor + offset)
+        await page.clock.runFor(150)
+        const locked = await read()
+        expect(locked.timeline).toBeCloseTo(locked.cursor + offset, 10)
+        expect(locked.scroll).toBeNull()
+        for (let i = 0; i < 3; i++) {
+            await page.clock.runFor(80)
+            const held = await read()
+            expect(held.timeline).toBeCloseTo(held.cursor + offset, 10)
+            expect(held.scroll).toBeNull()
+        }
+        await page.mouse.up()
+        const released = await read()
+        await page.clock.runFor(300)
+        expect(await read()).toEqual(released)
+
+        await wheel(page, { deltaY: 100 })
+        const sought = await read()
+        expect(sought.cursor).toBe(released.cursor - 0.1)
+        expect(sought.timeline).toBeCloseTo(sought.cursor + offset, 10)
+        expect(sought.scroll).toBeNull()
+        await page.clock.runFor(120)
+        expect(await read()).toEqual(sought)
+        await page.clock.runFor(300)
+        expect(await read()).toEqual(sought)
+    })
+
+    test('a held keyboard step stops when Tab moves focus and cannot restart on keyup', async ({
+        page,
+    }) => {
+        await page.evaluate(() => (window.editorTest.view.cursorTime = 3))
+        const step = page.getByRole('button', { name: 'Back 1 ms', exact: true })
+        await step.focus()
+        await page.keyboard.down('Space')
+        await page.clock.runFor(750)
+        expect(await cursor(page)).toBeGreaterThan(2.94)
+        expect(await cursor(page)).toBeLessThan(2.96)
+        await page.keyboard.press('Tab')
+        await expect(step).not.toBeFocused()
+        const stopped = await cursor(page)
+        await page.clock.runFor(1000)
+        await page.keyboard.up('Space')
+        await page.clock.runFor(1000)
+        expect(await cursor(page)).toBe(stopped)
+        await expect(page.getByRole('button', { name: 'Play preview', exact: true })).toBeVisible()
+    })
+
+    for (const reason of ['pointercancel', 'blur', 'unmount'] as const) {
+        test(`${reason} cancels a hold without resuming it later`, async ({ page }) => {
+            await page.evaluate(() => (window.editorTest.view.cursorTime = 3.123456))
+            const button = page.getByRole('button', { name: 'Forward 10 ms', exact: true })
+            const pointerId = await pressPointer(page, button)
+            await page.clock.runFor(750)
+            expect(await cursor(page)).toBeGreaterThan(3.5)
+            if (reason === 'pointercancel') {
+                await button.dispatchEvent('pointercancel', { pointerId, pointerType: 'mouse' })
+            } else if (reason === 'blur') {
+                await page.evaluate(() => {
+                    Object.defineProperty(document, 'hasFocus', {
+                        configurable: true,
+                        value: () => false,
+                    })
+                    window.dispatchEvent(new Event('blur'))
+                })
+            } else {
+                await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+            }
+            const stopped = await cursor(page)
+            await page.clock.runFor(1000)
+            expect(await cursor(page)).toBe(stopped)
+            if (reason === 'blur') {
+                await page.evaluate(() => {
+                    Reflect.deleteProperty(document, 'hasFocus')
+                    window.dispatchEvent(new Event('focus'))
+                })
+            }
+            await page.mouse.up()
+            await page.clock.runFor(1000)
+            expect(await cursor(page)).toBe(stopped)
+        })
+    }
+
+    test('Play/Pause never autohides controls and manual toggling preserves keyboard focus', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 3.123456
+            window.editorTest.view.time = 20
+            window.editorTest.settings.playStartPosition = 'view'
+        })
+        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page.clock.runFor(500)
+        expect(await cursor(page)).toBeGreaterThan(3.3)
+        expect(await cursor(page)).toBeLessThan(3.5)
+        await page.getByRole('button', { name: 'Pause preview', exact: true }).click()
+        const paused = await cursor(page)
+        await page.clock.runFor(500)
+        expect(await cursor(page)).toBe(paused)
+
+        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page.clock.runFor(3500)
+        await expect(
+            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+        ).toBeVisible()
+        const pause = page.getByRole('button', { name: 'Pause preview', exact: true })
+        await pause.focus()
+        await page.clock.runFor(3500)
+        await expect(pause).toBeFocused()
+        await pause.press('Escape')
+        await expect(
+            page.getByRole('button', { name: 'Show playback controls', exact: true }),
+        ).toBeFocused()
+        await expect(page.locator('.preview-transport')).toBeHidden()
+        await expect(page.locator('.preview-transport')).toHaveAttribute('inert', '')
+        await expect(page.locator('.preview-transport')).toHaveAttribute('aria-hidden', 'true')
+        const hiddenTime = await page.locator('.transport-time').textContent()
+        await page.clock.runFor(3500)
+        expect(await page.locator('.transport-time').textContent()).toBe(hiddenTime)
+        await page.getByRole('button', { name: 'Show playback controls', exact: true }).click()
+        await page.clock.runFor(3500)
+        await expect(
+            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+        ).toBeVisible()
+    })
+
+    test('wrapping a hidden bar does not dock with its previous height', async ({ page }) => {
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await page.setViewportSize({ width: 390, height: 1000 })
+        await page.evaluate(() => (window.editorTest.settings.previewHeight = 240))
+        await page.clock.runFor(32)
+        const panel = page.locator('.preview-transport')
+        await expect(panel).toBeHidden()
+
+        // The narrow image leaves 82.5 px spare. A stale 44 px bar would appear
+        // to fit, but the wrapped 82 px bar needs 90 px including its margins.
+        await page.setViewportSize({ width: 280, height: 1000 })
+        await page.clock.runFor(32)
+        await expect.poll(() => panel.evaluate((element) => element.clientHeight)).toBe(82)
+        await expect(panel).toBeHidden()
+        await expect(
+            page.getByRole('button', { name: 'Show playback controls', exact: true }),
+        ).toBeVisible()
+
+        await page.evaluate(() => (window.editorTest.settings.previewHeight = 300))
+        await page.clock.runFor(32)
+        await expect(panel).toBeVisible()
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await page.setViewportSize({ width: 390, height: 1000 })
+        await page.clock.runFor(32)
+        await expect.poll(() => panel.evaluate((element) => element.clientHeight)).toBe(44)
+        await expect(panel).toBeVisible()
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+    })
+
+    test('space below the viewport shows persistent controls without a tap', async ({ page }) => {
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await expect(page.locator('.preview-transport')).toBeHidden()
+        await page.setViewportSize({ width: 600, height: 1000 })
+        await page.evaluate(() => (window.editorTest.settings.previewHeight = 500))
+        await page.clock.runFor(32)
+        const panel = page.getByRole('group', { name: 'Preview playback controls', exact: true })
+        await expect(panel).toBeVisible()
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await expect(
+            page.getByRole('button', { name: 'Show preview settings', exact: true }),
+        ).toBeVisible()
+        const geometry = await page.evaluate(() => {
+            const viewport = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+            const bar = document.querySelector('.preview-transport')!.getBoundingClientRect()
+            const preview = document.querySelector('.preview')!.getBoundingClientRect()
+            return { gap: bar.top - viewport.bottom, bottom: preview.bottom - bar.bottom }
+        })
+        expect(geometry.gap).toBeCloseTo(4, 1)
+        expect(geometry.bottom).toBeGreaterThanOrEqual(3.9)
+        const play = page.getByRole('button', { name: 'Play preview', exact: true })
+        await play.focus()
+        await play.press('Escape')
+        await expect(play).not.toBeFocused()
+        await expect(panel).toBeVisible()
+        const before = await cursor(page)
+        await wheel(page, { deltaY: 100 }, '.preview-transport-root')
+        expect(await cursor(page)).toBe(before - 0.1)
+        await play.click()
+        await page.clock.fastForward(10000)
+        await expect(panel).toBeVisible()
+
+        // Losing docking space must not hide controls that were already visible.
+        await page.evaluate(() => (window.editorTest.settings.previewHeight = 200))
+        await page.clock.runFor(32)
+        await expect(panel).toBeVisible()
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await expect(panel).toBeHidden()
+    })
 })
 
 test('preview restores lost contexts, uploads each atlas once and releases decoded resources', async ({
@@ -395,6 +926,10 @@ test.describe('preview aspect ratios', () => {
         }
         // The top panel fits by height, unlike the width-limited left panel.
         await page.evaluate(() => (window.editorTest.settings.previewPosition = 'top'))
+        await settle(page)
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
         for (const [label, ratio] of [
             ['16:9', 16 / 9],
             ['21:9', 21 / 9],
@@ -544,6 +1079,9 @@ test.describe('preview aspect ratios', () => {
         })
         await page.setViewportSize({ width: 1069, height: 400 })
         await settle(page)
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
         await expect(antialias).toBeInViewport()
         await antialias.uncheck()
         await expect(antialias).not.toBeChecked()
