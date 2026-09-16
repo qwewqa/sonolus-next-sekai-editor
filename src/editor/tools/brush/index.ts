@@ -21,7 +21,7 @@ import type {
     NoteType,
 } from '../../../chart/note'
 import type { StageId } from '../../../chart/stages'
-import type { TimeScaleEase } from '../../../chart/timeScale'
+import type { TimeScaleEase, TimeScaleTransition } from '../../../chart/timeScale'
 import { pushState, replaceState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
@@ -68,6 +68,7 @@ export type BrushProperties = {
     timeScale?: number
     skip?: number
     timeScaleEase?: TimeScaleEase
+    timeScaleTransition?: TimeScaleTransition
     hideNotes?: boolean
     cameraSize?: number
     cameraZoom?: number
@@ -77,6 +78,7 @@ export type BrushProperties = {
     cameraRotation?: number
     cameraStageTilt?: number
     maskSize?: number
+    isMaskNotes?: boolean
     divisionSize?: number
     divisionParity?: DivisionParity
     yOffset?: number
@@ -92,6 +94,7 @@ export type BrushProperties = {
     divisionLineAlpha?: number
     rotation?: number
     yTranslation?: number
+    elevation?: number
     anchor?: Anchor
     eventEase?: EventEase
 }

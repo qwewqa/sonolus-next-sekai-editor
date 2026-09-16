@@ -50,6 +50,9 @@ import OptionalYOffsetBeatField from '../../../modals/form/OptionalYOffsetBeatFi
 import OptionalYOffsetField from '../../../modals/form/OptionalYOffsetField.vue'
 import OptionalYTranslationField from '../../../modals/form/OptionalYTranslationField.vue'
 import { useProperties } from '../../utils/properties'
+import OptionalIsMaskNotesField from '../../../modals/form/OptionalIsMaskNotesField.vue'
+import OptionalElevationField from '../../../modals/form/OptionalElevationField.vue'
+import OptionalTimeScaleTransitionField from '../../../modals/form/OptionalTimeScaleTransitionField.vue'
 
 const createModel = useProperties(brushProperties)
 
@@ -75,6 +78,7 @@ const connectorPresentation = createModel('connectorPresentation')
 const timeScale = createModel('timeScale')
 const skip = createModel('skip')
 const timeScaleEase = createModel('timeScaleEase')
+const timeScaleTransition = createModel('timeScaleTransition')
 const hideNotes = createModel('hideNotes')
 const cameraSize = createModel('cameraSize')
 const cameraZoom = createModel('cameraZoom')
@@ -84,6 +88,7 @@ const cameraZoomVerticalAlign = createModel('cameraZoomVerticalAlign')
 const cameraRotation = createModel('cameraRotation')
 const cameraStageTilt = createModel('cameraStageTilt')
 const maskSize = createModel('maskSize')
+const isMaskNotes = createModel('isMaskNotes')
 const divisionSize = createModel('divisionSize')
 const divisionParity = createModel('divisionParity')
 const yOffset = createModel('yOffset')
@@ -99,6 +104,7 @@ const judgmentLineAlpha = createModel('judgmentLineAlpha')
 const divisionLineAlpha = createModel('divisionLineAlpha')
 const rotation = createModel('rotation')
 const yTranslation = createModel('yTranslation')
+const elevation = createModel('elevation')
 const anchor = createModel('anchor')
 const eventEase = createModel('eventEase')
 </script>
@@ -126,6 +132,7 @@ const eventEase = createModel('eventEase')
     <OptionalTimeScaleField v-model="timeScale" />
     <OptionalSkipField v-model="skip" />
     <OptionalTimeScaleEaseField v-model="timeScaleEase" />
+    <OptionalTimeScaleTransitionField v-model="timeScaleTransition" />
     <OptionalHideNotesField v-model="hideNotes" />
     <OptionalCameraSizeField v-if="isDynamicStages" v-model="cameraSize" />
     <OptionalCameraZoomField v-if="isDynamicStages" v-model="cameraZoom" />
@@ -138,6 +145,7 @@ const eventEase = createModel('eventEase')
     <OptionalCameraRotationField v-if="isDynamicStages" v-model="cameraRotation" />
     <OptionalCameraStageTiltField v-if="isDynamicStages" v-model="cameraStageTilt" />
     <OptionalMaskSizeField v-if="isDynamicStages" v-model="maskSize" />
+    <OptionalIsMaskNotesField v-if="isDynamicStages" v-model="isMaskNotes" />
     <OptionalDivisionSizeField v-if="isDynamicStages" v-model="divisionSize" />
     <OptionalDivisionParityField v-if="isDynamicStages" v-model="divisionParity" />
     <OptionalYOffsetField v-if="isDynamicStages" v-model="yOffset" />
@@ -153,6 +161,7 @@ const eventEase = createModel('eventEase')
     <OptionalDivisionLineAlphaField v-if="isDynamicStages" v-model="divisionLineAlpha" />
     <OptionalRotationField v-if="isDynamicStages" v-model="rotation" />
     <OptionalYTranslationField v-if="isDynamicStages" v-model="yTranslation" />
+    <OptionalElevationField v-if="isDynamicStages" v-model="elevation" />
     <OptionalAnchorField v-if="isDynamicStages" v-model="anchor" />
     <OptionalEventEaseField v-if="isDynamicStages" v-model="eventEase" />
 </template>

@@ -35,6 +35,7 @@ import StageTransformEventSidebar from './StageTransformEventSidebar.vue'
 type DefaultStageTransformEventProperties = {
     rotation?: number
     yTranslation?: number
+    elevation?: number
     anchor?: Anchor
     eventEase?: EventEase
     copyProperties: boolean
@@ -70,7 +71,6 @@ export const stageTransformEvent: Tool = {
                 hovered: [],
                 creating: [
                     toStageTransformEventJointEntity({
-                        stageId: view.stageId ?? defaultStageId.value,
                         beat,
                         xTranslation: lane,
                         ...getPropertiesFromSelection(),
@@ -153,7 +153,6 @@ export const stageTransformEvent: Tool = {
             }
         } else {
             add({
-                stageId: view.stageId ?? defaultStageId.value,
                 beat,
                 xTranslation: lane,
                 ...getPropertiesFromSelection(),
@@ -221,7 +220,6 @@ export const stageTransformEvent: Tool = {
                     hovered: [],
                     creating: [
                         toStageTransformEventJointEntity({
-                            stageId: view.stageId ?? defaultStageId.value,
                             beat,
                             xTranslation: lane,
                             ...getPropertiesFromSelection(),
@@ -260,7 +258,6 @@ export const stageTransformEvent: Tool = {
                 const beat = yToValidBeat(y)
 
                 add({
-                    stageId: view.stageId ?? defaultStageId.value,
                     beat,
                     xTranslation: lane,
                     ...getPropertiesFromSelection(),
@@ -295,6 +292,7 @@ export const editStageTransformEvent = (
         rotation: object.rotation ?? entity.rotation,
         xTranslation: object.xTranslation ?? entity.xTranslation,
         yTranslation: object.yTranslation ?? entity.yTranslation,
+        elevation: object.elevation ?? entity.elevation,
         anchor: object.anchor ?? entity.anchor,
         eventEase: object.eventEase ?? entity.eventEase,
     })
@@ -312,6 +310,7 @@ export const editSelectedStageTransformEvent = (
         rotation: object.rotation ?? entity.rotation,
         xTranslation: object.xTranslation ?? entity.xTranslation,
         yTranslation: object.yTranslation ?? entity.yTranslation,
+        elevation: object.elevation ?? entity.elevation,
         anchor: object.anchor ?? entity.anchor,
         eventEase: object.eventEase ?? entity.eventEase,
     })
@@ -332,6 +331,7 @@ const getPropertiesFromSelection = () => {
     const stageTransformEventJoint = getStageTransformEventJointFromSelection()
 
     return {
+        stageId: view.stageId ?? stageTransformEventJoint?.stageId ?? defaultStageId.value,
         rotation:
             defaultStageTransformEventProperties.value.rotation ??
             stageTransformEventJoint?.rotation ??
@@ -339,6 +339,10 @@ const getPropertiesFromSelection = () => {
         yTranslation:
             defaultStageTransformEventProperties.value.yTranslation ??
             stageTransformEventJoint?.yTranslation ??
+            0,
+        elevation:
+            defaultStageTransformEventProperties.value.elevation ??
+            stageTransformEventJoint?.elevation ??
             0,
         anchor:
             defaultStageTransformEventProperties.value.anchor ??
