@@ -5,14 +5,18 @@ import {
     onUnmounted,
     ref,
     shallowRef,
+    useId,
     useTemplateRef,
     watch,
     watchEffect,
 } from 'vue'
 import { isAppActive } from '../activity'
+import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import { view } from '../editor/view'
 import { state } from '../history'
 import { isPlaying } from '../player'
+import { screenSm } from '../screen'
+import { settings } from '../settings'
 import type { State } from '../state'
 import { getPreviewState, hasSamePreviewData, previewEdit } from './edit'
 import { createPreviewChartBuilder } from './engine/chart'
@@ -26,6 +30,22 @@ import { loadSkinFromScp, type LoadedSkin } from './skin'
 
 const container = useTemplateRef('container')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+
+const controlsId = useId()
+const prefersCompactControls = matchMedia('(pointer: coarse)').matches
+const areControlsExpanded = computed(
+    () =>
+        settings.previewControls === 'expanded' ||
+        (settings.previewControls === 'auto' && screenSm.value && !prefersCompactControls),
+)
+const controlsToggleLabel = computed(() =>
+    areControlsExpanded.value ? 'Minimize preview settings' : 'Show preview settings',
+)
+const toggleControls = (event: MouseEvent) => {
+    settings.previewControls = areControlsExpanded.value ? 'collapsed' : 'expanded'
+    // Pointer clicks return shortcuts to the editor; keyboard users retain focus.
+    if (event.detail > 0) (event.currentTarget as HTMLButtonElement).blur()
+}
 
 const noteSpeed = ref(10)
 
@@ -352,7 +372,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div ref="container" class="preview relative h-full w-full overflow-hidden">
+    <div ref="container" class="preview relative h-full w-full">
         <div class="preview-viewport absolute overflow-hidden" :style="canvasStyle">
             <canvas
                 ref="canvas"
@@ -387,81 +407,109 @@ onUnmounted(() => {
 
         <div
             v-if="status === 'ready' && !isPlaying"
-            class="preview-controls absolute right-1 top-1 flex max-h-[calc(100%-0.5rem)] max-w-[calc(100%-0.5rem)] flex-col items-end gap-1 overflow-y-auto rounded bg-black/40 px-2 py-1 text-xs text-white/75"
+            class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden rounded text-xs text-white/75"
+            :class="areControlsExpanded ? 'w-64 bg-black/80' : 'w-11 bg-black/40'"
             @keydown.stop
         >
-            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
-                <span class="w-10 shrink-0">Speed</span>
-                <input
-                    v-model.number="noteSpeed"
-                    class="min-w-0 flex-1"
-                    type="range"
-                    min="1"
-                    max="12"
-                    step="0.05"
-                />
-                <input
-                    class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
-                    type="number"
-                    min="1"
-                    max="12"
-                    step="0.01"
-                    :value="noteSpeed"
-                    @change="onSpeedChange"
-                    @keydown="onSpeedKeydown"
-                />
-            </div>
-            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
-                <span class="w-10 shrink-0">Quality</span>
-                <input
-                    v-model.number="renderScale"
-                    class="min-w-0 flex-1"
-                    type="range"
-                    min="0.25"
-                    max="2"
-                    step="0.25"
-                />
-                <input
-                    class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
-                    type="number"
-                    min="0.25"
-                    max="2"
-                    step="0.25"
-                    :value="renderScale"
-                    @change="onScaleChange"
-                    @keydown="onSpeedKeydown"
-                />
-            </div>
-            <div
-                class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
-                role="radiogroup"
-                aria-label="Aspect ratio"
+            <button
+                type="button"
+                class="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded px-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/75"
+                :aria-expanded="areControlsExpanded"
+                :aria-controls="controlsId"
+                :aria-label="controlsToggleLabel"
+                :title="controlsToggleLabel"
+                @click="toggleControls"
             >
-                <span>Aspect</span>
-                <label
-                    v-for="ratio in aspectRatios"
-                    :key="ratio.label"
-                    class="flex shrink-0 cursor-pointer items-center gap-1"
-                >
+                <SettingsIcon class="size-4 shrink-0 fill-current" aria-hidden="true" />
+                <template v-if="areControlsExpanded">
+                    <span class="min-w-0 flex-1 truncate text-left">Preview settings</span>
+                    <svg
+                        class="size-4 shrink-0 fill-none stroke-current"
+                        viewBox="0 0 16 16"
+                        aria-hidden="true"
+                    >
+                        <path d="m4 10 4-4 4 4" stroke-width="1.5" />
+                    </svg>
+                </template>
+            </button>
+            <div
+                v-show="areControlsExpanded"
+                :id="controlsId"
+                class="preview-controls-body flex min-h-0 touch-pan-y flex-col items-end gap-1 overflow-y-auto overscroll-contain px-2 pb-2"
+            >
+                <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
+                    <span class="w-10 shrink-0">Speed</span>
                     <input
-                        v-model="aspectRatio"
-                        type="radio"
-                        name="preview-aspect-ratio"
-                        :value="ratio.value"
-                        @change="onAspectChange"
-                        @keydown.stop
+                        v-model.number="noteSpeed"
+                        class="min-w-0 flex-1"
+                        type="range"
+                        min="1"
+                        max="12"
+                        step="0.05"
                     />
-                    <span>{{ ratio.label }}</span>
+                    <input
+                        class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                        type="number"
+                        min="1"
+                        max="12"
+                        step="0.01"
+                        :value="noteSpeed"
+                        @change="onSpeedChange"
+                        @keydown="onSpeedKeydown"
+                    />
+                </div>
+                <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
+                    <span class="w-10 shrink-0">Quality</span>
+                    <input
+                        v-model.number="renderScale"
+                        class="min-w-0 flex-1"
+                        type="range"
+                        min="0.25"
+                        max="2"
+                        step="0.25"
+                    />
+                    <input
+                        class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                        type="number"
+                        min="0.25"
+                        max="2"
+                        step="0.25"
+                        :value="renderScale"
+                        @change="onScaleChange"
+                        @keydown="onSpeedKeydown"
+                    />
+                </div>
+                <div
+                    class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                    role="radiogroup"
+                    aria-label="Aspect ratio"
+                >
+                    <span>Aspect</span>
+                    <label
+                        v-for="ratio in aspectRatios"
+                        :key="ratio.label"
+                        class="flex shrink-0 cursor-pointer items-center gap-1"
+                    >
+                        <input
+                            v-model="aspectRatio"
+                            type="radio"
+                            name="preview-aspect-ratio"
+                            :value="ratio.value"
+                            @change="onAspectChange"
+                            @keydown.stop
+                        />
+                        <span>{{ ratio.label }}</span>
+                    </label>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                    <span>Effects</span>
+                    <input v-model="showEffects" type="checkbox" @change="blurInput" />
+                </label>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                    <span>Antialias</span>
+                    <input v-model="antialias" type="checkbox" @change="blurInput" />
                 </label>
             </div>
-            <label class="flex shrink-0 cursor-pointer items-center gap-2">
-                <span>Effects</span>
-                <input v-model="showEffects" type="checkbox" @change="blurInput" />
-            </label>
-            <label class="flex shrink-0 cursor-pointer items-center gap-2">
-                <span>Antialias</span>
-                <input v-model="antialias" type="checkbox" @change="blurInput" />
-            </label>
         </div>
     </div>
 </template>
@@ -469,6 +517,11 @@ onUnmounted(() => {
 <style scoped>
 .preview-viewport {
     background: url('./bg.png') center / cover no-repeat;
+}
+
+.preview-controls {
+    /* A short preview must still leave room to reach the expanded settings. */
+    max-height: min(calc(100dvh - 0.5rem), max(11rem, calc(100% - 0.5rem)));
 }
 
 .number-input {

@@ -104,6 +104,12 @@ const settingsProperties = {
 
     showPreview: Type.Boolean({ default: true }),
 
+    previewControls: Type.Union([
+        Type.Literal('auto'),
+        Type.Literal('expanded'),
+        Type.Literal('collapsed'),
+    ]),
+
     previewWidth: Type.Number(),
 
     previewHeight: Type.Number(),

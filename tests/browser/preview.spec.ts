@@ -544,11 +544,23 @@ test.describe('preview aspect ratios', () => {
         })
         await page.setViewportSize({ width: 1069, height: 400 })
         await settle(page)
-        expect(await controls.evaluate((panel) => panel.scrollHeight > panel.clientHeight)).toBe(
-            true,
-        )
+        await expect(antialias).toBeInViewport()
+        await antialias.uncheck()
+        await expect(antialias).not.toBeChecked()
+
+        // Even when the window itself is short, the header remains reachable
+        // and only the settings body scrolls.
+        await page.setViewportSize({ width: 1069, height: 128 })
+        await settle(page)
+        expect(
+            await controls
+                .locator('.preview-controls-body')
+                .evaluate((panel) => panel.scrollHeight > panel.clientHeight),
+        ).toBe(true)
         await antialias.scrollIntoViewIfNeeded()
         await expect(antialias).toBeInViewport()
+        await antialias.check()
+        await expect(antialias).toBeChecked()
         const speed = controls.locator('input[type="number"]').first()
         await speed.scrollIntoViewIfNeeded()
         await expect(speed).toBeInViewport()

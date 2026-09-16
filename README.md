@@ -21,6 +21,9 @@ ignored by Git; see [preview packages](public/resource/README.md).
 
 Preview defaults to note speed 10. Its aspect controls select the engine's 16:9,
 21:9, or 4:3 test viewport, with the playfield scaled uniformly to fit.
+The settings panel can be minimized with its header button and reopened with the
+gear button. It starts minimized on narrow screens and touch devices, and remembers
+your choice across reloads.
 
 FFT waveforms emphasize timing with 5 ms rows, logarithmic frequency bands
 (bass near the center, treble toward the outside), and a narrow peak-amplitude
