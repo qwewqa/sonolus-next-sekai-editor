@@ -28,7 +28,6 @@ import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import {
     focusEntityAtBeat,
-    focusViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -169,7 +168,7 @@ export const stageStyleEvent: Tool = {
                 editorLane: lane,
                 ...getPropertiesFromSelection(),
             })
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
         }
     },
 
@@ -199,7 +198,7 @@ export const stageStyleEvent: Tool = {
                 entity,
             }
         } else {
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
 
             notify(
                 interpolate(
@@ -238,7 +237,7 @@ export const stageStyleEvent: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'move': {
@@ -289,7 +288,7 @@ export const stageStyleEvent: Tool = {
                     editorLane: lane,
                     ...getPropertiesFromSelection(),
                 })
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'move': {

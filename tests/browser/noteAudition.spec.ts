@@ -151,7 +151,7 @@ for (const tool of ['select', 'note', 'slide'] as const) {
     })
 }
 
-test('empty-space seeking and note creation each keep their existing single audition', async ({
+test('empty-space clicks seek while note creation auditions once without moving the preview', async ({
     page,
 }) => {
     await click(page, -7, 8)
@@ -162,7 +162,7 @@ test('empty-space seeking and note creation each keep their existing single audi
     await page.keyboard.press('a')
     await click(page, -7, 10)
     expect(await snapshot(page)).toEqual({
-        cursor: 5,
+        cursor: 4,
         starts: [4.25, 5.25].map((offset) => ({ offset, duration: 0.12 })),
     })
     expect(await page.evaluate(() => window.editorTest.snapshot().notes)).toContainEqual({
@@ -172,6 +172,45 @@ test('empty-space seeking and note creation each keep their existing single audi
         size: 2,
     })
 })
+
+for (const tool of ['note', 'slide'] as const) {
+    test(`${tool} creation dragging auditions changed beats once while preserving the preview`, async ({
+        page,
+    }) => {
+        await page.keyboard.press(tool === 'note' ? 'a' : 's')
+        const start = await point(page, -7, 8)
+        const horizontal = await point(page, -5, 8)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(horizontal.x, horizontal.y)
+        await settle(page)
+        expect(await snapshot(page)).toEqual({
+            cursor: 3,
+            starts: [{ offset: 4.25, duration: 0.12 }],
+        })
+
+        const moved = await point(page, -5, 10)
+        await page.mouse.move(moved.x, moved.y)
+        await settle(page)
+        expect(await snapshot(page)).toEqual({
+            cursor: 3,
+            starts: [4.25, 5.25].map((offset) => ({ offset, duration: 0.12 })),
+        })
+        await page.mouse.move(moved.x + 2, moved.y + 1)
+        await page.mouse.up()
+        await settle(page)
+        expect(await snapshot(page)).toEqual({
+            cursor: 3,
+            starts: [4.25, 5.25].map((offset) => ({ offset, duration: 0.12 })),
+        })
+        expect(await page.evaluate(() => window.editorTest.snapshot().notes)).toContainEqual({
+            type: 'note',
+            beat: 10,
+            left: -7,
+            size: 2,
+        })
+    })
+}
 
 test('resizing a note auditions its fixed beat instead of the pointer beat', async ({ page }) => {
     const start = await point(page, -4, 3)
