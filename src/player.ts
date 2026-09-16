@@ -365,15 +365,17 @@ export const previewPlayer = (bgmTime: number) => {
     audio.source.start(time, offset, duration)
 }
 
+export const stopPreviewPlayer = () => {
+    preview?.stop()
+    preview = undefined
+}
+
 const startContext = () => {
     if (context.state !== 'running') {
         void context.resume()
     }
 
-    if (preview) {
-        preview.stop()
-        preview = undefined
-    }
+    stopPreviewPlayer()
 }
 
 const schedule = (

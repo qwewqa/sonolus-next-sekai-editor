@@ -4,7 +4,7 @@ import { zoomXIn } from '../commands/zooms/zoomXIn'
 import { zoomXOut } from '../commands/zooms/zoomXOut'
 import { zoomYIn } from '../commands/zooms/zoomYIn'
 import { zoomYOut } from '../commands/zooms/zoomYOut'
-import { stopPlayer } from '../player'
+import { cancelPreviewFollow, stopPlayer } from '../player'
 import { switchToolTo, tool, toolName, type ToolName } from '../tools'
 import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
 import { gesture } from './gestures/gesture'
@@ -122,34 +122,40 @@ const wheel = (event: WheelEvent) => {
             }
         }
     } else {
+        const mode = event.deltaMode
+        if (event.shiftKey ? event.deltaX : event.deltaY) cancelPreviewFollow()
         if (event.shiftKey) {
-            switch (event.deltaMode) {
+            switch (mode) {
                 case WheelEvent.DOM_DELTA_PIXEL:
                     scrollViewXBy(event.deltaY, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-event.deltaX, settings.mouseSmoothScrolling)
+                    if (event.deltaX) scrollViewYBy(-event.deltaX, settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_LINE:
                     scrollViewXBy(event.deltaY * 20, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-(event.deltaX * 20), settings.mouseSmoothScrolling)
+                    if (event.deltaX)
+                        scrollViewYBy(-(event.deltaX * 20), settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_PAGE:
                     scrollViewXBy(-event.deltaY * view.w, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-event.deltaX * view.h, settings.mouseSmoothScrolling)
+                    if (event.deltaX)
+                        scrollViewYBy(-event.deltaX * view.h, settings.mouseSmoothScrolling)
                     break
             }
         } else {
-            switch (event.deltaMode) {
+            switch (mode) {
                 case WheelEvent.DOM_DELTA_PIXEL:
                     scrollViewXBy(event.deltaX, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-event.deltaY, settings.mouseSmoothScrolling)
+                    if (event.deltaY) scrollViewYBy(-event.deltaY, settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_LINE:
                     scrollViewXBy(event.deltaX * 20, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-(event.deltaY * 20), settings.mouseSmoothScrolling)
+                    if (event.deltaY)
+                        scrollViewYBy(-(event.deltaY * 20), settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_PAGE:
                     scrollViewXBy(event.deltaX * view.w, settings.mouseSmoothScrolling)
-                    scrollViewYBy(-event.deltaY * view.h, settings.mouseSmoothScrolling)
+                    if (event.deltaY)
+                        scrollViewYBy(-event.deltaY * view.h, settings.mouseSmoothScrolling)
                     break
             }
         }
