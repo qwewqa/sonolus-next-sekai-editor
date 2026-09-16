@@ -1,16 +1,15 @@
-import { onMounted, onUnmounted } from 'vue'
+import { watch } from 'vue'
+import { isAppActive } from '../../activity'
 import { stopPlayer } from '../player'
 
-const onBlur = () => {
-    stopPlayer(false)
-}
-
 export const useFocusControl = () => {
-    onMounted(() => {
-        addEventListener('blur', onBlur)
-    })
-
-    onUnmounted(() => {
-        removeEventListener('blur', onBlur)
-    })
+    // Preserve pause-on-blur and handle visibility changes that arrive without a
+    // blur event, so background audio cannot outlive its suspended visual clock.
+    watch(
+        isAppActive,
+        (active) => {
+            if (!active) stopPlayer(false)
+        },
+        { flush: 'sync' },
+    )
 }

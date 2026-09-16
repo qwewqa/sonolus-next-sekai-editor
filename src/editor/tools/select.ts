@@ -10,6 +10,8 @@ import type { TimeScaleObject } from '../../chart/timeScale'
 import { pushState, replaceState, state } from '../../history'
 import { selectedEntities } from '../../history/selectedEntities'
 import { i18n } from '../../i18n'
+import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
+import type { State } from '../../state'
 import type { Entity, EntityType } from '../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../state/entities/bpm'
 import {
@@ -55,11 +57,16 @@ import {
 import { replaceNote } from '../../state/mutations/slides/note'
 import { addTimeScale, removeTimeScale } from '../../state/mutations/timeScale'
 import { getInStoreGrid } from '../../state/store/grid'
-import { createTransaction, type Transaction } from '../../state/transaction'
+import {
+    createTransaction,
+    type Transaction,
+    type TransactionOptions,
+} from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
 import { notify } from '../notification'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     view,
     xToLane,
@@ -77,14 +84,18 @@ import {
     toSelection,
 } from './utils'
 
+type MoveActive = {
+    type: 'move'
+    lane: number
+    focus: Entity
+    entities: Entity[]
+    onlyType: EntityType | undefined
+    lastLane?: number
+    lastBeatOffset?: number
+}
+
 let active:
-    | {
-          type: 'move'
-          lane: number
-          focus: Entity
-          entities: Entity[]
-          onlyType: EntityType | undefined
-      }
+    | MoveActive
     | {
           type: 'select'
           lane: number
@@ -125,7 +136,7 @@ export const select: Tool = {
                 hovered: entities,
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.select.selected, `${targets.length}`))
         } else {
@@ -148,7 +159,7 @@ export const select: Tool = {
             }
 
             if (entity) {
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.select.selected, `${targets.length}`))
             } else {
@@ -167,7 +178,7 @@ export const select: Tool = {
 
         const [focus] = entities.filter((entity) => selectedEntities.value.includes(entity))
         if (focus) {
-            focusViewAtBeat(focus.beat)
+            panViewAtBeat(focus.beat)
 
             notify(
                 interpolate(
@@ -194,7 +205,7 @@ export const select: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.select.moving, '1'))
 
@@ -229,6 +240,10 @@ export const select: Tool = {
                 const lane = xToLane(x)
                 const beatOffset = yToBeatOffset(y, active.focus.beat)
 
+                if (active.lastLane === lane && active.lastBeatOffset === beatOffset) break
+                active.lastLane = lane
+                active.lastBeatOffset = beatOffset
+
                 const creating: Entity[] = []
                 for (const entity of active.entities) {
                     const beat = entity.beat + beatOffset
@@ -247,11 +262,34 @@ export const select: Tool = {
                     creating.push(result)
                 }
 
+                // Selection transforms only change geometry. Pointer movement
+                // within the same snapped cells should not rebuild the preview.
+                const previous = view.entities.creating
+                if (
+                    creating.length === previous.length &&
+                    creating.every((entity, index) => {
+                        const other = previous[index]
+                        return (
+                            entity.type === other?.type &&
+                            entity.beat === other.beat &&
+                            entity.hitbox?.lane === other.hitbox?.lane &&
+                            entity.hitbox?.w === other.hitbox?.w
+                        )
+                    })
+                ) {
+                    break
+                }
+
                 view.entities = {
                     hovered: [],
                     creating,
                 }
-                focusViewAtBeat(active.focus.beat + beatOffset)
+                const source = state.value
+                const move = active
+                setPreviewEdit(source, () =>
+                    moveEntities(source, move, lane, beatOffset, { autoAddGroup: false }),
+                )
+                panViewAtBeat(active.focus.beat + beatOffset)
                 break
             }
             case 'select': {
@@ -285,43 +323,20 @@ export const select: Tool = {
 
         switch (active.type) {
             case 'move': {
-                const transaction = createTransaction(state.value)
-
                 const lane = xToLane(x)
                 const beatOffset = yToBeatOffset(y, active.focus.beat)
-
-                const entities = [...active.entities].sort(
-                    beatOffset > 0 ? (a, b) => b.beat - a.beat : (a, b) => a.beat - b.beat,
-                )
-
-                const selectedEntities: Entity[] = []
-                for (const entity of entities) {
-                    const beat = entity.beat + beatOffset
-                    if (beat < 0) continue
-
-                    const result = moves[entity.type]?.(
-                        transaction,
-                        active.onlyType,
-                        entity as never,
-                        active.lane,
-                        lane,
-                        beat,
-                        active.focus,
-                    )
-                    if (!result) continue
-
-                    selectedEntities.push(...result)
-                }
+                const moved = moveEntities(state.value, active, lane, beatOffset)
+                const selectedEntities = moved.selectedEntities
 
                 pushState(
                     interpolate(() => i18n.value.tools.select.moved, `${selectedEntities.length}`),
-                    transaction.commit(selectedEntities),
+                    moved,
                 )
                 view.entities = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(active.focus.beat + beatOffset)
+                panViewAtBeat(active.focus.beat + beatOffset)
 
                 notify(
                     interpolate(() => i18n.value.tools.select.moved, `${selectedEntities.length}`),
@@ -351,11 +366,43 @@ export const select: Tool = {
         }
 
         active = undefined
+        clearPreviewEdit()
     },
 
     dragCancel() {
         active = undefined
+        clearPreviewEdit()
     },
+}
+
+const moveEntities = (
+    source: State,
+    active: MoveActive,
+    lane: number,
+    beatOffset: number,
+    options?: TransactionOptions,
+) => {
+    const transaction = createTransaction(source, options)
+    const entities = [...active.entities].sort(
+        beatOffset > 0 ? (a, b) => b.beat - a.beat : (a, b) => a.beat - b.beat,
+    )
+    const selectedEntities: Entity[] = []
+    for (const entity of entities) {
+        const beat = entity.beat + beatOffset
+        if (beat < 0) continue
+
+        const result = moves[entity.type]?.(
+            transaction,
+            active.onlyType,
+            entity as never,
+            active.lane,
+            lane,
+            beat,
+            active.focus,
+        )
+        if (result) selectedEntities.push(...result)
+    }
+    return transaction.commit(selectedEntities)
 }
 
 const toMovedBpmObject = (entity: BpmEntity, beat: number): BpmObject => ({

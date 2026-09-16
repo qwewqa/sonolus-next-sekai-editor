@@ -7,6 +7,7 @@ import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages.ts'
 import { i18n } from '../../../../../i18n'
 import { showModal } from '../../../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../../../preview/edit'
 import type { Entity } from '../../../../../state/entities'
 import {
     toStagePivotEventJointEntity,
@@ -22,6 +23,7 @@ import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -101,7 +103,7 @@ export const stagePivotEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -112,7 +114,7 @@ export const stagePivotEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -140,7 +142,7 @@ export const stagePivotEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -172,7 +174,7 @@ export const stagePivotEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             notify(
                 interpolate(
@@ -242,13 +244,28 @@ export const stagePivotEvent: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
+            }
+        }
+
+        if (active.type !== 'add') {
+            const source = state.value
+            const entity = active.entity
+            const [replacement] = view.entities.creating
+            if (replacement?.type === 'stagePivotEventJoint') {
+                setPreviewEdit(source, () => {
+                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    removeStagePivotEventJoint(transaction, entity)
+                    const selectedEntities = addStagePivotEventJoint(transaction, replacement)
+                    return transaction.commit(selectedEntities)
+                }, [entity, replacement.beat, replacement.pivotLane])
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         const lane = xToValidLane(x)
@@ -273,7 +290,7 @@ export const stagePivotEvent: Tool = {
                     beat,
                     pivotLane: lane,
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -282,6 +299,7 @@ export const stagePivotEvent: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }

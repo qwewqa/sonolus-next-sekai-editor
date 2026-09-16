@@ -7,6 +7,7 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages.ts'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import { settings } from '../../../settings'
 import type { Entity } from '../../../state/entities'
 import { createSlideId } from '../../../state/entities/slides'
@@ -19,6 +20,7 @@ import { isSidebarVisible } from '../../sidebars'
 import { quickEdit } from '../../utils/quickEdit'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -109,12 +111,12 @@ export const note: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.note.selected, `${targets.length}`))
             } else {
                 if (entities.every((entity) => selectedEntities.value.includes(entity))) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         quickEdit(defaultNoteProperties.value)
@@ -130,7 +132,7 @@ export const note: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.note.selected, `${entities.length}`))
                 }
@@ -156,7 +158,7 @@ export const note: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (lane > entity.left + 0.5 && lane < entity.left + entity.size - 0.5) {
@@ -218,47 +220,36 @@ export const note: Tool = {
             }
             case 'edit': {
                 const [left, size] = resize(active.lane, lane, 1)
+                const object = { ...active.entity, left, size }
 
                 view.entities = {
                     hovered: [],
-                    creating: [
-                        toNoteEntity(
-                            active.entity.slideId,
-                            {
-                                ...active.entity,
-                                left,
-                                size,
-                            },
-                            active.entity,
-                        ),
-                    ],
+                    creating: [toNoteEntity(active.entity.slideId, object, active.entity)],
                 }
+                previewEdit(active.entity, object)
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
+                const object = {
+                    ...active.entity,
+                    beat,
+                    left: active.entity.left + offset(active.lane, lane),
+                }
 
                 view.entities = {
                     hovered: [],
-                    creating: [
-                        toNoteEntity(
-                            active.entity.slideId,
-                            {
-                                ...active.entity,
-                                beat,
-                                left: active.entity.left + offset(active.lane, lane),
-                            },
-                            active.entity,
-                        ),
-                    ],
+                    creating: [toNoteEntity(active.entity.slideId, object, active.entity)],
                 }
-                focusViewAtBeat(beat)
+                previewEdit(active.entity, object)
+                panViewAtBeat(beat)
                 break
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         const lane = xToLane(x)
@@ -295,7 +286,7 @@ export const note: Tool = {
                     beat,
                     left: active.entity.left + offset(active.lane, lane),
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -304,6 +295,7 @@ export const note: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }
@@ -451,6 +443,14 @@ const edit = (entity: NoteEntity, object: NoteObject) => {
         () => i18n.value.tools.note.edited,
         (transaction) => replaceNote(transaction, entity, object),
     )
+}
+
+const previewEdit = (entity: NoteEntity, object: NoteObject) => {
+    const source = state.value
+    setPreviewEdit(source, () => {
+        const transaction = createTransaction(source, { autoAddGroup: false })
+        return transaction.commit(replaceNote(transaction, entity, object))
+    }, [entity, object.beat, object.left, object.size])
 }
 
 const move = (entity: NoteEntity, object: NoteObject) => {

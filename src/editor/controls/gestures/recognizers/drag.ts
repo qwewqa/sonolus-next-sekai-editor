@@ -126,10 +126,12 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                     }
                 } else {
                     isDragging.value--
-
-                    void active.tool.dragEnd?.(p.x, p.y, p.modifiers)
+                    const completed = active.tool
                     active = undefined
                     update = undefined
+                    // Committing changes history synchronously. Boundary
+                    // watchers must not cancel this already completed drag.
+                    void completed.dragEnd?.(p.x, p.y, p.modifiers)
                 }
             } else {
                 const dx = p.x - active.sx
@@ -151,13 +153,16 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
         reset(cancelled) {
             if (cancelled && active?.type === 'drag') {
                 isDragging.value--
-                active.tool.dragCancel?.()
+                const cancelled = active
+                active = undefined
+                update = undefined
+                cancelled.tool.dragCancel?.()
                 // Selection tools update the current selection while dragging.
                 // Restore it only if no committed edit/reset replaced the store.
-                if (state.value.store === active.state.store) {
+                if (state.value.store === cancelled.state.store) {
                     replaceState({
                         ...state.value,
-                        selectedEntities: active.state.selectedEntities,
+                        selectedEntities: cancelled.state.selectedEntities,
                     })
                 }
                 view.selection = undefined

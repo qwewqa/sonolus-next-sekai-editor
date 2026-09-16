@@ -6,6 +6,7 @@ import { pushState, replaceState, state } from '../../../../history'
 import { selectedEntities } from '../../../../history/selectedEntities'
 import { i18n } from '../../../../i18n'
 import { showModal } from '../../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../../preview/edit'
 import type { Entity } from '../../../../state/entities'
 import {
     toCameraEventJointEntity,
@@ -21,6 +22,7 @@ import { notify } from '../../../notification'
 import { isSidebarVisible } from '../../../sidebars'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -110,7 +112,7 @@ export const cameraEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -121,7 +123,7 @@ export const cameraEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -149,7 +151,7 @@ export const cameraEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -181,7 +183,7 @@ export const cameraEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (
@@ -292,13 +294,28 @@ export const cameraEvent: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
+            }
+        }
+
+        if (active.type !== 'add') {
+            const source = state.value
+            const entity = active.entity
+            const [replacement] = view.entities.creating
+            if (replacement?.type === 'cameraEventJoint') {
+                setPreviewEdit(source, () => {
+                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    removeCameraEventJoint(transaction, entity)
+                    const selectedEntities = addCameraEventJoint(transaction, replacement)
+                    return transaction.commit(selectedEntities)
+                }, [entity, replacement.beat, replacement.cameraLeft, replacement.cameraSize])
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         const lane = xToLane(x)
@@ -335,7 +352,7 @@ export const cameraEvent: Tool = {
                     beat,
                     cameraLeft: active.entity.cameraLeft + offset(active.lane, lane),
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -344,6 +361,7 @@ export const cameraEvent: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }

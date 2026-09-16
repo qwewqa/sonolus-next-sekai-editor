@@ -8,7 +8,12 @@ import { rebuildSlide } from './mutations/slides'
 
 export type Transaction = ReturnType<typeof createTransaction>
 
-export const createTransaction = (state: State) => {
+export type TransactionOptions = { autoAddGroup?: boolean }
+
+export const createTransaction = (
+    state: State,
+    { autoAddGroup = true }: TransactionOptions = {},
+) => {
     const grid = createMapObjectTransaction(state.store.grid)
     const globalEventRanges = { ...state.store.globalEventRanges }
     const stageEventRanges = createMapObjectTransaction(state.store.stageEventRanges)
@@ -33,7 +38,9 @@ export const createTransaction = (state: State) => {
         },
 
         addToGroup: (groupId: GroupId) => {
-            if (!settings.autoAddGroup) return
+            // Speculative preview edits do not need the editor's trailing empty
+            // group. Preserve group identity so unchanged preview notes stay cached.
+            if (!autoAddGroup || !settings.autoAddGroup) return
 
             lastGroup ??= [...state.groups.keys()].at(-1)
             if (groupId !== lastGroup) return
