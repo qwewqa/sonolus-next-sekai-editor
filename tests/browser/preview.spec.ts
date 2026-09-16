@@ -241,7 +241,11 @@ test('dragging and property input update actual preview geometry before committi
     expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(original)
 
     // Select the restored note and edit the real sidebar without blurring it.
+    const selectionFrames = await page.evaluate(() => window.previewTest.frames)
     await page.mouse.click(start.x, start.y)
+    await settle(page)
+    expect(await page.evaluate(() => window.previewTest.frames)).toBe(selectionFrames)
+    expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(original)
     const lane = page.getByLabel('Lane', { exact: true })
     await lane.fill('2')
     await settle(page)

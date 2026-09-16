@@ -9,7 +9,6 @@ import criticalActiveUrl from './assets/se_live_long_critical.mp3?url'
 import normalTapUrl from './assets/se_live_perfect.mp3?url'
 import normalTraceUrl from './assets/se_live_trace.mp3?url'
 import criticalTraceUrl from './assets/se_live_trace_critical.mp3?url'
-import { view } from './editor/view'
 import { bgm } from './history/bgm'
 import { bpms } from './history/bpms'
 import { cullEntities, store } from './history/store'
@@ -340,7 +339,7 @@ export const stopPlayer = () => {
     state.value = undefined
 }
 
-export const previewPlayer = () => {
+export const previewPlayer = (bgmTime: number) => {
     const duration = settings.playPreviewDuration / 1000
     if (duration <= 0) return
 
@@ -348,7 +347,7 @@ export const previewPlayer = () => {
 
     if (!bgm.value.buffer) return
 
-    const offset = view.cursorTime + bgm.value.offset
+    const offset = bgmTime + bgm.value.offset
     if (offset < 0) return
 
     const audio = createPlayerAudio(

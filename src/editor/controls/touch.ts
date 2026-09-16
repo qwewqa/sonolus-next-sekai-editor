@@ -1,3 +1,4 @@
+import { beginAudioPreviewInteraction } from '../audioPreview'
 import { stopPlayer } from '../player'
 import { updateViewPointer, view } from '../view'
 import { gesture } from './gestures/gesture'
@@ -33,6 +34,7 @@ const touchstart = (event: TouchEvent) => {
     view.scrollingY = undefined
     view.scrollingX = undefined
     stopPlayer(false)
+    if (!touchGesture.pointerCount) beginAudioPreviewInteraction()
 
     touchGesture.start(ps)
 

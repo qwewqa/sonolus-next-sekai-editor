@@ -17,8 +17,8 @@ import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -87,12 +87,12 @@ export const timeScale: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.timeScale.selected, `${targets.length}`))
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         editMoveOrReplace(entity, {
@@ -129,7 +129,7 @@ export const timeScale: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.timeScale.selected, '1'))
                 }
@@ -169,7 +169,7 @@ export const timeScale: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.timeScale.moving, '1'))
 
@@ -244,7 +244,7 @@ export const timeScale: Tool = {
                     creating: [toTimeScaleEntity(object)],
                 }
                 previewMove(active.entity, object)
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -308,7 +308,7 @@ export const timeScale: Tool = {
                     timeScaleTransition: active.entity.timeScaleTransition,
                     hideNotes: active.entity.hideNotes,
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -399,7 +399,7 @@ const editMoveOrReplace = (entity: TimeScaleEntity, object: TimeScaleObject) => 
     } else {
         move(object, entity)
     }
-    panViewAtBeat(object.beat)
+    focusEntityAtBeat(object.beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {

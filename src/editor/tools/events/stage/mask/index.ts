@@ -22,8 +22,8 @@ import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -108,7 +108,7 @@ export const stageMaskEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -119,7 +119,7 @@ export const stageMaskEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -147,7 +147,7 @@ export const stageMaskEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -179,7 +179,7 @@ export const stageMaskEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (lane > entity.maskLeft + 0.5 && lane < entity.maskLeft + entity.maskSize - 0.5) {
@@ -287,7 +287,7 @@ export const stageMaskEvent: Tool = {
                         }),
                     ],
                 }
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -345,7 +345,7 @@ export const stageMaskEvent: Tool = {
                     beat,
                     maskLeft: active.entity.maskLeft + offset(active.lane, lane),
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }

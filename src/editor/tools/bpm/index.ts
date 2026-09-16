@@ -15,8 +15,8 @@ import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -78,12 +78,12 @@ export const bpm: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.bpm.selected, `${targets.length}`))
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (!isSidebarVisible.value) {
                         void showModal(BpmPropertiesModal, {})
@@ -97,7 +97,7 @@ export const bpm: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.bpm.selected, '1'))
                 }
@@ -131,7 +131,7 @@ export const bpm: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.bpm.moving, '1'))
 
@@ -192,7 +192,7 @@ export const bpm: Tool = {
                     creating: [toBpmEntity(object)],
                 }
                 previewMove(active.entity, object)
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -242,7 +242,7 @@ export const bpm: Tool = {
                     beat,
                     bpm: active.entity.bpm,
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -318,7 +318,7 @@ const editMoveOrReplace = (entity: BpmEntity, object: BpmObject) => {
     } else {
         move(object, entity)
     }
-    panViewAtBeat(object.beat)
+    focusEntityAtBeat(object.beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {

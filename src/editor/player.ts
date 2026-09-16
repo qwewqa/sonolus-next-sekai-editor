@@ -4,6 +4,7 @@ import { startPlayer as _startPlayer, stopPlayer as _stopPlayer, previewPlayer }
 import { settings } from '../settings'
 import { time } from '../time'
 import { interpolate } from '../utils/interpolate'
+import { audioPreviewRequest } from './audioPreview'
 import { notify } from './notification'
 import { focusView, view } from './view'
 
@@ -32,11 +33,11 @@ watch(time, ({ now }) => {
 })
 
 watch(
-    () => view.cursorTime,
-    () => {
+    [() => view.cursorTime, audioPreviewRequest],
+    ([cursorTime, request], [, previousRequest]) => {
         if (state) return
 
-        previewPlayer()
+        previewPlayer(request && request !== previousRequest ? request.time : cursorTime)
     },
 )
 

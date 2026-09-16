@@ -10,6 +10,7 @@ import { time } from '../time'
 import { computedArray } from '../utils/array'
 import { align, clamp, lerp, unlerp } from '../utils/math'
 import { optional } from '../utils/optional'
+import { requestAudioPreview } from './audioPreview'
 import { integrateScrollInertia } from './inertia'
 
 export type Selection = {
@@ -273,8 +274,10 @@ export const focusView = (t: number) => {
     panView(t)
 }
 
-export const panViewAtBeat = (beat: number) => {
-    panView(beatToTime(bpms.value, beat))
+export const focusEntityAtBeat = (beat: number) => {
+    const time = beatToTime(bpms.value, beat)
+    requestAudioPreview(time)
+    panView(time)
 }
 
 const panView = (t: number) => {

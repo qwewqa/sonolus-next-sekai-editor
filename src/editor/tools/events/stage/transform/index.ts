@@ -22,8 +22,8 @@ import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import {
+    focusEntityAtBeat,
     focusViewAtBeat,
-    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -103,7 +103,7 @@ export const stageTransformEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                panViewAtBeat(entity.beat)
+                focusEntityAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -114,7 +114,7 @@ export const stageTransformEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -142,7 +142,7 @@ export const stageTransformEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    panViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -174,7 +174,7 @@ export const stageTransformEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            panViewAtBeat(entity.beat)
+            focusEntityAtBeat(entity.beat)
 
             notify(
                 interpolate(
@@ -244,7 +244,7 @@ export const stageTransformEvent: Tool = {
                         }),
                     ],
                 }
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }
@@ -290,7 +290,7 @@ export const stageTransformEvent: Tool = {
                     beat,
                     xTranslation: lane,
                 })
-                panViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
         }

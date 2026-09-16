@@ -142,6 +142,10 @@ Only the latest request is resolved when the preview actually draws, so hidden
 or closed previews never build those transactions. Edits enter undo history once
 on completion. Cancellation restores the committed chart. Existing-object
 interactions keep preview time fixed; empty-space clicks still seek.
+Audio auditioning uses a separate time request: clicking a note still plays its
+short BGM snippet, including repeated clicks, without invalidating the visual
+preview. Dragging auditions new snapped beats and does not restart audio on
+horizontal or sub-snap pointer movement.
 
 The preview compiler reuses unchanged slide graphs, timing groups and stage
 metadata. For synthetic one-note edits, compilation plus frame-index rebuilding
@@ -167,8 +171,23 @@ Browser regressions verify zero visual callbacks/draws while inactive, playback
 pausing, deferred preview compilation/uploads and recovery on focus.
 Real pointer and property-input tests also compare uploaded WebGL geometry before
 commit, after cancellation and after commit, alongside cursor/undo invariants.
-The complete suite passes 121 unit tests and 47 browser tests, plus type, lint,
+The complete suite passes 126 unit tests and 63 browser tests, plus type, lint,
 source-formatting and production-build checks.
+
+### BGM waveform compatibility
+
+FFT waveform generation reads decoded samples directly instead of depending on
+`OfflineAudioContext.suspend()`, which Firefox does not implement. It retains the
+64-point spectrum, speaker downmixing, Blackman window, smoothing, and brightness
+scale. Browser comparisons against Chromium's native analyser differ by at most
+one opacity level for the tested mono/stereo inputs. Real Firefox also decodes
+audio and generates nonempty FFT waveform tiles successfully.
+
+The implementation reuses small FFT buffers, yields every 256 rows and avoids
+allocating a second full-length audio buffer or scheduling thousands of
+suspend/resume promises. Exact-duration and short clips no longer schedule a
+suspension beyond the audio endpoint. Local computation for 18,001 spectra of a
+three-minute stereo buffer measured 35–41 ms, excluding yields and PNG encoding.
 
 ### Comparison with optimized SVG (`2a96ffa`)
 
