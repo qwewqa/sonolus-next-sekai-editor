@@ -92,7 +92,7 @@ const onFocus = (event: FocusEvent) => {
             :class="previewPosition === 'left' ? 'flex-row' : 'flex-col'"
         >
             <div
-                class="relative z-10 bg-preview"
+                class="relative z-30 bg-preview"
                 :class="
                     previewPosition === 'left'
                         ? { 'min-w-[20%] max-w-[40%]': settings.showPreview }
