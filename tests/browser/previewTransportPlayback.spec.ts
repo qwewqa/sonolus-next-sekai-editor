@@ -707,6 +707,58 @@ test.describe('preview follow', () => {
         expect(await page.evaluate(() => window.editorTest.view.time)).toBe(1)
     })
 
+    test('manual wheel input takes over an offscreen seek when Follow is disabled', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const { view, settings } = window.editorTest
+            settings.playFollow = false
+            settings.mouseSmoothScrolling = false
+            settings.pps = 120
+            view.time = 4
+            view.cursorTime = 20
+            window.previewTransport.player.stepPreviewTime(10)
+        })
+        await page.clock.runFor(64)
+        const before = await page.evaluate(() => window.editorTest.view.time)
+        expect(before).toBeGreaterThan(4)
+        expect(before).toBeLessThan(20.01)
+        await page.locator('canvas.editor-chart').dispatchEvent('wheel', { deltaY: 120 })
+        const panned = await page.evaluate(() => window.editorTest.view.time)
+        expect(panned).toBeCloseTo(before - 1, 9)
+        expect(await page.evaluate(() => window.editorTest.view.scrollingY)).toBeUndefined()
+        await page.clock.runFor(400)
+        expect(await page.evaluate(() => window.editorTest.view.time)).toBe(panned)
+    })
+
+    test('an in-range seek with Follow disabled does not take ownership of manual smooth scrolling', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const { view, settings } = window.editorTest
+            settings.playFollow = false
+            settings.mouseSmoothScrolling = true
+            settings.pps = 120
+            view.time = 4
+            view.cursorTime = 4
+            window.previewTransport.player.beginPreviewScrub()
+        })
+        await page.locator('canvas.editor-chart').dispatchEvent('wheel', { deltaY: -120 })
+        const keptManualScroll = await page.evaluate(() => {
+            const { view } = window.editorTest
+            const { player } = window.previewTransport
+            const scrolling = view.scrollingY
+            player.scrubPreviewTo(4.1)
+            player.endPreviewScrub(false)
+            player.cancelPreviewFollow()
+            return view.scrollingY === scrolling
+        })
+        expect(keptManualScroll).toBe(true)
+        await page.locator('canvas.editor-chart').dispatchEvent('wheel', { deltaY: -120 })
+        await page.clock.runFor(300)
+        expect(await page.evaluate(() => window.editorTest.view.time)).toBe(6)
+    })
+
     test('both playback entry points take over follow easing without competing after pausing', async ({
         page,
     }) => {

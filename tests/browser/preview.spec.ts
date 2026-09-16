@@ -562,6 +562,26 @@ test.describe('preview transport', () => {
         await expect(page.getByRole('button', { name: 'Play preview', exact: true })).toBeVisible()
     })
 
+    test('a pointer step takes over a keyboard hold without losing the press', async ({ page }) => {
+        await page.evaluate(() => (window.editorTest.view.cursorTime = 3))
+        const keyboardStep = page.getByRole('button', { name: 'Forward 10 ms', exact: true })
+        await keyboardStep.focus()
+        await page.keyboard.down('Space')
+        expect(await cursor(page)).toBe(3.01)
+
+        const pointerStep = page.getByRole('button', { name: 'Forward 100 ms', exact: true })
+        await pressPointer(page, pointerStep)
+        expect(await cursor(page)).toBe(3.01 + 0.1)
+        // Releasing the old keyboard activation must not cancel the new pointer hold.
+        await page.keyboard.up('Space')
+        await page.clock.runFor(350)
+        expect(await cursor(page)).toBeGreaterThan(3.5)
+        await page.mouse.up()
+        const released = await cursor(page)
+        await page.clock.runFor(500)
+        expect(await cursor(page)).toBe(released)
+    })
+
     for (const reason of ['pointercancel', 'blur', 'unmount'] as const) {
         test(`${reason} cancels a hold without resuming it later`, async ({ page }) => {
             await page.evaluate(() => (window.editorTest.view.cursorTime = 3.123456))
@@ -714,6 +734,158 @@ test.describe('preview transport', () => {
             .click({ position: { x: 12, y: 12 } })
         await expect(panel).toBeHidden()
     })
+})
+
+test('paused compact timestamp follows the image through letterboxing and resize', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1000, height: 700 })
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.previewPosition = 'left'
+        settings.previewWidth = 200
+        settings.previewControls = 'expanded'
+    })
+    await settle(page)
+    await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+
+    const geometry = () =>
+        page.evaluate(() => {
+            const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+            const time = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
+            const front = document.elementFromPoint(
+                time.x + time.width / 2,
+                time.y + time.height / 2,
+            )
+            return {
+                imageTop: image.top,
+                imageLeft: image.left,
+                x: time.left - image.left,
+                y: time.top - image.top,
+                coveredBySettings: !!front?.closest('.preview-controls'),
+            }
+        })
+    await expect(page.locator('.transport-corner-time')).toBeVisible()
+    const letterboxed = await geometry()
+    expect(letterboxed.imageTop).toBeGreaterThan(200)
+    expect(letterboxed.x).toBeCloseTo(4, 1)
+    expect(letterboxed.y).toBeCloseTo(4, 1)
+    expect(letterboxed.coveredBySettings).toBe(false)
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.previewPosition = 'top'
+        settings.previewHeight = 200
+    })
+    await settle(page)
+    const resized = await geometry()
+    expect(resized.imageLeft).toBeGreaterThan(10)
+    expect(resized.x).toBeCloseTo(4, 1)
+    expect(resized.y).toBeCloseTo(4, 1)
+})
+
+test('expanded preview settings leave docked playback buttons reachable', async ({ page }) => {
+    await page.getByRole('radio', { name: '21:9', exact: true }).check()
+    await page.setViewportSize({ width: 700, height: 200 })
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.previewPosition = 'left'
+        settings.previewWidth = 250
+        settings.previewControls = 'expanded'
+    })
+    await settle(page)
+    await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+    await expect(page.locator('.preview-controls')).toBeVisible()
+    const geometry = await page.evaluate(() => {
+        const bar = document.querySelector('.preview-transport')!.getBoundingClientRect()
+        const settings = document.querySelector('.preview-controls')!.getBoundingClientRect()
+        const clock = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
+        const header = document.querySelector('.preview-controls button')!
+        const headerBox = header.getBoundingClientRect()
+        const headerFront = document.elementFromPoint(
+            headerBox.x + headerBox.width / 2,
+            headerBox.y + headerBox.height / 2,
+        )
+        const body = document.querySelector('.preview-controls-body')!
+        return {
+            gap: bar.top - settings.bottom,
+            clockGap: settings.top - clock.bottom,
+            headerReachable: header === headerFront || header.contains(headerFront),
+            scrolls: body.scrollHeight > body.clientHeight,
+            hit: [...document.querySelectorAll('.preview-transport button')].map((button) => {
+                const rect = button.getBoundingClientRect()
+                const front = document.elementFromPoint(
+                    rect.x + rect.width / 2,
+                    rect.y + rect.height / 2,
+                )
+                return front === button || button.contains(front)
+            }),
+        }
+    })
+    expect(geometry.gap).toBeCloseTo(4, 1)
+    expect(geometry.clockGap).toBeCloseTo(4, 1)
+    expect(geometry.headerReachable).toBe(true)
+    expect(geometry.scrolls).toBe(true)
+    expect(geometry.hit).toEqual(Array(7).fill(true))
+
+    // The settings body scrolls instead of making its lower controls unreachable.
+    const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+    await antialias.uncheck()
+    await expect(antialias).not.toBeChecked()
+    await expect(page.locator('.preview-transport')).toBeVisible()
+})
+
+test('a tiny left preview opens settings beside the bar without hiding its clock', async ({
+    page,
+}) => {
+    await page.getByRole('radio', { name: '21:9', exact: true }).check()
+    await page.setViewportSize({ width: 350, height: 120 })
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.previewPosition = 'left'
+        settings.previewWidth = 70
+        settings.previewControls = 'expanded'
+    })
+    await settle(page)
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const bar = document.querySelector('.preview-transport')!.getBoundingClientRect()
+                const settings = document
+                    .querySelector('.preview-controls')!
+                    .getBoundingClientRect()
+                return settings.left - bar.right
+            }),
+        )
+        .toBeCloseTo(4, 1)
+    const geometry = await page.evaluate(() => {
+        const settings = document.querySelector('.preview-controls')!.getBoundingClientRect()
+        const clock = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
+        return {
+            right: settings.right,
+            bottom: settings.bottom,
+            clockClear: clock.right < settings.left,
+            hit: [
+                ...document.querySelectorAll('.preview-transport button'),
+                document.querySelector('.preview-controls button')!,
+            ].map((button) => {
+                const box = button.getBoundingClientRect()
+                const front = document.elementFromPoint(
+                    box.x + box.width / 2,
+                    box.y + box.height / 2,
+                )
+                return button === front || button.contains(front)
+            }),
+        }
+    })
+    expect(geometry.right).toBeLessThanOrEqual(346)
+    expect(geometry.bottom).toBeLessThanOrEqual(116)
+    expect(geometry.clockClear).toBe(true)
+    expect(geometry.hit).toEqual(Array(8).fill(true))
+    const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+    await antialias.uncheck()
+    await expect(antialias).not.toBeChecked()
 })
 
 test('preview restores lost contexts, uploads each atlas once and releases decoded resources', async ({

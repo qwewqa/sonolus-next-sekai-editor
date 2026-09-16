@@ -14,12 +14,21 @@ import { isPlaying } from '../player'
 import { time } from '../time'
 import { formatTime } from '../utils/format'
 
-const props = defineProps<{ viewportBottom: number; persistent: boolean }>()
-const emit = defineEmits<{ resize: [height: number, width: number] }>()
+const props = defineProps<{
+    viewportLeft: number
+    viewportTop: number
+    viewportBottom: number
+    persistent: boolean
+}>()
+const emit = defineEmits<{
+    resize: [height: number, width: number, right: number]
+    timeResize: [width: number, height: number]
+}>()
 const visible = defineModel<boolean>({ required: true })
 const panelId = useId()
 const panel = useTemplateRef<HTMLDivElement>('panel')
 const toggle = useTemplateRef<HTMLButtonElement>('toggle')
+const cornerTime = useTemplateRef<HTMLSpanElement>('cornerTime')
 const position = computed(() =>
     visible.value || !isPlaying.value ? formatTime(Math.round(view.cursorTime * 1000) / 1000) : '',
 )
@@ -128,6 +137,7 @@ const startHold = (current: Hold) => {
 
 const onPointerDown = (event: PointerEvent, milliseconds: number) => {
     if (event.button !== 0 || !event.isPrimary) return
+    if (hold?.type === 'keyboard') finishHold(false)
     const target = event.currentTarget as HTMLButtonElement
     if (startHold({ type: 'pointer', pointerId: event.pointerId, target, milliseconds })) {
         target.setPointerCapture(event.pointerId)
@@ -209,20 +219,25 @@ watch(
     panel,
     (element, _previous, onCleanup) => {
         if (!element) {
-            emit('resize', 0, 0)
+            emit('resize', 0, 0, 0)
             return
         }
         const root = element.parentElement
         if (!root) return
         let height = -1
         let width = -1
+        let right = -1
         const update = () => {
-            const nextHeight = element.getBoundingClientRect().height
-            const nextWidth = root.getBoundingClientRect().width
-            if (nextHeight === height && nextWidth === width) return
+            const panelBounds = element.getBoundingClientRect()
+            const rootBounds = root.getBoundingClientRect()
+            const nextHeight = panelBounds.height
+            const nextWidth = rootBounds.width
+            const nextRight = panelBounds.right - rootBounds.left
+            if (nextHeight === height && nextWidth === width && nextRight === right) return
             height = nextHeight
             width = nextWidth
-            emit('resize', height, width)
+            right = nextRight
+            emit('resize', height, width, right)
         }
         const observer = new ResizeObserver(update)
         observer.observe(element)
@@ -235,6 +250,23 @@ watch(
     },
     { flush: 'post', immediate: true },
 )
+
+watch(cornerTime, (element, _previous, onCleanup) => {
+    if (!element) {
+        emit('timeResize', 0, 0)
+        return
+    }
+    const update = () => {
+        const { width, height } = element.getBoundingClientRect()
+        emit('timeResize', width, height)
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(element)
+    update()
+    onCleanup(() => {
+        observer.disconnect()
+    })
+})
 
 watch(
     [visible, isPlaying, isAppActive],
@@ -272,7 +304,9 @@ onUnmounted(() => {
         />
         <span
             v-if="!isPlaying"
-            class="transport-corner-time pointer-events-none absolute left-1 top-1 z-10 rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-white/80"
+            ref="cornerTime"
+            class="transport-corner-time pointer-events-none absolute z-10 rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-white/80"
+            :style="{ left: `${viewportLeft + 4}px`, top: `${viewportTop + 4}px` }"
             aria-label="Preview time"
         >
             {{ position }}
