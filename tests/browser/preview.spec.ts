@@ -635,13 +635,15 @@ test.describe('preview transport', () => {
         expect(await cursor(page)).toBe(paused)
 
         await page.getByRole('button', { name: 'Play preview', exact: true }).click()
-        await page.clock.runFor(3500)
+        // These waits check elapsed-time visibility, not intermediate animation
+        // frames. Skip frame-by-frame GPU work so slower CI runners stay bounded.
+        await page.clock.fastForward(3500)
         await expect(
             page.getByRole('group', { name: 'Preview playback controls', exact: true }),
         ).toBeVisible()
         const pause = page.getByRole('button', { name: 'Pause preview', exact: true })
         await pause.focus()
-        await page.clock.runFor(3500)
+        await page.clock.fastForward(3500)
         await expect(pause).toBeFocused()
         await pause.press('Escape')
         await expect(
@@ -651,10 +653,10 @@ test.describe('preview transport', () => {
         await expect(page.locator('.preview-transport')).toHaveAttribute('inert', '')
         await expect(page.locator('.preview-transport')).toHaveAttribute('aria-hidden', 'true')
         const hiddenTime = await page.locator('.transport-time').textContent()
-        await page.clock.runFor(3500)
+        await page.clock.fastForward(3500)
         expect(await page.locator('.transport-time').textContent()).toBe(hiddenTime)
         await page.getByRole('button', { name: 'Show playback controls', exact: true }).click()
-        await page.clock.runFor(3500)
+        await page.clock.fastForward(3500)
         await expect(
             page.getByRole('group', { name: 'Preview playback controls', exact: true }),
         ).toBeVisible()
