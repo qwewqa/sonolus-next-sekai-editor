@@ -128,6 +128,48 @@ SVG text-alignment comparisons at DPR 1, 1.25 and 2, plus type, lint, formatting
 and production-build checks. Normal cached artwork retains its geometry; the
 direct-draw overflow opacity tradeoff is described above.
 
+### Inactive windows and live edits
+
+Hidden tabs and unfocused windows suspend the shared visual clock, editor Canvas
+draws, preview WebGL frames, chart compilation, texture uploads and CSS
+animations. Focus resumes from current state without applying the inactive time
+as a large scrolling/gesture delta. The editor retains its pause-on-blur playback
+behavior and also pauses when the tab becomes hidden. Background windows need no
+recurring application timer.
+
+Dragging/resizing and valid numeric property input publish temporary edits.
+Only the latest request is resolved when the preview actually draws, so hidden
+or closed previews never build those transactions. Edits enter undo history once
+on completion. Cancellation restores the committed chart. Existing-object
+interactions keep preview time fixed; empty-space clicks still seek.
+
+The preview compiler reuses unchanged slide graphs, timing groups and stage
+metadata. For synthetic one-note edits, compilation plus frame-index rebuilding
+measured the following in Node (60 measured snapshots after 20 warmup snapshots):
+
+| Total notes | Fresh median / p95 | Cached median / p95 |
+| ----------: | -----------------: | ------------------: |
+|       1,700 |     1.01 / 3.07 ms |      0.24 / 0.56 ms |
+|       6,000 |     4.54 / 6.58 ms |      0.92 / 1.55 ms |
+|      20,000 |   17.09 / 30.11 ms |      4.14 / 6.16 ms |
+
+These measurements exclude edit transactions, rendering and GPU work. Flattening,
+sorting and rebuilding frame indexes still scale with chart size; changing BPM or
+timescale data invalidates more cached work than moving one note.
+Preview transactions also skip automatic creation of a trailing empty group,
+which otherwise invalidates every slide when editing a populated final group;
+committing retains the editor's usual group creation behavior. Extremely large
+bulk moves still cost more: the transaction alone measured 10.1 ms median /
+13.9 ms p95 when moving all 6,000 notes of one slide, compared with 3.7 / 5.2 ms
+for the same note count distributed among four-note slides.
+
+Browser regressions verify zero visual callbacks/draws while inactive, playback
+pausing, deferred preview compilation/uploads and recovery on focus.
+Real pointer and property-input tests also compare uploaded WebGL geometry before
+commit, after cancellation and after commit, alongside cursor/undo invariants.
+The complete suite passes 121 unit tests and 47 browser tests, plus type, lint,
+source-formatting and production-build checks.
+
 ### Comparison with optimized SVG (`2a96ffa`)
 
 A 6,000-note fixture with approximately 100 visible notes, a 1,600 x 1,000

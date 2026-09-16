@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html[data-app-inactive] *,
+html[data-app-inactive] *::before,
+html[data-app-inactive] *::after {
+    animation-play-state: paused !important;
+}

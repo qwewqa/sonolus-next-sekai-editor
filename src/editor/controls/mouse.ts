@@ -23,6 +23,15 @@ const toP = (event: MouseEvent) => ({
 })
 
 let secondarySwitchBack: ToolName | undefined
+let switchingSecondaryTool = false
+
+export const cancelMouseControls = (restoreTool = true) => {
+    if (switchingSecondaryTool) return
+    mouseGesture.cancel()
+    const previous = secondarySwitchBack
+    secondarySwitchBack = undefined
+    if (restoreTool && previous) switchToolTo(previous)
+}
 
 const mousedown = (event: MouseEvent) => {
     const p = toP(event)
@@ -34,7 +43,12 @@ const mousedown = (event: MouseEvent) => {
 
     if (!mouseGesture.pointerCount && event.buttons & 2 && !secondarySwitchBack) {
         secondarySwitchBack = toolName.value
-        switchToolTo(settings.mouseSecondaryTool)
+        switchingSecondaryTool = true
+        try {
+            switchToolTo(settings.mouseSecondaryTool)
+        } finally {
+            switchingSecondaryTool = false
+        }
     }
 
     mouseGesture.start([p])

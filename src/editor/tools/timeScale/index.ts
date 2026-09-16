@@ -7,6 +7,7 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../../state/entities/timeScale'
 import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScale'
@@ -17,6 +18,7 @@ import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -85,12 +87,12 @@ export const timeScale: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.timeScale.selected, `${targets.length}`))
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         editMoveOrReplace(entity, {
@@ -127,7 +129,7 @@ export const timeScale: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.timeScale.selected, '1'))
                 }
@@ -167,7 +169,7 @@ export const timeScale: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.timeScale.moving, '1'))
 
@@ -226,29 +228,30 @@ export const timeScale: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
+                const object: TimeScaleObject = {
+                    groupId: active.entity.groupId,
+                    beat,
+                    editorLane: lane,
+                    timeScale: active.entity.timeScale,
+                    skip: active.entity.skip,
+                    timeScaleEase: active.entity.timeScaleEase,
+                    timeScaleTransition: active.entity.timeScaleTransition,
+                    hideNotes: active.entity.hideNotes,
+                }
 
                 view.entities = {
                     hovered: [],
-                    creating: [
-                        toTimeScaleEntity({
-                            groupId: active.entity.groupId,
-                            beat,
-                            editorLane: lane,
-                            timeScale: active.entity.timeScale,
-                            skip: active.entity.skip,
-                            timeScaleEase: active.entity.timeScaleEase,
-                            timeScaleTransition: active.entity.timeScaleTransition,
-                            hideNotes: false,
-                        }),
-                    ],
+                    creating: [toTimeScaleEntity(object)],
                 }
-                focusViewAtBeat(beat)
+                previewMove(active.entity, object)
+                panViewAtBeat(beat)
                 break
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         const lane = xToValidLane(x)
@@ -305,7 +308,7 @@ export const timeScale: Tool = {
                     timeScaleTransition: active.entity.timeScaleTransition,
                     hideNotes: active.entity.hideNotes,
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -314,6 +317,7 @@ export const timeScale: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }
@@ -367,6 +371,22 @@ const tryFind = (x: number, y: number): [TimeScaleEntity] | [undefined, number, 
     return [undefined, beat, xToValidLane(x)]
 }
 
+const previewMove = (entity: TimeScaleEntity, object: TimeScaleObject) => {
+    const source = state.value
+    setPreviewEdit(source, () => {
+        const transaction = createTransaction(source, { autoAddGroup: false })
+        removeTimeScale(transaction, entity)
+        if (entity.beat !== object.beat) {
+            const overlap = getInStoreGrid(source.store.grid, 'timeScale', object.beat)?.find(
+                (candidate) =>
+                    candidate.beat === object.beat && candidate.groupId === object.groupId,
+            )
+            if (overlap) removeTimeScale(transaction, overlap)
+        }
+        return transaction.commit(addTimeScale(transaction, object))
+    }, [entity, object.beat, object.editorLane])
+}
+
 const editMoveOrReplace = (entity: TimeScaleEntity, object: TimeScaleObject) => {
     if (entity.beat === object.beat) {
         edit(entity, object)
@@ -379,7 +399,7 @@ const editMoveOrReplace = (entity: TimeScaleEntity, object: TimeScaleObject) => 
     } else {
         move(object, entity)
     }
-    focusViewAtBeat(object.beat)
+    panViewAtBeat(object.beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {

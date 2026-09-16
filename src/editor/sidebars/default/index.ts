@@ -9,6 +9,7 @@ import type { TimeScaleObject } from '../../../chart/timeScale'
 import { pushState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
+import type { State } from '../../../state'
 import type { Entity } from '../../../state/entities'
 import type { BpmEntity } from '../../../state/entities/bpm'
 import type { CameraEventJointEntity } from '../../../state/entities/events/joints/camera'
@@ -18,7 +19,14 @@ import type { StageStyleEventJointEntity } from '../../../state/entities/events/
 import type { StageTransformEventJointEntity } from '../../../state/entities/events/joints/stage/transform'
 import type { NoteEntity } from '../../../state/entities/slides/note'
 import type { TimeScaleEntity } from '../../../state/entities/timeScale'
-import { createTransaction, type Transaction } from '../../../state/transaction'
+import { addBpm, removeBpm } from '../../../state/mutations/bpm'
+import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScale'
+import { getInStoreGrid } from '../../../state/store/grid'
+import {
+    createTransaction,
+    type Transaction,
+    type TransactionOptions,
+} from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { editBpm, editSelectedBpm } from '../../tools/bpm'
@@ -73,21 +81,12 @@ export const editSelectedEditableEntities = (object: EditableObject) => {
         const entity = selectedEntities.value[0]!
         editEntity[entity.type]?.(entity as never, object)
     } else {
-        const editSelectedEntity = getEditSelectedEntity()
-
-        const transaction = createTransaction(state.value)
-
-        const entities = selectedEntities.value.flatMap(
-            (entity) =>
-                editSelectedEntity[entity.type]?.(transaction, entity as never, object) ?? [entity],
-        )
-
         pushState(
             interpolate(
                 () => i18n.value.sidebars.default.edited,
                 `${selectedEntities.value.length}`,
             ),
-            transaction.commit(entities),
+            createEditedEntitiesState(state.value, selectedEntities.value, object),
         )
         view.entities = {
             hovered: [],
@@ -101,6 +100,57 @@ export const editSelectedEditableEntities = (object: EditableObject) => {
             ),
         )
     }
+}
+
+// Build speculative property edits through the same mutations as committed
+// edits, without touching history, selection, notifications, or view position.
+export const createEditedEntitiesState = (
+    source: State,
+    selected: Entity[],
+    object: EditableObject,
+    options?: TransactionOptions,
+): State => {
+    const transaction = createTransaction(source, options)
+    const single = selected.length === 1 ? selected[0] : undefined
+    if (single?.type === 'bpm') {
+        const beat = object.beat ?? single.beat
+        // Moving the initial BPM leaves the required beat-zero BPM in place.
+        if (beat === single.beat || single.beat) removeBpm(transaction, single)
+        if (beat !== single.beat) {
+            const overlap = getInStoreGrid(source.store.grid, 'bpm', beat)?.find(
+                (entity) => entity.beat === beat,
+            )
+            if (overlap) removeBpm(transaction, overlap)
+        }
+        return transaction.commit(addBpm(transaction, { beat, bpm: object.bpm ?? single.bpm }))
+    }
+    if (single?.type === 'timeScale') {
+        removeTimeScale(transaction, single)
+        const beat = object.beat ?? single.beat
+        const groupId = object.groupId ?? single.groupId
+        if (beat !== single.beat) {
+            const overlap = getInStoreGrid(source.store.grid, 'timeScale', beat)?.find(
+                (entity) => entity.beat === beat && entity.groupId === groupId,
+            )
+            if (overlap) removeTimeScale(transaction, overlap)
+        }
+        return transaction.commit(
+            addTimeScale(transaction, {
+                ...single,
+                ...object,
+                beat,
+                groupId,
+            }),
+        )
+    }
+
+    const editSelectedEntity = getEditSelectedEntity()
+    return transaction.commit(
+        selected.flatMap(
+            (entity) =>
+                editSelectedEntity[entity.type]?.(transaction, entity as never, object) ?? [entity],
+        ),
+    )
 }
 
 let editEntity:

@@ -13,7 +13,15 @@ import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
 import { notify } from '../../notification'
-import { focusViewAtBeat, setViewHover, view, xToLane, yToTime, yToValidBeat } from '../../view'
+import {
+    focusViewAtBeat,
+    panViewAtBeat,
+    setViewHover,
+    view,
+    xToLane,
+    yToTime,
+    yToValidBeat,
+} from '../../view'
 import { defaultSlideProperties } from '../slide'
 import { hitEntitiesAtPoint, hitEntitiesInSelection, toSelection } from '../utils'
 
@@ -42,12 +50,12 @@ export const generateSlideNotes: Tool = {
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
             apply(selectedEntities.value.filter((entity) => entity.type === 'note'))
-            focusViewAtBeat(yToValidBeat(y))
+            panViewAtBeat(yToValidBeat(y))
         } else {
             const [entity] = entities
             if (entity) {
                 apply(entities)
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
             } else {
                 const selectedLength = selectedEntities.value.length
 

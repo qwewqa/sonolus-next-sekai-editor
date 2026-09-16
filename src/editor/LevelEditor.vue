@@ -9,6 +9,7 @@ import { screenSm } from '../screen'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
 import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
+import { useControlLifecycle } from './controls'
 import { useFocusControl } from './controls/focus'
 import { useKeyboardControl } from './controls/keyboard'
 import LevelEditorHoverMarkers from './LevelEditorHoverMarkers.vue'
@@ -21,6 +22,7 @@ import { view } from './view'
 
 useFocusControl()
 useKeyboardControl()
+useControlLifecycle()
 
 useAutoSave()
 

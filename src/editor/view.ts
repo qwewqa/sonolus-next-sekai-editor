@@ -268,9 +268,17 @@ export const focusViewAtBeat = (beat: number) => {
 }
 
 export const focusView = (t: number) => {
-    updateViewLastActive()
-
     view.cursorTime = t
+
+    panView(t)
+}
+
+export const panViewAtBeat = (beat: number) => {
+    panView(beatToTime(bpms.value, beat))
+}
+
+const panView = (t: number) => {
+    updateViewLastActive()
 
     if (t >= times.value.min && t <= times.value.max) return
 

@@ -9,12 +9,15 @@ import {
     watch,
     watchEffect,
 } from 'vue'
+import { isAppActive } from '../activity'
 import { view } from '../editor/view'
 import { state } from '../history'
 import { isPlaying } from '../player'
 import type { State } from '../state'
-import { buildPreviewChart } from './engine/chart'
+import { getPreviewState, hasSamePreviewData, previewEdit } from './edit'
+import { createPreviewChartBuilder } from './engine/chart'
 import { TARGET_ASPECT_RATIO } from './engine/layout'
+import type { PreviewChart } from './engine/model'
 import { renderPreviewFrame } from './engine/render'
 import { createPreviewRenderer, type PreviewRenderer } from './gl'
 import { loadParticleFromScp, type LoadedParticle } from './particle'
@@ -41,18 +44,22 @@ const status = ref<'loading' | 'missing' | 'error' | 'ready'>('loading')
 // rebuilding the preview and its indexes during ordinary editor interactions.
 const chartState = computed<State>((previous) => {
     const next = state.value
-    if (
-        previous?.store === next.store &&
-        previous.bpms === next.bpms &&
-        previous.groups === next.groups &&
-        previous.stages === next.stages &&
-        previous.isDynamicStages === next.isDynamicStages
-    ) {
+    if (previous && hasSamePreviewData(previous, next)) {
         return previous
     }
     return next
 })
-const chart = computed(() => buildPreviewChart(chartState.value, noteSpeed.value))
+const buildChart = createPreviewChartBuilder()
+// Capture changes cheaply, then resolve only the latest request when a visible
+// frame actually draws. Numeric input and pointer events may arrive repeatedly
+// before RAF; discarded requests never build a transaction or compile a chart.
+const chartRequest = computed(() => {
+    const current = chartState.value
+    const edit = previewEdit.value
+    const speed = noteSpeed.value
+    let chart: PreviewChart | undefined
+    return () => (chart ??= buildChart(getPreviewState(current, edit), speed))
+})
 
 const renderer = shallowRef<PreviewRenderer>()
 
@@ -79,7 +86,10 @@ const loadSkin = async () => {
             loadSkinFromScp,
             signal,
         )
-        if (isAborted()) return
+        if (isAborted()) {
+            loadedSkin?.texture.close()
+            return
+        }
         if (!loadedSkin) {
             status.value = 'missing'
             return
@@ -100,7 +110,10 @@ const loadSkin = async () => {
             loadParticleFromScp,
             signal,
         )
-        if (isAborted()) return
+        if (isAborted()) {
+            loadedParticle?.texture.close()
+            return
+        }
         particle.value = loadedParticle
     } catch (error) {
         if (isAborted()) return
@@ -111,7 +124,7 @@ const loadSkin = async () => {
 let contextLost = false
 
 const initializeRenderer = () => {
-    if (!canvas.value || !skin.value || renderer.value || contextLost) return
+    if (!isAppActive.value || !canvas.value || !skin.value || renderer.value || contextLost) return
 
     try {
         renderer.value = createPreviewRenderer(canvas.value, antialias.value)
@@ -122,7 +135,7 @@ const initializeRenderer = () => {
     }
 }
 
-watch(skin, initializeRenderer)
+watch([skin, isAppActive], initializeRenderer)
 watch(canvas, (currentCanvas, _previousCanvas, onCleanup) => {
     renderer.value?.dispose()
     renderer.value = undefined
@@ -149,25 +162,22 @@ watch(canvas, (currentCanvas, _previousCanvas, onCleanup) => {
     initializeRenderer()
 })
 
-watch(
-    [renderer, skin, particle],
-    (
-        [nextRenderer, nextSkin, nextParticle],
-        [previousRenderer, previousSkin, previousParticle],
-    ) => {
-        if (!nextRenderer) return
+let uploadedRenderer: PreviewRenderer | undefined
+let uploadedSkin: LoadedSkin | undefined
+let uploadedParticle: LoadedParticle | undefined
+watch([renderer, skin, particle, isAppActive], ([nextRenderer, nextSkin, nextParticle, active]) => {
+    if (!active || !nextRenderer) return
 
-        if (nextSkin && (nextRenderer !== previousRenderer || nextSkin !== previousSkin)) {
-            nextRenderer.setTexture(0, nextSkin.texture, nextSkin.interpolation)
-        }
-        if (
-            nextParticle &&
-            (nextRenderer !== previousRenderer || nextParticle !== previousParticle)
-        ) {
-            nextRenderer.setTexture(1, nextParticle.texture, nextParticle.interpolation)
-        }
-    },
-)
+    if (nextSkin && (nextRenderer !== uploadedRenderer || nextSkin !== uploadedSkin)) {
+        nextRenderer.setTexture(0, nextSkin.texture, nextSkin.interpolation)
+        uploadedSkin = nextSkin
+    }
+    if (nextParticle && (nextRenderer !== uploadedRenderer || nextParticle !== uploadedParticle)) {
+        nextRenderer.setTexture(1, nextParticle.texture, nextParticle.interpolation)
+        uploadedParticle = nextParticle
+    }
+    uploadedRenderer = nextRenderer
+})
 
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
@@ -269,6 +279,12 @@ const getRenderSize = (requestedScale: number) => {
 // these inputs changes. Coalesce edits and playback updates into one draw.
 watchEffect(
     () => {
+        if (!isAppActive.value) {
+            cancelAnimationFrame(rafId)
+            rafId = 0
+            renderFrame = undefined
+            return
+        }
         const currentRenderer = renderer.value
         const currentSkin = skin.value
         if (!currentRenderer || !currentSkin || !canvasWidth.value || !canvasHeight.value) {
@@ -279,10 +295,8 @@ watchEffect(
         const renderSize = getRenderSize(pixelRatio.value * renderScale.value)
         if (!renderSize) return
 
+        const getChart = chartRequest.value
         const args = [
-            currentRenderer,
-            currentSkin.skin,
-            chart.value,
             view.cursorTime,
             renderSize.width,
             renderSize.height,
@@ -293,12 +307,12 @@ watchEffect(
             particle.value?.particle,
         ] as const
         renderFrame = () => {
-            renderPreviewFrame(...args)
+            renderPreviewFrame(currentRenderer, currentSkin.skin, getChart(), ...args)
         }
         if (rafId) return
         rafId = requestAnimationFrame(() => {
             rafId = 0
-            renderFrame?.()
+            if (isAppActive.value) renderFrame?.()
         })
     },
     { flush: 'post' },

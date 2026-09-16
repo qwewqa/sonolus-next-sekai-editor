@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 import { beats, times } from '..'
+import { isAppActive } from '../../activity'
 import { state } from '../../history'
 import { defaultGroupId } from '../../history/groups'
 import { settings } from '../../settings'
@@ -91,6 +92,10 @@ const drawEntity = (
 // snapshot. Pointer-only overlays do not invalidate the chart underneath them.
 watchEffect(
     () => {
+        if (!isAppActive.value) {
+            chartFrame.cancel()
+            return
+        }
         const canvas = chartCanvas.value
         const inputs = contextInputs.value
         if (!canvas || !inputs.width || !inputs.height) return
@@ -137,6 +142,10 @@ watchEffect(
 
 watchEffect(
     () => {
+        if (!isAppActive.value) {
+            overlayFrame.cancel()
+            return
+        }
         const canvas = overlayCanvas.value
         const inputs = contextInputs.value
         if (!canvas || !inputs.width || !inputs.height) return

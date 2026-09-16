@@ -7,6 +7,7 @@ import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages.ts'
 import { i18n } from '../../../../../i18n'
 import { showModal } from '../../../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../../../preview/edit'
 import type { Entity } from '../../../../../state/entities'
 import {
     toStageMaskEventJointEntity,
@@ -22,6 +23,7 @@ import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import {
     focusViewAtBeat,
+    panViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -106,7 +108,7 @@ export const stageMaskEvent: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(
                     interpolate(
@@ -117,7 +119,7 @@ export const stageMaskEvent: Tool = {
                 )
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
                         edit(entity, {
@@ -145,7 +147,7 @@ export const stageMaskEvent: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(
                         interpolate(
@@ -177,7 +179,7 @@ export const stageMaskEvent: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             const lane = xToLane(x)
             if (lane > entity.maskLeft + 0.5 && lane < entity.maskLeft + entity.maskSize - 0.5) {
@@ -285,13 +287,28 @@ export const stageMaskEvent: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
+            }
+        }
+
+        if (active.type !== 'add') {
+            const source = state.value
+            const entity = active.entity
+            const [replacement] = view.entities.creating
+            if (replacement?.type === 'stageMaskEventJoint') {
+                setPreviewEdit(source, () => {
+                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    removeStageMaskEventJoint(transaction, entity)
+                    const selectedEntities = addStageMaskEventJoint(transaction, replacement)
+                    return transaction.commit(selectedEntities)
+                }, [entity, replacement.beat, replacement.maskLeft, replacement.maskSize])
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         const lane = xToLane(x)
@@ -328,7 +345,7 @@ export const stageMaskEvent: Tool = {
                     beat,
                     maskLeft: active.entity.maskLeft + offset(active.lane, lane),
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -337,6 +354,7 @@ export const stageMaskEvent: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }

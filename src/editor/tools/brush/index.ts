@@ -29,7 +29,15 @@ import type { Entity } from '../../../state/entities'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { focusViewAtBeat, setViewHover, view, xToLane, yToTime, yToValidBeat } from '../../view'
+import {
+    focusViewAtBeat,
+    panViewAtBeat,
+    setViewHover,
+    view,
+    xToLane,
+    yToTime,
+    yToValidBeat,
+} from '../../view'
 import { editSelectedCameraEvent } from '../events/camera'
 import { editSelectedStageMaskEvent } from '../events/stage/mask'
 import { editSelectedStagePivotEvent } from '../events/stage/pivot'
@@ -127,12 +135,12 @@ export const brush: Tool = {
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
             apply(modifyEntities(selectedEntities.value, modifiers))
-            focusViewAtBeat(yToValidBeat(y))
+            panViewAtBeat(yToValidBeat(y))
         } else {
             const [entity] = entities
             if (entity) {
                 apply(modifyEntities(entities, modifiers))
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
             } else {
                 const selectedLength = selectedEntities.value.length
 

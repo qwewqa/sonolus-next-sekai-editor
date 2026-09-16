@@ -5,6 +5,7 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
+import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../../state/entities/bpm'
 import { addBpm, removeBpm } from '../../../state/mutations/bpm'
@@ -13,7 +14,14 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
-import { focusViewAtBeat, setViewHover, snapYToBeat, view, yToValidBeat } from '../../view'
+import {
+    focusViewAtBeat,
+    panViewAtBeat,
+    setViewHover,
+    snapYToBeat,
+    view,
+    yToValidBeat,
+} from '../../view'
 import { hitEntitiesAtPoint } from '../utils'
 import BpmPropertiesModal from './BpmPropertiesModal.vue'
 
@@ -70,12 +78,12 @@ export const bpm: Tool = {
                     hovered: [],
                     creating: [],
                 }
-                focusViewAtBeat(entity.beat)
+                panViewAtBeat(entity.beat)
 
                 notify(interpolate(() => i18n.value.tools.bpm.selected, `${targets.length}`))
             } else {
                 if (selectedEntities.value.includes(entity)) {
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     if (!isSidebarVisible.value) {
                         void showModal(BpmPropertiesModal, {})
@@ -89,7 +97,7 @@ export const bpm: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    panViewAtBeat(entity.beat)
 
                     notify(interpolate(() => i18n.value.tools.bpm.selected, '1'))
                 }
@@ -123,7 +131,7 @@ export const bpm: Tool = {
                 hovered: [],
                 creating: [],
             }
-            focusViewAtBeat(entity.beat)
+            panViewAtBeat(entity.beat)
 
             notify(interpolate(() => i18n.value.tools.bpm.moving, '1'))
 
@@ -174,23 +182,24 @@ export const bpm: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
+                const object: BpmObject = {
+                    beat,
+                    bpm: active.entity.bpm,
+                }
 
                 view.entities = {
                     hovered: [],
-                    creating: [
-                        toBpmEntity({
-                            beat,
-                            bpm: active.entity.bpm,
-                        }),
-                    ],
+                    creating: [toBpmEntity(object)],
                 }
-                focusViewAtBeat(beat)
+                previewMove(active.entity, object)
+                panViewAtBeat(beat)
                 break
             }
         }
     },
 
     dragEnd(x, y) {
+        clearPreviewEdit()
         if (!active) return
 
         switch (active.type) {
@@ -233,7 +242,7 @@ export const bpm: Tool = {
                     beat,
                     bpm: active.entity.bpm,
                 })
-                focusViewAtBeat(beat)
+                panViewAtBeat(beat)
                 break
             }
         }
@@ -242,6 +251,7 @@ export const bpm: Tool = {
     },
 
     dragCancel() {
+        clearPreviewEdit()
         active = undefined
     },
 }
@@ -281,6 +291,21 @@ const tryFind = (x: number, y: number): [BpmEntity] | [undefined, number] => {
     return [undefined, beat]
 }
 
+const previewMove = (entity: BpmEntity, object: BpmObject) => {
+    const source = state.value
+    setPreviewEdit(source, () => {
+        const transaction = createTransaction(source, { autoAddGroup: false })
+        if (entity.beat === object.beat || entity.beat) removeBpm(transaction, entity)
+        if (entity.beat !== object.beat) {
+            const overlap = getInStoreGrid(source.store.grid, 'bpm', object.beat)?.find(
+                (candidate) => candidate.beat === object.beat,
+            )
+            if (overlap) removeBpm(transaction, overlap)
+        }
+        return transaction.commit(addBpm(transaction, object))
+    }, [entity, object.beat, object.bpm])
+}
+
 const editMoveOrReplace = (entity: BpmEntity, object: BpmObject) => {
     if (entity.beat === object.beat) {
         edit(entity, object)
@@ -293,7 +318,7 @@ const editMoveOrReplace = (entity: BpmEntity, object: BpmObject) => {
     } else {
         move(object, entity)
     }
-    focusViewAtBeat(object.beat)
+    panViewAtBeat(object.beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {
