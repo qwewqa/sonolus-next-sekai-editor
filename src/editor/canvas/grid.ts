@@ -1,14 +1,16 @@
 import { beatToTime } from '../../state/integrals/bpms'
 import { formatIntegerBeat, formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
+import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
 export const drawGrid = (
-    { ctx, bounds, scale, state, ups, fontFamily }: EditorDrawContext,
+    context: EditorDrawContext,
     beats: Range<number>,
     times: Range<number>,
     division: number,
 ) => {
+    const { ctx, bounds, scale, state, ups } = context
     ctx.save()
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 2 / scale
@@ -41,16 +43,19 @@ export const drawGrid = (
     }
 
     ctx.globalAlpha = 0.5
-    ctx.fillStyle = '#fff'
-    ctx.font = `0.4px ${fontFamily}`
-    ctx.textBaseline = 'middle'
-    ctx.textAlign = 'left'
     for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
-        ctx.fillText(formatIntegerBeat(beat), 6.1, beatToTime(state.bpms, beat) * ups)
+        drawText(
+            context,
+            formatIntegerBeat(beat),
+            6.1,
+            beatToTime(state.bpms, beat) * ups,
+            '#fff',
+            0.4,
+            'start',
+        )
     }
-    ctx.textAlign = 'right'
     for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++) {
-        ctx.fillText(formatIntegerTime(time), -6.1, time * ups)
+        drawText(context, formatIntegerTime(time), -6.1, time * ups, '#fff', 0.4, 'end')
     }
     ctx.restore()
 }

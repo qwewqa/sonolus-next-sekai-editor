@@ -400,4 +400,28 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
     assert.equal(ctx.lineWidth, 0.04, 'DPR does not change the stroke width in CSS pixels')
     assert.deepEqual(clears.at(-1), [0, 0, 750, 375])
     assertPaintRestored()
+
+    for (const [cssWidth, cssHeight, pixelRatio] of [
+        [601, 301, 1.25],
+        [601.375, 301.625, 1],
+        [601.375, 301.625, 1.5],
+        [601.375, 301.625, 2],
+    ]) {
+        const sceneHeight = (cssHeight / cssWidth) * bounds.w
+        const fractionalBounds = { ...bounds, b: bounds.t + sceneHeight, h: sceneHeight }
+        prepareSurface(canvas, cssWidth, cssHeight, pixelRatio, fractionalBounds)
+        const [sx, , , sy, tx, ty] = transforms.at(-1)!
+        // Browser compositing maps rounded backing dimensions back to the CSS
+        // box. Every scene position must still match the editor's input map.
+        for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
+            const x = fractionalBounds.l + fractionalBounds.w * fraction
+            const y = fractionalBounds.t + fractionalBounds.h * fraction
+            const renderedX = ((x * sx + tx) / width) * cssWidth
+            const renderedY = ((y * sy + ty) / height) * cssHeight
+            assert.ok(Math.abs(renderedX - cssWidth * fraction) < 1e-10)
+            assert.ok(Math.abs(renderedY - cssHeight * fraction) < 1e-10)
+        }
+        assert.equal(ctx.lineWidth, (2 * bounds.w) / cssWidth)
+        assertPaintRestored()
+    }
 })

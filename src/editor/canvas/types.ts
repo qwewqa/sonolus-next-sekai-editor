@@ -24,4 +24,5 @@ export type EditorDrawContext = {
     showGroupName: boolean
     recentlyActive: boolean
     fontFamily: string
+    fontMiddle: number
 }

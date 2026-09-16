@@ -1,6 +1,7 @@
 import type { FlickDirection } from '../../chart/note'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
+import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
 type NoteInfo = {
@@ -346,17 +347,27 @@ export const createNoteRenderer = () => {
                     context.showGroupName &&
                     entity.groupId !== context.defaultGroupId &&
                     state.groups.get(entity.groupId)?.name
-                ctx.font = `0.4px ${context.fontFamily}`
-                ctx.textBaseline = 'middle'
                 if (stage) {
-                    ctx.textAlign = group ? 'right' : 'center'
-                    ctx.fillStyle = '#a0a'
-                    ctx.fillText(stage, x + entity.size / 2, y + 0.3)
+                    drawText(
+                        context,
+                        stage,
+                        x + entity.size / 2,
+                        y + 0.3,
+                        '#a0a',
+                        0.4,
+                        group ? 'end' : 'center',
+                    )
                 }
                 if (group) {
-                    ctx.textAlign = stage ? 'left' : 'center'
-                    ctx.fillStyle = '#0aa'
-                    ctx.fillText(group, x + entity.size / 2, y + 0.3)
+                    drawText(
+                        context,
+                        group,
+                        x + entity.size / 2,
+                        y + 0.3,
+                        '#0aa',
+                        0.4,
+                        stage ? 'start' : 'center',
+                    )
                 }
             }
             ctx.restore()
