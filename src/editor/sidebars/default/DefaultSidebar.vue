@@ -60,6 +60,9 @@ import MultiYOffsetField from '../../../modals/form/MultiYOffsetField.vue'
 import MultiYTranslationField from '../../../modals/form/MultiYTranslationField.vue'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
 import BaseSidebar from '../BaseSidebar.vue'
+import MultiIsMaskNotesField from '../../../modals/form/MultiIsMaskNotesField.vue'
+import MultiElevationField from '../../../modals/form/MultiElevationField.vue'
+import MultiTimeScaleTransitionField from '../../../modals/form/MultiTimeScaleTransitionField.vue'
 
 const { entities, types, noteFields, createModel } = useSelectedEntitiesProperties(isEditableEntity)
 
@@ -71,6 +74,7 @@ const stageId = createModel('stageId')
 const timeScale = createModel('timeScale')
 const skip = createModel('skip')
 const timeScaleEase = createModel('timeScaleEase')
+const timeScaleTransition = createModel('timeScaleTransition')
 const hideNotes = createModel('hideNotes')
 const cameraLeft = createModel('cameraLeft')
 const cameraSize = createModel('cameraSize')
@@ -82,6 +86,7 @@ const cameraRotation = createModel('cameraRotation')
 const cameraStageTilt = createModel('cameraStageTilt')
 const maskLeft = createModel('maskLeft')
 const maskSize = createModel('maskSize')
+const isMaskNotes = createModel('isMaskNotes')
 const pivotLane = createModel('pivotLane')
 const divisionSize = createModel('divisionSize')
 const divisionParity = createModel('divisionParity')
@@ -99,6 +104,7 @@ const divisionLineAlpha = createModel('divisionLineAlpha')
 const rotation = createModel('rotation')
 const xTranslation = createModel('xTranslation')
 const yTranslation = createModel('yTranslation')
+const elevation = createModel('elevation')
 const anchor = createModel('anchor')
 const eventEase = createModel('eventEase')
 const noteType = createModel('noteType')
@@ -129,6 +135,7 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiTimeScaleField v-if="types.timeScale" v-model="timeScale" />
             <MultiSkipField v-if="types.timeScale" v-model="skip" />
             <MultiTimeScaleEaseField v-if="types.timeScale" v-model="timeScaleEase" />
+            <MultiTimeScaleTransitionField v-if="types.timeScale" v-model="timeScaleTransition" />
             <MultiHideNotesField v-if="types.timeScale" v-model="hideNotes" />
             <MultiCameraLeftField v-if="types.cameraEventJoint" v-model="cameraLeft" />
             <MultiCameraSizeField v-if="types.cameraEventJoint" v-model="cameraSize" />
@@ -149,6 +156,7 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiCameraStageTiltField v-if="types.cameraEventJoint" v-model="cameraStageTilt" />
             <MultiMaskLeftField v-if="types.stageMaskEventJoint" v-model="maskLeft" />
             <MultiMaskSizeField v-if="types.stageMaskEventJoint" v-model="maskSize" />
+            <MultiIsMaskNotesField v-if="types.stageMaskEventJoint" v-model="isMaskNotes" />
             <MultiPivotLaneField v-if="types.stagePivotEventJoint" v-model="pivotLane" />
             <MultiDivisionSizeField v-if="types.stagePivotEventJoint" v-model="divisionSize" />
             <MultiDivisionParityField v-if="types.stagePivotEventJoint" v-model="divisionParity" />
@@ -184,6 +192,7 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiRotationField v-if="types.stageTransformEventJoint" v-model="rotation" />
             <MultiXTranslationField v-if="types.stageTransformEventJoint" v-model="xTranslation" />
             <MultiYTranslationField v-if="types.stageTransformEventJoint" v-model="yTranslation" />
+            <MultiElevationField v-if="types.stageTransformEventJoint" v-model="elevation" />
             <MultiAnchorField v-if="types.stageTransformEventJoint" v-model="anchor" />
             <MultiEventEaseField
                 v-if="
