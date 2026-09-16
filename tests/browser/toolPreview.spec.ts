@@ -8,6 +8,91 @@ test.beforeEach(async ({ page }) => {
     await page.evaluate(installEditorFixture)
 })
 
+for (const name of [
+    'note',
+    'slide',
+    'bpm',
+    'timeScale',
+    'cameraEvent',
+    'stageMaskEvent',
+    'stagePivotEvent',
+    'stageStyleEvent',
+    'stageTransformEvent',
+] as const) {
+    test(`${name} placement keeps preview time through tap, drag, cancellation, and undo`, async ({
+        page,
+    }) => {
+        const result = await page.evaluate(async (name) => {
+            const toolsUrl = '/src/editor/tools/index.ts'
+            const modalsUrl = '/src/modals/index.ts'
+            const { tools } = (await import(toolsUrl)) as typeof import('../../src/editor/tools')
+            const { modals } = (await import(modalsUrl)) as typeof import('../../src/modals')
+            const { history, view, point, nextTick } = window.editorTest
+            const tool = tools[name]
+            const modifiers = { ctrl: false, shift: false }
+            const original = history.state.value.store
+            const times: number[] = []
+            view.cursorTime = 2.25
+            const start = point(0, 10)
+            const end = point(1, 12)
+            const closeProperties = async () => {
+                for (const modal of modals.splice(0)) modal.resolve()
+                await nextTick()
+            }
+
+            await tool.tap!(start.x, start.y, modifiers)
+            times.push(view.cursorTime)
+            const tapped = history.state.value.selectedEntities[0]?.beat
+            await closeProperties()
+            history.undoState()
+            const tapUndone = history.state.value.store === original
+
+            const started = tool.dragStart!(start.x, start.y, modifiers)
+            times.push(view.cursorTime)
+            tool.dragUpdate!(end.x, end.y, modifiers)
+            times.push(view.cursorTime)
+            const during = {
+                ghostBeat: view.entities.creating[0]?.beat,
+                sourceUnchanged: history.state.value.store === original,
+                canUndo: history.canUndo.value,
+            }
+            tool.dragCancel!()
+            times.push(view.cursorTime)
+            const cancelled = history.state.value.store === original && !history.canUndo.value
+
+            tool.dragStart!(start.x, start.y, modifiers)
+            tool.dragUpdate!(end.x, end.y, modifiers)
+            await tool.dragEnd!(end.x, end.y, modifiers)
+            times.push(view.cursorTime)
+            const dragged = history.state.value.selectedEntities[0]?.beat
+            await closeProperties()
+            history.undoState()
+            times.push(view.cursorTime)
+            return {
+                tapped,
+                tapUndone,
+                started,
+                during,
+                cancelled,
+                dragged,
+                dragUndone: history.state.value.store === original && !history.canUndo.value,
+                times,
+            }
+        }, name)
+
+        expect(result).toEqual({
+            tapped: 10,
+            tapUndone: true,
+            started: true,
+            during: { ghostBeat: 12, sourceUnchanged: true, canUndo: false },
+            cancelled: true,
+            dragged: 12,
+            dragUndone: true,
+            times: [2.25, 2.25, 2.25, 2.25, 2.25, 2.25],
+        })
+    })
+}
+
 for (const name of ['note', 'slide'] as const) {
     test(`${name} edits preview connected notes during dragging without seeking or committing`, async ({
         page,
@@ -91,7 +176,7 @@ for (const name of ['note', 'slide'] as const) {
                 resizing,
                 duringResize,
                 resized,
-                afterEmptyClick: view.cursorTime,
+                afterCreation: view.cursorTime,
             }
         }, name)
 
@@ -109,7 +194,7 @@ for (const name of ['note', 'slide'] as const) {
         expect(result.resizing.connectors[0]?.head).toEqual({ beat: 4, left: -4, size: 3 })
         expect(result.duringResize).toBe(2.25)
         expect(result.resized).toEqual(result.resizing)
-        expect(result.afterEmptyClick).toBe(5)
+        expect(result.afterCreation).toBe(2.25)
         expect(errors).toEqual([])
     })
 }

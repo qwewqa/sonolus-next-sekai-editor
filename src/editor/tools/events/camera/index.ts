@@ -22,7 +22,6 @@ import { notify } from '../../../notification'
 import { isSidebarVisible } from '../../../sidebars'
 import {
     focusEntityAtBeat,
-    focusViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -168,7 +167,7 @@ export const cameraEvent: Tool = {
                 cameraLeft: lane,
                 ...getPropertiesFromSelection(),
             })
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
         }
     },
 
@@ -221,7 +220,7 @@ export const cameraEvent: Tool = {
                 }
             }
         } else {
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
 
             notify(
                 interpolate(
@@ -263,7 +262,7 @@ export const cameraEvent: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'edit': {
@@ -331,7 +330,7 @@ export const cameraEvent: Tool = {
                     cameraLeft,
                     cameraSize,
                 })
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'edit': {

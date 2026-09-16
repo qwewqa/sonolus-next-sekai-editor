@@ -103,7 +103,7 @@ for (const scenario of cases) {
                 capturedPreview,
                 committed,
                 undoStore,
-                emptyTime: view.cursorTime,
+                creationTime: view.cursorTime,
             }
         }, scenario)
 
@@ -132,7 +132,7 @@ for (const scenario of cases) {
             time: 3.125,
         })
         expect(result.undoStore).toBe(true)
-        expect(result.emptyTime).toBe(5)
+        expect(result.creationTime).toBe(3.125)
         expect(errors).toEqual([])
     })
 }

@@ -42,6 +42,8 @@ playback and auditioning the final position when scrolling stops. Its direction
 matches editor scrolling, and additionally moves the play cursor. With Follow
 enabled, taps smoothly bring the timeline to the configured follow position;
 holding a step button or scrolling the wheel locks the timeline to that position.
+Placing, selecting, and dragging entities preserve the preview time while auditioning
+audio at the entity's position. Empty-space clicks with selection tools still seek.
 
 FFT waveforms emphasize timing with 5 ms rows, logarithmic frequency bands
 (bass near the center, treble toward the outside), and a narrow peak-amplitude

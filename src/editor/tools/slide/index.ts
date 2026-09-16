@@ -22,7 +22,6 @@ import { isSidebarVisible } from '../../sidebars'
 import { quickEdit } from '../../utils/quickEdit'
 import {
     focusEntityAtBeat,
-    focusViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -145,7 +144,7 @@ export const slide: Tool = {
                 left: lane,
                 ...getPropertiesFromSelection(beat),
             })
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
         }
     },
 
@@ -181,7 +180,7 @@ export const slide: Tool = {
                 }
             }
         } else {
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
 
             notify(interpolate(() => i18n.value.tools.slide.adding, '1'))
 
@@ -217,7 +216,7 @@ export const slide: Tool = {
                         }),
                     ],
                 }
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'edit': {
@@ -267,7 +266,7 @@ export const slide: Tool = {
                     left,
                     size,
                 })
-                focusViewAtBeat(beat)
+                focusEntityAtBeat(beat)
                 break
             }
             case 'edit': {

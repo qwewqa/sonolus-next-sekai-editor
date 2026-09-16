@@ -14,14 +14,7 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
-import {
-    focusEntityAtBeat,
-    focusViewAtBeat,
-    setViewHover,
-    snapYToBeat,
-    view,
-    yToValidBeat,
-} from '../../view'
+import { focusEntityAtBeat, setViewHover, snapYToBeat, view, yToValidBeat } from '../../view'
 import { hitEntitiesAtPoint } from '../utils'
 import BpmPropertiesModal from './BpmPropertiesModal.vue'
 
@@ -114,7 +107,7 @@ export const bpm: Tool = {
             } else {
                 add(object)
             }
-            focusViewAtBeat(object.beat)
+            focusEntityAtBeat(object.beat)
 
             void showModal(BpmPropertiesModal, {})
         }
@@ -140,7 +133,7 @@ export const bpm: Tool = {
                 entity,
             }
         } else {
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
 
             notify(interpolate(() => i18n.value.tools.bpm.adding, '1'))
 
@@ -165,7 +158,7 @@ export const bpm: Tool = {
                         hovered: [entity],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
                 } else {
                     view.entities = {
                         hovered: [],
@@ -176,7 +169,7 @@ export const bpm: Tool = {
                             }),
                         ],
                     }
-                    focusViewAtBeat(beat)
+                    focusEntityAtBeat(beat)
                 }
                 break
             }
@@ -214,7 +207,7 @@ export const bpm: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     void showModal(BpmPropertiesModal, {})
                 } else {
@@ -229,7 +222,7 @@ export const bpm: Tool = {
                     } else {
                         add(object)
                     }
-                    focusViewAtBeat(object.beat)
+                    focusEntityAtBeat(object.beat)
 
                     void showModal(BpmPropertiesModal, {})
                 }

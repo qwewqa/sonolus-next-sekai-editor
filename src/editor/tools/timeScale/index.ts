@@ -18,7 +18,6 @@ import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import {
     focusEntityAtBeat,
-    focusViewAtBeat,
     setViewHover,
     snapYToBeat,
     view,
@@ -152,7 +151,7 @@ export const timeScale: Tool = {
             } else {
                 add(object)
             }
-            focusViewAtBeat(object.beat)
+            focusEntityAtBeat(object.beat)
 
             void showModal(TimeScalePropertiesModal, {})
         }
@@ -178,7 +177,7 @@ export const timeScale: Tool = {
                 entity,
             }
         } else {
-            focusViewAtBeat(beat)
+            focusEntityAtBeat(beat)
 
             notify(interpolate(() => i18n.value.tools.timeScale.adding, '1'))
 
@@ -205,7 +204,7 @@ export const timeScale: Tool = {
                         hovered: [entity],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
                 } else {
                     view.entities = {
                         hovered: [],
@@ -222,7 +221,7 @@ export const timeScale: Tool = {
                             }),
                         ],
                     }
-                    focusViewAtBeat(beat)
+                    focusEntityAtBeat(beat)
                 }
                 break
             }
@@ -268,7 +267,7 @@ export const timeScale: Tool = {
                         hovered: [],
                         creating: [],
                     }
-                    focusViewAtBeat(entity.beat)
+                    focusEntityAtBeat(entity.beat)
 
                     void showModal(TimeScalePropertiesModal, {})
                 } else {
@@ -289,7 +288,7 @@ export const timeScale: Tool = {
                     } else {
                         add(object)
                     }
-                    focusViewAtBeat(object.beat)
+                    focusEntityAtBeat(object.beat)
 
                     void showModal(TimeScalePropertiesModal, {})
                 }
