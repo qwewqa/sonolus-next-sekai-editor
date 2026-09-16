@@ -10,5 +10,5 @@ export type Recognizer<T = number> = {
     count: T
     recognize: (...pointers: Tuple<[number, Pointer], T>) => boolean
     update?: (pointers: Map<number, Pointer>) => void
-    reset?: () => void
+    reset?: (cancelled?: boolean) => void
 }

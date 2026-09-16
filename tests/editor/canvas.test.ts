@@ -227,7 +227,7 @@ const withAnimationFrames = (
     run: (frames: {
         pending: Map<number, FrameRequestCallback>
         requests: () => number
-        tick: () => void
+        tick: (timestamp?: number) => void
     }) => void,
 ) => {
     const request = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame')
@@ -246,10 +246,10 @@ const withAnimationFrames = (
         run({
             pending,
             requests: () => requests,
-            tick: () => {
+            tick: (timestamp = 0) => {
                 const callbacks = [...pending.values()]
                 pending.clear()
-                callbacks.forEach((callback) => callback(0))
+                callbacks.forEach((callback) => callback(timestamp))
             },
         })
     } finally {
@@ -289,6 +289,21 @@ test('cancelling a pending frame discards its draw and permits scheduling after 
         scheduler.schedule(() => draws.push('new'))
         tick()
         assert.deepEqual(draws, ['new'])
+    })
+})
+
+test('independently scheduled canvas layers share the browser frame timestamp', () => {
+    withAnimationFrames(({ tick }) => {
+        const chart = createFrameScheduler()
+        const overlay = createFrameScheduler()
+        const draws: number[] = []
+        chart.schedule((timestamp) => draws.push(timestamp))
+        overlay.schedule((timestamp) => draws.push(timestamp))
+        tick(42)
+        assert.deepEqual(draws, [42, 42])
+        overlay.schedule((timestamp) => draws.push(timestamp))
+        tick(58)
+        assert.deepEqual(draws, [42, 42, 58])
     })
 })
 

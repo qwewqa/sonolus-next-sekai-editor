@@ -88,8 +88,10 @@ const hitEntitiesByGetter = <T extends Entity>(
 ) => {
     const spu = view.w / settings.width / settings.pps
 
-    const minKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMin - 0.25 * spu)))
-    const maxKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMax + 0.25 * spu)))
+    // Include the tallest hitbox (BPM, h = 0.4) across beat-bucket boundaries.
+    // The exact hitbox filter below still decides which objects are selected.
+    const minKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMin - 0.4 * spu)))
+    const maxKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMax + 0.4 * spu)))
 
     return [...getEntities(minKey, maxKey)].filter(({ hitbox }) => {
         if (!hitbox) return false

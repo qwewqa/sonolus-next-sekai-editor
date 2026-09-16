@@ -10,6 +10,7 @@ import { time } from '../time'
 import { computedArray } from '../utils/array'
 import { align, clamp, lerp, unlerp } from '../utils/math'
 import { optional } from '../utils/optional'
+import { integrateScrollInertia } from './inertia'
 
 export type Selection = {
     laneMin: number
@@ -118,19 +119,16 @@ watch(time, ({ now, delta }) => {
                     break
                 }
 
-                const a = Math.sign(view.scrollingX.value) * 800
-                const t = Math.min(delta, view.scrollingX.value / a)
-
-                scrollViewXBy(((2 * view.scrollingX.value - a * t) * delta) / 2)
-
-                view.scrollingX.value -= a * t
+                const motion = integrateScrollInertia(view.scrollingX.value, delta)
+                scrollViewXBy(motion.distance)
+                view.scrollingX.value = motion.velocity
                 break
             }
             case 'ease': {
                 if (now >= view.scrollingX.to.time) {
                     view.lane = view.scrollingX.to.viewLane
                     view.scrollingX = undefined
-                    return
+                    break
                 }
 
                 view.lane = lerp(
@@ -151,19 +149,16 @@ watch(time, ({ now, delta }) => {
                     break
                 }
 
-                const a = Math.sign(view.scrollingY.value) * 800
-                const t = Math.min(delta, view.scrollingY.value / a)
-
-                scrollViewYBy(((2 * view.scrollingY.value - a * t) * delta) / 2)
-
-                view.scrollingY.value -= a * t
+                const motion = integrateScrollInertia(view.scrollingY.value, delta)
+                scrollViewYBy(motion.distance)
+                view.scrollingY.value = motion.velocity
                 break
             }
             case 'ease': {
                 if (now >= view.scrollingY.to.time) {
                     view.time = view.scrollingY.to.viewTime
                     view.scrollingY = undefined
-                    return
+                    break
                 }
 
                 view.time = lerp(

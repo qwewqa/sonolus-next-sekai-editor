@@ -312,6 +312,10 @@ export const timeScale: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 export const editTimeScale = (entity: TimeScaleEntity, object: Partial<TimeScaleObject>) => {

@@ -10,7 +10,7 @@ import type { TimeScaleObject } from '../../chart/timeScale'
 import { pushState, replaceState, state } from '../../history'
 import { selectedEntities } from '../../history/selectedEntities'
 import { i18n } from '../../i18n'
-import type { Entity } from '../../state/entities'
+import type { Entity, EntityType } from '../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../state/entities/bpm'
 import {
     toCameraEventJointEntity,
@@ -67,6 +67,7 @@ import {
     yToTime,
     yToValidBeat,
 } from '../view'
+import { getOnlyEntityType } from './entityType'
 import {
     hitAllEntitiesAtPoint,
     hitAllEntitiesInSelection,
@@ -82,6 +83,7 @@ let active:
           lane: number
           focus: Entity
           entities: Entity[]
+          onlyType: EntityType | undefined
       }
     | {
           type: 'select'
@@ -179,6 +181,7 @@ export const select: Tool = {
                 lane,
                 focus,
                 entities: selectedEntities.value,
+                onlyType: getOnlyEntityType(selectedEntities.value),
             }
         } else {
             const [entity] = entities
@@ -200,6 +203,7 @@ export const select: Tool = {
                     lane,
                     focus: entity,
                     entities: [entity],
+                    onlyType: entity.type,
                 }
             } else {
                 active = {
@@ -231,7 +235,7 @@ export const select: Tool = {
                     if (beat < 0) continue
 
                     const result = creates[entity.type]?.(
-                        active.entities,
+                        active.onlyType,
                         entity as never,
                         active.lane,
                         lane,
@@ -286,7 +290,7 @@ export const select: Tool = {
                 const lane = xToLane(x)
                 const beatOffset = yToBeatOffset(y, active.focus.beat)
 
-                const entities = active.entities.sort(
+                const entities = [...active.entities].sort(
                     beatOffset > 0 ? (a, b) => b.beat - a.beat : (a, b) => a.beat - b.beat,
                 )
 
@@ -297,7 +301,7 @@ export const select: Tool = {
 
                     const result = moves[entity.type]?.(
                         transaction,
-                        entities,
+                        active.onlyType,
                         entity as never,
                         active.lane,
                         lane,
@@ -348,6 +352,10 @@ export const select: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 const toMovedBpmObject = (entity: BpmEntity, beat: number): BpmObject => ({
@@ -356,7 +364,7 @@ const toMovedBpmObject = (entity: BpmEntity, beat: number): BpmObject => ({
 })
 
 const toMovedTimeScaleObject = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: TimeScaleEntity,
     startLane: number,
     lane: number,
@@ -364,13 +372,12 @@ const toMovedTimeScaleObject = (
 ): TimeScaleObject => ({
     ...entity,
     beat,
-    editorLane: entities.every((entity) => entity.type === 'timeScale')
-        ? entity.editorLane + offset(startLane, lane)
-        : entity.editorLane,
+    editorLane:
+        onlyType === 'timeScale' ? entity.editorLane + offset(startLane, lane) : entity.editorLane,
 })
 
 const toMovedCameraEventObject = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: CameraEventJointEntity,
     startLane: number,
     lane: number,
@@ -379,7 +386,7 @@ const toMovedCameraEventObject = (
 ): CameraEventObject => {
     if (
         focus.type === 'cameraEventJoint' &&
-        entities.every((entity) => entity.type === 'cameraEventJoint') &&
+        onlyType === 'cameraEventJoint' &&
         (startLane <= focus.cameraLeft + 0.5 ||
             startLane >= focus.cameraLeft + focus.cameraSize - 0.5)
     ) {
@@ -406,7 +413,7 @@ const toMovedCameraEventObject = (
 }
 
 const toMovedStageMaskEventObject = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: StageMaskEventJointEntity,
     startLane: number,
     lane: number,
@@ -415,7 +422,7 @@ const toMovedStageMaskEventObject = (
 ): StageMaskEventObject => {
     if (
         focus.type === 'stageMaskEventJoint' &&
-        entities.every((entity) => entity.type === 'stageMaskEventJoint') &&
+        onlyType === 'stageMaskEventJoint' &&
         (startLane <= focus.maskLeft + 0.5 || startLane >= focus.maskLeft + focus.maskSize - 0.5)
     ) {
         const [maskLeft, maskSize] = resize(
@@ -450,7 +457,7 @@ const toMovedStagePivotEventObject = (
 })
 
 const toMovedStageStyleEventObject = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: StageStyleEventJointEntity,
     startLane: number,
     lane: number,
@@ -458,9 +465,10 @@ const toMovedStageStyleEventObject = (
 ): StageStyleEventObject => ({
     ...entity,
     beat,
-    editorLane: entities.every((entity) => entity.type === 'stageStyleEventJoint')
-        ? entity.editorLane + offset(startLane, lane)
-        : entity.editorLane,
+    editorLane:
+        onlyType === 'stageStyleEventJoint'
+            ? entity.editorLane + offset(startLane, lane)
+            : entity.editorLane,
 })
 
 const toMovedStageTransformEventObject = (
@@ -475,7 +483,7 @@ const toMovedStageTransformEventObject = (
 })
 
 const toMovedNoteObject = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: NoteEntity,
     startLane: number,
     lane: number,
@@ -484,7 +492,7 @@ const toMovedNoteObject = (
 ): NoteObject => {
     if (
         focus.type === 'note' &&
-        entities.every((entity) => entity.type === 'note') &&
+        onlyType === 'note' &&
         (startLane <= focus.left + 0.5 || startLane >= focus.left + focus.size - 0.5)
     ) {
         const isLeft = startLane >= focus.left + focus.size / 2
@@ -510,7 +518,7 @@ const toMovedNoteObject = (
 }
 
 type Create<T extends Entity> = (
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: T,
     startLane: number,
     lane: number,
@@ -521,42 +529,42 @@ type Create<T extends Entity> = (
 const creates: {
     [T in Entity as T['type']]: Create<T> | undefined
 } = {
-    bpm: (entities, entity, startLane, lane, beat) => toBpmEntity(toMovedBpmObject(entity, beat)),
-    timeScale: (entities, entity, startLane, lane, beat) =>
-        toTimeScaleEntity(toMovedTimeScaleObject(entities, entity, startLane, lane, beat)),
+    bpm: (onlyType, entity, startLane, lane, beat) => toBpmEntity(toMovedBpmObject(entity, beat)),
+    timeScale: (onlyType, entity, startLane, lane, beat) =>
+        toTimeScaleEntity(toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat)),
 
-    cameraEventJoint: (entities, entity, startLane, lane, beat, focus) =>
+    cameraEventJoint: (onlyType, entity, startLane, lane, beat, focus) =>
         toCameraEventJointEntity(
-            toMovedCameraEventObject(entities, entity, startLane, lane, beat, focus),
+            toMovedCameraEventObject(onlyType, entity, startLane, lane, beat, focus),
         ),
     cameraEventConnection: undefined,
 
-    stageMaskEventJoint: (entities, entity, startLane, lane, beat, focus) =>
+    stageMaskEventJoint: (onlyType, entity, startLane, lane, beat, focus) =>
         toStageMaskEventJointEntity(
-            toMovedStageMaskEventObject(entities, entity, startLane, lane, beat, focus),
+            toMovedStageMaskEventObject(onlyType, entity, startLane, lane, beat, focus),
         ),
     stageMaskEventConnection: undefined,
 
-    stagePivotEventJoint: (entities, entity, startLane, lane, beat) =>
+    stagePivotEventJoint: (onlyType, entity, startLane, lane, beat) =>
         toStagePivotEventJointEntity(toMovedStagePivotEventObject(entity, startLane, lane, beat)),
     stagePivotEventConnection: undefined,
 
-    stageStyleEventJoint: (entities, entity, startLane, lane, beat) =>
+    stageStyleEventJoint: (onlyType, entity, startLane, lane, beat) =>
         toStageStyleEventJointEntity(
-            toMovedStageStyleEventObject(entities, entity, startLane, lane, beat),
+            toMovedStageStyleEventObject(onlyType, entity, startLane, lane, beat),
         ),
     stageStyleEventConnection: undefined,
 
-    stageTransformEventJoint: (entities, entity, startLane, lane, beat) =>
+    stageTransformEventJoint: (onlyType, entity, startLane, lane, beat) =>
         toStageTransformEventJointEntity(
             toMovedStageTransformEventObject(entity, startLane, lane, beat),
         ),
     stageTransformEventConnection: undefined,
 
-    note: (entities, entity, startLane, lane, beat, focus) =>
+    note: (onlyType, entity, startLane, lane, beat, focus) =>
         toNoteEntity(
             entity.slideId,
-            toMovedNoteObject(entities, entity, startLane, lane, beat, focus),
+            toMovedNoteObject(onlyType, entity, startLane, lane, beat, focus),
             entity,
         ),
     connector: undefined,
@@ -564,7 +572,7 @@ const creates: {
 
 type Move<T extends Entity> = (
     transaction: Transaction,
-    entities: Entity[],
+    onlyType: EntityType | undefined,
     entity: T,
     startLane: number,
     lane: number,
@@ -575,7 +583,7 @@ type Move<T extends Entity> = (
 const moves: {
     [T in Entity as T['type']]: Move<T> | undefined
 } = {
-    bpm: (transaction, entities, entity, startLane, lane, beat) => {
+    bpm: (transaction, onlyType, entity, startLane, lane, beat) => {
         const object = toMovedBpmObject(entity, beat)
 
         if (entity.beat) removeBpm(transaction, entity)
@@ -587,8 +595,8 @@ const moves: {
 
         return addBpm(transaction, object)
     },
-    timeScale: (transaction, entities, entity, startLane, lane, beat) => {
-        const object = toMovedTimeScaleObject(entities, entity, startLane, lane, beat)
+    timeScale: (transaction, onlyType, entity, startLane, lane, beat) => {
+        const object = toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat)
 
         removeTimeScale(transaction, entity)
 
@@ -600,23 +608,23 @@ const moves: {
         return addTimeScale(transaction, object)
     },
 
-    cameraEventJoint: (transaction, entities, entity, startLane, lane, beat, focus) => {
-        const object = toMovedCameraEventObject(entities, entity, startLane, lane, beat, focus)
+    cameraEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
+        const object = toMovedCameraEventObject(onlyType, entity, startLane, lane, beat, focus)
 
         removeCameraEventJoint(transaction, entity)
         return addCameraEventJoint(transaction, object)
     },
     cameraEventConnection: undefined,
 
-    stageMaskEventJoint: (transaction, entities, entity, startLane, lane, beat, focus) => {
-        const object = toMovedStageMaskEventObject(entities, entity, startLane, lane, beat, focus)
+    stageMaskEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
+        const object = toMovedStageMaskEventObject(onlyType, entity, startLane, lane, beat, focus)
 
         removeStageMaskEventJoint(transaction, entity)
         return addStageMaskEventJoint(transaction, object)
     },
     stageMaskEventConnection: undefined,
 
-    stagePivotEventJoint: (transaction, entities, entity, startLane, lane, beat) => {
+    stagePivotEventJoint: (transaction, onlyType, entity, startLane, lane, beat) => {
         const object = toMovedStagePivotEventObject(entity, startLane, lane, beat)
 
         removeStagePivotEventJoint(transaction, entity)
@@ -624,15 +632,15 @@ const moves: {
     },
     stagePivotEventConnection: undefined,
 
-    stageStyleEventJoint: (transaction, entities, entity, startLane, lane, beat) => {
-        const object = toMovedStageStyleEventObject(entities, entity, startLane, lane, beat)
+    stageStyleEventJoint: (transaction, onlyType, entity, startLane, lane, beat) => {
+        const object = toMovedStageStyleEventObject(onlyType, entity, startLane, lane, beat)
 
         removeStageStyleEventJoint(transaction, entity)
         return addStageStyleEventJoint(transaction, object)
     },
     stageStyleEventConnection: undefined,
 
-    stageTransformEventJoint: (transaction, entities, entity, startLane, lane, beat) => {
+    stageTransformEventJoint: (transaction, onlyType, entity, startLane, lane, beat) => {
         const object = toMovedStageTransformEventObject(entity, startLane, lane, beat)
 
         removeStageTransformEventJoint(transaction, entity)
@@ -640,8 +648,8 @@ const moves: {
     },
     stageTransformEventConnection: undefined,
 
-    note: (transaction, entities, entity, startLane, lane, beat, focus) => {
-        const object = toMovedNoteObject(entities, entity, startLane, lane, beat, focus)
+    note: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
+        const object = toMovedNoteObject(onlyType, entity, startLane, lane, beat, focus)
 
         return replaceNote(transaction, entity, object)
     },

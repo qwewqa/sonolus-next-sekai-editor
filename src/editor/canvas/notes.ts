@@ -229,6 +229,7 @@ type Sprite = {
     w: number
     h: number
     pixels: number
+    frame: number
 }
 
 // Four million pixels cap the cached RGBA artwork at about 16 MiB, independently
@@ -241,6 +242,7 @@ const maxSpriteDimension = 4096
 export const createNoteRenderer = () => {
     const sprites = new Map<string, Sprite>()
     let cachedPixels = 0
+    let frame = 0
     let lookups = new WeakMap<readonly NoteInfo[], ReadonlyMap<NoteEntity, NoteInfo>>()
 
     const release = (sprite: Sprite) => {
@@ -262,6 +264,7 @@ export const createNoteRenderer = () => {
         if (cached) {
             sprites.delete(key)
             sprites.set(key, cached)
+            cached.frame = frame
             return cached
         }
 
@@ -291,6 +294,17 @@ export const createNoteRenderer = () => {
             return
         }
 
+        // A dense view may contain more distinct widths than fit in the cache.
+        // Evicting artwork already used in this frame would repeat every miss
+        // on every subsequent frame. Retain that working set and draw overflow
+        // directly; an ordinary scroll can still replace unused older sprites.
+        while (sprites.size >= maxCachedSprites || cachedPixels + pixels > maxCachedPixels) {
+            const oldest = sprites.entries().next().value
+            if (!oldest || oldest[1].frame === frame) return
+            sprites.delete(oldest[0])
+            release(oldest[1])
+        }
+
         const canvas = document.createElement('canvas')
         canvas.width = width
         canvas.height = height
@@ -298,19 +312,16 @@ export const createNoteRenderer = () => {
         if (!ctx) return
         ctx.setTransform(density, 0, 0, density, -x * density, -y * density)
         drawArtwork(ctx, entity, type, outline, scale)
-        const sprite = { canvas, x, y, w: width / density, h: height / density, pixels }
-        while (sprites.size >= maxCachedSprites || cachedPixels + pixels > maxCachedPixels) {
-            const oldest = sprites.entries().next().value
-            if (!oldest) break
-            sprites.delete(oldest[0])
-            release(oldest[1])
-        }
+        const sprite = { canvas, x, y, w: width / density, h: height / density, pixels, frame }
         sprites.set(key, sprite)
         cachedPixels += pixels
         return sprite
     }
 
     return {
+        beginFrame(timestamp: number) {
+            frame = timestamp
+        },
         draw(context: EditorDrawContext, entity: NoteEntity, highlighted: boolean, opacity = 1) {
             const { ctx, state, scale, recentlyActive } = context
             if (opacity <= 0 || scale <= 0 || context.pixelRatio <= 0) return

@@ -19,7 +19,8 @@ The migration follows these performance constraints:
   and paste drawing is culled without changing the entities used by editing tools.
 - Cache complete note artwork at device resolution, bounded to 512 sprites and
   approximately 16 MiB of RGBA pixels. Index immutable slide metadata instead of
-  searching a slide for every note. Oversized sprites draw directly.
+  searching a slide for every note. Sprites used in the current animation frame
+  remain resident; oversized sprites and cache overflow draw directly.
 - Weakly cache connector paths, gradients and event paths by entity, invalidating
   for BPM or zoom changes. Constant-alpha guides use flat fills; authored fading
   guides retain their gradients. Batch disjoint grid lines by opacity.
@@ -32,7 +33,9 @@ The visible compromises are static dashes and small rasterization changes.
 Faded event markers, connector fake crosses and labels can blend slightly
 differently at their intersections because those primitives are no longer
 isolated SVG groups. Cached note artwork and the whole creation/paste group keep
-their original group opacity. Native device resolution, note/flick/fake cues,
+their original group opacity. Faded multipart notes drawn directly because of
+size or cache limits can also blend slightly differently at their intersections.
+Native device resolution, note/flick/fake cues,
 curved connector geometry, authored fades and draw ordering are preserved.
 
 ### Alignment verification
@@ -60,6 +63,70 @@ identical ink bounds. An independent geometry audit compared 21 scene pairs and
 105 note artworks at DPR 1, 1.25 and 2, including fractional dimensions and pan.
 Note decorations, hitboxes, waveform placement and connector endpoints match the
 SVG geometry. Remaining edge differences come from rasterization.
+
+### Stutter and correctness audit
+
+A follow-up audit against `2162df9` found a recurring allocation spike when the
+visible note widths exceeded the sprite cache capacity. Ordinary LRU eviction
+discarded artwork earlier in the same frame, so every subsequent frame missed
+the cache again. Chart and creation layers now share the browser's animation-frame
+timestamp and retain sprites used in that frame. Overflow draws directly within
+the same cache limits, allowing unused older sprites to be replaced on scroll.
+
+In a deliberately dense browser fixture with 1,200 simultaneously visible,
+distinct-width notes, 39 steady scroll redraws measured:
+
+| Work                                    |   Before |   After |
+| --------------------------------------- | -------: | ------: |
+| New sprite canvases                     |   46,800 |       0 |
+| Canvas backing-size writes              |  187,200 |       0 |
+| Chart callback mean                     |  73.8 ms | 4.58 ms |
+| Chart callback 95th percentile          |   150 ms | 5.70 ms |
+| Chart callback maximum                  | 213.3 ms | 5.80 ms |
+| Main-thread long tasks (at least 50 ms) |       39 |       0 |
+
+These are warmed redraws; the initial frame still fills the bounded cache.
+The workload is intentionally more demanding than ordinary chart density. In the
+ordinary 6,000-note fixture, scrolling was already inexpensive (0.60 ms chart
+callback p95), and idle/hover behavior remained demand-driven. Zoom and resize
+still need sprites at the new scale; their measured callbacks stayed below 3 ms.
+Headless Edge uses software rendering, so these measurements demonstrate removed
+CPU/allocation spikes, not a hardware GPU frame-rate guarantee.
+
+Other fixes target work or behavior that can become visible as pauses or jumps:
+
+- Selection movement and resizing classify the selected entity types once per
+  gesture instead of scanning the full selection for each entity. Paste applies
+  the same linear classification. Moving a selection no longer sorts the previous
+  history state's selection array in place.
+- Preview hold heads and particles binary-search cached connector end indexes
+  instead of repeatedly walking completed segments. A 10,000-segment isolated
+  lookup benchmark with nine samples per frame fell from 47.09 to 0.267 ms across
+  1,000 frames; this excludes the rest of rendering. Tests cover ordering, tied
+  ends, overlaps, backward seeks and a 100,000-segment work bound.
+- Offscreen waveform image completions no longer redraw the entire chart.
+  Visible image completions still invalidate normally.
+- Inertial scrolling integrates only until its stopping time. A delayed frame
+  therefore cannot turn a small flick into a large overshoot, and finishing a
+  horizontal ease no longer delays the vertical update by one frame.
+- Audio catch-up skips cues whose playback deadlines have passed, bounding the
+  normal delayed-frame scan to the existing 200 ms scheduling lead. Holds that
+  span the gap resume, including when an expired source's end event is still
+  queued. Short overlapping holds cannot truncate longer ones. Stopping/replacing
+  playback and scrub previews now stops and releases sources, not just their
+  gain connections; natural completion also releases both nodes.
+- Preview resource downloads cancel on close, late decoded bitmaps are released,
+  and a particle load no longer uploads the skin texture a second time. WebGL
+  context restoration rebuilds textures and redraws even when paused.
+- Touch cancellation discards pending edits and previews, aligned pinch gestures
+  avoid zero-span zoom jumps, and leaving the editor restores a temporary mouse
+  tool. Hit-test broad-phase bounds now include the full note/BPM height at beat
+  bucket boundaries.
+
+Validation passes 104 unit tests and 13 browser tests, including the existing
+SVG text-alignment comparisons at DPR 1, 1.25 and 2, plus type, lint, formatting
+and production-build checks. Normal cached artwork retains its geometry; the
+direct-draw overflow opacity tradeoff is described above.
 
 ### Comparison with optimized SVG (`2a96ffa`)
 

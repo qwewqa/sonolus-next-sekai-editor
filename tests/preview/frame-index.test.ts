@@ -7,8 +7,10 @@ import {
     NoteKind,
     type PreviewChart,
     type PreviewNote,
+    type PreviewSlide,
 } from '../../src/preview/engine/model'
 import { renderPreviewFrame } from '../../src/preview/engine/render'
+import { findSlideConnector } from '../../src/preview/engine/slide'
 import { createTimeIndex, queryTimeIndex } from '../../src/preview/engine/timeIndex'
 import { createTimescaleGroup, type TimescaleChange } from '../../src/preview/engine/timescale'
 import type { PreviewRenderer } from '../../src/preview/gl'
@@ -41,6 +43,60 @@ const chart = (overrides: Partial<PreviewChart> = {}): PreviewChart => ({
     stages: [],
     hasStageTransforms: false,
     ...overrides,
+})
+
+const slide = (tailTimes: number[]): PreviewSlide => {
+    const head = note(0)
+    const tail = note(tailTimes.reduce((maximum, time) => Math.max(maximum, time), 0))
+    return {
+        activeHead: head,
+        activeTail: tail,
+        kind: ConnectorKind.activeNormal,
+        connectors: tailTimes.map((time) => ({
+            kind: ConnectorKind.activeNormal,
+            ease: 1,
+            head,
+            tail: note(time),
+            segmentHead: head,
+            segmentTail: tail,
+            segmentHeadAlpha: 1,
+            segmentTailAlpha: 1,
+            layer: 0,
+            throughJudgeLine: false,
+            fullScreen: false,
+        })),
+    }
+}
+
+test('slide lookups retain first-match ordering at tied endpoints and after arbitrary seeks', () => {
+    for (const times of [[], [1], [1, 1, 2, 4, 4, 6], [2, 1, 8, 5, 9, 3]]) {
+        const source = slide(times)
+        for (const time of [0, 1, 1.5, 7, -1, 8, 4, 9, 2, 3, Infinity, -Infinity]) {
+            assert.equal(
+                findSlideConnector(source, time),
+                source.connectors.find((connector) => connector.tail.targetTime > time),
+                `Endpoints ${times}, sample at ${time}`,
+            )
+        }
+    }
+})
+
+test('long slide lookups do not revisit passed segments for every particle sample', () => {
+    const source = slide(Array.from({ length: 100_000 }, (_, i) => i + 1))
+    let reads = 0
+    source.connectors = new Proxy(source.connectors, {
+        get(target, property, receiver) {
+            if (typeof property === 'string' && /^\d+$/.test(property)) reads++
+            return Reflect.get(target, property, receiver)
+        },
+    })
+    findSlideConnector(source, 0)
+    reads = 0
+    for (const time of [99_999, 99_998.5, 99_998, 50_000, 1, 0, 100_000]) {
+        const result = findSlideConnector(source, time)
+        assert.equal(result?.tail.targetTime, time < 100_000 ? Math.floor(time) + 1 : undefined)
+    }
+    assert.equal(reads, 7)
 })
 
 test('time index matches interval scans after arbitrary seeks and preserves source indices', () => {

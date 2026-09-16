@@ -29,6 +29,7 @@ const mousedown = (event: MouseEvent) => {
     updateViewPointer(p)
 
     view.scrollingY = undefined
+    view.scrollingX = undefined
     stopPlayer(false)
 
     if (!mouseGesture.pointerCount && event.buttons & 2 && !secondarySwitchBack) {
@@ -69,14 +70,7 @@ const mouseup = (event: MouseEvent) => {
     event.preventDefault()
 }
 
-const mouseleave = (event: MouseEvent) => {
-    const p = toP(event)
-    updateViewPointer(p)
-
-    mouseGesture.end([p])
-
-    event.preventDefault()
-}
+const mouseleave = mouseup
 
 const wheel = (event: WheelEvent) => {
     if (event.ctrlKey) {

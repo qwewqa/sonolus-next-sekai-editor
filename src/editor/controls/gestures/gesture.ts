@@ -88,6 +88,14 @@ export const gesture = (...recognizers: Recognizer[]) => {
         flush()
     }
 
+    const cancel = () => {
+        // A cancelled contact must not be recognized as a tap or commit an edit.
+        for (const recognizer of recognizers) recognizer.reset?.(true)
+        pointers.clear()
+        activeRecognizer = undefined
+        count = 0
+    }
+
     return {
         get pointerCount() {
             return pointers.size
@@ -96,5 +104,6 @@ export const gesture = (...recognizers: Recognizer[]) => {
         start,
         move,
         end,
+        cancel,
     }
 }

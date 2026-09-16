@@ -304,6 +304,10 @@ export const slide: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 const getNoteFromSelection = () => {

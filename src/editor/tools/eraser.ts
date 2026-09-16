@@ -114,6 +114,10 @@ export const eraser: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 const canRemoves: {

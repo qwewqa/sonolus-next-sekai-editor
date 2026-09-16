@@ -39,4 +39,8 @@ export const offset: Tool = {
 
         notify(() => i18n.value.tools.offset.changed)
     },
+
+    dragCancel() {
+        bgmOffsetDelta.value = 0
+    },
 }

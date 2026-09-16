@@ -27,6 +27,7 @@ const touchstart = (event: TouchEvent) => {
     updateViewPointer(ps[0])
 
     view.scrollingY = undefined
+    view.scrollingX = undefined
     stopPlayer(false)
 
     touchGesture.start(ps)
@@ -56,7 +57,7 @@ const touchcancel = (event: TouchEvent) => {
     const ps = toPs(event)
     updateViewPointer(ps[0])
 
-    touchGesture.end(ps)
+    touchGesture.cancel()
 
     event.preventDefault()
 }

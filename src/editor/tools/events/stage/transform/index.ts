@@ -280,6 +280,10 @@ export const stageTransformEvent: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 export const editStageTransformEvent = (

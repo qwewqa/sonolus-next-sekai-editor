@@ -28,6 +28,7 @@ export type Tool = {
     dragStart?: (x: number, y: number, modifiers: Modifiers) => boolean
     dragUpdate?: (x: number, y: number, modifiers: Modifiers) => void
     dragEnd?: (x: number, y: number, modifiers: Modifiers) => void | Promise<void>
+    dragCancel?: () => void
 }
 
 export const tools = {

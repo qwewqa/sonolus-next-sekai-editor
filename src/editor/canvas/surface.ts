@@ -41,16 +41,16 @@ export const prepareSurface = (
 // and reschedule on playback updates, which could starve a pending draw.
 export const createFrameScheduler = () => {
     let id = 0
-    let draw: (() => void) | undefined
+    let draw: ((timestamp: number) => void) | undefined
     return {
-        schedule(next: () => void) {
+        schedule(next: (timestamp: number) => void) {
             draw = next
             if (id) return
-            id = requestAnimationFrame(() => {
+            id = requestAnimationFrame((timestamp) => {
                 id = 0
                 const current = draw
                 draw = undefined
-                current?.()
+                current?.(timestamp)
             })
         },
         cancel() {

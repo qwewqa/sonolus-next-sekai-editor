@@ -18,6 +18,7 @@ import { TARGET_ASPECT_RATIO } from './engine/layout'
 import { renderPreviewFrame } from './engine/render'
 import { createPreviewRenderer, type PreviewRenderer } from './gl'
 import { loadParticleFromScp, type LoadedParticle } from './particle'
+import { loadPreviewResource } from './resource'
 import { loadSkinFromScp, type LoadedSkin } from './skin'
 
 const container = useTemplateRef('container')
@@ -55,74 +56,118 @@ const chart = computed(() => buildPreviewChart(chartState.value, noteSpeed.value
 
 const renderer = shallowRef<PreviewRenderer>()
 
-const fetchScp = async (name: string) => {
-    const response = await fetch(`${import.meta.env.BASE_URL}resource/${name}`, {
-        cache: 'no-store',
-    })
-    if (!response.ok) return
+let loadController: AbortController | undefined
 
-    return await response.arrayBuffer()
+const releaseResources = () => {
+    skin.value?.texture.close()
+    particle.value?.texture.close()
+    skin.value = undefined
+    particle.value = undefined
 }
 
 const loadSkin = async () => {
+    loadController?.abort()
+    loadController = new AbortController()
+    const { signal } = loadController
+    const isAborted = () => signal.aborted
     status.value = 'loading'
-    skin.value = undefined
-    particle.value = undefined
+    releaseResources()
 
     try {
-        const skinBuffer = await fetchScp('skin.scp')
-        if (!skinBuffer) {
+        const loadedSkin = await loadPreviewResource(
+            `${import.meta.env.BASE_URL}resource/skin.scp`,
+            loadSkinFromScp,
+            signal,
+        )
+        if (isAborted()) return
+        if (!loadedSkin) {
             status.value = 'missing'
             return
         }
 
-        skin.value = await loadSkinFromScp(skinBuffer)
+        skin.value = loadedSkin
         status.value = 'ready'
     } catch (error) {
+        if (isAborted()) return
         console.error('Failed to load preview skin:', error)
         status.value = 'missing'
         return
     }
 
     try {
-        const particleBuffer = await fetchScp('particle.scp')
-        if (particleBuffer) {
-            particle.value = await loadParticleFromScp(particleBuffer)
-        }
+        const loadedParticle = await loadPreviewResource(
+            `${import.meta.env.BASE_URL}resource/particle.scp`,
+            loadParticleFromScp,
+            signal,
+        )
+        if (isAborted()) return
+        particle.value = loadedParticle
     } catch (error) {
+        if (isAborted()) return
         console.error('Failed to load preview particle:', error)
     }
-
-    uploadTextures()
 }
 
-const uploadTextures = () => {
-    if (!renderer.value) return
+let contextLost = false
 
-    if (skin.value) renderer.value.setTexture(0, skin.value.texture, skin.value.interpolation)
-    if (particle.value)
-        renderer.value.setTexture(1, particle.value.texture, particle.value.interpolation)
-}
+const initializeRenderer = () => {
+    if (!canvas.value || !skin.value || renderer.value || contextLost) return
 
-let rendererCanvas: HTMLCanvasElement | undefined
-
-watch([skin, canvas], () => {
-    if (!canvas.value || !skin.value) return
-
-    if (!renderer.value || rendererCanvas !== canvas.value || renderer.value.isContextLost()) {
-        renderer.value?.dispose()
-        try {
-            renderer.value = createPreviewRenderer(canvas.value, antialias.value)
-            rendererCanvas = canvas.value
-        } catch (error) {
-            console.error('Failed to create preview renderer:', error)
-            status.value = 'error'
-            return
-        }
+    try {
+        renderer.value = createPreviewRenderer(canvas.value, antialias.value)
+        status.value = 'ready'
+    } catch (error) {
+        console.error('Failed to create preview renderer:', error)
+        status.value = 'error'
     }
+}
 
-    uploadTextures()
+watch(skin, initializeRenderer)
+watch(canvas, (currentCanvas, _previousCanvas, onCleanup) => {
+    renderer.value?.dispose()
+    renderer.value = undefined
+    contextLost = false
+    if (!currentCanvas) return
+
+    const onContextLost = (event: Event) => {
+        // Opt in to restoration; all resources from the old context are invalid.
+        event.preventDefault()
+        contextLost = true
+        renderer.value = undefined
+    }
+    const onContextRestored = () => {
+        contextLost = false
+        initializeRenderer()
+    }
+    currentCanvas.addEventListener('webglcontextlost', onContextLost)
+    currentCanvas.addEventListener('webglcontextrestored', onContextRestored)
+    onCleanup(() => {
+        currentCanvas.removeEventListener('webglcontextlost', onContextLost)
+        currentCanvas.removeEventListener('webglcontextrestored', onContextRestored)
+    })
+
+    initializeRenderer()
 })
+
+watch(
+    [renderer, skin, particle],
+    (
+        [nextRenderer, nextSkin, nextParticle],
+        [previousRenderer, previousSkin, previousParticle],
+    ) => {
+        if (!nextRenderer) return
+
+        if (nextSkin && (nextRenderer !== previousRenderer || nextSkin !== previousSkin)) {
+            nextRenderer.setTexture(0, nextSkin.texture, nextSkin.interpolation)
+        }
+        if (
+            nextParticle &&
+            (nextRenderer !== previousRenderer || nextParticle !== previousParticle)
+        ) {
+            nextRenderer.setTexture(1, nextParticle.texture, nextParticle.interpolation)
+        }
+    },
+)
 
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
@@ -278,11 +323,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+    loadController?.abort()
     resizeObserver.disconnect()
     cancelAnimationFrame(rafId)
     window.removeEventListener('resize', onPixelRatioChange)
     pixelRatioQuery?.removeEventListener('change', onPixelRatioChange)
     renderer.value?.dispose()
+    releaseResources()
 })
 </script>
 

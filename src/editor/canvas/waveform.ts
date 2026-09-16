@@ -5,10 +5,12 @@ import type { EditorDrawContext } from './types'
 export const createWaveformRenderer = (invalidate: () => void) => {
     let source: Waveform | undefined
     const images = new Map<string, HTMLImageElement>()
+    const visible = new Set<string>()
 
     const clear = () => {
         for (const image of images.values()) image.onload = null
         images.clear()
+        visible.clear()
         source = undefined
     }
 
@@ -24,6 +26,7 @@ export const createWaveformRenderer = (invalidate: () => void) => {
                 clear()
                 source = waveform
             }
+            visible.clear()
             if (!waveform) return
 
             const min = Math.max(0, Math.floor((times.min + offset) / waveformDuration))
@@ -39,10 +42,15 @@ export const createWaveformRenderer = (invalidate: () => void) => {
             for (let index = min; index <= max; index++) {
                 const href = waveform.images[index]
                 if (!href) continue
+                visible.add(href)
                 let image = images.get(href)
                 if (!image) {
                     image = new Image()
-                    image.onload = invalidate
+                    image.onload = () => {
+                        // Retained tiles can finish loading after a scroll. Only
+                        // the latest visible range needs another chart draw.
+                        if (visible.has(href)) invalidate()
+                    }
                     image.src = href
                 }
                 // Keep a small working set as the user scrolls through long audio.
