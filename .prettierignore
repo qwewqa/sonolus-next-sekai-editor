@@ -7,6 +7,7 @@
 !vite.config.ts
 
 !src/**/*
+!tests/**/*
 
 src/i18n/*/index.json
 !src/i18n/en/index.json

@@ -21,13 +21,13 @@ import {
     stageTransformToAffine,
     type StageTransform,
 } from './layout'
+import type { VisualMask } from './mask'
 import {
     applyAffine,
     clamp,
     ease,
     easeOutCubic,
     lerp,
-    remapClamped,
     unlerpClamped,
     vec,
     type EaseTypeValue,
@@ -45,6 +45,9 @@ type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
 
 const SLIDE_ALPHA = 1
 const GUIDE_ALPHA = 0.6
+
+const safeFraction = (a: number, b: number, value: number, fallback = 0.5) =>
+    Math.abs(a - b) < 1e-6 ? fallback : unlerpClamped(a, b, value)
 
 export const ConnectorVisualState = {
     waiting: 0,
@@ -100,6 +103,7 @@ const getConnectorZ = (
     lane: number,
     active: boolean,
     layer: ConnectorLayerValue,
+    elevation = 0,
 ): ZKey => {
     const layerValue = getConnectorLayer(kind, layer)
     let etc
@@ -112,7 +116,7 @@ const getConnectorZ = (
     } else {
         etc = kind - ConnectorKind.guideNeutral
     }
-    return getZ(layerValue, targetTime, lane, etc, true)
+    return getZ(layerValue, targetTime, lane, etc, true, elevation)
 }
 
 const getConnectorAlphaOption = (kind: ConnectorKindValue) =>
@@ -131,6 +135,7 @@ export type ConnectorEndpoint = {
     targetTime: number
     easeFrac: number
     transform?: StageTransform
+    mask?: VisualMask
 }
 
 export const drawConnector = (
@@ -200,32 +205,39 @@ export const drawConnector = (
     }
 
     const headAlpha =
-        remapClamped(
-            segmentHeadTargetTime,
-            segmentTailTargetTime,
+        lerp(
             segmentHeadAlpha,
             segmentTailAlpha,
-            head.targetTime,
+            safeFraction(segmentHeadTargetTime, segmentTailTargetTime, head.targetTime),
         ) * headNoteAlpha
     const tailAlpha =
-        remapClamped(
-            segmentHeadTargetTime,
-            segmentTailTargetTime,
+        lerp(
             segmentHeadAlpha,
             segmentTailAlpha,
-            tail.targetTime,
+            safeFraction(segmentHeadTargetTime, segmentTailTargetTime, tail.targetTime),
         ) * tailNoteAlpha
 
     if (now >= tail.targetTime && !bypassTailTargetTimeCheck) return
 
-    const zNormal = getConnectorZ(kind, segmentHeadTargetTime, segmentHeadLane, false, layer)
-    const zActive =
-        visualState === ConnectorVisualState.active && sprites.active
-            ? getConnectorZ(kind, segmentHeadTargetTime, segmentHeadLane, true, layer)
-            : zNormal
-
-    const drawQuad = (layout: Quad, baseA: number) => {
+    const drawQuad = (layout: Quad, baseA: number, elevation: number) => {
+        if (baseA <= 0) return
+        const zNormal = getConnectorZ(
+            kind,
+            segmentHeadTargetTime,
+            segmentHeadLane,
+            false,
+            layer,
+            elevation,
+        )
         if (visualState === ConnectorVisualState.active && sprites.active) {
+            const zActive = getConnectorZ(
+                kind,
+                segmentHeadTargetTime,
+                segmentHeadLane,
+                true,
+                layer,
+                elevation,
+            )
             const aModifier = (Math.cos(2 * Math.PI * now) + 1) / 2
             draw(sprites.normal, layout, zNormal, baseA * easeOutCubic(aModifier))
             draw(sprites.active, layout, zActive, baseA * easeOutCubic(1 - aModifier))
@@ -240,7 +252,7 @@ export const drawConnector = (
     }
 
     if (fullScreen) {
-        const judgeFrac = unlerpClamped(head.targetTime, tail.targetTime, now)
+        const judgeFrac = safeFraction(head.targetTime, tail.targetTime, now)
         const judgeAlpha = lerp(headAlpha, tailAlpha, judgeFrac)
         const baseA = clamp(judgeAlpha * getConnectorAlphaOption(kind), 0, 1)
         const w = Layout.screenW / 2
@@ -253,6 +265,11 @@ export const drawConnector = (
                 br: vec(w, -h),
             },
             baseA,
+            lerp(
+                head.transform?.projection.elevation ?? 0,
+                tail.transform?.projection.elevation ?? 0,
+                judgeFrac,
+            ),
         )
         return
     }
@@ -267,14 +284,15 @@ export const drawConnector = (
         DynamicLayout.progressStart,
         DynamicLayout.progressCutoff,
     )
-    const startFrac = unlerpClamped(head.visualProgress, tail.visualProgress, startVisualProgress)
-    const endFrac = unlerpClamped(head.visualProgress, tail.visualProgress, endVisualProgress)
+    const startFrac = safeFraction(head.visualProgress, tail.visualProgress, startVisualProgress, 0)
+    const endFrac = safeFraction(head.visualProgress, tail.visualProgress, endVisualProgress, 1)
     const startEaseFrac = lerp(head.easeFrac, tail.easeFrac, startFrac)
     const endEaseFrac = lerp(head.easeFrac, tail.easeFrac, endFrac)
     const easedHeadEaseFrac = ease(easeType, head.easeFrac)
     const easedTailEaseFrac = ease(easeType, tail.easeFrac)
 
     const alphaOption = getConnectorAlphaOption(kind)
+    if (head.size <= 0 && tailSize <= 0) return
 
     const headTransform = head.transform
     const tailTransform = tail.transform
@@ -283,38 +301,44 @@ export const drawConnector = (
         !!tailTransform &&
         !(stageTransformIsIdentity(headTransform) && stageTransformIsIdentity(tailTransform))
 
-    const sampleAt = (s: number): ConnectorSample => {
-        const easeFrac = lerp(startEaseFrac, endEaseFrac, s)
-        const interpFrac = unlerpClamped(
-            easedHeadEaseFrac,
-            easedTailEaseFrac,
-            ease(easeType, easeFrac),
-        )
-        const visualProgress = lerp(startVisualProgress, endVisualProgress, s)
-        const travel = approach(visualProgress)
-        const lane = lerp(head.lane, tailLane, interpFrac)
-        const size = Math.max(1e-3, lerp(head.size, tailSize, interpFrac))
-
+    const sampleEdges = (lane: number, size: number, travel: number, interpFrac: number) => {
         let left = perspectiveVec(lane - size, 1, travel)
         let right = perspectiveVec(lane + size, 1, travel)
+        let elevation = 0
         if (hasTransform) {
             const affine = stageTransformToAffine(
                 blendStageTransform(headTransform, tailTransform, interpFrac),
             )
             left = applyAffine(affine, left)
             right = applyAffine(affine, right)
+            elevation = affine.elevation
         }
+        return { left, right, elevation }
+    }
 
+    const sampleAt = (s: number): ConnectorSample => {
+        const easeFrac = lerp(startEaseFrac, endEaseFrac, s)
+        const frac = lerp(startFrac, endFrac, s)
+        const interpFrac =
+            easeType === 0
+                ? 0
+                : safeFraction(easedHeadEaseFrac, easedTailEaseFrac, ease(easeType, easeFrac), frac)
+        const visualProgress = lerp(startVisualProgress, endVisualProgress, s)
+        const travel = approach(visualProgress)
+        const lane = lerp(head.lane, tailLane, interpFrac)
+        const size = lerp(head.size, tailSize, interpFrac)
         return {
             s,
             travel,
-            left,
-            right,
-            alpha: lerp(headAlpha, tailAlpha, lerp(startFrac, endFrac, s)),
+            lane,
+            size,
+            interpFrac,
+            ...sampleEdges(lane, size > 0 ? size : 1e-3, travel, interpFrac),
+            alpha: lerp(headAlpha, tailAlpha, frac),
         }
     }
 
-    const emit = (a: ConnectorSample, b: ConnectorSample) => {
+    const emitQuad = (a: ConnectorSample, b: ConnectorSample) => {
         const baseA = clamp(((a.alpha + b.alpha) / 2) * alphaOption, 0, 1)
 
         const layout: Quad =
@@ -322,7 +346,72 @@ export const drawConnector = (
                 ? { bl: a.left, br: a.right, tl: b.left, tr: b.right }
                 : { bl: b.left, br: b.right, tl: a.left, tr: a.right }
 
-        drawQuad(layout, baseA)
+        drawQuad(layout, baseA, Math.min(a.elevation, b.elevation))
+    }
+
+    const headMask = head.mask
+    const tailMask = tail.mask
+    const emit = (a: ConnectorSample, b: ConnectorSample) => {
+        if (!headMask?.enabled || !tailMask?.enabled) {
+            emitQuad(a, b)
+            return
+        }
+
+        const startLeft = lerp(headMask.left, tailMask.left, a.interpFrac)
+        const startRight = lerp(headMask.right, tailMask.right, a.interpFrac)
+        const endLeft = lerp(headMask.left, tailMask.left, b.interpFrac)
+        const endRight = lerp(headMask.right, tailMask.right, b.interpFrac)
+        const splitFracs = [0, 1]
+
+        // Clip the original curve after sampling it. Clipping endpoint notes first
+        // would pull the whole connector toward the stage borders.
+        for (const edge of [-1, 1]) {
+            for (const [startBound, endBound] of [
+                [startLeft, endLeft],
+                [startRight, endRight],
+            ] as const) {
+                const startDistance = a.lane + edge * a.size - startBound
+                const endDistance = b.lane + edge * b.size - endBound
+                if (startDistance * endDistance < 0) {
+                    splitFracs.push(startDistance / (startDistance - endDistance))
+                }
+            }
+        }
+        splitFracs.sort((x, y) => x - y)
+
+        const maskedSampleAt = (frac: number) => {
+            const lane = lerp(a.lane, b.lane, frac)
+            const size = lerp(a.size, b.size, frac)
+            const left = lerp(startLeft, endLeft, frac)
+            const right = lerp(startRight, endRight, frac)
+            const maskedLeft = clamp(lane - size, left, right)
+            const maskedRight = clamp(lane + size, left, right)
+            const maskedSize = (maskedRight - maskedLeft) / 2
+            const renderSize = Math.min(maskedSize > 0 ? maskedSize : 1e-3, (right - left) / 2)
+            const renderLane = clamp(
+                (maskedLeft + maskedRight) / 2,
+                left + renderSize,
+                right - renderSize,
+            )
+            const travel = lerp(a.travel, b.travel, frac)
+            const interpFrac = lerp(a.interpFrac, b.interpFrac, frac)
+            return {
+                s: lerp(a.s, b.s, frac),
+                lane: renderLane,
+                size: maskedSize,
+                travel,
+                interpFrac,
+                alpha: lerp(a.alpha, b.alpha, frac),
+                ...sampleEdges(renderLane, renderSize, travel, interpFrac),
+            }
+        }
+
+        let previous = maskedSampleAt(0)
+        for (const frac of splitFracs.slice(1)) {
+            const next = maskedSampleAt(frac)
+            if (previous.size > 0 || next.size > 0) emitQuad(previous, next)
+            previous = next
+        }
     }
 
     const flatten = (a: ConnectorSample, b: ConnectorSample, depth: number) => {
@@ -334,8 +423,15 @@ export const drawConnector = (
             chordError(a.left, b.left, p2.left, 0.75) <= FLATTEN_EPS &&
             chordError(a.right, b.right, p1.right, 0.25) <= FLATTEN_EPS &&
             chordError(a.right, b.right, p2.right, 0.75) <= FLATTEN_EPS &&
+            (a.elevation === b.elevation || b.s - a.s <= 1 / 32) &&
             Math.abs(p1.alpha - lerp(a.alpha, b.alpha, 0.25)) * alphaOption <= FLATTEN_ALPHA_EPS &&
-            Math.abs(p2.alpha - lerp(a.alpha, b.alpha, 0.75)) * alphaOption <= FLATTEN_ALPHA_EPS
+            Math.abs(p2.alpha - lerp(a.alpha, b.alpha, 0.75)) * alphaOption <= FLATTEN_ALPHA_EPS &&
+            (Math.abs(a.alpha - b.alpha) * alphaOption <= 2 * FLATTEN_ALPHA_EPS ||
+                Math.max(
+                    Math.hypot(a.left.x - b.left.x, a.left.y - b.left.y),
+                    Math.hypot(a.right.x - b.right.x, a.right.y - b.right.y),
+                ) <=
+                    4 * DynamicLayout.screenPixelSize)
 
         if (!flat && depth < MAX_FLATTEN_DEPTH) {
             const mid = sampleAt((a.s + b.s) / 2)
@@ -352,13 +448,17 @@ export const drawConnector = (
 type ConnectorSample = {
     s: number
     travel: number
+    lane: number
+    size: number
+    interpFrac: number
+    elevation: number
     left: Vec
     right: Vec
     alpha: number
 }
 
 const FLATTEN_EPS = 0.001
-const FLATTEN_ALPHA_EPS = 0.02
+const FLATTEN_ALPHA_EPS = 1 / 192
 const MAX_FLATTEN_DEPTH = 8
 
 const chordError = (a: Vec, b: Vec, p: Vec, t: number) =>

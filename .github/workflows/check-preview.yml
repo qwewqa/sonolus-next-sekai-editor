@@ -1,0 +1,20 @@
+name: Check Preview
+
+on:
+    push:
+        branches: ['main', 'preview']
+    pull_request:
+        branches: ['main', 'preview']
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+            - run: npm ci
+            - run: npm test

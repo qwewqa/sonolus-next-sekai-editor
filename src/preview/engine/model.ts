@@ -105,6 +105,7 @@ export type StageMaskEvent = {
     time: number
     lane: number
     size: number
+    maskNotes: boolean
     ease: EaseTypeValue
 }
 
@@ -136,6 +137,7 @@ export type StageTransformEvent = {
     rotate: number
     xLaneTranslate: number
     yLaneTranslate: number
+    elevation: number
     centerWeight: number
     ease: EaseTypeValue
 }

@@ -1,12 +1,13 @@
 import type { GroupId } from '../../chart/groups'
 import type { StageId } from '../../chart/stages'
+import type { TimeScaleEase } from '../../chart/timeScale'
 import type { State } from '../../state'
 import type { EntityOfType, EntityType } from '../../state/entities'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { findIntegral } from '../../state/integrals'
 import { beatToTime } from '../../state/integrals/bpms'
 import { FlickDirection, type CameraChange, type FlickDirectionValue } from './layout'
-import { EaseType, ease, unlerpClamped, type EaseTypeValue } from './math'
+import { EaseType, ease, lerp, unlerpClamped, type EaseTypeValue } from './math'
 import {
     ConnectorKind,
     NoteKind,
@@ -42,6 +43,15 @@ const eventEases: Record<string, EaseTypeValue> = {
     out: EaseType.outQuad,
     inOut: EaseType.inOutQuad,
     outIn: EaseType.outInQuad,
+}
+
+const timeScaleEases: Record<TimeScaleEase, EaseTypeValue> = {
+    none: EaseType.none,
+    linear: EaseType.linear,
+    inQuad: EaseType.inQuad,
+    outQuad: EaseType.outQuad,
+    inOutQuad: EaseType.inOutQuad,
+    outInQuad: EaseType.outInQuad,
 }
 
 const guideKinds: Record<string, ConnectorKindValue> = {
@@ -101,7 +111,8 @@ export const buildPreviewChart = (state: State, noteSpeed: number): PreviewChart
             time: toTime(timeScale.beat),
             timescale: timeScale.timeScale,
             skipSeconds: timeScale.skip * secondsPerBeat(timeScale.beat),
-            ease: timeScale.timeScaleEase === 'linear' ? 1 : 0,
+            ease: timeScaleEases[timeScale.timeScaleEase],
+            transitionStyle: timeScale.timeScaleTransition === 'scroll' ? 1 : 0,
             hideNotes: timeScale.hideNotes,
         })
     }
@@ -131,6 +142,7 @@ export const buildPreviewChart = (state: State, noteSpeed: number): PreviewChart
                     time: toTime(event.beat),
                     lane: event.maskLeft + event.maskSize / 2,
                     size: event.maskSize / 2,
+                    maskNotes: event.isMaskNotes,
                     ease: eventEases[event.eventEase] ?? EaseType.linear,
                 }))
 
@@ -172,6 +184,7 @@ export const buildPreviewChart = (state: State, noteSpeed: number): PreviewChart
                     rotate: (event.rotation * Math.PI) / 180,
                     xLaneTranslate: event.xTranslation,
                     yLaneTranslate: event.yTranslation,
+                    elevation: event.elevation,
                     centerWeight: event.anchor === 'center' ? 1 : 0,
                     ease: eventEases[event.eventEase] ?? EaseType.linear,
                 }))
@@ -317,6 +330,11 @@ export const buildPreviewChart = (state: State, noteSpeed: number): PreviewChart
 
             previewNote.attachHead = getPreviewNote(info.attachHead)
             previewNote.attachTail = getPreviewNote(info.attachTail)
+            previewNote.size = lerp(
+                previewNote.attachHead.size,
+                previewNote.attachTail.size,
+                attachEasedFrac(previewNote),
+            )
         }
 
         let head: NoteEntity | undefined
@@ -444,7 +462,13 @@ export const attachEasedFrac = (note: PreviewNote) => {
 
     return ease(
         note.attachHead.connectorEase,
-        unlerpClamped(note.attachHead.targetTime, note.attachTail.targetTime, note.targetTime),
+        Math.abs(note.attachTail.targetTime - note.attachHead.targetTime) < 1e-6
+            ? 0.5
+            : unlerpClamped(
+                  note.attachHead.targetTime,
+                  note.attachTail.targetTime,
+                  note.targetTime,
+              ),
     )
 }
 
