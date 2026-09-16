@@ -106,7 +106,8 @@ watchEffect(
         const currentWaveform = settings.waveform === 'off' ? undefined : state.value.bgm.waveform
         const offset = state.value.bgm.offset + bgmOffsetDelta.value
         void waveformVersion.value
-        chartFrame.schedule(() => {
+        chartFrame.schedule((timestamp) => {
+            notes.beginFrame(timestamp)
             const ctx = prepareSurface(
                 canvas,
                 inputs.width,
@@ -145,7 +146,8 @@ watchEffect(
         const selected = visibleSelectedEntities.value
         const selection = view.selection
         const hover = view.hoverTime
-        overlayFrame.schedule(() => {
+        overlayFrame.schedule((timestamp) => {
+            notes.beginFrame(timestamp)
             const ctx = prepareSurface(
                 canvas,
                 inputs.width,

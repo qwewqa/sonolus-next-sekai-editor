@@ -13,6 +13,13 @@ import { view } from './editor/view'
 import { bgm } from './history/bgm'
 import { bpms } from './history/bpms'
 import { cullEntities, store } from './history/store'
+import {
+    createPlayerAudio,
+    getPlayerAudioStartTime,
+    scheduleActivePlayerAudio,
+    type ActivePlayerAudio,
+    type PlayerAudio,
+} from './playerAudio'
 import { settings } from './settings'
 import type { ConnectorEntity } from './state/entities/slides/connector'
 import { beatToTime, timeToBeat } from './state/integrals/bpms'
@@ -38,12 +45,6 @@ const sfxBuffers = {
     criticalActive: optional<AudioBuffer>(),
 }
 
-type ActiveAudio = {
-    node: GainNode
-    source: AudioBufferSourceNode
-    endBeat: number
-}
-
 const state = ref<{
     speed: number
     time: number
@@ -51,11 +52,11 @@ const state = ref<{
     contextTime: number
 
     lastTime: number
-    bgmNodes: Set<GainNode>
-    sfxNodes: Set<GainNode>
+    bgmNodes: Set<PlayerAudio>
+    sfxNodes: Set<PlayerAudio>
     actives: {
-        normalActive: Set<ActiveAudio>
-        criticalActive: Set<ActiveAudio>
+        normalActive: Set<ActivePlayerAudio>
+        criticalActive: Set<ActivePlayerAudio>
     }
 }>()
 export const isPlaying = computed(() => !!state.value)
@@ -66,7 +67,7 @@ watch(isBgmEnabled, () => {
 
     const value = isBgmEnabled.value ? settings.playBgmVolume / 100 : 0
 
-    for (const node of state.value.bgmNodes) {
+    for (const { node } of state.value.bgmNodes) {
         node.gain.value = value
     }
 })
@@ -77,7 +78,7 @@ watch(isSfxEnabled, () => {
 
     const value = isSfxEnabled.value ? settings.playSfxVolume / 100 : 0
 
-    for (const node of state.value.sfxNodes) {
+    for (const { node } of state.value.sfxNodes) {
         node.gain.value = value
     }
 
@@ -88,15 +89,19 @@ watch(isSfxEnabled, () => {
     }
 })
 
-let preview: AudioNode | undefined
+let preview: PlayerAudio | undefined
 
 watch(time, ({ now }) => {
     if (!state.value) return
 
+    // A delayed frame cannot play cues whose audio deadline already passed. Bound
+    // the scan as well, so returning to a background tab does not process its backlog.
+    const startTime = getPlayerAudioStartTime(state.value, now, context.currentTime, delay)
+    const isCatchingUp = startTime > state.value.lastTime
     const beats = {
         min: timeToBeat(
             bpms.value,
-            (state.value.lastTime - state.value.time) * state.value.speed + state.value.bgmTime,
+            (startTime - state.value.time) * state.value.speed + state.value.bgmTime,
         ),
         max: timeToBeat(
             bpms.value,
@@ -219,13 +224,17 @@ watch(time, ({ now }) => {
         if (!sfxBuffers[type]) continue
 
         for (const beat of beats) {
+            const when =
+                (beatToTime(bpms.value, beat) - state.value.bgmTime) / state.value.speed +
+                state.value.contextTime +
+                delay
+            if (when < context.currentTime) continue
+
             schedule(
                 state.value.sfxNodes,
                 sfxBuffers[type],
                 isSfxEnabled.value ? settings.playSfxVolume : 0,
-                (beatToTime(bpms.value, beat) - state.value.bgmTime) / state.value.speed +
-                    state.value.contextTime +
-                    delay,
+                when,
             )
         }
     }
@@ -236,7 +245,8 @@ watch(time, ({ now }) => {
     }
 
     for (const entity of cullEntities('connector', keys.min, keys.max)) {
-        if (entity.head.beat < beats.min || entity.head.beat >= beats.max) continue
+        if (entity.head.beat >= beats.max || entity.tail.beat <= beats.min) continue
+        if (entity.head.beat < beats.min && !isCatchingUp) continue
 
         if (entity.segmentHead.connectorType !== 'active') continue
 
@@ -251,7 +261,8 @@ watch(time, ({ now }) => {
         if (!sfxBuffers[type]) continue
 
         for (const entity of entities.sort((a, b) => a.head.beat - b.head.beat)) {
-            scheduleActive(
+            scheduleActivePlayerAudio(
+                context,
                 state.value.actives[type],
                 sfxBuffers[type],
                 entity.head.beat,
@@ -275,6 +286,8 @@ watch(time, ({ now }) => {
 export const loadBgm = (data: ArrayBuffer) => context.decodeAudioData(data)
 
 export const startPlayer = (bgmTime: number, speed: number) => {
+    stopPlayer()
+
     const time = performance.now() / 1000
     const contextTime = context.currentTime
 
@@ -311,16 +324,16 @@ export const startPlayer = (bgmTime: number, speed: number) => {
 export const stopPlayer = () => {
     if (!state.value) return
 
-    for (const node of state.value.bgmNodes) {
-        node.disconnect()
+    for (const audio of state.value.bgmNodes) {
+        audio.stop()
     }
-    for (const node of state.value.sfxNodes) {
-        node.disconnect()
+    for (const audio of state.value.sfxNodes) {
+        audio.stop()
     }
 
     for (const actives of Object.values(state.value.actives)) {
-        for (const { node } of actives) {
-            node.disconnect()
+        for (const audio of actives) {
+            audio.stop()
         }
     }
 
@@ -338,21 +351,19 @@ export const previewPlayer = () => {
     const offset = view.cursorTime + bgm.value.offset
     if (offset < 0) return
 
-    const source = new AudioBufferSourceNode(context, {
-        buffer: bgm.value.buffer,
-    })
-    const gain = new GainNode(context, {
-        gain: settings.playBgmVolume / 100,
-    })
-
-    gain.connect(context.destination)
-    preview = gain
-
-    source.connect(gain)
+    const audio = createPlayerAudio(
+        context,
+        { buffer: bgm.value.buffer },
+        settings.playBgmVolume,
+        () => {
+            if (preview === audio) preview = undefined
+        },
+    )
+    preview = audio
 
     const time = context.currentTime
-    gain.gain.linearRampToValueAtTime(0, time + duration)
-    source.start(time, offset, duration)
+    audio.node.gain.linearRampToValueAtTime(0, time + duration)
+    audio.source.start(time, offset, duration)
 }
 
 const startContext = () => {
@@ -361,85 +372,29 @@ const startContext = () => {
     }
 
     if (preview) {
-        preview.disconnect()
+        preview.stop()
         preview = undefined
     }
 }
 
 const schedule = (
-    nodes: Set<AudioNode>,
+    nodes: Set<PlayerAudio>,
     buffer: AudioBuffer,
     volume: number,
     when: number,
     offset = 0,
     speed = 1,
 ) => {
-    const source = new AudioBufferSourceNode(context, {
-        buffer,
-        playbackRate: speed,
-    })
-    const gain = new GainNode(context, {
-        gain: volume / 100,
-    })
-
-    gain.connect(context.destination)
-    nodes.add(gain)
-
-    source.connect(gain)
-    source.onended = () => {
-        gain.disconnect()
-        nodes.delete(gain)
-    }
+    const audio = createPlayerAudio(context, { buffer, playbackRate: speed }, volume, () =>
+        nodes.delete(audio),
+    )
+    nodes.add(audio)
 
     if (offset < 0) {
-        source.start(when - offset / speed)
+        audio.source.start(when - offset / speed)
     } else {
-        source.start(when, offset)
+        audio.source.start(when, offset)
     }
-}
-
-const scheduleActive = (
-    actives: Set<ActiveAudio>,
-    buffer: AudioBuffer,
-    startBeat: number,
-    endBeat: number,
-    volume: number,
-    whenStart: number,
-    whenStop: number,
-) => {
-    for (const active of actives) {
-        if (active.endBeat < startBeat) continue
-
-        active.endBeat = endBeat
-        active.source.stop(whenStop)
-        return
-    }
-
-    const source = new AudioBufferSourceNode(context, {
-        buffer,
-        loop: true,
-    })
-    const gain = new GainNode(context, {
-        gain: volume / 100,
-    })
-
-    gain.connect(context.destination)
-
-    const active = {
-        node: gain,
-        source,
-        endBeat,
-    }
-    actives.add(active)
-
-    source.connect(gain)
-    source.onended = () => {
-        gain.disconnect()
-        actives.delete(active)
-    }
-
-    source.start(whenStart)
-    source.stop(whenStop)
 }
 
 const loadSfx = () => {

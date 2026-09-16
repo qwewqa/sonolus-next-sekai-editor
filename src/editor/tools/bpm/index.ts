@@ -240,6 +240,10 @@ export const bpm: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 export const editBpm = (entity: BpmEntity, object: Partial<BpmObject>) => {

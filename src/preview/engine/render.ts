@@ -50,6 +50,7 @@ import {
 import { drawNote, drawSlideNoteHead, getNoteSpriteSet } from './note'
 import { LANE_PARTICLE_LAYER, PARTICLE_LAYER, drawParticleEffect, hashSeed } from './particleDraw'
 import { drawSimLine } from './simLine'
+import { findSlideConnector } from './slide'
 import {
     drawStageWithProps,
     drawStaticStage,
@@ -549,12 +550,7 @@ export const renderPreviewFrame = (
         if (now >= end + SLIDE_EFFECT_DESPAWN_DELAY) continue
 
         const slideInfoAt = (t: number) => {
-            let current
-            for (const connector of slide.connectors) {
-                if (t >= connector.tail.targetTime) continue
-                current = connector
-                break
-            }
+            const current = findSlideConnector(slide, t)
             if (!current) return
             if (!isActiveConnectorKind(current.kind) && current.kind !== ConnectorKind.damage)
                 return

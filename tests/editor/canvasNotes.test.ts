@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
-import { getNoteVisualType } from '../../src/editor/canvas/notes'
+import test, { type TestContext } from 'node:test'
+import { createNoteRenderer, getNoteVisualType } from '../../src/editor/canvas/notes'
+import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import type { NoteEntity } from '../../src/state/entities/slides/note'
 
 const note = (beat: number, properties: Partial<NoteEntity> = {}) =>
@@ -99,4 +100,93 @@ test('new note ghosts respect inactive separators at the same beat', () => {
     assert.equal(getNoteVisualType(note(5), infos), 'single')
     assert.equal(getNoteVisualType(note(6, { isConnectorSeparator: true }), infos), 'head')
     assert.equal(getNoteVisualType(note(8, { isConnectorSeparator: true }), infos), 'single')
+})
+
+const artworkFixture = (t: TestContext, scale = 40, pixelRatio = 1) => {
+    let images = 0
+    const makeCanvasContext = () =>
+        new Proxy(
+            { globalAlpha: 1 },
+            {
+                get(target, property) {
+                    if (property in target) return Reflect.get(target, property)
+                    if (property === 'drawImage') return () => images++
+                    return () => {}
+                },
+            },
+        ) as unknown as CanvasRenderingContext2D
+    const canvases: { width: number; height: number }[] = []
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'document')
+    Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: {
+            createElement() {
+                const canvas = { width: 0, height: 0, getContext: makeCanvasContext }
+                canvases.push(canvas)
+                return canvas
+            },
+        },
+    })
+    t.after(() => {
+        if (original) Object.defineProperty(globalThis, 'document', original)
+        else Reflect.deleteProperty(globalThis, 'document')
+    })
+    const renderer = createNoteRenderer()
+    const context = {
+        ctx: makeCanvasContext(),
+        scale,
+        pixelRatio,
+        ups: -2,
+        recentlyActive: false,
+        state: {
+            bpms: [{ x: 0, y: 0, s: 0.5 }],
+            store: { slides: { info: new Map() } },
+        },
+    } as unknown as EditorDrawContext
+    const draw = (size: number) =>
+        renderer.draw(
+            context,
+            note(0, { size, left: 0, flickDirection: 'none', isCritical: false, isFake: false }),
+            false,
+        )
+    return { renderer, canvases, draw, images: () => images }
+}
+
+test('dense unique note widths reuse cached artwork instead of allocating every frame', (t) => {
+    const { renderer, canvases, draw, images } = artworkFixture(t)
+    for (const timestamp of [1, 2, 3]) {
+        renderer.beginFrame(timestamp)
+        for (let i = 0; i < 600; i++) draw(1 + i / 1000)
+        assert.equal(canvases.length, 512)
+        assert.equal(images(), timestamp * 512)
+    }
+
+    // New notes scrolling into view replace previously unused cached artwork.
+    renderer.beginFrame(4)
+    for (let i = 0; i < 600; i++) draw(2 + i / 1000)
+    assert.equal(canvases.length, 1024)
+    assert.equal(images(), 4 * 512)
+    assert.ok(canvases.slice(0, 512).every(({ width, height }) => width === 0 && height === 0))
+    renderer.clear()
+    assert.ok(canvases.every(({ width, height }) => width === 0 && height === 0))
+})
+
+test('artwork pixel budget remains bounded without repeated high-DPR cache misses', (t) => {
+    const { renderer, canvases, draw } = artworkFixture(t, 160, 2)
+    renderer.beginFrame(1)
+    for (let i = 0; i < 100; i++) draw(3 + i / 1000)
+    const initialCount = canvases.length
+    assert.ok(initialCount > 0 && initialCount < 100)
+    assert.ok(
+        canvases.reduce((sum, { width, height }) => sum + width * height, 0) <= 4 * 1024 * 1024,
+    )
+
+    renderer.beginFrame(2)
+    for (let i = 0; i < 100; i++) draw(3 + i / 1000)
+    assert.equal(canvases.length, initialCount)
+
+    // A creation layer in the same RAF must not displace chart-layer artwork.
+    renderer.beginFrame(2)
+    for (let i = 0; i < 100; i++) draw(4 + i / 1000)
+    assert.equal(canvases.length, initialCount)
 })

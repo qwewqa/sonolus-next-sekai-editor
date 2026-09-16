@@ -69,8 +69,8 @@ export const pan = (): Recognizer<2> => {
             active.sy = y
         },
 
-        reset() {
-            if (settings.touchScrollInertia) {
+        reset(cancelled) {
+            if (!cancelled && settings.touchScrollInertia) {
                 if (active?.x) {
                     const dx = updates
                         .filter(({ t }) => time.value.now - t <= 0.1)

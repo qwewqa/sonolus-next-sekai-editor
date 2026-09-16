@@ -113,6 +113,10 @@ export const generateSlideNotes: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 const apply = (notes: NoteEntity[]) => {

@@ -280,6 +280,10 @@ export const stagePivotEvent: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 export const editStagePivotEvent = (

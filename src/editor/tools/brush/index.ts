@@ -196,6 +196,10 @@ export const brush: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 type Apply<T> = (transaction: Transaction, entity: T, object: BrushProperties) => Entity[]

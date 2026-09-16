@@ -5,6 +5,7 @@ export const zoomY = (): Recognizer<2> => {
     let active:
         | {
               size: number
+              distance: number
               id1: number
               id2: number
           }
@@ -22,6 +23,7 @@ export const zoomY = (): Recognizer<2> => {
 
             active = {
                 size: settings.pps,
+                distance: Math.max(l, 1),
                 id1,
                 id2,
             }
@@ -37,10 +39,9 @@ export const zoomY = (): Recognizer<2> => {
             const p2 = pointers.get(active.id2)
             if (!p2) return
 
-            const sl = Math.abs(p1.sy - p2.sy)
-            const l = Math.abs(p1.y - p2.y)
+            const l = Math.max(Math.abs(p1.y - p2.y), 1)
 
-            settings.pps = (active.size * l) / sl
+            settings.pps = (active.size * l) / active.distance
         },
 
         reset() {

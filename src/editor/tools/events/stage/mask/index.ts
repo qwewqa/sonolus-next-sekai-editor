@@ -335,6 +335,10 @@ export const stageMaskEvent: Tool = {
 
         active = undefined
     },
+
+    dragCancel() {
+        active = undefined
+    },
 }
 
 export const editStageMaskEvent = (

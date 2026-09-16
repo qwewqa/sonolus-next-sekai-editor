@@ -1,8 +1,9 @@
 import { ref, watch } from 'vue'
+import { replaceState, state } from '../../../../history'
 import { settings } from '../../../../settings'
 import { time } from '../../../../time'
 import { unlerp } from '../../../../utils/math'
-import { tool } from '../../../tools'
+import { tool, type Tool } from '../../../tools'
 import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
 import type { Modifiers } from '../pointer'
 import type { Recognizer } from './recognizer'
@@ -19,6 +20,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
         | {
               type: 'drag'
               id: number
+              tool: Tool
+              state: (typeof state)['value']
           }
         | {
               type: 'scroll'
@@ -64,7 +67,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             }
         }
 
-        tool.value.dragUpdate?.(x, y, modifiers)
+        if (active?.type === 'drag') active.tool.dragUpdate?.(x, y, modifiers)
 
         if (!updated) {
             update = undefined
@@ -80,6 +83,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
 
             const p = (x - view.x) / view.w
             if (!quickScroll || p < 1 - settings.touchQuickScrollZone / 100) {
+                const startState = state.value
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true
 
                 isDragging.value++
@@ -87,6 +91,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 active = {
                     type: 'drag',
                     id,
+                    tool: tool.value,
+                    state: startState,
                 }
                 update = {
                     x,
@@ -121,7 +127,9 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 } else {
                     isDragging.value--
 
-                    void tool.value.dragEnd?.(p.x, p.y, p.modifiers)
+                    void active.tool.dragEnd?.(p.x, p.y, p.modifiers)
+                    active = undefined
+                    update = undefined
                 }
             } else {
                 const dx = p.x - active.sx
@@ -140,8 +148,22 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             }
         },
 
-        reset() {
-            if (active?.type === 'scroll' && settings.touchScrollInertia) {
+        reset(cancelled) {
+            if (cancelled && active?.type === 'drag') {
+                isDragging.value--
+                active.tool.dragCancel?.()
+                // Selection tools update the current selection while dragging.
+                // Restore it only if no committed edit/reset replaced the store.
+                if (state.value.store === active.state.store) {
+                    replaceState({
+                        ...state.value,
+                        selectedEntities: active.state.selectedEntities,
+                    })
+                }
+                view.selection = undefined
+                view.entities = { hovered: [], creating: [] }
+            }
+            if (!cancelled && active?.type === 'scroll' && settings.touchScrollInertia) {
                 const dx = updates
                     .filter(({ t }) => time.value.now - t <= 0.1)
                     .reduce((sum, { dx }) => sum + dx, 0)
