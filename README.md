@@ -44,3 +44,6 @@ To use an installed Chromium browser instead, set
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable path. See
 [rendering performance](PERFORMANCE.md) for the migration design, visual tradeoffs
 and measurements.
+
+See the [public deployment plan](DEPLOYMENT_PLAN.md) for the proposed GitHub Pages
+release process, asset packaging, verification and rollback.
