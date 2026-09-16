@@ -28,12 +28,38 @@ The migration follows these performance constraints:
   the entire overlapping preview. Handle resizing, display-density changes,
   loaded fonts and restored Canvas contexts without continuous rendering.
 
-The visible compromises are static dashes and small rasterization/text-baseline
-changes. Faded event markers, connector fake crosses and labels can blend slightly
+The visible compromises are static dashes and small rasterization changes.
+Faded event markers, connector fake crosses and labels can blend slightly
 differently at their intersections because those primitives are no longer
 isolated SVG groups. Cached note artwork and the whole creation/paste group keep
 their original group opacity. Native device resolution, note/flick/fake cues,
 curved connector geometry, authored fades and draw ordering are preserved.
+
+### Alignment verification
+
+A follow-up comparison found a consistent one- or two-device-pixel downward
+shift in some labels: Canvas and SVG use different definitions of a middle text
+baseline. Text now uses SVG's half-x-height offset from the alphabetic baseline,
+measured once on mount and when fonts load, with explicit kerning and fonts
+shaped at their displayed CSS size. ASCII whitespace collapses as it did in SVG;
+nonbreaking spaces remain intact. Logical start/end anchors retain paired-label
+and text-direction behavior.
+
+Rounded Canvas backing dimensions also caused a small drift from pointer and DOM
+coordinates at fractional dimensions/DPR. Transforms now use the actual backing
+width and height ratios, keeping CSS positions exact without snapping geometry.
+
+Browser tests compare 27 text renderings with independent SVG raster references
+at DPR 1, 1.25 and 2, including fractional zoom, numeric labels, paired stage/group
+names, kerning, whitespace, CJK and RTL anchors. All pass with at most one backing
+pixel of ink-edge variation and less than 0.6 backing pixels of centroid drift;
+substituting the previous text renderer makes all three tests fail. The wider
+scene audit also checked 153 labels across five viewport/zoom/DPR combinations.
+Text advances agree within 0.016 CSS pixels; all 33 labels at normal DPR 1 have
+identical ink bounds. An independent geometry audit compared 21 scene pairs and
+105 note artworks at DPR 1, 1.25 and 2, including fractional dimensions and pan.
+Note decorations, hitboxes, waveform placement and connector endpoints match the
+SVG geometry. Remaining edge differences come from rasterization.
 
 ### Comparison with optimized SVG (`2a96ffa`)
 

@@ -19,6 +19,8 @@ class RecordingCanvas {
     font = ''
     textAlign = 'start'
     textBaseline = 'alphabetic'
+    fontKerning = 'auto'
+    transform = [1, 1, 0, 0]
     lineDashOffset = 0
     dash: number[] = []
     currentPath: unknown[] = []
@@ -37,6 +39,8 @@ class RecordingCanvas {
             font: this.font,
             textAlign: this.textAlign,
             textBaseline: this.textBaseline,
+            fontKerning: this.fontKerning,
+            transform: this.transform,
             lineDashOffset: this.lineDashOffset,
             dash: this.dash,
         }
@@ -49,6 +53,16 @@ class RecordingCanvas {
 
     setLineDash(dash: number[]) {
         this.dash = dash
+    }
+
+    translate(x: number, y: number) {
+        const [sx, sy, tx, ty] = this.transform
+        this.transform = [sx, sy, tx + sx * x, ty + sy * y]
+    }
+
+    scale(x: number, y: number) {
+        const [sx, sy, tx, ty] = this.transform
+        this.transform = [sx * x, sy * y, tx, ty]
     }
 
     beginPath() {
@@ -80,7 +94,14 @@ class RecordingCanvas {
     }
 
     fillText(text: string, x: number, y: number) {
-        this.labels.push({ text, x, y, align: this.textAlign, alpha: this.globalAlpha })
+        const [sx, sy, tx, ty] = this.transform
+        this.labels.push({
+            text,
+            x: tx + x * sx,
+            y: ty + y * sy,
+            align: this.textAlign,
+            alpha: this.globalAlpha,
+        })
     }
 }
 
@@ -125,6 +146,7 @@ const makeContext = () => {
         showGroupName: true,
         recentlyActive: false,
         fontFamily: 'sans-serif',
+        fontMiddle: 0.25,
     }
     return { canvas, context }
 }
@@ -300,12 +322,12 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
         ['M', -7, -10],
         ['L', 6, -10],
     ])
-    assert.deepEqual(canvas.labels, [{ text: '2x+1^', x: -7.2, y: -10, align: 'right', alpha: 1 }])
+    assert.deepEqual(canvas.labels, [{ text: '2x+1^', x: -7.2, y: -9.875, align: 'end', alpha: 1 }])
     assert.deepEqual(canvas.dash, [])
 
     canvas.labels = []
     drawEvent(context, mask(2), false)
     assert.equal(canvas.labels.length, 0)
     drawEvent(context, mask(2), true)
-    assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -10, align: 'center', alpha: 1 }])
+    assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -9.9, align: 'center', alpha: 1 }])
 })

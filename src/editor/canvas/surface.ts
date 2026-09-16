@@ -27,8 +27,12 @@ export const prepareSurface = (
     ctx.fillRect(0, 0, w, h)
     ctx.restore()
     const scale = width / bounds.w
-    const s = scale * pixelRatio
-    ctx.setTransform(s, 0, 0, s, -bounds.l * s, -bounds.t * s)
+    // CSS dimensions and DPR can both be fractional. Use the actual backing
+    // dimensions so browser scaling keeps the scene aligned with pointer and
+    // DOM coordinates, including at the far edges of the surface.
+    const sx = scale * (w / width)
+    const sy = scale * (h / height)
+    ctx.setTransform(sx, 0, 0, sy, -bounds.l * sx, -bounds.t * sy)
     ctx.lineWidth = 2 / scale
     return ctx
 }

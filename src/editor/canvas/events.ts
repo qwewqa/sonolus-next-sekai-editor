@@ -7,6 +7,7 @@ import { beatToTime } from '../../state/integrals/bpms'
 import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD } from '../entities/events/path'
+import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
 type DrawnEventEntity = Exclude<Entity, { type: 'note' | 'connector' }>
@@ -64,23 +65,6 @@ const marker = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
     ctx.stroke()
 }
 
-const label = (
-    context: EditorDrawContext,
-    text: string,
-    x: number,
-    y: number,
-    color: string,
-    size = 0.4,
-    align: CanvasTextAlign = 'center',
-) => {
-    const { ctx, fontFamily } = context
-    ctx.fillStyle = color
-    ctx.font = `${size}px ${fontFamily}`
-    ctx.textAlign = align
-    ctx.textBaseline = 'middle'
-    ctx.fillText(text, x, y)
-}
-
 const drawConnection = (context: EditorDrawContext, entity: EventConnectionEntity) => {
     const { ctx, state, ups } = context
     let cached = connectionPaths.get(entity)
@@ -135,7 +119,7 @@ export const drawEvent = (
             ctx.globalAlpha *= 0.5
             line(ctx, -6, y, 6, y)
             ctx.globalAlpha *= 2
-            label(context, formatBpm(entity.bpm), 6.1, y, '#f0f', 0.5, 'left')
+            drawText(context, formatBpm(entity.bpm), 6.1, y, '#f0f', 0.5, 'start')
             break
         }
         case 'timeScale': {
@@ -151,28 +135,28 @@ export const drawEvent = (
             ctx.strokeStyle = '#fff'
             ctx.fillStyle = '#ff0'
             marker(ctx, x, y)
-            label(
+            drawText(
                 context,
                 formatTimeScale(entity.timeScale, entity.skip, entity.timeScaleEase),
                 x + (x > 0 ? 0.2 : -0.2),
                 y,
                 '#ff0',
                 0.5,
-                x > 0 ? 'left' : 'right',
+                x > 0 ? 'start' : 'end',
             )
             if (
                 context.showGroupName &&
                 entity.groupId !== context.defaultGroupId &&
                 (highlighted || context.recentlyActive)
             ) {
-                label(
+                drawText(
                     context,
                     state.groups.get(entity.groupId)?.name ?? '',
                     x + (x > 0 ? -0.2 : 0.2),
                     y,
                     '#0aa',
                     0.4,
-                    x > 0 ? 'right' : 'left',
+                    x > 0 ? 'end' : 'start',
                 )
             }
             break
@@ -211,7 +195,7 @@ export const drawEvent = (
                 (highlighted || context.recentlyActive)
             ) {
                 const stageName = state.stages.get(entity.stageId)?.name
-                if (stageName) label(context, stageName, (x + (xs[1] ?? x)) / 2, y, '#a0a')
+                if (stageName) drawText(context, stageName, (x + (xs[1] ?? x)) / 2, y, '#a0a')
             }
         }
     }
