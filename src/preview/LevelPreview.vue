@@ -104,6 +104,11 @@ const renderScale = ref(1)
 const showEffects = ref(true)
 
 const antialias = ref(true)
+const dockPositions = [
+    { label: 'Left', value: 'left' },
+    { label: 'Top', value: 'top' },
+    { label: 'Auto', value: 'auto' },
+] as const
 // The same viewport ratios outlined by the engine's test-aspect overlay.
 const aspectRatios = [
     { label: '16:9', value: TARGET_ASPECT_RATIO },
@@ -402,11 +407,18 @@ const blurInput = (event: Event) => {
     input.blur()
 }
 
-const onAspectChange = (event: Event) => {
+const onRadioChange = (event: Event) => {
     const input = event.currentTarget as HTMLInputElement
     // Pointer changes return shortcuts to the editor; keyboard radio navigation
     // keeps focus so arrow keys can continue through all three choices.
     if (!input.matches(':focus-visible')) input.blur()
+}
+
+const onDockChange = (event: Event) => {
+    // Keep settings reachable when the new position leaves no room for a docked
+    // transport. Ordinary resizes still preserve the bar's chosen visibility.
+    isTransportVisible.value = false
+    onRadioChange(event)
 }
 
 const onSpeedKeydown = (event: KeyboardEvent) => {
@@ -630,6 +642,28 @@ onUnmounted(() => {
                 <div
                     class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
                     role="radiogroup"
+                    aria-label="Preview docking"
+                >
+                    <span>Dock</span>
+                    <label
+                        v-for="position in dockPositions"
+                        :key="position.value"
+                        class="flex shrink-0 cursor-pointer items-center gap-1"
+                    >
+                        <input
+                            v-model="settings.previewPosition"
+                            type="radio"
+                            name="preview-dock-position"
+                            :value="position.value"
+                            @change="onDockChange"
+                            @keydown.stop
+                        />
+                        <span>{{ position.label }}</span>
+                    </label>
+                </div>
+                <div
+                    class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                    role="radiogroup"
                     aria-label="Aspect ratio"
                 >
                     <span>Aspect</span>
@@ -643,7 +677,7 @@ onUnmounted(() => {
                             type="radio"
                             name="preview-aspect-ratio"
                             :value="ratio.value"
-                            @change="onAspectChange"
+                            @change="onRadioChange"
                             @keydown.stop
                         />
                         <span>{{ ratio.label }}</span>

@@ -24,6 +24,8 @@ Preview defaults to note speed 10. Its aspect controls select the engine's 16:9,
 The settings panel can be minimized with its header button and reopened with the
 gear button. It starts minimized on narrow screens and touch devices, and remembers
 your choice across reloads.
+Its Dock controls select Left, Top, or Auto and share the saved editor preference.
+Auto places the preview on the left on wider screens and above the editor on narrow screens.
 
 Tap the preview to show a compact bottom bar with play/pause and paired 1, 10,
 and 100 ms step buttons, ordered −100/−10/−1/+1/+10/+100. The image shifts upward
