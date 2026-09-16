@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { i18n } from '../i18n'
 import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{
     title: () => string
-    task: () => AsyncIterable<() => string> | Iterable<() => string>
+    task: (signal: AbortSignal) => AsyncIterable<() => string> | Iterable<() => string>
 }>()
 
 const emit = defineEmits<{
@@ -14,15 +14,26 @@ const emit = defineEmits<{
 
 const message = ref(() => i18n.value.modals.loading.loading)
 
-let isAborted = false
+const controller = new AbortController()
+onBeforeUnmount(() => {
+    controller.abort()
+})
 onMounted(async () => {
     try {
-        for await (message.value of props.task()) {
-            if (isAborted) return
+        for await (const next of props.task(controller.signal)) {
+            if (controller.signal.aborted) return
+            message.value = next
         }
 
-        emit('close')
+        if (!controller.signal.aborted) emit('close')
     } catch (error) {
+        if (
+            controller.signal.aborted ||
+            (error instanceof DOMException && error.name === 'AbortError')
+        ) {
+            if (!controller.signal.aborted) emit('close')
+            return
+        }
         console.error(error)
 
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -31,7 +42,7 @@ onMounted(async () => {
 })
 
 const onClose = () => {
-    isAborted = true
+    controller.abort()
     emit('close')
 }
 </script>

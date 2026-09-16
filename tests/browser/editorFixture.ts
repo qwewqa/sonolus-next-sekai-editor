@@ -32,6 +32,10 @@ declare global {
 // Count actual on-screen clears without adding any application test hooks or
 // readbacks, which can change Chromium's deferred Canvas rendering behavior.
 export const installCanvasCounters = () => {
+    // The Vite app loads more modules than the browser's default 250-entry
+    // resource timing buffer. Retain their URLs for fixtures that must import
+    // the same reactive module instances, including any HMR timestamps.
+    performance.setResourceTimingBufferSize(5000)
     window.editorFrames = { chart: 0, overlay: 0 }
     const count = (ctx: CanvasRenderingContext2D) => {
         if (!(ctx.canvas instanceof HTMLCanvasElement)) return

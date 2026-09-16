@@ -4,6 +4,13 @@ import { installCanvasCounters, installEditorFixture } from './editorFixture'
 declare global {
     interface Window {
         bgmTestErrors: string[]
+        bgmImportGate: {
+            held: boolean
+            encoded: number
+            created: string[]
+            revoked: string[]
+            release: () => void
+        }
     }
 }
 
@@ -30,6 +37,49 @@ const wav = (duration: number) => {
         )
     }
     return data
+}
+
+// Pause the second tile at a real asynchronous browser boundary. The first
+// tile already owns a blob URL, so cancellation must clean up partial results.
+const trackWaveformTiles = (heldTile = 2) => {
+    const toBlob = HTMLCanvasElement.prototype.toBlob
+    const createUrl = URL.createObjectURL
+    const revokeUrl = URL.revokeObjectURL
+    const gate = (window.bgmImportGate = {
+        held: false,
+        encoded: 0,
+        created: [] as string[],
+        revoked: [] as string[],
+        release: () => {},
+    })
+    HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) {
+        const hold = ++gate.encoded === heldTile
+        toBlob.call(
+            this,
+            (blob) => {
+                if (hold) {
+                    gate.held = true
+                    gate.release = () => {
+                        gate.held = false
+                        callback(blob)
+                    }
+                } else {
+                    callback(blob)
+                }
+            },
+            type,
+            quality,
+        )
+    }
+    URL.createObjectURL = (blob) => {
+        const url = createUrl.call(URL, blob)
+        gate.created.push(url)
+        return url
+    }
+    URL.revokeObjectURL = (url) => {
+        gate.revoked.push(url)
+        revokeUrl.call(URL, url)
+    }
 }
 
 test.beforeEach(async ({ page }) => {
@@ -94,8 +144,10 @@ for (const { mode, duration, missingSuspend } of [
         const result = await page.evaluate(async () => {
             const { buffer, filename, waveform } = window.editorTest.history.state.value.bgm
             let visiblePixels = 0
+            const dimensions: { width: number; height: number }[] = []
             for (const url of waveform?.images ?? []) {
                 const bitmap = await createImageBitmap(await (await fetch(url)).blob())
+                dimensions.push({ width: bitmap.width, height: bitmap.height })
                 const canvas = document.createElement('canvas')
                 canvas.width = bitmap.width
                 canvas.height = bitmap.height
@@ -112,6 +164,7 @@ for (const { mode, duration, missingSuspend } of [
                 duration: buffer?.duration,
                 images: waveform?.images.length ?? 0,
                 visiblePixels,
+                dimensions,
                 mode: window.editorTest.settings.waveform,
             }
         })
@@ -123,69 +176,383 @@ for (const { mode, duration, missingSuspend } of [
         } else {
             expect(result.images).toBe(1)
             expect(result.visiblePixels).toBeGreaterThan(0)
+            if (mode === 'fft') {
+                expect(result.dimensions).toEqual([{ width: 128, height: 2000 }])
+            }
         }
     })
 }
 
-test('FFT waveform retains native analyser intensity for mono and stereo audio', async ({
+test('FFT tiles retain opposite-phase stereo without smearing attacks into silence', async ({
     page,
 }) => {
     await page.goto('/')
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
-    const differences = await page.evaluate(async () => {
-        const { createSpectrumSampler, FFT_BINS } = await import('/src/waveform/fft.ts')
-        const differences: {
-            channels: number
-            time: number
-            bin: number
-            native: number
-            actual: number
-        }[] = []
+    const result = await page.evaluate(async () => {
+        const { createWaveform, cleanupWaveform } = await import('/src/waveform.ts')
         const sampleRate = 48000
+        const spectra: number[][] = []
         for (const numberOfChannels of [1, 2]) {
-            const ctx = new OfflineAudioContext(numberOfChannels, sampleRate / 5, sampleRate)
-            const buffer = ctx.createBuffer(numberOfChannels, sampleRate / 5, sampleRate)
-            const channels = Array.from({ length: numberOfChannels }, (_, channel) => {
-                const samples = buffer.getChannelData(channel)
-                for (let i = 0; i < samples.length; i++) {
-                    const t = i / sampleRate
-                    samples[i] =
-                        0.018 * Math.sin(2 * Math.PI * (1378.125 + channel * 750) * t) +
-                        0.009 * Math.cos(2 * Math.PI * (6250 - channel * 125) * t)
-                }
-                return samples
+            const buffer = new AudioBuffer({
+                numberOfChannels,
+                length: sampleRate / 10,
+                sampleRate,
             })
-            const sample = createSpectrumSampler(channels)
-            const source = ctx.createBufferSource()
-            source.buffer = buffer
-            const analyser = ctx.createAnalyser()
-            analyser.fftSize = FFT_BINS * 2
-            source.connect(analyser)
-            source.start()
-            const suspensions = Array.from({ length: 11 }, (_, row) => {
-                const time = row / 100
-                return ctx.suspend(time).then(async () => {
-                    const native = new Uint8Array(FFT_BINS)
-                    const actual = new Uint8Array(FFT_BINS)
-                    analyser.getByteFrequencyData(native)
-                    sample(Math.ceil((time * sampleRate) / 128) * 128, actual)
-                    for (let bin = 0; bin < FFT_BINS; bin++) {
-                        if (Math.abs(native[bin]! - actual[bin]!) > 1) {
-                            differences.push({
-                                channels: numberOfChannels,
-                                time,
-                                bin,
-                                native: native[bin]!,
-                                actual: actual[bin]!,
-                            })
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                const samples = buffer.getChannelData(channel)
+                for (let i = 960; i < 1920; i++) {
+                    samples[i] =
+                        0.1 * Math.sin((2 * Math.PI * 1500 * i) / sampleRate) * (channel ? -1 : 1)
+                }
+            }
+            const waveform = (await createWaveform(buffer, 'fft'))!
+            const bitmap = await createImageBitmap(await (await fetch(waveform.images[0]!)).blob())
+            const canvas = document.createElement('canvas')
+            canvas.width = bitmap.width
+            canvas.height = bitmap.height
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(bitmap, 0, 0)
+            const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const rows = []
+            for (let row = 0; row < 20; row++) {
+                for (let x = 0; x < 128; x++) {
+                    rows.push(data[((1999 - row) * 128 + x) * 4 + 3]!)
+                }
+            }
+            spectra.push(rows)
+            bitmap.close()
+        }
+        cleanupWaveform()
+        return {
+            mono: spectra[0]!,
+            stereo: spectra[1]!,
+            attack: spectra[0]!.slice(4 * 128 + 4, 5 * 128),
+            silence: spectra[0]!.slice(12 * 128),
+        }
+    })
+    expect(result.stereo, 'opposite-phase channels retain the same spectral power').toEqual(
+        result.mono,
+    )
+    expect(result.attack.some((alpha) => alpha > 0)).toBe(true)
+    expect(
+        result.silence.every((alpha) => alpha === 0),
+        'no trailing history smoothing',
+    ).toBe(true)
+})
+
+for (const sampleRate of [44100, 48000]) {
+    test(`FFT attack rows align across tile boundaries and audio endpoints at ${sampleRate} Hz`, async ({
+        page,
+    }) => {
+        await page.goto('/')
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        const results = await page.evaluate(async (sampleRate) => {
+            const { createWaveform, cleanupWaveform } = await import('/src/waveform.ts')
+            const results = []
+            for (const { duration, frames } of [
+                {
+                    duration: 10.01,
+                    // Integer row arithmetic avoids rounding 9.995 * 44100
+                    // just below its exact half-sample boundary.
+                    frames: [
+                        0,
+                        Math.round((1999 * sampleRate) / 200),
+                        10 * sampleRate,
+                        Math.round((2001 * sampleRate) / 200),
+                    ],
+                },
+                { duration: 10, frames: [10 * sampleRate - 1] },
+            ]) {
+                const buffer = new AudioBuffer({
+                    numberOfChannels: 1,
+                    length: Math.round(duration * sampleRate),
+                    sampleRate,
+                })
+                for (const frame of frames) buffer.getChannelData(0)[frame] = 1
+                const waveform = (await createWaveform(buffer, 'fft'))!
+                const attackRows: number[] = []
+                let mismatchedStripPixels = 0
+                let paddedVisiblePixels = 0
+                const dimensions = []
+                for (const [tile, url] of waveform.images.entries()) {
+                    const bitmap = await createImageBitmap(await (await fetch(url)).blob())
+                    dimensions.push({ width: bitmap.width, height: bitmap.height })
+                    const canvas = document.createElement('canvas')
+                    canvas.width = bitmap.width
+                    canvas.height = bitmap.height
+                    const ctx = canvas.getContext('2d')!
+                    ctx.drawImage(bitmap, 0, 0)
+                    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                    for (let row = 0; row < 2000; row++) {
+                        const globalRow = tile * 2000 + row
+                        const rowOffset = (1999 - row) * 128 * 4
+                        const alpha = data[rowOffset + 3]!
+                        if (alpha) attackRows.push(globalRow)
+                        for (let x = 1; x < 4; x++) {
+                            if (data[rowOffset + x * 4 + 3] !== alpha) mismatchedStripPixels++
+                        }
+                        if (globalRow >= Math.ceil(buffer.duration * 200)) {
+                            for (let x = 0; x < 128; x++) {
+                                if (data[rowOffset + x * 4 + 3]) paddedVisiblePixels++
+                            }
                         }
                     }
-                    await ctx.resume()
-                })
-            })
-            await Promise.all([ctx.startRendering(), ...suspensions])
-        }
-        return differences
+                    bitmap.close()
+                }
+                results.push({ attackRows, dimensions, mismatchedStripPixels, paddedVisiblePixels })
+            }
+            cleanupWaveform()
+            return results
+        }, sampleRate)
+        expect(results[0]).toEqual({
+            attackRows: [0, 1999, 2000, 2001],
+            dimensions: [
+                { width: 128, height: 2000 },
+                { width: 128, height: 2000 },
+            ],
+            mismatchedStripPixels: 0,
+            paddedVisiblePixels: 0,
+        })
+        expect(
+            results[1],
+            'exact ten-second audio needs one tile and retains its last sample',
+        ).toEqual({
+            attackRows: [1999],
+            dimensions: [{ width: 128, height: 2000 }],
+            mismatchedStripPixels: 0,
+            paddedVisiblePixels: 0,
+        })
     })
-    expect(differences, 'software spectrum differs by at most one opacity level').toEqual([])
+}
+
+test('FFT import revokes completed tiles when encoding a later tile fails', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    const result = await page.evaluate(async () => {
+        const { createWaveform, cleanupWaveform } = await import('/src/waveform.ts')
+        const toBlob = HTMLCanvasElement.prototype.toBlob
+        const createUrl = URL.createObjectURL
+        const revokeUrl = URL.revokeObjectURL
+        const created: string[] = []
+        const revoked: string[] = []
+        let encoded = 0
+        HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) {
+            if (++encoded === 2) {
+                callback(null)
+            } else {
+                toBlob.call(this, callback, type, quality)
+            }
+        }
+        URL.createObjectURL = (blob) => {
+            const url = createUrl.call(URL, blob)
+            created.push(url)
+            return url
+        }
+        URL.revokeObjectURL = (url) => {
+            revoked.push(url)
+            revokeUrl.call(URL, url)
+        }
+        let failure = ''
+        try {
+            await createWaveform(new AudioBuffer({ length: 480001, sampleRate: 48000 }), 'fft')
+        } catch (error) {
+            failure = String(error)
+        } finally {
+            cleanupWaveform()
+            HTMLCanvasElement.prototype.toBlob = toBlob
+            URL.createObjectURL = createUrl
+            URL.revokeObjectURL = revokeUrl
+        }
+        return { failure, encoded, created, revoked }
+    })
+    expect(result.failure).toContain('Unexpected missing blob')
+    expect(result.encoded).toBe(2)
+    expect(result.created).toHaveLength(1)
+    expect(result.revoked).toEqual(result.created)
+})
+
+test('cancelled BGM import cannot overwrite a replacement or leak partial FFT tiles', async ({
+    page,
+}) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => (window.editorTest.settings.waveform = 'fft'))
+    await page.evaluate(trackWaveformTiles)
+
+    await page.keyboard.press('m')
+    const dialogs = page.getByRole('dialog')
+    const file = dialogs.first().locator('input[type="button"]')
+    const firstChooser = page.waitForEvent('filechooser')
+    await file.click()
+    await (
+        await firstChooser
+    ).setFiles({ name: 'cancelled.wav', mimeType: 'audio/wav', buffer: wav(10.01) })
+    await expect.poll(() => page.evaluate(() => window.bgmImportGate.held)).toBe(true)
+    const firstUrl = await page.evaluate(() => window.bgmImportGate.created[0]!)
+    await expect(dialogs).toHaveCount(2)
+
+    // Escape dismisses the native dialog without invoking its close button.
+    // Cancellation therefore has to work on unmount as well as button clicks.
+    await page.keyboard.press('Escape')
+    await expect(dialogs).toHaveCount(1)
+    const replacementChooser = page.waitForEvent('filechooser')
+    await file.click()
+    await (
+        await replacementChooser
+    ).setFiles({ name: 'replacement.wav', mimeType: 'audio/wav', buffer: wav(0.021) })
+    await expect(file).toHaveValue(/^00:/)
+    await expect(dialogs).toHaveCount(1)
+    const replacementDuration = await file.inputValue()
+
+    await page.evaluate(() => window.bgmImportGate.release())
+    await expect.poll(() => page.evaluate(() => window.bgmImportGate.revoked)).toContain(firstUrl)
+    await expect(file).toHaveValue(replacementDuration)
+    expect(await page.evaluate(() => window.bgmImportGate.created.length)).toBe(2)
+    await dialogs.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expect(dialogs).toHaveCount(0)
+    const result = await page.evaluate(() => {
+        const { filename, buffer, waveform } = window.editorTest.history.state.value.bgm
+        return {
+            filename,
+            duration: buffer?.duration,
+            images: waveform?.images,
+            created: window.bgmImportGate.created,
+            revoked: window.bgmImportGate.revoked,
+        }
+    })
+    expect(result.filename).toBe('replacement')
+    expect(result.duration).toBeCloseTo(0.021, 3)
+    expect(result.images).toEqual([result.created[1]])
+    expect(result.revoked).toEqual([firstUrl])
+})
+
+test('resetting the chart during BGM import leaves no late waveform URLs', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => (window.editorTest.settings.waveform = 'fft'))
+    await page.evaluate(trackWaveformTiles)
+
+    await page.keyboard.press('m')
+    const dialogs = page.getByRole('dialog')
+    const chooser = page.waitForEvent('filechooser')
+    await dialogs.locator('input[type="button"]').click()
+    await (
+        await chooser
+    ).setFiles({ name: 'cancelled.wav', mimeType: 'audio/wav', buffer: wav(10.01) })
+    await expect.poll(() => page.evaluate(() => window.bgmImportGate.held)).toBe(true)
+    await page.evaluate(() => {
+        window.editorTest.history.resetState(false)
+        window.bgmImportGate.release()
+    })
+    await expect(dialogs).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() => window.bgmImportGate.revoked.length)).toBe(1)
+    const result = await page.evaluate(() => ({
+        created: window.bgmImportGate.created,
+        revoked: window.bgmImportGate.revoked,
+        filename: window.editorTest.history.state.value.bgm.filename,
+        hasBuffer: !!window.editorTest.history.state.value.bgm.buffer,
+        hasWaveform: !!window.editorTest.history.state.value.bgm.waveform,
+        canUndo: window.editorTest.history.canUndo.value,
+    }))
+    expect(result.created).toHaveLength(1)
+    expect(result.revoked).toEqual(result.created)
+    expect(result.filename).toBeUndefined()
+    expect(result.hasBuffer).toBe(false)
+    expect(result.hasWaveform).toBe(false)
+    expect(result.canUndo).toBe(false)
+})
+
+test('aborting FFT work at its first yield prevents tile encoding', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    const result = await page.evaluate(async () => {
+        const { createWaveform } = await import('/src/waveform.ts')
+        const controller = new AbortController()
+        const toBlob = HTMLCanvasElement.prototype.toBlob
+        let encoded = 0
+        HTMLCanvasElement.prototype.toBlob = function (...args) {
+            encoded++
+            toBlob.apply(this, args)
+        }
+        let failure = ''
+        try {
+            // The async function runs synchronously until FFT's first yield.
+            const pending = createWaveform(
+                new AudioBuffer({ length: 48000 * 60, sampleRate: 48000 }),
+                'fft',
+                controller.signal,
+            )
+            controller.abort()
+            await pending
+        } catch (error) {
+            failure = error instanceof DOMException ? error.name : String(error)
+        } finally {
+            HTMLCanvasElement.prototype.toBlob = toBlob
+        }
+        return { failure, encoded }
+    })
+    expect(result).toEqual({ failure: 'AbortError', encoded: 0 })
+})
+
+test('closing completed BGM drafts releases only URLs that were never committed', async ({
+    page,
+}) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => (window.editorTest.settings.waveform = 'fft'))
+    await page.evaluate(trackWaveformTiles, 0)
+    const dialogs = page.getByRole('dialog')
+
+    for (const commit of [false, true]) {
+        await page.keyboard.press('m')
+        const file = dialogs.locator('input[type="button"]')
+        const chooser = page.waitForEvent('filechooser')
+        await file.click()
+        await (
+            await chooser
+        ).setFiles({ name: 'draft.wav', mimeType: 'audio/wav', buffer: wav(0.021) })
+        await expect(file).toHaveValue(/^00:/)
+        await expect(dialogs).toHaveCount(1)
+        if (commit) {
+            await dialogs.getByRole('button', { name: 'Confirm', exact: true }).click()
+        } else {
+            await dialogs.locator('button').first().click()
+        }
+        await expect(dialogs).toHaveCount(0)
+    }
+
+    // Reopening and cancelling a dialog must not release the existing chart's
+    // waveform. That image is also retained by history while the import is undone.
+    await page.keyboard.press('m')
+    await expect(dialogs).toHaveCount(1)
+    await page.keyboard.press('Escape')
+    await expect(dialogs).toHaveCount(0)
+    const result = await page.evaluate(async () => {
+        const { history } = window.editorTest
+        const images = history.state.value.bgm.waveform!.images
+        history.undoState()
+        const whileUndone = history.state.value.bgm.filename
+        const response = await fetch(images[0]!)
+        const bitmap = await createImageBitmap(await response.blob())
+        const width = bitmap.width
+        bitmap.close()
+        history.redoState()
+        return {
+            created: window.bgmImportGate.created,
+            revoked: window.bgmImportGate.revoked,
+            images,
+            restored: history.state.value.bgm.waveform!.images,
+            whileUndone,
+            width,
+        }
+    })
+    expect(result.created).toHaveLength(2)
+    expect(result.revoked).toEqual([result.created[0]])
+    expect(result.images).toEqual([result.created[1]])
+    expect(result.restored).toEqual(result.images)
+    expect(result.whileUndone).toBeUndefined()
+    expect(result.width).toBe(128)
 })
