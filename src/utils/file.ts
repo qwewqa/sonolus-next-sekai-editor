@@ -46,7 +46,10 @@ export const pickFileForSave = async (id: string, filename: string) => {
             id,
             suggestedName: filename,
         })
-    } catch {
+    } catch (error) {
+        // Dismissing the picker cancels saving; it must not become a fallback
+        // download. Other failures retain the ordinary download fallback.
+        if (error instanceof DOMException && error.name === 'AbortError') throw error
         return
     }
 }

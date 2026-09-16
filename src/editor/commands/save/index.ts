@@ -27,9 +27,10 @@ export const save: Command = {
     execute() {
         void showModal(LoadingModal, {
             title: () => i18n.value.commands.save.title,
-            async *task() {
+            async *task(signal: AbortSignal) {
                 yield () => i18n.value.commands.save.exporting
                 await timeout(50)
+                signal.throwIfAborted()
 
                 const name = filename.value ?? 'LevelData'
 
@@ -50,14 +51,26 @@ export const save: Command = {
                 })
 
                 const handle = levelDataHandle ?? (await pickFileForSave('levelData', name))
+                signal.throwIfAborted()
                 if (handle) {
+                    let writable: FileSystemWritableFileStream | undefined
                     try {
-                        const writable = await handle.createWritable()
+                        writable = await handle.createWritable()
+                        signal.throwIfAborted()
                         await writable.write(blob)
+                        signal.throwIfAborted()
                         await writable.close()
+                        signal.throwIfAborted()
 
                         setLevelDataHandle(handle)
-                    } catch {
+                    } catch (error) {
+                        // Before close(), writes remain pending. Release the
+                        // stream on cancellation/failure without committing it.
+                        await writable?.abort().catch(() => undefined)
+                        signal.throwIfAborted()
+                        if (error instanceof DOMException && error.name === 'AbortError') {
+                            throw error
+                        }
                         saveAs(blob, name)
 
                         setLevelDataHandle(undefined)

@@ -23,14 +23,19 @@ const fadeEnd = ref(1)
 const onSelect = (file: File) => {
     void showModal(LoadingModal, {
         title: () => i18n.value.utilities.previewEditor.title,
-        async *task() {
+        async *task(signal: AbortSignal) {
             yield () => i18n.value.utilities.previewEditor.loading
 
             const data = await file.arrayBuffer()
+            signal.throwIfAborted()
 
             yield () => i18n.value.utilities.previewEditor.decoding
 
-            buffer.value = await loadBgm(data)
+            const decoded = await loadBgm(data)
+            // decodeAudioData cannot be interrupted; discard a late result
+            // instead of replacing audio selected after this task was closed.
+            signal.throwIfAborted()
+            buffer.value = decoded
         },
     })
 }
@@ -38,9 +43,10 @@ const onSelect = (file: File) => {
 const onGenerate = () => {
     void showModal(LoadingModal, {
         title: () => i18n.value.utilities.previewEditor.title,
-        async *task() {
+        async *task(signal: AbortSignal) {
             yield () => i18n.value.utilities.previewEditor.generating
             await timeout(50)
+            signal.throwIfAborted()
 
             if (!buffer.value) return
 
@@ -66,6 +72,7 @@ const onGenerate = () => {
             const buffers: Uint8Array<ArrayBuffer>[] = []
 
             const { Mp3Encoder } = await import('@breezystack/lamejs')
+            signal.throwIfAborted()
 
             const encoder = new Mp3Encoder(
                 buffer.value.numberOfChannels,

@@ -39,6 +39,9 @@ const fixture = (t: TestContext) => {
         restore() {},
         translate() {},
         scale() {},
+        getTransform() {
+            return { d: 1 }
+        },
         drawImage(image: TestImage) {
             drawn.push(image)
         },

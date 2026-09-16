@@ -36,13 +36,15 @@ export const open: Command = {
 
         await showModal(LoadingModal, {
             title: () => i18n.value.commands.open.title,
-            async *task() {
+            async *task(signal: AbortSignal) {
                 yield () => i18n.value.commands.open.loading
 
                 const buffer = await file.arrayBuffer()
+                signal.throwIfAborted()
 
                 yield () => i18n.value.commands.open.importing
                 await timeout(50)
+                signal.throwIfAborted()
 
                 const [type, data] = tryImport(buffer)
                 switch (type) {
