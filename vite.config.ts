@@ -14,8 +14,9 @@ export default defineConfig({
     plugins: [vue()],
     define: {
         __APP_VERSION__: JSON.stringify(
-            (process.env.CF_PAGES_BRANCH !== 'prod' &&
-                process.env.CF_PAGES_COMMIT_SHA?.slice(0, 8)) ||
+            (process.env.GITHUB_SHA && `${version}+${process.env.GITHUB_SHA.slice(0, 8)}`) ||
+                (process.env.CF_PAGES_BRANCH !== 'prod' &&
+                    process.env.CF_PAGES_COMMIT_SHA?.slice(0, 8)) ||
                 version,
         ),
     },

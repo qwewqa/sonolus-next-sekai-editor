@@ -2,13 +2,19 @@
 
 !eslint.config.js
 !index.html
-!README.md
+!/README.md
 !playwright.config.ts
+!playwright.production.config.ts
 !tailwind.config.js
 !vite.config.ts
 
 !src/**/*
 !tests/**/*
+!scripts/*release*.mjs
+!deployment/*.json
+!deployment/*.md
+!.github/
+!.github/workflows/*.yml
 
 src/i18n/*/index.json
 !src/i18n/en/index.json

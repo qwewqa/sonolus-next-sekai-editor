@@ -6,8 +6,12 @@
   "scripts": {
     "test": "tsx --test tests/preview/*.test.ts tests/editor/*.test.ts",
     "test:browser": "playwright test",
+    "test:production": "playwright test --config playwright.production.config.ts",
+    "test:release": "node --test tests/release/*.test.mjs",
     "dev": "vite --host",
     "build": "vite build",
+    "build:release": "node scripts/build-release.mjs",
+    "check:release": "node scripts/check-release.mjs",
     "check-type": "vue-tsc --build --force",
     "check-lint": "eslint .",
     "check-format": "prettier . --check"
