@@ -346,9 +346,10 @@ test('preview pause drops queued auditions while later note clicks still auditio
         return {
             playing: window.previewTransport.isPlaying(),
             starts: window.previewTransport.starts,
+            cursor: view.cursorTime,
         }
     })
-    expect(paused).toEqual({ playing: false, starts: [] })
+    expect(paused).toEqual({ playing: false, starts: [], cursor: 3 })
     const point = await page.evaluate(() => window.editorTest.point(-3, 3))
     await page.mouse.click(point.x, point.y)
     await settle(page)
@@ -358,7 +359,9 @@ test('preview pause drops queued auditions while later note clicks still auditio
     expect(starts).toHaveLength(1)
     expect(starts[0]!.offset).toBe(1.75)
     expect(starts[0]!.duration).toBe(0.12)
-    expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3.2)
+    // Pause captures audio time, replacing the artificial queued cursor update;
+    // subsequent note selection must still preserve that captured position.
+    expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(paused.cursor)
 })
 
 test('starting preview playback suppresses a queued audition without duplicating audio', async ({

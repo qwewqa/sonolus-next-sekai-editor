@@ -3,6 +3,7 @@ import { i18n } from '../i18n'
 import {
     startPlayer as _startPlayer,
     stopPlayer as _stopPlayer,
+    getPlayerTime,
     previewPlayer,
     stopPreviewPlayer,
 } from '../player'
@@ -20,9 +21,6 @@ let previewFollowScroll: typeof view.scrollingY
 
 let state:
     | {
-          speed: number
-          startTime: number
-          startBgmTime: number
           returnTime: number
       }
     | undefined
@@ -38,10 +36,15 @@ let transportPreview:
 const followTime = (cursorTime: number) =>
     Math.max(0, cursorTime + ((0.5 - settings.playFollowPosition / 100) * view.h) / settings.pps)
 
-watch(time, ({ now }) => {
+watch(time, () => {
     if (!state) return
 
-    view.cursorTime = Math.max(0, now - state.startTime) * state.speed + state.startBgmTime
+    const cursorTime = getPlayerTime()
+    if (cursorTime === undefined) {
+        state = undefined
+        return
+    }
+    view.cursorTime = cursorTime
 
     if (!settings.playFollow) return
 
@@ -69,19 +72,15 @@ watch(
 const startPlayerAt = (bgmTime: number) => {
     endPreviewScrub(false)
     cancelPreviewFollow()
-    state = {
-        speed,
-        startTime: _startPlayer(bgmTime, speed),
-        startBgmTime: bgmTime,
-        returnTime: bgmTime,
-    }
+    _startPlayer(bgmTime, speed)
+    state = { returnTime: bgmTime }
 
     notify(() => i18n.value.player.started)
 }
 
 export const startOrStopPlayer = () => {
     if (state) {
-        stopPlayer(false)
+        pausePlayer()
         return
     }
 
@@ -109,14 +108,25 @@ export const stopPlayer = (shouldReturn: boolean) => {
     notify(() => i18n.value.player.stopped)
 }
 
+const pausePlayer = () => {
+    // Explicit pause captures the audio position even if the last frame stalled.
+    // Fine stepping and editing still use stopPlayer to preserve the shown time.
+    const cursorTime = getPlayerTime()
+    if (cursorTime !== undefined) {
+        view.cursorTime = cursorTime
+        if (settings.playFollow) view.time = followTime(cursorTime)
+    }
+    stopPlayer(false)
+    transportPreview = {
+        time: view.cursorTime,
+        request: audioPreviewRequest.value,
+        audition: false,
+    }
+}
+
 export const togglePreviewPlayback = () => {
     if (state) {
-        stopPlayer(false)
-        transportPreview = {
-            time: view.cursorTime,
-            request: audioPreviewRequest.value,
-            audition: false,
-        }
+        pausePlayer()
         return
     }
 
@@ -214,19 +224,14 @@ export const endPreviewScrub = (audition = true) => {
 }
 
 export const changePlayerSpeed = (direction: -1 | 1) => {
-    if (state) {
-        _stopPlayer()
-    }
-
-    speed = getNewSpeed(direction)
+    const newSpeed = getNewSpeed(direction)
+    if (newSpeed === speed) return
+    speed = newSpeed
 
     if (state) {
-        state = {
-            speed,
-            startTime: _startPlayer(view.cursorTime, speed),
-            startBgmTime: view.cursorTime,
-            returnTime: state.returnTime,
-        }
+        // Keep the current audio position even if the displayed frame is late.
+        // The old and new BGM fade across this boundary without another preroll.
+        _startPlayer(getPlayerTime() ?? view.cursorTime, speed, 0)
     }
 
     notify(interpolate(() => i18n.value.player.changed, `${speed}`))

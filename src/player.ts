@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import normalTickUrl from './assets/se_live_connect.mp3?url'
 import criticalTickUrl from './assets/se_live_connect_critical.mp3?url'
 import criticalTapUrl from './assets/se_live_critical.mp3?url'
@@ -14,7 +14,6 @@ import { bpms } from './history/bpms'
 import { cullEntities, store } from './history/store'
 import {
     createPlayerAudio,
-    getPlayerAudioStartTime,
     scheduleActivePlayerAudio,
     type ActivePlayerAudio,
     type PlayerAudio,
@@ -23,11 +22,13 @@ import { settings } from './settings'
 import type { ConnectorEntity } from './state/entities/slides/connector'
 import { beatToTime, timeToBeat } from './state/integrals/bpms'
 import { beatToKey } from './state/store/grid'
-import { time } from './time'
 import { entries } from './utils/object'
 import { optional } from './utils/optional'
 
-const delay = 0.2
+const startupDelay = 0.2
+// Keep enough audio queued to survive a slow editor frame without delaying play.
+const lookAhead = 0.75
+const scheduleInterval = 25
 
 const context = new AudioContext()
 
@@ -44,13 +45,13 @@ const sfxBuffers = {
     criticalActive: optional<AudioBuffer>(),
 }
 
-const state = ref<{
+const state = shallowRef<{
     speed: number
-    time: number
     bgmTime: number
+    // Audio time at which bgmTime begins, including any initial preroll.
     contextTime: number
 
-    lastTime: number
+    scheduledUntil?: number
     bgmNodes: Set<PlayerAudio>
     sfxNodes: Set<PlayerAudio>
     actives: {
@@ -64,10 +65,10 @@ export const isBgmEnabled = ref(true)
 watch(isBgmEnabled, () => {
     if (!state.value) return
 
-    const value = isBgmEnabled.value ? settings.playBgmVolume / 100 : 0
+    const value = isBgmEnabled.value ? settings.playBgmVolume : 0
 
-    for (const { node } of state.value.bgmNodes) {
-        node.gain.value = value
+    for (const audio of state.value.bgmNodes) {
+        audio.setVolume(value)
     }
 })
 
@@ -75,36 +76,47 @@ export const isSfxEnabled = ref(true)
 watch(isSfxEnabled, () => {
     if (!state.value) return
 
-    const value = isSfxEnabled.value ? settings.playSfxVolume / 100 : 0
+    const value = isSfxEnabled.value ? settings.playSfxVolume : 0
 
-    for (const { node } of state.value.sfxNodes) {
-        node.gain.value = value
+    for (const audio of state.value.sfxNodes) {
+        audio.setVolume(value)
     }
 
     for (const actives of Object.values(state.value.actives)) {
-        for (const { node } of actives) {
-            node.gain.value = value
+        for (const audio of actives) {
+            audio.setVolume(value)
         }
     }
 })
 
 let preview: PlayerAudio | undefined
+let scheduler: ReturnType<typeof setInterval> | undefined
+let resuming: Promise<void> | undefined
+let areSfxReady = false
 
-watch(time, ({ now }) => {
-    if (!state.value) return
+const scheduleAudio = () => {
+    if (!state.value || !areSfxReady) return
 
-    // A delayed frame cannot play cues whose audio deadline already passed. Bound
-    // the scan as well, so returning to a background tab does not process its backlog.
-    const startTime = getPlayerAudioStartTime(state.value, now, context.currentTime, delay)
-    const isCatchingUp = startTime > state.value.lastTime
+    // Scan only new, still playable audio time. The audio clock freezes during
+    // suspension, so neither the cursor nor scheduling can run ahead of the BGM.
+    const now = context.currentTime
+    const startTime = Math.max(
+        state.value.contextTime,
+        state.value.scheduledUntil ?? state.value.contextTime,
+        now,
+    )
+    const endTime = Math.max(startTime, now + lookAhead)
+    if (startTime === endTime) return
+    const isCatchingUp =
+        state.value.scheduledUntil === undefined || startTime > state.value.scheduledUntil
     const beats = {
         min: timeToBeat(
             bpms.value,
-            (startTime - state.value.time) * state.value.speed + state.value.bgmTime,
+            (startTime - state.value.contextTime) * state.value.speed + state.value.bgmTime,
         ),
         max: timeToBeat(
             bpms.value,
-            (now - state.value.time) * state.value.speed + state.value.bgmTime,
+            (endTime - state.value.contextTime) * state.value.speed + state.value.bgmTime,
         ),
     }
 
@@ -225,8 +237,7 @@ watch(time, ({ now }) => {
         for (const beat of beats) {
             const when =
                 (beatToTime(bpms.value, beat) - state.value.bgmTime) / state.value.speed +
-                state.value.contextTime +
-                delay
+                state.value.contextTime
             if (when < context.currentTime) continue
 
             schedule(
@@ -269,34 +280,52 @@ watch(time, ({ now }) => {
                 isSfxEnabled.value ? settings.playSfxVolume : 0,
                 (beatToTime(bpms.value, entity.head.beat) - state.value.bgmTime) /
                     state.value.speed +
-                    state.value.contextTime +
-                    delay,
+                    state.value.contextTime,
                 (beatToTime(bpms.value, entity.tail.beat) - state.value.bgmTime) /
                     state.value.speed +
-                    state.value.contextTime +
-                    delay,
+                    state.value.contextTime,
             )
         }
     }
 
-    state.value.lastTime = now
-})
+    state.value.scheduledUntil = endTime
+}
+
+const clearScheduler = () => {
+    clearInterval(scheduler)
+    scheduler = undefined
+}
+
+const updateScheduler = () => {
+    clearScheduler()
+    if (!state.value || context.state !== 'running') return
+    scheduleAudio()
+    // Audio scheduling must not depend on whether the preview renders a frame.
+    scheduler = setInterval(scheduleAudio, scheduleInterval)
+}
+
+context.addEventListener('statechange', updateScheduler)
+
+export const getPlayerTime = () => {
+    if (!state.value) return
+    return (
+        Math.max(0, context.currentTime - state.value.contextTime) * state.value.speed +
+        state.value.bgmTime
+    )
+}
 
 export const loadBgm = (data: ArrayBuffer) => context.decodeAudioData(data)
 
-export const startPlayer = (bgmTime: number, speed: number) => {
+export const startPlayer = (bgmTime: number, speed: number, delay = startupDelay) => {
     stopPlayer()
 
-    const time = performance.now() / 1000
-    const contextTime = context.currentTime
+    const contextTime = context.currentTime + delay
 
     state.value = {
         speed,
-        time,
         bgmTime,
         contextTime,
 
-        lastTime: time,
         bgmNodes: new Set(),
         sfxNodes: new Set(),
         actives: {
@@ -312,27 +341,32 @@ export const startPlayer = (bgmTime: number, speed: number) => {
             state.value.bgmNodes,
             bgm.value.buffer,
             isBgmEnabled.value ? settings.playBgmVolume : 0,
-            contextTime + delay,
+            contextTime,
             bgmTime + bgm.value.offset,
             speed,
+            true,
         )
 
-    return time + delay
+    // Queue the first window even if resume is pending; native audio starts and
+    // the cursor share the same suspended clock, and stop cancels these sources.
+    scheduleAudio()
+    updateScheduler()
 }
 
 export const stopPlayer = () => {
+    clearScheduler()
     if (!state.value) return
 
     for (const audio of state.value.bgmNodes) {
-        audio.stop()
+        audio.fadeOut()
     }
     for (const audio of state.value.sfxNodes) {
-        audio.stop()
+        audio.fadeOut()
     }
 
     for (const actives of Object.values(state.value.actives)) {
         for (const audio of actives) {
-            audio.stop()
+            audio.fadeOut()
         }
     }
 
@@ -361,18 +395,27 @@ export const previewPlayer = (bgmTime: number) => {
     preview = audio
 
     const time = context.currentTime
-    audio.node.gain.linearRampToValueAtTime(0, time + duration)
-    audio.source.start(time, offset, duration)
+    audio.envelope(time, duration)
+    audio.start(time, offset, duration)
 }
 
 export const stopPreviewPlayer = () => {
-    preview?.stop()
+    preview?.fadeOut()
     preview = undefined
 }
 
 const startContext = () => {
-    if (context.state !== 'running') {
-        void context.resume()
+    if (context.state !== 'running' && !resuming) {
+        resuming = context
+            .resume()
+            .catch(() => {
+                if (context.state === 'running') return
+                stopPlayer()
+                stopPreviewPlayer()
+            })
+            .finally(() => {
+                resuming = undefined
+            })
     }
 
     stopPreviewPlayer()
@@ -385,17 +428,16 @@ const schedule = (
     when: number,
     offset = 0,
     speed = 1,
+    fadeIn = false,
 ) => {
     const audio = createPlayerAudio(context, { buffer, playbackRate: speed }, volume, () =>
         nodes.delete(audio),
     )
     nodes.add(audio)
 
-    if (offset < 0) {
-        audio.source.start(when - offset / speed)
-    } else {
-        audio.source.start(when, offset)
-    }
+    const startTime = offset < 0 ? when - offset / speed : when
+    if (fadeIn) audio.fadeIn(startTime)
+    audio.start(startTime, Math.max(0, offset))
 }
 
 const loadSfx = () => {
@@ -405,16 +447,29 @@ const loadSfx = () => {
         sfxBuffers[type] = await context.decodeAudioData(data)
     }
 
-    void load('normalTap', normalTapUrl)
-    void load('criticalTap', criticalTapUrl)
-    void load('normalFlick', normalFlickUrl)
-    void load('criticalFlick', criticalFlickUrl)
-    void load('normalTrace', normalTraceUrl)
-    void load('criticalTrace', criticalTraceUrl)
-    void load('normalTick', normalTickUrl)
-    void load('criticalTick', criticalTickUrl)
-    void load('normalActive', normalActiveUrl)
-    void load('criticalActive', criticalActiveUrl)
+    void Promise.allSettled([
+        load('normalTap', normalTapUrl),
+        load('criticalTap', criticalTapUrl),
+        load('normalFlick', normalFlickUrl),
+        load('criticalFlick', criticalFlickUrl),
+        load('normalTrace', normalTraceUrl),
+        load('criticalTrace', criticalTraceUrl),
+        load('normalTick', normalTickUrl),
+        load('criticalTick', criticalTickUrl),
+        load('normalActive', normalActiveUrl),
+        load('criticalActive', criticalActiveUrl),
+    ]).then(() => {
+        areSfxReady = true
+    })
 }
 
 loadSfx()
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        stopPlayer()
+        stopPreviewPlayer()
+        context.removeEventListener('statechange', updateScheduler)
+        void context.close()
+    })
+}

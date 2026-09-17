@@ -626,9 +626,14 @@ test.describe('preview transport', () => {
             window.editorTest.settings.playStartPosition = 'view'
         })
         await page.getByRole('button', { name: 'Play preview', exact: true }).click()
-        await page.clock.runFor(500)
-        expect(await cursor(page)).toBeGreaterThan(3.3)
-        expect(await cursor(page)).toBeLessThan(3.5)
+        // The UI uses a simulated animation clock; playback follows native audio
+        // time. Drive frames while waiting for real playback to advance.
+        await expect
+            .poll(async () => {
+                await page.clock.runFor(32)
+                return cursor(page)
+            })
+            .toBeGreaterThan(3.3)
         await page.getByRole('button', { name: 'Pause preview', exact: true }).click()
         const paused = await cursor(page)
         await page.clock.runFor(500)
