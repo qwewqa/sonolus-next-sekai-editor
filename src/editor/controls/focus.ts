@@ -1,5 +1,6 @@
 import { watch } from 'vue'
 import { isAppActive } from '../../activity'
+import { stopPreviewPlayer } from '../../player'
 import { stopPlayer } from '../player'
 
 export const useFocusControl = () => {
@@ -8,7 +9,10 @@ export const useFocusControl = () => {
     watch(
         isAppActive,
         (active) => {
-            if (!active) stopPlayer(false)
+            if (!active) {
+                stopPlayer(false)
+                stopPreviewPlayer()
+            }
         },
         { flush: 'sync' },
     )

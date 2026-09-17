@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
 import {
     createPlayerAudio,
-    getPlayerAudioStartTime,
     scheduleActivePlayerAudio,
     type ActivePlayerAudio,
     type PlayerAudio,
@@ -26,11 +25,25 @@ const fixture = (t: TestContext) => {
             this.starts.push(args)
         }
         stop(when?: number) {
+            assert.notEqual(this.starts.length, 0, 'a source cannot stop before it starts')
             this.stops.push(when)
+        }
+    }
+    class Param {
+        events: { method: 'set' | 'ramp' | 'cancel'; value?: number; time: number }[] = []
+        setValueAtTime(value: number, time: number) {
+            this.events.push({ method: 'set', value, time })
+        }
+        linearRampToValueAtTime(value: number, time: number) {
+            this.events.push({ method: 'ramp', value, time })
+        }
+        cancelScheduledValues(time: number) {
+            this.events.push({ method: 'cancel', time })
         }
     }
     class Gain {
         disconnects = 0
+        gain = new Param()
         constructor(
             readonly context: AudioContext,
             readonly options: GainOptions,
@@ -52,7 +65,11 @@ const fixture = (t: TestContext) => {
             else Reflect.deleteProperty(globalThis, name)
         }
     })
-    const context = { currentTime: 10, destination: {} } as AudioContext
+    const context = Object.assign(new EventTarget(), {
+        currentTime: 10,
+        destination: {},
+        state: 'running',
+    }) as unknown as AudioContext
     const buffer = {} as AudioBuffer
     const source = (audio: PlayerAudio) => audio.source as unknown as Source
     const gain = (audio: PlayerAudio) => audio.node as unknown as Gain
@@ -65,7 +82,7 @@ test('stopping cancels pending and long looping audio immediately and releases e
     for (const loop of [false, true]) {
         const audio = createPlayerAudio(context, { buffer, loop }, 75, () => playing.delete(audio))
         playing.add(audio)
-        audio.source.start(20)
+        audio.start(20)
         if (loop) audio.source.stop(3600)
     }
     const original = [...playing]
@@ -93,7 +110,7 @@ test('natural completion releases the source, gain, and owner reference exactly 
         current = undefined
     })
     const audio = current
-    audio.source.start(10, 3, 0.1)
+    audio.start(10, 3, 0.1)
     source(audio).onended!()
     audio.stop()
     assert.equal(current, undefined)
@@ -106,28 +123,123 @@ test('natural completion releases the source, gain, and owner reference exactly 
     assert.equal(gain(audio).options.gain, 0.4)
 })
 
-test('frame recovery limits catch-up to the audio lead at slow and fast playback speeds', () => {
-    const state = { lastTime: 101, time: 100, contextTime: 5 }
-    const now = 160
-    const contextTime = 65
-    const delay = 0.2
-    const from = getPlayerAudioStartTime(state, now, contextTime, delay)
-    for (const speed of [0.5, 1, 2]) {
-        const chartFrom = (from - state.time) * speed + 7
-        const chartNow = (now - state.time) * speed + 7
-        const scheduleTime = (chartTime: number) =>
-            (chartTime - 7) / speed + state.contextTime + delay
-        assert.ok(Math.abs(scheduleTime(chartFrom) - contextTime) < 1e-10)
-        assert.ok(Math.abs(scheduleTime(chartNow) - contextTime - delay) < 1e-10)
-        assert.ok(scheduleTime(chartFrom - speed) < contextTime)
-        assert.ok(chartNow - chartFrom < speed * 0.201)
+test('graceful replacement keeps the graph connected until its fade ends and cannot be revived', (t) => {
+    const { context, buffer, source, gain } = fixture(t)
+    let releases = 0
+    const audio = createPlayerAudio(context, { buffer }, 60, () => releases++)
+    audio.start(10)
+    audio.fadeOut()
+    assert.deepEqual(source(audio).stops, [10.005])
+    assert.equal(source(audio).disconnects, 0)
+    assert.equal(gain(audio).disconnects, 0)
+    assert.equal(releases, 0)
+    const automation = [...gain(audio).gain.events]
+    Object.assign(context, { currentTime: 10.002 })
+    audio.fadeOut()
+    audio.setVolume(100)
+    audio.fadeIn()
+    audio.envelope(10.002, 1)
+    assert.deepEqual(source(audio).stops, [10.005])
+    assert.deepEqual(gain(audio).gain.events, automation)
+    const queuedEnd = source(audio).onended!
+    queuedEnd()
+    audio.stop()
+    queuedEnd()
+    assert.equal(releases, 1)
+    assert.equal(source(audio).disconnects, 1)
+    assert.equal(gain(audio).disconnects, 1)
+})
+
+test('unstarted, future and suspended audio cancels immediately without waiting for audio time', (t) => {
+    const { context, buffer, source, gain } = fixture(t)
+    let releases = 0
+    const unstarted = createPlayerAudio(context, { buffer }, 50, () => releases++)
+    unstarted.fadeOut()
+    unstarted.start(10)
+    assert.deepEqual(source(unstarted).starts, [])
+    assert.deepEqual(source(unstarted).stops, [])
+
+    const future = createPlayerAudio(context, { buffer }, 50, () => releases++)
+    future.start(20)
+    future.fadeOut()
+    assert.deepEqual(source(future).stops, [undefined])
+
+    for (const state of ['suspended', 'interrupted', 'closed']) {
+        const audio = createPlayerAudio(context, { buffer }, 50, () => releases++)
+        audio.start(10)
+        Object.assign(context, { state })
+        audio.fadeOut()
+        assert.deepEqual(source(audio).stops, [undefined])
+        assert.equal(gain(audio).disconnects, 1)
+        Object.assign(context, { state: 'running' })
     }
-    assert.equal(
-        getPlayerAudioStartTime({ ...state, lastTime: 159.99 }, now, contextTime, delay),
-        159.99,
-    )
-    // A clock discrepancy must not move the scan boundary into a future frame.
-    assert.equal(getPlayerAudioStartTime(state, now, contextTime + 5, delay), now)
+    assert.equal(releases, 5)
+})
+
+test('immediate stop can cancel a pending graceful fade and releases only once', (t) => {
+    const { context, buffer, source, gain } = fixture(t)
+    let releases = 0
+    const audio = createPlayerAudio(context, { buffer, loop: true }, 50, () => releases++)
+    audio.start(10)
+    audio.fadeOut()
+    const queuedEnd = source(audio).onended!
+    audio.stop()
+    queuedEnd()
+    assert.deepEqual(source(audio).stops, [10.005, undefined])
+    assert.equal(releases, 1)
+    assert.equal(gain(audio).disconnects, 1)
+})
+
+test('suspension during a graceful fade releases the source instead of stranding its owner', (t) => {
+    const { context, buffer, source, gain } = fixture(t)
+    let releases = 0
+    const audio = createPlayerAudio(context, { buffer, loop: true }, 50, () => releases++)
+    audio.start(10)
+    audio.fadeOut()
+    Object.assign(context, { currentTime: 10.001, state: 'suspended' })
+    context.dispatchEvent(new Event('statechange'))
+    context.dispatchEvent(new Event('statechange'))
+    assert.deepEqual(source(audio).stops, [10.005, undefined])
+    assert.equal(releases, 1)
+    assert.equal(gain(audio).disconnects, 1)
+})
+
+test('changing volume during preroll preserves the scheduled attack through mute and unmute', (t) => {
+    const { context, buffer, gain } = fixture(t)
+    const audio = createPlayerAudio(context, { buffer }, 80, () => {})
+    audio.fadeIn(11)
+    audio.start(11)
+    audio.setVolume(0)
+    audio.setVolume(60)
+    assert.deepEqual(gain(audio).gain.events.slice(-2), [
+        { method: 'set', time: 11, value: 0 },
+        { method: 'ramp', time: 11.005, value: 0.6 },
+    ])
+})
+
+test('fallback interruption holds the interpolated gain during attack, decay and a volume ramp', (t) => {
+    const { context, buffer, gain } = fixture(t)
+    for (const [elapsed, expected] of [
+        [0.002, 0.4],
+        [0.052, 0.4],
+    ]) {
+        Object.assign(context, { currentTime: 10 })
+        const audio = createPlayerAudio(context, { buffer }, 80, () => {})
+        audio.envelope(10, 0.1, 0.004)
+        audio.start(10)
+        Object.assign(context, { currentTime: 10 + elapsed! })
+        audio.fadeOut()
+        const held = gain(audio).gain.events.at(-2)!
+        assert.ok(Math.abs(held.value! - expected!) < 1e-10)
+        assert.equal(gain(audio).gain.events.at(-1)!.value, 0)
+    }
+
+    Object.assign(context, { currentTime: 20 })
+    const audio = createPlayerAudio(context, { buffer }, 20, () => {})
+    audio.setVolume(100)
+    Object.assign(context, { currentTime: 20.0025 })
+    audio.setVolume(0)
+    assert.ok(Math.abs(gain(audio).gain.events.at(-2)!.value! - 0.6) < 1e-10)
 })
 
 test('recovery skips expired holds, resumes spanning holds, and preserves their latest end', (t) => {

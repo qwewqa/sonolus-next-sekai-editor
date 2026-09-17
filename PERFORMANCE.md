@@ -110,7 +110,7 @@ Other fixes target work or behavior that can become visible as pauses or jumps:
   therefore cannot turn a small flick into a large overshoot, and finishing a
   horizontal ease no longer delays the vertical update by one frame.
 - Audio catch-up skips cues whose playback deadlines have passed, bounding the
-  normal delayed-frame scan to the existing 200 ms scheduling lead. Holds that
+  delayed-frame scan to the scheduling lead (originally 200 ms; see below). Holds that
   span the gap resume, including when an expired source's end event is still
   queued. Short overlapping holds cannot truncate longer ones. Stopping/replacing
   playback and scrub previews now stops and releases sources, not just their
@@ -127,6 +127,38 @@ Validation passes 104 unit tests and 13 browser tests, including the existing
 SVG text-alignment comparisons at DPR 1, 1.25 and 2, plus type, lint, formatting
 and production-build checks. Normal cached artwork retains its geometry; the
 direct-draw overflow opacity tradeoff is described above.
+
+### Audio resilience under editor stalls
+
+BGM remains one native Web Audio buffer during uninterrupted playback. The
+cursor and hit-sound scheduler now use `AudioContext.currentTime`, so a delayed
+resume or audio-only suspension freezes the timeline instead of leaving the
+preview ahead of the music. Explicit pause captures the current audio position;
+fine-step controls and editing still operate on the displayed position.
+
+Hit sounds are queued 750 ms ahead by a 25 ms timer while audio is running,
+independently of animation frames. The initial playback delay remains 200 ms.
+The scheduler scans only new audio time, skips expired cues after longer stalls,
+and restores holds spanning a gap. It stops when playback pauses or the audio
+context suspends. Muting keeps scheduled cues available for an immediate unmute.
+
+BGM and holds have 5 ms attacks; note auditions have a 3 ms attack followed by
+their existing decay within the requested duration. Replacements and stops fade
+playing sources out over 5 ms, while future or suspended sources cancel
+immediately. Hit-sound attacks are unchanged. Gain automation uses tracked linear
+ramps without requiring `cancelAndHoldAtTime`. Speed changes restart at the current
+audio position with overlapping fades and no extra preroll.
+
+Native Edge regression tests inject a 300 ms resume delay, audio-only suspension,
+500 ms and 1.2 s main-thread stalls, and cancellation while resume is pending.
+The 500 ms stall retains all tested cues (the previous scheduler omitted roughly
+300 ms of them); longer stalls skip expired cues without a burst. Offline rendered
+PCM checks verify smooth gain transitions and unchanged hit-sound onsets. These
+tests measure scheduling and rendered samples, not audio-device underruns.
+
+Installed Firefox 156.0 also passed native PCM envelope checks, a 300 ms delayed
+resume, mid-playback suspension/resume, and cancellation during pending resume,
+with no measured clock drift or BGM restart after suspension.
 
 ### Inactive windows and live edits
 
