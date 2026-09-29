@@ -5,6 +5,7 @@ import {
     type SkinData,
     type SkinItem,
 } from '@sonolus/core'
+import { noteStyles, type NoteStyle } from '../chart/noteStyle'
 import { parseGzippedJson, parseScp } from './scp'
 
 export type Sprite = {
@@ -140,6 +141,7 @@ export type JudgmentSpriteSet = {
 }
 
 export type PreviewSkin = {
+    styles?: Partial<Record<NoteStyle, PreviewSkin>>
     cover?: Sprite
 
     lane?: Sprite
@@ -321,7 +323,7 @@ export const resolveSkin = (get: SpriteGetter): PreviewSkin => {
     const normalFlickArrows = firstArrows(flickArrows, redArrows, redArrowsFallback)
     const criticalFlickArrows = firstArrows(criticalArrows, yellowArrows, yellowArrowsFallback)
 
-    return {
+    const skin: PreviewSkin = {
         cover: get(SkinSpriteName.StageCover),
 
         lane: get(SkinSpriteName.Lane),
@@ -573,7 +575,107 @@ export const resolveSkin = (get: SpriteGetter): PreviewSkin => {
             first('Sekai Guide Black', SkinSpriteName.NoteConnectionNeutralSeamless),
         ],
     }
+    skin.styles = Object.fromEntries(
+        noteStyles.slice(1).map((style) => {
+            const color = style.charAt(0).toUpperCase() + style.slice(1)
+            const colored = { ...skin }
+            for (const [key, name] of Object.entries(noteFamilyNames)) {
+                const family = key as keyof typeof noteFamilyNames
+                const fallback = skin[family]
+                const resolved = { ...fallback }
+                if (!name.includes('Slide Tick')) {
+                    const [left, middle, right] = ['Left', 'Middle', 'Right'].map((part) =>
+                        get(`Sekai ${name} ${part} ${color}`),
+                    )
+                    if (left && middle && right)
+                        resolved.body = {
+                            renderType:
+                                fallback.body.middle && fallback.body.renderType.startsWith('slim')
+                                    ? 'slim'
+                                    : name.includes('Trace')
+                                      ? 'slim'
+                                      : 'normal',
+                            left,
+                            middle,
+                            right,
+                        }
+                }
+                if (name.includes('Flick')) {
+                    const prefix = name.startsWith('Critical')
+                        ? 'Critical Flick Arrow'
+                        : 'Flick Arrow'
+                    const groups = ['Up', 'Up Left', 'Down', 'Down Left'].map((direction) =>
+                        [1, 2, 3, 4, 5, 6].map((width) =>
+                            get(`Sekai ${prefix} ${direction} ${width} ${color}`),
+                        ),
+                    )
+                    if (groups.every((group) => group.every(Boolean))) {
+                        resolved.arrow = {
+                            fallback: false,
+                            up: groups[0] ?? [],
+                            upLeft: groups[1] ?? [],
+                            down: groups[2] ?? [],
+                            downLeft: groups[3] ?? [],
+                        }
+                    }
+                }
+                const tickName = name.includes('Slide Tick')
+                    ? name.replace(' Tick Note', ' Diamond')
+                    : name.includes('Trace')
+                      ? name.replace(' Note', ' Diamond')
+                      : undefined
+                if (tickName) resolved.tick = get(`Sekai ${tickName} ${color}`) ?? fallback.tick
+                if (!name.includes('Trace') && !name.includes('Tick') && name !== 'Damage Note') {
+                    const slotName = name.replace(' Note', '')
+                    resolved.slot = get(`Sekai Slot ${slotName} ${color}`) ?? fallback.slot
+                    resolved.slotGlow =
+                        get(`Sekai Slot Glow ${slotName} ${color}`) ?? fallback.slotGlow
+                }
+                colored[family] = resolved
+            }
+            for (const [key, family] of [
+                ['activeSlideConnector', 'Normal'],
+                ['criticalActiveSlideConnector', 'Critical'],
+                ['damageSlideConnector', 'Damage'],
+            ] as const) {
+                const normal = get(
+                    `Sekai ${family === 'Damage' ? 'Damage Slide Connection' : `${family} Active Slide Connection Normal`} ${color}`,
+                )
+                const active = get(
+                    `Sekai ${family === 'Damage' ? 'Damage Slide Connection Active' : `${family} Active Slide Connection Active`} ${color}`,
+                )
+                if (normal && active) colored[key] = { normal, active }
+            }
+            colored.activeSlideConnectorSlotGlow =
+                get(`Sekai Normal Slide Slot Glow ${color}`) ?? skin.activeSlideConnectorSlotGlow
+            colored.criticalActiveSlideConnectorSlotGlow =
+                get(`Sekai Critical Slide Slot Glow ${color}`) ??
+                skin.criticalActiveSlideConnectorSlotGlow
+            return [style, colored]
+        }),
+    )
+    return skin
 }
+
+const noteFamilyNames = {
+    normalNote: 'Normal Note',
+    slideNote: 'Slide Note',
+    flickNote: 'Flick Note',
+    downFlickNote: 'Down Flick Note',
+    criticalNote: 'Critical Note',
+    criticalSlideNote: 'Critical Slide Note',
+    criticalFlickNote: 'Critical Flick Note',
+    criticalDownFlickNote: 'Critical Down Flick Note',
+    traceNote: 'Normal Trace Note',
+    traceFlickNote: 'Trace Flick Note',
+    traceDownFlickNote: 'Trace Down Flick Note',
+    criticalTraceNote: 'Critical Trace Note',
+    criticalTraceFlickNote: 'Critical Trace Flick Note',
+    criticalTraceDownFlickNote: 'Critical Trace Down Flick Note',
+    normalSlideTickNote: 'Normal Slide Tick Note',
+    criticalSlideTickNote: 'Critical Slide Tick Note',
+    damageNote: 'Damage Note',
+} as const
 
 const resolveActiveConnection = (
     get: SpriteGetter,
@@ -605,3 +707,6 @@ const resolveActiveConnection = (
         active: undefined,
     }
 }
+
+export const getStyledSkin = (resource: PreviewSkin, style: NoteStyle = 'default'): PreviewSkin =>
+    resource.styles?.[style] ?? resource

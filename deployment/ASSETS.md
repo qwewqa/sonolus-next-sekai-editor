@@ -5,8 +5,8 @@ exact packages used by the preview tests and manual review. They are intentional
 separate from the ignored `public/resource` directory, where developers can use
 their own packages. `preview-assets.json` pins their size and SHA-256 digest.
 
-The packages were copied from the reviewed local preview resource set on
-2026-09-16. Neither package contains a license file, and the repository's MIT
+The packages were downloaded from the Coconut Next SEKAI server on
+2026-09-29. Neither package contains a license file, and the repository's MIT
 license should not be presented as a license for these resources. Their embedded
 metadata identifies the skin as **Next SEKAI 01** and the particles as
 **Next SEKAI**, attributed to **Burrito#1000**. Skin metadata lists collaborator
@@ -14,7 +14,7 @@ metadata identifies the skin as **Next SEKAI 01** and the particles as
 remain with the released files in `ASSET_NOTICES.txt`.
 
 The package info records a download from <https://coconut.sonolus.com/next-sekai>
-at `2026-09-16T04:30:45.997342+00:00`. Their data, texture and thumbnail payloads
+at `2026-09-29T07:14:14.371462+00:00`. Their data, texture and thumbnail payloads
 match the public [skin item](https://coconut.sonolus.com/next-sekai/sonolus/skins/coconut-next-sekai-1)
 and [particle item](https://coconut.sonolus.com/next-sekai/sonolus/particles/coconut-next-sekai-1)
 byte for byte. These links document provenance; the build uses the pinned local

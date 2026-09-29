@@ -155,6 +155,8 @@ const createGraphic = (
             segmentHead.connectorType === 'damage'
                 ? damageColor
                 : activeColors[segmentHead.connectorActiveIsCritical ? 'critical' : 'normal']
+        if (segmentHead.connectorStyle !== 'default')
+            color = guideColors[segmentHead.connectorStyle]
         headAlpha = tailAlpha = 0.8
     }
 

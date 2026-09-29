@@ -1,6 +1,7 @@
 import type { FlickDirection } from '../../chart/note'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
+import { noteStyleColors } from '../../utils/colors'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
@@ -156,6 +157,7 @@ const drawArtwork = (
     scale: number,
 ) => {
     const { size, isCritical, flickDirection } = entity
+    const palette = entity.noteStyle !== 'default' ? noteStyleColors[entity.noteStyle] : undefined
     const color = isCritical ? 'yellow' : flickDirection !== 'none' ? 'red' : 'green'
     const x = size > 0 ? 0 : -0.1
     const w = size > 0 ? size : 0.2
@@ -173,10 +175,11 @@ const drawArtwork = (
         }
     } else if (type === 'damage' || type === 'trace') {
         roundedRect(ctx, x, 0.15, w, 0.3)
-        ctx.fillStyle = type === 'damage' ? '#a50acc' : traceColors[color]
+        ctx.fillStyle = palette?.[2] ?? (type === 'damage' ? '#a50acc' : traceColors[color])
         ctx.fill()
     } else {
-        const [outer, inner, dot] = colors[type === 'single' && color === 'green' ? 'cyan' : color]
+        const [outer, inner, dot] =
+            palette ?? colors[type === 'single' && color === 'green' ? 'cyan' : color]
         roundedRect(ctx, x, 0, w, 0.6)
         ctx.fillStyle = outer
         ctx.fill()
@@ -194,7 +197,8 @@ const drawArtwork = (
     ctx.translate(size / 2, 0.3)
     if ((type === 'tick' || type === 'trace') && size > 0) {
         polygon(ctx, diamondPoints)
-        ctx.fillStyle = diamondColors[type === 'tick' && !isCritical ? 'green' : color]
+        ctx.fillStyle =
+            palette?.[1] ?? diamondColors[type === 'tick' && !isCritical ? 'green' : color]
         ctx.fill()
         polygon(ctx, diamondHighlightPoints)
         ctx.fillStyle = '#fff'
@@ -202,7 +206,7 @@ const drawArtwork = (
     }
     if (type !== 'anchor' && type !== 'tick' && type !== 'damage' && flickDirection !== 'none') {
         polygon(ctx, arrowPoints[flickDirection])
-        ctx.fillStyle = isCritical ? '#ffc633' : '#ec7cb4'
+        ctx.fillStyle = palette?.[2] ?? (isCritical ? '#ffc633' : '#ec7cb4')
         ctx.fill()
         ctx.strokeStyle = '#fff'
         ctx.stroke()
@@ -259,7 +263,7 @@ export const createNoteRenderer = () => {
     ) => {
         const { scale, pixelRatio } = context
         const density = scale * pixelRatio
-        const key = `${type === 'tail' ? 'head' : type}:${entity.size}:${+entity.isCritical}:${entity.flickDirection}:${+entity.isFake}:${+outline}:${scale}:${pixelRatio}`
+        const key = `${type === 'tail' ? 'head' : type}:${entity.size}:${entity.noteStyle}:${+entity.isCritical}:${entity.flickDirection}:${+entity.isFake}:${+outline}:${scale}:${pixelRatio}`
         const cached = sprites.get(key)
         if (cached) {
             sprites.delete(key)

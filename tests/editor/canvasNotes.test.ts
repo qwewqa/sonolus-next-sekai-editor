@@ -143,10 +143,17 @@ const artworkFixture = (t: TestContext, scale = 40, pixelRatio = 1) => {
             store: { slides: { info: new Map() } },
         },
     } as unknown as EditorDrawContext
-    const draw = (size: number) =>
+    const draw = (size: number, noteStyle: NoteEntity['noteStyle'] = 'default') =>
         renderer.draw(
             context,
-            note(0, { size, left: 0, flickDirection: 'none', isCritical: false, isFake: false }),
+            note(0, {
+                size,
+                noteStyle,
+                left: 0,
+                flickDirection: 'none',
+                isCritical: false,
+                isFake: false,
+            }),
             false,
         )
     return { renderer, canvases, draw, images: () => images }
@@ -189,4 +196,15 @@ test('artwork pixel budget remains bounded without repeated high-DPR cache misse
     renderer.beginFrame(2)
     for (let i = 0; i < 100; i++) draw(4 + i / 1000)
     assert.equal(canvases.length, initialCount)
+})
+
+test('cached note artwork distinguishes color overrides', (t) => {
+    const { renderer, canvases, draw } = artworkFixture(t)
+    renderer.beginFrame(1)
+    draw(2, 'red')
+    draw(2, 'blue')
+    draw(2, 'default')
+    assert.equal(canvases.length, 3)
+    draw(2, 'red')
+    assert.equal(canvases.length, 3)
 })

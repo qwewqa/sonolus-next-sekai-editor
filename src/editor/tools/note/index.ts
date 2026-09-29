@@ -304,6 +304,8 @@ export const editNote = (entity: NoteEntity, object: Partial<NoteObject>) => {
         groupId: object.groupId ?? entity.groupId,
         stageId: object.stageId ?? entity.stageId,
         beat: object.beat ?? entity.beat,
+        noteStyle: object.noteStyle ?? entity.noteStyle,
+        connectorStyle: object.connectorStyle ?? entity.connectorStyle,
         noteType: object.noteType ?? entity.noteType,
         isAttached: object.isAttached ?? entity.isAttached,
         left: object.left ?? entity.left,
@@ -337,6 +339,8 @@ export const editSelectedNote = (
         groupId: object.groupId ?? entity.groupId,
         stageId: object.stageId ?? entity.stageId,
         beat: object.beat ?? entity.beat,
+        noteStyle: object.noteStyle ?? entity.noteStyle,
+        connectorStyle: object.connectorStyle ?? entity.connectorStyle,
         noteType: object.noteType ?? entity.noteType,
         isAttached: object.isAttached ?? entity.isAttached,
         left: object.left ?? entity.left,
@@ -378,6 +382,9 @@ const getPropertiesFromSelection = () => {
     return {
         groupId: view.groupId ?? note?.groupId ?? defaultGroupId.value,
         stageId: view.stageId ?? note?.stageId ?? defaultStageId.value,
+        noteStyle: defaultNoteProperties.value.noteStyle ?? note?.noteStyle ?? 'default',
+        connectorStyle:
+            defaultNoteProperties.value.connectorStyle ?? note?.connectorStyle ?? 'default',
         noteType: defaultNoteProperties.value.noteType ?? note?.noteType ?? 'default',
         isAttached: defaultNoteProperties.value.isAttached ?? note?.isAttached ?? false,
         size: note?.size ?? view.noteSize,

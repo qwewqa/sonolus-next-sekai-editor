@@ -2,6 +2,8 @@ import { store } from '../../history/store'
 import type { NoteEntity } from '../../state/entities/slides/note'
 
 export type NoteFields = {
+    noteStyle: boolean
+    connectorStyle: boolean
     isAttached: boolean
     left: boolean
     size: boolean
@@ -40,6 +42,9 @@ export const getNoteFields = (note: NoteEntity): NoteFields => {
     const isDamageHead = info.damageHead === info.note
 
     return {
+        noteStyle: note.noteType !== 'anchor',
+        connectorStyle:
+            (isFirst || note.isConnectorSeparator) && !isLast && note.connectorType !== 'guide',
         isAttached: !isFirst && !isLast,
         left: isFirst || isLast || !note.isAttached,
         size: isFirst || isLast || !note.isAttached,

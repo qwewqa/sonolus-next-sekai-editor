@@ -38,6 +38,8 @@ import OptionalLeftBorderStyleField from '../../../modals/form/OptionalLeftBorde
 import OptionalMaskSizeField from '../../../modals/form/OptionalMaskSizeField.vue'
 import OptionalNoteAlphaField from '../../../modals/form/OptionalNoteAlphaField.vue'
 import OptionalNoteTypeField from '../../../modals/form/OptionalNoteTypeField.vue'
+import OptionalNoteStyleField from '../../../modals/form/OptionalNoteStyleField.vue'
+import OptionalConnectorStyleField from '../../../modals/form/OptionalConnectorStyleField.vue'
 import OptionalRightBorderStyleField from '../../../modals/form/OptionalRightBorderStyleField.vue'
 import OptionalRotationField from '../../../modals/form/OptionalRotationField.vue'
 import OptionalSfxField from '../../../modals/form/OptionalSfxField.vue'
@@ -58,6 +60,8 @@ const createModel = useProperties(brushProperties)
 
 const groupId = createModel('groupId')
 const stageId = createModel('stageId')
+const noteStyle = createModel('noteStyle')
+const connectorStyle = createModel('connectorStyle')
 const noteType = createModel('noteType')
 const isAttached = createModel('isAttached')
 const size = createModel('size')
@@ -111,6 +115,7 @@ const eventEase = createModel('eventEase')
 
 <template>
     <OptionalNoteTypeField v-model="noteType" />
+    <OptionalNoteStyleField v-model="noteStyle" />
     <OptionalGroupField v-model="groupId" />
     <OptionalStageField v-if="isDynamicStages" v-model="stageId" />
     <OptionalIsAttachedField v-model="isAttached" />
@@ -121,6 +126,7 @@ const eventEase = createModel('eventEase')
     <OptionalSfxField v-model="sfx" />
     <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
     <OptionalConnectorTypeField v-model="connectorType" />
+    <OptionalConnectorStyleField v-model="connectorStyle" />
     <OptionalConnectorEaseField v-model="connectorEase" />
     <OptionalConnectorIsFakeField v-model="connectorIsFake" />
     <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />

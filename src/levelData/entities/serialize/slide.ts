@@ -1,5 +1,6 @@
 import { EngineArchetypeDataName, type LevelDataEntity } from '@sonolus/core'
 import type { GroupId } from '../../../chart/groups'
+import { connectorKindValue, noteStyleValue } from '../../../chart/noteStyle'
 import type { StageId, Stages } from '../../../chart/stages'
 import type { NoteEntity } from '../../../state/entities/slides/note'
 import type { Store } from '../../../state/store'
@@ -76,6 +77,10 @@ export const serializeSlidesToLevelDataEntities = (
                         value: note.size / 2,
                     },
                     {
+                        name: 'style',
+                        value: noteStyleValue(note.noteStyle),
+                    },
+                    {
                         name: 'direction',
                         value: flickDirections[note.flickDirection],
                     },
@@ -93,20 +98,7 @@ export const serializeSlidesToLevelDataEntities = (
                     },
                     {
                         name: 'segmentKind',
-                        value:
-                            note.connectorType === 'active'
-                                ? note.connectorIsFake
-                                    ? note.connectorActiveIsCritical
-                                        ? 52
-                                        : 51
-                                    : note.connectorActiveIsCritical
-                                      ? 2
-                                      : 1
-                                : note.connectorType === 'damage'
-                                  ? note.connectorIsFake
-                                      ? 53
-                                      : 3
-                                  : guideSegmentKinds[note.connectorGuideColor],
+                        value: connectorKindValue(note),
                     },
                     {
                         name: 'segmentAlpha',
@@ -417,17 +409,6 @@ const connectorEases = {
     inOut: 4,
     outIn: 5,
     none: 0,
-}
-
-const guideSegmentKinds = {
-    neutral: 101,
-    red: 102,
-    green: 103,
-    blue: 104,
-    yellow: 105,
-    purple: 106,
-    cyan: 107,
-    black: 108,
 }
 
 const segmentLayers = {

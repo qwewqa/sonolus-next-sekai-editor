@@ -40,6 +40,7 @@ const note = (beat: number, left: number, size: number, extra: Partial<NoteEntit
         size,
         connectorEase: 'linear',
         connectorType: 'active',
+        connectorStyle: 'default',
         connectorActiveIsCritical: false,
         connectorIsFake: false,
         connectorGuideColor: 'blue',
@@ -302,4 +303,15 @@ test('fake connector crosses use non-scaling strokes and restore caller drawing 
     assert.equal(ctx.globalAlpha, 1)
     assert.equal(ctx.lineWidth, 1)
     assert.equal(ctx.strokeStyle, '#000')
+})
+
+test('active and damage connector colors override their default colors without changing guide colors', () => {
+    for (const connectorType of ['active', 'damage', 'guide'] as const) {
+        const { context, fills, renderer } = fixture()
+        const first = note(0, 0, 2, { connectorType, connectorStyle: 'red' })
+        const last = note(4, 0, 2)
+        renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false)
+        assert.equal(fills.length, 1)
+        assert.equal(fills[0].style, connectorType === 'guide' ? '#737bd6' : '#d6737b')
+    }
 })

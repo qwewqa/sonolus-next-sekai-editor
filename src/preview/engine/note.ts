@@ -1,9 +1,10 @@
+import type { NoteStyle } from '../../chart/noteStyle'
 import type { ZKey } from '../gl'
 import type { ArrowSpriteSet, NoteSpriteSet, PreviewSkin, Sprite } from '../skin'
+import { getStyledSkin } from '../skin'
 import {
     LAYER_NOTE_ARROW,
     LAYER_NOTE_BODY,
-    LAYER_NOTE_FLICK_BODY,
     LAYER_NOTE_SLIM_BODY,
     LAYER_NOTE_TICK,
     getZ,
@@ -40,7 +41,9 @@ export const getNoteSpriteSet = (
     kind: NoteKindValue,
     isCritical: boolean,
     direction: FlickDirectionValue,
+    style: NoteStyle = 'default',
 ): NoteSpriteSet | undefined => {
+    skin = getStyledSkin(skin, style)
     switch (kind) {
         case NoteKind.tap:
             return isCritical ? skin.criticalNote : skin.normalNote
@@ -78,12 +81,6 @@ export const getNoteSpriteSet = (
     }
 }
 
-const flickBodyKinds = new Set<NoteKindValue>([
-    NoteKind.flick,
-    NoteKind.headFlick,
-    NoteKind.tailFlick,
-])
-
 const slimBodyKinds = new Set<NoteKindValue>([
     NoteKind.trace,
     NoteKind.traceFlick,
@@ -95,7 +92,6 @@ const slimBodyKinds = new Set<NoteKindValue>([
 ])
 
 const getNoteBodyLayer = (kind: NoteKindValue) => {
-    if (flickBodyKinds.has(kind)) return LAYER_NOTE_FLICK_BODY
     if (slimBodyKinds.has(kind)) return LAYER_NOTE_SLIM_BODY
     return LAYER_NOTE_BODY
 }
@@ -114,6 +110,7 @@ export const drawNote = (
     transform: StageScreenTransform,
     noteAlpha: number,
     mask?: VisualMask,
+    style: NoteStyle = 'default',
 ) => {
     if (
         visualProgress < DynamicLayout.progressStart ||
@@ -125,7 +122,7 @@ export const drawNote = (
     if (size <= 0) return
 
     const travel = approach(visualProgress)
-    const spriteSet = getNoteSpriteSet(skin, kind, isCritical, direction)
+    const spriteSet = getNoteSpriteSet(skin, kind, isCritical, direction, style)
     if (!spriteSet) return
 
     drawNoteBody(draw, spriteSet, kind, lane, size, travel, targetTime, transform, noteAlpha)
@@ -157,13 +154,14 @@ export const drawSlideNoteHead = (
     transform: StageScreenTransform,
     noteAlpha: number,
     mask?: VisualMask,
+    style: NoteStyle = 'default',
 ) => {
     if (noteAlpha <= 0) return
     if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
     if (size <= 0) return
 
     const travel = approach(visualProgress)
-    const spriteSet = getNoteSpriteSet(skin, kind, isCritical, FlickDirection.upOmni)
+    const spriteSet = getNoteSpriteSet(skin, kind, isCritical, FlickDirection.upOmni, style)
     if (!spriteSet) return
 
     drawNoteBody(draw, spriteSet, kind, lane, size, travel, targetTime, transform, noteAlpha)

@@ -6,6 +6,7 @@ import {
     type ServerItemDetails,
     type ServerItemList,
 } from '@sonolus/core'
+import { noteStyles, type NoteStyle } from '../chart/noteStyle'
 import type { Tint } from './gl'
 import { parseGzippedJson, parseScp } from './scp'
 import { toSpriteUv, type Sprite } from './skin'
@@ -59,6 +60,7 @@ export type ConnectorParticleSet = {
 }
 
 export type PreviewParticle = {
+    styles?: Partial<Record<NoteStyle, PreviewParticle>>
     lane?: ParticleEffect
 
     normalNote: NoteParticleSet
@@ -194,7 +196,9 @@ const toProperty = (property: {
     ease: property.ease ?? 'linear',
 })
 
-const resolveParticle = (get: (name: string) => ParticleEffect | undefined): PreviewParticle => {
+export const resolveParticle = (
+    get: (name: string) => ParticleEffect | undefined,
+): PreviewParticle => {
     const first = (...names: string[]) => {
         for (const name of names) {
             const effect = get(name)
@@ -239,7 +243,7 @@ const resolveParticle = (get: (name: string) => ParticleEffect | undefined): Pre
         ParticleEffectName.NoteLinearAlternativeYellow,
     )
 
-    return {
+    const particle: PreviewParticle = {
         lane,
 
         normalNote: {
@@ -442,4 +446,89 @@ const resolveParticle = (get: (name: string) => ParticleEffect | undefined): Pre
             ),
         },
     }
+    particle.styles = Object.fromEntries(
+        noteStyles.slice(1).map((style) => {
+            const color = style.charAt(0).toUpperCase() + style.slice(1)
+            const colored = { ...particle }
+            for (const [family, names] of Object.entries(noteParticleNames)) {
+                const key = family as keyof typeof noteParticleNames
+                const resolved = { ...particle[key] }
+                for (const [property, name] of Object.entries(names)) {
+                    const field = property as keyof NoteParticleSet
+                    resolved[field] = get(`Sekai ${name} ${color}`) ?? resolved[field]
+                }
+                colored[key] = resolved
+            }
+            for (const [key, name] of [
+                ['normalSlideConnector', 'Normal'],
+                ['criticalSlideConnector', 'Critical'],
+            ] as const) {
+                const resolved = { ...particle[key] }
+                for (const [field, suffix] of [
+                    ['circular', 'Circular'],
+                    ['linear', 'Linear'],
+                    ['trailLinear', 'Trail Linear'],
+                    ['slotLinear', 'Slot Linear'],
+                ] as const) {
+                    resolved[field] =
+                        get(`Sekai ${name} Slide Connector ${suffix} ${color}`) ?? resolved[field]
+                }
+                colored[key] = resolved
+            }
+            return [style, colored]
+        }),
+    )
+    return particle
 }
+
+const hitParticleNames = (name: string, lane: string) => ({
+    circular: `${name} Note Circular`,
+    linear: `${name} Note Linear`,
+    slotLinear: `${name} Note Slot Linear`,
+    lane: `${lane} Lane Linear`,
+})
+const noteParticleNames = {
+    normalNote: hitParticleNames('Normal', 'Note'),
+    slideNote: hitParticleNames('Slide', 'Slide'),
+    flickNote: { ...hitParticleNames('Flick', 'Flick'), directional: 'Flick Note Directional' },
+    downFlickNote: {
+        ...hitParticleNames('Down Flick', 'Down Flick'),
+        directional: 'Down Flick Note Directional',
+    },
+    criticalNote: hitParticleNames('Critical', 'Critical'),
+    criticalSlideNote: hitParticleNames('Critical Slide', 'Critical Slide'),
+    criticalFlickNote: {
+        ...hitParticleNames('Critical Flick', 'Critical Flick'),
+        directional: 'Critical Note Directional',
+    },
+    criticalDownFlickNote: {
+        ...hitParticleNames('Critical Down Flick', 'Critical Down Flick'),
+        directional: 'Critical Down Flick Note Directional',
+    },
+    traceNote: { tick: 'Normal Trace Note Circular', linear: 'Normal Trace Note Linear' },
+    criticalTraceNote: {
+        tick: 'Critical Trace Note Circular',
+        linear: 'Critical Trace Note Linear',
+    },
+    traceFlickNote: { directional: 'Flick Note Directional', lane: 'Flick Lane Linear' },
+    traceDownFlickNote: {
+        directional: 'Down Flick Note Directional',
+        lane: 'Down Flick Lane Linear',
+    },
+    criticalTraceFlickNote: {
+        directional: 'Critical Note Directional',
+        lane: 'Critical Flick Lane Linear',
+    },
+    criticalTraceDownFlickNote: {
+        directional: 'Critical Down Flick Note Directional',
+        lane: 'Critical Down Flick Lane Linear',
+    },
+    normalSlideTickNote: { tick: 'Normal Slide Tick Note' },
+    criticalSlideTickNote: { tick: 'Critical Slide Tick Note' },
+    damageNote: { circular: 'Damage Note Circular', linear: 'Damage Note Linear' },
+} as const
+
+export const getStyledParticle = (
+    resource: PreviewParticle,
+    style: NoteStyle = 'default',
+): PreviewParticle => resource.styles?.[style] ?? resource

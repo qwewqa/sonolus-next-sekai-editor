@@ -12,15 +12,23 @@ npm run dev
 ```
 
 The preview branch includes upstream editor 0.5.21 (`9b753b2`) and follows
-`sonolus-next-sekai-engine` at `a338b98`. It supports quadratic timescale easing,
-mixed timescale and scroll transitions, stage note masking, and stage elevation.
+`sonolus-next-sekai-engine` at `9e93ba0`. It supports quadratic timescale easing,
+mixed timescale and scroll transitions, stage note masking, stage elevation, and
+note/connector colors. Color overrides are available in object properties, creation
+presets, and the brush. Default preserves the original appearance; preview skins
+and particles fall back to their original assets when colored assets are missing.
 
 Place a skin package at `public/resource/skin.scp` and optionally a particle package
 at `public/resource/particle.scp` to enable the preview. These local assets are
-ignored by Git; see [preview packages](public/resource/README.md).
+ignored by Git; see [preview packages](public/resource/README.md). The pinned release
+packages in `deployment/assets` contain Coconut Next SEKAI skin/particles 2.0.0
+and can also be copied there for local development.
 
 Preview defaults to note speed 10. Its aspect controls select the engine's 16:9,
 21:9, or 4:3 test viewport, with the playfield scaled uniformly to fit.
+Note speed, render scale, aspect ratio, effects, antialiasing, docking, and panel
+visibility are saved across reloads and available under Settings > Preview. The
+controls inside the preview edit those same preferences.
 The settings panel can be minimized with its header button and reopened with the
 gear button. It starts minimized on narrow screens and touch devices, and remembers
 your choice across reloads.

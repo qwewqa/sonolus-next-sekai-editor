@@ -4,16 +4,16 @@
         {
             "file": "resource/skin.scp",
             "source": "deployment/assets/skin.scp",
-            "bytes": 1071463,
-            "sha256": "de481f991212d98246ba3cc9c88ead33b0cf02ea3e4bb8fb4db9b64a6b264cbf",
-            "description": "Next SEKAI 01 skin, exact package used during preview verification"
+            "bytes": 5166945,
+            "sha256": "077e9ee4dfe2f7a740e860a21e2f1bc81c99edc40a319488c3b7c60cfd452c85",
+            "description": "Next SEKAI 01 2.0.0 skin, downloaded from Coconut Next SEKAI on 2026-09-29"
         },
         {
             "file": "resource/particle.scp",
             "source": "deployment/assets/particle.scp",
-            "bytes": 909304,
-            "sha256": "7cef4b029a99275057a72eb8cd64ac4028c9aefa39d560fac54132b290ee2504",
-            "description": "Next SEKAI particles, exact package used during preview verification"
+            "bytes": 5243033,
+            "sha256": "a927978485966e3beb99871163182994190c210a6be73c70dba25ca779e1cd94",
+            "description": "Next SEKAI 2.0.0 particles, downloaded from Coconut Next SEKAI on 2026-09-29"
         }
     ]
 }

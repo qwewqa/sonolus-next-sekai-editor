@@ -98,6 +98,8 @@ export const installEditorFixture = async () => {
         isCritical: false,
         flickDirection: 'none',
         isFake: false,
+        noteStyle: 'default',
+        connectorStyle: 'default',
         sfx: 'default',
         isConnectorSeparator: false,
         connectorType: 'active',

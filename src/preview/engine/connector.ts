@@ -190,6 +190,11 @@ export const drawConnector = (
     const sprites = getConnectorSprites(skin, kind)
     if (!sprites.normal) return
 
+    if (kind === ConnectorKind.damage || kind === ConnectorKind.fakeDamage) {
+        segmentHeadAlpha = 1
+        segmentTailAlpha = 1
+    }
+
     if (isActiveConnectorKind(kind)) {
         segmentHeadAlpha = 1
         segmentTailAlpha = 1

@@ -33,7 +33,7 @@ test('elevated stages cover lower notes while fixed connector layers remain outs
 test('coincident elevation layers use elapsed target time in the engine order', () => {
     setLayerTime(5)
     try {
-        assert.deepEqual(getZ(LAYER_NOTE_BODY, 4, -2), [16, 0.02, 1, 2])
+        assert.deepEqual(getZ(LAYER_NOTE_BODY, 4, -2), [16, 0.01, 1, 2])
         assert.deepEqual(getZ(LAYER_ACTIVE_SLIDE_CONNECTOR_TOP, 4, 2, 0, true, 0.05), [
             16,
             0.05 - 0.03,

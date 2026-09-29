@@ -16,13 +16,15 @@ defineProps<{
         :fill="
             properties.connectorType === 'guide'
                 ? guideColors[properties.connectorGuideColor ?? 'green']
-                : properties.connectorType === 'damage'
-                  ? damageColor
-                  : activeColors[
-                        (properties.connectorActiveIsCritical ?? properties.isCritical)
-                            ? 'critical'
-                            : 'normal'
-                    ]
+                : properties.connectorStyle && properties.connectorStyle !== 'default'
+                  ? guideColors[properties.connectorStyle]
+                  : properties.connectorType === 'damage'
+                    ? damageColor
+                    : activeColors[
+                          (properties.connectorActiveIsCritical ?? properties.isCritical)
+                              ? 'critical'
+                              : 'normal'
+                      ]
         "
         :fill-opacity="properties.connectorType === 'guide' ? 0.5 : 0.8"
     />

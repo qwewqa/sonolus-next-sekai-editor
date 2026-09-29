@@ -1,6 +1,8 @@
 import type { PreviewRenderer, ZKey } from '../gl'
 import type { NoteParticleSet, PreviewParticle } from '../particle'
+import { getStyledParticle } from '../particle'
 import type { PreviewSkin } from '../skin'
+import { getStyledSkin } from '../skin'
 import { attachEasedFrac } from './chart'
 import { ConnectorVisualState, drawConnector, type ConnectorEndpoint } from './connector'
 import {
@@ -501,7 +503,7 @@ export const renderPreviewFrame = (
 
         drawConnector(
             draw,
-            skin,
+            getStyledSkin(skin, connector.style),
             now,
             connector.kind,
             visualState,
@@ -540,6 +542,7 @@ export const renderPreviewFrame = (
             visualStageAffine(note),
             visualNoteAlpha(note),
             visualMaskAt(note, now),
+            note.style,
         )
     }
 
@@ -552,7 +555,11 @@ export const renderPreviewFrame = (
         const slideInfoAt = (t: number) => {
             const current = findSlideConnector(slide, t)
             if (!current) return
-            if (!isActiveConnectorKind(current.kind) && current.kind !== ConnectorKind.damage)
+            if (
+                !isActiveConnectorKind(current.kind) &&
+                current.kind !== ConnectorKind.damage &&
+                current.kind !== ConnectorKind.fakeDamage
+            )
                 return
             if (groupHidesNotesAt(current.segmentHead, t)) return
 
@@ -630,6 +637,10 @@ export const renderPreviewFrame = (
                         1 - info.yOffset,
                         info.affine,
                         info.noteAlpha,
+                        undefined,
+                        info.connector.style !== 'default'
+                            ? info.connector.style
+                            : slide.activeHead.style,
                     )
                 }
 
@@ -642,9 +653,10 @@ export const renderPreviewFrame = (
                             transformedVecAt(info.lane, approach(1 - info.yOffset)),
                         )
 
+                    const connectorSkin = getStyledSkin(skin, info.connector.style)
                     const glowSprite = isCritical
-                        ? skin.criticalActiveSlideConnectorSlotGlow
-                        : skin.activeSlideConnectorSlotGlow
+                        ? connectorSkin.criticalActiveSlideConnectorSlotGlow
+                        : connectorSkin.activeSlideConnectorSlotGlow
                     if (showEffects && glowSprite && info.size > 0) {
                         const glowHeight =
                             (3.25 + (Math.cos((now - start) * 8 * Math.PI) + 1) / 2) / 4.25
@@ -673,8 +685,10 @@ export const renderPreviewFrame = (
                     const connectorParticle =
                         showEffects && particle
                             ? isCritical
-                                ? particle.criticalSlideConnector
-                                : particle.normalSlideConnector
+                                ? getStyledParticle(particle, info.connector.style)
+                                      .criticalSlideConnector
+                                : getStyledParticle(particle, info.connector.style)
+                                      .normalSlideConnector
                             : undefined
                     if (connectorParticle) {
                         const phase = ((((now - start) / CONNECTOR_LOOP_DURATION) % 1) + 1) % 1
@@ -738,8 +752,10 @@ export const renderPreviewFrame = (
                     info.connector.kind === ConnectorKind.activeCritical ||
                     info.connector.kind === ConnectorKind.activeFakeCritical
                 const trail = isCritical
-                    ? particle.criticalSlideConnector.trailLinear
-                    : particle.normalSlideConnector.trailLinear
+                    ? getStyledParticle(particle, info.connector.style).criticalSlideConnector
+                          .trailLinear
+                    : getStyledParticle(particle, info.connector.style).normalSlideConnector
+                          .trailLinear
                 if (!trail) return
 
                 drawParticleEffect(
@@ -762,8 +778,10 @@ export const renderPreviewFrame = (
                     info.connector.kind === ConnectorKind.activeCritical ||
                     info.connector.kind === ConnectorKind.activeFakeCritical
                 const slotLinear = isCritical
-                    ? particle.criticalSlideConnector.slotLinear
-                    : particle.normalSlideConnector.slotLinear
+                    ? getStyledParticle(particle, info.connector.style).criticalSlideConnector
+                          .slotLinear
+                    : getStyledParticle(particle, info.connector.style).normalSlideConnector
+                          .slotLinear
                 if (!slotLinear) return
 
                 for (const [i, slotLane] of iterSlotLanes(info.lane, info.size).entries()) {
@@ -854,9 +872,20 @@ export const renderPreviewFrame = (
 
         const particleSet =
             showEffects && particle
-                ? getNoteParticleSet(particle, note.kind, note.isCritical, note.direction)
+                ? getNoteParticleSet(
+                      getStyledParticle(particle, note.style),
+                      note.kind,
+                      note.isCritical,
+                      note.direction,
+                  )
                 : undefined
-        const spriteSet = getNoteSpriteSet(skin, note.kind, note.isCritical, note.direction)
+        const spriteSet = getNoteSpriteSet(
+            skin,
+            note.kind,
+            note.isCritical,
+            note.direction,
+            note.style,
+        )
 
         let affine = identityStageScreenTransform
 

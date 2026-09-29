@@ -376,6 +376,7 @@ export const createPreviewChartBuilder = () => {
                     const groupIndex = groupIndexes.get(note.groupId) ?? 0
                     const previewNote: PreviewNote = {
                         kind,
+                        style: note.noteStyle,
                         isCritical: note.isCritical,
                         isFake: note.isFake,
                         targetTime: toTime(note.beat),
@@ -462,6 +463,7 @@ export const createPreviewChartBuilder = () => {
 
                             const headNote = getPreviewNote(head)
                             const connector: PreviewConnector = {
+                                style: segmentHead.connectorStyle,
                                 kind,
                                 ease: headNote.isAttached
                                     ? (headNote.attachHead?.connectorEase ?? headNote.connectorEase)
@@ -482,7 +484,9 @@ export const createPreviewChartBuilder = () => {
 
                             if (
                                 connector.activeHead &&
-                                (isActiveConnectorKind(kind) || kind === ConnectorKind.damage)
+                                (isActiveConnectorKind(kind) ||
+                                    kind === ConnectorKind.damage ||
+                                    kind === ConnectorKind.fakeDamage)
                             ) {
                                 const list = slideConnectors.get(connector.activeHead)
                                 if (list) {

@@ -8,6 +8,7 @@ import type {
     NoteSfx,
     NoteType,
 } from '../../chart/note'
+import { noteStyles, type NoteStyle } from '../../chart/noteStyle'
 import { selectedEntities } from '../../history/selectedEntities'
 import type { DefaultNoteSlideProperties } from '../../settings'
 import { entries } from '../../utils/object'
@@ -50,6 +51,10 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
     }
 
     switch (key) {
+        case 'noteStyle':
+        case 'connectorStyle':
+            editSelectedEditableEntities({ [key]: rotate(value as NoteStyle, [...noteStyles]) })
+            break
         case 'noteType':
             editSelectedEditableEntities({
                 noteType: rotate(value as NoteType, [

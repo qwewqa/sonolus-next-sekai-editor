@@ -550,6 +550,18 @@
                 "auto": "Auto",
                 "top": "Top",
                 "left": "Left"
+            },
+            "noteSpeed": "Note Speed",
+            "renderScale": "Render Scale",
+            "showEffects": "Effects",
+            "antialias": "Antialias",
+            "aspectRatio": "Aspect Ratio",
+            "showPreview": "Show Preview",
+            "controls": {
+                "title": "Preview Settings Panel",
+                "auto": "Auto",
+                "expanded": "Expanded",
+                "collapsed": "Collapsed"
             }
         },
         "toolbar": {
@@ -1048,6 +1060,13 @@
             },
             "yOffsetBeat": {
                 "label": "Y Offset (Beat)"
+            },
+            "noteStyle": {
+                "label": "Note Color",
+                "default": "Default"
+            },
+            "connectorStyle": {
+                "label": "Connector Color"
             }
         },
         "confirm": {
