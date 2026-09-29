@@ -60,11 +60,6 @@ export const loadSkinFromScp = async (buffer: ArrayBuffer): Promise<LoadedSkin> 
 
     const textureRaw = skinItem.texture.url ? scp.get(skinItem.texture.url) : undefined
     if (!textureRaw) throw new Error('Missing skin texture in scp file')
-    const texture = await createImageBitmap(new Blob([new Uint8Array(textureRaw)]), {
-        premultiplyAlpha: 'premultiply',
-        colorSpaceConversion: 'none',
-    })
-
     const sprites = new Map<string, Sprite>()
     for (const sprite of data.sprites) {
         if (sprites.has(sprite.name)) continue
@@ -74,12 +69,19 @@ export const loadSkinFromScp = async (buffer: ArrayBuffer): Promise<LoadedSkin> 
             transform: toTransform(sprite.transform),
         })
     }
+    const skin = resolveSkin((name) => sprites.get(name))
+
+    // Finish fallible metadata processing before allocating a decoded texture.
+    const texture = await createImageBitmap(new Blob([new Uint8Array(textureRaw)]), {
+        premultiplyAlpha: 'premultiply',
+        colorSpaceConversion: 'none',
+    })
 
     return {
         title: skinItem.title,
         interpolation: data.interpolation,
         texture,
-        skin: resolveSkin((name) => sprites.get(name)),
+        skin,
     }
 }
 

@@ -50,3 +50,43 @@ test('generated release archives are decoded by the existing local skin and part
         assert.equal(resource.interpolation, true)
     }
 })
+
+test('invalid skin and particle metadata is rejected before allocating decoded textures', async (t) => {
+    let decodedTextures = 0
+    Object.defineProperty(globalThis, 'createImageBitmap', {
+        configurable: true,
+        value: async () => {
+            decodedTextures++
+            return { close() {} } as ImageBitmap
+        },
+    })
+    t.after(() => {
+        Reflect.deleteProperty(globalThis, 'createImageBitmap')
+    })
+
+    for (const [category, load, metadata] of [
+        ['skins', loadSkinFromScp, { sprites: null }],
+        ['skins', loadSkinFromScp, { sprites: [{ name: 'broken', transform: null }] }],
+        ['particles', loadParticleFromScp, { sprites: null }],
+        ['particles', loadParticleFromScp, { effects: [{ name: 'broken', transform: {} }] }],
+    ] as const) {
+        const bytes = createScp({
+            [`sonolus/${category}/list`]: Buffer.from(
+                JSON.stringify({
+                    items: [
+                        { name: 'fixture', data: { url: '/data' }, texture: { url: '/texture' } },
+                    ],
+                }),
+            ),
+            data: gzipSync(
+                JSON.stringify({ width: 1, height: 1, sprites: [], effects: [], ...metadata }),
+            ),
+            texture: Buffer.from('decoded by bitmap mock'),
+        })
+        // A rejected package can be retried from the preview's Reload button.
+        for (let attempt = 0; attempt < 2; attempt++) {
+            await assert.rejects(load(Uint8Array.from(bytes).buffer), TypeError)
+            assert.equal(decodedTextures, 0)
+        }
+    }
+})

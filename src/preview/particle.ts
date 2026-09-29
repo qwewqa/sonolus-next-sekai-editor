@@ -108,11 +108,6 @@ export const loadParticleFromScp = async (buffer: ArrayBuffer): Promise<LoadedPa
 
     const textureRaw = particleItem.texture.url ? scp.get(particleItem.texture.url) : undefined
     if (!textureRaw) throw new Error('Missing particle texture in scp file')
-    const texture = await createImageBitmap(new Blob([new Uint8Array(textureRaw)]), {
-        premultiplyAlpha: 'premultiply',
-        colorSpaceConversion: 'none',
-    })
-
     const sprites = data.sprites.map((sprite): Sprite => ({
         ...toSpriteUv(sprite.x, sprite.y, sprite.w, sprite.h, data.width, data.height),
         texture: 1,
@@ -124,12 +119,19 @@ export const loadParticleFromScp = async (buffer: ArrayBuffer): Promise<LoadedPa
 
         effects.set(effect.name, toEffect(effect, sprites))
     }
+    const particle = resolveParticle((name) => effects.get(name))
+
+    // Finish fallible metadata processing before allocating a decoded texture.
+    const texture = await createImageBitmap(new Blob([new Uint8Array(textureRaw)]), {
+        premultiplyAlpha: 'premultiply',
+        colorSpaceConversion: 'none',
+    })
 
     return {
         title: particleItem.title,
         interpolation: data.interpolation,
         texture,
-        particle: resolveParticle((name) => effects.get(name)),
+        particle,
     }
 }
 
