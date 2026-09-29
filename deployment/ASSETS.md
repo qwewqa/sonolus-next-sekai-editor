@@ -13,8 +13,13 @@ metadata identifies the skin as **Next SEKAI 01** and the particles as
 **qwewqa#590353** and particles list **Hyeon2#7895**. Attribution and source information
 remain with the released files in `ASSET_NOTICES.txt`.
 
-The package info records a download from <https://coconut.sonolus.com/next-sekai>
-at `2026-09-29T07:14:14.371462+00:00`. Their data, texture and thumbnail payloads
+The package info records downloads from <https://coconut.sonolus.com/next-sekai>:
+
+- Skin: `2026-09-29T07:58:20.010104+00:00`, including corrected colored flick and
+  trace-flick sprite coordinates.
+- Particles: `2026-09-29T07:14:14.371462+00:00`.
+
+Their data, texture and thumbnail payloads
 match the public [skin item](https://coconut.sonolus.com/next-sekai/sonolus/skins/coconut-next-sekai-1)
 and [particle item](https://coconut.sonolus.com/next-sekai/sonolus/particles/coconut-next-sekai-1)
 byte for byte. These links document provenance; the build uses the pinned local
