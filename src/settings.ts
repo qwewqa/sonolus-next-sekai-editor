@@ -1,6 +1,7 @@
 import Type from 'typebox'
 import Value from 'typebox/value'
 import { shallowRef, watch } from 'vue'
+import { noteStyleSchema } from './chart/noteStyle'
 import { isCommandName, type CommandName } from './editor/commands'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
@@ -15,6 +16,8 @@ const number = (def: number, min: number, max: number) =>
 const defaultNoteSlidePropertiesSchema = Type.Intersect([
     Type.Partial(
         Type.Object({
+            noteStyle: noteStyleSchema,
+            connectorStyle: noteStyleSchema,
             noteType: Type.Union([
                 Type.Literal('default'),
                 Type.Literal('trace'),
@@ -108,6 +111,16 @@ const settingsProperties = {
         Type.Literal('auto'),
         Type.Literal('expanded'),
         Type.Literal('collapsed'),
+    ]),
+
+    previewNoteSpeed: number(10, 1, 12),
+    previewRenderScale: number(1, 0.25, 2),
+    previewShowEffects: Type.Boolean({ default: true }),
+    previewAntialias: Type.Boolean({ default: true }),
+    previewAspectRatio: Type.Union([
+        Type.Literal(16 / 9),
+        Type.Literal(21 / 9),
+        Type.Literal(4 / 3),
     ]),
 
     previewWidth: Type.Number(),

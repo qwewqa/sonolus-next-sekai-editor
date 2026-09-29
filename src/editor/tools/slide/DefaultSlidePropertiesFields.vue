@@ -16,6 +16,8 @@ import OptionalIsConnectorSeparatorField from '../../../modals/form/OptionalIsCo
 import OptionalIsCriticalField from '../../../modals/form/OptionalIsCriticalField.vue'
 import OptionalIsFakeField from '../../../modals/form/OptionalIsFakeField.vue'
 import OptionalNoteTypeField from '../../../modals/form/OptionalNoteTypeField.vue'
+import OptionalNoteStyleField from '../../../modals/form/OptionalNoteStyleField.vue'
+import OptionalConnectorStyleField from '../../../modals/form/OptionalConnectorStyleField.vue'
 import OptionalSfxField from '../../../modals/form/OptionalSfxField.vue'
 import PresetField from '../../../modals/form/PresetField.vue'
 import { settings } from '../../../settings'
@@ -23,6 +25,8 @@ import { useProperties } from '../../utils/properties'
 
 const createModel = useProperties(defaultSlideProperties)
 
+const noteStyle = createModel('noteStyle')
+const connectorStyle = createModel('connectorStyle')
 const noteType = createModel('noteType')
 const isAttached = createModel('isAttached')
 const isCritical = createModel('isCritical')
@@ -48,6 +52,7 @@ const copyProperties = createModel('copyProperties')
         :count="settings.defaultSlidePropertiesPresets.length"
     />
     <OptionalNoteTypeField v-model="noteType" />
+    <OptionalNoteStyleField v-model="noteStyle" />
     <OptionalIsAttachedField v-model="isAttached" />
     <OptionalIsCriticalField v-model="isCritical" />
     <OptionalFlickDirectionField v-model="flickDirection" />
@@ -55,6 +60,7 @@ const copyProperties = createModel('copyProperties')
     <OptionalSfxField v-model="sfx" />
     <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
     <OptionalConnectorTypeField v-model="connectorType" />
+    <OptionalConnectorStyleField v-model="connectorStyle" />
     <OptionalConnectorEaseField v-model="connectorEase" />
     <OptionalConnectorIsFakeField v-model="connectorIsFake" />
     <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />

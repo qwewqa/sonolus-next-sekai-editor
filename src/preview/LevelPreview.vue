@@ -97,13 +97,33 @@ const toggleControls = (event: MouseEvent) => {
     if (event.detail > 0) (event.currentTarget as HTMLButtonElement).blur()
 }
 
-const noteSpeed = ref(10)
+const noteSpeed = computed({
+    get: () => settings.previewNoteSpeed,
+    set: (value) => {
+        settings.previewNoteSpeed = value
+    },
+})
 
-const renderScale = ref(1)
+const renderScale = computed({
+    get: () => settings.previewRenderScale,
+    set: (value) => {
+        settings.previewRenderScale = value
+    },
+})
 
-const showEffects = ref(true)
+const showEffects = computed({
+    get: () => settings.previewShowEffects,
+    set: (value) => {
+        settings.previewShowEffects = value
+    },
+})
 
-const antialias = ref(true)
+const antialias = computed({
+    get: () => settings.previewAntialias,
+    set: (value) => {
+        settings.previewAntialias = value
+    },
+})
 const dockPositions = [
     { label: 'Left', value: 'left' },
     { label: 'Top', value: 'top' },
@@ -115,7 +135,12 @@ const aspectRatios = [
     { label: '21:9', value: 21 / 9 },
     { label: '4:3', value: 4 / 3 },
 ] as const
-const aspectRatio = ref<number>(TARGET_ASPECT_RATIO)
+const aspectRatio = computed({
+    get: () => settings.previewAspectRatio,
+    set: (value) => {
+        settings.previewAspectRatio = value
+    },
+})
 
 const skin = shallowRef<LoadedSkin>()
 const particle = shallowRef<LoadedParticle>()

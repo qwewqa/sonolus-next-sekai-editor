@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { noteStyleVariables } from '../../../utils/colors'
 import { computed } from 'vue'
 import { settings } from '../../../settings'
 import { defaultNotePropertiesPresetIndex } from '../../tools/note'
@@ -32,7 +33,7 @@ const type = computed(() => {
 </script>
 
 <template>
-    <svg viewBox="-0.55 -0.55 1.1 1.1">
+    <svg viewBox="-0.55 -0.55 1.1 1.1" :style="noteStyleVariables(properties.noteStyle)">
         <component :is="iconComponents[type]" :properties />
         <text
             v-if="index !== undefined"

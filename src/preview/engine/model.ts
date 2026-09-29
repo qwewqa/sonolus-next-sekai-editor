@@ -1,3 +1,4 @@
+import type { NoteStyle } from '../../chart/noteStyle'
 import type { CameraChange, FlickDirectionValue } from './layout'
 import type { EaseTypeValue } from './math'
 import type { TimescaleGroup } from './timescale'
@@ -55,6 +56,7 @@ export const isActiveConnectorKind = (kind: ConnectorKindValue) =>
 export type ConnectorLayerValue = 0 | 1 | 2 | 3
 
 export type PreviewNote = {
+    style: NoteStyle
     kind: NoteKindValue
     isCritical: boolean
     isFake: boolean
@@ -74,6 +76,7 @@ export type PreviewNote = {
 }
 
 export type PreviewConnector = {
+    style: NoteStyle
     kind: ConnectorKindValue
     ease: EaseTypeValue
     head: PreviewNote

@@ -261,3 +261,64 @@ test('sim lines connect equal lanes on different stages and scale thickness by p
     close(height(projected.draws[0]!.quad), height(baseline.draws[0]!.quad) / 4)
     close(projected.draws[0]!.z[1]! - baseline.draws[0]!.z[1]!, 1)
 })
+
+test('damage and fake damage connectors ignore guide alpha while respecting note alpha', () => {
+    init()
+    const damageSkin = { ...skin, damageSlideConnector: { normal: sprite } }
+    for (const kind of [ConnectorKind.damage, ConnectorKind.fakeDamage]) {
+        const render = (segmentAlpha: number, noteAlpha: number) => {
+            const result = capture()
+            drawConnector(
+                result.draw,
+                damageSkin,
+                0,
+                kind,
+                ConnectorVisualState.waiting,
+                EaseType.linear,
+                endpoint(),
+                endpoint({ targetTime: 4, visualProgress: 0.5 }),
+                2,
+                0,
+                segmentAlpha,
+                4,
+                segmentAlpha,
+                noteAlpha,
+                noteAlpha,
+                0,
+                false,
+            )
+            return result.draws
+        }
+        const baseline = render(1, 1)
+        assert.ok(baseline.length)
+        assert.deepEqual(render(0, 1), baseline)
+        assert.deepEqual(render(2, 1), baseline)
+        assert.equal(render(0, 0).length, 0)
+        assert.ok(render(0, 0.5).every((draw) => draw.alpha <= 0.5))
+    }
+})
+
+test('flick bodies share the ordinary note layer', () => {
+    init()
+    const result = capture()
+    const layeredSkin = { ...skin, flickNote: skin.normalNote }
+    for (const kind of [NoteKind.tap, NoteKind.flick]) {
+        drawNote(
+            result.draw,
+            layeredSkin,
+            0,
+            kind,
+            false,
+            0,
+            1,
+            0.5,
+            FlickDirection.upOmni,
+            2,
+            identityStageScreenTransform,
+            1,
+        )
+    }
+    const bodies = result.draws.filter((draw) => draw.sprite === sprite)
+    assert.equal(bodies.length, 2)
+    assert.deepEqual(bodies[0]!.z, bodies[1]!.z)
+})

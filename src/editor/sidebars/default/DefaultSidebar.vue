@@ -45,6 +45,8 @@ import MultiMaskLeftField from '../../../modals/form/MultiMaskLeftField.vue'
 import MultiMaskSizeField from '../../../modals/form/MultiMaskSizeField.vue'
 import MultiNoteAlphaField from '../../../modals/form/MultiNoteAlphaField.vue'
 import MultiNoteTypeField from '../../../modals/form/MultiNoteTypeField.vue'
+import MultiNoteStyleField from '../../../modals/form/MultiNoteStyleField.vue'
+import MultiConnectorStyleField from '../../../modals/form/MultiConnectorStyleField.vue'
 import MultiPivotLaneField from '../../../modals/form/MultiPivotLaneField.vue'
 import MultiRightBorderStyleField from '../../../modals/form/MultiRightBorderStyleField.vue'
 import MultiRotationField from '../../../modals/form/MultiRotationField.vue'
@@ -107,6 +109,8 @@ const yTranslation = createModel('yTranslation')
 const elevation = createModel('elevation')
 const anchor = createModel('anchor')
 const eventEase = createModel('eventEase')
+const noteStyle = createModel('noteStyle')
+const connectorStyle = createModel('connectorStyle')
 const noteType = createModel('noteType')
 const isAttached = createModel('isAttached')
 const left = createModel('left')
@@ -205,6 +209,10 @@ const connectorPresentation = createModel('connectorPresentation')
                 v-model="eventEase"
             />
             <MultiNoteTypeField v-if="types.note" v-model="noteType" />
+            <MultiNoteStyleField
+                v-if="types.note && noteFields.noteStyle !== false"
+                v-model="noteStyle"
+            />
             <MultiGroupField v-if="types.timeScale || types.note" v-model="groupId" />
             <MultiStageField
                 v-if="
@@ -248,6 +256,10 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiConnectorTypeField
                 v-if="types.note && noteFields.connectorType !== false"
                 v-model="connectorType"
+            />
+            <MultiConnectorStyleField
+                v-if="types.note && noteFields.connectorStyle !== false"
+                v-model="connectorStyle"
             />
             <MultiConnectorEaseField
                 v-if="types.note && noteFields.connectorEase !== false"

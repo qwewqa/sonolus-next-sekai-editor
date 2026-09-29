@@ -63,6 +63,8 @@ export const parseUscChart = (objects: UscObject[]) => {
                         groupId: getGroupId(object.timeScaleGroup),
                         stageId,
                         beat: object.beat,
+                        noteStyle: 'default',
+                        connectorStyle: 'default',
                         noteType: object.trace ? 'trace' : 'default',
                         isAttached: false,
                         left: object.lane - object.size,
@@ -90,6 +92,8 @@ export const parseUscChart = (objects: UscObject[]) => {
                         groupId: getGroupId(connection.timeScaleGroup ?? 0),
                         stageId,
                         beat: connection.beat,
+                        noteStyle: 'default',
+                        connectorStyle: 'default',
                         noteType:
                             connection.type === 'start' || connection.type === 'end'
                                 ? noteTypes[connection.judgeType]
@@ -128,6 +132,8 @@ export const parseUscChart = (objects: UscObject[]) => {
                         groupId: getGroupId(midpoint.timeScaleGroup),
                         stageId,
                         beat: midpoint.beat,
+                        noteStyle: 'default',
+                        connectorStyle: 'default',
                         noteType: 'anchor',
                         isAttached: false,
                         left: midpoint.lane - midpoint.size,
@@ -157,6 +163,8 @@ export const parseUscChart = (objects: UscObject[]) => {
                         groupId: getGroupId(object.timeScaleGroup),
                         stageId,
                         beat: object.beat,
+                        noteStyle: 'default',
+                        connectorStyle: 'default',
                         noteType: 'damage',
                         isAttached: false,
                         left: object.lane - object.size,

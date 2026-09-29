@@ -181,6 +181,12 @@ const apply = (notes: NoteEntity[]) => {
                     stageId: view.stageId ?? nearest?.stageId ?? defaultStageId.value,
                     beat,
                     left: 0,
+                    noteStyle:
+                        defaultSlideProperties.value.noteStyle ?? nearest?.noteStyle ?? 'default',
+                    connectorStyle:
+                        defaultSlideProperties.value.connectorStyle ??
+                        nearest?.connectorStyle ??
+                        'default',
                     noteType:
                         defaultSlideProperties.value.noteType ?? nearest?.noteType ?? 'default',
                     isAttached: true,

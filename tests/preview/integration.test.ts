@@ -27,6 +27,8 @@ const note = (overrides: Partial<NoteObject> = {}): NoteObject => ({
     isCritical: false,
     flickDirection: 'none',
     isFake: false,
+    noteStyle: 'default',
+    connectorStyle: 'default',
     sfx: 'default',
     isConnectorSeparator: false,
     connectorType: 'active',
@@ -390,3 +392,45 @@ for (const fixture of [
         }
     })
 }
+
+test('note colors reach approaching notes, slide heads and slot effects', () => {
+    const red = { ...noteSprite }
+    const blue = { ...noteSprite }
+    const slot = { ...noteSprite }
+    const coloredSkin = resolveSkin((name) => {
+        if (/^Sekai Slide Note (Left|Middle|Right) Red$/.test(name)) return red
+        if (/^Sekai Slide Note (Left|Middle|Right) Blue$/.test(name)) return blue
+        if (name === 'Sekai Slot Glow Slide Red') return slot
+    })
+    const head = note({ beat: 4, noteStyle: 'red', connectorStyle: 'blue' })
+    const source = chart({ slides: [[head, note({ beat: 8 })]] })
+    assert.equal(renderSprite(source, 1.9, coloredSkin, red).length, 3)
+    assert.equal(renderSprite(source, 2.1, coloredSkin, blue).length, 3)
+    assert.equal(renderSprite(source, 2.1, coloredSkin, slot, true).length, 1)
+    head.connectorStyle = 'default'
+    assert.equal(renderSprite(source, 2.1, coloredSkin, red).length, 3)
+})
+
+test('fake damage connectors draw a colored moving head during their active interval', () => {
+    const body = { ...noteSprite }
+    const coloredSkin = resolveSkin((name) =>
+        /^Sekai Damage Note (Left|Middle|Right) Purple$/.test(name) ? body : undefined,
+    )
+    const source = chart({
+        slides: [
+            [
+                note({
+                    beat: 0,
+                    noteType: 'damage',
+                    connectorType: 'damage',
+                    connectorIsFake: true,
+                    connectorStyle: 'purple',
+                }),
+                note({ beat: 8, noteType: 'damage' }),
+            ],
+        ],
+    })
+    assert.equal(preview(source).slides.length, 1)
+    assert.equal(renderSprite(source, 1, coloredSkin, body).length, 3)
+    assert.equal(renderSprite(source, 4, coloredSkin, body).length, 0)
+})

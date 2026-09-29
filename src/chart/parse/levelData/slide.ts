@@ -3,6 +3,13 @@ import Type from 'typebox'
 import { getOptionalRef, getOptionalValue, getValue, type ParseCtx } from '.'
 import type { GroupId } from '../../groups'
 import type { NoteObject } from '../../note'
+import {
+    coloredConnectorKinds,
+    connectorBaseKind,
+    connectorStyle,
+    noteStyles,
+    noteStyleValueSchema,
+} from '../../noteStyle'
 import type { StageId } from '../../stages'
 import { beatSchema } from './schemas'
 
@@ -213,6 +220,7 @@ const sfxs = {
 const isSeparatorSchema = Type.Number()
 
 const segmentKindSchema = Type.Union([
+    ...coloredConnectorKinds.map((kind) => Type.Literal(kind)),
     Type.Literal(1),
     Type.Literal(2),
     Type.Literal(3),
@@ -385,6 +393,9 @@ const toNoteObject = (
         groupId,
         stageId,
         beat: getValue(entity, EngineArchetypeDataName.Beat, beatSchema),
+        noteStyle:
+            noteStyles[getOptionalValue(entity, 'style', noteStyleValueSchema) ?? 0] ?? 'default',
+        connectorStyle: connectorStyle(getValue(entity, 'segmentKind', segmentKindSchema)),
         noteType: 'default',
         isAttached: !!getValue(entity, 'isAttached', isAttachedSchema),
         left: lane - size,
@@ -394,7 +405,11 @@ const toNoteObject = (
         isFake: false,
         sfx: sfxs[getOptionalValue(entity, 'effectKind', sfxSchema) ?? 0],
         isConnectorSeparator: !!getOptionalValue(entity, 'isSeparator', isSeparatorSchema),
-        ...segmentKinds[getValue(entity, 'segmentKind', segmentKindSchema)],
+        ...segmentKinds[
+            connectorBaseKind(
+                getValue(entity, 'segmentKind', segmentKindSchema),
+            ) as keyof typeof segmentKinds
+        ],
         connectorEase: connectorEases[getValue(entity, 'connectorEase', connectorEaseSchema)],
         connectorGuideAlpha: getValue(entity, 'segmentAlpha', segmentAlphaSchema),
         connectorLayer:

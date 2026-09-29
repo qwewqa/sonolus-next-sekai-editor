@@ -1283,3 +1283,99 @@ test.describe('preview aspect ratios', () => {
         await expect(speed).toBeInViewport()
     })
 })
+
+test('preview options share persisted settings with the main options menu', async ({ page }) => {
+    const preview = page.locator('.preview')
+    const speed = preview.locator('input[type="number"]').nth(0)
+    const scale = preview.locator('input[type="number"]').nth(1)
+    await speed.fill('9.25')
+    await speed.press('Enter')
+    await scale.fill('1.5')
+    await scale.press('Enter')
+    await preview.getByRole('radio', { name: '4:3', exact: true }).check()
+    await preview.getByLabel('Effects', { exact: true }).uncheck()
+    await preview.getByLabel('Antialias', { exact: true }).uncheck()
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByLabel('Note Speed', { exact: true })).toHaveValue('9.25')
+    await expect(dialog.getByLabel('Render Scale', { exact: true })).toHaveValue('1.5')
+    await expect(dialog.getByRole('combobox', { name: 'Aspect Ratio', exact: true })).toHaveValue(
+        String(4 / 3),
+    )
+    await expect(
+        dialog
+            .locator('label')
+            .filter({ has: page.getByText('Effects', { exact: true }) })
+            .getByRole('button'),
+    ).toHaveValue('Disabled')
+    await expect(
+        dialog
+            .locator('label')
+            .filter({ has: page.getByText('Antialias', { exact: true }) })
+            .getByRole('button'),
+    ).toHaveValue('Disabled')
+    await dialog.getByLabel('Note Speed', { exact: true }).fill('8.5')
+    await dialog.getByLabel('Note Speed', { exact: true }).press('Tab')
+    await dialog.getByLabel('Render Scale', { exact: true }).fill('0.75')
+    await dialog.getByLabel('Render Scale', { exact: true }).press('Tab')
+    await dialog
+        .getByRole('combobox', { name: 'Aspect Ratio', exact: true })
+        .selectOption({ label: '21:9' })
+    await dialog
+        .locator('label')
+        .filter({ has: page.getByText('Effects', { exact: true }) })
+        .getByRole('button')
+        .click()
+    await dialog
+        .locator('label')
+        .filter({ has: page.getByText('Antialias', { exact: true }) })
+        .getByRole('button')
+        .click()
+    await dialog
+        .getByRole('combobox', { name: 'Preview Settings Panel', exact: true })
+        .selectOption('expanded')
+    await page.keyboard.press('Escape')
+    await expect(speed).toHaveValue('8.5')
+    await expect(scale).toHaveValue('0.75')
+    await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
+    await page.reload()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => {
+        window.editorTest.settings.showPreview = true
+    })
+    await expect(speed).toHaveValue('8.5')
+    await expect(scale).toHaveValue('0.75')
+    await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
+})
+
+test('invalid persisted preview options normalize to valid settings', async ({ page }) => {
+    await page.evaluate(() => {
+        const values = {
+            previewNoteSpeed: 99,
+            previewRenderScale: -1,
+            previewAspectRatio: 0,
+            previewShowEffects: 'bad',
+            previewAntialias: null,
+        }
+        for (const [key, value] of Object.entries(values))
+            localStorage.setItem(`sonolus-next-sekai-editor.${key}`, JSON.stringify(value))
+    })
+    await page.reload()
+    await page.evaluate(installEditorFixture)
+    expect(
+        await page.evaluate(() => {
+            const s = window.editorTest.settings
+            return [
+                s.previewNoteSpeed,
+                s.previewRenderScale,
+                s.previewAspectRatio,
+                s.previewShowEffects,
+                s.previewAntialias,
+            ]
+        }),
+    ).toEqual([12, 0.25, 16 / 9, true, false])
+})

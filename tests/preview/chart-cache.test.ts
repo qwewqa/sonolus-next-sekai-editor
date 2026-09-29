@@ -25,6 +25,8 @@ const note = (overrides: Partial<NoteObject> = {}): NoteObject => ({
     isCritical: false,
     flickDirection: 'none',
     isFake: false,
+    noteStyle: 'default',
+    connectorStyle: 'default',
     sfx: 'default',
     isConnectorSeparator: false,
     connectorType: 'active',
