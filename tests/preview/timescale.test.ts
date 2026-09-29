@@ -162,3 +162,146 @@ test('empty groups retain ordinary time and extreme distances use the engine lim
     assert.equal(noteDistance(group, 0, 1e30), 1e20)
     assert.equal(noteDistance(group, 1e30, 0), -1e20)
 })
+
+test('overflowing scroll ratios retain finite reverse distances and clamp forward distances', () => {
+    for (const sign of [1, -1]) {
+        const group = createTimescaleGroup(
+            Array.from({ length: 207 }, (_, i) =>
+                change(i, sign * (i % 2 ? 0.001 : 1), {
+                    transitionStyle: i % 2 ? 0 : 1,
+                }),
+            ),
+            0,
+        )
+        assert.equal(noteDistance(group, 0, 206), sign * 1e20)
+        close(noteDistance(group, 206, 0), -sign * 0.002002002002002002)
+    }
+})
+
+const recoveringChanges = (half: number) =>
+    Array.from({ length: half * 2 + 1 }, (_, i) =>
+        change(i, i < half ? (i % 2 ? 1 : 0.001) : i % 2 ? 0.001 : 1, {
+            transitionStyle: i % 2 ? 0 : 1,
+        }),
+    )
+
+test('scroll ratios recover after both underflowing and overflowing intermediate ranges', () => {
+    const group = createTimescaleGroup(recoveringChanges(300), 0)
+    // Decimal oracle: tests/timescale_reference.py at engine 9e93ba0,
+    // RefTimeline(..., precision=100).distance(0, 600) and distance(600, 0).
+    close(noteDistance(group, 0, 600), 0.004004004004004004)
+    close(noteDistance(group, 600, 0), -0.004004004004004004)
+})
+
+test('extended scroll ranges retain easing, skips, negative speeds and zero-speed epsilon', () => {
+    const queries = [
+        [0, 600],
+        [600, 0],
+        [0.25, 599.75],
+        [599.75, 0.25],
+        [298.5, 302.25],
+        [302.25, 298.5],
+    ] as const
+    // Independent 100-digit Decimal oracle, using the same generated markers.
+    const cases = [
+        [
+            'positive',
+            [
+                0.5036703375041703, -0.5036703375041703, 0.30605158750417033, -0.30605158750417033,
+                376.72634999999997, -0.70570329375,
+            ],
+        ],
+        [
+            'negative',
+            [
+                -0.5036703375041703, 0.5036703375041703, -0.30485158750417035, 0.30485158750417035,
+                -377.02665, 0.70626583125,
+            ],
+        ],
+        [
+            'mixed',
+            [
+                -0.4993363980331709, 0.4993363980331709, -0.3006218146998376, 0.3006218146998376,
+                -375.72535, -0.70373433125,
+            ],
+        ],
+        [
+            'zero',
+            [
+                0.5003166950030004, -0.5003166950030004, 0.30297502833633366, -0.30297502833633366,
+                3749.75, -0.703078125,
+            ],
+        ],
+    ] as const
+    for (const [mode, expected] of cases) {
+        const changes = recoveringChanges(300).map((change, i) => ({
+            ...change,
+            timescale:
+                mode === 'zero' && change.timescale === 0.001
+                    ? 0
+                    : mode === 'negative' || (mode === 'mixed' && i % 3 === 0)
+                      ? -change.timescale
+                      : change.timescale,
+            ease: (i % 6) as TimescaleEase,
+            skipSeconds: ((i % 5) - 2) * 0.0003,
+        }))
+        const group = createTimescaleGroup(changes, 0)
+        for (const [index, [now, target]] of queries.entries()) {
+            close(noteDistance(group, now, target), expected[index]!)
+        }
+    }
+})
+
+test('extreme scroll ranges keep logarithmic transfer queries', () => {
+    const group = createTimescaleGroup(recoveringChanges(16_384), 0)
+    let reads = 0
+    group.transfers = new Proxy(group.transfers, {
+        get(target, property, receiver) {
+            if (typeof property === 'string' && /^\d+$/.test(property)) reads++
+            return Reflect.get(target, property, receiver)
+        },
+    })
+    close(noteDistance(group, 0, 32_768), 0.004004004004004004)
+    close(noteDistance(group, 32_768, 0), -0.004004004004004004)
+    assert.ok(reads <= 4 * Math.ceil(Math.log2(group.changes.length)), `${reads} transfer reads`)
+})
+
+test('finite extreme inputs retain leaf ratios, skip widths and cancelling integrals', () => {
+    const scroll = createTimescaleGroup(
+        [change(0, 1e308, { transitionStyle: 1 }), change(1, 1e-4)],
+        0,
+    )
+    assert.equal(noteDistance(scroll, 0, 1), 1e20)
+    close(noteDistance(scroll, 1, 0), -1e-4)
+
+    const skip = createTimescaleGroup(
+        [change(0, 1e-4, { transitionStyle: 1 }), change(1, 1e-4, { skipSeconds: 1e308 })],
+        0,
+    )
+    assert.equal(noteDistance(skip, 0, 1), 1e20)
+    assert.equal(noteDistance(skip, 1, 0), -1e20)
+
+    const cancelling = createTimescaleGroup([change(0, 1e308), change(4, -1e308), change(8, 1)], 0)
+    close(noteDistance(cancelling, 0, 9), 1)
+    close(noteDistance(cancelling, 9, 0), -1)
+    close(scaledTimeAt(cancelling, 9), 1)
+})
+
+test('eased integrals recover finite results after overflowing speed arithmetic', () => {
+    const speed = 2 ** 1023
+    const duration = 2 ** -1022
+    const rising = createTimescaleGroup(
+        [change(0, -speed, { ease: 1 }), change(duration, speed)],
+        0,
+    )
+    close(noteDistance(rising, 0, duration / 4), -0.375)
+    close(noteDistance(rising, duration / 4, 0), 0.375)
+    close(noteDistance(rising, 0, duration), 0)
+
+    const constant = createTimescaleGroup(
+        [change(0, speed, { ease: 1 }), change(duration, speed)],
+        0,
+    )
+    close(noteDistance(constant, 0, duration), 2)
+    close(noteDistance(constant, duration, 0), -2)
+})
