@@ -6,17 +6,17 @@ import tsEslint from 'typescript-eslint'
 
 export default tsEslint.config(
     {
-        ignores: ['**/*.*', '!src/**/*.*'],
+        ignores: ['node_modules/**', 'dist/**', 'public/**', 'test-results*/**', '.idea/**'],
     },
 
-    eslint.configs.recommended,
-
-    ...tsEslint.configs.strictTypeChecked,
-    ...tsEslint.configs.stylisticTypeChecked,
-
-    ...pluginVue.configs['flat/recommended'],
-
     {
+        files: ['src/**/*.{ts,vue}'],
+        extends: [
+            eslint.configs.recommended,
+            ...tsEslint.configs.strictTypeChecked,
+            ...tsEslint.configs.stylisticTypeChecked,
+            ...pluginVue.configs['flat/recommended'],
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -62,6 +62,25 @@ export default tsEslint.config(
                     varsIgnorePattern: '^_',
                 },
             ],
+        },
+    },
+
+    {
+        files: ['tests/**/*.ts', '*.config.ts'],
+        extends: [eslint.configs.recommended, ...tsEslint.configs.recommended],
+        languageOptions: {
+            globals: { ...globals.browser, ...globals.node },
+        },
+        rules: {
+            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+        },
+    },
+
+    {
+        files: ['scripts/**/*.mjs', 'tests/**/*.mjs', '*.config.js'],
+        extends: [eslint.configs.recommended],
+        languageOptions: {
+            globals: globals.node,
         },
     },
 

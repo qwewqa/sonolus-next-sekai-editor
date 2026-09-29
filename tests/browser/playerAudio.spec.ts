@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 
+// Playwright's Windows WebKit build does not provide Web Audio. These cases
+// still run in both browsers on Linux CI.
+test.skip(
+    ({ browserName }) => browserName === 'webkit' && process.platform === 'win32',
+    'Playwright WebKit on Windows does not provide Web Audio',
+)
+
 type RenderOptions = {
     volume: number
     start: number

@@ -22,6 +22,13 @@ const metadata = {
     sourceDirty: Boolean(git('status', '--porcelain', '--untracked-files=normal')),
 }
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'sekai-release-'))
+// Only remove the directory just allocated by mkdtemp, never a caller path.
+if (
+    dirname(temporaryRoot) !== resolve(tmpdir()) ||
+    !temporaryRoot.startsWith(join(tmpdir(), 'sekai-release-'))
+) {
+    throw new Error('Refusing to remove an unexpected temporary directory')
+}
 try {
     const publicDir = join(temporaryRoot, 'public')
     await stageReleasePublic(root, publicDir)
@@ -39,12 +46,5 @@ try {
         `Verified release ${metadata.appVersion}${metadata.sourceDirty ? ' (working tree has changes)' : ''}`,
     )
 } finally {
-    // Only remove the directory just allocated by mkdtemp, never a caller path.
-    if (
-        dirname(temporaryRoot) !== resolve(tmpdir()) ||
-        !temporaryRoot.startsWith(join(tmpdir(), 'sekai-release-'))
-    ) {
-        throw new Error('Refusing to remove an unexpected temporary directory')
-    }
     await rm(temporaryRoot, { recursive: true, force: true })
 }

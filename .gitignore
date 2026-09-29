@@ -2,8 +2,7 @@
 node_modules
 dist
 playwright-report
-test-results
-test-results-production
+test-results*/
 
 *.tsbuildinfo
 

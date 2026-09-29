@@ -14,7 +14,11 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
+    check:
+        uses: ./.github/workflows/check.yml
+
     build:
+        needs: check
         runs-on: ubuntu-latest
         timeout-minutes: 25
         steps:
@@ -28,11 +32,6 @@ jobs:
                   node-version-file: .node-version
                   cache: npm
             - run: npm ci
-            - run: npm test
-            - run: npm run test:release
-            - run: npm run check-type
-            - run: npm run check-lint
-            - run: npm run check-format
             - name: Install browser
               run: npx playwright install --with-deps chromium
             - run: npm run test:browser

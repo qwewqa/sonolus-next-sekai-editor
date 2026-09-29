@@ -3,14 +3,13 @@
 !eslint.config.js
 !index.html
 !/README.md
-!playwright.config.ts
-!playwright.production.config.ts
+!playwright*.config.ts
 !tailwind.config.js
 !vite.config.ts
 
 !src/**/*
 !tests/**/*
-!scripts/*release*.mjs
+!scripts/*.mjs
 !deployment/*.json
 !deployment/*.md
 !.github/
