@@ -106,8 +106,8 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
 <template>
     <div
         ref="controls"
-        class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden rounded-xl text-xs text-fg accent-fg shadow-xl"
-        :class="areControlsExpanded ? 'w-64 bg-modal' : 'w-11 rounded-full bg-button'"
+        class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden text-xs text-fg accent-fg shadow-xl"
+        :class="areControlsExpanded ? 'w-64 rounded-xl bg-modal' : 'w-11 rounded-full bg-button'"
         @keydown.stop
     >
         <button
