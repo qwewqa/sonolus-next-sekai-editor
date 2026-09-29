@@ -20,8 +20,12 @@ export const parseEvents = <T>(
     objects: T[],
     getObject: (entity: LevelDataEntity) => NoInfer<T>,
 ) => {
+    const visited = new Set<string>()
     let ref: string | undefined = firstRef
     while (ref) {
+        if (visited.has(ref)) throw new Error(`Invalid level: cyclic event ref "${ref}"`)
+        visited.add(ref)
+
         const entity = refs.get(ref)
         if (!entity) throw new Error(`Invalid level: ref "${ref}" not found`)
 

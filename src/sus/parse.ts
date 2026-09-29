@@ -100,7 +100,7 @@ export const parseSus = (data: string[]): Sus => {
         // Streams
         if (header.length === 6 && (header[3] === '3' || header[3] === '9')) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const key = `${header[5]!}-${header[3]}`
+            const key = `${header[5]!.toLowerCase()}-${header[3]}`
             const stream = streams.get(key)
 
             if (stream) {
@@ -153,6 +153,7 @@ const parse = (data: string[]) => {
         } else if (left === 'MEASUREBS') {
             measureChanges.unshift([lines.length, +right])
         } else {
+            if (left === 'REQUEST' && !right.startsWith('"ticks_per_beat ')) continue
             meta.set(left, right)
         }
     }
