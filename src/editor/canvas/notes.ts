@@ -1,4 +1,5 @@
 import type { FlickDirection } from '../../chart/note'
+import { createSlideInfoLookup } from '../../state/entities/slides/lookup'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slides/semantics'
 import { beatToTime } from '../../state/integrals/bpms'
@@ -246,7 +247,7 @@ export const createNoteRenderer = () => {
     const sprites = new Map<string, Sprite>()
     let cachedPixels = 0
     let frame = 0
-    let lookups = new WeakMap<readonly NoteInfo[], ReadonlyMap<NoteEntity, NoteInfo>>()
+    let getSlideInfoLookup = createSlideInfoLookup()
 
     const release = (sprite: Sprite) => {
         cachedPixels -= sprite.pixels
@@ -329,11 +330,7 @@ export const createNoteRenderer = () => {
             const { ctx, state, scale, recentlyActive } = context
             if (opacity <= 0 || scale <= 0 || context.pixelRatio <= 0) return
             const infos = state.store.slides.info.get(entity.slideId)
-            let lookup = infos && lookups.get(infos)
-            if (infos && !lookup) {
-                lookup = new Map(infos.map((info) => [info.note, info]))
-                lookups.set(infos, lookup)
-            }
+            const lookup = infos && getSlideInfoLookup(infos)
             const type = getNoteVisualType(entity, infos, lookup)
             const outline =
                 (type === 'anchor' || type === 'tick') && (highlighted || recentlyActive)
@@ -389,7 +386,7 @@ export const createNoteRenderer = () => {
         clear() {
             for (const sprite of sprites.values()) release(sprite)
             sprites.clear()
-            lookups = new WeakMap()
+            getSlideInfoLookup = createSlideInfoLookup()
         },
     }
 }

@@ -78,6 +78,8 @@ export const createTransport = ({
     }
 
     const stop = (shouldReturn = false) => {
+        // Inactivity can stop a paused transport before its queued audition flushes.
+        pendingAudition = undefined
         if (!playback) return
         const { returnTime } = playback
         audio.stop()

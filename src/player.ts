@@ -20,6 +20,7 @@ import {
 } from './playerAudio'
 import { settings } from './settings'
 import type { ConnectorEntity } from './state/entities/slides/connector'
+import { createSlideInfoLookup } from './state/entities/slides/lookup'
 import { getActiveNoteRole } from './state/entities/slides/semantics'
 import { beatToTime, timeToBeat } from './state/integrals/bpms'
 import { beatToKey } from './state/store/grid'
@@ -94,6 +95,7 @@ let preview: PlayerAudio | undefined
 let scheduler: ReturnType<typeof setInterval> | undefined
 let resuming: Promise<void> | undefined
 let areSfxReady = false
+const getSlideInfoLookup = createSlideInfoLookup()
 
 const scheduleAudio = () => {
     if (!state.value || !areSfxReady) return
@@ -157,7 +159,7 @@ const scheduleAudio = () => {
         const infos = store.value.slides.info.get(entity.slideId)
         if (!infos) throw new Error('Unexpected missing infos')
 
-        const info = infos.find((info) => info.note === entity)
+        const info = getSlideInfoLookup(infos).get(entity)
         if (!info) throw new Error('Unexpected missing info')
 
         const activeRole = getActiveNoteRole(info)

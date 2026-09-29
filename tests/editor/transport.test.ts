@@ -105,6 +105,24 @@ test('clamped steps replace old audio and cancel pending notes or cursor changes
     assert.deepEqual(auditions, [8, 0])
 })
 
+test('stopping a paused transport cancels pending note and cursor auditions before they flush', async (t) => {
+    const { transport, view, auditions } = fixture(t)
+    transport.audition(12)
+    transport.stop()
+    await nextTick()
+    assert.deepEqual(auditions, [])
+
+    view.cursorTime = 5
+    transport.stop()
+    await nextTick()
+    assert.deepEqual(auditions, [])
+
+    // New interactions after the stop retain their normal audition behavior.
+    transport.audition(14)
+    await nextTick()
+    assert.deepEqual(auditions, [14])
+})
+
 test('play and pause discard queued auditions and pause captures the audio clock', async (t) => {
     const { transport, view, clock, starts, auditions } = fixture(t)
     transport.audition(8)

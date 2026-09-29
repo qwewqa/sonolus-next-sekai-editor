@@ -344,6 +344,25 @@ test('pausing immediately after a stalled frame captures the audio position', as
     expect(current.cursor).toBe(paused.cursor)
 })
 
+test('backgrounding cancels a queued audition before the audio flush', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { player, starts } = window.audioResilience
+        window.editorTest.settings.playPreviewDuration = 120
+        player!.stepPreviewTime(10)
+        Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => false })
+        window.dispatchEvent(new Event('blur'))
+        await window.editorTest.nextTick()
+        return { sources: starts.length, cursor: window.editorTest.view.cursorTime }
+    })
+    expect(result).toEqual({ sources: 0, cursor: 0.01 })
+    await page.evaluate(() => {
+        Reflect.deleteProperty(document, 'hasFocus')
+        window.dispatchEvent(new Event('focus'))
+    })
+    await settle(page)
+    expect(await page.evaluate(() => window.audioResilience.starts)).toEqual([])
+})
+
 test('backgrounding cancels an audition whose audio resume is still pending', async ({ page }) => {
     await delayResume(page)
     const source = await page.evaluate(async () => {
