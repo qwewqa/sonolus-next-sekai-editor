@@ -42,8 +42,8 @@ for (const scenario of cases) {
 
             const tool = tools[scenario.tool]
             const modifiers = { ctrl: false, shift: false }
-            const start = point(...scenario.start)
-            const end = point(...scenario.end)
+            const start = point(scenario.start[0], scenario.start[1])
+            const end = point(scenario.end[0], scenario.end[1])
             const serialize = (value: unknown) =>
                 JSON.stringify(value, (_, item: unknown) =>
                     item instanceof Map ? [...item.entries()] : item,

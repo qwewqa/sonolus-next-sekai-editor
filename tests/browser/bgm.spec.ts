@@ -45,7 +45,7 @@ const trackWaveformTiles = (heldTile = 2) => {
     const toBlob = HTMLCanvasElement.prototype.toBlob
     const createUrl = URL.createObjectURL
     const revokeUrl = URL.revokeObjectURL
-    const gate = (window.bgmImportGate = {
+    const gate: Window['bgmImportGate'] = (window.bgmImportGate = {
         held: false,
         encoded: 0,
         created: [] as string[],
@@ -378,7 +378,7 @@ test('cancelled BGM import cannot overwrite a replacement or leak partial FFT ti
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await page.evaluate(installEditorFixture)
     await page.evaluate(() => (window.editorTest.settings.waveform = 'fft'))
-    await page.evaluate(trackWaveformTiles)
+    await page.evaluate(trackWaveformTiles, 2)
 
     await page.keyboard.press('m')
     const dialogs = page.getByRole('dialog')
@@ -432,7 +432,7 @@ test('resetting the chart during BGM import leaves no late waveform URLs', async
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await page.evaluate(installEditorFixture)
     await page.evaluate(() => (window.editorTest.settings.waveform = 'fft'))
-    await page.evaluate(trackWaveformTiles)
+    await page.evaluate(trackWaveformTiles, 2)
 
     await page.keyboard.press('m')
     const dialogs = page.getByRole('dialog')

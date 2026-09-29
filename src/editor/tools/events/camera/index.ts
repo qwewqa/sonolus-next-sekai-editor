@@ -12,10 +12,8 @@ import {
     toCameraEventJointEntity,
     type CameraEventJointEntity,
 } from '../../../../state/entities/events/joints/camera'
-import {
-    addCameraEventJoint,
-    removeCameraEventJoint,
-} from '../../../../state/mutations/events/camera'
+import { addCameraEventJoint } from '../../../../state/mutations/events/camera'
+import { editSelectedCameraEvent } from '../../../../state/operations/events/camera'
 import { createTransaction, type Transaction } from '../../../../state/transaction'
 import { interpolate } from '../../../../utils/interpolate'
 import { notify } from '../../../notification'
@@ -305,9 +303,9 @@ export const cameraEvent: Tool = {
             if (replacement?.type === 'cameraEventJoint') {
                 setPreviewEdit(source, () => {
                     const transaction = createTransaction(source, { autoAddGroup: false })
-                    removeCameraEventJoint(transaction, entity)
-                    const selectedEntities = addCameraEventJoint(transaction, replacement)
-                    return transaction.commit(selectedEntities)
+                    return transaction.commit(
+                        editSelectedCameraEvent(transaction, entity, replacement),
+                    )
                 }, [entity, replacement.beat, replacement.cameraLeft, replacement.cameraSize])
             }
         }
@@ -369,38 +367,7 @@ export const editCameraEvent = (
     entity: CameraEventJointEntity,
     object: Partial<CameraEventObject>,
 ) => {
-    edit(entity, {
-        beat: object.beat ?? entity.beat,
-        cameraLeft: object.cameraLeft ?? entity.cameraLeft,
-        cameraSize: object.cameraSize ?? entity.cameraSize,
-        cameraZoom: object.cameraZoom ?? entity.cameraZoom,
-        cameraZoomTargetLane: object.cameraZoomTargetLane ?? entity.cameraZoomTargetLane,
-        cameraZoomTargetY: object.cameraZoomTargetY ?? entity.cameraZoomTargetY,
-        cameraZoomVerticalAlign: object.cameraZoomVerticalAlign ?? entity.cameraZoomVerticalAlign,
-        cameraRotation: object.cameraRotation ?? entity.cameraRotation,
-        cameraStageTilt: object.cameraStageTilt ?? entity.cameraStageTilt,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
-}
-
-export const editSelectedCameraEvent = (
-    transaction: Transaction,
-    entity: CameraEventJointEntity,
-    object: Partial<CameraEventObject>,
-) => {
-    removeCameraEventJoint(transaction, entity)
-    return addCameraEventJoint(transaction, {
-        beat: object.beat ?? entity.beat,
-        cameraLeft: object.cameraLeft ?? entity.cameraLeft,
-        cameraSize: object.cameraSize ?? entity.cameraSize,
-        cameraZoom: object.cameraZoom ?? entity.cameraZoom,
-        cameraZoomTargetLane: object.cameraZoomTargetLane ?? entity.cameraZoomTargetLane,
-        cameraZoomTargetY: object.cameraZoomTargetY ?? entity.cameraZoomTargetY,
-        cameraZoomVerticalAlign: object.cameraZoomVerticalAlign ?? entity.cameraZoomVerticalAlign,
-        cameraRotation: object.cameraRotation ?? entity.cameraRotation,
-        cameraStageTilt: object.cameraStageTilt ?? entity.cameraStageTilt,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
+    edit(entity, object)
 }
 
 const getCameraEventJointFromSelection = () => {
@@ -483,17 +450,14 @@ const add = (object: CameraEventObject) => {
     )
 }
 
-const edit = (entity: CameraEventJointEntity, object: CameraEventObject) => {
+const edit = (entity: CameraEventJointEntity, object: Partial<CameraEventObject>) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
             () => i18n.value.events.cameraEvent,
         ),
-        (transaction) => {
-            removeCameraEventJoint(transaction, entity)
-            return addCameraEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedCameraEvent(transaction, entity, object),
     )
 }
 
@@ -504,9 +468,6 @@ const move = (entity: CameraEventJointEntity, object: CameraEventObject) => {
             '1',
             () => i18n.value.events.cameraEvent,
         ),
-        (transaction) => {
-            removeCameraEventJoint(transaction, entity)
-            return addCameraEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedCameraEvent(transaction, entity, object),
     )
 }

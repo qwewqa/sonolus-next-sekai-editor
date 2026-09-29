@@ -44,7 +44,7 @@ test('5 ms waveform attacks survive minimum zoom and fractional scrolling', asyn
             sourceContext.putImageData(pixels, 0, 0)
             const waveform = {
                 images: [source.toDataURL()],
-                style: { imageRendering: 'pixelated' },
+                style: { imageRendering: 'pixelated' as const },
             }
             let loaded: () => void = () => {}
             const ready = new Promise<void>((resolve) => (loaded = resolve))
@@ -98,7 +98,7 @@ test('waveform zoom reuses reductions and returns to the original raster when en
         sourceContext.fillRect(0, 101, 4, 1)
         const waveform = {
             images: [source.toDataURL()],
-            style: { imageRendering: 'pixelated' },
+            style: { imageRendering: 'pixelated' as const },
         }
         const output = document.createElement('canvas')
         output.width = 256
@@ -113,15 +113,15 @@ test('waveform zoom reuses reductions and returns to the original raster when en
             return createElement(...args)
         }) as typeof document.createElement
         const putImageData = CanvasRenderingContext2D.prototype.putImageData
-        CanvasRenderingContext2D.prototype.putImageData = function (...args) {
+        CanvasRenderingContext2D.prototype.putImageData = function (...args: unknown[]) {
             rasterWrites++
             return Reflect.apply(putImageData, this, args)
         }
         const drawn: CanvasImageSource[] = []
         const drawImage = ctx.drawImage
-        ctx.drawImage = function (...args) {
-            drawn.push(args[0])
-            return Reflect.apply(drawImage, this, args)
+        ctx.drawImage = function (image: CanvasImageSource, ...args: number[]) {
+            drawn.push(image)
+            return Reflect.apply(drawImage, this, [image, ...args])
         }
         let loaded: () => void = () => {}
         const ready = new Promise<void>((resolve) => (loaded = resolve))
@@ -203,7 +203,7 @@ test('waveform attacks survive fractional DPR and downward backing-size rounding
             sourceContext.fillRect(0, row, 4, 1)
             const waveform = {
                 images: [source.toDataURL()],
-                style: { imageRendering: 'pixelated' },
+                style: { imageRendering: 'pixelated' as const },
             }
             let loaded: () => void = () => {}
             const ready = new Promise<void>((resolve) => (loaded = resolve))

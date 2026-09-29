@@ -6,7 +6,7 @@ test('resource loads retain their bitmap and pass cancellation through to fetch'
     const controller = new AbortController()
     const buffer = new ArrayBuffer(4)
     const resource = {
-        texture: { close: () => assert.fail('active texture closed') } as ImageBitmap,
+        texture: { width: 1, height: 1, close: () => assert.fail('active texture closed') },
     }
     t.mock.method(globalThis, 'fetch', async (url: string, options: RequestInit) => {
         assert.equal(url, '/resource/skin.scp')
@@ -47,7 +47,15 @@ test('a bitmap finishing after unmount or replacement is closed instead of publi
     )
     await decoding
     controller.abort()
-    finishDecode!({ texture: { close: () => closes++ } as ImageBitmap })
+    finishDecode!({
+        texture: {
+            width: 1,
+            height: 1,
+            close: () => {
+                closes++
+            },
+        },
+    })
     assert.equal(await result, undefined)
     assert.equal(closes, 1)
 })

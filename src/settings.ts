@@ -5,6 +5,7 @@ import { noteStyleSchema } from './chart/noteStyle'
 import { isCommandName, type CommandName } from './editor/commands'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
+import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './preview/options'
 import { storageGet, storageRemove, storageSet } from './storage'
 import { clamp } from './utils/math'
 
@@ -113,14 +114,18 @@ const settingsProperties = {
         Type.Literal('collapsed'),
     ]),
 
-    previewNoteSpeed: number(10, 1, 12),
-    previewRenderScale: number(1, 0.25, 2),
+    previewNoteSpeed: number(previewNoteSpeed.default, previewNoteSpeed.min, previewNoteSpeed.max),
+    previewRenderScale: number(
+        previewRenderScale.default,
+        previewRenderScale.min,
+        previewRenderScale.max,
+    ),
     previewShowEffects: Type.Boolean({ default: true }),
     previewAntialias: Type.Boolean({ default: true }),
     previewAspectRatio: Type.Union([
-        Type.Literal(16 / 9),
-        Type.Literal(21 / 9),
-        Type.Literal(4 / 3),
+        Type.Literal(previewAspectRatios[0][1]),
+        Type.Literal(previewAspectRatios[1][1]),
+        Type.Literal(previewAspectRatios[2][1]),
     ]),
 
     previewWidth: Type.Number(),

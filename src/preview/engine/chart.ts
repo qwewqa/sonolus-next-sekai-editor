@@ -1,9 +1,17 @@
+import type { EventEase } from '../../chart/events'
+import type { BorderStyle, JudgmentLineColor } from '../../chart/events/stage/style'
 import type { GroupId } from '../../chart/groups'
+import type {
+    FlickDirection as ChartFlickDirection,
+    ConnectorGuideColor,
+    ConnectorLayer,
+} from '../../chart/note'
 import type { StageId } from '../../chart/stages'
 import type { TimeScaleEase } from '../../chart/timeScale'
 import type { State } from '../../state'
 import type { EntityOfType, EntityType } from '../../state/entities'
 import type { NoteEntity } from '../../state/entities/slides/note'
+import { allowsSimLine, getNoteRole, type NoteRole } from '../../state/entities/slides/semantics'
 import { findIntegral } from '../../state/integrals'
 import { beatToTime } from '../../state/integrals/bpms'
 import type { StoreSlides } from '../../state/store/slides'
@@ -27,7 +35,7 @@ import {
 } from './model'
 import { createTimescaleGroup, preemptTime, scaledTimeAt, type TimescaleChange } from './timescale'
 
-const flickDirections: Record<string, FlickDirectionValue> = {
+const flickDirections: Record<ChartFlickDirection, FlickDirectionValue> = {
     none: FlickDirection.upOmni,
     up: FlickDirection.upOmni,
     upLeft: FlickDirection.upLeft,
@@ -37,7 +45,7 @@ const flickDirections: Record<string, FlickDirectionValue> = {
     downRight: FlickDirection.downRight,
 }
 
-const eventEases: Record<string, EaseTypeValue> = {
+const eventEases: Record<EventEase, EaseTypeValue> = {
     none: EaseType.none,
     linear: EaseType.linear,
     in: EaseType.inQuad,
@@ -55,7 +63,7 @@ const timeScaleEases: Record<TimeScaleEase, EaseTypeValue> = {
     outInQuad: EaseType.outInQuad,
 }
 
-const guideKinds: Record<string, ConnectorKindValue> = {
+const guideKinds: Record<ConnectorGuideColor, ConnectorKindValue> = {
     neutral: ConnectorKind.guideNeutral,
     red: ConnectorKind.guideRed,
     green: ConnectorKind.guideGreen,
@@ -66,7 +74,7 @@ const guideKinds: Record<string, ConnectorKindValue> = {
     black: ConnectorKind.guideBlack,
 }
 
-const connectorLayers: Record<string, ConnectorLayerValue> = {
+const connectorLayers: Record<ConnectorLayer, ConnectorLayerValue> = {
     top: 0,
     bottom: 1,
     under: 2,
@@ -74,6 +82,18 @@ const connectorLayers: Record<string, ConnectorLayerValue> = {
 }
 
 const beatToTicks = 480
+
+const noteKinds: Record<NoteRole, readonly [NoteKindValue, NoteKindValue]> = {
+    anchor: [NoteKind.anchor, NoteKind.anchor],
+    damage: [NoteKind.damage, NoteKind.damage],
+    trace: [NoteKind.trace, NoteKind.traceFlick],
+    headTrace: [NoteKind.headTrace, NoteKind.headTraceFlick],
+    tailTrace: [NoteKind.tailTrace, NoteKind.tailTraceFlick],
+    tick: [NoteKind.tick, NoteKind.tick],
+    single: [NoteKind.tap, NoteKind.flick],
+    head: [NoteKind.headTap, NoteKind.headFlick],
+    tail: [NoteKind.tailRelease, NoteKind.tailFlick],
+}
 
 const getStoreEntities = <T extends EntityType>(
     grid: Map<number, Set<EntityOfType<T>>>,
@@ -210,7 +230,7 @@ export const createPreviewChartBuilder = () => {
                                 lane: event.maskLeft + event.maskSize / 2,
                                 size: event.maskSize / 2,
                                 maskNotes: event.isMaskNotes,
-                                ease: eventEases[event.eventEase] ?? EaseType.linear,
+                                ease: eventEases[event.eventEase],
                             }))
 
                         const stagePivots = pivots
@@ -224,7 +244,7 @@ export const createPreviewChartBuilder = () => {
                                 yOffset:
                                     event.yOffset +
                                     (event.yOffsetBeat * secondsPerBeat(event.beat)) / preempt,
-                                ease: eventEases[event.eventEase] ?? EaseType.linear,
+                                ease: eventEases[event.eventEase],
                             }))
 
                         const stageStyles = styles
@@ -232,16 +252,16 @@ export const createPreviewChartBuilder = () => {
                             .sort((a, b) => a.beat - b.beat)
                             .map((event): StageStyleEvent => ({
                                 time: toTime(event.beat),
-                                judgeLineColor: judgeLineColors[event.judgmentLineColor] ?? 0,
+                                judgeLineColor: judgeLineColors[event.judgmentLineColor],
                                 judgeLineStyle: event.judgmentLineStyle === 'singleLine' ? 1 : 0,
-                                leftBorderStyle: borderStyles[event.leftBorderStyle] ?? 0,
-                                rightBorderStyle: borderStyles[event.rightBorderStyle] ?? 0,
+                                leftBorderStyle: borderStyles[event.leftBorderStyle],
+                                rightBorderStyle: borderStyles[event.rightBorderStyle],
                                 fullWidth: event.isFullWidth ? 1 : 0,
                                 noteAlpha: event.noteAlpha,
                                 laneAlpha: event.laneAlpha,
                                 judgeLineAlpha: event.judgmentLineAlpha,
                                 divisionLineAlpha: event.divisionLineAlpha,
-                                ease: eventEases[event.eventEase] ?? EaseType.linear,
+                                ease: eventEases[event.eventEase],
                             }))
 
                         const stageTransforms = transforms
@@ -254,7 +274,7 @@ export const createPreviewChartBuilder = () => {
                                 yLaneTranslate: event.yTranslation,
                                 elevation: event.elevation,
                                 centerWeight: event.anchor === 'center' ? 1 : 0,
-                                ease: eventEases[event.eventEase] ?? EaseType.linear,
+                                ease: eventEases[event.eventEase],
                             }))
 
                         if (stageTransforms.length) hasStageTransforms = true
@@ -292,7 +312,7 @@ export const createPreviewChartBuilder = () => {
                               zoomVerticalAlign: joint.cameraZoomVerticalAlign === 'center' ? 1 : 0,
                               rotate: (joint.cameraRotation * Math.PI) / 180,
                               stageTilt: Math.min(Math.max(joint.cameraStageTilt, 0), 1),
-                              ease: eventEases[joint.eventEase] ?? EaseType.linear,
+                              ease: eventEases[joint.eventEase],
                           }))
                     : [],
         )
@@ -341,52 +361,23 @@ export const createPreviewChartBuilder = () => {
 
                     const isFirst = i === 0
                     const isLast = i === infos.length - 1
-                    const isInActive = info.activeHead !== info.activeTail
-                    const isActiveHead = info.activeHead === note
-                    const isActiveTail = info.activeTail === note
+                    const role = getNoteRole(info)
                     const isFlick = note.flickDirection !== 'none'
-
-                    let kind: NoteKindValue
-                    if (note.noteType === 'anchor') {
-                        kind = NoteKind.anchor
-                    } else if (note.noteType === 'damage') {
-                        kind = NoteKind.damage
-                    } else if (note.noteType === 'trace') {
-                        if (isInActive && isActiveHead) {
-                            kind = isFlick ? NoteKind.headTraceFlick : NoteKind.headTrace
-                        } else if (isInActive && isActiveTail) {
-                            kind = isFlick ? NoteKind.tailTraceFlick : NoteKind.tailTrace
-                        } else {
-                            kind = isFlick ? NoteKind.traceFlick : NoteKind.trace
-                        }
-                    } else if (note.noteType === 'forceTick') {
-                        kind = NoteKind.tick
-                    } else if (!isInActive) {
-                        kind = isFlick ? NoteKind.flick : NoteKind.tap
-                    } else if (isActiveHead) {
-                        kind = isFlick ? NoteKind.headFlick : NoteKind.headTap
-                    } else if (isActiveTail) {
-                        kind = isFlick ? NoteKind.tailFlick : NoteKind.tailRelease
-                    } else if (note.noteType === 'default') {
-                        kind = NoteKind.tick
-                    } else {
-                        kind = isFlick ? NoteKind.flick : NoteKind.tap
-                    }
 
                     const groupIndex = groupIndexes.get(note.groupId) ?? 0
                     const previewNote: PreviewNote = {
-                        kind,
+                        kind: noteKinds[role][isFlick ? 1 : 0],
                         style: note.noteStyle,
                         isCritical: note.isCritical,
                         isFake: note.isFake,
                         targetTime: toTime(note.beat),
                         lane: note.left + note.size / 2,
                         size: note.size / 2,
-                        direction: flickDirections[note.flickDirection] ?? FlickDirection.upOmni,
+                        direction: flickDirections[note.flickDirection],
                         groupIndex,
                         stageIndex: stageIndexes.get(note.stageId) ?? -1,
                         isAttached: !isFirst && !isLast && note.isAttached,
-                        connectorEase: eventEases[note.connectorEase] ?? EaseType.linear,
+                        connectorEase: eventEases[note.connectorEase],
                         targetScaledTime: 0,
                     }
                     previewNotes.set(note, previewNote)
@@ -396,12 +387,7 @@ export const createPreviewChartBuilder = () => {
                     const group = groups[groupIndex]!
                     previewNote.targetScaledTime = scaledTimeAt(group, previewNote.targetTime)
 
-                    if (
-                        note.noteType === 'trace' ||
-                        (note.noteType === 'default' &&
-                            (!isInActive || isActiveHead || isActiveTail)) ||
-                        note.noteType === 'forceNonTick'
-                    ) {
+                    if (allowsSimLine(role)) {
                         simCandidates.push({
                             stageId: note.stageId,
                             tick: Math.round(note.beat * beatToTicks),
@@ -447,9 +433,7 @@ export const createPreviewChartBuilder = () => {
                                     ? ConnectorKind.fakeDamage
                                     : ConnectorKind.damage
                             } else {
-                                kind =
-                                    guideKinds[segmentHead.connectorGuideColor] ??
-                                    ConnectorKind.guideNeutral
+                                kind = guideKinds[segmentHead.connectorGuideColor]
                             }
 
                             const activeHead =
@@ -476,7 +460,7 @@ export const createPreviewChartBuilder = () => {
                                 activeTail: activeTail && getPreviewNote(activeTail),
                                 segmentHeadAlpha: info.segmentHead.connectorGuideAlpha,
                                 segmentTailAlpha: info.segmentTail.connectorGuideAlpha,
-                                layer: connectorLayers[segmentHead.connectorLayer] ?? 0,
+                                layer: connectorLayers[segmentHead.connectorLayer],
                                 throughJudgeLine: segmentHead.connectorIsPassThrough,
                                 fullScreen: segmentHead.connectorPresentation === 'fullscreen',
                             }
@@ -589,7 +573,7 @@ export const attachEasedFrac = (note: PreviewNote) => {
     )
 }
 
-const judgeLineColors: Record<string, number> = {
+const judgeLineColors: Record<JudgmentLineColor, number> = {
     neutral: 0,
     red: 1,
     green: 2,
@@ -600,7 +584,7 @@ const judgeLineColors: Record<string, number> = {
     black: 7,
 }
 
-const borderStyles: Record<string, number> = {
+const borderStyles: Record<BorderStyle, number> = {
     default: 0,
     light: 1,
     disabled: 2,

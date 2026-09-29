@@ -12,7 +12,8 @@ import { settings } from '../../../settings'
 import type { Entity } from '../../../state/entities'
 import { createSlideId } from '../../../state/entities/slides'
 import { toNoteEntity, type NoteEntity } from '../../../state/entities/slides/note'
-import { addNote, replaceNote } from '../../../state/mutations/slides/note'
+import { addNote } from '../../../state/mutations/slides/note'
+import { editSelectedNote } from '../../../state/operations/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -300,69 +301,7 @@ export const note: Tool = {
 }
 
 export const editNote = (entity: NoteEntity, object: Partial<NoteObject>) => {
-    edit(entity, {
-        groupId: object.groupId ?? entity.groupId,
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        noteStyle: object.noteStyle ?? entity.noteStyle,
-        connectorStyle: object.connectorStyle ?? entity.connectorStyle,
-        noteType: object.noteType ?? entity.noteType,
-        isAttached: object.isAttached ?? entity.isAttached,
-        left: object.left ?? entity.left,
-        size: object.size ?? entity.size,
-        isCritical: object.isCritical ?? entity.isCritical,
-        flickDirection: object.flickDirection ?? entity.flickDirection,
-        isFake: object.isFake ?? entity.isFake,
-        sfx: object.sfx ?? entity.sfx,
-        isConnectorSeparator: object.isConnectorSeparator ?? entity.isConnectorSeparator,
-        connectorType: object.connectorType ?? entity.connectorType,
-        connectorEase: object.connectorEase ?? entity.connectorEase,
-        connectorIsFake: object.connectorIsFake ?? object.isFake ?? entity.connectorIsFake,
-        connectorActiveIsCritical:
-            object.connectorActiveIsCritical ??
-            object.isCritical ??
-            entity.connectorActiveIsCritical,
-        connectorGuideColor: object.connectorGuideColor ?? entity.connectorGuideColor,
-        connectorGuideAlpha: object.connectorGuideAlpha ?? entity.connectorGuideAlpha,
-        connectorLayer: object.connectorLayer ?? entity.connectorLayer,
-        connectorIsPassThrough: object.connectorIsPassThrough ?? entity.connectorIsPassThrough,
-        connectorPresentation: object.connectorPresentation ?? entity.connectorPresentation,
-    })
-}
-
-export const editSelectedNote = (
-    transaction: Transaction,
-    entity: NoteEntity,
-    object: Partial<NoteObject>,
-) => {
-    return replaceNote(transaction, entity, {
-        groupId: object.groupId ?? entity.groupId,
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        noteStyle: object.noteStyle ?? entity.noteStyle,
-        connectorStyle: object.connectorStyle ?? entity.connectorStyle,
-        noteType: object.noteType ?? entity.noteType,
-        isAttached: object.isAttached ?? entity.isAttached,
-        left: object.left ?? entity.left,
-        size: object.size ?? entity.size,
-        isCritical: object.isCritical ?? entity.isCritical,
-        flickDirection: object.flickDirection ?? entity.flickDirection,
-        isFake: object.isFake ?? entity.isFake,
-        sfx: object.sfx ?? entity.sfx,
-        isConnectorSeparator: object.isConnectorSeparator ?? entity.isConnectorSeparator,
-        connectorType: object.connectorType ?? entity.connectorType,
-        connectorEase: object.connectorEase ?? entity.connectorEase,
-        connectorIsFake: object.connectorIsFake ?? object.isFake ?? entity.connectorIsFake,
-        connectorActiveIsCritical:
-            object.connectorActiveIsCritical ??
-            object.isCritical ??
-            entity.connectorActiveIsCritical,
-        connectorGuideColor: object.connectorGuideColor ?? entity.connectorGuideColor,
-        connectorGuideAlpha: object.connectorGuideAlpha ?? entity.connectorGuideAlpha,
-        connectorLayer: object.connectorLayer ?? entity.connectorLayer,
-        connectorIsPassThrough: object.connectorIsPassThrough ?? entity.connectorIsPassThrough,
-        connectorPresentation: object.connectorPresentation ?? entity.connectorPresentation,
-    })
+    edit(entity, object)
 }
 
 const getNoteFromSelection = () => {
@@ -444,10 +383,10 @@ const add = (object: NoteObject) => {
     )
 }
 
-const edit = (entity: NoteEntity, object: NoteObject) => {
+const edit = (entity: NoteEntity, object: Partial<NoteObject>) => {
     update(
         () => i18n.value.tools.note.edited,
-        (transaction) => replaceNote(transaction, entity, object),
+        (transaction) => editSelectedNote(transaction, entity, object),
     )
 }
 
@@ -455,13 +394,13 @@ const previewEdit = (entity: NoteEntity, object: NoteObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
         const transaction = createTransaction(source, { autoAddGroup: false })
-        return transaction.commit(replaceNote(transaction, entity, object))
+        return transaction.commit(editSelectedNote(transaction, entity, object))
     }, [entity, object.beat, object.left, object.size])
 }
 
 const move = (entity: NoteEntity, object: NoteObject) => {
     update(
         () => i18n.value.tools.note.moved,
-        (transaction) => replaceNote(transaction, entity, object),
+        (transaction) => editSelectedNote(transaction, entity, object),
     )
 }

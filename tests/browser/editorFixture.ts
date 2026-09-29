@@ -280,9 +280,9 @@ export const installEditorFixture = async () => {
             groupId: ((i % 2) + 1) as GroupId,
             beat: beat + 2.5,
             editorLane: 8 - i,
-            timeScale: [1, 0, -1, 2][i],
+            timeScale: [1, 0, -1, 2][i]!,
             skip: i % 2 ? 2 : 0,
-            timeScaleEase: (['linear', 'inQuad', 'outInQuad', 'none'] as const)[i],
+            timeScaleEase: (['linear', 'inQuad', 'outInQuad', 'none'] as const)[i]!,
             timeScaleTransition: i % 2 ? 'scroll' : 'timeScale',
             hideNotes: i === 2,
         })

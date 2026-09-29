@@ -1,8 +1,8 @@
 import type { ZKey } from '../gl'
 import type { PreviewSkin, Sprite } from '../skin'
+import type { PreviewFrameContext } from './context'
 import { LAYER_SIM_LINE, getZ } from './layer'
 import {
-    DynamicLayout,
     approach,
     perspectiveVec,
     stageTransformToAffineOrIdentity,
@@ -25,6 +25,7 @@ import {
 type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
 
 export const drawSimLine = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
     leftLane: number,
@@ -41,13 +42,13 @@ export const drawSimLine = (
     if (!skin.simLine) return
 
     if (
-        leftVisualProgress < DynamicLayout.progressStart &&
-        rightVisualProgress < DynamicLayout.progressStart
+        leftVisualProgress < context.layout.progressStart &&
+        rightVisualProgress < context.layout.progressStart
     )
         return
     if (
-        leftVisualProgress > DynamicLayout.progressCutoff &&
-        rightVisualProgress > DynamicLayout.progressCutoff
+        leftVisualProgress > context.layout.progressCutoff &&
+        rightVisualProgress > context.layout.progressCutoff
     )
         return
     if (
@@ -58,13 +59,13 @@ export const drawSimLine = (
 
     const adjLeftProgress = clamp(
         leftVisualProgress,
-        DynamicLayout.progressStart,
-        DynamicLayout.progressCutoff,
+        context.layout.progressStart,
+        context.layout.progressCutoff,
     )
     const adjRightProgress = clamp(
         rightVisualProgress,
-        DynamicLayout.progressStart,
-        DynamicLayout.progressCutoff,
+        context.layout.progressStart,
+        context.layout.progressCutoff,
     )
 
     let adjLeftLane = leftLane
@@ -76,8 +77,8 @@ export const drawSimLine = (
         adjRightLane = lerp(leftLane, rightLane, adjRightFrac)
     }
 
-    const adjLeftTravel = approach(adjLeftProgress)
-    const adjRightTravel = approach(adjRightProgress)
+    const adjLeftTravel = approach(context.layout, adjLeftProgress)
+    const adjRightTravel = approach(context.layout, adjRightProgress)
     const leftAffine = stageTransformToAffineOrIdentity(leftTransform)
     const rightAffine = stageTransformToAffineOrIdentity(rightTransform)
     const leftScale = Math.max(0, leftAffine.a00 * leftAffine.a11 - leftAffine.a01 * leftAffine.a10)
@@ -93,15 +94,21 @@ export const drawSimLine = (
     let mlScale
     let mrScale
     if (adjLeftLane <= adjRightLane) {
-        ml = applyAffine(leftAffine, perspectiveVec(adjLeftLane, 1, adjLeftTravel))
-        mr = applyAffine(rightAffine, perspectiveVec(adjRightLane, 1, adjRightTravel))
+        ml = applyAffine(leftAffine, perspectiveVec(context.layout, adjLeftLane, 1, adjLeftTravel))
+        mr = applyAffine(
+            rightAffine,
+            perspectiveVec(context.layout, adjRightLane, 1, adjRightTravel),
+        )
         mlTravel = adjLeftTravel
         mrTravel = adjRightTravel
         mlScale = leftScale
         mrScale = rightScale
     } else {
-        ml = applyAffine(rightAffine, perspectiveVec(adjRightLane, 1, adjRightTravel))
-        mr = applyAffine(leftAffine, perspectiveVec(adjLeftLane, 1, adjLeftTravel))
+        ml = applyAffine(
+            rightAffine,
+            perspectiveVec(context.layout, adjRightLane, 1, adjRightTravel),
+        )
+        mr = applyAffine(leftAffine, perspectiveVec(context.layout, adjLeftLane, 1, adjLeftTravel))
         mlTravel = adjRightTravel
         mrTravel = adjLeftTravel
         mlScale = rightScale
@@ -110,8 +117,8 @@ export const drawSimLine = (
 
     if (Math.hypot(mr.x - ml.x, mr.y - ml.y) < 1e-6) return
     const ort = normalizeVecOrZero(orthogonalVec(subVec(mr, ml)))
-    const mlH = DynamicLayout.scaledNoteH * tiltWidthFactor(mlTravel) * mlScale
-    const mrH = DynamicLayout.scaledNoteH * tiltWidthFactor(mrTravel) * mrScale
+    const mlH = context.layout.scaledNoteH * tiltWidthFactor(context.layout, mlTravel) * mlScale
+    const mrH = context.layout.scaledNoteH * tiltWidthFactor(context.layout, mrTravel) * mrScale
 
     const layout: Quad = {
         bl: vec(ml.x + ort.x * mlH, ml.y + ort.y * mlH),
@@ -126,6 +133,7 @@ export const drawSimLine = (
     if (a <= 0) return
 
     const z = getZ(
+        context.now,
         LAYER_SIM_LINE,
         (leftTargetTime + rightTargetTime) / 2,
         (leftLane + rightLane) / 2,

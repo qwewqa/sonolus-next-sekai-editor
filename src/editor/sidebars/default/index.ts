@@ -1,77 +1,21 @@
-import type { BpmObject } from '../../../chart/bpm'
-import type { CameraEventObject } from '../../../chart/events/camera'
-import type { StageMaskEventObject } from '../../../chart/events/stage/mask'
-import type { StagePivotEventObject } from '../../../chart/events/stage/pivot'
-import type { StageStyleEventObject } from '../../../chart/events/stage/style'
-import type { StageTransformEventObject } from '../../../chart/events/stage/transform'
-import type { NoteObject } from '../../../chart/note'
-import type { TimeScaleObject } from '../../../chart/timeScale'
 import { pushState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
-import type { State } from '../../../state'
 import type { Entity } from '../../../state/entities'
-import type { BpmEntity } from '../../../state/entities/bpm'
-import type { CameraEventJointEntity } from '../../../state/entities/events/joints/camera'
-import type { StageMaskEventJointEntity } from '../../../state/entities/events/joints/stage/mask'
-import type { StagePivotEventJointEntity } from '../../../state/entities/events/joints/stage/pivot'
-import type { StageStyleEventJointEntity } from '../../../state/entities/events/joints/stage/style'
-import type { StageTransformEventJointEntity } from '../../../state/entities/events/joints/stage/transform'
-import type { NoteEntity } from '../../../state/entities/slides/note'
-import type { TimeScaleEntity } from '../../../state/entities/timeScale'
-import { addBpm, removeBpm } from '../../../state/mutations/bpm'
-import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScale'
-import { getInStoreGrid } from '../../../state/store/grid'
-import {
-    createTransaction,
-    type Transaction,
-    type TransactionOptions,
-} from '../../../state/transaction'
+import { createEditedEntitiesState } from '../../../state/operations/edit'
+import type { EditableObject } from '../../../state/operations/editable'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { editBpm, editSelectedBpm } from '../../tools/bpm'
-import { editCameraEvent, editSelectedCameraEvent } from '../../tools/events/camera'
-import { editSelectedStageMaskEvent, editStageMaskEvent } from '../../tools/events/stage/mask'
-import { editSelectedStagePivotEvent, editStagePivotEvent } from '../../tools/events/stage/pivot'
-import { editSelectedStageStyleEvent, editStageStyleEvent } from '../../tools/events/stage/style'
-import {
-    editSelectedStageTransformEvent,
-    editStageTransformEvent,
-} from '../../tools/events/stage/transform'
-import { editNote, editSelectedNote } from '../../tools/note'
-import { editSelectedTimeScale, editTimeScale } from '../../tools/timeScale'
+import { editBpm } from '../../tools/bpm'
+import { editCameraEvent } from '../../tools/events/camera'
+import { editStageMaskEvent } from '../../tools/events/stage/mask'
+import { editStagePivotEvent } from '../../tools/events/stage/pivot'
+import { editStageStyleEvent } from '../../tools/events/stage/style'
+import { editStageTransformEvent } from '../../tools/events/stage/transform'
+import { editNote } from '../../tools/note'
+import { editTimeScale } from '../../tools/timeScale'
 import { view } from '../../view'
-
-export type EditableObject = Partial<
-    BpmObject &
-        TimeScaleObject &
-        CameraEventObject &
-        StageMaskEventObject &
-        StagePivotEventObject &
-        StageStyleEventObject &
-        StageTransformEventObject &
-        NoteObject
->
-
-export type EditableEntity =
-    | BpmEntity
-    | TimeScaleEntity
-    | CameraEventJointEntity
-    | StageMaskEventJointEntity
-    | StagePivotEventJointEntity
-    | StageStyleEventJointEntity
-    | StageTransformEventJointEntity
-    | NoteEntity
-
-export const isEditableEntity = (entity: Entity) =>
-    entity.type === 'bpm' ||
-    entity.type === 'timeScale' ||
-    entity.type === 'cameraEventJoint' ||
-    entity.type === 'stageMaskEventJoint' ||
-    entity.type === 'stagePivotEventJoint' ||
-    entity.type === 'stageStyleEventJoint' ||
-    entity.type === 'stageTransformEventJoint' ||
-    entity.type === 'note'
+export { isEditableEntity } from '../../../state/operations/editable'
 
 export const editSelectedEditableEntities = (object: EditableObject) => {
     if (selectedEntities.value.length === 1) {
@@ -102,57 +46,6 @@ export const editSelectedEditableEntities = (object: EditableObject) => {
     }
 }
 
-// Build speculative property edits through the same mutations as committed
-// edits, without touching history, selection, notifications, or view position.
-export const createEditedEntitiesState = (
-    source: State,
-    selected: Entity[],
-    object: EditableObject,
-    options?: TransactionOptions,
-): State => {
-    const transaction = createTransaction(source, options)
-    const single = selected.length === 1 ? selected[0] : undefined
-    if (single?.type === 'bpm') {
-        const beat = object.beat ?? single.beat
-        // Moving the initial BPM leaves the required beat-zero BPM in place.
-        if (beat === single.beat || single.beat) removeBpm(transaction, single)
-        if (beat !== single.beat) {
-            const overlap = getInStoreGrid(source.store.grid, 'bpm', beat)?.find(
-                (entity) => entity.beat === beat,
-            )
-            if (overlap) removeBpm(transaction, overlap)
-        }
-        return transaction.commit(addBpm(transaction, { beat, bpm: object.bpm ?? single.bpm }))
-    }
-    if (single?.type === 'timeScale') {
-        removeTimeScale(transaction, single)
-        const beat = object.beat ?? single.beat
-        const groupId = object.groupId ?? single.groupId
-        if (beat !== single.beat) {
-            const overlap = getInStoreGrid(source.store.grid, 'timeScale', beat)?.find(
-                (entity) => entity.beat === beat && entity.groupId === groupId,
-            )
-            if (overlap) removeTimeScale(transaction, overlap)
-        }
-        return transaction.commit(
-            addTimeScale(transaction, {
-                ...single,
-                ...object,
-                beat,
-                groupId,
-            }),
-        )
-    }
-
-    const editSelectedEntity = getEditSelectedEntity()
-    return transaction.commit(
-        selected.flatMap(
-            (entity) =>
-                editSelectedEntity[entity.type]?.(transaction, entity as never, object) ?? [entity],
-        ),
-    )
-}
-
 let editEntity:
     | {
           [T in Entity as T['type']]: ((entity: T, object: EditableObject) => void) | undefined
@@ -180,37 +73,5 @@ const getEditEntity = () =>
         stageTransformEventConnection: undefined,
 
         note: editNote,
-        connector: undefined,
-    })
-
-let editSelectedEntity:
-    | {
-          [T in Entity as T['type']]:
-              | ((transaction: Transaction, entity: T, object: EditableObject) => Entity[])
-              | undefined
-      }
-    | undefined
-
-const getEditSelectedEntity = () =>
-    (editSelectedEntity ??= {
-        bpm: editSelectedBpm,
-        timeScale: editSelectedTimeScale,
-
-        cameraEventJoint: editSelectedCameraEvent,
-        cameraEventConnection: undefined,
-
-        stageMaskEventJoint: editSelectedStageMaskEvent,
-        stageMaskEventConnection: undefined,
-
-        stagePivotEventJoint: editSelectedStagePivotEvent,
-        stagePivotEventConnection: undefined,
-
-        stageStyleEventJoint: editSelectedStageStyleEvent,
-        stageStyleEventConnection: undefined,
-
-        stageTransformEventJoint: editSelectedStageTransformEvent,
-        stageTransformEventConnection: undefined,
-
-        note: editSelectedNote,
         connector: undefined,
     })

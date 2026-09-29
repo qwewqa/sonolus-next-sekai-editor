@@ -18,10 +18,8 @@ import {
     toStageStyleEventJointEntity,
     type StageStyleEventJointEntity,
 } from '../../../../../state/entities/events/joints/stage/style'
-import {
-    addStageStyleEventJoint,
-    removeStageStyleEventJoint,
-} from '../../../../../state/mutations/events/stage/style'
+import { addStageStyleEventJoint } from '../../../../../state/mutations/events/stage/style'
+import { editSelectedStageStyleEvent } from '../../../../../state/operations/events/stage/style'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
@@ -265,9 +263,9 @@ export const stageStyleEvent: Tool = {
             if (replacement?.type === 'stageStyleEventJoint') {
                 setPreviewEdit(source, () => {
                     const transaction = createTransaction(source, { autoAddGroup: false })
-                    removeStageStyleEventJoint(transaction, entity)
-                    const selectedEntities = addStageStyleEventJoint(transaction, replacement)
-                    return transaction.commit(selectedEntities)
+                    return transaction.commit(
+                        editSelectedStageStyleEvent(transaction, entity, replacement),
+                    )
                 }, [entity, replacement.beat, replacement.editorLane])
             }
         }
@@ -317,44 +315,7 @@ export const editStageStyleEvent = (
     entity: StageStyleEventJointEntity,
     object: Partial<StageStyleEventObject>,
 ) => {
-    edit(entity, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        editorLane: object.editorLane ?? entity.editorLane,
-        judgmentLineColor: object.judgmentLineColor ?? entity.judgmentLineColor,
-        judgmentLineStyle: object.judgmentLineStyle ?? entity.judgmentLineStyle,
-        leftBorderStyle: object.leftBorderStyle ?? entity.leftBorderStyle,
-        rightBorderStyle: object.rightBorderStyle ?? entity.rightBorderStyle,
-        isFullWidth: object.isFullWidth ?? entity.isFullWidth,
-        noteAlpha: object.noteAlpha ?? entity.noteAlpha,
-        laneAlpha: object.laneAlpha ?? entity.laneAlpha,
-        judgmentLineAlpha: object.judgmentLineAlpha ?? entity.judgmentLineAlpha,
-        divisionLineAlpha: object.divisionLineAlpha ?? entity.divisionLineAlpha,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
-}
-
-export const editSelectedStageStyleEvent = (
-    transaction: Transaction,
-    entity: StageStyleEventJointEntity,
-    object: Partial<StageStyleEventObject>,
-) => {
-    removeStageStyleEventJoint(transaction, entity)
-    return addStageStyleEventJoint(transaction, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        editorLane: object.editorLane ?? entity.editorLane,
-        judgmentLineColor: object.judgmentLineColor ?? entity.judgmentLineColor,
-        judgmentLineStyle: object.judgmentLineStyle ?? entity.judgmentLineStyle,
-        leftBorderStyle: object.leftBorderStyle ?? entity.leftBorderStyle,
-        rightBorderStyle: object.rightBorderStyle ?? entity.rightBorderStyle,
-        isFullWidth: object.isFullWidth ?? entity.isFullWidth,
-        noteAlpha: object.noteAlpha ?? entity.noteAlpha,
-        laneAlpha: object.laneAlpha ?? entity.laneAlpha,
-        judgmentLineAlpha: object.judgmentLineAlpha ?? entity.judgmentLineAlpha,
-        divisionLineAlpha: object.divisionLineAlpha ?? entity.divisionLineAlpha,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
+    edit(entity, object)
 }
 
 const getStageStyleEventJointFromSelection = () => {
@@ -455,17 +416,14 @@ const add = (object: StageStyleEventObject) => {
     )
 }
 
-const edit = (entity: StageStyleEventJointEntity, object: StageStyleEventObject) => {
+const edit = (entity: StageStyleEventJointEntity, object: Partial<StageStyleEventObject>) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
             () => i18n.value.events.stageStyleEvent,
         ),
-        (transaction) => {
-            removeStageStyleEventJoint(transaction, entity)
-            return addStageStyleEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageStyleEvent(transaction, entity, object),
     )
 }
 
@@ -476,9 +434,6 @@ const move = (entity: StageStyleEventJointEntity, object: StageStyleEventObject)
             '1',
             () => i18n.value.events.stageStyleEvent,
         ),
-        (transaction) => {
-            removeStageStyleEventJoint(transaction, entity)
-            return addStageStyleEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageStyleEvent(transaction, entity, object),
     )
 }

@@ -140,7 +140,7 @@ for (const command of ['open', 'autosave'] as const) {
                         type: 'application/octet-stream',
                     })
                     window.showOpenFilePicker = async () =>
-                        [{ getFile: async () => file }] as FileSystemFileHandle[]
+                        [{ getFile: async () => file }] as [FileSystemFileHandle]
                     void open.execute()
                 } else {
                     const { serializeAutoSave } = await import('/src/history/autoSave/serialize.ts')
@@ -190,7 +190,7 @@ test('cancelled cover decoding cannot replace a newer selected image', async ({ 
             }
             image.addEventListener('load', hold)
             return image
-        } as typeof Image
+        } as unknown as typeof Image
     })
     await openUtility(page, 'coverEditor')
     await chooseFile(page, 'old.svg', 'image/svg+xml', cover(11, 12))

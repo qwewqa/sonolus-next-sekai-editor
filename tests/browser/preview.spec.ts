@@ -129,7 +129,7 @@ test.beforeEach(async ({ page }, testInfo) => {
         }
         window.addEventListener('error', (event) => window.previewTest.errors.push(event.message))
         const upload = WebGLRenderingContext.prototype.texImage2D
-        WebGLRenderingContext.prototype.texImage2D = function (...args) {
+        WebGLRenderingContext.prototype.texImage2D = function (...args: unknown[]) {
             if (args.some((arg) => arg instanceof ImageBitmap)) window.previewTest.uploads++
             return Reflect.apply(upload, this, args)
         }
@@ -160,7 +160,7 @@ test.beforeEach(async ({ page }, testInfo) => {
             return bufferSubData.apply(this, args)
         }
         const decode = window.createImageBitmap
-        window.createImageBitmap = async (...args) => {
+        window.createImageBitmap = async (...args: unknown[]) => {
             const bitmap = (await Reflect.apply(decode, window, args)) as ImageBitmap
             window.previewTest.bitmaps++
             return bitmap
@@ -201,7 +201,11 @@ test.describe('preview transport', () => {
     test.use({ hasTouch: true })
 
     const cursor = (page: Page) => page.evaluate(() => window.editorTest.view.cursorTime)
-    const wheel = (page: Page, init: WheelEventInit, selector = '.preview-transport-toggle') =>
+    const wheel = (
+        page: Page,
+        init: Pick<WheelEventInit, 'deltaX' | 'deltaY' | 'deltaMode' | 'ctrlKey'>,
+        selector = '.preview-transport-toggle',
+    ) =>
         page.locator(selector).evaluate((element, init) => {
             let bubbled = false
             const onWheel = () => (bubbled = true)

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { getFrameIndex, latestVisibleTarget } from '../../src/preview/engine/frameIndex'
-import { FlickDirection } from '../../src/preview/engine/layout'
+import { FlickDirection, type CameraChange } from '../../src/preview/engine/layout'
 import {
     ConnectorKind,
     NoteKind,
@@ -14,10 +14,16 @@ import { findSlideConnector } from '../../src/preview/engine/slide'
 import { createTimeIndex, queryTimeIndex } from '../../src/preview/engine/timeIndex'
 import { createTimescaleGroup, type TimescaleChange } from '../../src/preview/engine/timescale'
 import type { PreviewRenderer } from '../../src/preview/gl'
+import {
+    resolveParticle,
+    type ParticleEffect,
+    type ParticleProperty,
+} from '../../src/preview/particle'
 import { resolveSkin } from '../../src/preview/skin'
 
 const note = (targetTime: number, overrides: Partial<PreviewNote> = {}): PreviewNote => ({
     kind: NoteKind.tap,
+    style: 'default',
     isCritical: false,
     isFake: false,
     targetTime,
@@ -54,6 +60,7 @@ const slide = (tailTimes: number[]): PreviewSlide => {
         kind: ConnectorKind.activeNormal,
         connectors: tailTimes.map((time) => ({
             kind: ConnectorKind.activeNormal,
+            style: 'default',
             ease: 1,
             head,
             tail: note(time),
@@ -79,6 +86,123 @@ test('slide lookups retain first-match ordering at tied endpoints and after arbi
             )
         }
     }
+})
+
+test('interleaved frames retain their viewport, camera, effect geometry and layer time', () => {
+    const camera: CameraChange = {
+        time: 0,
+        lane: 0,
+        size: 6,
+        zoom: 1,
+        zoomTargetLane: 0,
+        zoomTargetY: 0,
+        zoomVerticalAlign: 0,
+        rotate: 0,
+        stageTilt: 1,
+        ease: 1,
+    }
+    const activeSlide = slide([2])
+    const source = chart({
+        isDynamicStages: true,
+        cameras: [camera, { ...camera, time: 2, rotate: 0.7, stageTilt: 0.3, zoom: 1.5 }],
+        notes: [note(0.25, { stageIndex: 0 }), note(0.8), note(1.1, { kind: NoteKind.flick })],
+        slides: [activeSlide],
+        connectors: activeSlide.connectors,
+        stages: [
+            {
+                order: 0,
+                drawStartTime: 0,
+                drawEndTime: 10,
+                masks: [],
+                pivots: [],
+                styles: [],
+                transforms: [
+                    {
+                        time: 0,
+                        rotate: 0.2,
+                        xLaneTranslate: 1,
+                        yLaneTranslate: 0,
+                        centerWeight: 0,
+                        elevation: 1,
+                        ease: 1,
+                    },
+                ],
+                hasTransforms: true,
+            },
+        ],
+    })
+    const sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+    const skin = resolveSkin(() => sprite)
+    const constant = (value: number): ParticleProperty => ({
+        from: { c: value },
+        to: { c: value },
+        ease: 'linear',
+    })
+    const effect: ParticleEffect = {
+        groups: [
+            {
+                count: 1,
+                particles: [
+                    {
+                        sprite,
+                        tint: { r: 1, g: 1, b: 1 },
+                        start: 0,
+                        duration: 1,
+                        x: constant(0),
+                        y: constant(0),
+                        w: constant(1),
+                        h: constant(1),
+                        r: constant(0),
+                        a: constant(1),
+                    },
+                ],
+            },
+        ],
+    }
+    const particle = resolveParticle(() => effect)
+    const capture = (interleave = false) => {
+        const draws: Parameters<PreviewRenderer['draw']>[] = []
+        const renderer: PreviewRenderer = {
+            maxViewportSize: { width: 1920, height: 1920 },
+            setTexture() {},
+            begin() {},
+            draw(...args) {
+                draws.push(args)
+                if (interleave) {
+                    // A second preview renders while the first is drawing both current
+                    // notes and effects sampled at earlier camera positions.
+                    renderPreviewFrame(
+                        { ...renderer, draw() {} },
+                        skin,
+                        source,
+                        1.5,
+                        900,
+                        1600,
+                        900,
+                        1600,
+                        8,
+                        true,
+                        particle,
+                    )
+                }
+            },
+            flush() {},
+            isContextLost: () => false,
+            dispose() {},
+        }
+        renderPreviewFrame(renderer, skin, source, 0.45, 1600, 900, 1600, 900, 8, true, particle)
+        return draws
+    }
+    const expected = capture()
+    assert.ok(
+        expected.some(([, , z]) => z[0] === 100),
+        'Includes particle effects',
+    )
+    assert.ok(
+        expected.some(([, , z]) => z[0] === 16),
+        'Includes notes',
+    )
+    assert.deepEqual(capture(true), expected)
 })
 
 test('long slide lookups do not revisit passed segments for every particle sample', () => {
@@ -169,6 +293,7 @@ test('visibility candidates include attachment endpoints, long connectors and th
         connectors: [
             {
                 kind: ConnectorKind.guideNeutral,
+                style: 'default',
                 ease: 1,
                 head,
                 tail,
@@ -290,6 +415,7 @@ test('culled frames match full future traversal with eased speeds, offsets, atta
         })),
         connectors: Array.from({ length: 9 }, (_, i) => ({
             kind: ConnectorKind.guideNeutral,
+            style: 'default',
             ease: 1,
             head: notes[i * 20]!,
             tail: notes[i * 20 + 19]!,

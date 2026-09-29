@@ -31,7 +31,7 @@ export const useAutoSave = () => {
 
             if (!isDirty.value) return
 
-            id = setTimeout(() => {
+            id = window.setTimeout(() => {
                 if (!enabled) return
 
                 const levelData = serializeToLevelData(

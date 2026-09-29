@@ -82,7 +82,7 @@ test('property draft transactions preserve groups while committed property edits
 }) => {
     const result = await page.evaluate(async () => {
         const { createEditedEntitiesState } =
-            (await import('/src/editor/sidebars/default/index.ts')) as typeof import('../../src/editor/sidebars/default')
+            (await import('/src/state/operations/edit.ts')) as typeof import('../../src/state/operations/edit')
         const { history, settings, fixtures, show } = window.editorTest
         const first = fixtures.interaction.slides[0]![0]!
         show({

@@ -1,15 +1,12 @@
 import type { FlickDirection } from '../../chart/note'
 import type { NoteEntity } from '../../state/entities/slides/note'
+import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slides/semantics'
 import { beatToTime } from '../../state/integrals/bpms'
 import { noteStyleColors } from '../../utils/colors'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
-type NoteInfo = {
-    note: NoteEntity
-    activeHead?: NoteEntity
-    activeTail?: NoteEntity
-}
+type NoteInfo = SlideNoteInfo
 
 type NoteVisualType = 'anchor' | 'damage' | 'trace' | 'tick' | 'single' | 'head' | 'tail'
 
@@ -29,10 +26,12 @@ export const getNoteVisualType = (
     const infoEntity = entity.useInfoOf ?? entity
     const info = lookup ? lookup.get(infoEntity) : infos.find(({ note }) => note === infoEntity)
     if (info) {
-        if (info.activeHead === info.activeTail) return 'single'
-        if (info.activeHead === infoEntity) return 'head'
-        if (info.activeTail === infoEntity) return 'tail'
-        return infoEntity.noteType === 'default' ? 'tick' : 'single'
+        const activeRole = getActiveNoteRole(info)
+        return activeRole === 'middle'
+            ? infoEntity.noteType === 'default'
+                ? 'tick'
+                : 'single'
+            : activeRole
     }
     if (!infos.length) return 'single'
 

@@ -13,10 +13,8 @@ import {
     toStageMaskEventJointEntity,
     type StageMaskEventJointEntity,
 } from '../../../../../state/entities/events/joints/stage/mask'
-import {
-    addStageMaskEventJoint,
-    removeStageMaskEventJoint,
-} from '../../../../../state/mutations/events/stage/mask'
+import { addStageMaskEventJoint } from '../../../../../state/mutations/events/stage/mask'
+import { editSelectedStageMaskEvent } from '../../../../../state/operations/events/stage/mask'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
@@ -298,9 +296,9 @@ export const stageMaskEvent: Tool = {
             if (replacement?.type === 'stageMaskEventJoint') {
                 setPreviewEdit(source, () => {
                     const transaction = createTransaction(source, { autoAddGroup: false })
-                    removeStageMaskEventJoint(transaction, entity)
-                    const selectedEntities = addStageMaskEventJoint(transaction, replacement)
-                    return transaction.commit(selectedEntities)
+                    return transaction.commit(
+                        editSelectedStageMaskEvent(transaction, entity, replacement),
+                    )
                 }, [entity, replacement.beat, replacement.maskLeft, replacement.maskSize])
             }
         }
@@ -362,30 +360,7 @@ export const editStageMaskEvent = (
     entity: StageMaskEventJointEntity,
     object: Partial<StageMaskEventObject>,
 ) => {
-    edit(entity, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        maskLeft: object.maskLeft ?? entity.maskLeft,
-        maskSize: object.maskSize ?? entity.maskSize,
-        isMaskNotes: object.isMaskNotes ?? entity.isMaskNotes,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
-}
-
-export const editSelectedStageMaskEvent = (
-    transaction: Transaction,
-    entity: StageMaskEventJointEntity,
-    object: Partial<StageMaskEventObject>,
-) => {
-    removeStageMaskEventJoint(transaction, entity)
-    return addStageMaskEventJoint(transaction, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        maskLeft: object.maskLeft ?? entity.maskLeft,
-        maskSize: object.maskSize ?? entity.maskSize,
-        isMaskNotes: object.isMaskNotes ?? entity.isMaskNotes,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
+    edit(entity, object)
 }
 
 const getStageMaskEventJointFromSelection = () => {
@@ -456,17 +431,14 @@ const add = (object: StageMaskEventObject) => {
     )
 }
 
-const edit = (entity: StageMaskEventJointEntity, object: StageMaskEventObject) => {
+const edit = (entity: StageMaskEventJointEntity, object: Partial<StageMaskEventObject>) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
             () => i18n.value.events.stageMaskEvent,
         ),
-        (transaction) => {
-            removeStageMaskEventJoint(transaction, entity)
-            return addStageMaskEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageMaskEvent(transaction, entity, object),
     )
 }
 
@@ -477,9 +449,6 @@ const move = (entity: StageMaskEventJointEntity, object: StageMaskEventObject) =
             '1',
             () => i18n.value.events.stageMaskEvent,
         ),
-        (transaction) => {
-            removeStageMaskEventJoint(transaction, entity)
-            return addStageMaskEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageMaskEvent(transaction, entity, object),
     )
 }

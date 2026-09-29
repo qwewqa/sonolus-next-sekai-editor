@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from 'vue'
-import { isAppActive } from '../activity'
+import { computed, nextTick, useId, useTemplateRef, watch } from 'vue'
 import PlayIcon from '../editor/commands/play/PlayIcon.vue'
-import {
-    beginPreviewScrub,
-    endPreviewScrub,
-    scrubPreviewTo,
-    stepPreviewTime,
-    togglePreviewPlayback,
-} from '../editor/player'
+import { togglePreviewPlayback } from '../editor/player'
 import { view } from '../editor/view'
 import { isPlaying } from '../player'
-import { time } from '../time'
+import { i18n } from '../i18n'
 import { formatTime } from '../utils/format'
+import { interpolateRaw } from '../utils/interpolate'
+import { useTransportInput } from './useTransportInput'
 
 const props = defineProps<{
     viewportLeft: number
@@ -32,156 +27,18 @@ const cornerTime = useTemplateRef<HTMLSpanElement>('cornerTime')
 const position = computed(() =>
     visible.value || !isPlaying.value ? formatTime(Math.round(view.cursorTime * 1000) / 1000) : '',
 )
-const activeStep = ref<number>()
-
-type Hold = {
-    milliseconds: number
-    target: HTMLButtonElement
-    scrub?: { cursor: number; time: number }
-} & ({ type: 'pointer'; pointerId: number } | { type: 'keyboard'; key: string })
-
-let hold: Hold | undefined
-let holdDelay: ReturnType<typeof setTimeout> | undefined
-let stopScrubClock: (() => void) | undefined
-let wheelDelay: ReturnType<typeof setTimeout> | undefined
-let isWheelScrubbing = false
-let wheelRoot: HTMLElement | undefined
-
-const finishHold = (audition: boolean) => {
-    const current = hold
-    if (!current) return
-    hold = undefined
-    activeStep.value = undefined
-    clearTimeout(holdDelay)
-    holdDelay = undefined
-    stopScrubClock?.()
-    stopScrubClock = undefined
-    if (current.scrub) endPreviewScrub(audition && isAppActive.value)
-    if (current.type === 'pointer') {
-        if (current.target.hasPointerCapture(current.pointerId)) {
-            current.target.releasePointerCapture(current.pointerId)
-        }
-        current.target.blur()
-    }
-}
-
-const finishWheel = (audition: boolean) => {
-    clearTimeout(wheelDelay)
-    wheelDelay = undefined
-    document.removeEventListener('pointerdown', onWheelOutsidePointerDown, true)
-    wheelRoot = undefined
-    if (!isWheelScrubbing) return
-    isWheelScrubbing = false
-    endPreviewScrub(audition && isAppActive.value)
-}
-
-const onWheelOutsidePointerDown = (event: PointerEvent) => {
-    if (event.target instanceof Node && !wheelRoot?.contains(event.target)) finishWheel(false)
-}
-
-const onWheel = (event: WheelEvent) => {
-    // Firefox can change legacy wheel units when deltaY is accessed first.
-    const mode = event.deltaMode
-    const delta = event.deltaY
-    if (event.ctrlKey || !isAppActive.value || !Number.isFinite(delta) || !delta) return
-
-    const pixels =
-        delta *
-        (mode === WheelEvent.DOM_DELTA_LINE
-            ? 16
-            : mode === WheelEvent.DOM_DELTA_PAGE
-              ? (event.currentTarget as HTMLElement).clientHeight
-              : 1)
-    event.preventDefault()
-    event.stopPropagation()
-    finishHold(false)
-    if (!isWheelScrubbing) {
-        beginPreviewScrub('locked')
-        isWheelScrubbing = true
-        wheelRoot = event.currentTarget as HTMLElement
-        // A subsequent editor click must retain its normal note audition.
-        document.addEventListener('pointerdown', onWheelOutsidePointerDown, true)
-    }
-    scrubPreviewTo(view.cursorTime - pixels / 1000)
-    // Trackpads can emit several events per frame. Keep them silent and audition
-    // only the final position after the gesture settles.
-    clearTimeout(wheelDelay)
-    wheelDelay = setTimeout(() => {
-        finishWheel(true)
-    }, 120)
-}
-
-const startHold = (current: Hold) => {
-    if (hold || !isAppActive.value) return false
-    finishWheel(false)
-    stepPreviewTime(current.milliseconds)
-    hold = current
-    activeStep.value = current.milliseconds
-    // A short tap remains one exact step. Holding then scrubs at 100 steps/s,
-    // using elapsed time instead of an interval or a backlog of repeated taps.
-    holdDelay = setTimeout(() => {
-        holdDelay = undefined
-        if (hold !== current || !isAppActive.value) return
-        beginPreviewScrub('locked')
-        current.scrub = { cursor: view.cursorTime, time: performance.now() / 1000 }
-        stopScrubClock = watch(time, ({ now }) => {
-            if (hold !== current || !current.scrub) return
-            scrubPreviewTo(
-                current.scrub.cursor +
-                    (Math.max(0, now - current.scrub.time) * current.milliseconds) / 10,
-            )
-        })
-    }, 250)
-    return true
-}
-
-const onPointerDown = (event: PointerEvent, milliseconds: number) => {
-    if (event.button !== 0 || !event.isPrimary) return
-    if (hold?.type === 'keyboard') finishHold(false)
-    const target = event.currentTarget as HTMLButtonElement
-    if (startHold({ type: 'pointer', pointerId: event.pointerId, target, milliseconds })) {
-        target.setPointerCapture(event.pointerId)
-    }
-}
-
-const onPointerUp = (event: PointerEvent) => {
-    if (hold?.type === 'pointer' && hold.pointerId === event.pointerId) finishHold(true)
-}
-
-const onPointerCancel = (event: PointerEvent) => {
-    if (hold?.type === 'pointer' && hold.pointerId === event.pointerId) finishHold(false)
-}
-
-const onStepKeydown = (event: KeyboardEvent, milliseconds: number) => {
-    if (event.key !== ' ' && event.key !== 'Enter') return
-    event.preventDefault()
-    if (event.repeat) return
-    startHold({
-        type: 'keyboard',
-        key: event.key,
-        target: event.currentTarget as HTMLButtonElement,
-        milliseconds,
-    })
-}
-
-const onStepKeyup = (event: KeyboardEvent) => {
-    if (event.key !== ' ' && event.key !== 'Enter') return
-    event.preventDefault()
-    if (hold?.type === 'keyboard' && hold.key === event.key) finishHold(true)
-}
-
-const onStepBlur = (event: FocusEvent) => {
-    if (hold?.type === 'keyboard' && hold.target === event.currentTarget) finishHold(false)
-}
-
-const onStepClick = (event: MouseEvent, milliseconds: number) => {
-    // Pointer and keyboard presses are handled above. Assistive technology can
-    // activate a button with a click alone and still gets one exact step.
-    if (!event.detail && !hold) {
-        finishWheel(false)
-        stepPreviewTime(milliseconds)
-    }
-}
+const {
+    activeStep,
+    onWheel,
+    onPointerDown,
+    onPointerUp,
+    onPointerCancel,
+    onStepKeydown,
+    onStepKeyup,
+    onStepBlur,
+    onStepClick,
+    cancel,
+} = useTransportInput(visible)
 
 const blurPointerButton = (event: MouseEvent) => {
     if (event.detail) (event.currentTarget as HTMLButtonElement).blur()
@@ -189,15 +46,13 @@ const blurPointerButton = (event: MouseEvent) => {
 
 const toggleVisibility = (event: MouseEvent) => {
     if (props.persistent) return
-    finishHold(false)
-    finishWheel(false)
+    cancel()
     visible.value = !visible.value
     blurPointerButton(event)
 }
 
 const hide = (event: MouseEvent | KeyboardEvent) => {
-    finishHold(false)
-    finishWheel(false)
+    cancel()
     if (props.persistent) {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         return
@@ -209,8 +64,7 @@ const hide = (event: MouseEvent | KeyboardEvent) => {
 }
 
 const play = (event: MouseEvent) => {
-    finishHold(false)
-    finishWheel(false)
+    cancel()
     togglePreviewPlayback()
     blurPointerButton(event)
 }
@@ -267,22 +121,6 @@ watch(cornerTime, (element, _previous, onCleanup) => {
         observer.disconnect()
     })
 })
-
-watch(
-    [visible, isPlaying, isAppActive],
-    ([shown, playing, active], [wasShown]) => {
-        if (!shown || playing || !active) finishHold(false)
-        // Seeking also works with the controls hidden. Only a transition to
-        // hidden, playback, or backgrounding cancels an active wheel gesture.
-        if ((wasShown && !shown) || playing || !active) finishWheel(false)
-    },
-    { flush: 'sync' },
-)
-
-onUnmounted(() => {
-    finishHold(false)
-    finishWheel(false)
-})
 </script>
 
 <template>
@@ -296,7 +134,7 @@ onUnmounted(() => {
             ref="toggle"
             type="button"
             class="preview-transport-toggle pointer-events-auto absolute inset-0 h-full w-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg"
-            :aria-label="visible ? 'Hide playback controls' : 'Show playback controls'"
+            :aria-label="visible ? i18n.preview.transport.hide : i18n.preview.transport.show"
             :aria-expanded="visible"
             :aria-controls="panelId"
             @click.stop="toggleVisibility"
@@ -307,19 +145,19 @@ onUnmounted(() => {
             ref="cornerTime"
             class="transport-corner-time pointer-events-none absolute z-10 rounded-full bg-modal px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-fg shadow-md"
             :style="{ left: `${viewportLeft + 4}px`, top: `${viewportTop + 4}px` }"
-            aria-label="Preview time"
+            :aria-label="i18n.preview.transport.time"
         >
             {{ position }}
         </span>
         <div
             :id="panelId"
             ref="panel"
-            class="preview-transport absolute z-20 grid items-center gap-1 rounded-xl bg-modal p-1 text-fg shadow-xl"
+            class="preview-transport absolute z-20 grid items-center gap-1 rounded-xl bg-modal px-1.5 py-1 text-fg shadow-xl"
             :class="visible ? 'pointer-events-auto' : 'pointer-events-none invisible'"
             :inert="!visible"
             :aria-hidden="!visible"
             role="group"
-            aria-label="Preview playback controls"
+            :aria-label="i18n.preview.transport.controls"
             @click.stop
             @keydown.stop
             @keydown.esc.prevent="hide"
@@ -329,15 +167,15 @@ onUnmounted(() => {
             <button
                 type="button"
                 class="transport-button"
-                :aria-label="isPlaying ? 'Pause preview' : 'Play preview'"
-                :title="isPlaying ? 'Pause preview' : 'Play preview'"
+                :aria-label="isPlaying ? i18n.preview.transport.pause : i18n.preview.transport.play"
+                :title="isPlaying ? i18n.preview.transport.pause : i18n.preview.transport.play"
                 @click="play"
             >
                 <PlayIcon :state="isPlaying" class="size-4 fill-current" aria-hidden="true" />
             </button>
             <span
                 class="transport-time px-1 text-center font-mono text-xs tabular-nums"
-                aria-label="Preview time"
+                :aria-label="i18n.preview.transport.time"
             >
                 {{ position }}
             </span>
@@ -348,8 +186,20 @@ onUnmounted(() => {
                     type="button"
                     class="transport-button touch-none select-none flex-col"
                     :class="{ 'is-held': activeStep === step }"
-                    :aria-label="`${step < 0 ? 'Back' : 'Forward'} ${Math.abs(step)} ms`"
-                    :title="`Hold for ${Math.abs(step) / 10}× ${step < 0 ? 'backward' : 'forward'}`"
+                    :aria-label="
+                        interpolateRaw(
+                            step < 0 ? i18n.preview.transport.back : i18n.preview.transport.forward,
+                            `${Math.abs(step)}`,
+                        )
+                    "
+                    :title="
+                        interpolateRaw(
+                            step < 0
+                                ? i18n.preview.transport.holdBackward
+                                : i18n.preview.transport.holdForward,
+                            `${Math.abs(step) / 10}`,
+                        )
+                    "
                     @pointerdown="onPointerDown($event, step)"
                     @pointerup="onPointerUp"
                     @pointercancel="onPointerCancel"

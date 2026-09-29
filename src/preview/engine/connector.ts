@@ -1,5 +1,6 @@
 import type { ZKey } from '../gl'
 import type { PreviewSkin, Sprite } from '../skin'
+import type { PreviewFrameContext } from './context'
 import {
     LAYER_ACTIVE_SLIDE_CONNECTOR_BOTTOM,
     LAYER_ACTIVE_SLIDE_CONNECTOR_OVER,
@@ -12,8 +13,6 @@ import {
     getZ,
 } from './layer'
 import {
-    DynamicLayout,
-    Layout,
     approach,
     blendStageTransform,
     perspectiveVec,
@@ -98,6 +97,7 @@ const getConnectorLayer = (kind: ConnectorKindValue, layer: ConnectorLayerValue)
 }
 
 const getConnectorZ = (
+    context: PreviewFrameContext,
     kind: ConnectorKindValue,
     targetTime: number,
     lane: number,
@@ -116,7 +116,7 @@ const getConnectorZ = (
     } else {
         etc = kind - ConnectorKind.guideNeutral
     }
-    return getZ(layerValue, targetTime, lane, etc, true, elevation)
+    return getZ(context.now, layerValue, targetTime, lane, etc, true, elevation)
 }
 
 const getConnectorAlphaOption = (kind: ConnectorKindValue) =>
@@ -139,9 +139,9 @@ export type ConnectorEndpoint = {
 }
 
 export const drawConnector = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
-    now: number,
     kind: ConnectorKindValue,
     visualState: ConnectorVisualStateValue,
     easeType: EaseTypeValue,
@@ -165,16 +165,16 @@ export const drawConnector = (
     if (fullScreen) {
         if (
             head.targetTime === tail.targetTime ||
-            now < Math.min(head.targetTime, tail.targetTime) ||
-            now > Math.max(head.targetTime, tail.targetTime)
+            context.now < Math.min(head.targetTime, tail.targetTime) ||
+            context.now > Math.max(head.targetTime, tail.targetTime)
         )
             return
     } else {
         if (
-            (head.visualProgress < DynamicLayout.progressStart &&
-                tail.visualProgress < DynamicLayout.progressStart) ||
-            (head.visualProgress > DynamicLayout.progressCutoff &&
-                tail.visualProgress > DynamicLayout.progressCutoff) ||
+            (head.visualProgress < context.layout.progressStart &&
+                tail.visualProgress < context.layout.progressStart) ||
+            (head.visualProgress > context.layout.progressCutoff &&
+                tail.visualProgress > context.layout.progressCutoff) ||
             head.visualProgress === tail.visualProgress
         )
             return
@@ -222,11 +222,12 @@ export const drawConnector = (
             safeFraction(segmentHeadTargetTime, segmentTailTargetTime, tail.targetTime),
         ) * tailNoteAlpha
 
-    if (now >= tail.targetTime && !bypassTailTargetTimeCheck) return
+    if (context.now >= tail.targetTime && !bypassTailTargetTimeCheck) return
 
     const drawQuad = (layout: Quad, baseA: number, elevation: number) => {
         if (baseA <= 0) return
         const zNormal = getConnectorZ(
+            context,
             kind,
             segmentHeadTargetTime,
             segmentHeadLane,
@@ -236,6 +237,7 @@ export const drawConnector = (
         )
         if (visualState === ConnectorVisualState.active && sprites.active) {
             const zActive = getConnectorZ(
+                context,
                 kind,
                 segmentHeadTargetTime,
                 segmentHeadLane,
@@ -243,7 +245,7 @@ export const drawConnector = (
                 layer,
                 elevation,
             )
-            const aModifier = (Math.cos(2 * Math.PI * now) + 1) / 2
+            const aModifier = (Math.cos(2 * Math.PI * context.now) + 1) / 2
             draw(sprites.normal, layout, zNormal, baseA * easeOutCubic(aModifier))
             draw(sprites.active, layout, zActive, baseA * easeOutCubic(1 - aModifier))
         } else {
@@ -257,11 +259,11 @@ export const drawConnector = (
     }
 
     if (fullScreen) {
-        const judgeFrac = safeFraction(head.targetTime, tail.targetTime, now)
+        const judgeFrac = safeFraction(head.targetTime, tail.targetTime, context.now)
         const judgeAlpha = lerp(headAlpha, tailAlpha, judgeFrac)
         const baseA = clamp(judgeAlpha * getConnectorAlphaOption(kind), 0, 1)
-        const w = Layout.screenW / 2
-        const h = Layout.screenH / 2
+        const w = context.layout.screenW / 2
+        const h = context.layout.screenH / 2
         drawQuad(
             {
                 bl: vec(-w, -h),
@@ -281,13 +283,13 @@ export const drawConnector = (
 
     const startVisualProgress = clamp(
         head.visualProgress,
-        DynamicLayout.progressStart,
-        DynamicLayout.progressCutoff,
+        context.layout.progressStart,
+        context.layout.progressCutoff,
     )
     const endVisualProgress = clamp(
         tail.visualProgress,
-        DynamicLayout.progressStart,
-        DynamicLayout.progressCutoff,
+        context.layout.progressStart,
+        context.layout.progressCutoff,
     )
     const startFrac = safeFraction(head.visualProgress, tail.visualProgress, startVisualProgress, 0)
     const endFrac = safeFraction(head.visualProgress, tail.visualProgress, endVisualProgress, 1)
@@ -307,8 +309,8 @@ export const drawConnector = (
         !(stageTransformIsIdentity(headTransform) && stageTransformIsIdentity(tailTransform))
 
     const sampleEdges = (lane: number, size: number, travel: number, interpFrac: number) => {
-        let left = perspectiveVec(lane - size, 1, travel)
-        let right = perspectiveVec(lane + size, 1, travel)
+        let left = perspectiveVec(context.layout, lane - size, 1, travel)
+        let right = perspectiveVec(context.layout, lane + size, 1, travel)
         let elevation = 0
         if (hasTransform) {
             const affine = stageTransformToAffine(
@@ -329,7 +331,7 @@ export const drawConnector = (
                 ? 0
                 : safeFraction(easedHeadEaseFrac, easedTailEaseFrac, ease(easeType, easeFrac), frac)
         const visualProgress = lerp(startVisualProgress, endVisualProgress, s)
-        const travel = approach(visualProgress)
+        const travel = approach(context.layout, visualProgress)
         const lane = lerp(head.lane, tailLane, interpFrac)
         const size = lerp(head.size, tailSize, interpFrac)
         return {
@@ -436,7 +438,7 @@ export const drawConnector = (
                     Math.hypot(a.left.x - b.left.x, a.left.y - b.left.y),
                     Math.hypot(a.right.x - b.right.x, a.right.y - b.right.y),
                 ) <=
-                    4 * DynamicLayout.screenPixelSize)
+                    4 * context.layout.screenPixelSize)
 
         if (!flat && depth < MAX_FLATTEN_DEPTH) {
             const mid = sampleAt((a.s + b.s) / 2)

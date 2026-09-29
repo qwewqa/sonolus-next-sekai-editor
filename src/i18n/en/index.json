@@ -1079,5 +1079,33 @@
         "loading": {
             "loading": "Loading ..."
         }
+    },
+    "preview": {
+        "settings": "Preview settings",
+        "minimizeSettings": "Minimize preview settings",
+        "showSettings": "Show preview settings",
+        "shortLabels": {
+            "noteSpeed": "Speed",
+            "renderScale": "Quality",
+            "position": "Dock",
+            "aspectRatio": "Aspect"
+        },
+        "noteSpeedValue": "Note speed value",
+        "renderScaleValue": "Render quality value",
+        "loadingSkin": "Loading skin...",
+        "skinUnavailable": "The preview skin could not be loaded.",
+        "reload": "Reload",
+        "transport": {
+            "hide": "Hide playback controls",
+            "show": "Show playback controls",
+            "time": "Preview time",
+            "controls": "Preview playback controls",
+            "pause": "Pause preview",
+            "play": "Play preview",
+            "back": "Back {0} ms",
+            "forward": "Forward {0} ms",
+            "holdBackward": "Hold for {0}× backward",
+            "holdForward": "Hold for {0}× forward"
+        }
     }
 }

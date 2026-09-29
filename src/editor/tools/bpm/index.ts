@@ -8,7 +8,8 @@ import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../../state/entities/bpm'
-import { addBpm, removeBpm } from '../../../state/mutations/bpm'
+import { addBpm } from '../../../state/mutations/bpm'
+import { editBpm as applyBpmEdit, editSelectedBpm } from '../../../state/operations/bpm'
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
@@ -250,22 +251,7 @@ export const bpm: Tool = {
 }
 
 export const editBpm = (entity: BpmEntity, object: Partial<BpmObject>) => {
-    editMoveOrReplace(entity, {
-        beat: object.beat ?? entity.beat,
-        bpm: object.bpm ?? entity.bpm,
-    })
-}
-
-export const editSelectedBpm = (
-    transaction: Transaction,
-    entity: BpmEntity,
-    object: Partial<BpmObject>,
-) => {
-    removeBpm(transaction, entity)
-    return addBpm(transaction, {
-        beat: object.beat ?? entity.beat,
-        bpm: object.bpm ?? entity.bpm,
-    })
+    editMoveOrReplace(entity, object)
 }
 
 const find = (beat: number) =>
@@ -288,30 +274,18 @@ const previewMove = (entity: BpmEntity, object: BpmObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
         const transaction = createTransaction(source, { autoAddGroup: false })
-        if (entity.beat === object.beat || entity.beat) removeBpm(transaction, entity)
-        if (entity.beat !== object.beat) {
-            const overlap = getInStoreGrid(source.store.grid, 'bpm', object.beat)?.find(
-                (candidate) => candidate.beat === object.beat,
-            )
-            if (overlap) removeBpm(transaction, overlap)
-        }
-        return transaction.commit(addBpm(transaction, object))
+        return transaction.commit(applyBpmEdit(transaction, entity, object))
     }, [entity, object.beat, object.bpm])
 }
 
-const editMoveOrReplace = (entity: BpmEntity, object: BpmObject) => {
-    if (entity.beat === object.beat) {
-        edit(entity, object)
-        return
-    }
-
-    const overlap = find(object.beat)
-    if (overlap) {
-        replace(overlap, object, entity)
-    } else {
-        move(object, entity)
-    }
-    focusEntityAtBeat(object.beat)
+const editMoveOrReplace = (entity: BpmEntity, object: Partial<BpmObject>) => {
+    const beat = object.beat ?? entity.beat
+    const message = entity.beat === beat ? 'edited' : find(beat) ? 'replaced' : 'moved'
+    update(
+        () => i18n.value.tools.bpm[message],
+        (transaction) => applyBpmEdit(transaction, entity, object),
+    )
+    if (entity.beat !== beat) focusEntityAtBeat(beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {
@@ -343,30 +317,6 @@ const add = (object: BpmObject) => {
 const edit = (entity: BpmEntity, object: BpmObject) => {
     update(
         () => i18n.value.tools.bpm.edited,
-        (transaction) => {
-            removeBpm(transaction, entity)
-            return addBpm(transaction, object)
-        },
-    )
-}
-
-const move = (object: BpmObject, old: BpmEntity) => {
-    update(
-        () => i18n.value.tools.bpm.moved,
-        (transaction) => {
-            if (old.beat) removeBpm(transaction, old)
-            return addBpm(transaction, object)
-        },
-    )
-}
-
-const replace = (entity: BpmEntity, object: BpmObject, old: BpmEntity) => {
-    update(
-        () => i18n.value.tools.bpm.replaced,
-        (transaction) => {
-            if (old.beat) removeBpm(transaction, old)
-            removeBpm(transaction, entity)
-            return addBpm(transaction, object)
-        },
+        (transaction) => editSelectedBpm(transaction, entity, object),
     )
 }

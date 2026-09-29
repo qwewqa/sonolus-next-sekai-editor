@@ -5,15 +5,16 @@ import {
     drawConnector,
     type ConnectorEndpoint,
 } from '../../src/preview/engine/connector'
+import type { PreviewFrameContext } from '../../src/preview/engine/context'
 import {
     FlickDirection,
     approach,
+    createLayout,
+    createViewport,
     defaultCameraInfo,
     identityStageScreenTransform,
     identityStageTransform,
-    initLayout,
     perspectiveVec,
-    refreshLayout,
     type StageTransform,
 } from '../../src/preview/engine/layout'
 import { EaseType, type Quad } from '../../src/preview/engine/math'
@@ -21,11 +22,12 @@ import { ConnectorKind, NoteKind } from '../../src/preview/engine/model'
 import { drawNote } from '../../src/preview/engine/note'
 import { drawSimLine } from '../../src/preview/engine/simLine'
 import type { ZKey } from '../../src/preview/gl'
-import type { PreviewSkin, Sprite } from '../../src/preview/skin'
+import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
 
 const sprite: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
 const tick: Sprite = { ...sprite }
-const skin = {
+const skin: PreviewSkin = {
+    ...resolveSkin(() => undefined),
     normalNote: {
         body: { renderType: 'normalFallback', middle: sprite },
         arrow: { fallback: false, up: [], down: [], upLeft: [], downLeft: [] },
@@ -33,12 +35,12 @@ const skin = {
     },
     guides: [sprite],
     simLine: sprite,
-} as PreviewSkin
-
-const init = () => {
-    initLayout(1600, 900)
-    refreshLayout({ ...defaultCameraInfo(), stageTilt: 0 }, true)
 }
+
+const createContext = (): PreviewFrameContext => ({
+    now: 0,
+    layout: createLayout(createViewport(1600, 900), { ...defaultCameraInfo(), stageTilt: 0 }, true),
+})
 
 const capture = () => {
     const draws: { sprite: Sprite; quad: Quad; z: ZKey; alpha: number }[] = []
@@ -63,6 +65,7 @@ const endpoint = (overrides: Partial<ConnectorEndpoint> = {}): ConnectorEndpoint
 })
 
 const connector = (
+    context: PreviewFrameContext,
     head: ConnectorEndpoint,
     tail: ConnectorEndpoint,
     headAlpha = 1,
@@ -70,9 +73,9 @@ const connector = (
 ) => {
     const result = capture()
     drawConnector(
+        context,
         result.draw,
         skin,
-        0,
         ConnectorKind.guideNeutral,
         ConnectorVisualState.waiting,
         EaseType.linear,
@@ -92,12 +95,12 @@ const connector = (
 }
 
 test('notes outside a mask disappear, including their markers', () => {
-    init()
+    const context = createContext()
     const result = capture()
     drawNote(
+        context,
         result.draw,
         skin,
-        0,
         NoteKind.tap,
         false,
         3,
@@ -113,7 +116,7 @@ test('notes outside a mask disappear, including their markers', () => {
 })
 
 test('elevation flattens note bodies while preserving marker dimensions and layer order', () => {
-    init()
+    const context = createContext()
     const baseline = capture()
     const elevated = capture()
     for (const [result, transform] of [
@@ -121,9 +124,9 @@ test('elevation flattens note bodies while preserving marker dimensions and laye
         [elevated, { ...identityStageScreenTransform, a11: 0.25, a12: 0.2, elevation: 2 }],
     ] as const) {
         drawNote(
+            context,
             result.draw,
             skin,
-            0,
             NoteKind.tap,
             false,
             0,
@@ -144,15 +147,25 @@ test('elevation flattens note bodies while preserving marker dimensions and laye
 })
 
 test('connector masks clip the original path at border crossings', () => {
-    init()
+    const context = createContext()
     const mask = { enabled: true, left: -1, right: 1, stageIndex: 1 }
     const head = endpoint({ lane: -4, mask })
     const tail = endpoint({ lane: 4, visualProgress: 0.1, targetTime: 4, easeFrac: 1, mask })
-    const draws = connector(head, tail)
+    const draws = connector(context, head, tail)
     assert.ok(draws.length > 0)
-    const headPosition = perspectiveVec(0, 1, approach(head.visualProgress))
-    const tailPosition = perspectiveVec(0, 1, approach(tail.visualProgress))
-    const laneScale = perspectiveVec(1, 1, approach(0.5)).x
+    const headPosition = perspectiveVec(
+        context.layout,
+        0,
+        1,
+        approach(context.layout, head.visualProgress),
+    )
+    const tailPosition = perspectiveVec(
+        context.layout,
+        0,
+        1,
+        approach(context.layout, tail.visualProgress),
+    )
+    const laneScale = perspectiveVec(context.layout, 1, 1, approach(context.layout, 0.5)).x
     for (const { quad } of draws) {
         for (const point of Object.values(quad)) {
             assert.ok(point.x / laneScale >= -1 - 1e-10)
@@ -165,6 +178,7 @@ test('connector masks clip the original path at border crossings', () => {
     }
     assert.equal(
         connector(
+            context,
             endpoint({ lane: 4, mask }),
             endpoint({ lane: 5, visualProgress: 0.1, targetTime: 4, easeFrac: 1, mask }),
         ).length,
@@ -173,10 +187,11 @@ test('connector masks clip the original path at border crossings', () => {
 })
 
 test('a collapsed connector mask and two zero-width endpoints emit no geometry', () => {
-    init()
+    const context = createContext()
     const mask = { enabled: true, left: 0, right: 0 }
     assert.equal(
         connector(
+            context,
             endpoint({ mask }),
             endpoint({ mask, visualProgress: 0.1, targetTime: 4, easeFrac: 1 }),
         ).length,
@@ -184,6 +199,7 @@ test('a collapsed connector mask and two zero-width endpoints emit no geometry',
     )
     assert.equal(
         connector(
+            context,
             endpoint({ size: 0 }),
             endpoint({ size: 0, visualProgress: 0.1, targetTime: 4, easeFrac: 1 }),
         ).length,
@@ -192,8 +208,9 @@ test('a collapsed connector mask and two zero-width endpoints emit no geometry',
 })
 
 test('connector alpha fades remain visible on a geometrically straight connector', () => {
-    init()
+    const context = createContext()
     const draws = connector(
+        context,
         endpoint(),
         endpoint({ visualProgress: 0.1, targetTime: 4, easeFrac: 1 }),
         0,
@@ -205,21 +222,26 @@ test('connector alpha fades remain visible on a geometrically straight connector
 })
 
 test('coincident easing fractions still connect both endpoint lanes', () => {
-    init()
+    const context = createContext()
     for (const delta of [0, 1e-8]) {
         const draws = connector(
+            context,
             endpoint({ lane: -2, easeFrac: 0.3 }),
             endpoint({ lane: 2, easeFrac: 0.3 + delta, visualProgress: 0.1, targetTime: 4 }),
         )
         assert.ok(draws.length > 0)
         const last = draws.at(-1)!.quad
-        close((last.tl.x + last.tr.x) / 2, perspectiveVec(2, 1, approach(0.1)).x)
+        close(
+            (last.tl.x + last.tr.x) / 2,
+            perspectiveVec(context.layout, 2, 1, approach(context.layout, 0.1)).x,
+        )
     }
 })
 
 test('connectors between elevations draw their segments at changing depths', () => {
-    init()
+    const context = createContext()
     const draws = connector(
+        context,
         endpoint({ transform: identityStageTransform }),
         endpoint({
             visualProgress: 0.1,
@@ -236,15 +258,16 @@ test('connectors between elevations draw their segments at changing depths', () 
 })
 
 test('sim lines connect equal lanes on different stages and scale thickness by projection', () => {
-    init()
+    const context = createContext()
     const left: StageTransform = { ...identityStageTransform, tx: -0.5 }
     const right: StageTransform = { ...identityStageTransform, tx: 0.5 }
     const baseline = capture()
-    drawSimLine(baseline.draw, skin, 0, 0.5, 2, 0, 0.5, 2, left, right)
+    drawSimLine(context, baseline.draw, skin, 0, 0.5, 2, 0, 0.5, 2, left, right)
     assert.equal(baseline.draws.length, 1)
     const projected = capture()
     const projection = { ...identityStageScreenTransform, a11: 0.25, elevation: 1 }
     drawSimLine(
+        context,
         projected.draw,
         skin,
         0,
@@ -263,15 +286,15 @@ test('sim lines connect equal lanes on different stages and scale thickness by p
 })
 
 test('damage and fake damage connectors ignore guide alpha while respecting note alpha', () => {
-    init()
+    const context = createContext()
     const damageSkin = { ...skin, damageSlideConnector: { normal: sprite } }
     for (const kind of [ConnectorKind.damage, ConnectorKind.fakeDamage]) {
         const render = (segmentAlpha: number, noteAlpha: number) => {
             const result = capture()
             drawConnector(
+                context,
                 result.draw,
                 damageSkin,
-                0,
                 kind,
                 ConnectorVisualState.waiting,
                 EaseType.linear,
@@ -299,14 +322,14 @@ test('damage and fake damage connectors ignore guide alpha while respecting note
 })
 
 test('flick bodies share the ordinary note layer', () => {
-    init()
+    const context = createContext()
     const result = capture()
     const layeredSkin = { ...skin, flickNote: skin.normalNote }
     for (const kind of [NoteKind.tap, NoteKind.flick]) {
         drawNote(
+            context,
             result.draw,
             layeredSkin,
-            0,
             kind,
             false,
             0,

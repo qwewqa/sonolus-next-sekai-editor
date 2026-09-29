@@ -1,7 +1,7 @@
 import { onUnmounted, watch } from 'vue'
 import { isAppActive } from '../../activity'
 import { state } from '../../history'
-import { hasSamePreviewData } from '../../preview/edit'
+import { hasSameChartData } from '../../state/data'
 import { tool } from '../tools'
 import { view } from '../view'
 import { cancelMouseControls, mouseControlListeners } from './mouse'
@@ -20,7 +20,7 @@ export const useControlLifecycle = () => {
         ([currentTool, currentState], [previousTool, previousState]) => {
             if (
                 currentTool === previousTool &&
-                hasSamePreviewData(currentState, previousState) &&
+                hasSameChartData(currentState, previousState) &&
                 currentState.bgm === previousState.bgm &&
                 currentState.initialLife === previousState.initialLife
             ) {

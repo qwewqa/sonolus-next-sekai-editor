@@ -79,7 +79,7 @@ export const instrumentRendering = () => {
         return clear.apply(this, args)
     }
     const upload = WebGLRenderingContext.prototype.texImage2D
-    WebGLRenderingContext.prototype.texImage2D = function (...args) {
+    WebGLRenderingContext.prototype.texImage2D = function (...args: unknown[]) {
         if (args.some((arg) => arg instanceof ImageBitmap)) window.productionSmoke.uploads++
         return Reflect.apply(upload, this, args)
     }
@@ -92,13 +92,13 @@ export const instrumentRendering = () => {
         return fill.apply(this, args)
     }
     const put = CanvasRenderingContext2D.prototype.putImageData
-    CanvasRenderingContext2D.prototype.putImageData = function (...args) {
+    CanvasRenderingContext2D.prototype.putImageData = function (...args: unknown[]) {
         if (this.canvas.width === 128 && this.canvas.height === 2000)
             window.productionSmoke.fftTiles++
         return Reflect.apply(put, this, args)
     }
     const draw = CanvasRenderingContext2D.prototype.drawImage
-    CanvasRenderingContext2D.prototype.drawImage = function (...args) {
+    CanvasRenderingContext2D.prototype.drawImage = function (...args: unknown[]) {
         if (
             this.canvas instanceof HTMLCanvasElement &&
             this.canvas.classList.contains('editor-chart') &&

@@ -27,6 +27,13 @@ import { pushState, replaceState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
 import type { Entity } from '../../../state/entities'
+import { editSelectedCameraEvent } from '../../../state/operations/events/camera'
+import { editSelectedStageMaskEvent } from '../../../state/operations/events/stage/mask'
+import { editSelectedStagePivotEvent } from '../../../state/operations/events/stage/pivot'
+import { editSelectedStageStyleEvent } from '../../../state/operations/events/stage/style'
+import { editSelectedStageTransformEvent } from '../../../state/operations/events/stage/transform'
+import { editSelectedNote } from '../../../state/operations/note'
+import { editSelectedTimeScale } from '../../../state/operations/timeScale'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -39,13 +46,6 @@ import {
     yToTime,
     yToValidBeat,
 } from '../../view'
-import { editSelectedCameraEvent } from '../events/camera'
-import { editSelectedStageMaskEvent } from '../events/stage/mask'
-import { editSelectedStagePivotEvent } from '../events/stage/pivot'
-import { editSelectedStageStyleEvent } from '../events/stage/style'
-import { editSelectedStageTransformEvent } from '../events/stage/transform/index.ts'
-import { editSelectedNote } from '../note'
-import { editSelectedTimeScale } from '../timeScale'
 import {
     hitAllEntitiesAtPoint,
     hitAllEntitiesInSelection,

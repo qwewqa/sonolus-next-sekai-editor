@@ -1,8 +1,15 @@
 import { EngineArchetypeDataName, type LevelDataEntity } from '@sonolus/core'
 import type { GroupId } from '../../../chart/groups'
+import type { NoteObject } from '../../../chart/note'
 import { connectorKindValue, noteStyleValue } from '../../../chart/noteStyle'
 import type { StageId, Stages } from '../../../chart/stages'
 import type { NoteEntity } from '../../../state/entities/slides/note'
+import {
+    allowsSimLine,
+    getActiveNoteRole,
+    getNoteRole,
+    type NoteRole,
+} from '../../../state/entities/slides/semantics'
 import type { Store } from '../../../state/store'
 
 export const serializeSlidesToLevelDataEntities = (
@@ -139,49 +146,19 @@ export const serializeSlidesToLevelDataEntities = (
 
             const isFirst = i === 0
             const isLast = i === infos.length - 1
-            const isInActive = info.activeHead !== info.activeTail
-            const isActiveHead = info.activeHead === info.note
-            const isActiveTail = info.activeTail === info.note
+            const activeRole = getActiveNoteRole(info)
+            const role = getNoteRole(info)
             const isFlick = info.note.flickDirection !== 'none'
 
             entity.archetype = info.note.isFake ? 'Fake' : ''
-
-            if (info.note.noteType === 'anchor') {
-                entity.archetype += 'Anchor'
-            } else if (info.note.noteType === 'damage') {
-                entity.archetype += 'Damage'
-            } else {
+            if (role !== 'anchor' && role !== 'damage') {
                 entity.archetype += info.note.isCritical ? 'Critical' : 'Normal'
-
-                if (info.note.noteType === 'trace') {
-                    if (isInActive)
-                        entity.archetype += isActiveHead ? 'Head' : isActiveTail ? 'Tail' : ''
-                    entity.archetype += isFlick ? 'TraceFlick' : 'Trace'
-                } else if (info.note.noteType === 'forceTick') {
-                    entity.archetype += 'Tick'
-                } else if (!isInActive) {
-                    entity.archetype += isFlick ? 'Flick' : 'Tap'
-                } else if (isActiveHead) {
-                    entity.archetype += isFlick ? 'HeadFlick' : 'HeadTap'
-                } else if (isActiveTail) {
-                    entity.archetype += isFlick ? 'TailFlick' : 'TailRelease'
-                } else if (info.note.noteType === 'default') {
-                    entity.archetype += 'Tick'
-                } else {
-                    entity.archetype += isFlick ? 'Flick' : 'Tap'
-                }
             }
-
-            entity.archetype += 'Note'
+            entity.archetype += `${noteArchetypes[role][isFlick ? 1 : 0]}Note`
 
             const tick = Math.round(info.note.beat * beatToTicks)
 
-            if (
-                info.note.noteType === 'trace' ||
-                (info.note.noteType === 'default' &&
-                    (!isInActive || isActiveHead || isActiveTail)) ||
-                info.note.noteType === 'forceNonTick'
-            ) {
+            if (allowsSimLine(role)) {
                 const allowSimLines = getAllowSimLines(info.note.stageId)
 
                 const notes = allowSimLines.get(tick)
@@ -205,11 +182,11 @@ export const serializeSlidesToLevelDataEntities = (
                 )
             }
 
-            if (isInActive && isActiveHead) {
+            if (activeRole === 'head') {
                 disallowHiddenTicks.add(tick)
             }
 
-            if (info.activeHead && isInActive && isActiveTail) {
+            if (info.activeHead && activeRole === 'tail') {
                 entity.data.push({
                     name: 'activeHead',
                     ref: (getEntity(info.activeHead).name ??= getName()),
@@ -378,7 +355,19 @@ export const serializeSlidesToLevelDataEntities = (
 const beatToTicks = 480
 const ticksPerHidden = beatToTicks / 2
 
-const flickDirections = {
+const noteArchetypes: Record<NoteRole, readonly [string, string]> = {
+    anchor: ['Anchor', 'Anchor'],
+    damage: ['Damage', 'Damage'],
+    trace: ['Trace', 'TraceFlick'],
+    headTrace: ['HeadTrace', 'HeadTraceFlick'],
+    tailTrace: ['TailTrace', 'TailTraceFlick'],
+    tick: ['Tick', 'Tick'],
+    single: ['Tap', 'Flick'],
+    head: ['HeadTap', 'HeadFlick'],
+    tail: ['TailRelease', 'TailFlick'],
+}
+
+const flickDirections: Record<NoteObject['flickDirection'], number> = {
     none: 0,
     up: 0,
     upLeft: 1,
@@ -388,7 +377,7 @@ const flickDirections = {
     downRight: 5,
 }
 
-const sfxs = {
+const sfxs: Record<NoteObject['sfx'], number> = {
     default: 0,
     none: 1,
     normalTap: 2,
@@ -402,7 +391,7 @@ const sfxs = {
     damage: 10,
 }
 
-const connectorEases = {
+const connectorEases: Record<NoteObject['connectorEase'], number> = {
     linear: 1,
     in: 2,
     out: 3,
@@ -411,14 +400,14 @@ const connectorEases = {
     none: 0,
 }
 
-const segmentLayers = {
+const segmentLayers: Record<NoteObject['connectorLayer'], number> = {
     top: 0,
     bottom: 1,
     under: 2,
     over: 3,
 }
 
-const segmentPresentations = {
+const segmentPresentations: Record<NoteObject['connectorPresentation'], number> = {
     default: 0,
     fullscreen: 1,
 }

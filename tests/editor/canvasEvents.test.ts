@@ -20,7 +20,7 @@ class RecordingCanvas {
     textAlign = 'start'
     textBaseline = 'alphabetic'
     fontKerning = 'auto'
-    transform = [1, 1, 0, 0]
+    transform: [number, number, number, number] = [1, 1, 0, 0]
     lineDashOffset = 0
     dash: number[] = []
     currentPath: unknown[] = []

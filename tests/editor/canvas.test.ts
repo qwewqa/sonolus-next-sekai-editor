@@ -267,7 +267,7 @@ test('frame scheduling coalesces rapid edits into the latest pending draw withou
         for (let value = 0; value < 100; value++) scheduler.schedule(() => draws.push(value))
         assert.equal(requests(), 1)
         assert.equal(pending.size, 1)
-        assert.deepEqual(draws, [])
+        assert.equal(draws.length, 0)
         tick()
         assert.deepEqual(draws, [99])
         assert.equal(pending.size, 0)
@@ -285,7 +285,7 @@ test('cancelling a pending frame discards its draw and permits scheduling after 
         scheduler.cancel()
         assert.equal(pending.size, 0)
         tick()
-        assert.deepEqual(draws, [])
+        assert.equal(draws.length, 0)
         scheduler.schedule(() => draws.push('new'))
         tick()
         assert.deepEqual(draws, ['new'])
@@ -327,9 +327,10 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
     let width = 0
     let height = 0
     const dimensions: number[][] = []
-    const transforms: number[][] = []
+    type Transform = [number, number, number, number, number, number]
+    const transforms: Transform[] = []
     const clears: number[][] = []
-    let transform = [1, 0, 0, 1, 0, 0]
+    let transform: Transform = [1, 0, 0, 1, 0, 0]
     const initialPaint = {
         globalAlpha: 0.375,
         globalCompositeOperation: 'multiply',
@@ -338,7 +339,7 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
     const stack: (typeof initialPaint)[] = []
     const ctx = {
         ...initialPaint,
-        setTransform: (...args: number[]) => {
+        setTransform: (...args: Transform) => {
             transform = args
             transforms.push(args)
         },
@@ -421,7 +422,7 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
         [601.375, 301.625, 1],
         [601.375, 301.625, 1.5],
         [601.375, 301.625, 2],
-    ]) {
+    ] as const) {
         const sceneHeight = (cssHeight / cssWidth) * bounds.w
         const fractionalBounds = { ...bounds, b: bounds.t + sceneHeight, h: sceneHeight }
         prepareSurface(canvas, cssWidth, cssHeight, pixelRatio, fractionalBounds)

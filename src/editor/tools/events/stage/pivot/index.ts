@@ -13,10 +13,8 @@ import {
     toStagePivotEventJointEntity,
     type StagePivotEventJointEntity,
 } from '../../../../../state/entities/events/joints/stage/pivot'
-import {
-    addStagePivotEventJoint,
-    removeStagePivotEventJoint,
-} from '../../../../../state/mutations/events/stage/pivot'
+import { addStagePivotEventJoint } from '../../../../../state/mutations/events/stage/pivot'
+import { editSelectedStagePivotEvent } from '../../../../../state/operations/events/stage/pivot'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
@@ -255,9 +253,9 @@ export const stagePivotEvent: Tool = {
             if (replacement?.type === 'stagePivotEventJoint') {
                 setPreviewEdit(source, () => {
                     const transaction = createTransaction(source, { autoAddGroup: false })
-                    removeStagePivotEventJoint(transaction, entity)
-                    const selectedEntities = addStagePivotEventJoint(transaction, replacement)
-                    return transaction.commit(selectedEntities)
+                    return transaction.commit(
+                        editSelectedStagePivotEvent(transaction, entity, replacement),
+                    )
                 }, [entity, replacement.beat, replacement.pivotLane])
             }
         }
@@ -307,34 +305,7 @@ export const editStagePivotEvent = (
     entity: StagePivotEventJointEntity,
     object: Partial<StagePivotEventObject>,
 ) => {
-    edit(entity, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        pivotLane: object.pivotLane ?? entity.pivotLane,
-        divisionSize: object.divisionSize ?? entity.divisionSize,
-        divisionParity: object.divisionParity ?? entity.divisionParity,
-        yOffset: object.yOffset ?? entity.yOffset,
-        yOffsetBeat: object.yOffsetBeat ?? entity.yOffsetBeat,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
-}
-
-export const editSelectedStagePivotEvent = (
-    transaction: Transaction,
-    entity: StagePivotEventJointEntity,
-    object: Partial<StagePivotEventObject>,
-) => {
-    removeStagePivotEventJoint(transaction, entity)
-    return addStagePivotEventJoint(transaction, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        pivotLane: object.pivotLane ?? entity.pivotLane,
-        divisionSize: object.divisionSize ?? entity.divisionSize,
-        divisionParity: object.divisionParity ?? entity.divisionParity,
-        yOffset: object.yOffset ?? entity.yOffset,
-        yOffsetBeat: object.yOffsetBeat ?? entity.yOffsetBeat,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
+    edit(entity, object)
 }
 
 const getStagePivotEventJointFromSelection = () => {
@@ -413,17 +384,14 @@ const add = (object: StagePivotEventObject) => {
     )
 }
 
-const edit = (entity: StagePivotEventJointEntity, object: StagePivotEventObject) => {
+const edit = (entity: StagePivotEventJointEntity, object: Partial<StagePivotEventObject>) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
             () => i18n.value.events.stagePivotEvent,
         ),
-        (transaction) => {
-            removeStagePivotEventJoint(transaction, entity)
-            return addStagePivotEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStagePivotEvent(transaction, entity, object),
     )
 }
 
@@ -434,9 +402,6 @@ const move = (entity: StagePivotEventJointEntity, object: StagePivotEventObject)
             '1',
             () => i18n.value.events.stagePivotEvent,
         ),
-        (transaction) => {
-            removeStagePivotEventJoint(transaction, entity)
-            return addStagePivotEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStagePivotEvent(transaction, entity, object),
     )
 }

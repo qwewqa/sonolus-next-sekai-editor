@@ -2,6 +2,7 @@ import type { NoteStyle } from '../../chart/noteStyle'
 import type { ZKey } from '../gl'
 import type { ArrowSpriteSet, NoteSpriteSet, PreviewSkin, Sprite } from '../skin'
 import { getStyledSkin } from '../skin'
+import type { PreviewFrameContext } from './context'
 import {
     LAYER_NOTE_ARROW,
     LAYER_NOTE_BODY,
@@ -10,7 +11,6 @@ import {
     getZ,
 } from './layer'
 import {
-    DynamicLayout,
     FlickDirection,
     approach,
     layoutFlickArrow,
@@ -97,9 +97,9 @@ const getNoteBodyLayer = (kind: NoteKindValue) => {
 }
 
 export const drawNote = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
-    now: number,
     kind: NoteKindValue,
     isCritical: boolean,
     lane: number,
@@ -113,20 +113,32 @@ export const drawNote = (
     style: NoteStyle = 'default',
 ) => {
     if (
-        visualProgress < DynamicLayout.progressStart ||
-        visualProgress > DynamicLayout.progressCutoff
+        visualProgress < context.layout.progressStart ||
+        visualProgress > context.layout.progressCutoff
     )
         return
     if (noteAlpha <= 0) return
     if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
     if (size <= 0) return
 
-    const travel = approach(visualProgress)
+    const travel = approach(context.layout, visualProgress)
     const spriteSet = getNoteSpriteSet(skin, kind, isCritical, direction, style)
     if (!spriteSet) return
 
-    drawNoteBody(draw, spriteSet, kind, lane, size, travel, targetTime, transform, noteAlpha)
+    drawNoteBody(
+        context,
+        draw,
+        spriteSet,
+        kind,
+        lane,
+        size,
+        travel,
+        targetTime,
+        transform,
+        noteAlpha,
+    )
     drawNoteArrow(
+        context,
         draw,
         spriteSet.arrow,
         isCritical,
@@ -135,14 +147,14 @@ export const drawNote = (
         travel,
         targetTime,
         direction,
-        now,
         transform,
         noteAlpha,
     )
-    drawNoteTick(draw, spriteSet.tick, lane, travel, targetTime, transform, noteAlpha)
+    drawNoteTick(context, draw, spriteSet.tick, lane, travel, targetTime, transform, noteAlpha)
 }
 
 export const drawSlideNoteHead = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
     kind: NoteKindValue,
@@ -160,15 +172,27 @@ export const drawSlideNoteHead = (
     if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
     if (size <= 0) return
 
-    const travel = approach(visualProgress)
+    const travel = approach(context.layout, visualProgress)
     const spriteSet = getNoteSpriteSet(skin, kind, isCritical, FlickDirection.upOmni, style)
     if (!spriteSet) return
 
-    drawNoteBody(draw, spriteSet, kind, lane, size, travel, targetTime, transform, noteAlpha)
-    drawNoteTick(draw, spriteSet.tick, lane, travel, targetTime, transform, noteAlpha)
+    drawNoteBody(
+        context,
+        draw,
+        spriteSet,
+        kind,
+        lane,
+        size,
+        travel,
+        targetTime,
+        transform,
+        noteAlpha,
+    )
+    drawNoteTick(context, draw, spriteSet.tick, lane, travel, targetTime, transform, noteAlpha)
 }
 
 const drawNoteBody = (
+    context: PreviewFrameContext,
     draw: Draw,
     spriteSet: NoteSpriteSet,
     kind: NoteKindValue,
@@ -183,30 +207,30 @@ const drawNoteBody = (
     if (!body.middle) return
 
     const layer = getNoteBodyLayer(kind)
-    const z = getZ(layer, targetTime, lane, 0, false, transform.elevation)
+    const z = getZ(context.now, layer, targetTime, lane, 0, false, transform.elevation)
 
     switch (body.renderType) {
         case 'normal': {
-            const [left, middle, right] = layoutRegularNoteBody(lane, size, travel)
+            const [left, middle, right] = layoutRegularNoteBody(context.layout, lane, size, travel)
             draw(body.left, transformQuadAffine(transform, left), z, Math.min(noteAlpha, 1))
             draw(body.middle, transformQuadAffine(transform, middle), z, Math.min(noteAlpha, 1))
             draw(body.right, transformQuadAffine(transform, right), z, Math.min(noteAlpha, 1))
             break
         }
         case 'slim': {
-            const [left, middle, right] = layoutSlimNoteBody(lane, size, travel)
+            const [left, middle, right] = layoutSlimNoteBody(context.layout, lane, size, travel)
             draw(body.left, transformQuadAffine(transform, left), z, Math.min(noteAlpha, 1))
             draw(body.middle, transformQuadAffine(transform, middle), z, Math.min(noteAlpha, 1))
             draw(body.right, transformQuadAffine(transform, right), z, Math.min(noteAlpha, 1))
             break
         }
         case 'normalFallback': {
-            const layout = layoutRegularNoteBodyFallback(lane, size, travel)
+            const layout = layoutRegularNoteBodyFallback(context.layout, lane, size, travel)
             draw(body.middle, transformQuadAffine(transform, layout), z, Math.min(noteAlpha, 1))
             break
         }
         case 'slimFallback': {
-            const layout = layoutSlimNoteBodyFallback(lane, size, travel)
+            const layout = layoutSlimNoteBodyFallback(context.layout, lane, size, travel)
             draw(body.middle, transformQuadAffine(transform, layout), z, Math.min(noteAlpha, 1))
             break
         }
@@ -214,6 +238,7 @@ const drawNoteBody = (
 }
 
 const drawNoteTick = (
+    context: PreviewFrameContext,
     draw: Draw,
     sprite: Sprite | undefined,
     lane: number,
@@ -224,10 +249,14 @@ const drawNoteTick = (
 ) => {
     if (!sprite) return
 
-    const z = getZ(LAYER_NOTE_TICK, targetTime, lane, 0, false, transform.elevation)
+    const z = getZ(context.now, LAYER_NOTE_TICK, targetTime, lane, 0, false, transform.elevation)
     draw(
         sprite,
-        transformBillboard(transform, layoutTick(lane, travel), transformedVecAt(lane, travel)),
+        transformBillboard(
+            transform,
+            layoutTick(context.layout, lane, travel),
+            transformedVecAt(context.layout, lane, travel),
+        ),
         z,
         Math.min(noteAlpha, 1),
     )
@@ -256,6 +285,7 @@ const getArrowSprite = (
 }
 
 const drawNoteArrow = (
+    context: PreviewFrameContext,
     draw: Draw,
     arrow: ArrowSpriteSet,
     isCritical: boolean,
@@ -264,7 +294,6 @@ const drawNoteArrow = (
     travel: number,
     targetTime: number,
     direction: FlickDirectionValue,
-    now: number,
     transform: StageScreenTransform,
     noteAlpha: number,
 ) => {
@@ -272,9 +301,10 @@ const drawNoteArrow = (
     if (!sprite) return
 
     const period = 0.5
-    const animationProgress = (((now / period) % 1) + 1) % 1
+    const animationProgress = (((context.now / period) % 1) + 1) % 1
     const a = Math.min((1 - easeInCubic(animationProgress)) * noteAlpha, 1)
     const z = getZ(
+        context.now,
         LAYER_NOTE_ARROW,
         targetTime,
         lane,
@@ -284,8 +314,13 @@ const drawNoteArrow = (
     )
 
     const layout = arrow.fallback
-        ? layoutFlickArrowFallback(lane, size, direction, travel, animationProgress)
-        : layoutFlickArrow(lane, size, direction, travel, animationProgress)
+        ? layoutFlickArrowFallback(context.layout, lane, size, direction, travel, animationProgress)
+        : layoutFlickArrow(context.layout, lane, size, direction, travel, animationProgress)
 
-    draw(sprite, transformBillboard(transform, layout, transformedVecAt(lane, travel)), z, a)
+    draw(
+        sprite,
+        transformBillboard(transform, layout, transformedVecAt(context.layout, lane, travel)),
+        z,
+        a,
+    )
 }

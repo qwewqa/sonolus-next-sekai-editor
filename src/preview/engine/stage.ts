@@ -1,8 +1,8 @@
 import type { ZKey } from '../gl'
 import type { JudgmentSpriteSet, PreviewSkin, Sprite } from '../skin'
+import type { PreviewFrameContext } from './context'
 import { LAYER_STAGE, getZ, getZAlt } from './layer'
 import {
-    DynamicLayout,
     approach,
     computeStageTransform,
     currentLayoutTransform,
@@ -68,11 +68,15 @@ const JUDGE_LINE_BORDER_FACTOR = 5
 
 type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
 
-const snapDividerEdgeToScreenPixels = (a: Vec, b: Vec): [Vec, Vec] => {
+const snapDividerEdgeToScreenPixels = (
+    context: PreviewFrameContext,
+    a: Vec,
+    b: Vec,
+): [Vec, Vec] => {
     const dx = b.x - a.x
     const dy = b.y - a.y
     const width = Math.hypot(dx, dy)
-    const pixelSize = DynamicLayout.screenPixelSize
+    const pixelSize = context.layout.screenPixelSize
     if (width <= 0 || pixelSize <= 0) return [a, b]
 
     const snappedWidth = Math.max(1, Math.round(width / pixelSize)) * pixelSize
@@ -86,9 +90,9 @@ const snapDividerEdgeToScreenPixels = (a: Vec, b: Vec): [Vec, Vec] => {
     ]
 }
 
-const snapDividerThicknessToScreenPixels = (quad: Quad): Quad => {
-    const [bl, br] = snapDividerEdgeToScreenPixels(quad.bl, quad.br)
-    const [tl, tr] = snapDividerEdgeToScreenPixels(quad.tl, quad.tr)
+const snapDividerThicknessToScreenPixels = (context: PreviewFrameContext, quad: Quad): Quad => {
+    const [bl, br] = snapDividerEdgeToScreenPixels(context, quad.bl, quad.br)
+    const [tl, tr] = snapDividerEdgeToScreenPixels(context, quad.tl, quad.tr)
     return { bl, tl, tr, br }
 }
 
@@ -299,10 +303,14 @@ export const stagePropsHasTransform = (props: StageProps) =>
     props.centerWeight !== 0 ||
     props.elevation !== 0
 
-export const stagePropsTransform = (props: StageProps): StageTransform =>
+export const stagePropsTransform = (
+    context: PreviewFrameContext,
+    props: StageProps,
+): StageTransform =>
     stagePropsHasTransform(props)
         ? computeStageTransform(
-              currentLayoutTransform(),
+              context.layout,
+              currentLayoutTransform(context.layout),
               props.rotate,
               props.xLaneTranslate,
               props.yLaneTranslate,
@@ -365,13 +373,13 @@ const isCollapsedBorder = (q: Quad) =>
 export const resolveJudgeLineStyle = (style: Transition<number>) =>
     style.progress < 0.5 ? style.start : style.end
 
-export const drawStaticStage = (draw: Draw, skin: PreviewSkin) => {
+export const drawStaticStage = (context: PreviewFrameContext, draw: Draw, skin: PreviewSkin) => {
     if (skin.sekaiStage) {
-        draw(skin.sekaiStage, layoutSekaiStage(), getZ(LAYER_STAGE), 1)
+        draw(skin.sekaiStage, layoutSekaiStage(context.layout), getZ(context.now, LAYER_STAGE), 1)
         return
     }
 
-    drawDynamicStage(draw, skin, {
+    drawDynamicStage(context, draw, skin, {
         lane: 0,
         width: 6,
         pivotLane: 0,
@@ -396,15 +404,21 @@ export const drawStaticStage = (draw: Draw, skin: PreviewSkin) => {
     })
 }
 
-export const drawStageWithProps = (draw: Draw, skin: PreviewSkin, props: StageProps) => {
+export const drawStageWithProps = (
+    context: PreviewFrameContext,
+    draw: Draw,
+    skin: PreviewSkin,
+    props: StageProps,
+) => {
     const transform = stagePropsHasTransform(props)
-        ? stageTransformToAffine(stagePropsTransform(props))
+        ? stageTransformToAffine(stagePropsTransform(context, props))
         : identityStageScreenTransform
 
-    drawDynamicStage(draw, skin, props, transform)
+    drawDynamicStage(context, draw, skin, props, transform)
 }
 
 export const drawDynamicStage = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
     props: StageProps,
@@ -439,12 +453,12 @@ export const drawDynamicStage = (
     const fw = clamp(props.fullWidth, 0, 1)
 
     if (!skin.laneBackground) {
-        drawFallbackStage(draw, skin, props, transform)
+        drawFallbackStage(context, draw, skin, props, transform)
         return
     }
 
-    const travel = approach(1 - yOffset)
-    const nh = DynamicLayout.noteH
+    const travel = approach(context.layout, 1 - yOffset)
+    const nh = context.layout.noteH
     const l = lane - width
     const r = lane + width
     const halfJl = lerp(width, FULL_WIDTH_HALF_EXTENT, fw)
@@ -459,10 +473,11 @@ export const drawDynamicStage = (
         const borderW = borderStyleWidth(style, 0.08, 0.04, 0.025)
         const left = style === 1 ? edge - borderW / 2 : isLeft ? edge - borderW : edge
         const right = style === 1 ? edge + borderW / 2 : isLeft ? edge : edge + borderW
-        const bottom = layoutStageLaneByEdges(left, right)
+        const bottom = layoutStageLaneByEdges(context.layout, left, right)
         const top = layoutStageLaneByEdges(
-            tiltWidenedEdge(left, edge + 8 * (left - edge)),
-            tiltWidenedEdge(right, edge + 8 * (right - edge)),
+            context.layout,
+            tiltWidenedEdge(context.layout, left, edge + 8 * (left - edge)),
+            tiltWidenedEdge(context.layout, right, edge + 8 * (right - edge)),
         )
         return { bl: bottom.bl, br: bottom.br, tl: top.tl, tr: top.tr }
     }
@@ -488,7 +503,12 @@ export const drawDynamicStage = (
                 break
             }
             case 1: {
-                draw(skin.laneDivider, snapDividerThicknessToScreenPixels(place(q)), zKey, alpha)
+                draw(
+                    skin.laneDivider,
+                    snapDividerThicknessToScreenPixels(context, place(q)),
+                    zKey,
+                    alpha,
+                )
                 break
             }
         }
@@ -519,14 +539,16 @@ export const drawDynamicStage = (
 
         for (let k = kStart; k <= kEnd; k++) {
             const pos = shiftedPivot + k * divisionSize
-            const layoutB = layoutStageLaneByEdges(pos - 0.0125, pos + 0.0125)
+            const layoutB = layoutStageLaneByEdges(context.layout, pos - 0.0125, pos + 0.0125)
             const layoutT = layoutStageLaneByEdges(
-                tiltWidenedEdge(pos - 0.0125, pos - 0.1),
-                tiltWidenedEdge(pos + 0.0125, pos + 0.1),
+                context.layout,
+                tiltWidenedEdge(context.layout, pos - 0.0125, pos - 0.1),
+                tiltWidenedEdge(context.layout, pos + 0.0125, pos + 0.1),
             )
             draw(
                 skin.laneDivider,
                 snapDividerThicknessToScreenPixels(
+                    context,
                     place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
                 ),
                 zKey,
@@ -538,17 +560,17 @@ export const drawDynamicStage = (
     const thicknessScale = lerp(
         1,
         travel > 0 ? clamp(1 / travel, 1, 4) : 4,
-        DynamicLayout.stageTilt,
+        context.layout.stageTilt,
     )
     const judgmentDividerSize =
-        0.014 * thicknessScale * tiltWidthFactor(travel) * DynamicLayout.wScale
-    const judgmentDividerOffset = rotateVec(vec(judgmentDividerSize, 0), -DynamicLayout.rotate)
-    const dividerDepthB = tiltDepth(1 + nh - nh / f + 0.001, travel)
-    const dividerDepthT = tiltDepth(1 - nh + nh / f - 0.001, travel)
+        0.014 * thicknessScale * tiltWidthFactor(context.layout, travel) * context.layout.wScale
+    const judgmentDividerOffset = rotateVec(vec(judgmentDividerSize, 0), -context.layout.rotate)
+    const dividerDepthB = tiltDepth(context.layout, 1 + nh - nh / f + 0.001, travel)
+    const dividerDepthT = tiltDepth(context.layout, 1 - nh + nh / f - 0.001, travel)
 
     const layoutJudgmentDivider = (dividerLane: number): Quad => {
-        const b = transformedVecAt(dividerLane, dividerDepthB)
-        const t = transformedVecAt(dividerLane, dividerDepthT)
+        const b = transformedVecAt(context.layout, dividerLane, dividerDepthB)
+        const t = transformedVecAt(context.layout, dividerLane, dividerDepthT)
         return {
             bl: vec(b.x - judgmentDividerOffset.x, b.y - judgmentDividerOffset.y),
             tl: vec(t.x - judgmentDividerOffset.x, t.y - judgmentDividerOffset.y),
@@ -573,7 +595,10 @@ export const drawDynamicStage = (
 
         for (let k = kStart; k <= kEnd; k++) {
             const pos = shiftedPivot + k
-            const divLayout = snapDividerThicknessToScreenPixels(place(layoutJudgmentDivider(pos)))
+            const divLayout = snapDividerThicknessToScreenPixels(
+                context,
+                place(layoutJudgmentDivider(pos)),
+            )
             const edgeWeight = width > 0 ? Math.abs(pos - lane) / width : 0
             draw(sprites.center, divLayout, zLo, alpha)
             draw(sprites.edge, divLayout, zHi, alpha * edgeWeight)
@@ -584,6 +609,7 @@ export const drawDynamicStage = (
         if (style === 1) return layoutJudgmentDivider(edge)
         const borderW = style === 2 ? 0 : Math.max(0, Math.min(1 / f / 2, width))
         return perspectiveRect(
+            context.layout,
             isLeft ? edge : edge - borderW,
             isLeft ? edge + borderW : edge,
             1 - nh + nh / f,
@@ -622,7 +648,12 @@ export const drawDynamicStage = (
                 break
             }
             case 1: {
-                draw(sprites.edge, snapDividerThicknessToScreenPixels(place(q)), zKey, alpha)
+                draw(
+                    sprites.edge,
+                    snapDividerThicknessToScreenPixels(context, place(q)),
+                    zKey,
+                    alpha,
+                )
                 break
             }
         }
@@ -646,10 +677,18 @@ export const drawDynamicStage = (
     }
 
     const drawGradient = (sprites: JudgmentSpriteSet, zKey: ZKey, alpha: number) => {
-        const bottomL = place(perspectiveRect(lJl, lane, 1 + nh, 1 + nh - nh / f, travel))
-        const bottomR = place(perspectiveRect(rJl, lane, 1 + nh, 1 + nh - nh / f, travel))
-        const topL = place(perspectiveRect(lJl, lane, 1 - nh, 1 - nh + nh / f, travel))
-        const topR = place(perspectiveRect(rJl, lane, 1 - nh, 1 - nh + nh / f, travel))
+        const bottomL = place(
+            perspectiveRect(context.layout, lJl, lane, 1 + nh, 1 + nh - nh / f, travel),
+        )
+        const bottomR = place(
+            perspectiveRect(context.layout, rJl, lane, 1 + nh, 1 + nh - nh / f, travel),
+        )
+        const topL = place(
+            perspectiveRect(context.layout, lJl, lane, 1 - nh, 1 - nh + nh / f, travel),
+        )
+        const topR = place(
+            perspectiveRect(context.layout, rJl, lane, 1 - nh, 1 - nh + nh / f, travel),
+        )
         const gradA = alpha * (1 - fw)
         const edgeA = alpha * fw
         if (gradA > 0) {
@@ -668,13 +707,15 @@ export const drawDynamicStage = (
 
     const drawSingleLine = (sprites: JudgmentSpriteSet, zKey: ZKey, alpha: number) => {
         const halfThick = nh / f / 2
-        const layout = place(perspectiveRect(lJl, rJl, 1 - halfThick, 1 + halfThick, travel))
+        const layout = place(
+            perspectiveRect(context.layout, lJl, rJl, 1 - halfThick, 1 + halfThick, travel),
+        )
         draw(sprites.singleLine, layout, zKey, alpha)
     }
 
     const la = laneAlpha * (1 - fw)
     if (la > 0) {
-        draw(skin.laneBackground, place(layoutStageLaneByEdges(l, r)), z(0), la)
+        draw(skin.laneBackground, place(layoutStageLaneByEdges(context.layout, l, r)), z(0), la)
 
         const pLeft = leftBorderStyle.progress
         if (leftBorderStyle.start === leftBorderStyle.end) {
@@ -729,7 +770,7 @@ export const drawDynamicStage = (
     const jaSingle = ja * wSingleLine
 
     if (jaBar > 0) {
-        const bgLayout = place(perspectiveRect(lJl, rJl, 1 - nh, 1 + nh, travel))
+        const bgLayout = place(perspectiveRect(context.layout, lJl, rJl, 1 - nh, 1 + nh, travel))
         if (spritesSame) {
             draw(spritesA.background, bgLayout, z(1), jaBar)
         } else {
@@ -870,6 +911,7 @@ export const drawDynamicStage = (
 }
 
 const drawFallbackStage = (
+    context: PreviewFrameContext,
     draw: Draw,
     skin: PreviewSkin,
     props: StageProps,
@@ -881,8 +923,8 @@ const drawFallbackStage = (
 
     const wDefault = transitionWeight(judgeLineStyle, 0)
     const wSingleLine = transitionWeight(judgeLineStyle, 1)
-    const travel = approach(1 - props.yOffset)
-    const nh = DynamicLayout.noteH
+    const travel = approach(context.layout, 1 - props.yOffset)
+    const nh = context.layout.noteH
     const l = lane - width
     const r = lane + width
     const fw = clamp(props.fullWidth, 0, 1)
@@ -900,9 +942,10 @@ const drawFallbackStage = (
 
     if (la > 0) {
         if (leftWidth > 0) {
-            const layoutB = layoutStageLaneByEdges(l - leftWidth, l)
+            const layoutB = layoutStageLaneByEdges(context.layout, l - leftWidth, l)
             const layoutT = layoutStageLaneByEdges(
-                tiltWidenedEdge(l - leftWidth, l - 4 * leftWidth),
+                context.layout,
+                tiltWidenedEdge(context.layout, l - leftWidth, l - 4 * leftWidth),
                 l,
             )
             draw(
@@ -913,10 +956,11 @@ const drawFallbackStage = (
             )
         }
         if (rightWidth > 0) {
-            const layoutB = layoutStageLaneByEdges(r, r + rightWidth)
+            const layoutB = layoutStageLaneByEdges(context.layout, r, r + rightWidth)
             const layoutT = layoutStageLaneByEdges(
+                context.layout,
                 r,
-                tiltWidenedEdge(r + rightWidth, r + 4 * rightWidth),
+                tiltWidenedEdge(context.layout, r + rightWidth, r + 4 * rightWidth),
             )
             draw(
                 skin.stageRightBorder,
@@ -936,20 +980,22 @@ const drawFallbackStage = (
             const kEnd = Math.ceil((r - shiftedPivot - eps) / divisionSize) - 1
             for (let k = kStart; k <= kEnd; k++) {
                 const pos = shiftedPivot + k * divisionSize
-                draw(skin.lane, place(layoutStageLaneByEdges(prev, pos)), zLo, la)
+                draw(skin.lane, place(layoutStageLaneByEdges(context.layout, prev, pos)), zLo, la)
                 prev = pos
             }
         }
-        draw(skin.lane, place(layoutStageLaneByEdges(prev, r)), zLo, la)
+        draw(skin.lane, place(layoutStageLaneByEdges(context.layout, prev, r)), zLo, la)
     }
 
     if (ja * wDefault > 0) {
-        const layout = place(perspectiveRect(lJl, rJl, 1 - nh, 1 + nh, travel))
+        const layout = place(perspectiveRect(context.layout, lJl, rJl, 1 - nh, 1 + nh, travel))
         draw(skin.judgmentLine, layout, zHi, ja * wDefault)
     }
     if (ja * wSingleLine > 0) {
         const halfThick = nh / JUDGE_LINE_BORDER_FACTOR / 2
-        const layout = place(perspectiveRect(lJl, rJl, 1 - halfThick, 1 + halfThick, travel))
+        const layout = place(
+            perspectiveRect(context.layout, lJl, rJl, 1 - halfThick, 1 + halfThick, travel),
+        )
         draw(skin.judgmentLine, layout, zSingle, ja * wSingleLine)
     }
 }

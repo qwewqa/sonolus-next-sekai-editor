@@ -78,48 +78,38 @@ export type LayoutTransform = {
     sizeZoom: number
 }
 
-export const Layout = {
-    fieldW: 0,
-    fieldH: 0,
-    screenW: 0,
-    screenH: 2,
-    coverDepth: APPROACH_SCALE,
-    cutoffDepth: DEFAULT_APPROACH_CUTOFF,
-}
+export type PreviewViewport = Readonly<{
+    fieldW: number
+    fieldH: number
+    screenW: number
+    screenH: number
+    screenPixelSize: number
+}>
 
-export const DynamicLayout = {
-    t: 0,
-    wScale: 0,
-    hScale: 0,
-    xTranslate: 0,
-    rotate: 0,
-    stageTilt: 1,
-    sizeZoom: 1,
-    noteH: 0,
-    scaledNoteH: 0,
-    progressStart: 0,
-    progressCutoff: 0,
-    widthOffset: 0,
-    laneT: 0,
-    laneB: 0,
-    safeLaneT: 0,
-    stageLaneT: 0,
-    stageLaneB: 0,
-    screenPixelSize: 0,
-}
+export type PreviewLayout = Readonly<
+    PreviewViewport &
+        LayoutTransform & {
+            noteH: number
+            scaledNoteH: number
+            progressStart: number
+            progressCutoff: number
+            widthOffset: number
+            laneT: number
+            laneB: number
+            safeLaneT: number
+            stageLaneT: number
+            stageLaneB: number
+        }
+>
 
-export const initLayout = (displayWidth: number, displayHeight: number) => {
+export const createViewport = (displayWidth: number, displayHeight: number): PreviewViewport => {
     const aspectRatio = displayWidth / displayHeight
-    Layout.screenW = 2 * aspectRatio
-    Layout.screenH = 2
-    DynamicLayout.screenPixelSize = 2 / displayHeight
-
-    if (aspectRatio > TARGET_ASPECT_RATIO) {
-        Layout.fieldW = 2 * TARGET_ASPECT_RATIO
-        Layout.fieldH = 2
-    } else {
-        Layout.fieldW = 2 * aspectRatio
-        Layout.fieldH = (2 * aspectRatio) / TARGET_ASPECT_RATIO
+    return {
+        fieldW: 2 * Math.min(aspectRatio, TARGET_ASPECT_RATIO),
+        fieldH: aspectRatio > TARGET_ASPECT_RATIO ? 2 : (2 * aspectRatio) / TARGET_ASPECT_RATIO,
+        screenW: 2 * aspectRatio,
+        screenH: 2,
+        screenPixelSize: 2 / displayHeight,
     }
 }
 
@@ -133,23 +123,25 @@ export const defaultCameraInfo = (): CameraInfo => ({
     stageTilt: 1,
 })
 
-const toCameraInfo = (camera: CameraChange): CameraInfo => ({
+const toCameraInfo = (context: PreviewViewport, camera: CameraChange): CameraInfo => ({
     lane: camera.lane,
     size: camera.size,
     zoom: camera.zoom,
     zoomTarget: cameraZoomTargetAt(
+        context,
         camera.lane,
         camera.size,
         camera.zoomTargetLane,
         camera.zoomTargetY,
         camera.stageTilt,
     ),
-    zoomAnchor: cameraZoomAnchor(camera.zoomVerticalAlign),
+    zoomAnchor: cameraZoomAnchor(context, camera.zoomVerticalAlign),
     rotate: camera.rotate,
     stageTilt: camera.stageTilt,
 })
 
 export const getCameraInfo = (
+    context: PreviewViewport,
     cameras: CameraChange[],
     t: number,
     leftLimit = false,
@@ -171,16 +163,16 @@ export const getCameraInfo = (
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    if (index === -1) return toCameraInfo(cameras[0]!)
+    if (index === -1) return toCameraInfo(context, cameras[0]!)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const a = cameras[index]!
     const b = cameras[index + 1]
-    if (!b || b.time <= a.time) return toCameraInfo(a)
+    if (!b || b.time <= a.time) return toCameraInfo(context, a)
 
     const p = ease(a.ease, unlerp(a.time, b.time, t))
-    const infoA = toCameraInfo(a)
-    const infoB = toCameraInfo(b)
+    const infoA = toCameraInfo(context, a)
+    const infoB = toCameraInfo(context, b)
 
     return {
         lane: lerp(a.lane, b.lane, p),
@@ -200,6 +192,7 @@ export const getCameraInfo = (
 }
 
 export const cameraZoomTargetAt = (
+    context: PreviewViewport,
     lane: number,
     size: number,
     targetLane: number,
@@ -207,9 +200,9 @@ export const cameraZoomTargetAt = (
     tilt: number,
 ): Vec => {
     const sizeZoom = 6 / size
-    const w = Layout.fieldW * FIELD_W_FACTOR * sizeZoom
-    const tTop = Layout.fieldH * FIELD_T_FACTOR
-    const b = Layout.fieldH * FIELD_B_FACTOR
+    const w = context.fieldW * FIELD_W_FACTOR * sizeZoom
+    const tTop = context.fieldH * FIELD_T_FACTOR
+    const b = context.fieldH * FIELD_B_FACTOR
     const travel = approachAtTilt(1 - targetY, tilt)
     const targetTotalLane = lane + targetLane
     return vec(
@@ -218,40 +211,22 @@ export const cameraZoomTargetAt = (
     )
 }
 
-export const cameraZoomAnchor = (align: 0 | 1): Vec =>
-    vec(0, align === 1 ? 0 : Layout.fieldH * FIELD_B_FACTOR)
+export const cameraZoomAnchor = (context: PreviewViewport, align: 0 | 1): Vec =>
+    vec(0, align === 1 ? 0 : context.fieldH * FIELD_B_FACTOR)
 
-export const refreshLayout = (camera: CameraInfo, dynamicStages: boolean) => {
-    const base = baseLayoutTransform(camera)
-    DynamicLayout.t = base.t
-    DynamicLayout.wScale = base.wScale
-    DynamicLayout.hScale = base.hScale
-    DynamicLayout.xTranslate = base.xTranslate
-    DynamicLayout.rotate = base.rotate
-    DynamicLayout.stageTilt = base.stageTilt
-    DynamicLayout.sizeZoom = base.sizeZoom
-
+export const createLayout = (
+    viewport: PreviewViewport,
+    camera: CameraInfo,
+    dynamicStages: boolean,
+): PreviewLayout => {
+    const base = baseLayoutTransform(viewport, camera)
     const tilt = base.stageTilt
-
-    DynamicLayout.widthOffset = (1 - tilt) * STAGE_WIDTH_MID
-    DynamicLayout.safeLaneT = (1e-4 - DynamicLayout.widthOffset) / Math.max(tilt, 1e-6)
+    const widthOffset = (1 - tilt) * STAGE_WIDTH_MID
     const vanishTilt = Math.max(tilt, STAGE_TILT_VANISH_MIN)
     const vanishExt = ((1 - vanishTilt) * STAGE_WIDTH_MID) / vanishTilt
-    DynamicLayout.laneT = LANE_T - vanishExt
-    DynamicLayout.laneB = LANE_B + vanishExt
-    if (dynamicStages) {
-        DynamicLayout.stageLaneT = LANE_T - vanishExt * 0.9
-        DynamicLayout.stageLaneB = LANE_B + vanishExt + 3
-    } else {
-        DynamicLayout.stageLaneT = LANE_T - vanishExt
-        DynamicLayout.stageLaneB = LANE_B + vanishExt
-    }
-
     const baseNoteH = NOTE_H * (0.6 * base.sizeZoom + 0.4)
-    const flatNoteH =
-        (STAGE_WIDTH_MID * DynamicLayout.wScale) / (2 * Math.abs(DynamicLayout.hScale))
-    DynamicLayout.noteH = lerp(flatNoteH, baseNoteH, tilt)
-
+    const flatNoteH = (STAGE_WIDTH_MID * base.wScale) / (2 * Math.abs(base.hScale))
+    const noteH = lerp(flatNoteH, baseNoteH, tilt)
     const zoomed = zoomedLayoutTransform(
         base,
         camera.zoom,
@@ -259,26 +234,33 @@ export const refreshLayout = (camera: CameraInfo, dynamicStages: boolean) => {
         camera.zoomAnchor,
         camera.rotate,
     )
-    DynamicLayout.t = zoomed.t
-    DynamicLayout.wScale = zoomed.wScale
-    DynamicLayout.hScale = zoomed.hScale
-    DynamicLayout.xTranslate = zoomed.xTranslate
-    DynamicLayout.rotate = zoomed.rotate
-
-    DynamicLayout.scaledNoteH = DynamicLayout.noteH * DynamicLayout.hScale
-
-    DynamicLayout.progressStart = inverseApproachTilt(Layout.coverDepth - vanishExt)
-    DynamicLayout.progressCutoff = inverseApproachTilt(Layout.cutoffDepth)
+    return {
+        ...viewport,
+        ...zoomed,
+        noteH,
+        scaledNoteH: noteH * zoomed.hScale,
+        progressStart: inverseApproachTilt(zoomed, APPROACH_SCALE - vanishExt),
+        progressCutoff: inverseApproachTilt(zoomed, DEFAULT_APPROACH_CUTOFF),
+        widthOffset,
+        laneT: LANE_T - vanishExt,
+        laneB: LANE_B + vanishExt,
+        safeLaneT: (1e-4 - widthOffset) / Math.max(tilt, 1e-6),
+        stageLaneT: LANE_T - vanishExt * (dynamicStages ? 0.9 : 1),
+        stageLaneB: LANE_B + vanishExt + (dynamicStages ? 3 : 0),
+    }
 }
 
-export const baseLayoutTransform = (camera: CameraInfo): LayoutTransform => {
+export const baseLayoutTransform = (
+    context: PreviewViewport,
+    camera: CameraInfo,
+): LayoutTransform => {
     const sizeZoom = 6 / camera.size
-    const t = Layout.fieldH * FIELD_T_FACTOR
-    const w = Layout.fieldW * FIELD_W_FACTOR * sizeZoom
+    const t = context.fieldH * FIELD_T_FACTOR
+    const w = context.fieldW * FIELD_W_FACTOR * sizeZoom
     return {
         t,
         wScale: w,
-        hScale: Layout.fieldH * FIELD_B_FACTOR - t,
+        hScale: context.fieldH * FIELD_B_FACTOR - t,
         xTranslate: -camera.lane * w,
         rotate: 0,
         stageTilt: clamp(camera.stageTilt, 0, 1),
@@ -302,23 +284,26 @@ export const zoomedLayoutTransform = (
     sizeZoom: transform.sizeZoom,
 })
 
-export const layoutTransformAtCamera = (camera: CameraInfo): LayoutTransform =>
+export const layoutTransformAtCamera = (
+    context: PreviewViewport,
+    camera: CameraInfo,
+): LayoutTransform =>
     zoomedLayoutTransform(
-        baseLayoutTransform(camera),
+        baseLayoutTransform(context, camera),
         camera.zoom,
         camera.zoomTarget,
         camera.zoomAnchor,
         camera.rotate,
     )
 
-export const currentLayoutTransform = (): LayoutTransform => ({
-    t: DynamicLayout.t,
-    wScale: DynamicLayout.wScale,
-    hScale: DynamicLayout.hScale,
-    xTranslate: DynamicLayout.xTranslate,
-    rotate: DynamicLayout.rotate,
-    stageTilt: DynamicLayout.stageTilt,
-    sizeZoom: DynamicLayout.sizeZoom,
+export const currentLayoutTransform = (context: PreviewLayout): LayoutTransform => ({
+    t: context.t,
+    wScale: context.wScale,
+    hScale: context.hScale,
+    xTranslate: context.xTranslate,
+    rotate: context.rotate,
+    stageTilt: context.stageTilt,
+    sizeZoom: context.sizeZoom,
 })
 
 const approachCurveBase = (x: number) => APPROACH_SCALE ** (1 - x)
@@ -360,10 +345,14 @@ export const approachAtTilt = (progress: number, tilt: number): number => {
     return approachSlice(progress, tilt, spawnDepth)
 }
 
-export const approach = (progress: number) => approachAtTilt(progress, DynamicLayout.stageTilt)
+export const approach = (context: PreviewLayout, progress: number) =>
+    approachAtTilt(progress, context.stageTilt)
 
-export const inverseApproachTilt = (approachValue: number): number => {
-    const tilt = DynamicLayout.stageTilt
+export const inverseApproachTilt = (
+    context: Pick<LayoutTransform, 'stageTilt'>,
+    approachValue: number,
+): number => {
+    const tilt = context.stageTilt
     if (tilt >= 1) return inverseApproachCurveBase(approachValue)
 
     const spawnDepth = APPROACH_SCALE
@@ -387,49 +376,53 @@ export const inverseApproachTilt = (approachValue: number): number => {
 export const widthFactorAtTilt = (depth: number, tilt: number) =>
     tilt * depth + (1 - tilt) * STAGE_WIDTH_MID
 
-export const tiltWidthFactor = (depth: number) =>
-    DynamicLayout.stageTilt * depth + DynamicLayout.widthOffset
+export const tiltWidthFactor = (context: PreviewLayout, depth: number) =>
+    context.stageTilt * depth + context.widthOffset
 
-export const tiltDepth = (lineY: number, travel: number) =>
-    travel + (lineY - 1) * lerp(1, travel, DynamicLayout.stageTilt)
+export const tiltDepth = (context: PreviewLayout, lineY: number, travel: number) =>
+    travel + (lineY - 1) * lerp(1, travel, context.stageTilt)
 
-export const tiltWidenedEdge = (bottomEdge: number, topEdge: number) =>
-    lerp(bottomEdge, topEdge, DynamicLayout.stageTilt)
+export const tiltWidenedEdge = (context: PreviewLayout, bottomEdge: number, topEdge: number) =>
+    lerp(bottomEdge, topEdge, context.stageTilt)
 
-export const transformVec = (v: Vec): Vec =>
+export const transformVec = (context: PreviewLayout, v: Vec): Vec =>
     rotateVec(
-        vec(
-            v.x * DynamicLayout.wScale + DynamicLayout.xTranslate,
-            v.y * DynamicLayout.hScale + DynamicLayout.t,
-        ),
-        -DynamicLayout.rotate,
+        vec(v.x * context.wScale + context.xTranslate, v.y * context.hScale + context.t),
+        -context.rotate,
     )
 
-export const transformQuad = (q: Quad): Quad => ({
-    bl: transformVec(q.bl),
-    tl: transformVec(q.tl),
-    tr: transformVec(q.tr),
-    br: transformVec(q.br),
+export const transformQuad = (context: PreviewLayout, q: Quad): Quad => ({
+    bl: transformVec(context, q.bl),
+    tl: transformVec(context, q.tl),
+    tr: transformVec(context, q.tr),
+    br: transformVec(context, q.br),
 })
 
-export const transformedVecAt = (lane: number, travel = 1): Vec =>
-    transformVec(vec(lane * tiltWidthFactor(travel), travel))
+export const transformedVecAt = (context: PreviewLayout, lane: number, travel = 1): Vec =>
+    transformVec(context, vec(lane * tiltWidthFactor(context, travel), travel))
 
-export const preRotationVecAt = (lane: number, travel = 1): Vec =>
+export const preRotationVecAt = (context: PreviewLayout, lane: number, travel = 1): Vec =>
     vec(
-        lane * tiltWidthFactor(travel) * DynamicLayout.wScale + DynamicLayout.xTranslate,
-        travel * DynamicLayout.hScale + DynamicLayout.t,
+        lane * tiltWidthFactor(context, travel) * context.wScale + context.xTranslate,
+        travel * context.hScale + context.t,
     )
 
-export const perspectiveVec = (x: number, y: number, travel = 1): Vec =>
-    transformVec(vec(x * tiltWidthFactor(y * travel), y * travel))
+export const perspectiveVec = (context: PreviewLayout, x: number, y: number, travel = 1): Vec =>
+    transformVec(context, vec(x * tiltWidthFactor(context, y * travel), y * travel))
 
-export const perspectiveRect = (l: number, r: number, t: number, b: number, travel = 1): Quad => {
-    const depthB = tiltDepth(b, travel)
-    const depthT = tiltDepth(t, travel)
-    const wb = tiltWidthFactor(depthB)
-    const wt = tiltWidthFactor(depthT)
-    return transformQuad({
+export const perspectiveRect = (
+    context: PreviewLayout,
+    l: number,
+    r: number,
+    t: number,
+    b: number,
+    travel = 1,
+): Quad => {
+    const depthB = tiltDepth(context, b, travel)
+    const depthT = tiltDepth(context, t, travel)
+    const wb = tiltWidthFactor(context, depthB)
+    const wt = tiltWidthFactor(context, depthT)
+    return transformQuad(context, {
         bl: vec(l * wb, depthB),
         br: vec(r * wb, depthB),
         tl: vec(l * wt, depthT),
@@ -528,6 +521,7 @@ const stageRotationPivot = (camera: LayoutTransform, judgeDepth: number): Vec =>
     )
 
 export const computeStageTransform = (
+    context: PreviewViewport,
     camera: LayoutTransform,
     stageRotate: number,
     xLaneTranslate: number,
@@ -549,8 +543,8 @@ export const computeStageTransform = (
             -camera.rotate,
         ),
     )
-    const baseT = Layout.fieldH * FIELD_T_FACTOR
-    const baseH = Layout.fieldH * FIELD_B_FACTOR - baseT
+    const baseT = context.fieldH * FIELD_T_FACTOR
+    const baseH = context.fieldH * FIELD_B_FACTOR - baseT
     const centerJudgeY = camera.hScale * (travel + baseT / baseH)
     const offset = rotateVec(
         vec(
@@ -595,10 +589,10 @@ export const blendStageTransform = (
     },
 })
 
-export const layoutSekaiStage = (): Quad => {
+export const layoutSekaiStage = (context: PreviewLayout): Quad => {
     const w = ((2048 / 1420) * 12) / 2
     const h = 1176 / 850
-    return transformQuad({
+    return transformQuad(context, {
         bl: vec(-w, LANE_T + h),
         br: vec(w, LANE_T + h),
         tl: vec(-w, LANE_T),
@@ -606,13 +600,31 @@ export const layoutSekaiStage = (): Quad => {
     })
 }
 
-export const layoutStageLaneByEdges = (l: number, r: number, yOffset = 0): Quad =>
-    perspectiveRect(l, r, DynamicLayout.stageLaneT, DynamicLayout.stageLaneB, approach(1 - yOffset))
+export const layoutStageLaneByEdges = (
+    context: PreviewLayout,
+    l: number,
+    r: number,
+    yOffset = 0,
+): Quad =>
+    perspectiveRect(
+        context,
+        l,
+        r,
+        context.stageLaneT,
+        context.stageLaneB,
+        approach(context, 1 - yOffset),
+    )
 
-export const layoutNoteBodyByEdges = (l: number, r: number, h: number, travel: number): Quad =>
-    perspectiveRect(l, r, 1 - h, 1 + h, travel)
+export const layoutNoteBodyByEdges = (
+    context: PreviewLayout,
+    l: number,
+    r: number,
+    h: number,
+    travel: number,
+): Quad => perspectiveRect(context, l, r, 1 - h, 1 + h, travel)
 
 export const layoutNoteBodySlicesByEdges = (
+    context: PreviewLayout,
     l: number,
     r: number,
     h: number,
@@ -624,34 +636,60 @@ export const layoutNoteBodySlicesByEdges = (
     const ml = Math.min(l + edgeW, m)
     const mr = Math.max(r - edgeW, m)
     return [
-        layoutNoteBodyByEdges(l, ml, h, travel),
-        layoutNoteBodyByEdges(ml, mr, h, travel),
-        layoutNoteBodyByEdges(mr, r, h, travel),
+        layoutNoteBodyByEdges(context, l, ml, h, travel),
+        layoutNoteBodyByEdges(context, ml, mr, h, travel),
+        layoutNoteBodyByEdges(context, mr, r, h, travel),
     ]
 }
 
-export const layoutRegularNoteBody = (lane: number, size: number, travel: number) =>
-    layoutNoteBodySlicesByEdges(lane - size, lane + size, DynamicLayout.noteH, NOTE_EDGE_W, travel)
-
-export const layoutRegularNoteBodyFallback = (lane: number, size: number, travel: number) =>
-    layoutNoteBodyByEdges(lane - size, lane + size, DynamicLayout.noteH, travel)
-
-export const layoutSlimNoteBody = (lane: number, size: number, travel: number) =>
+export const layoutRegularNoteBody = (
+    context: PreviewLayout,
+    lane: number,
+    size: number,
+    travel: number,
+) =>
     layoutNoteBodySlicesByEdges(
+        context,
         lane - size,
         lane + size,
-        DynamicLayout.noteH,
+        context.noteH,
+        NOTE_EDGE_W,
+        travel,
+    )
+
+export const layoutRegularNoteBodyFallback = (
+    context: PreviewLayout,
+    lane: number,
+    size: number,
+    travel: number,
+) => layoutNoteBodyByEdges(context, lane - size, lane + size, context.noteH, travel)
+
+export const layoutSlimNoteBody = (
+    context: PreviewLayout,
+    lane: number,
+    size: number,
+    travel: number,
+) =>
+    layoutNoteBodySlicesByEdges(
+        context,
+        lane - size,
+        lane + size,
+        context.noteH,
         NOTE_SLIM_EDGE_W,
         travel,
     )
 
-export const layoutSlimNoteBodyFallback = (lane: number, size: number, travel: number) =>
-    layoutNoteBodyByEdges(lane - size, lane + size, DynamicLayout.noteH / 2, travel)
+export const layoutSlimNoteBodyFallback = (
+    context: PreviewLayout,
+    lane: number,
+    size: number,
+    travel: number,
+) => layoutNoteBodyByEdges(context, lane - size, lane + size, context.noteH / 2, travel)
 
-export const layoutTick = (lane: number, travel: number): Quad => {
-    const center = transformedVecAt(lane, travel)
-    const h = -DynamicLayout.scaledNoteH * tiltWidthFactor(travel)
-    const rot = -DynamicLayout.rotate
+export const layoutTick = (context: PreviewLayout, lane: number, travel: number): Quad => {
+    const center = transformedVecAt(context, lane, travel)
+    const h = -context.scaledNoteH * tiltWidthFactor(context, travel)
+    const rot = -context.rotate
     const dx = rotateVec(vec(h, 0), rot)
     const dy = rotateVec(vec(0, h), rot)
     return {
@@ -663,6 +701,7 @@ export const layoutTick = (lane: number, travel: number): Quad => {
 }
 
 export const layoutFlickArrow = (
+    context: PreviewLayout,
     lane: number,
     size: number,
     direction: FlickDirectionValue,
@@ -697,17 +736,17 @@ export const layoutFlickArrow = (
     }
 
     const w = clamp(size, 0, 3) / 2
-    const baseBl = transformedVecAt(lane - w, travel)
-    const baseBr = transformedVecAt(lane + w, travel)
+    const baseBl = transformedVecAt(context, lane - w, travel)
+    const baseBr = transformedVecAt(context, lane + w, travel)
     const up = rotateVec(subVec(baseBr, baseBl), Math.PI / 2)
     const baseTl = vec(baseBl.x + up.x, baseBl.y + up.y)
     const baseTr = vec(baseBr.x + up.x, baseBr.y + up.y)
     const offsetScale = isDown ? 1 - animationProgress : animationProgress
     const offsetBase = rotateVec(
-        vec(animationTopXOffset * DynamicLayout.wScale, 2 * DynamicLayout.wScale),
-        -DynamicLayout.rotate,
+        vec(animationTopXOffset * context.wScale, 2 * context.wScale),
+        -context.rotate,
     )
-    const factor = offsetScale * tiltWidthFactor(travel)
+    const factor = offsetScale * tiltWidthFactor(context, travel)
     const offset = vec(offsetBase.x * factor, offsetBase.y * factor)
 
     const result = translateQuad({ bl: baseBl, br: baseBr, tl: baseTl, tr: baseTr }, offset)
@@ -718,6 +757,7 @@ export const layoutFlickArrow = (
 }
 
 export const layoutFlickArrowFallback = (
+    context: PreviewLayout,
     lane: number,
     size: number,
     direction: FlickDirectionValue,
@@ -758,18 +798,18 @@ export const layoutFlickArrowFallback = (
 
     const w = clamp(size / 2, 1, 2)
     const offsetScale = isDown ? 1 - animationProgress : animationProgress
-    const width = tiltWidthFactor(travel)
+    const width = tiltWidthFactor(context, travel)
     const offset = vec(
-        animationTopXOffset * DynamicLayout.wScale * offsetScale * width,
-        2 * DynamicLayout.wScale * offsetScale * width,
+        animationTopXOffset * context.wScale * offsetScale * width,
+        2 * context.wScale * offsetScale * width,
     )
-    const scale = w * DynamicLayout.wScale * width
-    const center = transformedVecAt(lane, travel)
+    const scale = w * context.wScale * width
+    const center = transformedVecAt(context, lane, travel)
 
     const corner = (x: number, y: number): Vec => {
         let p = rotateVec(vec(x, y), rotation)
         p = vec(p.x * scale + offset.x, p.y * scale + offset.y)
-        p = rotateVec(p, -DynamicLayout.rotate)
+        p = rotateVec(p, -context.rotate)
         return vec(p.x + center.x, p.y + center.y)
     }
 
@@ -781,11 +821,16 @@ export const layoutFlickArrowFallback = (
     }
 }
 
-export const layoutLinearEffect = (lane: number, shear: number, yOffset = 0): Quad => {
+export const layoutLinearEffect = (
+    context: PreviewLayout,
+    lane: number,
+    shear: number,
+    yOffset = 0,
+): Quad => {
     const w = 1
-    const travel = approach(1 - yOffset)
-    const bl = transformedVecAt(lane - w, travel)
-    const br = transformedVecAt(lane + w, travel)
+    const travel = approach(context, 1 - yOffset)
+    const bl = transformedVecAt(context, lane - w, travel)
+    const br = transformedVecAt(context, lane + w, travel)
     const d = subVec(br, bl)
     const shearScale = (shear + 0.125 * lane) / 2
     const up = vec(
@@ -800,11 +845,16 @@ export const layoutLinearEffect = (lane: number, shear: number, yOffset = 0): Qu
     }
 }
 
-export const layoutRotatedLinearEffect = (lane: number, shear: number, yOffset = 0): Quad => {
+export const layoutRotatedLinearEffect = (
+    context: PreviewLayout,
+    lane: number,
+    shear: number,
+    yOffset = 0,
+): Quad => {
     const w = 1
-    const travel = approach(1 - yOffset)
-    const bl = transformedVecAt(lane - w, travel)
-    const br = transformedVecAt(lane + w, travel)
+    const travel = approach(context, 1 - yOffset)
+    const bl = transformedVecAt(context, lane - w, travel)
+    const br = transformedVecAt(context, lane + w, travel)
     const d = subVec(br, bl)
     const up = vec(-d.y, d.x)
     const angle = Math.atan(-(shear + 0.125 * lane) / 2)
@@ -823,16 +873,22 @@ export const layoutRotatedLinearEffect = (lane: number, shear: number, yOffset =
     }
 }
 
-export const layoutCircularEffect = (lane: number, w: number, h: number, yOffset = 0): Quad => {
-    const travel = approach(1 - yOffset)
-    const width = tiltWidthFactor(travel)
+export const layoutCircularEffect = (
+    context: PreviewLayout,
+    lane: number,
+    w: number,
+    h: number,
+    yOffset = 0,
+): Quad => {
+    const travel = approach(context, 1 - yOffset)
+    const width = tiltWidthFactor(context, travel)
     w *= width
-    h *= DynamicLayout.wScale / DynamicLayout.hScale
+    h *= context.wScale / context.hScale
     const t = travel + h * width
     const b = travel - h * width
-    const wb = tiltWidthFactor(b)
-    const wt = tiltWidthFactor(t)
-    return transformQuad({
+    const wb = tiltWidthFactor(context, b)
+    const wt = tiltWidthFactor(context, t)
+    return transformQuad(context, {
         bl: vec(lane * wb - w, b),
         br: vec(lane * wb + w, b),
         tl: vec(lane * wt - w, t),
@@ -840,11 +896,11 @@ export const layoutCircularEffect = (lane: number, w: number, h: number, yOffset
     })
 }
 
-export const layoutTickEffect = (lane: number, yOffset = 0): Quad => {
-    const travel = approach(1 - yOffset)
-    const w = 4 * DynamicLayout.wScale * tiltWidthFactor(travel)
-    const center = transformedVecAt(lane, travel)
-    const rot = -DynamicLayout.rotate
+export const layoutTickEffect = (context: PreviewLayout, lane: number, yOffset = 0): Quad => {
+    const travel = approach(context, 1 - yOffset)
+    const w = 4 * context.wScale * tiltWidthFactor(context, travel)
+    const center = transformedVecAt(context, lane, travel)
+    const rot = -context.rotate
     const dx = rotateVec(vec(w, 0), rot)
     const dy = rotateVec(vec(0, w), rot)
     return {
@@ -856,48 +912,50 @@ export const layoutTickEffect = (lane: number, yOffset = 0): Quad => {
 }
 
 export const layoutParticleLane = (
+    context: PreviewLayout,
     lane: number,
     size: number,
     yOffset = 0,
     extendDown = true,
     compensateOvershoot = true,
 ): Quad => {
-    const travel = approach(1 - yOffset)
-    let top = Math.max(tiltDepth(DynamicLayout.laneT, travel), DynamicLayout.safeLaneT)
-    let bottom = DynamicLayout.laneB
-    if (extendDown) bottom = lerp(bottom, DynamicLayout.stageLaneB, 0.25 * DynamicLayout.stageTilt)
-    bottom = Math.max(tiltDepth(bottom, travel), top)
+    const travel = approach(context, 1 - yOffset)
+    let top = Math.max(tiltDepth(context, context.laneT, travel), context.safeLaneT)
+    let bottom = context.laneB
+    if (extendDown) bottom = lerp(bottom, context.stageLaneB, 0.25 * context.stageTilt)
+    bottom = Math.max(tiltDepth(context, bottom, travel), top)
     if (compensateOvershoot) {
-        top = Math.max(top, lerp(DynamicLayout.safeLaneT, bottom, 0.07 / 1.07))
+        top = Math.max(top, lerp(context.safeLaneT, bottom, 0.07 / 1.07))
     }
     return {
-        bl: transformedVecAt(lane - size, bottom),
-        br: transformedVecAt(lane + size, bottom),
-        tl: transformedVecAt(lane - size, top),
-        tr: transformedVecAt(lane + size, top),
+        bl: transformedVecAt(context, lane - size, bottom),
+        br: transformedVecAt(context, lane + size, bottom),
+        tl: transformedVecAt(context, lane - size, top),
+        tr: transformedVecAt(context, lane + size, top),
     }
 }
 
-export const layoutSlotEffect = (lane: number, yOffset = 0): Quad => {
-    const travel = approach(1 - yOffset)
-    const nh = DynamicLayout.noteH
-    return perspectiveRect(lane - 0.5, lane + 0.5, 1 - nh, 1 + nh, travel)
+export const layoutSlotEffect = (context: PreviewLayout, lane: number, yOffset = 0): Quad => {
+    const travel = approach(context, 1 - yOffset)
+    const nh = context.noteH
+    return perspectiveRect(context, lane - 0.5, lane + 0.5, 1 - nh, 1 + nh, travel)
 }
 
 export const layoutSlotGlowEffect = (
+    context: PreviewLayout,
     lane: number,
     size: number,
     height: number,
     yOffset = 0,
 ): Quad => {
     const s = 1.25
-    const travel = approach(1 - yOffset)
-    const h = 4.25 * DynamicLayout.wScale * tiltWidthFactor(travel)
-    const up = rotateVec(vec(0, h), -DynamicLayout.rotate)
-    const lMin = transformedVecAt(lane - size, travel)
-    const rMin = transformedVecAt(lane + size, travel)
-    const lMax = transformedVecAt((lane - size) * s, travel)
-    const rMax = transformedVecAt((lane + size) * s, travel)
+    const travel = approach(context, 1 - yOffset)
+    const h = 4.25 * context.wScale * tiltWidthFactor(context, travel)
+    const up = rotateVec(vec(0, h), -context.rotate)
+    const lMin = transformedVecAt(context, lane - size, travel)
+    const rMin = transformedVecAt(context, lane + size, travel)
+    const lMax = transformedVecAt(context, (lane - size) * s, travel)
+    const rMax = transformedVecAt(context, (lane + size) * s, travel)
     return {
         bl: lMin,
         br: rMin,
@@ -924,6 +982,7 @@ export const iterSlotLanes = (
 }
 
 export const layoutSlideConnectorSegment = (
+    context: PreviewLayout,
     startLane: number,
     startSize: number,
     startTravel: number,
@@ -937,9 +996,9 @@ export const layoutSlideConnectorSegment = (
         ;[startTravel, endTravel] = [endTravel, startTravel]
     }
     return {
-        bl: perspectiveVec(startLane - startSize, 1, startTravel),
-        br: perspectiveVec(startLane + startSize, 1, startTravel),
-        tl: perspectiveVec(endLane - endSize, 1, endTravel),
-        tr: perspectiveVec(endLane + endSize, 1, endTravel),
+        bl: perspectiveVec(context, startLane - startSize, 1, startTravel),
+        br: perspectiveVec(context, startLane + startSize, 1, startTravel),
+        tl: perspectiveVec(context, endLane - endSize, 1, endTravel),
+        tr: perspectiveVec(context, endLane + endSize, 1, endTravel),
     }
 }

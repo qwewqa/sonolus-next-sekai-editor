@@ -20,6 +20,7 @@ import {
 } from './playerAudio'
 import { settings } from './settings'
 import type { ConnectorEntity } from './state/entities/slides/connector'
+import { getActiveNoteRole } from './state/entities/slides/semantics'
 import { beatToTime, timeToBeat } from './state/integrals/bpms'
 import { beatToKey } from './state/store/grid'
 import { entries } from './utils/object'
@@ -159,9 +160,7 @@ const scheduleAudio = () => {
         const info = infos.find((info) => info.note === entity)
         if (!info) throw new Error('Unexpected missing info')
 
-        const isInActive = info.activeHead !== info.activeTail
-        const isActiveHead = info.activeHead === info.note
-        const isActiveTail = info.activeTail === info.note
+        const activeRole = getActiveNoteRole(info)
         const isFlick = info.note.flickDirection !== 'none'
 
         if (entity.noteType === 'trace') {
@@ -184,7 +183,7 @@ const scheduleAudio = () => {
             } else {
                 targets.normalTick.add(entity.beat)
             }
-        } else if (!isInActive) {
+        } else if (activeRole === 'single') {
             if (isFlick) {
                 if (entity.isCritical) {
                     targets.criticalFlick.add(entity.beat)
@@ -198,7 +197,7 @@ const scheduleAudio = () => {
                     targets.normalTap.add(entity.beat)
                 }
             }
-        } else if (isActiveHead || isActiveTail) {
+        } else if (activeRole === 'head' || activeRole === 'tail') {
             if (isFlick) {
                 if (entity.isCritical) {
                     targets.criticalFlick.add(entity.beat)

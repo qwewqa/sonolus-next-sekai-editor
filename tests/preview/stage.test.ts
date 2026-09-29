@@ -4,12 +4,12 @@ import {
     STAGE_WIDTH_MID,
     blendStageTransform,
     computeStageTransform,
+    createLayout,
+    createViewport,
     defaultCameraInfo,
     elevationProjection,
     identityStageScreenTransform,
     identityStageTransform,
-    initLayout,
-    refreshLayout,
     stageTransformIsIdentity,
     stageTransformToAffine,
     transformBillboard,
@@ -29,7 +29,7 @@ import {
     getStageProps,
     stagePropsHasTransform,
 } from '../../src/preview/engine/stage'
-import type { PreviewSkin, Sprite } from '../../src/preview/skin'
+import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
 
 const stage = (overrides: Partial<PreviewStage> = {}): PreviewStage => ({
     order: 0,
@@ -189,11 +189,20 @@ test('elevation caps at a line instead of flipping stage geometry', () => {
 })
 
 test('combined camera and stage transforms match the engine reference geometry', () => {
-    initLayout(1600, 900)
-    const transform = computeStageTransform(camera(0.5, 0.6), -0.4, 1.25, -0.5, 2, 0.35, 4)
+    const viewport = createViewport(1600, 900)
+    const transform = computeStageTransform(
+        viewport,
+        camera(0.5, 0.6),
+        -0.4,
+        1.25,
+        -0.5,
+        2,
+        0.35,
+        4,
+    )
     const screen = stageTransformToAffine(transform)
 
-    // Reference values from sekai.lib.layout.compute_stage_transform with these inputs.
+    // Reference: engine 9e93ba0, sekai.lib.layout.compute_stage_transform with these inputs.
     close(transform.px, 0.25181455987483137)
     close(transform.py, 0.013869882246752063)
     closeVec(applyAffine(screen, vec(-0.25, 0.45)), vec(-0.46396571156346417, 0.4008507457570851))
@@ -241,17 +250,20 @@ test('billboard decorations keep their size and stage rotation when elevation co
 })
 
 test('custom and fallback stage borders interpolate width without fading or duplicate draws', () => {
-    initLayout(1600, 900)
-    refreshLayout(defaultCameraInfo(), true)
+    const context = {
+        now: 0,
+        layout: createLayout(createViewport(1600, 900), defaultCameraInfo(), true),
+    }
     const border: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
     for (const custom of [false, true]) {
         // Only stage sprites are used; note and connector sprite sets are irrelevant here.
-        const skin = {
+        const skin: PreviewSkin = {
+            ...resolveSkin(() => undefined),
             judgments: [],
             stageBorder: border,
             stageLeftBorder: border,
             laneBackground: custom ? { ...border } : undefined,
-        } as PreviewSkin
+        }
         const props = {
             ...getStageProps(stage(), 0),
             width: 6,
@@ -261,6 +273,7 @@ test('custom and fallback stage borders interpolate width without fading or dupl
         const drawBorder = (start: number, end: number, progress: number) => {
             const draws: { quad: Quad; alpha: number }[] = []
             drawDynamicStage(
+                context,
                 (sprite, quad, _z, alpha) => {
                     if (sprite === border) draws.push({ quad, alpha })
                 },

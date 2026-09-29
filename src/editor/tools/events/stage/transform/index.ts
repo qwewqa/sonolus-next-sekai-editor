@@ -13,10 +13,8 @@ import {
     toStageTransformEventJointEntity,
     type StageTransformEventJointEntity,
 } from '../../../../../state/entities/events/joints/stage/transform'
-import {
-    addStageTransformEventJoint,
-    removeStageTransformEventJoint,
-} from '../../../../../state/mutations/events/stage/transform'
+import { addStageTransformEventJoint } from '../../../../../state/mutations/events/stage/transform'
+import { editSelectedStageTransformEvent } from '../../../../../state/operations/events/stage/transform'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
@@ -255,9 +253,9 @@ export const stageTransformEvent: Tool = {
             if (replacement?.type === 'stageTransformEventJoint') {
                 setPreviewEdit(source, () => {
                     const transaction = createTransaction(source, { autoAddGroup: false })
-                    removeStageTransformEventJoint(transaction, entity)
-                    const selectedEntities = addStageTransformEventJoint(transaction, replacement)
-                    return transaction.commit(selectedEntities)
+                    return transaction.commit(
+                        editSelectedStageTransformEvent(transaction, entity, replacement),
+                    )
                 }, [entity, replacement.beat, replacement.xTranslation])
             }
         }
@@ -307,34 +305,7 @@ export const editStageTransformEvent = (
     entity: StageTransformEventJointEntity,
     object: Partial<StageTransformEventObject>,
 ) => {
-    edit(entity, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        rotation: object.rotation ?? entity.rotation,
-        xTranslation: object.xTranslation ?? entity.xTranslation,
-        yTranslation: object.yTranslation ?? entity.yTranslation,
-        elevation: object.elevation ?? entity.elevation,
-        anchor: object.anchor ?? entity.anchor,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
-}
-
-export const editSelectedStageTransformEvent = (
-    transaction: Transaction,
-    entity: StageTransformEventJointEntity,
-    object: Partial<StageTransformEventObject>,
-) => {
-    removeStageTransformEventJoint(transaction, entity)
-    return addStageTransformEventJoint(transaction, {
-        stageId: object.stageId ?? entity.stageId,
-        beat: object.beat ?? entity.beat,
-        rotation: object.rotation ?? entity.rotation,
-        xTranslation: object.xTranslation ?? entity.xTranslation,
-        yTranslation: object.yTranslation ?? entity.yTranslation,
-        elevation: object.elevation ?? entity.elevation,
-        anchor: object.anchor ?? entity.anchor,
-        eventEase: object.eventEase ?? entity.eventEase,
-    })
+    edit(entity, object)
 }
 
 const getStageTransformEventJointFromSelection = () => {
@@ -415,17 +386,17 @@ const add = (object: StageTransformEventObject) => {
     )
 }
 
-const edit = (entity: StageTransformEventJointEntity, object: StageTransformEventObject) => {
+const edit = (
+    entity: StageTransformEventJointEntity,
+    object: Partial<StageTransformEventObject>,
+) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
             () => i18n.value.events.stageTransformEvent,
         ),
-        (transaction) => {
-            removeStageTransformEventJoint(transaction, entity)
-            return addStageTransformEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageTransformEvent(transaction, entity, object),
     )
 }
 
@@ -436,9 +407,6 @@ const move = (entity: StageTransformEventJointEntity, object: StageTransformEven
             '1',
             () => i18n.value.events.stageTransformEvent,
         ),
-        (transaction) => {
-            removeStageTransformEventJoint(transaction, entity)
-            return addStageTransformEventJoint(transaction, object)
-        },
+        (transaction) => editSelectedStageTransformEvent(transaction, entity, object),
     )
 }

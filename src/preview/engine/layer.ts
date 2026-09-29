@@ -26,13 +26,8 @@ export const LAYER_SLOT_GLOW_EFFECT: Layer = { layer: 16, sublayer: 4 }
 export const LAYER_ACTIVE_SLIDE_CONNECTOR_OVER: Layer = { layer: 22, sublayer: 0 }
 export const LAYER_GUIDE_CONNECTOR_OVER: Layer = { layer: 23, sublayer: 0 }
 
-let currentTime = 0
-
-export const setLayerTime = (time: number) => {
-    currentTime = time
-}
-
 export const getZ = (
+    currentTime: number,
     layer: Layer,
     time = 0,
     lane = 0,

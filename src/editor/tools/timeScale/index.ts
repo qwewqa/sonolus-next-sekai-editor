@@ -10,7 +10,11 @@ import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../../state/entities/timeScale'
-import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScale'
+import { addTimeScale } from '../../../state/mutations/timeScale'
+import {
+    editTimeScale as applyTimeScaleEdit,
+    editSelectedTimeScale,
+} from '../../../state/operations/timeScale'
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
@@ -322,34 +326,7 @@ export const timeScale: Tool = {
 }
 
 export const editTimeScale = (entity: TimeScaleEntity, object: Partial<TimeScaleObject>) => {
-    editMoveOrReplace(entity, {
-        groupId: object.groupId ?? entity.groupId,
-        beat: object.beat ?? entity.beat,
-        editorLane: object.editorLane ?? entity.editorLane,
-        timeScale: object.timeScale ?? entity.timeScale,
-        skip: object.skip ?? entity.skip,
-        timeScaleEase: object.timeScaleEase ?? entity.timeScaleEase,
-        timeScaleTransition: object.timeScaleTransition ?? entity.timeScaleTransition,
-        hideNotes: object.hideNotes ?? entity.hideNotes,
-    })
-}
-
-export const editSelectedTimeScale = (
-    transaction: Transaction,
-    entity: TimeScaleEntity,
-    object: Partial<TimeScaleObject>,
-) => {
-    removeTimeScale(transaction, entity)
-    return addTimeScale(transaction, {
-        groupId: object.groupId ?? entity.groupId,
-        beat: object.beat ?? entity.beat,
-        editorLane: object.editorLane ?? entity.editorLane,
-        timeScale: object.timeScale ?? entity.timeScale,
-        skip: object.skip ?? entity.skip,
-        timeScaleEase: object.timeScaleEase ?? entity.timeScaleEase,
-        timeScaleTransition: object.timeScaleTransition ?? entity.timeScaleTransition,
-        hideNotes: object.hideNotes ?? entity.hideNotes,
-    })
+    editMoveOrReplace(entity, object)
 }
 
 const find = (groupId: GroupId | undefined, beat: number) =>
@@ -374,31 +351,23 @@ const previewMove = (entity: TimeScaleEntity, object: TimeScaleObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
         const transaction = createTransaction(source, { autoAddGroup: false })
-        removeTimeScale(transaction, entity)
-        if (entity.beat !== object.beat) {
-            const overlap = getInStoreGrid(source.store.grid, 'timeScale', object.beat)?.find(
-                (candidate) =>
-                    candidate.beat === object.beat && candidate.groupId === object.groupId,
-            )
-            if (overlap) removeTimeScale(transaction, overlap)
-        }
-        return transaction.commit(addTimeScale(transaction, object))
+        return transaction.commit(applyTimeScaleEdit(transaction, entity, object))
     }, [entity, object.beat, object.editorLane])
 }
 
-const editMoveOrReplace = (entity: TimeScaleEntity, object: TimeScaleObject) => {
-    if (entity.beat === object.beat) {
-        edit(entity, object)
-        return
-    }
-
-    const overlap = find(object.groupId, object.beat)
-    if (overlap) {
-        replace(overlap, object, entity)
-    } else {
-        move(object, entity)
-    }
-    focusEntityAtBeat(object.beat)
+const editMoveOrReplace = (entity: TimeScaleEntity, object: Partial<TimeScaleObject>) => {
+    const beat = object.beat ?? entity.beat
+    const message =
+        entity.beat === beat
+            ? 'edited'
+            : find(object.groupId ?? entity.groupId, beat)
+              ? 'replaced'
+              : 'moved'
+    update(
+        () => i18n.value.tools.timeScale[message],
+        (transaction) => applyTimeScaleEdit(transaction, entity, object),
+    )
+    if (entity.beat !== beat) focusEntityAtBeat(beat)
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {
@@ -430,30 +399,6 @@ const add = (object: TimeScaleObject) => {
 const edit = (entity: TimeScaleEntity, object: TimeScaleObject) => {
     update(
         () => i18n.value.tools.timeScale.edited,
-        (transaction) => {
-            removeTimeScale(transaction, entity)
-            return addTimeScale(transaction, object)
-        },
-    )
-}
-
-const move = (object: TimeScaleObject, old: TimeScaleEntity) => {
-    update(
-        () => i18n.value.tools.timeScale.moved,
-        (transaction) => {
-            removeTimeScale(transaction, old)
-            return addTimeScale(transaction, object)
-        },
-    )
-}
-
-const replace = (entity: TimeScaleEntity, object: TimeScaleObject, old: TimeScaleEntity) => {
-    update(
-        () => i18n.value.tools.timeScale.replaced,
-        (transaction) => {
-            removeTimeScale(transaction, old)
-            removeTimeScale(transaction, entity)
-            return addTimeScale(transaction, object)
-        },
+        (transaction) => editSelectedTimeScale(transaction, entity, object),
     )
 }

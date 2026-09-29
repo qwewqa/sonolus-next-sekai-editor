@@ -5,12 +5,10 @@ import { numberEditKey } from '../../modals/form/numberEdit'
 import { clearPreviewEdit, previewEdit, setPreviewEdit, type PreviewEdit } from '../../preview/edit'
 import type { State } from '../../state'
 import type { Entity, EntityType } from '../../state/entities'
+import { createEditedEntitiesState } from '../../state/operations/edit'
+import type { EditableObject } from '../../state/operations/editable'
 import { entries } from '../../utils/object'
-import {
-    createEditedEntitiesState,
-    editSelectedEditableEntities,
-    type EditableObject,
-} from '../sidebars/default'
+import { editSelectedEditableEntities } from '../sidebars/default'
 import { getNoteFields, type NoteFields } from './noteFields'
 
 export const useProperties =

@@ -6,24 +6,22 @@ import {
     type ConnectorEndpoint,
 } from '../../src/preview/engine/connector'
 import {
-    DynamicLayout,
-    Layout,
     cameraZoomAnchor,
     cameraZoomTargetAt,
     computeStageTransform,
+    createLayout,
+    createViewport,
     currentLayoutTransform,
     defaultCameraInfo,
-    initLayout,
     layoutParticleLane,
     layoutRegularNoteBodyFallback,
     layoutSlotGlowEffect,
     layoutStageLaneByEdges,
-    refreshLayout,
     stageTransformToAffine,
 } from '../../src/preview/engine/layout'
 import { EaseType, applyAffine, type Quad } from '../../src/preview/engine/math'
 import { ConnectorKind } from '../../src/preview/engine/model'
-import type { PreviewSkin, Sprite } from '../../src/preview/skin'
+import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
 
 const close = (actual: number, expected: number) =>
     assert.ok(Math.abs(actual - expected) < 1e-10, `${actual} != ${expected}`)
@@ -38,22 +36,22 @@ const presets = [
 
 test('aspect presets fit the engine field while retaining the full device viewport', () => {
     for (const preset of presets) {
-        initLayout(preset.width, preset.height)
-        close(Layout.fieldW, preset.fieldW)
-        close(Layout.fieldH, preset.fieldH)
-        close(Layout.screenW, (2 * preset.width) / preset.height)
-        close(Layout.screenH, 2)
-        close(DynamicLayout.screenPixelSize, 2 / preset.height)
+        const viewport = createViewport(preset.width, preset.height)
+        close(viewport.fieldW, preset.fieldW)
+        close(viewport.fieldH, preset.fieldH)
+        close(viewport.screenW, (2 * preset.width) / preset.height)
+        close(viewport.screenH, 2)
+        close(viewport.screenPixelSize, 2 / preset.height)
 
         // Extra space belongs to the viewport, not a stretched or cropped field.
-        close(Layout.fieldW / Layout.fieldH, 16 / 9)
-        assert.ok(Layout.fieldW <= Layout.screenW)
-        assert.ok(Layout.fieldH <= Layout.screenH)
+        close(viewport.fieldW / viewport.fieldH, 16 / 9)
+        assert.ok(viewport.fieldW <= viewport.screenW)
+        assert.ok(viewport.fieldH <= viewport.screenH)
     }
 })
 
 const transformedGeometry = (width: number, height: number, tilt: number): Quad[] => {
-    initLayout(width, height)
+    const viewport = createViewport(width, height)
     const camera = {
         ...defaultCameraInfo(),
         lane: 1.5,
@@ -61,18 +59,27 @@ const transformedGeometry = (width: number, height: number, tilt: number): Quad[
         stageTilt: tilt,
         zoom: 1.3,
         rotate: 0.4,
-        zoomTarget: cameraZoomTargetAt(1.5, 4, -0.75, 0.35, tilt),
-        zoomAnchor: cameraZoomAnchor(0),
+        zoomTarget: cameraZoomTargetAt(viewport, 1.5, 4, -0.75, 0.35, tilt),
+        zoomAnchor: cameraZoomAnchor(viewport, 0),
     }
-    refreshLayout(camera, true)
+    const context = { now: 0, layout: createLayout(viewport, camera, true) }
     const stage = stageTransformToAffine(
-        computeStageTransform(currentLayoutTransform(), -0.25, 2, -0.5, 1, 0.2, 0.75),
+        computeStageTransform(
+            viewport,
+            currentLayoutTransform(context.layout),
+            -0.25,
+            2,
+            -0.5,
+            1,
+            0.2,
+            0.75,
+        ),
     )
     return [
-        layoutRegularNoteBodyFallback(2, 1, 0.65),
-        layoutStageLaneByEdges(-4, 4, 0.1),
-        layoutParticleLane(2, 1, 0.1),
-        layoutSlotGlowEffect(2, 1, 0.6, 0.1),
+        layoutRegularNoteBodyFallback(context.layout, 2, 1, 0.65),
+        layoutStageLaneByEdges(context.layout, -4, 4, 0.1),
+        layoutParticleLane(context.layout, 2, 1, 0.1),
+        layoutSlotGlowEffect(context.layout, 2, 1, 0.6, 0.1),
     ].map((quad) => ({
         bl: applyAffine(stage, quad.bl),
         tl: applyAffine(stage, quad.tl),
@@ -98,7 +105,7 @@ test('aspect changes preserve camera, stage, note and effect geometry without di
 
 test('full-screen connectors cover the viewport beyond the fitted 16:9 field', () => {
     const sprite: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
-    const skin = { guides: [sprite] } as PreviewSkin
+    const skin: PreviewSkin = { ...resolveSkin(() => undefined), guides: [sprite] }
     const endpoint: ConnectorEndpoint = {
         lane: 0,
         size: 1,
@@ -107,13 +114,13 @@ test('full-screen connectors cover the viewport beyond the fitted 16:9 field', (
         easeFrac: 0,
     }
     for (const preset of presets) {
-        initLayout(preset.width, preset.height)
-        refreshLayout(defaultCameraInfo(), true)
+        const viewport = createViewport(preset.width, preset.height)
+        const context = { now: 1, layout: createLayout(viewport, defaultCameraInfo(), true) }
         const quads: Quad[] = []
         drawConnector(
+            context,
             (_, quad) => quads.push(quad),
             skin,
-            1,
             ConnectorKind.guideNeutral,
             ConnectorVisualState.waiting,
             EaseType.linear,

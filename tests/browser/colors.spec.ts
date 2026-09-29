@@ -27,12 +27,12 @@ test('all note colors and connector families survive level data round trips and 
             'purple',
             'cyan',
             'black',
-        ]
+        ] as const
         const source = window.editorTest.fixtures.interaction
         const base = source.slides[0]![0]!
         const slides = []
         const expected = []
-        for (const connectorType of ['active', 'damage']) {
+        for (const connectorType of ['active', 'damage'] as const) {
             for (const connectorActiveIsCritical of connectorType === 'active'
                 ? [false, true]
                 : [false]) {

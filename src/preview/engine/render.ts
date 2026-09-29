@@ -5,6 +5,7 @@ import type { PreviewSkin } from '../skin'
 import { getStyledSkin } from '../skin'
 import { attachEasedFrac } from './chart'
 import { ConnectorVisualState, drawConnector, type ConnectorEndpoint } from './connector'
+import type { PreviewFrameContext } from './context'
 import {
     CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
     MAX_HIT_EFFECT_DURATION,
@@ -12,17 +13,17 @@ import {
     getFrameIndex,
     latestVisibleTarget,
 } from './frameIndex'
-import { LAYER_SLOT_EFFECT, LAYER_SLOT_GLOW_EFFECT, getZ, setLayerTime } from './layer'
+import { LAYER_SLOT_EFFECT, LAYER_SLOT_GLOW_EFFECT, getZ } from './layer'
 import {
-    DynamicLayout,
     FlickDirection,
     approach,
     blendStageTransform,
+    createLayout,
+    createViewport,
     defaultCameraInfo,
     getCameraInfo,
     identityStageScreenTransform,
     identityStageTransform,
-    initLayout,
     iterSlotLanes,
     layoutCircularEffect,
     layoutLinearEffect,
@@ -31,7 +32,6 @@ import {
     layoutSlotEffect,
     layoutSlotGlowEffect,
     layoutTickEffect,
-    refreshLayout,
     stageTransformToAffineOrIdentity,
     transformBillboard,
     transformedVecAt,
@@ -147,11 +147,14 @@ export const renderPreviewFrame = (
     showEffects: boolean,
     particle?: PreviewParticle,
 ) => {
-    setLayerTime(now)
-    initLayout(displayWidth, displayHeight)
-
-    const camera = chart.isDynamicStages ? getCameraInfo(chart.cameras, now) : defaultCameraInfo()
-    refreshLayout(camera, chart.isDynamicStages)
+    const viewport = createViewport(displayWidth, displayHeight)
+    const camera = chart.isDynamicStages
+        ? getCameraInfo(viewport, chart.cameras, now)
+        : defaultCameraInfo()
+    const context: PreviewFrameContext = {
+        now,
+        layout: createLayout(viewport, camera, chart.isDynamicStages),
+    }
 
     renderer.begin(width, height, displayWidth / displayHeight)
     const draw = renderer.draw
@@ -161,7 +164,9 @@ export const renderPreviewFrame = (
 
     const stageProps: StageProps[] = chart.stages.map((stage) => getStageProps(stage, now))
     const stageTransforms: StageTransform[] = stageProps.map((props) =>
-        stagePropsHasTransform(props) ? stagePropsTransform(props) : identityStageTransform,
+        stagePropsHasTransform(props)
+            ? stagePropsTransform(context, props)
+            : identityStageTransform,
     )
     const stageAffines: StageScreenTransform[] = stageTransforms.map((transform) =>
         stageTransformToAffineOrIdentity(transform),
@@ -171,7 +176,7 @@ export const renderPreviewFrame = (
         now,
         frameIndex.minimumTimescale,
         Math.max(preemptTime(noteSpeed, 0), ...preempts),
-        DynamicLayout.progressStart,
+        context.layout.progressStart,
         Math.min(0, ...stageProps.map((props) => props.yOffset)),
     )
 
@@ -180,10 +185,10 @@ export const renderPreviewFrame = (
             if (now < stage.drawStartTime || now > stage.drawEndTime) continue
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            drawStageWithProps(draw, skin, stageProps[i]!)
+            drawStageWithProps(context, draw, skin, stageProps[i]!)
         }
     } else {
-        drawStaticStage(draw, skin)
+        drawStaticStage(context, draw, skin)
     }
 
     const groupPreempt = (note: PreviewNote) =>
@@ -359,34 +364,46 @@ export const renderPreviewFrame = (
         return basicYOffsetAt(note, t)
     }
 
-    const basicStageTransformAt = (note: PreviewNote, t: number): StageTransform => {
+    const basicStageTransformAt = (
+        context: PreviewFrameContext,
+        note: PreviewNote,
+        t: number,
+    ): StageTransform => {
         const props = stagePropsAtTime(note.stageIndex, t)
         return props && stagePropsHasTransform(props)
-            ? stagePropsTransform(props)
+            ? stagePropsTransform(context, props)
             : identityStageTransform
     }
 
-    const visualStageTransformAt = (note: PreviewNote, t: number): StageTransform => {
+    const visualStageTransformAt = (
+        context: PreviewFrameContext,
+        note: PreviewNote,
+        t: number,
+    ): StageTransform => {
         if (!chart.isDynamicStages) return identityStageTransform
         if (note.isAttached && note.attachHead && note.attachTail) {
             return blendStageTransform(
-                basicStageTransformAt(note.attachHead, t),
-                basicStageTransformAt(note.attachTail, t),
+                basicStageTransformAt(context, note.attachHead, t),
+                basicStageTransformAt(context, note.attachTail, t),
                 attachEasedFrac(note),
             )
         }
-        return basicStageTransformAt(note, t)
+        return basicStageTransformAt(context, note, t)
     }
 
-    const withLayoutAt = (t: number, fn: () => void) => {
+    const withLayoutAt = (t: number, fn: (context: PreviewFrameContext) => void) => {
         if (!chart.isDynamicStages || !chart.cameras.length || t === now) {
-            fn()
+            fn(context)
             return
         }
-        const saved = { ...DynamicLayout }
-        refreshLayout(getCameraInfo(chart.cameras, t), chart.isDynamicStages)
-        fn()
-        Object.assign(DynamicLayout, saved)
+        fn({
+            now,
+            layout: createLayout(
+                viewport,
+                getCameraInfo(viewport, chart.cameras, t),
+                chart.isDynamicStages,
+            ),
+        })
     }
 
     let particleOrder = 0
@@ -502,9 +519,9 @@ export const renderPreviewFrame = (
         }
 
         drawConnector(
+            context,
             draw,
             getStyledSkin(skin, connector.style),
-            now,
             connector.kind,
             visualState,
             connector.ease,
@@ -529,9 +546,9 @@ export const renderPreviewFrame = (
         if (groupHidesNotes(note)) continue
 
         drawNote(
+            context,
             draw,
             skin,
-            now,
             note.kind,
             note.isCritical,
             visualLane(note),
@@ -552,7 +569,7 @@ export const renderPreviewFrame = (
         if (now < start) continue
         if (now >= end + SLIDE_EFFECT_DESPAWN_DELAY) continue
 
-        const slideInfoAt = (t: number) => {
+        const slideInfoAt = (context: PreviewFrameContext, t: number) => {
             const current = findSlideConnector(slide, t)
             if (!current) return
             if (
@@ -608,8 +625,8 @@ export const renderPreviewFrame = (
                 affine: chart.isDynamicStages
                     ? stageTransformToAffineOrIdentity(
                           blendStageTransform(
-                              basicStageTransformAt(attachHead, t),
-                              basicStageTransformAt(attachTail, t),
+                              basicStageTransformAt(context, attachHead, t),
+                              basicStageTransformAt(context, attachTail, t),
                               easedFrac,
                           ),
                       )
@@ -618,7 +635,7 @@ export const renderPreviewFrame = (
         }
 
         if (now < end) {
-            const info = slideInfoAt(now)
+            const info = slideInfoAt(context, now)
             if (info) {
                 const isCritical = isActiveConnectorKind(info.connector.kind)
                     ? info.connector.kind === ConnectorKind.activeCritical ||
@@ -627,6 +644,7 @@ export const renderPreviewFrame = (
 
                 if (info.size > 0) {
                     drawSlideNoteHead(
+                        context,
                         draw,
                         skin,
                         slide.activeHead.kind,
@@ -650,7 +668,11 @@ export const renderPreviewFrame = (
                         transformBillboard(
                             info.affine,
                             q,
-                            transformedVecAt(info.lane, approach(1 - info.yOffset)),
+                            transformedVecAt(
+                                context.layout,
+                                info.lane,
+                                approach(context.layout, 1 - info.yOffset),
+                            ),
                         )
 
                     const connectorSkin = getStyledSkin(skin, info.connector.style)
@@ -664,6 +686,7 @@ export const renderPreviewFrame = (
                             glowSprite,
                             billboard(
                                 layoutSlotGlowEffect(
+                                    context.layout,
                                     info.lane,
                                     info.size,
                                     glowHeight,
@@ -671,6 +694,7 @@ export const renderPreviewFrame = (
                                 ),
                             ),
                             getZ(
+                                context.now,
                                 LAYER_SLOT_GLOW_EFFECT,
                                 start,
                                 info.lane,
@@ -696,7 +720,15 @@ export const renderPreviewFrame = (
                             drawParticleEffect(
                                 draw,
                                 connectorParticle.circular,
-                                place(layoutCircularEffect(info.lane, 3.5, 2.1, info.yOffset)),
+                                place(
+                                    layoutCircularEffect(
+                                        context.layout,
+                                        info.lane,
+                                        3.5,
+                                        2.1,
+                                        info.yOffset,
+                                    ),
+                                ),
                                 phase,
                                 true,
                                 hashSeed(slideIndex, 201),
@@ -707,7 +739,9 @@ export const renderPreviewFrame = (
                             drawParticleEffect(
                                 draw,
                                 connectorParticle.linear,
-                                billboard(layoutLinearEffect(info.lane, 0, info.yOffset)),
+                                billboard(
+                                    layoutLinearEffect(context.layout, info.lane, 0, info.yOffset),
+                                ),
                                 phase,
                                 true,
                                 hashSeed(slideIndex, 202),
@@ -723,6 +757,7 @@ export const renderPreviewFrame = (
                 period: number,
                 seedBase: number,
                 spawn: (
+                    context: PreviewFrameContext,
                     info: NonNullable<ReturnType<typeof slideInfoAt>>,
                     progress: number,
                     seed: number,
@@ -739,15 +774,15 @@ export const renderPreviewFrame = (
                     const progress = (now - spawnTime) / LINEAR_EFFECT_DURATION
                     if (progress >= 1) continue
 
-                    withLayoutAt(spawnTime, () => {
-                        const info = slideInfoAt(spawnTime)
+                    withLayoutAt(spawnTime, (context) => {
+                        const info = slideInfoAt(context, spawnTime)
                         if (!info) return
-                        spawn(info, progress, hashSeed(slideIndex, seedBase + k))
+                        spawn(context, info, progress, hashSeed(slideIndex, seedBase + k))
                     })
                 }
             }
 
-            drawSpawned(CONNECTOR_TRAIL_SPAWN_PERIOD, 10000, (info, progress, seed) => {
+            drawSpawned(CONNECTOR_TRAIL_SPAWN_PERIOD, 10000, (context, info, progress, seed) => {
                 const isCritical =
                     info.connector.kind === ConnectorKind.activeCritical ||
                     info.connector.kind === ConnectorKind.activeFakeCritical
@@ -763,8 +798,12 @@ export const renderPreviewFrame = (
                     trail,
                     transformBillboard(
                         info.affine,
-                        layoutLinearEffect(info.lane, 0, info.yOffset),
-                        transformedVecAt(info.lane, approach(1 - info.yOffset)),
+                        layoutLinearEffect(context.layout, info.lane, 0, info.yOffset),
+                        transformedVecAt(
+                            context.layout,
+                            info.lane,
+                            approach(context.layout, 1 - info.yOffset),
+                        ),
                     ),
                     progress,
                     false,
@@ -773,7 +812,7 @@ export const renderPreviewFrame = (
                 )
             })
 
-            drawSpawned(CONNECTOR_SLOT_SPAWN_PERIOD, 20000, (info, progress, seed) => {
+            drawSpawned(CONNECTOR_SLOT_SPAWN_PERIOD, 20000, (context, info, progress, seed) => {
                 const isCritical =
                     info.connector.kind === ConnectorKind.activeCritical ||
                     info.connector.kind === ConnectorKind.activeFakeCritical
@@ -790,8 +829,12 @@ export const renderPreviewFrame = (
                         slotLinear,
                         transformBillboard(
                             info.affine,
-                            layoutLinearEffect(slotLane, 0, info.yOffset),
-                            transformedVecAt(slotLane, approach(1 - info.yOffset)),
+                            layoutLinearEffect(context.layout, slotLane, 0, info.yOffset),
+                            transformedVecAt(
+                                context.layout,
+                                slotLane,
+                                approach(context.layout, 1 - info.yOffset),
+                            ),
                         ),
                         progress,
                         false,
@@ -815,6 +858,7 @@ export const renderPreviewFrame = (
         if (leftExtents.size <= 0 || rightExtents.size <= 0) continue
 
         drawSimLine(
+            context,
             draw,
             skin,
             leftExtents.lane,
@@ -889,20 +933,24 @@ export const renderPreviewFrame = (
 
         let affine = identityStageScreenTransform
 
-        withLayoutAt(target, () => {
-            affine = stageTransformToAffineOrIdentity(visualStageTransformAt(note, target))
+        withLayoutAt(target, (context) => {
+            affine = stageTransformToAffineOrIdentity(visualStageTransformAt(context, note, target))
 
             if (!particleSet) return
 
             const place = (q: Quad) => transformQuadAffine(affine, q)
             const billboard = (q: Quad) =>
-                transformBillboard(affine, q, transformedVecAt(lane, approach(1 - yOffset)))
+                transformBillboard(
+                    affine,
+                    q,
+                    transformedVecAt(context.layout, lane, approach(context.layout, 1 - yOffset)),
+                )
 
             if (particleSet.linear && elapsed < LINEAR_EFFECT_DURATION) {
                 drawParticleEffect(
                     draw,
                     particleSet.linear,
-                    billboard(layoutLinearEffect(lane, 0, yOffset)),
+                    billboard(layoutLinearEffect(context.layout, lane, 0, yOffset)),
                     elapsed / LINEAR_EFFECT_DURATION,
                     false,
                     hashSeed(noteIndex, 1),
@@ -913,7 +961,7 @@ export const renderPreviewFrame = (
                 drawParticleEffect(
                     draw,
                     particleSet.circular,
-                    place(layoutCircularEffect(lane, 1.75, 1.05, yOffset)),
+                    place(layoutCircularEffect(context.layout, lane, 1.75, 1.05, yOffset)),
                     elapsed / CIRCULAR_EFFECT_DURATION,
                     false,
                     hashSeed(noteIndex, 2),
@@ -925,7 +973,12 @@ export const renderPreviewFrame = (
                     draw,
                     particleSet.directional,
                     billboard(
-                        layoutRotatedLinearEffect(lane, directionShear(note.direction), yOffset),
+                        layoutRotatedLinearEffect(
+                            context.layout,
+                            lane,
+                            directionShear(note.direction),
+                            yOffset,
+                        ),
                     ),
                     elapsed / DIRECTIONAL_EFFECT_DURATION,
                     false,
@@ -937,7 +990,7 @@ export const renderPreviewFrame = (
                 drawParticleEffect(
                     draw,
                     particleSet.tick,
-                    billboard(layoutTickEffect(lane, yOffset)),
+                    billboard(layoutTickEffect(context.layout, lane, yOffset)),
                     elapsed / TICK_EFFECT_DURATION,
                     false,
                     hashSeed(noteIndex, 4),
@@ -954,7 +1007,7 @@ export const renderPreviewFrame = (
                     drawParticleEffect(
                         draw,
                         particleSet.slotLinear,
-                        billboard(layoutLinearEffect(slotLane, 0, yOffset)),
+                        billboard(layoutLinearEffect(context.layout, slotLane, 0, yOffset)),
                         elapsed / LINEAR_EFFECT_DURATION,
                         false,
                         hashSeed(noteIndex, 10 + i),
@@ -975,7 +1028,16 @@ export const renderPreviewFrame = (
                     drawParticleEffect(
                         draw,
                         particleSet.lane,
-                        place(layoutParticleLane(lane, size, laneYOffset, extendDown, true)),
+                        place(
+                            layoutParticleLane(
+                                context.layout,
+                                lane,
+                                size,
+                                laneYOffset,
+                                extendDown,
+                                true,
+                            ),
+                        ),
                         elapsed / LANE_EFFECT_DURATION,
                         false,
                         hashSeed(noteIndex, 5),
@@ -989,7 +1051,16 @@ export const renderPreviewFrame = (
                     drawParticleEffect(
                         draw,
                         particleSet.laneBasic,
-                        place(layoutParticleLane(lane, size, laneYOffset, extendDown, false)),
+                        place(
+                            layoutParticleLane(
+                                context.layout,
+                                lane,
+                                size,
+                                laneYOffset,
+                                extendDown,
+                                false,
+                            ),
+                        ),
                         elapsed / LANE_BASIC_EFFECT_DURATION,
                         false,
                         hashSeed(noteIndex, 5),
@@ -1005,8 +1076,19 @@ export const renderPreviewFrame = (
                 for (const slotLane of iterSlotLanes(lane, size, pivotLane, halfOffset)) {
                     draw(
                         spriteSet.slot,
-                        transformQuadAffine(affine, layoutSlotEffect(slotLane, yOffset)),
-                        getZ(LAYER_SLOT_EFFECT, target, slotLane, 0, true, affine.elevation),
+                        transformQuadAffine(
+                            affine,
+                            layoutSlotEffect(context.layout, slotLane, yOffset),
+                        ),
+                        getZ(
+                            context.now,
+                            LAYER_SLOT_EFFECT,
+                            target,
+                            slotLane,
+                            0,
+                            true,
+                            affine.elevation,
+                        ),
                         a,
                     )
                 }
@@ -1017,10 +1099,28 @@ export const renderPreviewFrame = (
                     spriteSet.slotGlow,
                     transformBillboard(
                         affine,
-                        layoutSlotGlowEffect(lane, size, unlerpClamped(1, 0.8, progress), yOffset),
-                        transformedVecAt(lane, approach(1 - yOffset)),
+                        layoutSlotGlowEffect(
+                            context.layout,
+                            lane,
+                            size,
+                            unlerpClamped(1, 0.8, progress),
+                            yOffset,
+                        ),
+                        transformedVecAt(
+                            context.layout,
+                            lane,
+                            approach(context.layout, 1 - yOffset),
+                        ),
                     ),
-                    getZ(LAYER_SLOT_GLOW_EFFECT, target, lane, 0, true, affine.elevation),
+                    getZ(
+                        context.now,
+                        LAYER_SLOT_GLOW_EFFECT,
+                        target,
+                        lane,
+                        0,
+                        true,
+                        affine.elevation,
+                    ),
                     1 - progress,
                 )
             }

@@ -1,5 +1,6 @@
 import { shallowRef } from 'vue'
 import type { State } from '../state'
+import { hasSameChartData } from '../state/data'
 
 export type PreviewEdit = {
     source: State
@@ -11,13 +12,6 @@ export type PreviewEdit = {
 // preview frame actually needs them. Pointer events can replace this several
 // times before the next animation frame without building discarded states.
 export const previewEdit = shallowRef<PreviewEdit>()
-
-export const hasSamePreviewData = (left: State, right: State) =>
-    left.store === right.store &&
-    left.bpms === right.bpms &&
-    left.groups === right.groups &&
-    left.stages === right.stages &&
-    left.isDynamicStages === right.isDynamicStages
 
 export const setPreviewEdit = (
     source: State,
@@ -31,7 +25,7 @@ export const setPreviewEdit = (
     if (
         dependencies &&
         previous?.dependencies?.length === dependencies.length &&
-        hasSamePreviewData(previous.source, source) &&
+        hasSameChartData(previous.source, source) &&
         dependencies.every((value, index) => value === previous.dependencies?.[index])
     ) {
         return
@@ -50,4 +44,4 @@ export const clearPreviewEdit = () => {
 }
 
 export const getPreviewState = (current: State, edit = previewEdit.value) =>
-    edit && hasSamePreviewData(current, edit.source) ? edit.resolve() : current
+    edit && hasSameChartData(current, edit.source) ? edit.resolve() : current
