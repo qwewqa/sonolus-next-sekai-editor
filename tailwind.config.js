@@ -8,6 +8,7 @@ module.exports = {
                 bg: '#404464',
                 button: '#fff',
                 accent: '#77efdc',
+                'on-accent': '#30334d',
                 header: '#bcbcd1',
                 modal: '#e9ebef',
                 preview: '#5b5c7c',

@@ -556,17 +556,9 @@ onUnmounted(() => {
             >
                 <template v-if="status === 'loading'">Loading skin...</template>
                 <template v-else>
-                    <p>
-                        Put a skin package at
-                        <span class="font-bold">public/resource/skin.scp</span> to enable the
-                        preview.
-                    </p>
-                    <p class="text-xs text-white/50">
-                        Optionally add
-                        <span class="font-bold">public/resource/particle.scp</span> for hit effects.
-                    </p>
+                    <p>The preview skin could not be loaded.</p>
                     <button
-                        class="rounded bg-button px-3 py-1 text-fg transition-colors hover:shadow-accent active:bg-accent active:text-button"
+                        class="min-h-11 rounded-full bg-button px-4 py-2 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent"
                         @click="loadSkin"
                     >
                         Reload
@@ -590,14 +582,15 @@ onUnmounted(() => {
             v-if="status === 'ready' && !isPlaying"
             v-show="!areTransportControlsVisible || canDockTransport"
             ref="controls"
-            class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden rounded text-xs text-white/75"
-            :class="areControlsExpanded ? 'w-64 bg-black/80' : 'w-11 bg-black/40'"
+            class="preview-controls absolute right-1 top-1 z-10 flex max-w-[calc(100%-0.5rem)] flex-col overflow-hidden rounded-xl text-xs text-fg accent-fg shadow-xl"
+            :class="areControlsExpanded ? 'w-64 bg-modal' : 'w-11 rounded-full bg-button'"
             :style="controlsStyle"
             @keydown.stop
         >
             <button
                 type="button"
-                class="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded px-2 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/75"
+                class="flex h-11 w-full shrink-0 items-center justify-center gap-2 px-3 transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                :class="areControlsExpanded ? 'bg-header' : 'rounded-full'"
                 :aria-expanded="areControlsExpanded"
                 :aria-controls="controlsId"
                 :aria-label="controlsToggleLabel"
@@ -620,12 +613,13 @@ onUnmounted(() => {
                 v-show="areControlsExpanded"
                 :id="controlsId"
                 ref="controlsBody"
-                class="preview-controls-body flex min-h-0 touch-pan-y flex-col items-end gap-1 overflow-y-auto overscroll-contain px-2 pb-2"
+                class="preview-controls-body flex min-h-0 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-2"
             >
                 <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
                     <span class="w-10 shrink-0">Speed</span>
                     <input
                         v-model.number="noteSpeed"
+                        aria-label="Note speed"
                         class="min-w-0 flex-1"
                         type="range"
                         min="1"
@@ -633,11 +627,12 @@ onUnmounted(() => {
                         step="0.05"
                     />
                     <input
-                        class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                        class="number-input w-10 shrink-0 rounded-full bg-button px-1 text-right shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg"
                         type="number"
                         min="1"
                         max="12"
                         step="0.01"
+                        aria-label="Note speed value"
                         :value="noteSpeed"
                         @change="onSpeedChange"
                         @keydown="onSpeedKeydown"
@@ -647,6 +642,7 @@ onUnmounted(() => {
                     <span class="w-10 shrink-0">Quality</span>
                     <input
                         v-model.number="renderScale"
+                        aria-label="Render quality"
                         class="min-w-0 flex-1"
                         type="range"
                         min="0.25"
@@ -654,26 +650,27 @@ onUnmounted(() => {
                         step="0.25"
                     />
                     <input
-                        class="number-input w-10 shrink-0 rounded bg-black/30 px-1 text-right"
+                        class="number-input w-10 shrink-0 rounded-full bg-button px-1 text-right shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg"
                         type="number"
                         min="0.25"
                         max="2"
                         step="0.25"
+                        aria-label="Render quality value"
                         :value="renderScale"
                         @change="onScaleChange"
                         @keydown="onSpeedKeydown"
                     />
                 </div>
                 <div
-                    class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                    class="flex max-w-full shrink-0 flex-wrap items-center gap-1"
                     role="radiogroup"
                     aria-label="Preview docking"
                 >
-                    <span>Dock</span>
+                    <span class="w-10 shrink-0">Dock</span>
                     <label
                         v-for="position in dockPositions"
                         :key="position.value"
-                        class="flex shrink-0 cursor-pointer items-center gap-1"
+                        class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1 shadow-sm"
                     >
                         <input
                             v-model="settings.previewPosition"
@@ -687,15 +684,15 @@ onUnmounted(() => {
                     </label>
                 </div>
                 <div
-                    class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
+                    class="flex max-w-full shrink-0 flex-wrap items-center gap-1"
                     role="radiogroup"
                     aria-label="Aspect ratio"
                 >
-                    <span>Aspect</span>
+                    <span class="w-10 shrink-0">Aspect</span>
                     <label
                         v-for="ratio in aspectRatios"
                         :key="ratio.label"
-                        class="flex shrink-0 cursor-pointer items-center gap-1"
+                        class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1 shadow-sm"
                     >
                         <input
                             v-model="aspectRatio"
@@ -708,13 +705,22 @@ onUnmounted(() => {
                         <span>{{ ratio.label }}</span>
                     </label>
                 </div>
-                <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                <label
+                    class="flex w-full shrink-0 cursor-pointer items-center justify-between gap-2"
+                >
                     <span>Effects</span>
-                    <input v-model="showEffects" type="checkbox" @change="blurInput" />
+                    <input
+                        v-model="showEffects"
+                        class="size-4"
+                        type="checkbox"
+                        @change="blurInput"
+                    />
                 </label>
-                <label class="flex shrink-0 cursor-pointer items-center gap-2">
+                <label
+                    class="flex w-full shrink-0 cursor-pointer items-center justify-between gap-2"
+                >
                     <span>Antialias</span>
-                    <input v-model="antialias" type="checkbox" @change="blurInput" />
+                    <input v-model="antialias" class="size-4" type="checkbox" @change="blurInput" />
                 </label>
             </div>
         </div>

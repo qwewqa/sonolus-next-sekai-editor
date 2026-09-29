@@ -295,7 +295,7 @@ onUnmounted(() => {
             v-if="!persistent"
             ref="toggle"
             type="button"
-            class="preview-transport-toggle pointer-events-auto absolute inset-0 h-full w-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/75"
+            class="preview-transport-toggle pointer-events-auto absolute inset-0 h-full w-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg"
             :aria-label="visible ? 'Hide playback controls' : 'Show playback controls'"
             :aria-expanded="visible"
             :aria-controls="panelId"
@@ -305,7 +305,7 @@ onUnmounted(() => {
         <span
             v-if="!isPlaying"
             ref="cornerTime"
-            class="transport-corner-time pointer-events-none absolute z-10 rounded bg-black/40 px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-white/80"
+            class="transport-corner-time pointer-events-none absolute z-10 rounded-full bg-modal px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-fg shadow-md"
             :style="{ left: `${viewportLeft + 4}px`, top: `${viewportTop + 4}px` }"
             aria-label="Preview time"
         >
@@ -314,7 +314,7 @@ onUnmounted(() => {
         <div
             :id="panelId"
             ref="panel"
-            class="preview-transport absolute z-20 grid items-center gap-1 rounded bg-black/80 p-1 text-white/90"
+            class="preview-transport absolute z-20 grid items-center gap-1 rounded-xl bg-modal p-1 text-fg shadow-xl"
             :class="visible ? 'pointer-events-auto' : 'pointer-events-none invisible'"
             :inert="!visible"
             :aria-hidden="!visible"
@@ -362,7 +362,7 @@ onUnmounted(() => {
                     <span class="font-mono text-xs tabular-nums leading-4" aria-hidden="true">
                         {{ step < 0 ? '−' : '+' }}{{ Math.abs(step) }}
                     </span>
-                    <span class="text-[9px] leading-3 text-white/60" aria-hidden="true">ms</span>
+                    <span class="text-[10px] leading-3 opacity-75" aria-hidden="true">ms</span>
                 </button>
             </div>
         </div>
@@ -393,11 +393,11 @@ onUnmounted(() => {
 }
 
 .transport-button {
-    @apply flex h-9 min-w-0 items-center justify-center rounded bg-white/10 px-px hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/75;
+    @apply flex h-9 min-w-0 items-center justify-center rounded-full bg-button px-px shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent;
 }
 
 .transport-button.is-held {
-    @apply bg-white/30;
+    @apply bg-accent text-on-accent;
 }
 
 @container (max-width: 18.9375rem) {
