@@ -24,12 +24,10 @@ export const useAutoSave = () => {
         (state) => {
             clearTimeout(id)
 
-            if (!state) {
+            if (!state || !isDirty.value) {
                 storageRemove('autoSave.levelData')
                 return
             }
-
-            if (!isDirty.value) return
 
             id = window.setTimeout(() => {
                 if (!enabled) return

@@ -55,7 +55,7 @@ const states = shallowReactive([
 export let levelDataHandle: FileSystemFileHandle | undefined
 
 addEventListener('beforeunload', (event) => {
-    if (canUndo.value) event.preventDefault()
+    if (isDirty.value) event.preventDefault()
 })
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

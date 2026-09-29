@@ -61,9 +61,7 @@ export const createTransaction = (
             }
 
             return {
-                bgm: state.bgm,
-                initialLife: state.initialLife,
-                isDynamicStages: state.isDynamicStages,
+                ...state,
                 store: {
                     grid: {
                         ...state.store.grid,
@@ -81,8 +79,6 @@ export const createTransaction = (
                 },
                 bpms: bpms ?? state.bpms,
                 groups: groups ?? state.groups,
-                stages: state.stages,
-
                 selectedEntities,
             }
         },
