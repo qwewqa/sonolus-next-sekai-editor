@@ -12,6 +12,7 @@ import {
     SLIDE_EFFECT_DESPAWN_DELAY,
     getFrameIndex,
     latestVisibleTarget,
+    queryGroupTimeIndex,
 } from './frameIndex'
 import { LAYER_SLOT_EFFECT, LAYER_SLOT_GLOW_EFFECT, getZ } from './layer'
 import {
@@ -172,12 +173,26 @@ export const renderPreviewFrame = (
         stageTransformToAffineOrIdentity(transform),
     )
     const frameIndex = getFrameIndex(chart)
-    const latestTarget = latestVisibleTarget(
+    const minimumYOffset = stageProps.reduce(
+        (minimum, props) => Math.min(minimum, props.yOffset),
+        0,
+    )
+    const defaultPreempt = preemptTime(noteSpeed, 0)
+    const latestTargets = frameIndex.minimumTimescales.map((minimumTimescale, index) =>
+        latestVisibleTarget(
+            now,
+            minimumTimescale,
+            preempts[index] ?? defaultPreempt,
+            context.layout.progressStart,
+            minimumYOffset,
+        ),
+    )
+    const fallbackLatestTarget = latestVisibleTarget(
         now,
-        frameIndex.minimumTimescale,
-        Math.max(preemptTime(noteSpeed, 0), ...preempts),
+        1,
+        defaultPreempt,
         context.layout.progressStart,
-        Math.min(0, ...stageProps.map((props) => props.yOffset)),
+        minimumYOffset,
     )
 
     if (chart.isDynamicStages) {
@@ -409,7 +424,12 @@ export const renderPreviewFrame = (
     let particleOrder = 0
     const nextParticleZ = (layer = PARTICLE_LAYER): ZKey => [layer, particleOrder++]
 
-    for (const { item: connector } of queryTimeIndex(frameIndex.connectors, now, latestTarget)) {
+    for (const { item: connector } of queryGroupTimeIndex(
+        frameIndex.connectors,
+        now,
+        latestTargets,
+        fallbackLatestTarget,
+    )) {
         const { head, tail, segmentHead, segmentTail } = connector
 
         const endTime =
@@ -540,7 +560,12 @@ export const renderPreviewFrame = (
         )
     }
 
-    for (const { item: note } of queryTimeIndex(frameIndex.notes, now, latestTarget)) {
+    for (const { item: note } of queryGroupTimeIndex(
+        frameIndex.notes,
+        now,
+        latestTargets,
+        fallbackLatestTarget,
+    )) {
         if (now >= note.targetTime) continue
         if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
         if (groupHidesNotes(note)) continue
@@ -846,7 +871,12 @@ export const renderPreviewFrame = (
         }
     }
 
-    for (const { item: simLine } of queryTimeIndex(frameIndex.simLines, now, latestTarget)) {
+    for (const { item: simLine } of queryGroupTimeIndex(
+        frameIndex.simLines,
+        now,
+        latestTargets,
+        fallbackLatestTarget,
+    )) {
         const { left, right } = simLine
         if (now >= Math.min(left.targetTime, right.targetTime)) continue
         if (groupHidesNotes(left) || groupHidesNotes(right)) continue

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { getFrameIndex, latestVisibleTarget } from '../../src/preview/engine/frameIndex'
+import {
+    getFrameIndex,
+    latestVisibleTarget,
+    queryGroupTimeIndex,
+} from '../../src/preview/engine/frameIndex'
 import { FlickDirection, type CameraChange } from '../../src/preview/engine/layout'
 import {
     ConnectorKind,
@@ -319,13 +323,13 @@ test('visibility candidates include attachment endpoints, long connectors and th
     const index = getFrameIndex(source)
     assert.equal(getFrameIndex(source), index)
     assert.deepEqual(
-        queryTimeIndex(index.notes, 2, 6).map(({ item }) => item),
+        queryGroupTimeIndex(index.notes, 2, [6]).map(({ item }) => item),
         [attached],
     )
-    assert.equal(queryTimeIndex(index.connectors, 2, 6).length, 1)
-    assert.equal(queryTimeIndex(index.connectors, 104.99, 109).length, 1)
-    assert.equal(queryTimeIndex(index.connectors, 105, 109).length, 0)
-    assert.equal(queryTimeIndex(index.simLines, 2, 6).length, 1)
+    assert.equal(queryGroupTimeIndex(index.connectors, 2, [6]).length, 1)
+    assert.equal(queryGroupTimeIndex(index.connectors, 104.99, [109]).length, 1)
+    assert.equal(queryGroupTimeIndex(index.connectors, 105, [109]).length, 0)
+    assert.equal(queryGroupTimeIndex(index.simLines, 2, [6]).length, 1)
     assert.equal(queryTimeIndex(index.slides, 100.5, 100.5).length, 1)
     assert.equal(queryTimeIndex(index.slides, 100.6, 100.6).length, 0)
     assert.deepEqual(
@@ -345,8 +349,8 @@ test('lookahead includes slow speeds and stage offsets and falls back for nonmon
         hideNotes: false,
     }
     const index = getFrameIndex(chart({ groups: [createTimescaleGroup([change], 1)] }))
-    assert.equal(index.minimumTimescale, 0.25)
-    assert.ok(latestVisibleTarget(10, index.minimumTimescale, 4, 0, -2) >= 58)
+    assert.deepEqual(index.minimumTimescales, [0.25])
+    assert.ok(latestVisibleTarget(10, index.minimumTimescales[0]!, 4, 0, -2) >= 58)
     for (const overrides of [
         { timescale: 0 },
         { timescale: -1 },
@@ -356,16 +360,124 @@ test('lookahead includes slow speeds and stage offsets and falls back for nonmon
         const special = getFrameIndex(
             chart({ groups: [createTimescaleGroup([{ ...change, ...overrides }], 0)] }),
         )
-        assert.equal(latestVisibleTarget(10, special.minimumTimescale, 4, 0, 0), Infinity)
+        assert.equal(latestVisibleTarget(10, special.minimumTimescales[0]!, 4, 0, 0), Infinity)
     }
     assert.equal(latestVisibleTarget(0, 1, 1e21, 0, 0), Infinity)
+})
+
+test('special and unused groups do not make ordinary candidates scan the future chart', () => {
+    const special = note(100_000, { groupIndex: 1 })
+    const notes = [special, ...Array.from({ length: 100_000 }, (_, i) => note(i / 10))]
+    const source = chart({
+        notes,
+        groups: [
+            createTimescaleGroup([], 0),
+            createTimescaleGroup(
+                [
+                    {
+                        time: 0,
+                        timescale: 1,
+                        skipSeconds: 0,
+                        ease: 0,
+                        transitionStyle: 1,
+                        hideNotes: false,
+                    },
+                ],
+                0,
+            ),
+            createTimescaleGroup(
+                [
+                    {
+                        time: 0,
+                        timescale: 0,
+                        skipSeconds: 0,
+                        ease: 0,
+                        transitionStyle: 0,
+                        hideNotes: false,
+                    },
+                ],
+                0,
+            ),
+        ],
+    })
+    const index = getFrameIndex(source)
+    assert.deepEqual(index.minimumTimescales, [1, 0, 0])
+    assert.equal(index.notes.size, 2, 'Unused groups do not need candidate indexes')
+    const ordinary = index.notes.get(0)!
+    let reads = 0
+    ordinary.entries = new Proxy(ordinary.entries, {
+        get(target, property, receiver) {
+            if (typeof property === 'string' && /^\d+$/.test(property)) reads++
+            return Reflect.get(target, property, receiver)
+        },
+    })
+    assert.deepEqual(
+        queryGroupTimeIndex(index.notes, 1, [1.5, Infinity, Infinity]).map(({ index }) => index),
+        [0, 12, 13, 14, 15, 16],
+    )
+    assert.ok(reads < 100, `Expected bounded ordinary-note work, read ${reads} entries`)
+})
+
+test('group queries include every attachment and connector endpoint without duplicate draws', () => {
+    const head = note(40)
+    const tail = note(60, { groupIndex: 1 })
+    const attached = note(50, {
+        groupIndex: 2,
+        isAttached: true,
+        attachHead: head,
+        attachTail: tail,
+    })
+    const ordinary = note(55)
+    const connectors = [
+        {
+            kind: ConnectorKind.guideNeutral,
+            style: 'default' as const,
+            ease: 1 as const,
+            head: attached,
+            tail: ordinary,
+            segmentHead: head,
+            segmentTail: tail,
+            segmentHeadAlpha: 1,
+            segmentTailAlpha: 1,
+            layer: 0 as const,
+            throughJudgeLine: false,
+            fullScreen: false,
+        },
+    ]
+    const source = chart({
+        notes: [ordinary, attached, tail, head],
+        connectors,
+        simLines: [{ left: ordinary, right: attached }],
+    })
+    const index = getFrameIndex(source)
+    for (const bounds of [
+        [1, 100, 1],
+        [100, 1, 1],
+        [100, 100, 1],
+    ]) {
+        assert.equal(queryGroupTimeIndex(index.connectors, 0, bounds).length, 1)
+        assert.equal(queryGroupTimeIndex(index.simLines, 0, bounds).length, 1)
+    }
+    assert.deepEqual(
+        queryGroupTimeIndex(index.notes, 0, [1, 100, 1]).map(({ index }) => index),
+        [1, 2],
+    )
+    assert.deepEqual(
+        queryGroupTimeIndex(index.notes, 0, [100, 100, 1]).map(({ index }) => index),
+        [0, 1, 2, 3],
+    )
+    assert.equal(
+        queryGroupTimeIndex(index.notes, 0, [1, 1, Infinity]).length,
+        0,
+        'Attached progress depends on its endpoints, not its own group',
+    )
 })
 
 test('culled frames match full future traversal with eased speeds, offsets, attachments and effects', () => {
     const notes = Array.from({ length: 200 }, (_, i) =>
         note(i / 2, {
             lane: (i % 10) - 5,
-            groupIndex: i % 2,
+            groupIndex: i % 11 === 0 ? 2 : i % 2,
             stageIndex: i % 2,
         }),
     )
@@ -401,6 +513,19 @@ test('culled frames match full future traversal with eased speeds, offsets, atta
                     },
                 ],
                 3,
+            ),
+            createTimescaleGroup(
+                [
+                    {
+                        time: 0,
+                        timescale: 0.75,
+                        skipSeconds: 0,
+                        ease: 0,
+                        transitionStyle: 1,
+                        hideNotes: false,
+                    },
+                ],
+                1,
             ),
         ],
         stages: [-2, 0.5].map((yOffset, order) => ({
@@ -447,15 +572,15 @@ test('culled frames match full future traversal with eased speeds, offsets, atta
         dispose() {},
     }
     const index = getFrameIndex(source)
-    const minimumTimescale = index.minimumTimescale
+    const minimumTimescales = index.minimumTimescales
     for (const now of [-2, 0, 0.5, 20, 70, 100, 4]) {
         for (const speed of [1, 7, 11]) {
             draws = []
-            index.minimumTimescale = minimumTimescale
+            index.minimumTimescales = minimumTimescales
             renderPreviewFrame(renderer, skin, source, now, 1920, 1080, 1920, 1080, speed, true)
             const culled = draws
             draws = []
-            index.minimumTimescale = 0
+            index.minimumTimescales = minimumTimescales.map(() => 0)
             renderPreviewFrame(renderer, skin, source, now, 1920, 1080, 1920, 1080, speed, true)
             assert.deepEqual(culled, draws, `Frame at ${now}, speed ${speed}`)
         }
