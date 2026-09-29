@@ -1288,6 +1288,60 @@ test.describe('preview aspect ratios', () => {
         expect(await page.evaluate(() => window.previewTest.uploads)).toBe(before.uploads)
     })
 
+    test('wrapped settings labels use available screen height and still scroll in a short window', async ({
+        page,
+    }) => {
+        // Wider text reproduces platform font metrics that wrap the last aspect
+        // option onto another row. The panel must fit its content when it can.
+        await page.addStyleTag({
+            content: '.preview-controls { font-family: monospace; font-size: 14px; }',
+        })
+        await page.getByRole('radio', { name: '21:9', exact: true }).check()
+        await page.evaluate(() => {
+            window.editorTest.settings.previewPosition = 'top'
+            window.editorTest.settings.previewHeight = 80
+        })
+        await page.setViewportSize({ width: 1069, height: 400 })
+        await settle(page)
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        const controls = page.locator('.preview-controls')
+        const body = controls.locator('.preview-controls-body')
+        const antialias = controls.getByLabel('Antialias', { exact: true })
+        const aspect = controls.getByRole('radiogroup', { name: 'Aspect Ratio', exact: true })
+        const first = await aspect.getByRole('radio', { name: '16:9', exact: true }).boundingBox()
+        const last = await aspect.getByRole('radio', { name: '4:3', exact: true }).boundingBox()
+        expect(last!.y).toBeGreaterThan(first!.y)
+        await expect(antialias).toBeInViewport()
+        await expect
+            .poll(() => body.evaluate((element) => element.scrollHeight - element.clientHeight))
+            .toBe(0)
+        await antialias.uncheck()
+        await expect(antialias).not.toBeChecked()
+
+        await page.getByRole('button', { name: 'Minimize preview settings', exact: true }).click()
+        await page.getByRole('button', { name: 'Show preview settings', exact: true }).click()
+        await settle(page)
+        await expect(antialias).toBeInViewport()
+        await expect
+            .poll(() => body.evaluate((element) => element.scrollHeight - element.clientHeight))
+            .toBe(0)
+
+        await page.setViewportSize({ width: 1069, height: 128 })
+        await settle(page)
+        expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
+            true,
+        )
+        await antialias.scrollIntoViewIfNeeded()
+        await expect(antialias).toBeInViewport()
+        await antialias.check()
+        await expect(antialias).toBeChecked()
+        const speed = controls.getByRole('spinbutton', { name: 'Note Speed', exact: true })
+        await speed.scrollIntoViewIfNeeded()
+        await expect(speed).toBeInViewport()
+    })
+
     test('controls stay within narrow panels and scroll into view in short top panels', async ({
         page,
     }) => {
