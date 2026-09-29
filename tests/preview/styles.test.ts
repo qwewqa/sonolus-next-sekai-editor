@@ -1,6 +1,4 @@
-import type { ParticleData, SkinData } from '@sonolus/core'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
     connectorBaseKind,
@@ -9,7 +7,6 @@ import {
     noteStyles,
 } from '../../src/chart/noteStyle'
 import { getStyledParticle, resolveParticle, type ParticleEffect } from '../../src/preview/particle'
-import { parseGzippedJson, parseScp } from '../../src/preview/scp'
 import { getStyledSkin, resolveSkin, type Sprite } from '../../src/preview/skin'
 
 const sprite = (): Sprite => ({ u0: 0, v0: 0, u1: 1, v1: 1 })
@@ -123,52 +120,4 @@ test('colored effects fall back per effect and trace flicks share directional an
         getStyledParticle(particle, 'blue').flickNote.circular,
         particle.flickNote.circular,
     )
-})
-
-test('pinned Coconut 2.0.0 packages resolve every note and connector color', () => {
-    const readData = (filename: string, category: string) => {
-        const bytes = readFileSync(
-            new URL(`../../deployment/assets/${filename}.scp`, import.meta.url),
-        )
-        const archive = parseScp(
-            bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        )
-        const item = archive.getJson<{ items: { data: { url: string } }[] }>(
-            `sonolus/${category}/list`,
-        )!.items[0]!
-        return archive.get(item.data.url)!
-    }
-    const skinData = parseGzippedJson<SkinData>(readData('skin', 'skins'))
-    const sprites = new Map(skinData.sprites.map(({ name }) => [name, sprite()]))
-    const skin = resolveSkin((name) => sprites.get(name))
-    const particleData = parseGzippedJson<ParticleData>(readData('particle', 'particles'))
-    const effects = new Map(
-        particleData.effects.map(({ name }) => [name, { groups: [] } satisfies ParticleEffect]),
-    )
-    const particle = resolveParticle((name) => effects.get(name))
-    for (const style of noteStyles.slice(1)) {
-        const color = style.charAt(0).toUpperCase() + style.slice(1)
-        const palette = getStyledSkin(skin, style)
-        assert.equal(
-            palette.normalNote.body.middle,
-            sprites.get(`Sekai Normal Note Middle ${color}`),
-        )
-        assert.notEqual(palette.normalNote.body.middle, skin.normalNote.body.middle)
-        assert.equal(
-            palette.damageSlideConnector.normal,
-            sprites.get(`Sekai Damage Slide Connection ${color}`),
-        )
-        assert.equal(
-            palette.criticalFlickNote.arrow.downLeft[5],
-            sprites.get(`Sekai Critical Flick Arrow Down Left 6 ${color}`),
-        )
-        assert.equal(
-            getStyledParticle(particle, style).normalNote.circular,
-            effects.get(`Sekai Normal Note Circular ${color}`),
-        )
-        assert.notEqual(
-            getStyledParticle(particle, style).normalNote.circular,
-            particle.normalNote.circular,
-        )
-    }
 })

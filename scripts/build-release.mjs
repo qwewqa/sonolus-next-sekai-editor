@@ -3,12 +3,8 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-    checkRelease,
-    readAssetManifest,
-    stageReleasePublic,
-    writeReleaseManifest,
-} from './release-utils.mjs'
+import { stagePreviewAssets } from './release-assets.mjs'
+import { checkRelease, stageReleasePublic, writeReleaseManifest } from './release-utils.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
@@ -25,11 +21,11 @@ const metadata = {
     appVersion: `${version}+${commit.slice(0, 8)}`,
     sourceDirty: Boolean(git('status', '--porcelain', '--untracked-files=normal')),
 }
-const manifest = await readAssetManifest(root)
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'sekai-release-'))
 try {
     const publicDir = join(temporaryRoot, 'public')
-    await stageReleasePublic(root, publicDir, manifest)
+    await stageReleasePublic(root, publicDir)
+    const assets = await stagePreviewAssets(root, publicDir)
     const { build } = await import('vite')
     await build({
         root,
@@ -37,8 +33,8 @@ try {
         publicDir,
         build: { outDir: join(root, 'dist'), emptyOutDir: true },
     })
-    await writeReleaseManifest(join(root, 'dist'), metadata, manifest.assets)
-    await checkRelease(join(root, 'dist'), manifest.assets, metadata)
+    await writeReleaseManifest(join(root, 'dist'), metadata, assets)
+    await checkRelease(join(root, 'dist'), metadata)
     console.log(
         `Verified release ${metadata.appVersion}${metadata.sourceDirty ? ' (working tree has changes)' : ''}`,
     )

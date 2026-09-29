@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
+import type { ParticleData, SkinData } from '@sonolus/core'
 import { readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
+import { noteStyles } from '../../src/chart/noteStyle'
+import { parseGzippedJson, parseScp } from '../../src/preview/scp'
 import { chart, instrumentRendering, stereoWav } from './fixtures'
 
 const siteUrl = new URL(
@@ -17,14 +20,29 @@ const frames = (page: Page) =>
 test('release assets, preview, chart editing and FFT audio work in the production bundle', async ({
     page,
 }, testInfo) => {
+    const manifestResponse = await page.request.get('/release-manifest.json')
+    expect(manifestResponse.ok()).toBe(true)
+    const manifest = (await manifestResponse.json()) as {
+        previewAssets: { file: string; source: string }[]
+    }
+    const hasParticles = manifest.previewAssets.some(
+        (asset) => asset.file === 'resource/particle.scp',
+    )
+    const optionalParticle = (url: string) =>
+        !hasParticles && url.endsWith('/resource/particle.scp')
     const errors: string[] = []
     const requests: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     page.on('console', (message) => {
-        if (message.type() === 'error') errors.push(message.text())
+        if (message.type() === 'error' && !optionalParticle(message.location().url))
+            errors.push(message.text())
     })
     page.on('response', (response) => {
-        if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`)
+        if (
+            response.status() >= 400 &&
+            !(response.status() === 404 && optionalParticle(response.url()))
+        )
+            errors.push(`${response.status()} ${response.url()}`)
     })
     page.on('requestfailed', (request) =>
         errors.push(`${request.failure()?.errorText}: ${request.url()}`),
@@ -33,11 +51,50 @@ test('release assets, preview, chart editing and FFT audio work in the productio
     await page.addInitScript(instrumentRendering)
     await page.goto('/')
 
+    await test.step('published packages contain the supported color resources', async () => {
+        // Custom and older skins may intentionally rely on the color fallbacks.
+        if (
+            !['skins', 'particles'].every((category) =>
+                manifest.previewAssets.some(
+                    (asset) =>
+                        asset.source ===
+                        `https://coconut.sonolus.com/next-sekai/sonolus/${category}/coconut-next-sekai-1`,
+                ),
+            )
+        )
+            return
+        const names = async (name: string, category: string) => {
+            const response = await page.request.get(`/resource/${name}.scp`)
+            expect(response.ok()).toBe(true)
+            const archive = parseScp(Uint8Array.from(await response.body()).buffer)
+            const item = archive.getJson<{ items: { data: { url: string } }[] }>(
+                `sonolus/${category}/list`,
+            )!.items[0]!
+            const data = parseGzippedJson<SkinData & ParticleData>(archive.get(item.data.url)!)
+            return new Set((name === 'skin' ? data.sprites : data.effects).map(({ name }) => name))
+        }
+        const skin = await names('skin', 'skins')
+        const particle = await names('particle', 'particles')
+        for (const style of noteStyles.slice(1)) {
+            const color = style.charAt(0).toUpperCase() + style.slice(1)
+            for (const name of [
+                'Sekai Normal Note Middle',
+                'Sekai Damage Slide Connection',
+                'Sekai Critical Flick Arrow Down Left 6',
+            ]) {
+                expect(skin.has(`${name} ${color}`)).toBe(true)
+            }
+            expect(particle.has(`Sekai Normal Note Circular ${color}`)).toBe(true)
+        }
+    })
+
     await test.step('load actual release packages and deployed metadata', async () => {
         await expect(page.locator('canvas.editor-chart')).toBeVisible()
         await expect(page.locator('.preview-controls')).toBeVisible()
         await expect(page.locator('.preview input[type="number"]').first()).toHaveValue('10')
-        await expect.poll(() => page.evaluate(() => window.productionSmoke.uploads)).toBe(2)
+        await expect
+            .poll(() => page.evaluate(() => window.productionSmoke.uploads))
+            .toBe(hasParticles ? 2 : 1)
         await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', siteUrl)
         await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
             'content',

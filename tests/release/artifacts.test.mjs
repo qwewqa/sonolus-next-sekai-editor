@@ -6,9 +6,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
     checkRelease,
-    copyVerifiedAsset,
     noticeFiles,
-    readAssetManifest,
     sha256,
     stageReleasePublic,
     staticFiles,
@@ -46,7 +44,7 @@ async function releaseFixture(t) {
         const bytes = Buffer.from(`test ${name} package`)
         return {
             file: `resource/${name}.scp`,
-            source: `deployment/assets/${name}.scp`,
+            source: `https://example.com/sonolus/${name === 'skin' ? 'skins' : 'particles'}/fixture`,
             bytes: bytes.length,
             sha256: sha256(bytes),
         }
@@ -65,19 +63,10 @@ async function releaseFixture(t) {
     return { directory, assets }
 }
 
-test('staging uses the pinned repository packages and excludes development resources', async (t) => {
+test('staging includes site notices without reading local preview packages', async (t) => {
     const directory = await temporary(t)
-    const manifest = await readAssetManifest(root)
-    await stageReleasePublic(root, directory, manifest)
-    for (const asset of manifest.assets) {
-        assert.deepEqual(
-            await readFile(join(directory, asset.file)),
-            await readFile(join(root, asset.source)),
-        )
-    }
-    await assert.rejects(readFile(join(directory, 'resource/next-sekai-resources.scp')), {
-        code: 'ENOENT',
-    })
+    await stageReleasePublic(root, directory)
+    await assert.rejects(readFile(join(directory, 'resource/skin.scp')), { code: 'ENOENT' })
     const notices = await readFile(join(directory, 'THIRD_PARTY_NOTICES.txt'), 'utf8')
     assert.match(notices, /@breezystack\/lamejs 1\.2\.7/)
     assert.match(notices, /Corresponding source archive:/)
@@ -87,66 +76,42 @@ test('staging uses the pinned repository packages and excludes development resou
     )
 })
 
-test('an altered package with unchanged length fails before it is staged', async (t) => {
-    const directory = await temporary(t)
-    const source = 'deployment/assets/skin.scp'
-    await write(directory, source, 'altered')
-    await assert.rejects(
-        copyVerifiedAsset(directory, join(directory, 'output'), {
-            source,
-            file: 'resource/skin.scp',
-            bytes: 7,
-            sha256: sha256('original'.slice(0, 7)),
-        }),
-        /integrity failed/,
-    )
-    await assert.rejects(readFile(join(directory, 'output/resource/skin.scp')), { code: 'ENOENT' })
-})
-
-test('asset manifest cannot redirect source files outside the pinned package location', async (t) => {
-    const directory = await temporary(t)
-    const manifest = await readAssetManifest(root)
-    manifest.assets[0].source = '../private.scp'
-    await write(directory, 'deployment/preview-assets.json', JSON.stringify(manifest))
-    await assert.rejects(readAssetManifest(directory), /Invalid preview asset declaration/)
-})
-
 test('artifact verification detects file tampering and unexpected files', async (t) => {
-    const { directory, assets } = await releaseFixture(t)
-    await checkRelease(directory, assets, metadata)
+    const { directory } = await releaseFixture(t)
+    await checkRelease(directory, metadata)
     await write(directory, 'assets/index-12345678.js', 'changed')
-    await assert.rejects(checkRelease(directory, assets), /file integrity failed/)
+    await assert.rejects(checkRelease(directory), /file integrity failed/)
     await write(directory, 'assets/index-12345678.js', 'console.log("release")')
     await write(directory, 'resource/next-sekai-resources.scp', 'unintended media')
-    await assert.rejects(checkRelease(directory, assets), /Unexpected release file/)
+    await assert.rejects(checkRelease(directory), /Unexpected release file/)
 })
 
 test('an extra hashed bundle still fails when it was not recorded by the build', async (t) => {
-    const { directory, assets } = await releaseFixture(t)
+    const { directory } = await releaseFixture(t)
     await write(directory, 'assets/unexpected-12345678.js', 'unrecorded')
-    await assert.rejects(checkRelease(directory, assets), /file inventory differs/)
+    await assert.rejects(checkRelease(directory), /file inventory differs/)
 })
 
-test('recomputing output hashes cannot replace the pinned preview package', async (t) => {
+test('package hashes detect replacements even when the file inventory is recomputed', async (t) => {
     const { directory, assets } = await releaseFixture(t)
     await write(directory, 'resource/skin.scp', 'replacement package')
     await writeReleaseManifest(directory, metadata, assets)
-    await assert.rejects(checkRelease(directory, assets), /Preview asset integrity failed/)
+    await assert.rejects(checkRelease(directory), /Preview asset integrity failed/)
 })
 
 test('release identity must match the expected checkout and version', async (t) => {
     const { directory, assets } = await releaseFixture(t)
     await assert.rejects(
-        checkRelease(directory, assets, { commit: 'b'.repeat(40) }),
+        checkRelease(directory, { commit: 'b'.repeat(40) }),
         /metadata mismatch: commit/,
     )
     await assert.rejects(
-        checkRelease(directory, assets, { version: '2.0.0' }),
+        checkRelease(directory, { version: '2.0.0' }),
         /metadata mismatch: version/,
     )
     await writeReleaseManifest(directory, { ...metadata, sourceDirty: true }, assets)
     await assert.rejects(
-        checkRelease(directory, assets, { sourceDirty: false }),
+        checkRelease(directory, { sourceDirty: false }),
         /metadata mismatch: sourceDirty/,
     )
 })

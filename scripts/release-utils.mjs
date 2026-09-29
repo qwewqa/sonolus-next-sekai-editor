@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve, sep } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 
 export const staticFiles = ['favicon.ico', 'thumbnail.png']
 export const noticeFiles = [
@@ -28,39 +28,6 @@ async function regularFile(path) {
         throw new Error(`Expected a regular release file: ${path}`)
     }
     return readFile(path)
-}
-
-export async function readAssetManifest(root) {
-    const manifest = JSON.parse(
-        await readFile(join(root, 'deployment/preview-assets.json'), 'utf8'),
-    )
-    if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.assets)) {
-        throw new Error('Unsupported preview asset manifest')
-    }
-    const expected = new Set(['resource/skin.scp', 'resource/particle.scp'])
-    for (const asset of manifest.assets) {
-        if (
-            !expected.delete(asset.file) ||
-            asset.source !== `deployment/assets/${asset.file.slice('resource/'.length)}` ||
-            !Number.isSafeInteger(asset.bytes) ||
-            asset.bytes <= 0 ||
-            !/^[a-f0-9]{64}$/.test(asset.sha256)
-        ) {
-            throw new Error(`Invalid preview asset declaration: ${asset.file}`)
-        }
-    }
-    if (expected.size) throw new Error('Preview asset manifest is incomplete')
-    return manifest
-}
-
-export async function copyVerifiedAsset(root, destination, asset) {
-    const bytes = await regularFile(containedPath(root, asset.source))
-    if (bytes.length !== asset.bytes || sha256(bytes) !== asset.sha256) {
-        throw new Error(`Preview asset integrity failed: ${asset.source}`)
-    }
-    const target = containedPath(destination, asset.file)
-    await mkdir(dirname(target), { recursive: true })
-    await writeFile(target, bytes)
 }
 
 async function dependencyNotices(root) {
@@ -115,12 +82,11 @@ async function dependencyNotices(root) {
     return sections.join('\n') + '\n'
 }
 
-export async function stageReleasePublic(root, destination, manifest) {
+export async function stageReleasePublic(root, destination) {
     await mkdir(destination, { recursive: true })
     for (const file of staticFiles) {
         await writeFile(join(destination, file), await regularFile(join(root, 'public', file)))
     }
-    for (const asset of manifest.assets) await copyVerifiedAsset(root, destination, asset)
     await writeFile(join(destination, 'LICENSE.txt'), await regularFile(join(root, 'LICENSE.txt')))
     await mkdir(join(destination, 'notices'), { recursive: true })
     for (const file of noticeFiles.filter((file) => file.startsWith('notices/'))) {
@@ -142,6 +108,20 @@ async function listFiles(directory, prefix = '') {
 }
 
 function validateFileNames(files, assets) {
+    const remaining = new Set(['resource/skin.scp', 'resource/particle.scp'])
+    if (!Array.isArray(assets)) throw new Error('Invalid preview asset declarations')
+    for (const asset of assets) {
+        if (
+            !remaining.delete(asset.file) ||
+            typeof asset.source !== 'string' ||
+            !asset.source ||
+            !Number.isSafeInteger(asset.bytes) ||
+            asset.bytes <= 0 ||
+            !/^[a-f0-9]{64}$/.test(asset.sha256)
+        )
+            throw new Error('Invalid preview asset declaration')
+    }
+    if (remaining.has('resource/skin.scp')) throw new Error('Missing preview skin')
     const exact = new Set([
         'index.html',
         'release-manifest.json',
@@ -181,8 +161,9 @@ export async function writeReleaseManifest(directory, metadata, assets) {
     return manifest
 }
 
-export async function checkRelease(directory, assets, expected = {}) {
+export async function checkRelease(directory, expected = {}) {
     const manifest = JSON.parse(await regularFile(join(directory, 'release-manifest.json')))
+    const assets = manifest.previewAssets
     if (
         manifest.schemaVersion !== 1 ||
         !/^[a-f0-9]{40}$/.test(manifest.commit) ||
@@ -190,8 +171,7 @@ export async function checkRelease(directory, assets, expected = {}) {
         !manifest.version ||
         manifest.base !== '/' ||
         manifest.appVersion !== `${manifest.version}+${manifest.commit.slice(0, 8)}` ||
-        typeof manifest.sourceDirty !== 'boolean' ||
-        JSON.stringify(manifest.previewAssets) !== JSON.stringify(assets)
+        typeof manifest.sourceDirty !== 'boolean'
     )
         throw new Error('Invalid release metadata')
     for (const [key, value] of Object.entries(expected)) {
