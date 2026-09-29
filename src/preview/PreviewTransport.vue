@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import PlayIcon from '../editor/commands/play/PlayIcon.vue'
 import { togglePreviewPlayback } from '../editor/player'
 import { view } from '../editor/view'
@@ -24,8 +24,13 @@ const panelId = useId()
 const panel = useTemplateRef<HTMLDivElement>('panel')
 const toggle = useTemplateRef<HTMLButtonElement>('toggle')
 const cornerTime = useTemplateRef<HTMLSpanElement>('cornerTime')
-const position = computed(() =>
-    visible.value || !isPlaying.value ? formatTime(Math.round(view.cursorTime * 1000) / 1000) : '',
+const isCornerTimeVisible = ref(false)
+const formattedTime = computed(() => formatTime(Math.round(view.cursorTime * 1000) / 1000))
+// Only the displayed clock subscribes to playback time. The corner clock stays
+// visible on narrow previews even when their playback controls are hidden.
+const cornerPosition = computed(() => (isCornerTimeVisible.value ? formattedTime.value : ''))
+const barPosition = computed(() =>
+    visible.value && !isCornerTimeVisible.value ? formattedTime.value : '',
 )
 const {
     activeStep,
@@ -107,15 +112,19 @@ watch(
 
 watch(cornerTime, (element, _previous, onCleanup) => {
     if (!element) {
+        isCornerTimeVisible.value = false
         emit('timeResize', 0, 0)
         return
     }
     const update = () => {
         const { width, height } = element.getBoundingClientRect()
+        isCornerTimeVisible.value = width > 0 && height > 0
         emit('timeResize', width, height)
     }
     const observer = new ResizeObserver(update)
-    observer.observe(element)
+    // An empty clock has zero content size both before and after a narrow
+    // layout reveals it. Observe its padding box to detect that transition.
+    observer.observe(element, { box: 'border-box' })
     update()
     onCleanup(() => {
         observer.disconnect()
@@ -141,13 +150,12 @@ watch(cornerTime, (element, _previous, onCleanup) => {
             @keydown.stop
         />
         <span
-            v-if="!isPlaying"
             ref="cornerTime"
             class="transport-corner-time pointer-events-none absolute z-10 rounded-full bg-modal px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-fg shadow-md"
             :style="{ left: `${viewportLeft + 4}px`, top: `${viewportTop + 4}px` }"
             :aria-label="i18n.preview.transport.time"
         >
-            {{ position }}
+            {{ cornerPosition }}
         </span>
         <div
             :id="panelId"
@@ -177,7 +185,7 @@ watch(cornerTime, (element, _previous, onCleanup) => {
                 class="transport-time px-1 text-center font-mono text-xs tabular-nums"
                 :aria-label="i18n.preview.transport.time"
             >
-                {{ position }}
+                {{ barPosition }}
             </span>
             <div class="transport-steps grid min-w-0 grid-cols-6 gap-0.5">
                 <button

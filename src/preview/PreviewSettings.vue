@@ -77,15 +77,10 @@ const onScaleChange = (event: Event) => {
     input.value = settings.previewRenderScale.toString()
 }
 
-const blurInput = (event: Event) => {
+const onControlChange = (event: Event) => {
     const input = event.currentTarget as HTMLInputElement
-    input.blur()
-}
-
-const onRadioChange = (event: Event) => {
-    const input = event.currentTarget as HTMLInputElement
-    // Pointer changes return shortcuts to the editor; keyboard radio navigation
-    // keeps focus so arrow keys can continue through all three choices.
+    // Pointer changes return shortcuts to the editor. Keyboard changes retain
+    // focus for repeated Space presses and radio navigation.
     if (!input.matches(':focus-visible')) input.blur()
 }
 
@@ -93,7 +88,7 @@ const onDockChange = (event: Event) => {
     // Keep settings reachable when the new position leaves no room for a docked
     // transport. Ordinary resizes still preserve the bar's chosen visibility.
     emit('positionChange')
-    onRadioChange(event)
+    onControlChange(event)
 }
 
 const onSpeedKeydown = (event: KeyboardEvent) => {
@@ -138,11 +133,14 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
             ref="controlsBody"
             class="preview-controls-body flex min-h-0 touch-pan-y flex-col gap-1.5 overflow-y-auto overscroll-contain px-2 pb-2 pt-1"
         >
-            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
-                <span class="w-10 shrink-0">{{ i18n.preview.shortLabels.noteSpeed }}</span>
+            <div class="flex w-full min-w-0 shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="preview-setting-label w-20 shrink-0">{{
+                    i18n.settings.preview.noteSpeed
+                }}</span>
                 <input
                     v-model.number="settings.previewNoteSpeed"
                     :aria-label="i18n.settings.preview.noteSpeed"
+                    :title="i18n.settings.preview.noteSpeed"
                     class="min-w-0 flex-1"
                     type="range"
                     :min="previewNoteSpeed.min"
@@ -155,17 +153,21 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                     :min="previewNoteSpeed.min"
                     :max="previewNoteSpeed.max"
                     :step="previewNoteSpeed.step"
-                    :aria-label="i18n.preview.noteSpeedValue"
+                    :aria-label="i18n.settings.preview.noteSpeed"
+                    :title="i18n.settings.preview.noteSpeed"
                     :value="settings.previewNoteSpeed"
                     @change="onSpeedChange"
                     @keydown="onSpeedKeydown"
                 />
             </div>
-            <div class="flex w-full min-w-0 shrink-0 items-center gap-2">
-                <span class="w-10 shrink-0">{{ i18n.preview.shortLabels.renderScale }}</span>
+            <div class="flex w-full min-w-0 shrink-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="preview-setting-label w-20 shrink-0">{{
+                    i18n.settings.preview.renderScale
+                }}</span>
                 <input
                     v-model.number="settings.previewRenderScale"
                     :aria-label="i18n.settings.preview.renderScale"
+                    :title="i18n.settings.preview.renderScale"
                     class="min-w-0 flex-1"
                     type="range"
                     :min="previewRenderScale.min"
@@ -178,7 +180,8 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                     :min="previewRenderScale.min"
                     :max="previewRenderScale.max"
                     :step="previewRenderScale.step"
-                    :aria-label="i18n.preview.renderScaleValue"
+                    :aria-label="i18n.settings.preview.renderScale"
+                    :title="i18n.settings.preview.renderScale"
                     :value="settings.previewRenderScale"
                     @change="onScaleChange"
                     @keydown="onSpeedKeydown"
@@ -189,11 +192,13 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                 role="radiogroup"
                 :aria-label="i18n.settings.preview.position.title"
             >
-                <span class="w-10 shrink-0">{{ i18n.preview.shortLabels.position }}</span>
+                <span class="preview-setting-label w-20 shrink-0">{{
+                    i18n.settings.preview.position.title
+                }}</span>
                 <label
                     v-for="[label, value] in previewPositionOptions"
                     :key="value"
-                    class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1.5 py-0.5 shadow-sm"
+                    class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1 py-0.5 shadow-sm"
                 >
                     <input
                         v-model="settings.previewPosition"
@@ -211,18 +216,20 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                 role="radiogroup"
                 :aria-label="i18n.settings.preview.aspectRatio"
             >
-                <span class="w-10 shrink-0">{{ i18n.preview.shortLabels.aspectRatio }}</span>
+                <span class="preview-setting-label w-20 shrink-0">{{
+                    i18n.settings.preview.aspectRatio
+                }}</span>
                 <label
                     v-for="[label, value] in previewAspectRatios"
                     :key="label"
-                    class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1.5 py-0.5 shadow-sm"
+                    class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-button px-1 py-0.5 shadow-sm"
                 >
                     <input
                         v-model="settings.previewAspectRatio"
                         type="radio"
                         name="preview-aspect-ratio"
                         :value="value"
-                        @change="onRadioChange"
+                        @change="onControlChange"
                         @keydown.stop
                     />
                     <span>{{ label }}</span>
@@ -234,7 +241,7 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                     v-model="settings.previewShowEffects"
                     class="size-4"
                     type="checkbox"
-                    @change="blurInput"
+                    @change="onControlChange"
                 />
             </label>
             <label class="flex w-full shrink-0 cursor-pointer items-center justify-between gap-2">
@@ -243,7 +250,7 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                     v-model="settings.previewAntialias"
                     class="size-4"
                     type="checkbox"
-                    @change="blurInput"
+                    @change="onControlChange"
                 />
             </label>
         </div>
@@ -252,8 +259,15 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
 
 <style scoped>
 .preview-controls {
+    container-type: inline-size;
     /* A short preview must still leave room to reach the expanded settings. */
     max-height: min(calc(100dvh - 0.5rem), max(11rem, calc(100% - 0.5rem)));
+}
+
+@container (max-width: 12rem) {
+    .preview-setting-label {
+        width: 100%;
+    }
 }
 
 .number-input {

@@ -184,7 +184,7 @@ test.beforeEach(async ({ page }, testInfo) => {
     const preview = page.locator('.preview')
     if (transport)
         await preview.getByRole('button', { name: 'Show preview settings', exact: true }).click()
-    await expect(preview.getByText('Speed', { exact: true })).toBeVisible()
+    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
     await expect(preview.locator('input[type="number"]').first()).toHaveValue('10')
     await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(2)
     await settle(page)
@@ -669,6 +669,59 @@ test.describe('preview transport', () => {
         await expect(
             page.getByRole('group', { name: 'Preview playback controls', exact: true }),
         ).toBeVisible()
+    })
+
+    test('compact timestamp advances during playback with the bar hidden and across resize', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.clock.runFor(32)
+        const corner = page.locator('.transport-corner-time')
+        const barTime = page.locator('.transport-time')
+        await expect(corner).toBeVisible()
+        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page
+            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
+        await expect(page.locator('.preview-transport')).toBeHidden()
+        await expect(corner).toBeVisible()
+        await expect(corner).toHaveText(/^\d{2}:\d{2}\.\d{3}$/)
+        const first = await corner.textContent()
+        const hiddenTime = await barTime.textContent()
+        await expect
+            .poll(async () => {
+                await page.clock.runFor(32)
+                return corner.textContent()
+            })
+            .not.toBe(first)
+        expect(await barTime.textContent()).toBe(hiddenTime)
+
+        await page.setViewportSize({ width: 800, height: 844 })
+        await page.clock.runFor(32)
+        await expect(corner).toBeHidden()
+        await expect
+            .poll(async () => {
+                await page.clock.runFor(32)
+                return corner.textContent()
+            })
+            .toBe('')
+        const hiddenCorner = await corner.textContent()
+        const before = await cursor(page)
+        await expect
+            .poll(async () => {
+                await page.clock.runFor(32)
+                return cursor(page)
+            })
+            .toBeGreaterThan(before + 0.1)
+        expect(await corner.textContent()).toBe(hiddenCorner)
+        expect(await barTime.textContent()).toBe(hiddenTime)
+
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.clock.runFor(32)
+        await expect(corner).toBeVisible()
+        await expect(corner).not.toHaveText(first ?? '')
+        await expect(corner).not.toHaveText('')
+        await expect(page.locator('.preview-transport')).toBeHidden()
     })
 
     test('wrapping a hidden bar does not dock with its previous height', async ({ page }) => {
@@ -1194,6 +1247,12 @@ test.describe('preview aspect ratios', () => {
             await checkbox.focus()
             await checkbox.press('Space')
             await expect(checkbox).not.toBeChecked()
+            await expect(checkbox).toBeFocused()
+            // Send the next key to actual focus rather than re-focusing through
+            // Locator.press: blurring a checkbox used to start editor playback.
+            await page.keyboard.press('Space')
+            await expect(checkbox).toBeChecked()
+            await expect(checkbox).toBeFocused()
             await expect(controls).toBeVisible()
         }
         await settle(page)
@@ -1290,8 +1349,23 @@ test.describe('preview aspect ratios', () => {
 
 test('preview options share persisted settings with the main options menu', async ({ page }) => {
     const preview = page.locator('.preview')
-    const speed = preview.locator('input[type="number"]').nth(0)
-    const scale = preview.locator('input[type="number"]').nth(1)
+    for (const label of ['Note Speed', 'Render Scale']) {
+        await expect(preview.getByText(label, { exact: true })).toBeVisible()
+        await expect(preview.getByRole('slider', { name: label, exact: true })).toHaveAttribute(
+            'title',
+            label,
+        )
+        await expect(preview.getByRole('spinbutton', { name: label, exact: true })).toHaveAttribute(
+            'title',
+            label,
+        )
+    }
+    for (const label of ['Position', 'Aspect Ratio']) {
+        await expect(preview.getByText(label, { exact: true })).toBeVisible()
+        await expect(preview.getByRole('radiogroup', { name: label, exact: true })).toBeVisible()
+    }
+    const speed = preview.getByRole('spinbutton', { name: 'Note Speed', exact: true })
+    const scale = preview.getByRole('spinbutton', { name: 'Render Scale', exact: true })
     await speed.fill('9.25')
     await speed.press('Enter')
     await scale.fill('1.5')

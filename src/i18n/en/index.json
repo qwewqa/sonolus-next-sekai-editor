@@ -1084,14 +1084,6 @@
         "settings": "Preview settings",
         "minimizeSettings": "Minimize preview settings",
         "showSettings": "Show preview settings",
-        "shortLabels": {
-            "noteSpeed": "Speed",
-            "renderScale": "Quality",
-            "position": "Dock",
-            "aspectRatio": "Aspect"
-        },
-        "noteSpeedValue": "Note speed value",
-        "renderScaleValue": "Render quality value",
         "loadingSkin": "Loading skin...",
         "skinUnavailable": "The preview skin could not be loaded.",
         "reload": "Reload",
