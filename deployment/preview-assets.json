@@ -4,8 +4,8 @@
         {
             "file": "resource/skin.scp",
             "source": "deployment/assets/skin.scp",
-            "bytes": 5166945,
-            "sha256": "077e9ee4dfe2f7a740e860a21e2f1bc81c99edc40a319488c3b7c60cfd452c85",
+            "bytes": 5166764,
+            "sha256": "15d6403cfa2afb14b81e18b4804ade5845b849a7f2a82978b04dc5fac090bc01",
             "description": "Next SEKAI 01 2.0.0 skin, downloaded from Coconut Next SEKAI on 2026-09-29"
         },
         {
