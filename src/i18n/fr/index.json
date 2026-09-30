@@ -514,8 +514,7 @@
       "connectorGuideAlpha": {
         "label": "Opacité du Guide"
       },
-      "connectorGuideColor": {
-        "label": "Couler du Guide",
+      "colors": {
         "neutral": "Neutre",
         "red": "Rouge",
         "green": "Vert",

@@ -106,7 +106,6 @@ export const installEditorFixture = async () => {
         connectorEase: 'linear',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'neutral',
         connectorGuideAlpha: 1,
         connectorLayer: 'top',
         connectorIsPassThrough: false,
@@ -191,7 +190,7 @@ export const installEditorFixture = async () => {
             noteType: 'anchor',
             connectorType: 'guide',
             connectorLayer: (['under', 'bottom', 'top', 'over'] as const)[i % 4],
-            connectorGuideColor: (['red', 'green', 'blue', 'yellow', 'purple', 'cyan'] as const)[i],
+            connectorStyle: (['red', 'green', 'blue', 'yellow', 'purple', 'cyan'] as const)[i],
             connectorGuideAlpha: [0, 0.25, 0.5, 0.75, 1, 0.4][i],
         }
         connectors.slides.push([

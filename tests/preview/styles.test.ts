@@ -23,7 +23,6 @@ test('all colored connector families retain their behavior and wire values', () 
                     connectorType: type,
                     connectorIsFake: fake,
                     connectorActiveIsCritical: critical,
-                    connectorGuideColor: 'green',
                     connectorStyle: style,
                 })
                 assert.equal(kind, (fake ? 50 : 0) + (index ? base * 10 + index : base))
@@ -32,17 +31,16 @@ test('all colored connector families retain their behavior and wire values', () 
             }
         }
     }
-    for (const [index, color] of noteStyles.slice(1).entries()) {
+    for (const [index, color] of noteStyles.entries()) {
         const kind = connectorKindValue({
             connectorType: 'guide',
             connectorIsFake: true,
             connectorActiveIsCritical: true,
-            connectorGuideColor: color as Exclude<typeof color, 'default'>,
-            connectorStyle: 'black',
+            connectorStyle: color,
         })
-        assert.equal(kind, 101 + index)
+        assert.equal(kind, color === 'default' ? 103 : 100 + index)
         assert.equal(connectorBaseKind(kind), kind)
-        assert.equal(connectorStyle(kind), 'default')
+        assert.equal(connectorStyle(kind), color === 'default' ? 'green' : color)
     }
 })
 

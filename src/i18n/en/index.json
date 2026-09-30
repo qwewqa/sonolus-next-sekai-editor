@@ -832,8 +832,7 @@
             "connectorGuideAlpha": {
                 "label": "Guide Alpha"
             },
-            "connectorGuideColor": {
-                "label": "Guide Color",
+            "colors": {
                 "neutral": "Neutral",
                 "red": "Red",
                 "green": "Green",

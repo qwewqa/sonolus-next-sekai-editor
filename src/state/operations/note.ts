@@ -30,7 +30,6 @@ export const editSelectedNote = (
             object.connectorActiveIsCritical ??
             object.isCritical ??
             entity.connectorActiveIsCritical,
-        connectorGuideColor: object.connectorGuideColor ?? entity.connectorGuideColor,
         connectorGuideAlpha: object.connectorGuideAlpha ?? entity.connectorGuideAlpha,
         connectorLayer: object.connectorLayer ?? entity.connectorLayer,
         connectorIsPassThrough: object.connectorIsPassThrough ?? entity.connectorIsPassThrough,

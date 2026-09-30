@@ -6,7 +6,6 @@ import MultiConnectorActiveIsCriticalField from '../../../modals/form/MultiConne
 import MultiConnectorIsFakeField from '../../../modals/form/MultiConnectorIsFakeField.vue'
 import MultiConnectorEaseField from '../../../modals/form/MultiConnectorEaseField.vue'
 import MultiConnectorGuideAlphaField from '../../../modals/form/MultiConnectorGuideAlphaField.vue'
-import MultiConnectorGuideColorField from '../../../modals/form/MultiConnectorGuideColorField.vue'
 import MultiConnectorIsPassThroughField from '../../../modals/form/MultiConnectorIsPassThroughField.vue'
 import MultiConnectorLayerField from '../../../modals/form/MultiConnectorLayerField.vue'
 import MultiConnectorPresentationField from '../../../modals/form/MultiConnectorPresentationField.vue'
@@ -49,7 +48,6 @@ const connectorType = createModel('connectorType')
 const connectorEase = createModel('connectorEase')
 const connectorIsFake = createModel('connectorIsFake')
 const connectorActiveIsCritical = createModel('connectorActiveIsCritical')
-const connectorGuideColor = createModel('connectorGuideColor')
 const connectorGuideAlpha = createModel('connectorGuideAlpha')
 const connectorLayer = createModel('connectorLayer')
 const connectorIsPassThrough = createModel('connectorIsPassThrough')
@@ -96,10 +94,6 @@ const connectorPresentation = createModel('connectorPresentation')
         <MultiConnectorActiveIsCriticalField
             v-if="noteFields.connectorActiveIsCritical !== false"
             v-model="connectorActiveIsCritical"
-        />
-        <MultiConnectorGuideColorField
-            v-if="noteFields.connectorGuideColor !== false"
-            v-model="connectorGuideColor"
         />
         <MultiConnectorGuideAlphaField
             v-if="noteFields.connectorGuideAlpha !== false"

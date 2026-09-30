@@ -1,11 +1,8 @@
 import type { EventEase } from '../../chart/events'
 import type { BorderStyle, JudgmentLineColor } from '../../chart/events/stage/style'
 import type { GroupId } from '../../chart/groups'
-import type {
-    FlickDirection as ChartFlickDirection,
-    ConnectorGuideColor,
-    ConnectorLayer,
-} from '../../chart/note'
+import type { FlickDirection as ChartFlickDirection, ConnectorLayer } from '../../chart/note'
+import { guideColor } from '../../chart/noteStyle'
 import type { StageId } from '../../chart/stages'
 import type { TimeScaleEase } from '../../chart/timeScale'
 import type { State } from '../../state'
@@ -63,7 +60,7 @@ const timeScaleEases: Record<TimeScaleEase, EaseTypeValue> = {
     outInQuad: EaseType.outInQuad,
 }
 
-const guideKinds: Record<ConnectorGuideColor, ConnectorKindValue> = {
+const guideKinds: Record<ReturnType<typeof guideColor>, ConnectorKindValue> = {
     neutral: ConnectorKind.guideNeutral,
     red: ConnectorKind.guideRed,
     green: ConnectorKind.guideGreen,
@@ -433,7 +430,7 @@ export const createPreviewChartBuilder = () => {
                                     ? ConnectorKind.fakeDamage
                                     : ConnectorKind.damage
                             } else {
-                                kind = guideKinds[segmentHead.connectorGuideColor]
+                                kind = guideKinds[guideColor(segmentHead.connectorStyle)]
                             }
 
                             const activeHead =

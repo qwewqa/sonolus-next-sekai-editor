@@ -1,3 +1,4 @@
+import { guideColor } from '../../chart/noteStyle'
 import { ease } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
@@ -131,7 +132,7 @@ const createGraphic = (
     let headAlpha: number
     let tailAlpha: number
     if (segmentHead.connectorType === 'guide') {
-        color = guideColors[segmentHead.connectorGuideColor]
+        color = guideColors[guideColor(segmentHead.connectorStyle)]
         const tSegmentHead = beatToTime(bpms, segmentHead.beat)
         const tSegmentTail = beatToTime(bpms, segmentTail.beat)
         headAlpha =

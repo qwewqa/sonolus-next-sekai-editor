@@ -3,6 +3,7 @@ import { isDirty, resetState, state } from '..'
 import { parseLevelDataChart } from '../../chart/parse/levelData'
 import { validateChart } from '../../chart/validate'
 import { i18n } from '../../i18n'
+import { serializeEditorMetadata } from '../../levelData/editorMetadata'
 import { serializeToLevelData } from '../../levelData/serialize'
 import { showModal } from '../../modals'
 import InfoModal from '../../modals/InfoModal.vue'
@@ -56,7 +57,14 @@ export const useAutoSave = () => {
                 current.stages,
             )
             // setItem is atomic: a failed write leaves the previous recovery intact.
-            storageSet('autoSave.levelData', serializeAutoSave(levelData, filename.value))
+            storageSet(
+                'autoSave.levelData',
+                serializeAutoSave(
+                    levelData,
+                    filename.value,
+                    serializeEditorMetadata(levelData.entities, current.store),
+                ),
+            )
             savedState = current
             errorReported = false
         } catch (error) {
@@ -104,9 +112,9 @@ export const useAutoSave = () => {
                     await timeout(50)
                     signal.throwIfAborted()
 
-                    const { filename, levelData } = parseAutoSave(data)
+                    const { filename, levelData, defaultGuideColors } = parseAutoSave(data)
 
-                    const chart = parseLevelDataChart(levelData.entities)
+                    const chart = parseLevelDataChart(levelData.entities, defaultGuideColors)
                     validateChart(chart)
 
                     resetState(true, chart, levelData.bgmOffset, filename)

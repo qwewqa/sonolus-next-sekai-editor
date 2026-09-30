@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
+import { parseAutoSave } from '../../src/history/autoSave/parse'
 import { installEditorFixture } from './editorFixture'
+import legacyColors from './fixtures/legacy-colors.json' with { type: 'json' }
 
 test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -24,6 +26,52 @@ const recovery = (page: Page) =>
         const data = storageGet('autoSave.levelData', undefined)
         return data ? parseAutoSave(data) : undefined
     })
+
+// Fixture generated with the unmodified serializers from de281ff, before the
+// two color fields were unified. It includes every guide color, normal/fake
+// active and damage connectors, camera motion, masks, elevation and time scales.
+for (const format of ['compressed', 'unversioned'] as const) {
+    test(`upgrading a ${format} recovery preserves the old chart and its colors`, async ({
+        page,
+    }) => {
+        const { levelData } = parseAutoSave(legacyColors.autoSave)
+        await page.evaluate(
+            (save) => {
+                localStorage.setItem(
+                    'sonolus-next-sekai-editor.autoSave.levelData',
+                    JSON.stringify(save),
+                )
+            },
+            format === 'compressed' ? legacyColors.autoSave : levelData,
+        )
+        await page.reload()
+        await expect
+            .poll(() =>
+                page.evaluate(async () => {
+                    const { state } = await import('/src/history/index.ts')
+                    const { serializeToLevelData } = await import('/src/levelData/serialize.ts')
+                    const s = state.value
+                    return serializeToLevelData(
+                        s.initialLife,
+                        s.isDynamicStages,
+                        s.bgm.offset,
+                        s.store,
+                        s.groups,
+                        s.stages,
+                    )
+                }),
+            )
+            .toEqual(levelData)
+        expect(
+            await page.evaluate(async () => {
+                const { state } = await import('/src/history/index.ts')
+                return [...state.value.store.slides.note.values()]
+                    .slice(0, 8)
+                    .map(([head]) => head!.connectorStyle)
+            }),
+        ).toEqual(['neutral', 'red', 'green', 'blue', 'yellow', 'purple', 'cyan', 'black'])
+    })
+}
 
 const editNamedChart = (page: Page) =>
     page.evaluate(async () => {
@@ -267,6 +315,83 @@ test('closing before the autosave delay preserves colored notes, connectors and 
     await reopened.reload()
     await expect.poll(() => recovery(reopened)).toMatchObject({ filename: 'colored-chart' })
     await expect.poll(() => canvasColors(reopened)).toEqual(beforeClose)
+    await reopened.close()
+})
+
+test('tab recovery preserves default guide color without adding it to exported levels', async ({
+    page,
+    context,
+}) => {
+    await page.evaluate(() => {
+        const { history, fixtures, settings } = window.editorTest
+        settings.autoSave = true
+        settings.autoSaveDelay = 5
+        const base = { ...fixtures.interaction.slides[0]![0]!, connectorType: 'guide' as const }
+        history.resetState(
+            true,
+            {
+                ...fixtures.interaction,
+                slides: [
+                    [
+                        { ...base, beat: 1 },
+                        { ...base, beat: 2, connectorStyle: 'green' },
+                    ],
+                    // Unnamed standalone notes are moved before named slides on import.
+                    [{ ...base, beat: 3, connectorStyle: 'blue' }],
+                    [{ ...base, beat: 4 }],
+                    [
+                        { ...base, beat: 5, connectorStyle: 'green' },
+                        { ...base, beat: 6 },
+                    ],
+                ],
+            },
+            0,
+            'guide-colors',
+        )
+    })
+    page.on('dialog', (dialog) => void dialog.accept())
+    await Promise.all([page.waitForEvent('close'), page.close({ runBeforeUnload: true })])
+    const reopened = await context.newPage()
+    await reopened.goto('/')
+    await expect
+        .poll(() =>
+            reopened.evaluate(async () => {
+                const { state } = await import('/src/history/index.ts')
+                return [...state.value.store.slides.note.values()]
+                    .flat()
+                    .sort((a, b) => a.beat - b.beat)
+                    .map(({ beat, connectorStyle }) => ({ beat, connectorStyle }))
+            }),
+        )
+        .toEqual([
+            { beat: 1, connectorStyle: 'default' },
+            { beat: 2, connectorStyle: 'green' },
+            { beat: 3, connectorStyle: 'blue' },
+            { beat: 4, connectorStyle: 'default' },
+            { beat: 5, connectorStyle: 'green' },
+            { beat: 6, connectorStyle: 'default' },
+        ])
+    const exported = await reopened.evaluate(async () => {
+        const { state } = await import('/src/history/index.ts')
+        const { serializeToLevelData } = await import('/src/levelData/serialize.ts')
+        const s = state.value
+        return serializeToLevelData(
+            s.initialLife,
+            s.isDynamicStages,
+            s.bgm.offset,
+            s.store,
+            s.groups,
+            s.stages,
+        )
+    })
+    const kinds = exported.entities.flatMap((entity) =>
+        entity.data
+            .filter(({ name }) => name === 'segmentKind')
+            .map((data) => ('value' in data ? data.value : undefined)),
+    )
+    expect(kinds.sort()).toEqual([103, 103, 103, 103, 103, 104])
+    expect(exported).not.toHaveProperty('defaultGuideColors')
+    expect((await recovery(reopened))!.defaultGuideColors).toHaveLength(3)
     await reopened.close()
 })
 

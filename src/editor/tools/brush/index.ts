@@ -12,7 +12,6 @@ import type { Anchor } from '../../../chart/events/stage/transform.ts'
 import type { GroupId } from '../../../chart/groups'
 import type {
     ConnectorEase,
-    ConnectorGuideColor,
     ConnectorLayer,
     ConnectorPresentation,
     ConnectorType,
@@ -71,7 +70,6 @@ export type BrushProperties = {
     connectorEase?: ConnectorEase
     connectorIsFake?: boolean
     connectorActiveIsCritical?: boolean
-    connectorGuideColor?: ConnectorGuideColor
     connectorGuideAlpha?: number
     connectorLayer?: ConnectorLayer
     connectorIsPassThrough?: boolean

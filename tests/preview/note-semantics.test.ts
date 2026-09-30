@@ -33,7 +33,6 @@ const note = (beat: number, properties: Partial<NoteObject> = {}): NoteObject =>
     connectorEase: 'linear',
     connectorIsFake: false,
     connectorActiveIsCritical: false,
-    connectorGuideColor: 'neutral',
     connectorGuideAlpha: 1,
     connectorLayer: 'top',
     connectorIsPassThrough: false,

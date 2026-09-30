@@ -30,18 +30,16 @@ export const noteStyleValueSchema = Type.Integer({ minimum: 0, maximum: 8 })
 
 export const noteStyleValue = (style: NoteStyle) => noteStyles.indexOf(style)
 
+export const guideColor = (style: NoteStyle = 'default') => (style === 'default' ? 'green' : style)
+
 // Colored segment kinds encode the family in the tens digit and color in the units digit.
 export const connectorKindValue = (
     note: Pick<
         NoteObject,
-        | 'connectorType'
-        | 'connectorIsFake'
-        | 'connectorActiveIsCritical'
-        | 'connectorGuideColor'
-        | 'connectorStyle'
+        'connectorType' | 'connectorIsFake' | 'connectorActiveIsCritical' | 'connectorStyle'
     >,
 ) => {
-    if (note.connectorType === 'guide') return 100 + noteStyleValue(note.connectorGuideColor)
+    if (note.connectorType === 'guide') return 100 + noteStyleValue(guideColor(note.connectorStyle))
     const family = note.connectorType === 'damage' ? 3 : note.connectorActiveIsCritical ? 2 : 1
     const style = noteStyleValue(note.connectorStyle)
     return (note.connectorIsFake ? 50 : 0) + (style > 0 ? family * 10 + style : family)
@@ -57,4 +55,6 @@ export const connectorBaseKind = (kind: number) => {
 }
 
 export const connectorStyle = (kind: number): NoteStyle =>
-    coloredConnectorKinds.includes(kind) ? (noteStyles[kind % 10] ?? 'default') : 'default'
+    coloredConnectorKinds.includes(kind) || (kind >= 101 && kind <= 108)
+        ? (noteStyles[kind % 10] ?? 'default')
+        : 'default'

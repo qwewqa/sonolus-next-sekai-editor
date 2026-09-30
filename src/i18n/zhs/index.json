@@ -514,8 +514,7 @@
       "connectorGuideAlpha": {
         "label": "引导不透明度"
       },
-      "connectorGuideColor": {
-        "label": "引导颜色",
+      "colors": {
         "neutral": "白",
         "red": "红",
         "green": "绿",

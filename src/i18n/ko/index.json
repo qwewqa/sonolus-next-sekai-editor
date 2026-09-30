@@ -790,8 +790,7 @@
       "connectorGuideAlpha": {
         "label": "가이드 불투명도"
       },
-      "connectorGuideColor": {
-        "label": "가이드 색상",
+      "colors": {
         "neutral": "하양",
         "red": "빨강",
         "green": "초록",

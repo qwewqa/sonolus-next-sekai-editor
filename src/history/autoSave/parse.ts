@@ -7,6 +7,7 @@ import { autoSaveSchema } from './schema'
 type ParsedAutoSave = {
     filename?: string
     levelData: LevelData
+    defaultGuideColors?: number[]
 }
 
 export const parseAutoSave = (data: unknown): ParsedAutoSave => {
@@ -22,5 +23,6 @@ export const parseAutoSave = (data: unknown): ParsedAutoSave => {
     return {
         filename: data.filename,
         levelData: parseLevelData(JSON.parse(new TextDecoder().decode(ungzip(buffer)))),
+        ...(data.defaultGuideColors ? { defaultGuideColors: data.defaultGuideColors } : {}),
     }
 }

@@ -20,6 +20,7 @@ import { parseTimeScalesToChart } from './timeScale'
 export type ParseCtx = {
     chart: Chart
     entities: LevelDataEntity[]
+    defaultGuideColors: ReadonlySet<LevelDataEntity>
 
     getGroupId: (entity: LevelDataEntity) => GroupId
     addGroup: (
@@ -36,7 +37,10 @@ export type ParseCtx = {
     ) => StageId
 }
 
-export const parseLevelDataChart = (entities: LevelDataEntity[]): Chart => {
+export const parseLevelDataChart = (
+    entities: LevelDataEntity[],
+    defaultGuideColors: readonly number[] = [],
+): Chart => {
     const chart: Chart = {
         initialLife: 1000,
         isDynamicStages: false,
@@ -59,6 +63,7 @@ export const parseLevelDataChart = (entities: LevelDataEntity[]): Chart => {
     const ctx: ParseCtx = {
         chart,
         entities,
+        defaultGuideColors: new Set(defaultGuideColors.flatMap((index) => entities[index] ?? [])),
 
         getGroupId(entity) {
             const ref = getRef(entity, '#TIMESCALE_GROUP')

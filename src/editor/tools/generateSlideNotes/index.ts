@@ -216,10 +216,6 @@ const apply = (notes: NoteEntity[]) => {
                         defaultSlideProperties.value.isCritical ??
                         nearest?.connectorActiveIsCritical ??
                         false,
-                    connectorGuideColor:
-                        defaultSlideProperties.value.connectorGuideColor ??
-                        nearest?.connectorGuideColor ??
-                        'green',
                     connectorGuideAlpha:
                         defaultSlideProperties.value.connectorGuideAlpha ??
                         nearest?.connectorGuideAlpha ??

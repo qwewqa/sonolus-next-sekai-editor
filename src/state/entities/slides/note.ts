@@ -3,7 +3,6 @@ import type { BaseEntity } from '..'
 import type { GroupId } from '../../../chart/groups'
 import type {
     ConnectorEase,
-    ConnectorGuideColor,
     ConnectorLayer,
     ConnectorPresentation,
     ConnectorType,
@@ -36,7 +35,6 @@ export type NoteEntity = BaseEntity & {
     connectorLayer: ConnectorLayer
     connectorIsFake: boolean
     connectorActiveIsCritical: boolean
-    connectorGuideColor: ConnectorGuideColor
     connectorGuideAlpha: number
     connectorIsPassThrough: boolean
     connectorPresentation: ConnectorPresentation
@@ -76,7 +74,6 @@ export const toNoteEntity = (
     connectorEase: object.connectorEase,
     connectorIsFake: object.connectorIsFake,
     connectorActiveIsCritical: object.connectorActiveIsCritical,
-    connectorGuideColor: object.connectorGuideColor,
     connectorGuideAlpha: object.connectorGuideAlpha,
     connectorLayer: object.connectorLayer,
     connectorIsPassThrough: object.connectorIsPassThrough,

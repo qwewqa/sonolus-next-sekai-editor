@@ -514,8 +514,7 @@
       "connectorGuideAlpha": {
         "label": "Guide Saydamlığı"
       },
-      "connectorGuideColor": {
-        "label": "Guide Rengi",
+      "colors": {
         "neutral": "Nötr",
         "red": "Kırmızı",
         "green": "Yeşil",

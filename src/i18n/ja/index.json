@@ -534,8 +534,7 @@
       "connectorGuideAlpha": {
         "label": "ガイドの透明度"
       },
-      "connectorGuideColor": {
-        "label": "ガイドの色",
+      "colors": {
         "neutral": "灰",
         "red": "赤",
         "green": "緑",

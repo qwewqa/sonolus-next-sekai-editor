@@ -65,7 +65,7 @@ let i = 0
 const getClipboardEntry = (text: string): ClipboardEntry => {
     try {
         const data = parseClipboardData(JSON.parse(text))
-        const chart = parseLevelDataChart(data.entities)
+        const chart = parseLevelDataChart(data.entities, data.defaultGuideColors)
 
         return {
             name: `#${++i} (${

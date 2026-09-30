@@ -13,7 +13,13 @@ import {
 import type { StageId } from '../../stages'
 import { beatSchema } from './schemas'
 
-export const parseSlidesToChart = ({ chart, entities, getGroupId, getStageId }: ParseCtx) => {
+export const parseSlidesToChart = ({
+    chart,
+    entities,
+    getGroupId,
+    getStageId,
+    defaultGuideColors,
+}: ParseCtx) => {
     const refs = new Map<string, NoteEntity>()
     const slides = new Map<string, string[]>()
 
@@ -22,7 +28,14 @@ export const parseSlidesToChart = ({ chart, entities, getGroupId, getStageId }: 
 
         if (!entity.name) {
             chart.slides.push([
-                toNoteObject(getGroupId(entity), getStageId(entity), entity, true, undefined),
+                toNoteObject(
+                    getGroupId(entity),
+                    getStageId(entity),
+                    entity,
+                    true,
+                    undefined,
+                    defaultGuideColors.has(entity),
+                ),
             ])
             continue
         }
@@ -71,6 +84,7 @@ export const parseSlidesToChart = ({ chart, entities, getGroupId, getStageId }: 
                         entity,
                         i === slide.length - 1,
                         prevActiveHead,
+                        defaultGuideColors.has(entity),
                     )
 
                     if (i === 0 || object.isConnectorSeparator) {
@@ -242,85 +256,71 @@ const segmentKinds = {
         connectorType: 'active',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'green',
     },
     2: {
         connectorType: 'active',
         connectorIsFake: false,
         connectorActiveIsCritical: true,
-        connectorGuideColor: 'yellow',
     },
     3: {
         connectorType: 'damage',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'green',
     },
     51: {
         connectorType: 'active',
         connectorIsFake: true,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'green',
     },
     52: {
         connectorType: 'active',
         connectorIsFake: true,
         connectorActiveIsCritical: true,
-        connectorGuideColor: 'yellow',
     },
     53: {
         connectorType: 'damage',
         connectorIsFake: true,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'green',
     },
     101: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'neutral',
     },
     102: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'red',
     },
     103: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'green',
     },
     104: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'blue',
     },
     105: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'yellow',
     },
     106: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'purple',
     },
     107: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'cyan',
     },
     108: {
         connectorType: 'guide',
         connectorIsFake: false,
         connectorActiveIsCritical: false,
-        connectorGuideColor: 'black',
     },
 } as const
 
@@ -385,6 +385,7 @@ const toNoteObject = (
     entity: NoteEntity,
     isLast: boolean,
     prevActiveHead: NoteObject | undefined,
+    defaultGuideColor: boolean,
 ) => {
     const lane = getValue(entity, 'lane', laneSchema)
     const size = getValue(entity, 'size', sizeSchema)
@@ -395,7 +396,10 @@ const toNoteObject = (
         beat: getValue(entity, EngineArchetypeDataName.Beat, beatSchema),
         noteStyle:
             noteStyles[getOptionalValue(entity, 'style', noteStyleValueSchema) ?? 0] ?? 'default',
-        connectorStyle: connectorStyle(getValue(entity, 'segmentKind', segmentKindSchema)),
+        connectorStyle:
+            defaultGuideColor && getValue(entity, 'segmentKind', segmentKindSchema) === 103
+                ? 'default'
+                : connectorStyle(getValue(entity, 'segmentKind', segmentKindSchema)),
         noteType: 'default',
         isAttached: !!getValue(entity, 'isAttached', isAttachedSchema),
         left: lane - size,

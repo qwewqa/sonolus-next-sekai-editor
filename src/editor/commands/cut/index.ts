@@ -8,6 +8,7 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { stages } from '../../../history/stages'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
+import { serializeEditorMetadata } from '../../../levelData/editorMetadata'
 import { serializeToLevelDataEntities } from '../../../levelData/entities/serialize'
 import type { Entity, EntityOfType, EntityType } from '../../../state/entities'
 import type { RemoveMutation } from '../../../state/mutations'
@@ -40,29 +41,33 @@ export const cut: Command = {
             return
         }
 
+        const copiedStore = createStore({
+            initialLife: initialLife.value,
+            isDynamicStages: isDynamicStages.value,
+            bpms: getEntities(entities, 'bpm'),
+            timeScales: getEntities(entities, 'timeScale'),
+            cameraEvents: getEntities(entities, 'cameraEventJoint'),
+            stageMaskEvents: getEntities(entities, 'stageMaskEventJoint'),
+            stagePivotEvents: getEntities(entities, 'stagePivotEventJoint'),
+            stageStyleEvents: getEntities(entities, 'stageStyleEventJoint'),
+            stageTransformEvents: getEntities(entities, 'stageTransformEventJoint'),
+            groups: groups.value,
+            stages: stages.value,
+            slides: getSlides(entities),
+        })
+        const copiedEntities = serializeToLevelDataEntities(
+            initialLife.value,
+            isDynamicStages.value,
+            copiedStore,
+            groups.value,
+            stages.value,
+        )
+
         setClipboardData({
             lane: xToLane(view.pointer.x),
             beat: yToValidBeat(view.pointer.y),
-            entities: serializeToLevelDataEntities(
-                initialLife.value,
-                isDynamicStages.value,
-                createStore({
-                    initialLife: initialLife.value,
-                    isDynamicStages: isDynamicStages.value,
-                    bpms: getEntities(entities, 'bpm'),
-                    timeScales: getEntities(entities, 'timeScale'),
-                    cameraEvents: getEntities(entities, 'cameraEventJoint'),
-                    stageMaskEvents: getEntities(entities, 'stageMaskEventJoint'),
-                    stagePivotEvents: getEntities(entities, 'stagePivotEventJoint'),
-                    stageStyleEvents: getEntities(entities, 'stageStyleEventJoint'),
-                    stageTransformEvents: getEntities(entities, 'stageTransformEventJoint'),
-                    groups: groups.value,
-                    stages: stages.value,
-                    slides: getSlides(entities),
-                }),
-                groups.value,
-                stages.value,
-            ),
+            entities: copiedEntities,
+            ...serializeEditorMetadata(copiedEntities, copiedStore),
         })
 
         const removeEntities = entities.filter(

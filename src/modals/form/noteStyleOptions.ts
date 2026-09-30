@@ -6,7 +6,7 @@ export const noteStyleOptions = computed<[string, NoteStyle][]>(() =>
     noteStyles.map((style) => [
         style === 'default'
             ? i18n.value.modals.form.noteStyle.default
-            : i18n.value.modals.form.connectorGuideColor[style],
+            : i18n.value.modals.form.colors[style],
         style,
     ]),
 )

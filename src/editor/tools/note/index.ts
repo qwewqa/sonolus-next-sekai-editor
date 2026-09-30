@@ -343,7 +343,6 @@ const getPropertiesFromSelection = () => {
             defaultNoteProperties.value.connectorActiveIsCritical ??
             defaultNoteProperties.value.isCritical ??
             false,
-        connectorGuideColor: defaultNoteProperties.value.connectorGuideColor ?? 'green',
         connectorGuideAlpha: defaultNoteProperties.value.connectorGuideAlpha ?? 1,
         connectorLayer: defaultNoteProperties.value.connectorLayer ?? 'top',
         connectorIsPassThrough: defaultNoteProperties.value.connectorIsPassThrough ?? false,

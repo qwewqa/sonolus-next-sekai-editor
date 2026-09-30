@@ -1,8 +1,13 @@
 import type { LevelData } from '@sonolus/core'
 import { gzip } from 'pako'
+import type { EditorMetadata } from '../../levelData/editorMetadata'
 import type { AutoSave } from './schema'
 
-export const serializeAutoSave = (levelData: LevelData, filename?: string): AutoSave => {
+export const serializeAutoSave = (
+    levelData: LevelData,
+    filename?: string,
+    metadata: EditorMetadata = {},
+): AutoSave => {
     const buffer = gzip(JSON.stringify(levelData), {
         level: 9,
     })
@@ -15,5 +20,6 @@ export const serializeAutoSave = (levelData: LevelData, filename?: string): Auto
         version: 1,
         filename,
         levelData: btoa(chunks.join('')),
+        ...metadata,
     }
 }

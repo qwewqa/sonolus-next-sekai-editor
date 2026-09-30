@@ -16,7 +16,6 @@ export type NoteFields = {
     connectorEase: boolean
     connectorIsFake: boolean
     connectorActiveIsCritical: boolean
-    connectorGuideColor: boolean
     connectorGuideAlpha: boolean
     connectorLayer: boolean
     connectorIsPassThrough: boolean
@@ -43,8 +42,7 @@ export const getNoteFields = (note: NoteEntity): NoteFields => {
 
     return {
         noteStyle: note.noteType !== 'anchor',
-        connectorStyle:
-            (isFirst || note.isConnectorSeparator) && !isLast && note.connectorType !== 'guide',
+        connectorStyle: (isFirst || note.isConnectorSeparator) && !isLast,
         isAttached: !isFirst && !isLast,
         left: isFirst || isLast || !note.isAttached,
         size: isFirst || isLast || !note.isAttached,
@@ -62,7 +60,6 @@ export const getNoteFields = (note: NoteEntity): NoteFields => {
             (isInActive && (isActiveHead || note.isConnectorSeparator)) ||
             (isInDamage && (isDamageHead || note.isConnectorSeparator)),
         connectorActiveIsCritical: isInActive && (isActiveHead || note.isConnectorSeparator),
-        connectorGuideColor: isInGuide && (isGuideHead || note.isConnectorSeparator),
         connectorGuideAlpha: isInGuide && (isGuideHead || note.isConnectorSeparator || isGuideTail),
         connectorLayer: (isFirst || note.isConnectorSeparator) && !isLast,
         connectorIsPassThrough: (isFirst || note.isConnectorSeparator) && !isLast,

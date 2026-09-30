@@ -514,8 +514,7 @@
       "connectorGuideAlpha": {
         "label": "Guide不透明度"
       },
-      "connectorGuideColor": {
-        "label": "Guide顏色",
+      "colors": {
         "neutral": "預設",
         "red": "紅",
         "green": "綠",

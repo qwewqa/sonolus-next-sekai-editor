@@ -1,7 +1,7 @@
 import Type from 'typebox'
 import Value from 'typebox/value'
 import { shallowRef, watch } from 'vue'
-import { noteStyleSchema } from './chart/noteStyle'
+import { noteStyles, noteStyleSchema } from './chart/noteStyle'
 import { isCommandName, type CommandName } from './editor/commands'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
@@ -68,16 +68,6 @@ const defaultNoteSlidePropertiesSchema = Type.Intersect([
             ]),
             connectorIsFake: Type.Boolean(),
             connectorActiveIsCritical: Type.Boolean(),
-            connectorGuideColor: Type.Union([
-                Type.Literal('neutral'),
-                Type.Literal('red'),
-                Type.Literal('green'),
-                Type.Literal('blue'),
-                Type.Literal('yellow'),
-                Type.Literal('purple'),
-                Type.Literal('cyan'),
-                Type.Literal('black'),
-            ]),
             connectorGuideAlpha: Type.Number(),
             connectorLayer: Type.Union([
                 Type.Literal('top'),
@@ -390,6 +380,28 @@ const settingsProperties = {
     }),
 }
 
+// Older presets stored guide and active/damage colors separately. Preserve the
+// color that applied to an explicit guide preset; otherwise prefer an explicit
+// connector color, falling back to a guide-only color preset when necessary.
+const migratePreset = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+    const { connectorGuideColor, ...preset } = value as Record<string, unknown>
+    if (
+        noteStyles.some((style) => style !== 'default' && style === connectorGuideColor) &&
+        (preset.connectorType === 'guide' ||
+            (preset.connectorType === undefined &&
+                (preset.connectorStyle === undefined || preset.connectorStyle === 'default')))
+    )
+        preset.connectorStyle = connectorGuideColor
+    return preset
+}
+
+const migrateSetting = (key: string, value: unknown) =>
+    (key === 'defaultNotePropertiesPresets' || key === 'defaultSlidePropertiesPresets') &&
+    Array.isArray(value)
+        ? value.map(migratePreset)
+        : value
+
 const normalize = <T extends Type.TSchema>(schema: T, value: unknown) =>
     Value.Decode(schema, Value.Repair(schema, value))
 
@@ -399,7 +411,9 @@ export const settings = Object.defineProperties(
         Object.entries(settingsProperties).map(([key, schema]) => {
             const defaultValue = Value.Create(schema)
 
-            const prop = shallowRef(normalize(schema, storageGet(key, defaultValue)))
+            const prop = shallowRef(
+                normalize(schema, migrateSetting(key, storageGet(key, defaultValue))),
+            )
             watch(
                 prop,
                 (value) => {
@@ -417,7 +431,8 @@ export const settings = Object.defineProperties(
                 {
                     enumerable: true,
                     get: () => prop.value,
-                    set: (value: unknown) => (prop.value = normalize(schema, value)),
+                    set: (value: unknown) =>
+                        (prop.value = normalize(schema, migrateSetting(key, value))),
                 },
             ]
         }),

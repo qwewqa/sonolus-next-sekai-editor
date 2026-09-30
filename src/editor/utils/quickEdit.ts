@@ -1,6 +1,5 @@
 import type {
     ConnectorEase,
-    ConnectorGuideColor,
     ConnectorLayer,
     ConnectorPresentation,
     ConnectorType,
@@ -131,20 +130,6 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
             break
         case 'connectorActiveIsCritical':
             editSelectedEditableEntities({ connectorActiveIsCritical: !value })
-            break
-        case 'connectorGuideColor':
-            editSelectedEditableEntities({
-                connectorGuideColor: rotate(value as ConnectorGuideColor, [
-                    'neutral',
-                    'red',
-                    'green',
-                    'blue',
-                    'yellow',
-                    'purple',
-                    'cyan',
-                    'black',
-                ]),
-            })
             break
         case 'connectorGuideAlpha':
             editSelectedEditableEntities({ connectorGuideAlpha: value as never })

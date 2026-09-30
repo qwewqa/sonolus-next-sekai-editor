@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { guideColor } from '../../../../../chart/noteStyle'
 import type { DefaultNoteSlideProperties } from '../../../../../settings'
 import { activeColors, damageColor, guideColors } from '../../../../../utils/colors'
 
@@ -15,7 +16,7 @@ defineProps<{
         height="0.55"
         :fill="
             properties.connectorType === 'guide'
-                ? guideColors[properties.connectorGuideColor ?? 'green']
+                ? guideColors[guideColor(properties.connectorStyle)]
                 : properties.connectorStyle && properties.connectorStyle !== 'default'
                   ? guideColors[properties.connectorStyle]
                   : properties.connectorType === 'damage'
