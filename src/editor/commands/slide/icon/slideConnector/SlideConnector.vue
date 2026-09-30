@@ -21,11 +21,12 @@ const colors = computed(() => connectorColors(props.properties))
     />
     <path
         v-if="colors.edge"
-        d="M -0.5 0 V 0.55 M 0.5 0 V 0.55"
+        d="M -0.48 0 V 0.55 M 0.48 0 V 0.55"
         fill="none"
         :stroke="colors.edge"
         stroke-opacity="0.8"
-        stroke-width="0.08"
+        stroke-width="0.04"
+        stroke-linecap="butt"
     />
     <template
         v-if="

@@ -89,6 +89,7 @@ const fixture = () => {
             })
         },
         setLineDash() {},
+        clip() {},
         createLinearGradient(...points: number[]) {
             const gradient = {
                 points,
@@ -328,7 +329,7 @@ test('one connector color applies to active, damage and guide connectors', () =>
         if (connectorType === 'guide') {
             assert.equal(strokes.length, 0)
         } else {
-            assert.equal(strokes[0]!.style, connectorType === 'damage' ? '#4b282b' : '#efc7ca')
+            assert.equal(strokes[0]!.style, connectorType === 'damage' ? '#4b282b' : '#e0969c')
             assert.equal(strokes[0]!.width, 3 / context.scale)
         }
     }

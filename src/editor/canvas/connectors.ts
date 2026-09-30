@@ -248,11 +248,16 @@ export const createConnectorRenderer = () => {
             // easing midpoints must not acquire horizontal seams. Cap the width
             // for narrow connectors so their selected color remains visible.
             if (graphic.edges && graphic.edgeColor && graphic.maxEdgeWidth > 0) {
+                ctx.save()
+                // Strokes straddle their paths. Keep the shading inside the
+                // connector, including the head/tail cuts of slanted curves.
+                ctx.clip(graphic.path)
                 ctx.strokeStyle = graphic.edgeColor
                 ctx.lineWidth = Math.min(3 / scale, graphic.maxEdgeWidth)
                 ctx.lineCap = 'butt'
                 ctx.setLineDash([])
                 ctx.stroke(graphic.edges)
+                ctx.restore()
             }
 
             if (graphic.fakeMarker) {

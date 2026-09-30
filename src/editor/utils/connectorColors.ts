@@ -41,5 +41,5 @@ export const connectorColors = (properties: ConnectorProperties) => {
         return { body: shade(base, 0, 0.22), edge: shade(base, 0, 0.65) }
 
     const body = styled && critical ? shade(base, 255, 0.5) : base
-    return { body, edge: shade(body, 255, 0.6) }
+    return { body, edge: shade(body, 255, 0.25) }
 }
