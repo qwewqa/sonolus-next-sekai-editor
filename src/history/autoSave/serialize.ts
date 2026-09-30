@@ -6,10 +6,14 @@ export const serializeAutoSave = (levelData: LevelData, filename?: string): Auto
     const buffer = gzip(JSON.stringify(levelData), {
         level: 9,
     })
+    const chunks: string[] = []
+    for (let offset = 0; offset < buffer.length; offset += 0x8000) {
+        chunks.push(String.fromCharCode(...buffer.subarray(offset, offset + 0x8000)))
+    }
 
     return {
         version: 1,
         filename,
-        levelData: btoa(String.fromCharCode(...buffer)),
+        levelData: btoa(chunks.join('')),
     }
 }

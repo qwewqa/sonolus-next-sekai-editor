@@ -755,7 +755,8 @@
         "autoSave": {
             "title": "Auto Save",
             "importing": "Importing level...",
-            "disabled": "Due to size of your level, auto save is disabled for this level. Please save manually."
+            "disabled": "Due to size of your level, auto save is disabled for this level. Please save manually.",
+            "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab."
         },
         "changes": {
             "title": "Changes",
@@ -1086,6 +1087,9 @@
         "showSettings": "Show preview settings",
         "loadingSkin": "Loading skin...",
         "skinUnavailable": "The preview skin could not be loaded.",
+        "graphicsUnavailable": "Preview graphics could not be started.",
+        "graphicsHelp": "Check that graphics acceleration and WebGL are enabled in your browser, then restart the browser if needed.",
+        "errorDetails": "Error details",
         "reload": "Reload",
         "transport": {
             "hide": "Hide playback controls",

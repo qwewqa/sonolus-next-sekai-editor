@@ -9,7 +9,8 @@ export const loadPreviewResource = async <T extends { texture: ImageBitmap }>(
     if (isAborted()) return
 
     const response = await fetch(url, { cache: 'no-store', signal })
-    if (!response.ok || isAborted()) return
+    if (isAborted() || response.status === 404) return
+    if (!response.ok) throw new Error(`Resource download failed: HTTP ${response.status}`)
 
     const buffer = await response.arrayBuffer()
     if (isAborted()) return

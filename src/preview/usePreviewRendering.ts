@@ -22,7 +22,7 @@ type PreviewViewport = {
 
 export const usePreviewRendering = (
     canvas: Readonly<Ref<HTMLCanvasElement | null>>,
-    { skin, particle, status }: ReturnType<typeof usePreviewResources>,
+    { skin, particle, status, errorDetail }: ReturnType<typeof usePreviewResources>,
     { canvasWidth, canvasHeight, pixelRatio }: PreviewViewport,
 ) => {
     // Selection, audio and filename changes share the same chart data. Keep them from
@@ -56,9 +56,11 @@ export const usePreviewRendering = (
 
         try {
             renderer.value = createPreviewRenderer(canvas.value, settings.previewAntialias)
+            errorDetail.value = ''
             status.value = 'ready'
         } catch (error) {
             console.error('Failed to create preview renderer:', error)
+            errorDetail.value = error instanceof Error ? error.message : String(error)
             status.value = 'error'
         }
     }
@@ -98,18 +100,26 @@ export const usePreviewRendering = (
         ([nextRenderer, nextSkin, nextParticle, active]) => {
             if (!active || !nextRenderer) return
 
-            if (nextSkin && (nextRenderer !== uploadedRenderer || nextSkin !== uploadedSkin)) {
-                nextRenderer.setTexture(0, nextSkin.texture, nextSkin.interpolation)
-                uploadedSkin = nextSkin
+            try {
+                if (nextSkin && (nextRenderer !== uploadedRenderer || nextSkin !== uploadedSkin)) {
+                    nextRenderer.setTexture(0, nextSkin.texture, nextSkin.interpolation)
+                    uploadedSkin = nextSkin
+                }
+                if (
+                    nextParticle &&
+                    (nextRenderer !== uploadedRenderer || nextParticle !== uploadedParticle)
+                ) {
+                    nextRenderer.setTexture(1, nextParticle.texture, nextParticle.interpolation)
+                    uploadedParticle = nextParticle
+                }
+                uploadedRenderer = nextRenderer
+            } catch (error) {
+                console.error('Failed to upload preview textures:', error)
+                errorDetail.value = error instanceof Error ? error.message : String(error)
+                status.value = 'error'
+                renderer.value = undefined
+                nextRenderer.dispose()
             }
-            if (
-                nextParticle &&
-                (nextRenderer !== uploadedRenderer || nextParticle !== uploadedParticle)
-            ) {
-                nextRenderer.setTexture(1, nextParticle.texture, nextParticle.interpolation)
-                uploadedParticle = nextParticle
-            }
-            uploadedRenderer = nextRenderer
         },
     )
 

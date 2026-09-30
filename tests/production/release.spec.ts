@@ -29,7 +29,7 @@ test('release assets, preview, chart editing and FFT audio work in the productio
         (asset) => asset.file === 'resource/particle.scp',
     )
     const optionalParticle = (url: string) =>
-        !hasParticles && url.endsWith('/resource/particle.scp')
+        !hasParticles && new URL(url, siteUrl).pathname.endsWith('/resource/particle.scp')
     const errors: string[] = []
     const requests: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))

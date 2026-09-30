@@ -12,7 +12,7 @@ import { usePreviewViewport } from './usePreviewViewport'
 const container = useTemplateRef<HTMLDivElement>('container')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const resources = usePreviewResources()
-const { status, loadSkin } = resources
+const { status, errorDetail, loadVersion, loadSkin } = resources
 const viewport = usePreviewViewport(container)
 const {
     canvasHeight,
@@ -36,24 +36,42 @@ usePreviewRendering(canvas, resources, viewport)
         <div class="preview-viewport absolute overflow-hidden" :style="canvasStyle">
             <canvas
                 ref="canvas"
-                :key="settings.previewAntialias ? 'aa' : 'no-aa'"
+                :key="`${loadVersion}:${settings.previewAntialias}`"
                 class="absolute inset-0 h-full w-full"
             />
 
             <div
                 v-if="status !== 'ready'"
-                class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-white/75"
+                class="absolute inset-0 flex overflow-y-auto bg-black/40 p-4 text-center text-sm text-white/90"
             >
-                <template v-if="status === 'loading'">{{ i18n.preview.loadingSkin }}</template>
-                <template v-else>
-                    <p>{{ i18n.preview.skinUnavailable }}</p>
-                    <button
-                        class="min-h-11 rounded-full bg-button px-4 py-2 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent"
-                        @click="loadSkin"
-                    >
-                        {{ i18n.preview.reload }}
-                    </button>
-                </template>
+                <div class="m-auto flex w-full shrink-0 flex-col items-center gap-2">
+                    <template v-if="status === 'loading'">{{ i18n.preview.loadingSkin }}</template>
+                    <template v-else>
+                        <p>
+                            {{
+                                status === 'error'
+                                    ? i18n.preview.graphicsUnavailable
+                                    : i18n.preview.skinUnavailable
+                            }}
+                        </p>
+                        <p v-if="status === 'error'">{{ i18n.preview.graphicsHelp }}</p>
+                        <details
+                            v-if="errorDetail"
+                            class="max-h-32 max-w-full overflow-auto break-words"
+                        >
+                            <summary class="cursor-pointer">
+                                {{ i18n.preview.errorDetails }}
+                            </summary>
+                            <p>{{ errorDetail }}</p>
+                        </details>
+                        <button
+                            class="min-h-11 rounded-full bg-button px-4 py-2 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent"
+                            @click="loadSkin"
+                        >
+                            {{ i18n.preview.reload }}
+                        </button>
+                    </template>
+                </div>
             </div>
         </div>
 

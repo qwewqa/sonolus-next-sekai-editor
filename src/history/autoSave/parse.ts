@@ -17,8 +17,7 @@ export const parseAutoSave = (data: unknown): ParsedAutoSave => {
             levelData: data,
         }
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-spread
-    const buffer = Uint8Array.from([...atob(data.levelData)].map((c) => c.charCodeAt(0)))
+    const buffer = Uint8Array.from(atob(data.levelData), (c) => c.charCodeAt(0))
 
     return {
         filename: data.filename,

@@ -400,13 +400,17 @@ export const settings = Object.defineProperties(
             const defaultValue = Value.Create(schema)
 
             const prop = shallowRef(normalize(schema, storageGet(key, defaultValue)))
-            watch(prop, (value) => {
-                if (Value.Equal(value, defaultValue)) {
-                    storageRemove(key)
-                } else {
-                    storageSet(key, value)
-                }
-            })
+            watch(
+                prop,
+                (value) => {
+                    if (Value.Equal(value, defaultValue)) {
+                        storageRemove(key)
+                    } else {
+                        storageSet(key, value)
+                    }
+                },
+                { flush: 'sync' },
+            )
 
             return [
                 key,

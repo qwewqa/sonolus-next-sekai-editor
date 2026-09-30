@@ -96,6 +96,7 @@ declare global {
             errors: string[]
             auditions?: number[]
             restore?: () => void
+            contextRequests?: boolean[]
         }
     }
 }
@@ -111,8 +112,8 @@ const settle = (page: Page) =>
 test.beforeEach(async ({ page }, testInfo) => {
     const transport = testInfo.titlePath.includes('preview transport')
     if (transport) await page.clock.install({ time: new Date('2030-01-01T00:00:00Z') })
-    await page.route('**/resource/skin.scp', (route) => route.fulfill({ body: resource('skins') }))
-    await page.route('**/resource/particle.scp', (route) =>
+    await page.route('**/resource/skin.scp*', (route) => route.fulfill({ body: resource('skins') }))
+    await page.route('**/resource/particle.scp*', (route) =>
         route.fulfill({ body: resource('particles') }),
     )
     await page.addInitScript(installCanvasCounters)
@@ -196,6 +197,113 @@ test.afterEach(async ({ page }) => {
         [],
     )
 })
+
+test('unavailable WebGL reports a graphics error and reload can recover', async ({ page }) => {
+    await page.evaluate(async () => {
+        window.editorTest.settings.showPreview = false
+        await window.editorTest.nextTick()
+        const original = HTMLCanvasElement.prototype.getContext
+        HTMLCanvasElement.prototype.getContext = function (
+            this: HTMLCanvasElement,
+            ...args: Parameters<typeof original>
+        ) {
+            return args[0] === 'webgl' ? null : Reflect.apply(original, this, args)
+        } as typeof original
+        window.previewTest.restore = () => {
+            HTMLCanvasElement.prototype.getContext = original
+        }
+        window.editorTest.settings.showPreview = true
+    })
+    const preview = page.locator('.preview')
+    await expect(preview.getByText('Preview graphics could not be started.')).toBeVisible()
+    await expect(preview.getByText('The preview skin could not be loaded.')).toHaveCount(0)
+    await preview.getByText('Error details').click()
+    await expect(
+        preview.getByText('WebGL is unavailable or disabled in this browser'),
+    ).toBeVisible()
+    await page.evaluate(() => window.previewTest.restore!())
+    await preview.getByRole('button', { name: 'Reload', exact: true }).click()
+    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+})
+
+test('preview falls back when antialiasing prevents graphics initialization', async ({ page }) => {
+    await page.evaluate(async () => {
+        window.editorTest.settings.showPreview = false
+        await window.editorTest.nextTick()
+        const original = HTMLCanvasElement.prototype.getContext
+        window.previewTest.contextRequests = []
+        HTMLCanvasElement.prototype.getContext = function (
+            this: HTMLCanvasElement,
+            ...args: Parameters<typeof original>
+        ) {
+            if (args[0] === 'webgl') {
+                const antialias = !!(args[1] as WebGLContextAttributes)?.antialias
+                window.previewTest.contextRequests!.push(antialias)
+                if (antialias) return null
+            }
+            return Reflect.apply(original, this, args)
+        } as typeof original
+        window.editorTest.settings.showPreview = true
+    })
+    await expect(page.locator('.preview').getByText('Note Speed', { exact: true })).toBeVisible()
+    expect(await page.evaluate(() => window.previewTest.contextRequests)).toEqual([true, false])
+    expect(await page.evaluate(() => window.editorTest.settings.previewAntialias)).toBe(true)
+})
+
+test('texture upload failures stay recoverable without uncaught errors', async ({ page }) => {
+    await page.evaluate(async () => {
+        window.editorTest.settings.showPreview = false
+        await window.editorTest.nextTick()
+        const original = WebGLRenderingContext.prototype.texImage2D
+        WebGLRenderingContext.prototype.texImage2D = function (...args: unknown[]) {
+            if (args.some((arg) => arg instanceof ImageBitmap))
+                throw new Error('Texture upload failed')
+            return Reflect.apply(original, this, args)
+        }
+        window.previewTest.restore = () => {
+            WebGLRenderingContext.prototype.texImage2D = original
+        }
+        window.editorTest.settings.showPreview = true
+    })
+    const preview = page.locator('.preview')
+    await expect(preview.getByText('Preview graphics could not be started.')).toBeVisible()
+    await preview.getByText('Error details').click()
+    await expect(preview.getByText('Texture upload failed', { exact: true })).toBeVisible()
+    await page.evaluate(() => window.previewTest.restore!())
+    await preview.getByRole('button', { name: 'Reload', exact: true }).click()
+    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+})
+
+for (const failure of [
+    { status: 503, body: 'Unavailable', detail: 'Resource download failed: HTTP 503' },
+    { status: 200, body: '<html>Cached error page</html>', detail: 'Invalid scp file' },
+]) {
+    test(`skin failure reports ${failure.detail} and retries a versioned resource`, async ({
+        page,
+    }) => {
+        await page.evaluate(async () => {
+            window.editorTest.settings.showPreview = false
+            await window.editorTest.nextTick()
+        })
+        await page.route('**/resource/skin.scp*', (route) => route.fulfill(failure))
+        await page.evaluate(() => {
+            window.editorTest.settings.showPreview = true
+        })
+        const preview = page.locator('.preview')
+        await expect(preview.getByText('The preview skin could not be loaded.')).toBeVisible()
+        await preview.getByText('Error details').click()
+        await expect(preview.getByText(failure.detail)).toBeVisible()
+        await page.route('**/resource/skin.scp*', (route) =>
+            route.fulfill({ body: resource('skins') }),
+        )
+        const request = page.waitForRequest((request) =>
+            new URL(request.url()).pathname.endsWith('/resource/skin.scp'),
+        )
+        await preview.getByRole('button', { name: 'Reload', exact: true }).click()
+        expect(new URL((await request).url()).searchParams.get('v')).toBeTruthy()
+        await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+    })
+}
 
 test.describe('preview transport', () => {
     test.use({ hasTouch: true })

@@ -138,12 +138,10 @@ export const createPreviewRenderer = (
     canvas: HTMLCanvasElement,
     antialias = true,
 ): PreviewRenderer => {
-    const gl = canvas.getContext('webgl', {
-        alpha: true,
-        antialias,
-        premultipliedAlpha: true,
-    })
-    if (!gl) throw new Error('WebGL is not supported')
+    const getContext = (antialias: boolean) =>
+        canvas.getContext('webgl', { alpha: true, antialias, premultipliedAlpha: true })
+    const gl = getContext(antialias) ?? (antialias ? getContext(false) : null)
+    if (!gl) throw new Error('WebGL is unavailable or disabled in this browser')
 
     const maxViewportDimensions = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array
 

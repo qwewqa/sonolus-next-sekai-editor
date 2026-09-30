@@ -3,10 +3,14 @@ import { loadParticleFromScp, type LoadedParticle } from './particle'
 import { loadPreviewResource } from './resource'
 import { loadSkinFromScp, type LoadedSkin } from './skin'
 
+declare const __APP_VERSION__: string
+
 export const usePreviewResources = () => {
     const skin = shallowRef<LoadedSkin>()
     const particle = shallowRef<LoadedParticle>()
     const status = ref<'loading' | 'missing' | 'error' | 'ready'>('loading')
+    const errorDetail = ref('')
+    const loadVersion = ref(0)
 
     let loadController: AbortController | undefined
 
@@ -23,11 +27,13 @@ export const usePreviewResources = () => {
         const { signal } = loadController
         const isAborted = () => signal.aborted
         status.value = 'loading'
+        errorDetail.value = ''
+        loadVersion.value++
         releaseResources()
 
         try {
             const loadedSkin = await loadPreviewResource(
-                `${import.meta.env.BASE_URL}resource/skin.scp`,
+                `${import.meta.env.BASE_URL}resource/skin.scp?v=${encodeURIComponent(__APP_VERSION__)}`,
                 loadSkinFromScp,
                 signal,
             )
@@ -45,13 +51,14 @@ export const usePreviewResources = () => {
         } catch (error) {
             if (isAborted()) return
             console.error('Failed to load preview skin:', error)
+            errorDetail.value = error instanceof Error ? error.message : String(error)
             status.value = 'missing'
             return
         }
 
         try {
             const loadedParticle = await loadPreviewResource(
-                `${import.meta.env.BASE_URL}resource/particle.scp`,
+                `${import.meta.env.BASE_URL}resource/particle.scp?v=${encodeURIComponent(__APP_VERSION__)}`,
                 loadParticleFromScp,
                 signal,
             )
@@ -71,5 +78,5 @@ export const usePreviewResources = () => {
         loadController?.abort()
         releaseResources()
     })
-    return { skin, particle, status, loadSkin }
+    return { skin, particle, status, errorDetail, loadVersion, loadSkin }
 }
