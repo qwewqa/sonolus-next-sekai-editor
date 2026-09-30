@@ -11,6 +11,7 @@ import { usePreviewViewport } from './usePreviewViewport'
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+const background = useTemplateRef<HTMLDivElement>('background')
 const resources = usePreviewResources()
 const { status, errorDetail, loadVersion, loadSkin } = resources
 const viewport = usePreviewViewport(container)
@@ -28,12 +29,17 @@ const {
     onTimeResize,
     onDockChange,
 } = viewport
-usePreviewRendering(canvas, resources, viewport)
+usePreviewRendering(canvas, background, resources, viewport)
 </script>
 
 <template>
     <div ref="container" class="preview relative h-full w-full">
-        <div class="preview-viewport absolute overflow-hidden" :style="canvasStyle">
+        <div class="preview-viewport absolute overflow-hidden bg-black" :style="canvasStyle">
+            <div
+                ref="background"
+                class="preview-background pointer-events-none absolute inset-0 origin-top-left"
+                aria-hidden="true"
+            />
             <canvas
                 ref="canvas"
                 :key="`${loadVersion}:${settings.previewAntialias}`"
@@ -98,7 +104,7 @@ usePreviewRendering(canvas, resources, viewport)
 </template>
 
 <style scoped>
-.preview-viewport {
+.preview-background {
     background: url('./bg.png') center / cover no-repeat;
 }
 </style>

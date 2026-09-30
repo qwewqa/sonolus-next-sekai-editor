@@ -22,6 +22,7 @@ type PreviewViewport = {
 
 export const usePreviewRendering = (
     canvas: Readonly<Ref<HTMLCanvasElement | null>>,
+    background: Readonly<Ref<HTMLDivElement | null>>,
     { skin, particle, status, errorDetail }: ReturnType<typeof usePreviewResources>,
     { canvasWidth, canvasHeight, pixelRatio }: PreviewViewport,
 ) => {
@@ -125,6 +126,8 @@ export const usePreviewRendering = (
 
     let rafId = 0
     let renderFrame: (() => void) | undefined
+    let renderedBackground: HTMLDivElement | undefined
+    let renderedBackgroundTransform = ''
 
     const getRenderSize = (requestedScale: number) => {
         if (!renderer.value) return
@@ -161,6 +164,7 @@ export const usePreviewRendering = (
             if (!renderSize) return
 
             const getChart = chartRequest.value
+            const backgroundElement = background.value
             const args = [
                 view.cursorTime,
                 renderSize.width,
@@ -172,7 +176,35 @@ export const usePreviewRendering = (
                 particle.value?.particle,
             ] as const
             renderFrame = () => {
-                renderPreviewFrame(currentRenderer, currentSkin.skin, getChart(), ...args)
+                const quad = renderPreviewFrame(
+                    currentRenderer,
+                    currentSkin.skin,
+                    getChart(),
+                    ...args,
+                )
+                if (!backgroundElement) return
+                // Map the complete image into the engine's screen-space quad in
+                // this same frame. CSS pixels have a downward-pointing y axis.
+                const displayWidth = args[3]
+                const displayHeight = args[4]
+                const scale = displayHeight / 2
+                const transform = `matrix(${[
+                    ((quad.tr.x - quad.tl.x) * scale) / displayWidth,
+                    (-(quad.tr.y - quad.tl.y) * scale) / displayWidth,
+                    (quad.bl.x - quad.tl.x) / 2,
+                    -(quad.bl.y - quad.tl.y) / 2,
+                    displayWidth / 2 + quad.tl.x * scale,
+                    displayHeight / 2 - quad.tl.y * scale,
+                ].join(',')})`
+                if (
+                    renderedBackground !== backgroundElement ||
+                    renderedBackgroundTransform !== transform
+                ) {
+                    backgroundElement.style.backgroundSize = '100% 100%'
+                    backgroundElement.style.transform = transform
+                    renderedBackground = backgroundElement
+                    renderedBackgroundTransform = transform
+                }
             }
             if (rafId) return
             rafId = requestAnimationFrame(() => {

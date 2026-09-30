@@ -3,6 +3,7 @@ import type { NoteParticleSet, PreviewParticle } from '../particle'
 import { getStyledParticle } from '../particle'
 import type { PreviewSkin } from '../skin'
 import { getStyledSkin } from '../skin'
+import { layoutBackground } from './background'
 import { attachEasedFrac } from './chart'
 import { ConnectorVisualState, drawConnector, type ConnectorEndpoint } from './connector'
 import type { PreviewFrameContext } from './context'
@@ -1158,4 +1159,5 @@ export const renderPreviewFrame = (
     }
 
     renderer.flush()
+    return layoutBackground(viewport, chart.isDynamicStages ? chart.cameras : [], camera)
 }

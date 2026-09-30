@@ -1192,6 +1192,181 @@ test('unfocused preview defers geometry, compilation and renderer creation until
     expect(await page.evaluate(() => window.previewTest.frames)).toBe(before.frames + 1)
 })
 
+test.describe('preview background camera', () => {
+    const showCameraChart = async (page: Page) => {
+        await page.evaluate(() => {
+            const { show, fixtures, view } = window.editorTest
+            const first = {
+                beat: 0,
+                cameraLeft: -6,
+                cameraSize: 12,
+                cameraZoom: 1,
+                cameraZoomTargetLane: 0,
+                cameraZoomTargetY: 0,
+                cameraZoomVerticalAlign: 'default' as const,
+                cameraRotation: 0,
+                cameraStageTilt: 1,
+                eventEase: 'linear' as const,
+            }
+            show({
+                ...fixtures.notes,
+                cameraEvents: [
+                    first,
+                    {
+                        ...first,
+                        beat: 8,
+                        cameraLeft: -2.5,
+                        cameraSize: 8,
+                        cameraZoom: 1.3,
+                        cameraZoomTargetLane: -0.75,
+                        cameraZoomTargetY: 0.35,
+                        cameraRotation: (0.4 * 180) / Math.PI,
+                        cameraStageTilt: 0.5,
+                    },
+                ],
+            })
+            view.cursorTime = 0
+        })
+        await settle(page)
+    }
+
+    const background = (page: Page) =>
+        page.locator('.preview-background').evaluate((element) => {
+            const viewport = element.parentElement!
+            const width = Number.parseFloat(viewport.style.width)
+            const height = Number.parseFloat(viewport.style.height)
+            const style = getComputedStyle(element)
+            const matrix = new DOMMatrix(style.transform)
+            const corners = [
+                [0, height],
+                [0, 0],
+                [width, 0],
+                [width, height],
+            ].map(([x, y]) => {
+                const point = matrix.transformPoint({ x, y })
+                return [((point.x - width / 2) * 2) / height, 1 - (point.y * 2) / height]
+            })
+            return {
+                corners,
+                rotation: Math.atan2(matrix.b, matrix.a),
+                transform: style.transform,
+                size: style.backgroundSize,
+                clip: getComputedStyle(viewport).overflow,
+                canvasTransform: getComputedStyle(viewport.querySelector('canvas')!).transform,
+            }
+        })
+
+    test('matches engine background corners and stays synchronized while seeking and changing quality', async ({
+        page,
+    }) => {
+        await showCameraChart(page)
+        const first = await background(page)
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 2
+        })
+        await settle(page)
+        expect((await background(page)).rotation).toBeCloseTo(0.2, 5)
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 4
+        })
+        await settle(page)
+        const last = await background(page)
+        // Engine 9e93ba0, same camera as the reference in background.test.ts.
+        const expected = [
+            [-4.601563948172114, -1.4209550223968535],
+            [-2.7713883637279726, 2.9078173025386116],
+            [4.924206880601742, -0.3458281809176391],
+            [3.094031296157601, -4.674600505853104],
+        ]
+        for (let i = 0; i < 4; i++) {
+            expect(last.corners[i]![0]).toBeCloseTo(expected[i]![0]!, 4)
+            expect(last.corners[i]![1]).toBeCloseTo(expected[i]![1]!, 4)
+        }
+        expect(last).toMatchObject({ size: '100% 100%', clip: 'hidden', canvasTransform: 'none' })
+        await page.evaluate(() => {
+            window.editorTest.settings.previewRenderScale = 0.5
+        })
+        await settle(page)
+        expect(await background(page)).toEqual(last)
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 0
+        })
+        await settle(page)
+        expect(await background(page)).toEqual(first)
+        const frames = await page.evaluate(() => window.previewTest.frames)
+        await page.waitForTimeout(150)
+        expect(await page.evaluate(() => window.previewTest.frames)).toBe(frames)
+        expect(await background(page)).toEqual(first)
+    })
+
+    test('paused camera drafts, cancellation and undo update the background with the notes', async ({
+        page,
+    }) => {
+        await showCameraChart(page)
+        await page.evaluate(() => {
+            const { history, store, settings } = window.editorTest
+            settings.showSidebar = true
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'cameraEventJoint' && entity.beat === 0,
+                ),
+            })
+        })
+        await settle(page)
+        const before = await background(page)
+        const rotation = page.getByLabel('Camera Rotation', { exact: true })
+        await rotation.fill('45')
+        await settle(page)
+        const draft = await background(page)
+        expect(draft.rotation).toBeCloseTo(Math.PI / 4, 5)
+        expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+        await rotation.press('Escape')
+        await settle(page)
+        expect(await background(page)).toEqual(before)
+        await rotation.fill('45')
+        await rotation.press('Tab')
+        await settle(page)
+        expect(await background(page)).toEqual(draft)
+        await page.evaluate(() => window.editorTest.history.undoState())
+        await settle(page)
+        expect(await background(page)).toEqual(before)
+    })
+
+    test('aspect changes preserve rotation and an inactive preview catches up on focus', async ({
+        page,
+    }) => {
+        await showCameraChart(page)
+        await page.evaluate(() => {
+            window.editorTest.view.cursorTime = 4
+        })
+        await settle(page)
+        for (const label of ['21:9', '4:3', '16:9']) {
+            await page.getByRole('radio', { name: label, exact: true }).check()
+            await settle(page)
+            expect((await background(page)).rotation).toBeCloseTo(0.4, 5)
+        }
+        const before = await background(page)
+        await page.evaluate(() => {
+            Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => false })
+            window.dispatchEvent(new Event('blur'))
+            window.editorTest.view.cursorTime = 2
+        })
+        await settle(page)
+        expect(await background(page)).toEqual(before)
+        await page.evaluate(() => {
+            Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => true })
+            window.dispatchEvent(new Event('focus'))
+        })
+        await settle(page)
+        expect((await background(page)).rotation).toBeCloseTo(0.2, 5)
+        // Switching to a static chart also removes all overscan and camera motion.
+        await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction))
+        await settle(page)
+        expect((await background(page)).transform).toBe('matrix(1, 0, 0, 1, 0, 0)')
+    })
+})
+
 test.describe('preview aspect ratios', () => {
     test.use({ deviceScaleFactor: 1.25 })
 
