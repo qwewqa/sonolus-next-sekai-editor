@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { guideColor } from '../../../../../chart/noteStyle'
+import { computed } from 'vue'
 import type { DefaultNoteSlideProperties } from '../../../../../settings'
-import { activeColors, damageColor, guideColors } from '../../../../../utils/colors'
+import { connectorColors } from '../../../../utils/connectorColors'
 
-defineProps<{
+const props = defineProps<{
     properties: DefaultNoteSlideProperties
 }>()
+
+const colors = computed(() => connectorColors(props.properties))
 </script>
 
 <template>
@@ -14,22 +16,23 @@ defineProps<{
         y="0"
         width="1"
         height="0.55"
-        :fill="
-            properties.connectorType === 'guide'
-                ? guideColors[guideColor(properties.connectorStyle)]
-                : properties.connectorStyle && properties.connectorStyle !== 'default'
-                  ? guideColors[properties.connectorStyle]
-                  : properties.connectorType === 'damage'
-                    ? damageColor
-                    : activeColors[
-                          (properties.connectorActiveIsCritical ?? properties.isCritical)
-                              ? 'critical'
-                              : 'normal'
-                      ]
-        "
+        :fill="colors.body"
         :fill-opacity="properties.connectorType === 'guide' ? 0.5 : 0.8"
     />
-    <template v-if="properties.connectorIsFake ?? properties.isFake">
+    <path
+        v-if="colors.edge"
+        d="M -0.5 0 V 0.55 M 0.5 0 V 0.55"
+        fill="none"
+        :stroke="colors.edge"
+        stroke-opacity="0.8"
+        stroke-width="0.08"
+    />
+    <template
+        v-if="
+            properties.connectorType !== 'guide' &&
+            (properties.connectorIsFake ?? properties.isFake)
+        "
+    >
         <line x1="-0.5" y1="0" x2="0.5" y2="0.55" stroke="#f44" stroke-width="0.1" />
         <line x1="-0.5" y1="0.55" x2="0.5" y2="0" stroke="#f44" stroke-width="0.1" />
     </template>

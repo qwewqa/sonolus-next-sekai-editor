@@ -57,18 +57,21 @@ const fixture = () => {
         fillStyle: Style
         strokeStyle: string
         lineWidth: number
+        lineCap: string
     }[] = []
     const ctx = {
         globalAlpha: 1,
         fillStyle: '#000' as Style,
         strokeStyle: '#000',
         lineWidth: 1,
+        lineCap: 'round',
         save() {
             stack.push({
                 globalAlpha: this.globalAlpha,
                 fillStyle: this.fillStyle,
                 strokeStyle: this.strokeStyle,
                 lineWidth: this.lineWidth,
+                lineCap: this.lineCap,
             })
         },
         restore() {
@@ -108,7 +111,7 @@ const fixture = () => {
 }
 
 test('Canvas eased connectors preserve partial-segment quadratic geometry', () => {
-    const { context, fills, renderer } = fixture()
+    const { context, fills, strokes, renderer } = fixture()
     const first = note(0, 0, 2, { connectorEase: 'in' })
     const last = note(4, 4, 4)
     const entity = toConnectorEntity(note(1, 0, 0), note(3, 0, 0), first, last, first, last)
@@ -123,11 +126,17 @@ test('Canvas eased connectors preserve partial-segment quadratic geometry', () =
     ])
     assert.equal(fills[0]!.style, '#7fffd3')
     assert.equal(fills[0]!.alpha, 0.8)
+    assert.deepEqual(strokes[0]!.path.commands, [
+        ['M', 0.25, -1],
+        ['Q', 0.75, -2, 2.25, -3],
+        ['M', 2.375, -1],
+        ['Q', 3.125, -2, 5.375, -3],
+    ])
 })
 
 test('compound easing joins at the attachment midpoint and clips each half', () => {
     for (const connectorEase of ['inOut', 'outIn'] as const) {
-        const { context, fills, renderer } = fixture()
+        const { context, fills, strokes, renderer } = fixture()
         const first = note(0, 0, 2, { connectorEase })
         const last = note(8, 8, 4)
         for (const [start, end] of [
@@ -148,6 +157,9 @@ test('compound easing joins at the attachment midpoint and clips each half', () 
             const commands = fills.at(-1)!.path.commands
             const halves = commands.filter(([command]) => command === 'M').length
             assert.equal(halves, start < 4 && end > 4 ? 2 : 1)
+            const edges = strokes.at(-1)!.path.commands
+            assert.equal(edges.filter(([command]) => command === 'M').length, halves * 2)
+            assert.ok(edges.every(([command]) => command === 'M' || command === 'Q'))
             // At the shared midpoint both halves use the same three-lane-wide
             // cross-section; there can be no split or incorrect overlap.
             if (halves === 2) {
@@ -286,7 +298,7 @@ test('fake connector crosses use non-scaling strokes and restore caller drawing 
     const first = note(0, 0, 2, { connectorEase: 'none', connectorIsFake: true })
     const last = note(4, 4, 4)
     renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false, 0.25)
-    assert.deepEqual(strokes[0], {
+    assert.deepEqual(strokes.at(-1), {
         path: Object.assign(new RecordedPath(), {
             commands: [
                 ['M', 0, -0],
@@ -302,16 +314,23 @@ test('fake connector crosses use non-scaling strokes and restore caller drawing 
     assert.equal(ctx.globalAlpha, 1)
     assert.equal(ctx.lineWidth, 1)
     assert.equal(ctx.strokeStyle, '#000')
+    assert.equal(ctx.lineCap, 'round')
 })
 
 test('one connector color applies to active, damage and guide connectors', () => {
     for (const connectorType of ['active', 'damage', 'guide'] as const) {
-        const { context, fills, renderer } = fixture()
+        const { context, fills, strokes, renderer } = fixture()
         const first = note(0, 0, 2, { connectorType, connectorStyle: 'red' })
         const last = note(4, 0, 2)
         renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false)
         assert.equal(fills.length, 1)
-        assert.equal(fills[0]!.style, '#d6737b')
+        assert.equal(fills[0]!.style, connectorType === 'damage' ? '#a75a60' : '#d6737b')
+        if (connectorType === 'guide') {
+            assert.equal(strokes.length, 0)
+        } else {
+            assert.equal(strokes[0]!.style, connectorType === 'damage' ? '#4b282b' : '#efc7ca')
+            assert.equal(strokes[0]!.width, 3 / context.scale)
+        }
     }
 })
 

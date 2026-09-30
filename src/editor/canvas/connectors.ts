@@ -1,10 +1,9 @@
-import { guideColor } from '../../chart/noteStyle'
 import { ease } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
-import { activeColors, damageColor, guideColors } from '../../utils/colors'
 import { clamp, lerp, remap, unlerp } from '../../utils/math'
 import { isConnectorVisible } from '../entities/visibility'
+import { connectorColors } from '../utils/connectorColors'
 import type { EditorDrawContext } from './types'
 
 type Edge = { time: number; left: number; size: number }
@@ -13,6 +12,9 @@ type ConnectorGraphic = {
     bpms: BpmIntegral[]
     ups: number
     path: Path2D
+    edges?: Path2D
+    edgeColor?: string
+    maxEdgeWidth: number
     fakeMarker?: Path2D
     color: string
     headAlpha: number
@@ -35,6 +37,7 @@ const appendEase = (
     tTail: number,
     connectorEase: 'in' | 'out',
     ups: number,
+    edges: Path2D | undefined,
 ) => {
     const pHead = unlerp(attachHead.time, attachTail.time, tHead)
     const pTail = unlerp(attachHead.time, attachTail.time, tTail)
@@ -57,6 +60,11 @@ const appendEase = (
     path.lineTo(lTail + sTail, yTail)
     path.quadraticCurveTo(lMid + sMid, yMid, lHead + sHead, yHead)
     path.closePath()
+
+    edges?.moveTo(lHead, yHead)
+    edges?.quadraticCurveTo(lMid, yMid, lTail, yTail)
+    edges?.moveTo(lHead + sHead, yHead)
+    edges?.quadraticCurveTo(lMid + sMid, yMid, lTail + sTail, yTail)
 }
 
 const createGraphic = (
@@ -72,12 +80,18 @@ const createGraphic = (
     const yHead = tHead * ups
     const yTail = tTail * ups
     const path = new Path2D()
+    const colors = connectorColors(segmentHead)
+    const edges = colors.edge ? new Path2D() : undefined
     const first = { time: tAttachHead, left: attachHead.left, size: attachHead.size }
     const last = { time: tAttachTail, left: attachTail.left, size: attachTail.size }
 
     switch (attachHead.connectorEase) {
         case 'none':
             path.rect(attachHead.left, yTail, attachHead.size, yHead - yTail)
+            edges?.moveTo(first.left, yHead)
+            edges?.lineTo(first.left, yTail)
+            edges?.moveTo(first.left + first.size, yHead)
+            edges?.lineTo(first.left + first.size, yTail)
             break
         case 'linear': {
             const lHead = remap(tAttachHead, tAttachTail, first.left, last.left, tHead)
@@ -89,11 +103,15 @@ const createGraphic = (
             path.lineTo(lTail + sTail, yTail)
             path.lineTo(lHead + sHead, yHead)
             path.closePath()
+            edges?.moveTo(lHead, yHead)
+            edges?.lineTo(lTail, yTail)
+            edges?.moveTo(lHead + sHead, yHead)
+            edges?.lineTo(lTail + sTail, yTail)
             break
         }
         case 'in':
         case 'out':
-            appendEase(path, first, last, tHead, tTail, attachHead.connectorEase, ups)
+            appendEase(path, first, last, tHead, tTail, attachHead.connectorEase, ups, edges)
             break
         case 'inOut':
         case 'outIn': {
@@ -111,6 +129,7 @@ const createGraphic = (
                     Math.min(middle.time, tTail),
                     attachHead.connectorEase === 'inOut' ? 'in' : 'out',
                     ups,
+                    edges,
                 )
             }
             if (tTail > middle.time) {
@@ -122,17 +141,17 @@ const createGraphic = (
                     tTail,
                     attachHead.connectorEase === 'inOut' ? 'out' : 'in',
                     ups,
+                    edges,
                 )
             }
             break
         }
     }
 
-    let color: string
+    const color = colors.body
     let headAlpha: number
     let tailAlpha: number
     if (segmentHead.connectorType === 'guide') {
-        color = guideColors[guideColor(segmentHead.connectorStyle)]
         const tSegmentHead = beatToTime(bpms, segmentHead.beat)
         const tSegmentTail = beatToTime(bpms, segmentTail.beat)
         headAlpha =
@@ -152,12 +171,6 @@ const createGraphic = (
                 tTail,
             ) * 0.5
     } else {
-        color =
-            segmentHead.connectorType === 'damage'
-                ? damageColor
-                : activeColors[segmentHead.connectorActiveIsCritical ? 'critical' : 'normal']
-        if (segmentHead.connectorStyle !== 'default')
-            color = guideColors[segmentHead.connectorStyle]
         headAlpha = tailAlpha = 0.8
     }
 
@@ -178,6 +191,9 @@ const createGraphic = (
         bpms,
         ups,
         path,
+        edges,
+        edgeColor: colors.edge,
+        maxEdgeWidth: Math.min(first.size, last.size) * 0.12,
         fakeMarker,
         color,
         headAlpha,
@@ -227,6 +243,17 @@ export const createConnectorRenderer = () => {
                 ctx.fillStyle = graphic.gradient
             }
             ctx.fill(graphic.path)
+
+            // Only the two sides are outlined: segment boundaries and compound
+            // easing midpoints must not acquire horizontal seams. Cap the width
+            // for narrow connectors so their selected color remains visible.
+            if (graphic.edges && graphic.edgeColor && graphic.maxEdgeWidth > 0) {
+                ctx.strokeStyle = graphic.edgeColor
+                ctx.lineWidth = Math.min(3 / scale, graphic.maxEdgeWidth)
+                ctx.lineCap = 'butt'
+                ctx.setLineDash([])
+                ctx.stroke(graphic.edges)
+            }
 
             if (graphic.fakeMarker) {
                 ctx.globalAlpha = opacity * 0.8
