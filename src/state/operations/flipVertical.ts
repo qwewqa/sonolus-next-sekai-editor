@@ -1,0 +1,173 @@
+import type { State } from '..'
+import type { NoteObject } from '../../chart/note'
+import type { Ease } from '../../ease'
+import type { Entity } from '../entities'
+import type { NoteEntity } from '../entities/slides/note'
+import { addBpm, removeBpm } from '../mutations/bpm'
+import { addCameraEventJoint, removeCameraEventJoint } from '../mutations/events/camera'
+import { addStageMaskEventJoint, removeStageMaskEventJoint } from '../mutations/events/stage/mask'
+import {
+    addStagePivotEventJoint,
+    removeStagePivotEventJoint,
+} from '../mutations/events/stage/pivot'
+import {
+    addStageStyleEventJoint,
+    removeStageStyleEventJoint,
+} from '../mutations/events/stage/style'
+import {
+    addStageTransformEventJoint,
+    removeStageTransformEventJoint,
+} from '../mutations/events/stage/transform'
+import { addNote, removeNote } from '../mutations/slides/note'
+import { addTimeScale, removeTimeScale } from '../mutations/timeScale'
+import { getInStoreGrid } from '../store/grid'
+import { createTransaction, type Transaction } from '../transaction'
+import { connectorProperties } from './connectorProperties'
+import { isEditableEntity, type EditableEntity } from './editable'
+
+const reverseEase = (ease: Ease): Ease => (ease === 'in' ? 'out' : ease === 'out' ? 'in' : ease)
+
+const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) => {
+    const properties = new Map<NoteEntity, Partial<NoteObject>>()
+    const ids = new Set(
+        [...selected].filter((entity) => entity.type === 'note').map((note) => note.slideId),
+    )
+    for (const id of ids) {
+        const notes = source.store.slides.note.get(id)
+        if (!notes || notes.length < 2 || !notes.every((note) => selected.has(note))) continue
+
+        const segments = notes.filter(
+            (note, index) => index === 0 || index === notes.length - 1 || note.isConnectorSeparator,
+        )
+        const attachments = notes.filter(
+            (note, index) => index === 0 || index === notes.length - 1 || !note.isAttached,
+        )
+        // After reversal an interval's former tail owns its outgoing properties.
+        // Rotate the unused last endpoint's properties too, so flipping twice
+        // restores them along with the visible segments.
+        for (const [index, note] of segments.entries()) {
+            const previous = segments.at(index - 1)
+            if (previous) properties.set(note, connectorProperties(previous))
+        }
+        for (const [index, note] of attachments.entries()) {
+            const previous = attachments.at(index - 1)
+            if (previous)
+                properties.set(note, {
+                    ...properties.get(note),
+                    connectorEase: reverseEase(previous.connectorEase),
+                })
+        }
+    }
+    return properties
+}
+
+export const flipVertical = (source: State, selected: Entity[]): State => {
+    const entities = [...new Set(selected.filter(isEditableEntity))]
+    if (!entities.length) return source
+    let min = Infinity
+    let max = -Infinity
+    for (const entity of entities) {
+        min = Math.min(min, entity.beat)
+        max = Math.max(max, entity.beat)
+    }
+    if (min === max) return source
+
+    const properties = reverseSlideProperties(source, new Set(entities))
+    const transaction = createTransaction(source, { autoAddGroup: false })
+    const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find((bpm) => bpm.beat === 0)
+
+    // Remove the entire selection first. Sequential moves can otherwise delete
+    // each other's destination, particularly when swapping BPMs and events.
+    for (const entity of entities) remove(transaction, entity)
+    const flipped: Entity[] = []
+    for (const entity of entities) {
+        const beat = min + (max - entity.beat)
+        if (entity.type !== 'note') {
+            // Match the editor's move behavior: a timing point replaces an
+            // occupied destination in its own group/stage, never another lane.
+            for (const other of getInStoreGrid(transaction.store.grid, entity.type, beat) ?? []) {
+                if (
+                    other.beat === beat &&
+                    (!('groupId' in entity) ||
+                        ('groupId' in other && other.groupId === entity.groupId)) &&
+                    (!('stageId' in entity) ||
+                        ('stageId' in other && other.stageId === entity.stageId))
+                )
+                    remove(transaction, other)
+            }
+        }
+        flipped.push(
+            ...add(transaction, {
+                ...entity,
+                ...(entity.type === 'note' ? properties.get(entity) : undefined),
+                beat,
+            }),
+        )
+    }
+    // Moving the initial BPM must not leave the chart without a tempo at zero.
+    if (
+        initialBpm &&
+        !getInStoreGrid(transaction.store.grid, 'bpm', 0)?.some((bpm) => bpm.beat === 0)
+    )
+        addBpm(transaction, initialBpm)
+
+    return transaction.commit(flipped)
+}
+
+const remove = (transaction: Transaction, entity: EditableEntity) => {
+    switch (entity.type) {
+        case 'bpm': {
+            removeBpm(transaction, entity)
+            return
+        }
+        case 'timeScale': {
+            removeTimeScale(transaction, entity)
+            return
+        }
+        case 'cameraEventJoint': {
+            removeCameraEventJoint(transaction, entity)
+            return
+        }
+        case 'stageMaskEventJoint': {
+            removeStageMaskEventJoint(transaction, entity)
+            return
+        }
+        case 'stagePivotEventJoint': {
+            removeStagePivotEventJoint(transaction, entity)
+            return
+        }
+        case 'stageStyleEventJoint': {
+            removeStageStyleEventJoint(transaction, entity)
+            return
+        }
+        case 'stageTransformEventJoint': {
+            removeStageTransformEventJoint(transaction, entity)
+            return
+        }
+        case 'note': {
+            removeNote(transaction, entity)
+            return
+        }
+    }
+}
+
+const add = (transaction: Transaction, entity: EditableEntity) => {
+    switch (entity.type) {
+        case 'bpm':
+            return addBpm(transaction, entity)
+        case 'timeScale':
+            return addTimeScale(transaction, entity)
+        case 'cameraEventJoint':
+            return addCameraEventJoint(transaction, entity)
+        case 'stageMaskEventJoint':
+            return addStageMaskEventJoint(transaction, entity)
+        case 'stagePivotEventJoint':
+            return addStagePivotEventJoint(transaction, entity)
+        case 'stageStyleEventJoint':
+            return addStageStyleEventJoint(transaction, entity)
+        case 'stageTransformEventJoint':
+            return addStageTransformEventJoint(transaction, entity)
+        case 'note':
+            return addNote(transaction, entity.slideId, entity)
+    }
+}

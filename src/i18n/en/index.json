@@ -60,9 +60,19 @@
             "switched": "Switched to Eraser tool"
         },
         "flip": {
-            "title": "Flip",
+            "title": "Flip horizontally",
             "noSelected": "No object selected to flip",
             "flipped": "Flipped {0} objects"
+        },
+        "flipVertical": {
+            "title": "Flip vertically",
+            "flipped": "Flipped {0} objects vertically"
+        },
+        "combineNotes": {
+            "title": "Combine into slide",
+            "noSelected": "No notes selected to combine",
+            "sameSlide": "Selected notes already belong to the same slide",
+            "combined": "Combined {0} notes into one slide"
         },
         "fullscreen": {
             "title": "Fullscreen",

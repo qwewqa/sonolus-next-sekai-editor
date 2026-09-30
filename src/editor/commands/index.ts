@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { bgm } from './bgm'
 import { bpm } from './bpm'
 import { brush } from './brush'
+import { combineNotes } from './combineNotes'
 import { copy } from './copy'
 import { cut } from './cut'
 import { deselect } from './deselect'
@@ -15,6 +16,7 @@ import { stagePivotEvent } from './events/stage/pivot'
 import { stageStyleEvent } from './events/stage/style'
 import { stageTransformEvent } from './events/stage/transform'
 import { flip } from './flip'
+import { flipVertical } from './flipVertical'
 import { fullscreen } from './fullscreen'
 import { generateSlideNotes } from './generateSlideNotes'
 import { groupAll } from './groups/groupAll'
@@ -102,6 +104,8 @@ export const commands = {
     eraser,
     brush,
     flip,
+    flipVertical,
+    combineNotes,
     cut,
     copy,
     paste,
