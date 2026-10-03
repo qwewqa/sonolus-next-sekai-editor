@@ -26,7 +26,6 @@ const rows = (page: Page) =>
             x: row.x,
             y: row.y,
             w: row.w,
-            trueY: row.trueY,
             beat: row.note.beat,
             left: row.note.left,
             size: row.note.size,
@@ -296,9 +295,7 @@ test('edge drags resize while preserving beat and elevation; snapping is adjusta
     expect((await notes(page))[0]?.elevation).toBe(2.25)
 })
 
-test('same-beat slide notes rise in order and overlapping notes remain selectable', async ({
-    page,
-}, testInfo) => {
+test('same-beat overlapping notes remain at their actual elevation', async ({ page }, testInfo) => {
     await page.evaluate(() => {
         const { fixtures, show, view } = window.editorTest
         const base = fixtures.interaction.slides[0]![0]!
@@ -324,24 +321,98 @@ test('same-beat slide notes rise in order and overlapping notes remain selectabl
         .filter((row) => row.slideId === displayed[0]?.slideId)
         .sort((a, b) => a.order - b.order)
     expect(slide).toHaveLength(2)
-    expect(slide[1]!.y).toBeLessThan(slide[0]!.y)
+    expect(slide[1]!.y).toBe(slide[0]!.y)
     const overlapping = displayed.filter((row) => row.left === -3)
-    expect(Math.abs(overlapping[0]!.y - overlapping[1]!.y)).toBeGreaterThanOrEqual(20)
-    expect(new Set(displayed.map((row) => row.trueY)).size).toBe(1)
-    for (let index = 0; index < displayed.length; index++) {
-        const target = await point(page, index)
-        await page.mouse.click(target.x, target.y)
-        expect(
-            await page.evaluate(
-                () => window.editorTest.history.state.value.selectedEntities.length,
-            ),
-        ).toBe(1)
-    }
+    expect(overlapping[0]!.y).toBe(overlapping[1]!.y)
+    expect(new Set(displayed.map((row) => row.y)).size).toBe(1)
+    const target = await point(
+        page,
+        displayed.findIndex((row) => row.left === 3),
+    )
+    await page.mouse.click(target.x, target.y)
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(1)
     await page.screenshot({
         path: testInfo.outputPath('elevation-desktop.png'),
         style: '.notification { visibility: hidden }',
     })
 })
+
+for (const connectorLayer of ['top', 'over'] as const) {
+    test(
+        'same-beat slide connectors fill the note widths at their actual elevations (' +
+            connectorLayer +
+            ')',
+        async ({ page }, testInfo) => {
+            await page.evaluate((connectorLayer) => {
+                const { fixtures, show, view } = window.editorTest
+                const base = fixtures.interaction.slides[0]![0]!
+                show(
+                    {
+                        ...fixtures.interaction,
+                        slides: [
+                            [
+                                {
+                                    ...base,
+                                    beat: 6,
+                                    left: -3,
+                                    size: 4,
+                                    elevation: 1,
+                                    connectorEase: 'linear',
+                                    connectorLayer,
+                                },
+                                { ...base, beat: 6, left: 1, size: 2, elevation: 4 },
+                            ],
+                        ],
+                    },
+                    3,
+                )
+                view.cursorTime = 3
+            }, connectorLayer)
+            await open(page)
+            const sample = () =>
+                page.evaluate(() => {
+                    const canvas = document.querySelector<HTMLCanvasElement>('.elevation-canvas')!
+                    const layout = window.elevationTest.scene.elevationLayout.value
+                    const [head, tail] = [...layout.rows].sort((a, b) => a.order - b.order)
+                    const x = (head!.x + tail!.x) / 2 + (head!.w + tail!.w) / 8
+                    const y = (head!.y + tail!.y) / 2
+                    return [
+                        ...canvas
+                            .getContext('2d')!
+                            .getImageData(
+                                Math.round((x * canvas.width) / layout.width),
+                                Math.round((y * canvas.height) / layout.height),
+                                1,
+                                1,
+                            ).data,
+                    ]
+                })
+            const filled = await sample()
+            await page.evaluate(() => {
+                window.editorTest.view.visibilities = {
+                    ...window.editorTest.view.visibilities,
+                    connector: false,
+                }
+            })
+            await settle(page)
+            const empty = await sample()
+            expect(filled).not.toEqual(empty)
+            expect(filled[3]).toBeGreaterThan(empty[3]!)
+            await page.evaluate(() => {
+                window.editorTest.view.visibilities = {
+                    ...window.editorTest.view.visibilities,
+                    connector: true,
+                }
+            })
+            await settle(page)
+            await page.mouse.click((await point(page, 0)).x, (await point(page, 0)).y)
+            await settle(page)
+            await page.screenshot({ path: testInfo.outputPath('elevation-connectors.png') })
+        },
+    )
+}
 
 test('attached notes display inherited stage plus note elevation and remain read-only', async ({
     page,

@@ -6,8 +6,10 @@ import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { isEditableEntity } from '../state/operations/editable'
 import { formatShortcut } from '../utils/format'
-import { commands, isCommandName, type CommandName } from './commands'
+import { commands, isCommandName, type Command, type CommandName } from './commands'
+import DeleteIcon from './commands/reset/ResetIcon.vue'
 import { closeContextMenu, contextMenu } from './contextMenu'
+import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
 import { pasteAtContextPosition } from './contextMenuPaste'
 import { openElevationEditor } from './elevation/state'
 import { editorNavigation } from './navigation'
@@ -17,6 +19,12 @@ import { hitAllEntitiesAtPoint, modifyEntities } from './tools/utils'
 import { view, yToValidBeat } from './view'
 
 type ActionName = CommandName | 'delete' | 'selectSlideNotes' | 'editElevations'
+type Action = {
+    name: ActionName
+    title: string
+    icon: Command['icon']
+    shortcut: string | undefined
+}
 
 const menu = useTemplateRef<HTMLDivElement>('menu')
 const position = ref({ left: 0, top: 0 })
@@ -65,7 +73,7 @@ const actions = computed(() => {
     if (canEditElevations) groups.push(['editElevations'])
     if (canDelete.value) groups.push(['delete'])
     return groups.map((names) =>
-        names.map((name) => {
+        names.map((name): Action => {
             if (name === 'editElevations')
                 return {
                     name,
@@ -77,14 +85,14 @@ const actions = computed(() => {
                 return {
                     name,
                     title: i18n.value.contextMenu.selectSlideNotes,
-                    icon: commands.slide.icon,
+                    icon: { is: SelectSlideNotesIcon },
                     shortcut: undefined,
                 }
             if (name === 'delete')
                 return {
                     name,
                     title: i18n.value.contextMenu.delete,
-                    icon: commands.eraser.icon,
+                    icon: { is: DeleteIcon },
                     shortcut: undefined,
                 }
             return {

@@ -1,5 +1,7 @@
+import type { ConnectorLayer, ConnectorType } from '../../chart/note'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
-import { clamp } from '../../utils/math'
+import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
+import { clamp, lerp } from '../../utils/math'
 import { connectorColors } from '../utils/connectorColors'
 import type { ElevationRow } from './layout'
 
@@ -13,10 +15,33 @@ export type ElevationConnection = {
     fake: boolean
 }
 
+const layerOrder: Record<ConnectorLayer, number> = { under: 0, bottom: 1, top: 2, over: 3 }
+const typeOrder: Record<ConnectorType, number> = { active: 0, damage: 1, guide: 2 }
+
+const guideAlpha = (connector: ConnectorEntity, bpms?: BpmIntegral[]) => {
+    const timeAt = (beat: number) => (bpms ? beatToTime(bpms, beat) : beat)
+    const start = timeAt(connector.segmentHead.beat)
+    const end = timeAt(connector.segmentTail.beat)
+    const fraction =
+        Math.abs(end - start) < 1e-6
+            ? 0.5
+            : clamp((timeAt(connector.head.beat) - start) / (end - start))
+    return (
+        clamp(
+            lerp(
+                connector.segmentHead.connectorGuideAlpha,
+                connector.segmentTail.connectorGuideAlpha,
+                fraction,
+            ),
+        ) * 0.5
+    )
+}
+
 export const getElevationConnections = (
     rows: ElevationRow[],
     connectors: Iterable<ConnectorEntity[]>,
     enabled = true,
+    bpms?: BpmIntegral[],
 ): ElevationConnection[] => {
     if (!enabled) return []
     const byNote = new Map(rows.map((row) => [row.note, row]))
@@ -28,14 +53,7 @@ export const getElevationConnections = (
             if (!head || !tail) continue
             const properties = connector.segmentHead
             const guide = properties.connectorType === 'guide'
-            const alpha = guide
-                ? clamp(
-                      Math.max(
-                          properties.connectorGuideAlpha,
-                          connector.segmentTail.connectorGuideAlpha,
-                      ),
-                  ) * 0.6
-                : 0.85
+            const alpha = guide ? guideAlpha(connector, bpms) : 0.8
             if (!alpha) continue
             const colors = connectorColors(properties)
             result.push({
@@ -49,77 +67,90 @@ export const getElevationConnections = (
             })
         }
     }
-    return result
+    return result.sort((a, b) => {
+        const headA = a.connector.segmentHead
+        const headB = b.connector.segmentHead
+        return (
+            layerOrder[headA.connectorLayer] - layerOrder[headB.connectorLayer] ||
+            typeOrder[headA.connectorType] - typeOrder[headB.connectorType]
+        )
+    })
 }
 
-const edgeDistance = (row: ElevationRow, dx: number, dy: number, laneScale: number) =>
-    Math.min(
-        dx === 0 ? Infinity : (row.w / 2 + 3) / Math.abs(dx),
-        dy === 0 ? Infinity : (laneScale * 0.3 + 3) / Math.abs(dy),
+export type ElevationRibbon = {
+    headLeft: [number, number]
+    headRight: [number, number]
+    tailLeft: [number, number]
+    tailRight: [number, number]
+}
+
+export const getElevationRibbon = (
+    connection: ElevationConnection,
+): ElevationRibbon | undefined => {
+    const { head, tail, connector } = connection
+    if (
+        connector.attachHead.connectorEase === 'none' ||
+        head.y === tail.y ||
+        (head.w <= 0 && tail.w <= 0)
     )
+        return
+    return {
+        headLeft: [head.x - head.w / 2, head.y],
+        headRight: [head.x + head.w / 2, head.y],
+        tailLeft: [tail.x - tail.w / 2, tail.y],
+        tailRight: [tail.x + tail.w / 2, tail.y],
+    }
+}
 
 export const drawElevationConnections = (
     ctx: CanvasRenderingContext2D,
     connections: ElevationConnection[],
-    laneScale: number,
 ) => {
     ctx.save()
-    ctx.lineJoin = 'round'
+    ctx.lineCap = 'butt'
+    ctx.setLineDash([])
     for (const connection of connections) {
-        const { head, tail, connector } = connection
-        const distance = Math.hypot(tail.x - head.x, tail.y - head.y)
-        const dx = distance ? (tail.x - head.x) / distance : 0
-        const dy = distance ? (tail.y - head.y) / distance : -1
-        const start = edgeDistance(head, dx, dy, laneScale)
-        const end = edgeDistance(tail, dx, dy, laneScale)
-        const points: [number, number][] =
-            distance > start + end + 2
-                ? [
-                      [head.x + dx * start, head.y + dy * start],
-                      [tail.x - dx * end, tail.y - dy * end],
-                  ]
-                : [
-                      [head.x, head.y - laneScale * 0.3 - 3],
-                      [head.x, Math.min(head.y, tail.y) - laneScale * 0.3 - 18],
-                      [tail.x, Math.min(head.y, tail.y) - laneScale * 0.3 - 18],
-                      [tail.x, tail.y - laneScale * 0.3 - 3],
-                  ]
-        const drawPath = () => {
+        const ribbon = getElevationRibbon(connection)
+        if (!ribbon) continue
+        const { headLeft, headRight, tailLeft, tailRight } = ribbon
+        const body = () => {
             ctx.beginPath()
-            points.forEach(([x, y], index) => {
-                if (index) ctx.lineTo(x, y)
-                else ctx.moveTo(x, y)
-            })
-            ctx.stroke()
+            ctx.moveTo(...headLeft)
+            ctx.lineTo(...tailLeft)
+            ctx.lineTo(...tailRight)
+            ctx.lineTo(...headRight)
+            ctx.closePath()
         }
         ctx.globalAlpha = connection.alpha
-        ctx.setLineDash(
-            connection.fake
-                ? [5, 4]
-                : connector.segmentHead.connectorType === 'guide'
-                  ? [3, 3]
-                  : [],
-        )
-        if (connection.edge) {
-            ctx.strokeStyle = connection.edge
-            ctx.lineWidth = 5
-            drawPath()
-        }
-        ctx.strokeStyle = ctx.fillStyle = connection.color
-        ctx.lineWidth = connector.segmentHead.connectorType === 'guide' ? 2 : 3
-        drawPath()
-        const tip = points.at(-1)
-        const previous = points.at(-2)
-        if (!tip || !previous) continue
-        const angle = Math.atan2(tip[1] - previous[1], tip[0] - previous[0])
-        const length = Math.min(9, Math.hypot(tip[0] - previous[0], tip[1] - previous[1]) * 0.6)
-        ctx.setLineDash([])
-        ctx.beginPath()
-        ctx.moveTo(...tip)
-        ctx.lineTo(tip[0] - Math.cos(angle - 0.5) * length, tip[1] - Math.sin(angle - 0.5) * length)
-        ctx.lineTo(tip[0] - Math.cos(angle + 0.5) * length, tip[1] - Math.sin(angle + 0.5) * length)
-        ctx.closePath()
+        ctx.fillStyle = connection.color
+        body()
         ctx.fill()
+        const edgeWidth = Math.min(3, Math.min(connection.head.w, connection.tail.w) * 0.12)
+        if (connection.edge && edgeWidth > 0) {
+            ctx.save()
+            body()
+            ctx.clip()
+            ctx.strokeStyle = connection.edge
+            ctx.lineWidth = edgeWidth
+            ctx.beginPath()
+            ctx.moveTo(...headLeft)
+            ctx.lineTo(...tailLeft)
+            ctx.moveTo(...headRight)
+            ctx.lineTo(...tailRight)
+            ctx.stroke()
+            ctx.restore()
+        }
+        if (connection.fake) {
+            ctx.globalAlpha = 0.8
+            ctx.strokeStyle = '#f44'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.moveTo(...headLeft)
+            ctx.lineTo(...tailRight)
+            ctx.moveTo(...tailLeft)
+            ctx.lineTo(...headRight)
+            ctx.stroke()
+        }
     }
     ctx.restore()
 }

@@ -27,22 +27,22 @@ const viewport = {
     elevationScale: 100,
 }
 
-test('elevation layout separates overlapping notes while preserving their real elevation', () => {
+test('overlapping notes stay at their actual elevation', () => {
     const layout = layoutElevationNotes([note(1, 0), note(2, 0), note(3, 0)], viewport)
     assert.equal(layout.rows.length, 3)
-    assert.equal(new Set(layout.rows.map((row) => row.y)).size, 3)
+    assert.equal(new Set(layout.rows.map((row) => row.y)).size, 1)
     for (const row of layout.rows) {
-        assert.equal(row.trueY, layout.yAt(0))
+        assert.equal(row.y, layout.yAt(0))
         assert.equal(row.x, layout.xAt(0))
     }
 })
 
-test('same-elevation slide notes rise in connection order even without lane overlap', () => {
+test('same-elevation slide notes stay level regardless of connection order', () => {
     const layout = layoutElevationNotes([note(1, 2, 5), note(1, 0, -5), note(1, 1, 0)], viewport)
     const rows = [...layout.rows].sort((a, b) => a.order - b.order)
     assert.equal(rows.length, 3)
-    assert.ok(rows[0]!.y > rows[1]!.y && rows[1]!.y > rows[2]!.y)
-    assert.equal(rows[0]!.trueY, rows[2]!.trueY)
+    assert.equal(rows[0]!.y, rows[1]!.y)
+    assert.equal(rows[0]!.y, rows[2]!.y)
 })
 
 test('the elevation viewport maps fixed units without shifting the axis during an edit', () => {

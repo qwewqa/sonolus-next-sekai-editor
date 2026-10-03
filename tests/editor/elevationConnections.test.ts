@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
     drawElevationConnections,
     getElevationConnections,
+    getElevationRibbon,
 } from '../../src/editor/elevation/connections'
 import type { ElevationRow } from '../../src/editor/elevation/layout'
 import { connectorColors } from '../../src/editor/utils/connectorColors'
@@ -13,6 +14,8 @@ const note = (properties: Partial<NoteEntity> = {}) =>
     ({
         beat: 4,
         connectorType: 'active',
+        connectorEase: 'linear',
+        connectorLayer: 'top',
         connectorStyle: 'default',
         connectorIsFake: false,
         connectorGuideAlpha: 1,
@@ -23,7 +26,6 @@ const row = (note: NoteEntity, x = 100, y = 200, order = 0): ElevationRow => ({
     note,
     x,
     y,
-    trueY: y,
     w: 40,
     lane: 0,
     size: 1,
@@ -88,7 +90,7 @@ test('styles belong to segment owners and transparent guides are omitted', () =>
     )[0]
     assert.equal(guide?.color, connectorColors(owner).body)
     assert.equal(guide?.edge, undefined)
-    assert.ok(guide && Math.abs(guide.alpha - 0.45) < 1e-12)
+    assert.ok(guide && Math.abs(guide.alpha - 0.1875) < 1e-12)
     const damageOwner = note({ connectorType: 'damage', connectorIsFake: true })
     const damage = getElevationConnections(
         [row(head), row(tail)],
@@ -110,6 +112,7 @@ const canvas = () => {
         beginPath() {},
         stroke() {},
         closePath() {},
+        clip() {},
         moveTo(x: number, y: number) {
             moves.push([x, y])
         },
@@ -134,34 +137,145 @@ const canvas = () => {
     }
 }
 
-test('arrows clip to actual note bodies at high lane scale and still point at the tail', () => {
+test('ribbons join full endpoint widths and taper without clipping to note bodies', () => {
     const head = note(),
         tail = note()
-    const connections = getElevationConnections(
-        [row(head, 100, 250), row(tail, 100, 100)],
-        [[connect(head, tail)]],
-    )
+    const a = row(head, 100, 250),
+        b = { ...row(tail, 160, 100), w: 80 }
+    const [connection] = getElevationConnections([a, b], [[connect(head, tail)]])
+    assert.ok(connection)
+    assert.deepEqual(getElevationRibbon(connection), {
+        headLeft: [80, 250],
+        headRight: [120, 250],
+        tailLeft: [120, 100],
+        tailRight: [200, 100],
+    })
     const recorded = canvas()
-    drawElevationConnections(recorded.ctx, connections, 100)
-    assert.deepEqual(recorded.moves[0], [100, 217])
-    assert.deepEqual(recorded.lines[0], [100, 133])
-    assert.deepEqual(recorded.moves.at(-1), [100, 133])
-    assert.ok(recorded.lines.at(-1)![1] > 133)
+    drawElevationConnections(recorded.ctx, [connection])
+    assert.deepEqual(recorded.moves[0], [80, 250])
+    assert.deepEqual(recorded.lines.slice(0, 3), [
+        [120, 100],
+        [200, 100],
+        [120, 250],
+    ])
     assert.equal(recorded.fills, 1)
 })
 
-test('overlapping endpoints route outside the note bodies and fake links remain dashed', () => {
+test('all interpolating eases produce the same ribbon at a single beat', () => {
+    for (const connectorEase of ['linear', 'in', 'out', 'inOut', 'outIn'] as const) {
+        const head = note({ connectorEase }),
+            tail = note()
+        const [connection] = getElevationConnections(
+            [row(head), row(tail, 150, 100)],
+            [[connect(head, tail)]],
+        )
+        assert.ok(connection)
+        assert.deepEqual(getElevationRibbon(connection), {
+            headLeft: [80, 200],
+            headRight: [120, 200],
+            tailLeft: [130, 100],
+            tailRight: [170, 100],
+        })
+    }
+})
+
+test('same-elevation, none-ease and zero-width connectors do not invent visible geometry', () => {
+    for (const kind of ['level', 'none', 'zero'] as const) {
+        const head = note({ connectorEase: kind === 'none' ? 'none' : 'linear' }),
+            tail = note()
+        const a = row(head),
+            b = row(tail, 150, kind === 'level' ? 200 : 100)
+        if (kind === 'zero') a.w = b.w = 0
+        const [connection] = getElevationConnections([a, b], [[connect(head, tail)]])
+        assert.ok(connection)
+        assert.equal(getElevationRibbon(connection), undefined)
+        const recorded = canvas()
+        drawElevationConnections(recorded.ctx, [connection])
+        assert.equal(recorded.fills, 0)
+        assert.equal(recorded.moves.length, 0)
+    }
+})
+
+test('a zero-width endpoint tapers to a point without losing the other endpoint', () => {
+    const head = note(),
+        tail = note()
+    const a = { ...row(head), w: 0 },
+        b = row(tail, 150, 100)
+    const [connection] = getElevationConnections([a, b], [[connect(head, tail)]])
+    assert.ok(connection)
+    assert.deepEqual(getElevationRibbon(connection), {
+        headLeft: [100, 200],
+        headRight: [100, 200],
+        tailLeft: [130, 100],
+        tailRight: [170, 100],
+    })
+})
+
+test('fake ribbons retain filled bodies and use the same cross marker as the main editor', () => {
     const head = note({ connectorIsFake: true }),
         tail = note()
     const connections = getElevationConnections(
-        [row(head), row(tail, 110, 200)],
+        [row(head), row(tail, 110, 100)],
         [[connect(head, tail)]],
     )
     const recorded = canvas()
-    drawElevationConnections(recorded.ctx, connections, 30)
-    assert.deepEqual(recorded.moves[0], [100, 188])
-    assert.deepEqual(recorded.lines[0], [100, 173])
-    assert.deepEqual(recorded.lines[1], [110, 173])
-    assert.ok(recorded.dashes.some((dash) => dash.join(',') === '5,4'))
+    drawElevationConnections(recorded.ctx, connections)
     assert.equal(recorded.fills, 1)
+    assert.ok(recorded.dashes.every((dash) => dash.length === 0))
+    assert.deepEqual(recorded.moves.slice(-2), [
+        [80, 200],
+        [90, 100],
+    ])
+    assert.deepEqual(recorded.lines.slice(-2), [
+        [130, 100],
+        [120, 200],
+    ])
+})
+
+test('connector layers and families are painted in preview order', () => {
+    const head = note(),
+        tail = note()
+    const owners = [
+        note({ connectorLayer: 'over', connectorType: 'guide' }),
+        note({ connectorLayer: 'top', connectorType: 'damage' }),
+        note({ connectorLayer: 'under', connectorType: 'guide' }),
+        note({ connectorLayer: 'top', connectorType: 'active' }),
+        note({ connectorLayer: 'bottom', connectorType: 'active' }),
+    ]
+    const result = getElevationConnections(
+        [row(head), row(tail)],
+        [owners.map((owner) => connect(head, tail, owner))],
+    )
+    assert.deepEqual(
+        result.map((item) => [
+            item.connector.segmentHead.connectorLayer,
+            item.connector.segmentHead.connectorType,
+        ]),
+        [
+            ['under', 'guide'],
+            ['bottom', 'active'],
+            ['top', 'active'],
+            ['top', 'damage'],
+            ['over', 'guide'],
+        ],
+    )
+})
+
+test('guide opacity interpolates in time across BPM changes', () => {
+    const head = note(),
+        tail = note()
+    const segmentHead = note({ beat: 0, connectorType: 'guide', connectorGuideAlpha: 0 })
+    const segmentTail = note({ beat: 8, connectorGuideAlpha: 1 })
+    const bpms = [
+        { x: 0, y: 0, s: 0.5 },
+        { x: 4, y: 2, s: 1 },
+    ]
+    const [connection] = getElevationConnections(
+        [row(head), row(tail)],
+        [[connect(head, tail, segmentHead, segmentTail)]],
+        true,
+        bpms,
+    )
+    assert.ok(connection)
+    assert.ok(Math.abs(connection.alpha - 1 / 6) < 1e-12)
 })

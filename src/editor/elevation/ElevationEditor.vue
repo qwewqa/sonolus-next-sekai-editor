@@ -590,6 +590,7 @@ const connections = computed(() => {
         rows,
         [...slideIds].map((id) => connectorStore.value.get(id) ?? []),
         view.visibilities.connector,
+        elevationState.value.bpms,
     )
 })
 
@@ -598,6 +599,12 @@ watchEffect(() => {
     const layout = elevationLayout.value
     const current = elevationState.value
     const currentConnections = connections.value
+    const belowNotes = currentConnections.filter(
+        (connection) => connection.connector.segmentHead.connectorLayer !== 'over',
+    )
+    const aboveNotes = currentConnections.filter(
+        (connection) => connection.connector.segmentHead.connectorLayer === 'over',
+    )
     const selected = new Set(current.selectedEntities)
     const hover = hovered.value
     const ghosts = creating.value.map((row) => ({
@@ -605,7 +612,6 @@ watchEffect(() => {
         x: layout.xAt(row.lane),
         y: layout.yAt(row.elevation),
         w: row.size * layout.laneScale,
-        trueY: layout.yAt(row.elevation),
     }))
     const rect = selection.value
     const ratio = pixelRatio.value
@@ -655,7 +661,7 @@ watchEffect(() => {
             ctx.lineTo(x, layout.height)
             ctx.stroke()
         }
-        drawElevationConnections(ctx, currentConnections, layout.laneScale)
+        drawElevationConnections(ctx, belowNotes)
         const context: EditorDrawContext = {
             ctx,
             scale: layout.laneScale,
@@ -678,32 +684,15 @@ watchEffect(() => {
             fontMiddle: 0.25,
         }
         notes.beginFrame(timestamp)
-        for (const row of [...layout.rows, ...ghosts]) {
-            if (
-                row.y !== row.trueY &&
-                row.x >= -3 &&
-                row.x <= layout.width + 3 &&
-                Math.max(row.y, row.trueY) >= 0 &&
-                Math.min(row.y, row.trueY) <= layout.height
-            ) {
-                ctx.setLineDash([3, 3])
-                ctx.strokeStyle = '#ffffff40'
-                ctx.beginPath()
-                ctx.moveTo(row.x, row.trueY)
-                ctx.lineTo(row.x, row.y)
-                ctx.stroke()
-                ctx.setLineDash([])
-                ctx.fillStyle = '#ffffff80'
-                ctx.fillRect(row.x - 3, row.trueY - 1, 6, 2)
-            }
-            const padding = layout.laneScale * 1.6 + 8
-            if (
-                row.y + padding < 0 ||
-                row.y - padding > layout.height ||
-                row.x + row.w / 2 + padding < 0 ||
-                row.x - row.w / 2 - padding > layout.width
-            )
-                continue
+        const padding = layout.laneScale * 1.6 + 8
+        const visibleRows = [...layout.rows, ...ghosts].filter(
+            (row) =>
+                row.y + padding >= 0 &&
+                row.y - padding <= layout.height &&
+                row.x + row.w / 2 + padding >= 0 &&
+                row.x - row.w / 2 - padding <= layout.width,
+        )
+        for (const row of visibleRows) {
             ctx.save()
             ctx.scale(layout.laneScale, layout.laneScale)
             notes.draw(
@@ -718,6 +707,9 @@ watchEffect(() => {
                 },
             )
             ctx.restore()
+        }
+        drawElevationConnections(ctx, aboveNotes)
+        for (const row of visibleRows) {
             if (selected.has(row.note) || row.note === hover) {
                 ctx.setLineDash([6, 4])
                 ctx.strokeStyle = '#ffffff80'

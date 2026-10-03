@@ -5,11 +5,11 @@ import {
     isElevationEditorOpen,
     openElevationEditor,
 } from '../../elevation/state'
-import FlipIcon from '../flip/FlipIcon.vue'
+import ElevationIcon from './ElevationIcon.vue'
 
 export const elevation: Command = {
     title: () => i18n.value.commands.elevation.title,
-    icon: { is: FlipIcon, props: { class: 'rotate-90' } },
+    icon: { is: ElevationIcon },
 
     execute() {
         if (isElevationEditorOpen.value) closeElevationEditor()
