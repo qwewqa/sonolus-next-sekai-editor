@@ -267,7 +267,11 @@ const settingsProperties = {
 
     playPreviewDuration: number(500, 0, 1000),
 
-    mouseSecondaryTool: Type.Union([Type.Literal('eraser'), Type.Literal('select')]),
+    mouseSecondaryTool: Type.Union([
+        Type.Literal('eraser'),
+        Type.Literal('select'),
+        Type.Literal('selectContextMenu'),
+    ]),
 
     mouseSmoothScrolling: Type.Boolean({ default: true }),
 

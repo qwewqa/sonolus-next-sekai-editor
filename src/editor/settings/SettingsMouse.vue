@@ -14,6 +14,7 @@ import SettingsSection from './SettingsSection.vue'
             :options="[
                 [i18n.settings.mouse.secondaryTool.eraser, 'eraser'],
                 [i18n.settings.mouse.secondaryTool.select, 'select'],
+                [i18n.settings.mouse.secondaryTool.selectContextMenu, 'selectContextMenu'],
             ]"
         />
 

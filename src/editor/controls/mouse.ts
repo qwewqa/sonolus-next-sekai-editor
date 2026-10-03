@@ -4,6 +4,7 @@ import { zoomXIn } from '../commands/zooms/zoomXIn'
 import { zoomXOut } from '../commands/zooms/zoomXOut'
 import { zoomYIn } from '../commands/zooms/zoomYIn'
 import { zoomYOut } from '../commands/zooms/zoomYOut'
+import { closeContextMenu, openContextMenu } from '../contextMenu'
 import { cancelPreviewFollow, stopPlayer } from '../player'
 import { switchToolTo, tool, toolName, type ToolName } from '../tools'
 import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
@@ -25,9 +26,12 @@ const toP = (event: MouseEvent) => ({
 
 let secondarySwitchBack: ToolName | undefined
 let switchingSecondaryTool = false
+let contextClick: { x: number; y: number } | undefined
 
 export const cancelMouseControls = (restoreTool = true) => {
     if (switchingSecondaryTool) return
+    contextClick = undefined
+    closeContextMenu()
     mouseGesture.cancel()
     const previous = secondarySwitchBack
     secondarySwitchBack = undefined
@@ -35,6 +39,7 @@ export const cancelMouseControls = (restoreTool = true) => {
 }
 
 const mousedown = (event: MouseEvent) => {
+    closeContextMenu()
     const p = toP(event)
     updateViewPointer(p)
 
@@ -47,11 +52,27 @@ const mousedown = (event: MouseEvent) => {
         secondarySwitchBack = toolName.value
         switchingSecondaryTool = true
         try {
-            switchToolTo(settings.mouseSecondaryTool)
+            switchToolTo(
+                settings.mouseSecondaryTool === 'selectContextMenu'
+                    ? 'select'
+                    : settings.mouseSecondaryTool,
+            )
         } finally {
             switchingSecondaryTool = false
         }
     }
+
+    if (
+        settings.mouseSecondaryTool === 'selectContextMenu' &&
+        !mouseGesture.pointerCount &&
+        event.button === 2 &&
+        event.buttons === 2 &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey
+    )
+        contextClick = { x: p.x, y: p.y }
 
     mouseGesture.start([p])
 
@@ -61,6 +82,8 @@ const mousedown = (event: MouseEvent) => {
 const mousemove = (event: MouseEvent) => {
     const p = toP(event)
     updateViewPointer(p)
+    if (contextClick && Math.hypot(p.x - contextClick.x, p.y - contextClick.y) > 20)
+        contextClick = undefined
 
     if (mouseGesture.pointerCount) {
         mouseGesture.move([p])
@@ -76,17 +99,31 @@ const mouseup = (event: MouseEvent) => {
     const p = toP(event)
     updateViewPointer(p)
 
-    mouseGesture.end([p])
+    const showMenu =
+        contextClick &&
+        event.button === 2 &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        Math.hypot(p.x - contextClick.x, p.y - contextClick.y) <= 20
+    contextClick = undefined
+    if (showMenu) mouseGesture.cancel()
+    else mouseGesture.end([p])
 
     if (!mouseGesture.pointerCount && secondarySwitchBack) {
         switchToolTo(secondarySwitchBack)
         secondarySwitchBack = undefined
     }
 
+    if (showMenu) openContextMenu(p.x, p.y)
     event.preventDefault()
 }
 
-const mouseleave = mouseup
+const mouseleave = (event: MouseEvent) => {
+    contextClick = undefined
+    mouseup(event)
+}
 
 const wheel = (event: WheelEvent) => {
     if (event.ctrlKey) {

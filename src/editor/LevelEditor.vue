@@ -9,6 +9,7 @@ import { screenSm } from '../screen'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
 import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
+import LevelEditorContextMenu from './LevelEditorContextMenu.vue'
 import { useControlLifecycle } from './controls'
 import { useFocusControl } from './controls/focus'
 import { useKeyboardControl } from './controls/keyboard'
@@ -139,6 +140,7 @@ const stage = computed(() =>
             </template>
 
             <LevelEditorToolbar />
+            <LevelEditorContextMenu />
         </div>
         <div class="z-10 flex gap-4 bg-preview px-2 py-1 text-xs text-white/50">
             <span class="flex-grow">{{ tool.title() }}</span>

@@ -53,6 +53,7 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { align } from '../../../utils/math'
+import type { Modifiers } from '../../controls/gestures/pointer'
 import { notify } from '../../notification'
 import { view, xToLane, yToBeatOffset } from '../../view'
 import { getOnlyEntityType } from '../entityType'
@@ -112,57 +113,7 @@ export const paste: Tool = {
         const data = clipboardEntry.value?.data
         if (!data) return
 
-        const entities = transform(data.chart)
-        if (!entities.length) return
-
-        if (
-            entities.some(
-                (entity) =>
-                    entity.type === 'cameraEventJoint' ||
-                    entity.type === 'stageMaskEventJoint' ||
-                    entity.type === 'stagePivotEventJoint' ||
-                    entity.type === 'stageStyleEventJoint' ||
-                    entity.type === 'stageTransformEventJoint',
-            )
-        ) {
-            await checkDynamicStages()
-        }
-
-        const transaction = createTransaction(state.value)
-
-        const onlyType = getOnlyEntityType(entities)
-        const lane = xToLane(x)
-        const beatOffset = yToBeatOffset(y, data.beat)
-
-        const selectedEntities: Entity[] = []
-        for (const entity of entities) {
-            const beat = entity.beat + beatOffset
-            if (beat < 0) continue
-
-            const result = pastes[entity.type]?.(
-                transaction,
-                onlyType,
-                entity as never,
-                data.lane,
-                lane,
-                beat,
-                modifiers.shift,
-            )
-            if (!result) continue
-
-            selectedEntities.push(...result)
-        }
-
-        pushState(
-            interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`),
-            transaction.commit(selectedEntities),
-        )
-        view.entities = {
-            hovered: [],
-            creating: [],
-        }
-
-        notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
+        await pasteAtPosition(xToLane(x), yToBeatOffset(y, data.beat), modifiers)
     },
 
     dragStart(x, y, modifiers) {
@@ -295,6 +246,61 @@ export const paste: Tool = {
     dragCancel() {
         active = undefined
     },
+}
+
+export const pasteAtPosition = async (lane: number, beatOffset: number, modifiers: Modifiers) => {
+    const data = clipboardEntry.value?.data
+    if (!data) return
+
+    const entities = transform(data.chart)
+    if (!entities.length) return
+
+    if (
+        entities.some(
+            (entity) =>
+                entity.type === 'cameraEventJoint' ||
+                entity.type === 'stageMaskEventJoint' ||
+                entity.type === 'stagePivotEventJoint' ||
+                entity.type === 'stageStyleEventJoint' ||
+                entity.type === 'stageTransformEventJoint',
+        )
+    ) {
+        await checkDynamicStages()
+    }
+
+    const transaction = createTransaction(state.value)
+
+    const onlyType = getOnlyEntityType(entities)
+
+    const selectedEntities: Entity[] = []
+    for (const entity of entities) {
+        const beat = entity.beat + beatOffset
+        if (beat < 0) continue
+
+        const result = pastes[entity.type]?.(
+            transaction,
+            onlyType,
+            entity as never,
+            data.lane,
+            lane,
+            beat,
+            modifiers.shift,
+        )
+        if (!result) continue
+
+        selectedEntities.push(...result)
+    }
+
+    pushState(
+        interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`),
+        transaction.commit(selectedEntities),
+    )
+    view.entities = {
+        hovered: [],
+        creating: [],
+    }
+
+    notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
 }
 
 const transform = (chart: Chart) => {

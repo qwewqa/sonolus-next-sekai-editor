@@ -178,9 +178,9 @@ const removes: {
     connector: undefined,
 }
 
-const canRemove = (entity: Entity) => canRemoves[entity.type]?.(entity as never) ?? true
+export const canRemove = (entity: Entity) => canRemoves[entity.type]?.(entity as never) ?? true
 
-const remove = (entities: Entity[]) => {
+export const remove = (entities: Entity[]) => {
     entities = entities.filter(canRemove)
     if (!entities.length) {
         replaceState({

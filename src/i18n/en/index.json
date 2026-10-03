@@ -504,6 +504,12 @@
             }
         }
     },
+    "contextMenu": {
+        "title": "Selection actions",
+        "paste": "Paste",
+        "selectSlideNotes": "Select Slide Notes",
+        "delete": "Delete"
+    },
     "settings": {
         "title": "Settings",
         "resetSettings": "Reset Settings",
@@ -539,7 +545,8 @@
             "secondaryTool": {
                 "title": "Secondary Tool",
                 "eraser": "Eraser",
-                "select": "Select"
+                "select": "Select",
+                "selectContextMenu": "Select + Context Menu"
             },
             "smoothScrolling": "Smooth Scrolling"
         },
