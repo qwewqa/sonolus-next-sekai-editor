@@ -394,6 +394,7 @@ const toNoteObject = (
         groupId,
         stageId,
         beat: getValue(entity, EngineArchetypeDataName.Beat, beatSchema),
+        elevation: getOptionalValue(entity, 'elevation', Type.Number()) ?? 0,
         noteStyle:
             noteStyles[getOptionalValue(entity, 'style', noteStyleValueSchema) ?? 0] ?? 'default',
         connectorStyle:

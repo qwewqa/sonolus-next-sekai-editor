@@ -56,6 +56,7 @@ export const isActiveConnectorKind = (kind: ConnectorKindValue) =>
 export type ConnectorLayerValue = 0 | 1 | 2 | 3
 
 export type PreviewNote = {
+    elevation?: number
     style: NoteStyle
     kind: NoteKindValue
     isCritical: boolean

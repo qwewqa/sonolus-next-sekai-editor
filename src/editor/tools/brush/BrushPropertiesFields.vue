@@ -164,7 +164,7 @@ const eventEase = createModel('eventEase')
     <OptionalDivisionLineAlphaField v-if="isDynamicStages" v-model="divisionLineAlpha" />
     <OptionalRotationField v-if="isDynamicStages" v-model="rotation" />
     <OptionalYTranslationField v-if="isDynamicStages" v-model="yTranslation" />
-    <OptionalElevationField v-if="isDynamicStages" v-model="elevation" />
+    <OptionalElevationField v-model="elevation" />
     <OptionalAnchorField v-if="isDynamicStages" v-model="anchor" />
     <OptionalEventEaseField v-if="isDynamicStages" v-model="eventEase" />
 </template>

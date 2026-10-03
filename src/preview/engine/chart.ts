@@ -364,6 +364,7 @@ export const createPreviewChartBuilder = () => {
                     const groupIndex = groupIndexes.get(note.groupId) ?? 0
                     const previewNote: PreviewNote = {
                         kind: noteKinds[role][isFlick ? 1 : 0],
+                        elevation: note.elevation,
                         style: note.noteStyle,
                         isCritical: note.isCritical,
                         isFake: note.isFake,

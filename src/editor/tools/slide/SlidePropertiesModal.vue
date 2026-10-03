@@ -18,6 +18,7 @@ import MultiIsCriticalField from '../../../modals/form/MultiIsCriticalField.vue'
 import MultiIsFakeField from '../../../modals/form/MultiIsFakeField.vue'
 import MultiLeftField from '../../../modals/form/MultiLeftField.vue'
 import MultiNoteTypeField from '../../../modals/form/MultiNoteTypeField.vue'
+import MultiElevationField from '../../../modals/form/MultiElevationField.vue'
 import MultiNoteStyleField from '../../../modals/form/MultiNoteStyleField.vue'
 import MultiConnectorStyleField from '../../../modals/form/MultiConnectorStyleField.vue'
 import MultiSfxField from '../../../modals/form/MultiSfxField.vue'
@@ -30,6 +31,7 @@ const { noteFields, createModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'note',
 )
 
+const elevation = createModel('elevation')
 const noteStyle = createModel('noteStyle')
 const connectorStyle = createModel('connectorStyle')
 const noteType = createModel('noteType')
@@ -57,6 +59,7 @@ const connectorPresentation = createModel('connectorPresentation')
 <template>
     <PropertiesModal :title="i18n.tools.slide.modal.title">
         <MultiNoteTypeField v-model="noteType" />
+        <MultiElevationField v-if="noteFields.elevation !== false" v-model="elevation" />
         <MultiNoteStyleField v-if="noteFields.noteStyle !== false" v-model="noteStyle" />
         <MultiGroupField v-model="groupId" />
         <MultiStageField v-if="isDynamicStages" v-model="stageId" />

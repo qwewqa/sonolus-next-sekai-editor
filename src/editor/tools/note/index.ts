@@ -321,6 +321,7 @@ const getPropertiesFromSelection = () => {
     return {
         groupId: view.groupId ?? note?.groupId ?? defaultGroupId.value,
         stageId: view.stageId ?? note?.stageId ?? defaultStageId.value,
+        elevation: defaultNoteProperties.value.elevation ?? note?.elevation ?? 0,
         noteStyle: defaultNoteProperties.value.noteStyle ?? note?.noteStyle ?? 'default',
         connectorStyle:
             defaultNoteProperties.value.connectorStyle ?? note?.connectorStyle ?? 'default',

@@ -19,6 +19,7 @@ export type NoteEntity = BaseEntity & {
     slideId: SlideId
     groupId: GroupId
     stageId: StageId
+    elevation: number
     noteStyle: NoteStyle
     connectorStyle: NoteStyle
     noteType: NoteType
@@ -59,6 +60,7 @@ export const toNoteEntity = (
     groupId: object.groupId,
     stageId: object.stageId,
     beat: object.beat,
+    elevation: object.elevation ?? 0,
     noteStyle: object.noteStyle,
     connectorStyle: object.connectorStyle,
     noteType: object.noteType,

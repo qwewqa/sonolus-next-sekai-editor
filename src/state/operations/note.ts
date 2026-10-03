@@ -12,6 +12,7 @@ export const editSelectedNote = (
         groupId: object.groupId ?? entity.groupId,
         stageId: object.stageId ?? entity.stageId,
         beat: object.beat ?? entity.beat,
+        elevation: object.elevation ?? entity.elevation,
         noteStyle: object.noteStyle ?? entity.noteStyle,
         connectorStyle: object.connectorStyle ?? entity.connectorStyle,
         noteType: object.noteType ?? entity.noteType,

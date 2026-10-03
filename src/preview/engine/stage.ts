@@ -306,8 +306,9 @@ export const stagePropsHasTransform = (props: StageProps) =>
 export const stagePropsTransform = (
     context: PreviewFrameContext,
     props: StageProps,
+    elevationOffset = 0,
 ): StageTransform =>
-    stagePropsHasTransform(props)
+    stagePropsHasTransform(props) || elevationOffset !== 0
         ? computeStageTransform(
               context.layout,
               currentLayoutTransform(context.layout),
@@ -316,7 +317,7 @@ export const stagePropsTransform = (
               props.yLaneTranslate,
               props.lane,
               props.centerWeight,
-              props.elevation,
+              props.elevation + elevationOffset,
           )
         : identityStageTransform
 

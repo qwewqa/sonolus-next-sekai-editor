@@ -17,6 +17,7 @@ const number = (def: number, min: number, max: number) =>
 const defaultNoteSlidePropertiesSchema = Type.Intersect([
     Type.Partial(
         Type.Object({
+            elevation: Type.Number(),
             noteStyle: noteStyleSchema,
             connectorStyle: noteStyleSchema,
             noteType: Type.Union([

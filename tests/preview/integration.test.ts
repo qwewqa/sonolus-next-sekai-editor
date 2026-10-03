@@ -5,6 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { NoteObject } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleEase } from '../../src/chart/timeScale'
+import { serializeToLevelDataEntities } from '../../src/levelData/entities/serialize'
 import { buildPreviewChart } from '../../src/preview/engine/chart'
 import type { Quad } from '../../src/preview/engine/math'
 import { renderPreviewFrame } from '../../src/preview/engine/render'
@@ -432,4 +433,96 @@ test('fake damage connectors draw a colored moving head during their active inte
     assert.equal(preview(source).slides.length, 1)
     assert.equal(renderSprite(source, 1, coloredSkin, body).length, 3)
     assert.equal(renderSprite(source, 4, coloredSkin, body).length, 0)
+})
+
+test('note elevation survives state creation and export with a zero default', () => {
+    const source = chart({ slides: [[note({ elevation: -0.5 })], [note()]] })
+    const state = createState(source, 0)
+    assert.deepEqual(
+        [...state.store.slides.note.values()].flat().map((item) => item.elevation),
+        [-0.5, 0],
+    )
+    const entities = serializeToLevelDataEntities(
+        state.initialLife,
+        state.isDynamicStages,
+        state.store,
+        state.groups,
+        state.stages,
+    )
+    const elevations = entities
+        .filter((entity) => entity.archetype.includes('Note'))
+        .map((entity) => {
+            const entry = entity.data.find((item) => item.name === 'elevation')
+            return entry && 'value' in entry ? entry.value : undefined
+        })
+    assert.deepEqual(elevations, [-0.5, 0])
+})
+
+test('per-note elevation adds to the stage before rotation, translation, and clamping', () => {
+    for (const offset of [-1, 0, 0.5, 100]) {
+        const stageEvent = {
+            stageId,
+            beat: 0,
+            rotation: 20,
+            xTranslation: 0.5,
+            yTranslation: -0.25,
+            elevation: 1,
+            anchor: 'default',
+            eventEase: 'none',
+        } as const
+        const source = chart({
+            stageTransformEvents: [stageEvent],
+            slides: [[note({ elevation: offset })]],
+        })
+        const combined = chart({ stageTransformEvents: [{ ...stageEvent, elevation: 1 + offset }] })
+        assert.deepEqual(renderNotes(source), renderNotes(combined))
+        assert.equal(preview(source).notes[0]!.elevation, offset)
+    }
+})
+
+test('standalone notes and attached ticks follow per-note elevation', () => {
+    const raised = chart({ slides: [[note({ elevation: 1 })]] })
+    const stageRaised = chart({
+        stageTransformEvents: [
+            {
+                stageId,
+                beat: 0,
+                rotation: 0,
+                xTranslation: 0,
+                yTranslation: 0,
+                elevation: 1,
+                anchor: 'default',
+                eventEase: 'none',
+            },
+        ],
+    })
+    assert.deepEqual(renderNotes(raised), renderNotes(stageRaised))
+    assert.notDeepEqual(renderNotes(raised), renderNotes(chart()))
+    const flat = {
+        beat: 0,
+        cameraLeft: -6,
+        cameraSize: 12,
+        cameraZoom: 1,
+        cameraZoomTargetLane: 0,
+        cameraZoomTargetY: 0,
+        cameraZoomVerticalAlign: 'default',
+        cameraRotation: 0,
+        cameraStageTilt: 0,
+        eventEase: 'none',
+    } as const
+    raised.cameraEvents = [flat]
+    assert.deepEqual(renderNotes(raised), renderNotes(chart({ cameraEvents: [flat] })))
+    const slide = [
+        note({ beat: 2, elevation: 1 }),
+        note({ beat: 4, isAttached: true, noteType: 'trace', elevation: 99 }),
+        note({ beat: 6, elevation: 1 }),
+    ]
+    const attached = chart({ slides: [slide] })
+    const equivalent = chart({
+        slides: [slide.map((item) => ({ ...item, elevation: 0 }))],
+        stageTransformEvents: stageRaised.stageTransformEvents,
+    })
+    assert.deepEqual(renderNotes(attached), renderNotes(equivalent))
+    const staticRaised = chart({ isDynamicStages: false, slides: [[note({ elevation: 1 })]] })
+    assert.notDeepEqual(renderNotes(staticRaised), renderNotes(chart({ isDynamicStages: false })))
 })

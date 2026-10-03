@@ -327,6 +327,7 @@ const getPropertiesFromSelection = (beat: number) => {
     return {
         groupId: view.groupId ?? note?.groupId ?? defaultGroupId.value,
         stageId: view.stageId ?? note?.stageId ?? defaultStageId.value,
+        elevation: defaultSlideProperties.value.elevation ?? nearest?.elevation ?? 0,
         noteStyle: defaultSlideProperties.value.noteStyle ?? nearest?.noteStyle ?? 'default',
         connectorStyle:
             defaultSlideProperties.value.connectorStyle ?? nearest?.connectorStyle ?? 'default',

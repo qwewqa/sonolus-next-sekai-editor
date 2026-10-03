@@ -32,6 +32,7 @@ export type NoteObject = {
     groupId: GroupId
     stageId: StageId
     beat: number
+    elevation?: number
     noteStyle: NoteStyle
     connectorStyle: NoteStyle
     noteType: NoteType

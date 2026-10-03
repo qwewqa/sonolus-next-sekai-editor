@@ -20,8 +20,10 @@ import {
     FlickDirection,
     approach,
     blendStageTransform,
+    computeStageTransform,
     createLayout,
     createViewport,
+    currentLayoutTransform,
     defaultCameraInfo,
     getCameraInfo,
     identityStageScreenTransform,
@@ -261,10 +263,26 @@ export const renderPreviewFrame = (
         return basicVisualNoteAlpha(note)
     }
 
-    const basicStageTransform = (note: PreviewNote): StageTransform =>
-        note.stageIndex >= 0
-            ? (stageTransforms[note.stageIndex] ?? identityStageTransform)
-            : identityStageTransform
+    const standaloneTransform = (context: PreviewFrameContext, elevation: number): StageTransform =>
+        computeStageTransform(
+            context.layout,
+            currentLayoutTransform(context.layout),
+            0,
+            0,
+            0,
+            0,
+            0,
+            elevation,
+        )
+
+    const basicStageTransform = (note: PreviewNote): StageTransform => {
+        const elevation = note.elevation ?? 0
+        if (elevation === 0) return stageTransforms[note.stageIndex] ?? identityStageTransform
+        const props = stageProps[note.stageIndex]
+        return props
+            ? stagePropsTransform(context, props, elevation)
+            : standaloneTransform(context, elevation)
+    }
 
     const visualStageTransform = (note: PreviewNote): StageTransform => {
         if (note.isAttached && note.attachHead && note.attachTail) {
@@ -278,10 +296,11 @@ export const renderPreviewFrame = (
     }
 
     const visualStageAffine = (note: PreviewNote): StageScreenTransform => {
-        if (!chart.isDynamicStages) return identityStageScreenTransform
         if (note.isAttached && note.attachHead && note.attachTail) {
             return stageTransformToAffineOrIdentity(visualStageTransform(note))
         }
+        if ((note.elevation ?? 0) !== 0)
+            return stageTransformToAffineOrIdentity(basicStageTransform(note))
         return note.stageIndex >= 0
             ? (stageAffines[note.stageIndex] ?? identityStageScreenTransform)
             : identityStageScreenTransform
@@ -386,9 +405,12 @@ export const renderPreviewFrame = (
         t: number,
     ): StageTransform => {
         const props = stagePropsAtTime(note.stageIndex, t)
-        return props && stagePropsHasTransform(props)
-            ? stagePropsTransform(context, props)
-            : identityStageTransform
+        const elevation = note.elevation ?? 0
+        return props
+            ? stagePropsTransform(context, props, elevation)
+            : elevation !== 0
+              ? standaloneTransform(context, elevation)
+              : identityStageTransform
     }
 
     const visualStageTransformAt = (
@@ -396,7 +418,6 @@ export const renderPreviewFrame = (
         note: PreviewNote,
         t: number,
     ): StageTransform => {
-        if (!chart.isDynamicStages) return identityStageTransform
         if (note.isAttached && note.attachHead && note.attachTail) {
             return blendStageTransform(
                 basicStageTransformAt(context, note.attachHead, t),
@@ -648,15 +669,13 @@ export const renderPreviewFrame = (
                     visualNoteAlpha(current.tail),
                     segmentFrac,
                 ),
-                affine: chart.isDynamicStages
-                    ? stageTransformToAffineOrIdentity(
-                          blendStageTransform(
-                              basicStageTransformAt(context, attachHead, t),
-                              basicStageTransformAt(context, attachTail, t),
-                              easedFrac,
-                          ),
-                      )
-                    : identityStageScreenTransform,
+                affine: stageTransformToAffineOrIdentity(
+                    blendStageTransform(
+                        basicStageTransformAt(context, attachHead, t),
+                        basicStageTransformAt(context, attachTail, t),
+                        easedFrac,
+                    ),
+                ),
             }
         }
 

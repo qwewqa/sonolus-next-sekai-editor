@@ -194,7 +194,12 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiRotationField v-if="types.stageTransformEventJoint" v-model="rotation" />
             <MultiXTranslationField v-if="types.stageTransformEventJoint" v-model="xTranslation" />
             <MultiYTranslationField v-if="types.stageTransformEventJoint" v-model="yTranslation" />
-            <MultiElevationField v-if="types.stageTransformEventJoint" v-model="elevation" />
+            <MultiElevationField
+                v-if="
+                    types.stageTransformEventJoint || (types.note && noteFields.elevation !== false)
+                "
+                v-model="elevation"
+            />
             <MultiAnchorField v-if="types.stageTransformEventJoint" v-model="anchor" />
             <MultiEventEaseField
                 v-if="

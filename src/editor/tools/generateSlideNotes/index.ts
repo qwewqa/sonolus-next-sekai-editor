@@ -181,6 +181,7 @@ const apply = (notes: NoteEntity[]) => {
                     stageId: view.stageId ?? nearest?.stageId ?? defaultStageId.value,
                     beat,
                     left: 0,
+                    elevation: defaultSlideProperties.value.elevation ?? nearest?.elevation ?? 0,
                     noteStyle:
                         defaultSlideProperties.value.noteStyle ?? nearest?.noteStyle ?? 'default',
                     connectorStyle:
