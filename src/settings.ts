@@ -112,6 +112,7 @@ const settingsProperties = {
         previewRenderScale.max,
     ),
     previewShowEffects: Type.Boolean({ default: true }),
+    previewHighlightSelection: Type.Boolean({ default: true }),
     previewAntialias: Type.Boolean({ default: true }),
     previewAspectRatio: Type.Union([
         Type.Literal(previewAspectRatios[0][1]),
@@ -451,4 +452,18 @@ export const settings = Object.defineProperties(
     ),
 ) as {
     [K in keyof typeof settingsProperties]: Type.StaticDecode<(typeof settingsProperties)[K]>
+}
+
+export const resetSettings = () => {
+    for (const [key, schema] of Object.entries(settingsProperties)) {
+        if (key === 'keyboardShortcuts') continue
+        Reflect.set(settings, key, Value.Create(schema))
+    }
+}
+
+export const resetKeybinds = () => {
+    settings.keyboardShortcuts = normalize(
+        settingsProperties.keyboardShortcuts,
+        Value.Create(settingsProperties.keyboardShortcuts),
+    )
 }

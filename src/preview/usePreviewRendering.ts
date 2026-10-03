@@ -167,7 +167,9 @@ export const usePreviewRendering = (
 
             const getChart = chartRequest.value
             const backgroundElement = background.value
-            const selected = getPreviewState(state.value).selectedEntities
+            const selected = settings.previewHighlightSelection
+                ? getPreviewState(state.value).selectedEntities
+                : []
             const objects = new Set(selected)
             const stageIds = new Set(
                 selected.flatMap((entity) => {
@@ -210,7 +212,9 @@ export const usePreviewRendering = (
                     currentSkin.skin,
                     getChart(),
                     ...args,
-                    { objects, stages, outline: outline.add },
+                    objects.size || stages.size
+                        ? { objects, stages, outline: outline.add }
+                        : undefined,
                 )
                 if (ctx) {
                     const scale = args[4] / 2

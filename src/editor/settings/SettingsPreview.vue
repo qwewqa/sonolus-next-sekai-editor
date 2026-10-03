@@ -36,6 +36,10 @@ import SettingsSection from './SettingsSection.vue'
             :label="i18n.settings.preview.showEffects"
         />
         <ToggleField v-model="settings.previewAntialias" :label="i18n.settings.preview.antialias" />
+        <ToggleField
+            v-model="settings.previewHighlightSelection"
+            :label="i18n.settings.preview.highlightSelection"
+        />
         <SelectField
             v-model="settings.previewControls"
             :label="i18n.settings.preview.controls.title"

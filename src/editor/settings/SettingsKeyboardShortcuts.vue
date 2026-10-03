@@ -8,10 +8,10 @@ import SettingsSection from './SettingsSection.vue'
 const getKey = (name: CommandName) => settings.keyboardShortcuts[name]
 
 const setKey = (name: CommandName, key: string | undefined) => {
-    settings.keyboardShortcuts = {
-        ...settings.keyboardShortcuts,
-        [name]: key,
-    }
+    const shortcuts = { ...settings.keyboardShortcuts }
+    if (key === undefined) Reflect.deleteProperty(shortcuts, name)
+    else shortcuts[name] = key
+    settings.keyboardShortcuts = shortcuts
 }
 </script>
 

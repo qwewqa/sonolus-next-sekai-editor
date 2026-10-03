@@ -40,6 +40,14 @@ test('selected notes highlight at the hit beat without seeking or adding history
     await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+    const highlighting = page.locator('.preview').getByLabel('Highlight Selection', { exact: true })
+    await highlighting.uncheck()
+    await expect.poll(() => outlinePixels(page)).toBe(0)
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(1)
+    await highlighting.check()
+    await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
     await page.evaluate(() => {
         const { history } = window.editorTest
         history.replaceState({ ...history.state.value, selectedEntities: [] })
@@ -56,7 +64,9 @@ test('connectors, moving slide heads, and stage events highlight their visible o
         const { fixtures, show, view, history } = window.editorTest
         const base = fixtures.interaction.slides[0]?.[0]
         const transform = fixtures.events.stageTransformEvents[0]
-        if (!base || !transform) throw new Error('Missing fixture')
+        const mask = fixtures.events.stageMaskEvents[0]
+        const style = fixtures.events.stageStyleEvents[0]
+        if (!base || !transform || !mask || !style) throw new Error('Missing fixture')
         show(
             {
                 ...fixtures.interaction,
@@ -68,6 +78,8 @@ test('connectors, moving slide heads, and stage events highlight their visible o
                     ],
                 ],
                 stageTransformEvents: [{ ...transform, beat: 0, xTranslation: 0, elevation: 0.5 }],
+                stageMaskEvents: [{ ...mask, beat: 0, maskLeft: -6, maskSize: 12 }],
+                stageStyleEvents: [{ ...style, beat: 0 }],
             },
             3,
         )
@@ -93,7 +105,8 @@ test('connectors, moving slide heads, and stage events highlight their visible o
         const event = [...store.getAllEntities()].find(
             (entity) => entity.type === 'stageTransformEventJoint',
         )
-        if (event) history.replaceState({ ...history.state.value, selectedEntities: [event] })
+        if (!event) throw new Error('Missing stage event')
+        history.replaceState({ ...history.state.value, selectedEntities: [event] })
     })
     await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3)

@@ -13,15 +13,19 @@ const modelValue = defineModel<string | undefined>({ required: true })
 const isActive = ref(false)
 
 const onClick = () => {
-    isActive.value = true
-
-    modelValue.value = undefined
+    if (isActive.value) modelValue.value = undefined
+    isActive.value = !isActive.value
 }
 
 const onKeyDown = (event: KeyboardEvent) => {
     if (!isActive.value) return
+    if (event.key === 'Tab') return
+
+    event.preventDefault()
+    event.stopPropagation()
 
     modelValue.value = event.key
+    isActive.value = false
 }
 
 const onBlur = () => {
@@ -34,12 +38,17 @@ const onBlur = () => {
         <button
             class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent active:bg-accent active:text-button"
             :class="{ 'animate-pulse': isActive }"
-            :title="i18n.modals.form.key.input"
+            type="button"
+            :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
             @click="onClick"
-            @keydown.prevent="onKeyDown"
+            @keydown="onKeyDown"
             @blur="onBlur"
         >
-            {{ formatShortcut(modelValue) ?? (isActive ? i18n.modals.form.key.press : '\xa0') }}
+            {{
+                isActive
+                    ? i18n.modals.form.key.press
+                    : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
+            }}
         </button>
     </BaseField>
 </template>

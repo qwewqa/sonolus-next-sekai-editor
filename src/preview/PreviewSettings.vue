@@ -245,6 +245,15 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
                 />
             </label>
             <label class="flex w-full shrink-0 cursor-pointer items-center justify-between gap-2">
+                <span>{{ i18n.settings.preview.highlightSelection }}</span>
+                <input
+                    v-model="settings.previewHighlightSelection"
+                    class="size-4"
+                    type="checkbox"
+                    @change="onControlChange"
+                />
+            </label>
+            <label class="flex w-full shrink-0 cursor-pointer items-center justify-between gap-2">
                 <span>{{ i18n.settings.preview.antialias }}</span>
                 <input
                     v-model="settings.previewAntialias"

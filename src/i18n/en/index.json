@@ -506,6 +506,9 @@
     },
     "settings": {
         "title": "Settings",
+        "resetSettings": "Reset Settings",
+        "resetSettingsHint": "Restore default settings, keeping keyboard shortcuts.",
+        "resetKeybinds": "Reset Keybinds",
         "editor": {
             "title": "Editor",
             "locale": "Language",
@@ -564,6 +567,7 @@
             "noteSpeed": "Note Speed",
             "renderScale": "Render Scale",
             "showEffects": "Effects",
+            "highlightSelection": "Highlight Selection",
             "antialias": "Antialias",
             "aspectRatio": "Aspect Ratio",
             "showPreview": "Show Preview",
@@ -980,7 +984,9 @@
             },
             "key": {
                 "input": "Input Key",
-                "press": "Press a key..."
+                "press": "Press a key or click again to clear",
+                "clear": "Click again to remove this shortcut",
+                "unassigned": "Unassigned"
             },
             "maskLeft": {
                 "label": "Mask Lane"
