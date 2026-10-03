@@ -11,6 +11,7 @@ import type { PreviewChart } from './engine/model'
 import { renderPreviewFrame } from './engine/render'
 import { createPreviewRenderer, type PreviewRenderer } from './gl'
 import type { LoadedParticle } from './particle'
+import { createSelectionOutline } from './selectionOutline'
 import type { LoadedSkin } from './skin'
 import type { usePreviewResources } from './usePreviewResources'
 
@@ -25,6 +26,7 @@ export const usePreviewRendering = (
     background: Readonly<Ref<HTMLDivElement | null>>,
     { skin, particle, status, errorDetail }: ReturnType<typeof usePreviewResources>,
     { canvasWidth, canvasHeight, pixelRatio }: PreviewViewport,
+    selectionCanvas?: Readonly<Ref<HTMLCanvasElement | null>>,
 ) => {
     // Selection, audio and filename changes share the same chart data. Keep them from
     // rebuilding the preview and its indexes during ordinary editor interactions.
@@ -165,6 +167,22 @@ export const usePreviewRendering = (
 
             const getChart = chartRequest.value
             const backgroundElement = background.value
+            const selected = getPreviewState(state.value).selectedEntities
+            const objects = new Set(selected)
+            const stageIds = new Set(
+                selected.flatMap((entity) => {
+                    if (entity.type === 'note' || entity.type === 'connector') return []
+                    if ('stageId' in entity) return [entity.stageId]
+                    if ('min' in entity && 'stageId' in entity.min) return [entity.min.stageId]
+                    return []
+                }),
+            )
+            const stages = new Set(
+                [...state.value.stages.keys()].flatMap((id, index) =>
+                    stageIds.has(id) ? [index] : [],
+                ),
+            )
+            const overlay = selectionCanvas?.value
             const args = [
                 view.cursorTime,
                 renderSize.width,
@@ -176,12 +194,40 @@ export const usePreviewRendering = (
                 particle.value?.particle,
             ] as const
             renderFrame = () => {
+                const ctx = overlay?.getContext('2d')
+                if (overlay && ctx) {
+                    const ratio = pixelRatio.value
+                    if (overlay.width !== Math.round(canvasWidth.value * ratio))
+                        overlay.width = Math.round(canvasWidth.value * ratio)
+                    if (overlay.height !== Math.round(canvasHeight.value * ratio))
+                        overlay.height = Math.round(canvasHeight.value * ratio)
+                    ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+                    ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value)
+                }
+                const outline = createSelectionOutline()
                 const quad = renderPreviewFrame(
                     currentRenderer,
                     currentSkin.skin,
                     getChart(),
                     ...args,
+                    { objects, stages, outline: outline.add },
                 )
+                if (ctx) {
+                    const scale = args[4] / 2
+                    ctx.beginPath()
+                    for (const { a, b } of outline.edges()) {
+                        ctx.moveTo(args[3] / 2 + a.x * scale, args[4] / 2 - a.y * scale)
+                        ctx.lineTo(args[3] / 2 + b.x * scale, args[4] / 2 - b.y * scale)
+                    }
+                    ctx.lineJoin = 'round'
+                    ctx.lineCap = 'round'
+                    ctx.strokeStyle = '#06151d'
+                    ctx.lineWidth = 5
+                    ctx.stroke()
+                    ctx.strokeStyle = '#67e8f9'
+                    ctx.lineWidth = 2
+                    ctx.stroke()
+                }
                 if (!backgroundElement) return
                 // Map the complete image into the engine's screen-space quad in
                 // this same frame. CSS pixels have a downward-pointing y axis.

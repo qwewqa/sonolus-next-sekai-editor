@@ -83,10 +83,7 @@ export const serializeSlidesToLevelDataEntities = (
                         name: 'size',
                         value: note.size / 2,
                     },
-                    {
-                        name: 'elevation',
-                        value: note.elevation,
-                    },
+                    ...(note.elevation !== 0 ? [{ name: 'elevation', value: note.elevation }] : []),
                     {
                         name: 'style',
                         value: noteStyleValue(note.noteStyle),

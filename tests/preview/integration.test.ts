@@ -455,7 +455,7 @@ test('note elevation survives state creation and export with a zero default', ()
             const entry = entity.data.find((item) => item.name === 'elevation')
             return entry && 'value' in entry ? entry.value : undefined
         })
-    assert.deepEqual(elevations, [-0.5, 0])
+    assert.deepEqual(elevations, [-0.5, undefined])
 })
 
 test('per-note elevation adds to the stage before rotation, translation, and clamping', () => {

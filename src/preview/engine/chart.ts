@@ -363,6 +363,7 @@ export const createPreviewChartBuilder = () => {
 
                     const groupIndex = groupIndexes.get(note.groupId) ?? 0
                     const previewNote: PreviewNote = {
+                        source: note,
                         kind: noteKinds[role][isFlick ? 1 : 0],
                         elevation: note.elevation,
                         style: note.noteStyle,
@@ -407,6 +408,12 @@ export const createPreviewChartBuilder = () => {
                     )
                 }
 
+                const first = infos[0]
+                const sourceConnectors = new Map(
+                    (first ? (state.store.slides.connector.get(first.note.slideId) ?? []) : []).map(
+                        (connector) => [connector.head, connector],
+                    ),
+                )
                 let head: NoteEntity | undefined
                 for (const [i, info] of infos.entries()) {
                     const note = info.note
@@ -445,6 +452,7 @@ export const createPreviewChartBuilder = () => {
 
                             const headNote = getPreviewNote(head)
                             const connector: PreviewConnector = {
+                                source: sourceConnectors.get(head),
                                 style: segmentHead.connectorStyle,
                                 kind,
                                 ease: headNote.isAttached

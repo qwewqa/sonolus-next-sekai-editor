@@ -150,6 +150,11 @@ export const renderPreviewFrame = (
     noteSpeed: number,
     showEffects: boolean,
     particle?: PreviewParticle,
+    selection?: {
+        objects: ReadonlySet<object>
+        stages?: ReadonlySet<number>
+        outline: (quad: Quad, source?: object) => void
+    },
 ) => {
     const viewport = createViewport(displayWidth, displayHeight)
     const camera = chart.isDynamicStages
@@ -162,6 +167,18 @@ export const renderPreviewFrame = (
 
     renderer.begin(width, height, displayWidth / displayHeight)
     const draw = renderer.draw
+    const selectedDraw = (source?: object, stage?: number): PreviewRenderer['draw'] => {
+        if (
+            !selection ||
+            (!(source && selection.objects.has(source)) &&
+                !(stage !== undefined && selection.stages?.has(stage)))
+        )
+            return draw
+        return (sprite, quad, z, alpha, tint, blend) => {
+            draw(sprite, quad, z, alpha, tint, blend)
+            if (sprite && alpha > 0) selection.outline(quad, source)
+        }
+    }
 
     const hideNotes = chart.groups.map((group) => hideNotesAt(group, now))
     const preempts = chart.groups.map((group) => preemptTime(noteSpeed, group.forceNoteSpeed))
@@ -203,7 +220,7 @@ export const renderPreviewFrame = (
             if (now < stage.drawStartTime || now > stage.drawEndTime) continue
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            drawStageWithProps(context, draw, skin, stageProps[i]!)
+            drawStageWithProps(context, selectedDraw(undefined, i), skin, stageProps[i]!)
         }
     } else {
         drawStaticStage(context, draw, skin)
@@ -562,7 +579,7 @@ export const renderPreviewFrame = (
 
         drawConnector(
             context,
-            draw,
+            selectedDraw(connector.source),
             getStyledSkin(skin, connector.style),
             connector.kind,
             visualState,
@@ -582,19 +599,10 @@ export const renderPreviewFrame = (
         )
     }
 
-    for (const { item: note } of queryGroupTimeIndex(
-        frameIndex.notes,
-        now,
-        latestTargets,
-        fallbackLatestTarget,
-    )) {
-        if (now >= note.targetTime) continue
-        if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
-        if (groupHidesNotes(note)) continue
-
+    const paintNote = (note: PreviewNote, paint: PreviewRenderer['draw']) => {
         drawNote(
             context,
-            draw,
+            paint,
             skin,
             note.kind,
             note.isCritical,
@@ -608,6 +616,36 @@ export const renderPreviewFrame = (
             visualMaskAt(note, now),
             note.style,
         )
+    }
+    for (const { item: note } of queryGroupTimeIndex(
+        frameIndex.notes,
+        now,
+        latestTargets,
+        fallbackLatestTarget,
+    )) {
+        if (now >= note.targetTime) continue
+        if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
+        if (groupHidesNotes(note)) continue
+        paintNote(note, selectedDraw(note.source))
+    }
+    if (selection?.objects.size) {
+        for (const { item: note } of queryTimeIndex(frameIndex.effects, now, now)) {
+            if (
+                Math.abs(now - note.targetTime) > 1e-7 ||
+                !note.source ||
+                !selection.objects.has(note.source)
+            )
+                continue
+            if (
+                note.kind === NoteKind.anchor ||
+                note.kind === NoteKind.hideTick ||
+                groupHidesNotes(note)
+            )
+                continue
+            paintNote(note, (sprite, quad, _z, alpha) => {
+                if (sprite && alpha > 0) selection.outline(quad, note.source)
+            })
+        }
     }
 
     for (const { item: slide, index: slideIndex } of queryTimeIndex(frameIndex.slides, now, now)) {
@@ -690,7 +728,7 @@ export const renderPreviewFrame = (
                 if (info.size > 0) {
                     drawSlideNoteHead(
                         context,
-                        draw,
+                        selectedDraw(slide.activeHead.source),
                         skin,
                         slide.activeHead.kind,
                         isCritical,

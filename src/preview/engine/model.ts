@@ -1,4 +1,6 @@
 import type { NoteStyle } from '../../chart/noteStyle'
+import type { ConnectorEntity } from '../../state/entities/slides/connector'
+import type { NoteEntity } from '../../state/entities/slides/note'
 import type { CameraChange, FlickDirectionValue } from './layout'
 import type { EaseTypeValue } from './math'
 import type { TimescaleGroup } from './timescale'
@@ -56,6 +58,7 @@ export const isActiveConnectorKind = (kind: ConnectorKindValue) =>
 export type ConnectorLayerValue = 0 | 1 | 2 | 3
 
 export type PreviewNote = {
+    source?: NoteEntity
     elevation?: number
     style: NoteStyle
     kind: NoteKindValue
@@ -77,6 +80,7 @@ export type PreviewNote = {
 }
 
 export type PreviewConnector = {
+    source?: ConnectorEntity
     style: NoteStyle
     kind: ConnectorKindValue
     ease: EaseTypeValue

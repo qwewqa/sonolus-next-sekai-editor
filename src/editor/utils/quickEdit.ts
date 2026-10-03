@@ -50,6 +50,9 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
     }
 
     switch (key) {
+        case 'elevation':
+            editSelectedEditableEntities({ elevation: properties.elevation })
+            break
         case 'noteStyle':
         case 'connectorStyle':
             editSelectedEditableEntities({ [key]: rotate(value as NoteStyle, [...noteStyles]) })
