@@ -155,13 +155,16 @@ export const renderPreviewFrame = (
         stages?: ReadonlySet<number>
         outline: (quad: Quad, source?: object) => void
     },
+    leftLimit = false,
 ) => {
+    const hasReached = (target: number) => (leftLimit ? now > target : now >= target)
     const viewport = createViewport(displayWidth, displayHeight)
     const camera = chart.isDynamicStages
-        ? getCameraInfo(viewport, chart.cameras, now)
+        ? getCameraInfo(viewport, chart.cameras, now, leftLimit)
         : defaultCameraInfo()
     const context: PreviewFrameContext = {
         now,
+        leftLimit,
         layout: createLayout(viewport, camera, chart.isDynamicStages),
     }
 
@@ -180,10 +183,12 @@ export const renderPreviewFrame = (
         }
     }
 
-    const hideNotes = chart.groups.map((group) => hideNotesAt(group, now))
+    const hideNotes = chart.groups.map((group) => hideNotesAt(group, now, leftLimit))
     const preempts = chart.groups.map((group) => preemptTime(noteSpeed, group.forceNoteSpeed))
 
-    const stageProps: StageProps[] = chart.stages.map((stage) => getStageProps(stage, now))
+    const stageProps: StageProps[] = chart.stages.map((stage) =>
+        getStageProps(stage, now, leftLimit),
+    )
     const stageTransforms: StageTransform[] = stageProps.map((props) =>
         stagePropsHasTransform(props)
             ? stagePropsTransform(context, props)
@@ -217,7 +222,11 @@ export const renderPreviewFrame = (
 
     if (chart.isDynamicStages) {
         for (const [i, stage] of chart.stages.entries()) {
-            if (now < stage.drawStartTime || now > stage.drawEndTime) continue
+            if (
+                (leftLimit ? now <= stage.drawStartTime : now < stage.drawStartTime) ||
+                now > stage.drawEndTime
+            )
+                continue
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             drawStageWithProps(context, selectedDraw(undefined, i), skin, stageProps[i]!)
@@ -231,7 +240,7 @@ export const renderPreviewFrame = (
     const groupHidesNotes = (note: PreviewNote) => hideNotes[note.groupIndex] ?? false
     const groupHidesNotesAt = (note: PreviewNote, t: number) => {
         const group = chart.groups[note.groupIndex]
-        return group ? hideNotesAt(group, t) : false
+        return group ? hideNotesAt(group, t, leftLimit && t === now) : false
     }
 
     const basicVisualLane = (note: PreviewNote) =>
@@ -325,7 +334,9 @@ export const renderPreviewFrame = (
 
     const basicProgress = (note: PreviewNote) => {
         const group = chart.groups[note.groupIndex]
-        const distance = group ? noteDistance(group, now, note.targetTime) : note.targetTime - now
+        const distance = group
+            ? noteDistance(group, now, note.targetTime, leftLimit)
+            : note.targetTime - now
         return 1 - distance / groupPreempt(note)
     }
 
@@ -333,10 +344,11 @@ export const renderPreviewFrame = (
         if (note.isAttached && note.attachHead && note.attachTail) {
             const head = note.attachHead
             const tail = note.attachTail
-            const headProgress = now < head.targetTime ? basicProgress(head) : 1
+            const headProgress = !hasReached(head.targetTime) ? basicProgress(head) : 1
             const tailProgress = basicProgress(tail)
-            const headFrac =
-                now < head.targetTime ? 0 : unlerpClamped(head.targetTime, tail.targetTime, now)
+            const headFrac = !hasReached(head.targetTime)
+                ? 0
+                : unlerpClamped(head.targetTime, tail.targetTime, now)
             const frac = unlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
             return remapClamped(headFrac, 1, headProgress, tailProgress, frac)
         }
@@ -468,26 +480,26 @@ export const renderPreviewFrame = (
         now,
         latestTargets,
         fallbackLatestTarget,
+        leftLimit,
     )) {
         const { head, tail, segmentHead, segmentTail } = connector
 
         const endTime =
             Math.max(head.targetTime, tail.targetTime) +
             (connector.throughJudgeLine ? CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY : 0)
-        if (now >= endTime) continue
+        if (hasReached(endTime)) continue
 
         if (groupHidesNotes(segmentHead)) continue
 
-        if (connector.activeTail && now >= connector.activeTail.targetTime) continue
+        if (connector.activeTail && hasReached(connector.activeTail.targetTime)) continue
 
         let visualState
         if (connector.kind === ConnectorKind.damage) {
             visualState = ConnectorVisualState.waiting
         } else if (connector.activeHead) {
-            visualState =
-                now < connector.activeHead.targetTime
-                    ? ConnectorVisualState.waiting
-                    : ConnectorVisualState.active
+            visualState = !hasReached(connector.activeHead.targetTime)
+                ? ConnectorVisualState.waiting
+                : ConnectorVisualState.active
         } else {
             visualState = ConnectorVisualState.waiting
         }
@@ -505,7 +517,7 @@ export const renderPreviewFrame = (
 
         let headEndpoint: ConnectorEndpoint
         let headNoteAlpha: number
-        if (now >= head.targetTime && !connector.throughJudgeLine) {
+        if (hasReached(head.targetTime) && !connector.throughJudgeLine) {
             const headVisualProgress =
                 1 -
                 remapClamped(
@@ -596,6 +608,7 @@ export const renderPreviewFrame = (
             connector.layer,
             connector.fullScreen,
             connector.throughJudgeLine,
+            leftLimit ? head.targetTime : undefined,
         )
     }
 
@@ -622,13 +635,14 @@ export const renderPreviewFrame = (
         now,
         latestTargets,
         fallbackLatestTarget,
+        leftLimit,
     )) {
-        if (now >= note.targetTime) continue
+        if (hasReached(note.targetTime)) continue
         if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
         if (groupHidesNotes(note)) continue
         paintNote(note, selectedDraw(note.source))
     }
-    if (selection?.objects.size) {
+    if (!leftLimit && selection?.objects.size) {
         for (const { item: note } of queryTimeIndex(frameIndex.effects, now, now)) {
             if (
                 Math.abs(now - note.targetTime) > 1e-7 ||
@@ -648,14 +662,19 @@ export const renderPreviewFrame = (
         }
     }
 
-    for (const { item: slide, index: slideIndex } of queryTimeIndex(frameIndex.slides, now, now)) {
+    for (const { item: slide, index: slideIndex } of queryTimeIndex(
+        frameIndex.slides,
+        now,
+        now,
+        leftLimit,
+    )) {
         const start = slide.activeHead.targetTime
         const end = slide.activeTail.targetTime
-        if (now < start) continue
-        if (now >= end + SLIDE_EFFECT_DESPAWN_DELAY) continue
+        if (leftLimit ? now <= start : now < start) continue
+        if (hasReached(end + SLIDE_EFFECT_DESPAWN_DELAY)) continue
 
         const slideInfoAt = (context: PreviewFrameContext, t: number) => {
-            const current = findSlideConnector(slide, t)
+            const current = findSlideConnector(slide, t, leftLimit && t === now)
             if (!current) return
             if (
                 !isActiveConnectorKind(current.kind) &&
@@ -717,7 +736,7 @@ export const renderPreviewFrame = (
             }
         }
 
-        if (now < end) {
+        if (!hasReached(end)) {
             const info = slideInfoAt(context, now)
             if (info) {
                 const isCritical = isActiveConnectorKind(info.connector.kind)
@@ -852,7 +871,7 @@ export const renderPreviewFrame = (
                 )
                 for (let k = firstIndex; ; k++) {
                     const spawnTime = start + k * period
-                    if (spawnTime > now || spawnTime >= end) break
+                    if ((leftLimit ? spawnTime >= now : spawnTime > now) || spawnTime >= end) break
 
                     const progress = (now - spawnTime) / LINEAR_EFFECT_DURATION
                     if (progress >= 1) continue
@@ -934,9 +953,10 @@ export const renderPreviewFrame = (
         now,
         latestTargets,
         fallbackLatestTarget,
+        leftLimit,
     )) {
         const { left, right } = simLine
-        if (now >= Math.min(left.targetTime, right.targetTime)) continue
+        if (hasReached(Math.min(left.targetTime, right.targetTime))) continue
         if (groupHidesNotes(left) || groupHidesNotes(right)) continue
 
         const leftMask = visualMaskAt(left, now)
@@ -963,10 +983,10 @@ export const renderPreviewFrame = (
     }
 
     for (const { item: note, index: noteIndex } of showEffects
-        ? queryTimeIndex(frameIndex.effects, now, now)
+        ? queryTimeIndex(frameIndex.effects, now, now, leftLimit)
         : []) {
         const elapsed = now - note.targetTime
-        if (elapsed < 0 || elapsed >= MAX_HIT_EFFECT_DURATION) continue
+        if ((leftLimit ? elapsed <= 0 : elapsed < 0) || elapsed >= MAX_HIT_EFFECT_DURATION) continue
         if (note.isFake) continue
         if (
             note.kind === NoteKind.anchor ||

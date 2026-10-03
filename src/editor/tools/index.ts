@@ -1,8 +1,10 @@
-import { computed, ref, type Component } from 'vue'
+import { computed, ref, shallowRef, type Component } from 'vue'
 import type { Modifiers } from '../controls/gestures/pointer'
+import { editorNavigation } from '../navigation'
 import { view } from '../view'
 import { bpm } from './bpm'
 import { brush } from './brush'
+import { elevation } from './elevation'
 import { eraser } from './eraser'
 import { cameraEvent } from './events/camera'
 import { stageMaskEvent } from './events/stage/mask'
@@ -20,6 +22,7 @@ import { timeScale } from './timeScale'
 export type Tool = {
     title: () => string
     sidebar?: Component
+    secondaryTool?: false
 
     hover?: (x: number, y: number, modifiers: Modifiers) => void | Promise<void>
 
@@ -33,6 +36,7 @@ export type Tool = {
 
 export const tools = {
     select,
+    elevation,
     eraser,
     brush,
     paste,
@@ -57,7 +61,15 @@ export type ToolName = keyof typeof tools
 
 export const toolName = ref<ToolName>('select')
 
-export const tool = computed(() => tools[toolName.value])
+export const panelTools = shallowRef<Partial<Record<ToolName, Tool>>>({})
+
+export const tool = computed(() =>
+    editorNavigation.value
+        ? (panelTools.value[toolName.value] ?? tools[toolName.value])
+        : toolName.value === 'elevation'
+          ? tools.select
+          : tools[toolName.value],
+)
 
 export const switchToolTo = (tool: ToolName) => {
     toolName.value = tool

@@ -5,6 +5,7 @@ import { zoomXOut } from '../commands/zooms/zoomXOut'
 import { zoomYIn } from '../commands/zooms/zoomYIn'
 import { zoomYOut } from '../commands/zooms/zoomYOut'
 import { closeContextMenu, openContextMenu } from '../contextMenu'
+import { getControlBounds } from '../navigation'
 import { cancelPreviewFollow, stopPlayer } from '../player'
 import { switchToolTo, tool, toolName, type ToolName } from '../tools'
 import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
@@ -13,6 +14,8 @@ import { drag } from './gestures/recognizers/drag'
 import { tap } from './gestures/recognizers/tap'
 
 const mouseGesture = gesture(drag(false), tap())
+
+export const hasMouseControls = () => mouseGesture.pointerCount > 0
 
 const toP = (event: MouseEvent) => ({
     id: 1,
@@ -48,7 +51,12 @@ const mousedown = (event: MouseEvent) => {
     stopPlayer(false)
     if (!mouseGesture.pointerCount) beginAudioPreviewInteraction()
 
-    if (!mouseGesture.pointerCount && event.buttons & 2 && !secondarySwitchBack) {
+    if (
+        !mouseGesture.pointerCount &&
+        event.buttons & 2 &&
+        !secondarySwitchBack &&
+        tool.value.secondaryTool !== false
+    ) {
         secondarySwitchBack = toolName.value
         switchingSecondaryTool = true
         try {
@@ -64,6 +72,7 @@ const mousedown = (event: MouseEvent) => {
 
     if (
         settings.mouseSecondaryTool === 'selectContextMenu' &&
+        tool.value.secondaryTool !== false &&
         !mouseGesture.pointerCount &&
         event.button === 2 &&
         event.buttons === 2 &&
@@ -126,6 +135,7 @@ const mouseleave = (event: MouseEvent) => {
 }
 
 const wheel = (event: WheelEvent) => {
+    const bounds = getControlBounds(view)
     if (event.ctrlKey) {
         if (event.shiftKey) {
             if (event.deltaY) {
@@ -173,9 +183,9 @@ const wheel = (event: WheelEvent) => {
                         scrollViewYBy(-(event.deltaX * 20), settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_PAGE:
-                    scrollViewXBy(-event.deltaY * view.w, settings.mouseSmoothScrolling)
+                    scrollViewXBy(-event.deltaY * bounds.w, settings.mouseSmoothScrolling)
                     if (event.deltaX)
-                        scrollViewYBy(-event.deltaX * view.h, settings.mouseSmoothScrolling)
+                        scrollViewYBy(-event.deltaX * bounds.h, settings.mouseSmoothScrolling)
                     break
             }
         } else {
@@ -190,9 +200,9 @@ const wheel = (event: WheelEvent) => {
                         scrollViewYBy(-(event.deltaY * 20), settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_PAGE:
-                    scrollViewXBy(event.deltaX * view.w, settings.mouseSmoothScrolling)
+                    scrollViewXBy(event.deltaX * bounds.w, settings.mouseSmoothScrolling)
                     if (event.deltaY)
-                        scrollViewYBy(-event.deltaY * view.h, settings.mouseSmoothScrolling)
+                        scrollViewYBy(-event.deltaY * bounds.h, settings.mouseSmoothScrolling)
                     break
             }
         }

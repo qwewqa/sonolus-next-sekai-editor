@@ -2,10 +2,22 @@ import { onUnmounted, watch } from 'vue'
 import { isAppActive } from '../../activity'
 import { state } from '../../history'
 import { hasSameChartData } from '../../state/data'
+import { editorNavigation, type EditorNavigation } from '../navigation'
 import { tool } from '../tools'
 import { view } from '../view'
-import { cancelMouseControls, mouseControlListeners } from './mouse'
-import { cancelTouchControls, touchControlListeners } from './touch'
+import { cancelMouseControls, hasMouseControls, mouseControlListeners } from './mouse'
+import { cancelTouchControls, hasTouchControls, touchControlListeners } from './touch'
+
+export const activateEditorNavigation = (navigation?: EditorNavigation) => {
+    if (hasMouseControls() || hasTouchControls()) return editorNavigation.value === navigation
+    if (editorNavigation.value !== navigation) {
+        view.scrollingX = undefined
+        view.scrollingY = undefined
+        view.entities = { hovered: [], creating: [] }
+        editorNavigation.value = navigation
+    }
+    return true
+}
 
 const cancelControls = (restoreTool = true) => {
     cancelMouseControls(restoreTool)
@@ -51,3 +63,14 @@ export const controlListeners = {
     ...touchControlListeners,
     contextmenu,
 }
+
+export const controlsForNavigation = (getNavigation: () => EditorNavigation | undefined) =>
+    Object.fromEntries(
+        Object.entries(controlListeners).map(([name, listener]) => [
+            name,
+            (event: Event) => {
+                if (activateEditorNavigation(getNavigation())) listener(event as never)
+                else event.preventDefault()
+            },
+        ]),
+    )

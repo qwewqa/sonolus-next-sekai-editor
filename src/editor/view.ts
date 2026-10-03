@@ -12,6 +12,7 @@ import { align, clamp, lerp, unlerp } from '../utils/math'
 import { optional } from '../utils/optional'
 import { requestAudioPreview } from './audioPreview'
 import { integrateScrollInertia } from './inertia'
+import { editorNavigation, getControlBounds } from './navigation'
 
 export type Selection = {
     laneMin: number
@@ -209,6 +210,7 @@ export const ups = computed(() => viewBox.value.ups)
 
 export const scrollViewXBy = (dx: number, smooth = false) => {
     updateViewLastActive()
+    const width = getControlBounds(view).w
 
     if (smooth) {
         view.scrollingX = {
@@ -221,7 +223,7 @@ export const scrollViewXBy = (dx: number, smooth = false) => {
                 time: time.value.now + 0.25,
                 viewLane: clamp(
                     (view.scrollingX?.type === 'ease' ? view.scrollingX.to.viewLane : view.lane) +
-                        (dx / view.w) * settings.width,
+                        (dx / width) * settings.width,
                     -settings.maxScrollX,
                     settings.maxScrollX,
                 ),
@@ -229,7 +231,7 @@ export const scrollViewXBy = (dx: number, smooth = false) => {
         }
     } else {
         view.lane = clamp(
-            view.lane + (dx / view.w) * settings.width,
+            view.lane + (dx / width) * settings.width,
             -settings.maxScrollX,
             settings.maxScrollX,
         )
@@ -238,6 +240,11 @@ export const scrollViewXBy = (dx: number, smooth = false) => {
 
 export const scrollViewYBy = (dy: number, smooth = false) => {
     updateViewLastActive()
+
+    if (editorNavigation.value) {
+        editorNavigation.value.scrollY(dy)
+        return
+    }
 
     if (smooth) {
         view.scrollingY = {
@@ -261,6 +268,7 @@ export const scrollViewYBy = (dy: number, smooth = false) => {
 }
 
 export const setViewHover = (y: number) => {
+    if (editorNavigation.value) return
     view.hoverTime = Math.max(0, yToTime(y))
 }
 

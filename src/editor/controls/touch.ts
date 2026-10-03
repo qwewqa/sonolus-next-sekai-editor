@@ -12,6 +12,8 @@ import { zoomY } from './gestures/recognizers/zoomY'
 
 const touchGesture = gesture(zoomY(), zoomX(), pan(), drag(true), tap(), twoTap(), threeTap())
 
+export const hasTouchControls = () => touchGesture.pointerCount > 0
+
 export const cancelTouchControls = () => {
     touchGesture.cancel()
 }

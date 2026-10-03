@@ -58,6 +58,7 @@ export const queryGroupTimeIndex = <T>(
     now: number,
     latestTargets: readonly number[],
     fallbackLatestTarget = Infinity,
+    leftLimit = false,
 ) => {
     const matches = new Set<IndexedItem<T>>()
     for (const [group, partition] of index) {
@@ -65,6 +66,7 @@ export const queryGroupTimeIndex = <T>(
             partition,
             now,
             latestTargets[group] ?? fallbackLatestTarget,
+            leftLimit,
         )) {
             matches.add(item)
         }

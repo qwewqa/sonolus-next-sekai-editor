@@ -5,8 +5,14 @@ import { commands, type CommandName } from '../commands'
 import { isDragging } from '../controls/gestures/recognizers/drag'
 import LevelEditorToolbarTool from './LevelEditorToolbarTool.vue'
 
+const props = defineProps<{ available?: CommandName[] }>()
+
 const toolbar = computed<CommandName[][]>(() => [
-    ...settings.toolbar,
+    ...settings.toolbar
+        .map((group) =>
+            props.available ? group.filter((name) => props.available?.includes(name)) : group,
+        )
+        .filter((group) => group.length),
     ['fullscreen', 'settings', 'help'],
 ])
 

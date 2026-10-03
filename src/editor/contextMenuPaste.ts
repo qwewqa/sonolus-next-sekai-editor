@@ -5,6 +5,7 @@ import { hasSameChartData } from '../state/data'
 import { timeToBeat } from '../state/integrals/bpms'
 import { align } from '../utils/math'
 import type { Modifiers } from './controls/gestures/pointer'
+import { editorNavigation } from './navigation'
 import { pasteAtPosition } from './tools/paste'
 import { view, xToLane, yToTime } from './view'
 
@@ -13,6 +14,7 @@ export const pasteAtContextPosition = async (
     y: number,
     modifiers: Modifiers = { ctrl: false, shift: false },
 ) => {
+    if (editorNavigation.value) return await editorNavigation.value.pasteAtPoint(x, y, modifiers)
     const source = state.value
     const lane = xToLane(x)
     const beat = timeToBeat(bpms.value, Math.max(0, yToTime(y)))

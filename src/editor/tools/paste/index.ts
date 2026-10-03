@@ -248,11 +248,23 @@ export const paste: Tool = {
     },
 }
 
-export const pasteAtPosition = async (lane: number, beatOffset: number, modifiers: Modifiers) => {
+export type PastePositionOptions = {
+    notesOnly?: boolean
+    mapNote?: (entity: NoteEntity, beat: number) => Partial<NoteObject>
+}
+
+export const pasteAtPosition = async (
+    lane: number,
+    beatOffset: number,
+    modifiers: Modifiers,
+    options: PastePositionOptions = {},
+) => {
     const data = clipboardEntry.value?.data
     if (!data) return
 
-    const entities = transform(data.chart)
+    const entities = transform(data.chart).filter(
+        (entity) => !options.notesOnly || entity.type === 'note',
+    )
     if (!entities.length) return
 
     if (
@@ -276,6 +288,16 @@ export const pasteAtPosition = async (lane: number, beatOffset: number, modifier
     for (const entity of entities) {
         const beat = entity.beat + beatOffset
         if (beat < 0) continue
+
+        if (entity.type === 'note' && options.mapNote) {
+            selectedEntities.push(
+                ...addNote(transaction, entity.slideId, {
+                    ...toMovedNoteObject(entity, data.lane, lane, beat, modifiers.shift),
+                    ...options.mapNote(entity, beat),
+                }),
+            )
+            continue
+        }
 
         const result = pastes[entity.type]?.(
             transaction,
@@ -344,6 +366,15 @@ const transform = (chart: Chart) => {
                 .map((note) => toNoteEntity(slideId, note))
         }),
     ]
+}
+
+export const getPasteNoteEntities = () => {
+    const data = clipboardEntry.value?.data
+    return data
+        ? cachedTransform(data.chart).filter(
+              (entity): entity is NoteEntity => entity.type === 'note',
+          )
+        : []
 }
 
 let transformCache:
@@ -481,7 +512,7 @@ const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
     downRight: 'downLeft',
 }
 
-const toMovedNoteObject = (
+export const toMovedNoteObject = (
     entity: NoteEntity,
     startLane: number,
     lane: number,

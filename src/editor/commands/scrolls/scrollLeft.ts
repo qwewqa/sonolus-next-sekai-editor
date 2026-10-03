@@ -1,5 +1,6 @@
 import type { Command } from '..'
 import { i18n } from '../../../i18n'
+import { getControlBounds } from '../../navigation'
 import { scrollViewXBy, view } from '../../view'
 import ScrollLeftIcon from './ScrollLeftIcon.vue'
 
@@ -10,6 +11,6 @@ export const scrollLeft: Command = {
     },
 
     execute() {
-        scrollViewXBy(-view.w * 0.1, true)
+        scrollViewXBy(-getControlBounds(view).w * 0.1, true)
     },
 }

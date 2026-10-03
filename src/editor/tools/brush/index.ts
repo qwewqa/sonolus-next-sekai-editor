@@ -238,7 +238,7 @@ const applies: {
     connector: undefined,
 }
 
-const apply = (entities: Entity[]) => {
+export const applyBrushToEntities = (entities: Entity[]) => {
     if (!entities.length) {
         replaceState({
             ...state.value,
@@ -269,3 +269,5 @@ const apply = (entities: Entity[]) => {
 
     notify(interpolate(() => i18n.value.tools.brush.brushed, `${entities.length}`))
 }
+
+const apply = applyBrushToEntities

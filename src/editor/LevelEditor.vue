@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef, watch, type Ref } from 'vue'
+import { computed, ref, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
 import { useAutoSave } from '../history/autoSave'
 import { isDynamicStages } from '../history/dynamicStages.ts'
 import { groups } from '../history/groups'
@@ -9,8 +9,12 @@ import { screenSm } from '../screen'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
 import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
+import ElevationEditor from './elevation/ElevationEditor.vue'
+import { isElevationEditorOpen, isElevationSideBySide } from './elevation/state'
 import LevelEditorContextMenu from './LevelEditorContextMenu.vue'
 import { useControlLifecycle } from './controls'
+import { cancelMouseControls } from './controls/mouse'
+import { cancelTouchControls } from './controls/touch'
 import { useFocusControl } from './controls/focus'
 import { useKeyboardControl } from './controls/keyboard'
 import LevelEditorHoverMarkers from './LevelEditorHoverMarkers.vue'
@@ -28,6 +32,72 @@ useControlLifecycle()
 useAutoSave()
 
 const container: Ref<HTMLDivElement | null> = useTemplateRef('container')
+const host = useTemplateRef<HTMLDivElement>('host')
+const hostWidth = ref(0)
+watch(host, (element, _, cleanup) => {
+    if (!element) return
+    const update = () => {
+        hostWidth.value = element.clientWidth
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(element)
+    update()
+    cleanup(() => {
+        observer.disconnect()
+    })
+})
+watchEffect(() => {
+    isElevationSideBySide.value =
+        settings.elevationEditorSideBySide === 'allow' ||
+        (settings.elevationEditorSideBySide === 'auto' && hostWidth.value >= 800)
+})
+
+const splitMinimum = computed(() =>
+    Math.min(50, Math.max(20, (201 / Math.max(1, hostWidth.value)) * 100)),
+)
+const splitWidth = computed(() =>
+    Math.max(splitMinimum.value, Math.min(100 - splitMinimum.value, settings.elevationEditorWidth)),
+)
+let resizing: { pointerId: number; original: number; left: number; width: number } | undefined
+const setSplitWidth = (width: number) => {
+    settings.elevationEditorWidth = Math.max(
+        splitMinimum.value,
+        Math.min(100 - splitMinimum.value, width),
+    )
+}
+const startResize = (event: PointerEvent) => {
+    if (event.button !== 0 || !host.value) return
+    cancelMouseControls()
+    cancelTouchControls()
+    const rect = host.value.getBoundingClientRect()
+    resizing = {
+        pointerId: event.pointerId,
+        original: settings.elevationEditorWidth,
+        left: rect.left,
+        width: rect.width,
+    }
+    ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+const moveResize = (event: PointerEvent) => {
+    if (event.pointerId !== resizing?.pointerId) return
+    setSplitWidth((1 - (event.clientX - resizing.left) / resizing.width) * 100)
+}
+const finishResize = (event: PointerEvent) => {
+    if (event.pointerId !== resizing?.pointerId) return
+    if (event.type === 'pointercancel') settings.elevationEditorWidth = resizing.original
+    resizing = undefined
+}
+const resizeKey = (event: KeyboardEvent) => {
+    if (event.key === 'ArrowLeft') setSplitWidth(splitWidth.value + 2)
+    else if (event.key === 'ArrowRight') setSplitWidth(splitWidth.value - 2)
+    else if (event.key === 'Escape' && resizing) {
+        settings.elevationEditorWidth = resizing.original
+        resizing = undefined
+    } else if (event.key === 'Home') setSplitWidth(splitMinimum.value)
+    else if (event.key === 'End') setSplitWidth(100 - splitMinimum.value)
+    else return
+    event.preventDefault()
+}
 
 const updateBounds = () => {
     if (!container.value) return
@@ -124,22 +194,52 @@ const stage = computed(() =>
 
 <template>
     <div class="flex flex-col">
-        <div
-            ref="container"
-            class="relative flex-grow select-none overflow-hidden"
-            tabindex="-1"
-            @pointerdown="container?.focus()"
-        >
-            <template v-if="view.w && view.h">
-                <LevelEditorRangeMarkers />
-                <LevelEditorHoverMarkers />
-
-                <LevelEditorNotification />
-
-                <LevelEditorCanvas />
-            </template>
-
-            <LevelEditorToolbar />
+        <div ref="host" class="relative flex min-h-0 flex-grow select-none overflow-hidden">
+            <div
+                v-if="!isElevationEditorOpen || isElevationSideBySide"
+                ref="container"
+                class="relative min-w-0 flex-1 overflow-hidden"
+                tabindex="-1"
+                @pointerdown="container?.focus()"
+            >
+                <template v-if="view.w && view.h">
+                    <LevelEditorRangeMarkers />
+                    <LevelEditorHoverMarkers />
+                    <LevelEditorCanvas />
+                </template>
+                <LevelEditorToolbar />
+            </div>
+            <div
+                v-if="isElevationEditorOpen && isElevationSideBySide"
+                class="relative z-10 w-px flex-none bg-white/10"
+            >
+                <div
+                    class="absolute inset-y-0 -left-1.5 w-3 cursor-col-resize touch-none hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                    role="separator"
+                    tabindex="0"
+                    aria-orientation="vertical"
+                    :aria-label="i18n.elevation.resize"
+                    :title="i18n.elevation.resize"
+                    :aria-valuemin="splitMinimum"
+                    :aria-valuemax="100 - splitMinimum"
+                    :aria-valuenow="Math.round(splitWidth)"
+                    @pointerdown.stop.prevent="startResize"
+                    @pointermove.stop="moveResize"
+                    @pointerup.stop="finishResize"
+                    @pointercancel.stop="finishResize"
+                    @lostpointercapture="finishResize"
+                    @keydown.stop="resizeKey"
+                    @dblclick="settings.elevationEditorWidth = 50"
+                />
+            </div>
+            <div
+                v-if="isElevationEditorOpen"
+                class="relative min-w-0 flex-1 overflow-hidden"
+                :style="isElevationSideBySide ? { flex: `0 0 ${splitWidth}%` } : undefined"
+            >
+                <ElevationEditor />
+            </div>
+            <LevelEditorNotification />
             <LevelEditorContextMenu />
         </div>
         <div class="z-10 flex gap-4 bg-preview px-2 py-1 text-xs text-white/50">

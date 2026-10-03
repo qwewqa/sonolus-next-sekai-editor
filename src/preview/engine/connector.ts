@@ -157,6 +157,7 @@ export const drawConnector = (
     layer: ConnectorLayerValue,
     fullScreen: boolean,
     bypassTailTargetTimeCheck = false,
+    fullScreenStartTime = head.targetTime,
 ) => {
     if (kind === ConnectorKind.none) return
 
@@ -164,8 +165,10 @@ export const drawConnector = (
 
     if (fullScreen) {
         if (
-            head.targetTime === tail.targetTime ||
-            context.now < Math.min(head.targetTime, tail.targetTime) ||
+            fullScreenStartTime === tail.targetTime ||
+            (context.leftLimit
+                ? context.now <= Math.min(fullScreenStartTime, tail.targetTime)
+                : context.now < Math.min(fullScreenStartTime, tail.targetTime)) ||
             context.now > Math.max(head.targetTime, tail.targetTime)
         )
             return
@@ -175,7 +178,12 @@ export const drawConnector = (
                 tail.visualProgress < context.layout.progressStart) ||
             (head.visualProgress > context.layout.progressCutoff &&
                 tail.visualProgress > context.layout.progressCutoff) ||
-            head.visualProgress === tail.visualProgress
+            (head.visualProgress === tail.visualProgress &&
+                !(
+                    context.leftLimit &&
+                    (head.transform?.projection.elevation ?? 0) !==
+                        (tail.transform?.projection.elevation ?? 0)
+                ))
         )
             return
     }
@@ -222,7 +230,11 @@ export const drawConnector = (
             safeFraction(segmentHeadTargetTime, segmentTailTargetTime, tail.targetTime),
         ) * tailNoteAlpha
 
-    if (context.now >= tail.targetTime && !bypassTailTargetTimeCheck) return
+    if (
+        (context.leftLimit ? context.now > tail.targetTime : context.now >= tail.targetTime) &&
+        !bypassTailTargetTimeCheck
+    )
+        return
 
     const drawQuad = (layout: Quad, baseA: number, elevation: number) => {
         if (baseA <= 0) return

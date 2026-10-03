@@ -23,6 +23,7 @@ import { removeTimeScale } from '../../../state/mutations/timeScale'
 import { createStore } from '../../../state/store/creates'
 import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { editorNavigation } from '../../navigation'
 import { notify } from '../../notification'
 import { view, xToLane, yToValidBeat } from '../../view'
 import CutIcon from './CutIcon.vue'
@@ -63,9 +64,10 @@ export const cut: Command = {
             stages.value,
         )
 
+        const position = editorNavigation.value?.positionAtPoint(view.pointer.x, view.pointer.y)
         setClipboardData({
-            lane: xToLane(view.pointer.x),
-            beat: yToValidBeat(view.pointer.y),
+            lane: position?.lane ?? xToLane(view.pointer.x),
+            beat: position?.beat ?? yToValidBeat(view.pointer.y),
             entities: copiedEntities,
             ...serializeEditorMetadata(copiedEntities, copiedStore),
         })

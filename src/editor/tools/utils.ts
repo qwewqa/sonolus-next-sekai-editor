@@ -3,6 +3,7 @@ import type { Entity, EntityType } from '../../state/entities'
 import { getNoteInteractionWidth } from '../../state/entities/slides/note'
 import { align, clamp } from '../../utils/math'
 import type { Modifiers } from '../controls/gestures/pointer'
+import { editorNavigation } from '../navigation'
 import { view, xToLane, yToTime, type Selection } from '../view'
 
 export const offset = (startLane: number, lane: number) => align(lane - startLane)
@@ -24,8 +25,12 @@ export const hitEntitiesAtPoint = <T extends EntityType>(
     x: number,
     y: number,
     minimumNoteWidth = 1.5,
-) =>
-    filterPointHits(
+) => {
+    if (editorNavigation.value)
+        return editorNavigation.value
+            .hitPoint(x, y, minimumNoteWidth)
+            .filter((entity): entity is Extract<Entity, { type: T }> => entity.type === type)
+    return filterPointHits(
         hitEntities(
             type,
             xToLane(x - 10),
@@ -37,9 +42,11 @@ export const hitEntitiesAtPoint = <T extends EntityType>(
         x,
         minimumNoteWidth,
     )
+}
 
-export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1.5) =>
-    filterPointHits(
+export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1.5) => {
+    if (editorNavigation.value) return editorNavigation.value.hitPoint(x, y, minimumNoteWidth)
+    return filterPointHits(
         hitAllEntities(
             xToLane(x - 10),
             xToLane(x + 10),
@@ -50,6 +57,7 @@ export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1
         x,
         minimumNoteWidth,
     )
+}
 
 const filterPointHits = <T extends Entity>(entities: T[], x: number, minimumNoteWidth: number) => {
     const hits = entities.filter(isVisible)

@@ -38,11 +38,23 @@ export const createTimeIndex = <T>(
 
 // Select intervals with start <= latestStart and end > now. A maximum-end tree
 // prevents one long hold from forcing a scan over all the notes preceding it.
-export const queryTimeIndex = <T>(index: TimeIndex<T>, now: number, latestStart: number) => {
+export const queryTimeIndex = <T>(
+    index: TimeIndex<T>,
+    now: number,
+    latestStart: number,
+    leftLimit = false,
+) => {
     const matches: Entry<T>[] = []
     const visit = (node: number, left: number, right: number) => {
         const entry = index.entries[left]
-        if (!entry || entry.start > latestStart || (index.maxEnds[node] ?? -Infinity) <= now) return
+        if (
+            !entry ||
+            entry.start > latestStart ||
+            (leftLimit
+                ? (index.maxEnds[node] ?? -Infinity) < now
+                : (index.maxEnds[node] ?? -Infinity) <= now)
+        )
+            return
         if (right - left === 1) {
             matches.push(entry)
             return

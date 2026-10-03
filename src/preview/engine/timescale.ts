@@ -263,14 +263,14 @@ export const createTimescaleGroup = (
     return group
 }
 
-const findLastChange = (changes: TimescaleChange[], t: number) => {
+const findLastChange = (changes: TimescaleChange[], t: number, leftLimit = false) => {
     let lo = 0
     let hi = changes.length - 1
     let result = -1
     while (lo <= hi) {
         const mid = (lo + hi) >> 1
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        if (changes[mid]!.time <= t) {
+        if (leftLimit ? changes[mid]!.time < t : changes[mid]!.time <= t) {
             result = mid
             lo = mid + 1
         } else {
@@ -316,12 +316,17 @@ const rangeTransfer = (group: TimescaleGroup, first: number, last: number) => {
 
 // Scroll transitions change a note's distance relative to its hit time. They
 // cannot be represented by subtracting two global scaled-time coordinates.
-export const noteDistance = (group: TimescaleGroup, now: number, targetTime: number) => {
+export const noteDistance = (
+    group: TimescaleGroup,
+    now: number,
+    targetTime: number,
+    leftLimit = false,
+) => {
     const reverse = now > targetTime
     const left = reverse ? targetTime : now
     const right = reverse ? now : targetTime
-    const first = findLastChange(group.changes, left)
-    const last = findLastChange(group.changes, right)
+    const first = findLastChange(group.changes, left, leftLimit && !reverse)
+    const last = findLastChange(group.changes, right, leftLimit && reverse)
     let transfer: Transfer
     if (first === last) {
         transfer = partialTransfer(group, first, left, right, false)
@@ -341,8 +346,8 @@ export const noteDistance = (group: TimescaleGroup, now: number, targetTime: num
     return clamp(reverse ? -toNumber(transfer.backward) : toNumber(transfer.forward), -1e20, 1e20)
 }
 
-export const hideNotesAt = (group: TimescaleGroup, t: number) => {
-    const index = findLastChange(group.changes, t)
+export const hideNotesAt = (group: TimescaleGroup, t: number, leftLimit = false) => {
+    const index = findLastChange(group.changes, t, leftLimit)
     if (index === -1) return false
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

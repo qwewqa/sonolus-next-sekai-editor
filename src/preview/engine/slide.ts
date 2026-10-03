@@ -6,7 +6,7 @@ const endIndexes = new WeakMap<PreviewSlide, Float64Array>()
 // Cache prefix maxima so all of them can find the first unfinished connector
 // without repeatedly walking every preceding segment. Prefix maxima retain
 // source order even for tied or overlapping endpoints.
-export const findSlideConnector = (slide: PreviewSlide, time: number) => {
+export const findSlideConnector = (slide: PreviewSlide, time: number, leftLimit = false) => {
     let ends = endIndexes.get(slide)
     if (!ends) {
         ends = new Float64Array(slide.connectors.length)
@@ -23,7 +23,7 @@ export const findSlideConnector = (slide: PreviewSlide, time: number) => {
     while (left < right) {
         const middle = (left + right) >>> 1
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        if (ends[middle]! <= time) left = middle + 1
+        if (leftLimit ? ends[middle]! < time : ends[middle]! <= time) left = middle + 1
         else right = middle
     }
     return slide.connectors[left]

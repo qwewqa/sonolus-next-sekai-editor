@@ -1,5 +1,6 @@
 import type { Command } from '..'
 import { i18n } from '../../../i18n'
+import { getControlBounds } from '../../navigation'
 import { scrollViewYBy, view } from '../../view'
 import ScrollUpIcon from './ScrollUpIcon.vue'
 
@@ -10,6 +11,6 @@ export const scrollUp: Command = {
     },
 
     execute() {
-        scrollViewYBy(view.h * 0.05, true)
+        scrollViewYBy(getControlBounds(view).h * 0.05, true)
     },
 }

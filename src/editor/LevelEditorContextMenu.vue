@@ -9,12 +9,14 @@ import { formatShortcut } from '../utils/format'
 import { commands, isCommandName, type CommandName } from './commands'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import { pasteAtContextPosition } from './contextMenuPaste'
+import { openElevationEditor } from './elevation/state'
+import { editorNavigation } from './navigation'
 import { toolName } from './tools'
 import { canRemove, remove } from './tools/eraser'
-import { modifyEntities } from './tools/utils'
-import { view } from './view'
+import { hitAllEntitiesAtPoint, modifyEntities } from './tools/utils'
+import { view, yToValidBeat } from './view'
 
-type ActionName = CommandName | 'delete' | 'selectSlideNotes'
+type ActionName = CommandName | 'delete' | 'selectSlideNotes' | 'editElevations'
 
 const menu = useTemplateRef<HTMLDivElement>('menu')
 const position = ref({ left: 0, top: 0 })
@@ -27,6 +29,11 @@ const actions = computed(() => {
     const selection = selectedEntities.value
     const groups: ActionName[][] = []
     const editable = selection.some(isEditableEntity)
+    const point = contextMenu.value
+    const canEditElevations =
+        point &&
+        (selection.some((entity) => entity.type === 'note') ||
+            !hitAllEntitiesAtPoint(point.x, point.y).length)
     if (
         selection.some(
             (entity) =>
@@ -55,9 +62,17 @@ const actions = computed(() => {
             transforms.push('combineNotes')
     }
     if (transforms.length) groups.push(transforms)
+    if (canEditElevations) groups.push(['editElevations'])
     if (canDelete.value) groups.push(['delete'])
     return groups.map((names) =>
         names.map((name) => {
+            if (name === 'editElevations')
+                return {
+                    name,
+                    title: i18n.value.elevation.edit,
+                    icon: commands.elevation.icon,
+                    shortcut: undefined,
+                }
             if (name === 'selectSlideNotes')
                 return {
                     name,
@@ -91,7 +106,18 @@ const dismiss = (restoreFocus = false) => {
 const execute = (name: ActionName) => {
     const point = contextMenu.value
     dismiss(true)
-    if (name === 'delete') remove(selectedEntities.value)
+    if (name === 'editElevations') {
+        if (point) {
+            const note = hitAllEntitiesAtPoint(point.x, point.y).find(
+                (entity) => entity.type === 'note' && selectedEntities.value.includes(entity),
+            )
+            openElevationEditor(
+                note?.beat ??
+                    editorNavigation.value?.positionAtPoint(point.x, point.y).beat ??
+                    yToValidBeat(point.y),
+            )
+        }
+    } else if (name === 'delete') remove(selectedEntities.value)
     else if (name === 'selectSlideNotes')
         replaceState({
             ...state.value,

@@ -49,12 +49,14 @@ export const generateSlideNotes: Tool = {
         const entities = hitEntitiesAtPoint('note', x, y)
 
         if (entities.some((entity) => selectedEntities.value.includes(entity))) {
-            apply(selectedEntities.value.filter((entity) => entity.type === 'note'))
+            applyGeneratedSlideNotes(
+                selectedEntities.value.filter((entity) => entity.type === 'note'),
+            )
             focusEntityAtBeat(yToValidBeat(y))
         } else {
             const [entity] = entities
             if (entity) {
-                apply(entities)
+                applyGeneratedSlideNotes(entities)
                 focusEntityAtBeat(entity.beat)
             } else {
                 const selectedLength = selectedEntities.value.length
@@ -117,7 +119,7 @@ export const generateSlideNotes: Tool = {
 
         view.selection = undefined
 
-        apply(hitEntitiesInSelection('note', selection))
+        applyGeneratedSlideNotes(hitEntitiesInSelection('note', selection))
 
         active = undefined
     },
@@ -127,7 +129,7 @@ export const generateSlideNotes: Tool = {
     },
 }
 
-const apply = (notes: NoteEntity[]) => {
+export const applyGeneratedSlideNotes = (notes: NoteEntity[]) => {
     const transaction = createTransaction(state.value)
 
     const entities: Entity[] = []

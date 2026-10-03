@@ -3,6 +3,7 @@ import { replaceState, state } from '../../../../history'
 import { settings } from '../../../../settings'
 import { time } from '../../../../time'
 import { unlerp } from '../../../../utils/math'
+import { getControlBounds } from '../../../navigation'
 import { tool, type Tool } from '../../../tools'
 import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
 import type { Modifiers } from '../pointer'
@@ -42,27 +43,28 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
     watch(time, ({ delta }) => {
         if (!update) return
         const { x, y, modifiers } = update
+        const bounds = getControlBounds(view)
 
         let updated = 0
 
         if (settings.dragToPanX) {
-            const px = (x - view.x) / view.w
+            const px = (x - bounds.x) / bounds.w
             if (px < 0.2) {
-                scrollViewXBy(-unlerp(0.2, 0, px) * view.w * delta)
+                scrollViewXBy(-unlerp(0.2, 0, px) * bounds.w * delta)
                 updated++
             } else if (px > 0.8) {
-                scrollViewXBy(unlerp(0.8, 1, px) * view.w * delta)
+                scrollViewXBy(unlerp(0.8, 1, px) * bounds.w * delta)
                 updated++
             }
         }
 
         if (settings.dragToPanY) {
-            const py = (y - view.y) / view.h
+            const py = (y - bounds.y) / bounds.h
             if (py < 0.2) {
-                scrollViewYBy(unlerp(0.2, 0, py) * view.h * delta)
+                scrollViewYBy(unlerp(0.2, 0, py) * bounds.h * delta)
                 updated++
             } else if (py > 0.8) {
-                scrollViewYBy(-unlerp(0.8, 1, py) * view.h * delta)
+                scrollViewYBy(-unlerp(0.8, 1, py) * bounds.h * delta)
                 updated++
             }
         }
@@ -81,7 +83,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             if (!isActive) return false
             if (Math.hypot(x - sx, y - sy) <= 20) return false
 
-            const p = (x - view.x) / view.w
+            const bounds = getControlBounds(view)
+            const p = (x - bounds.x) / bounds.w
             if (!quickScroll || p < 1 - settings.touchQuickScrollZone / 100) {
                 const startState = state.value
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true

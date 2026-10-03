@@ -7,7 +7,7 @@ import { defaultGroupId } from '../../history/groups'
 import { settings } from '../../settings'
 import type { Entity } from '../../state/entities'
 import { beatToTime, timeToBeat } from '../../state/integrals/bpms'
-import { controlListeners } from '../controls'
+import { activateEditorNavigation, controlsForNavigation } from '../controls'
 import { computedVisibleEntities, isEntityInBeatRange } from '../entities/visibility'
 import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../entities/visible'
 import { bgmOffsetDelta } from '../tools/offset'
@@ -23,6 +23,7 @@ import type { EditorDrawContext } from './types'
 import { createWaveformRenderer } from './waveform'
 
 const container = useTemplateRef('container')
+const controlListeners = controlsForNavigation(() => undefined)
 const chartCanvas = useTemplateRef<HTMLCanvasElement>('chart')
 const overlayCanvas = useTemplateRef<HTMLCanvasElement>('overlay')
 const pixelRatio = ref(devicePixelRatio || 1)
@@ -270,7 +271,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div ref="container" class="editor absolute size-full" v-on="controlListeners">
+    <div
+        ref="container"
+        class="editor absolute size-full touch-none"
+        @pointerenter="activateEditorNavigation()"
+        @focusin="activateEditorNavigation()"
+        v-on="controlListeners"
+    >
         <canvas
             ref="chart"
             class="editor-chart pointer-events-none absolute size-full"

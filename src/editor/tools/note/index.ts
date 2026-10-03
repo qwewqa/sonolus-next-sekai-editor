@@ -315,7 +315,7 @@ const getNoteFromSelection = () => {
     return entity
 }
 
-const getPropertiesFromSelection = () => {
+export const getNotePropertiesFromSelection = () => {
     const note = getNoteFromSelection()
 
     return {
@@ -350,6 +350,8 @@ const getPropertiesFromSelection = () => {
         connectorPresentation: defaultNoteProperties.value.connectorPresentation ?? 'default',
     }
 }
+
+const getPropertiesFromSelection = getNotePropertiesFromSelection
 
 const tryFind = (
     x: number,

@@ -1,4 +1,4 @@
-import { settings } from '../../../../settings'
+import { getVerticalScale, setVerticalScale } from '../../../navigation'
 import type { Recognizer } from './recognizer'
 
 export const zoomY = (): Recognizer<2> => {
@@ -22,7 +22,7 @@ export const zoomY = (): Recognizer<2> => {
             if (Math.abs(sl - l) <= 40) return false
 
             active = {
-                size: settings.pps,
+                size: getVerticalScale(),
                 distance: Math.max(l, 1),
                 id1,
                 id2,
@@ -41,7 +41,7 @@ export const zoomY = (): Recognizer<2> => {
 
             const l = Math.max(Math.abs(p1.y - p2.y), 1)
 
-            settings.pps = (active.size * l) / active.distance
+            setVerticalScale((active.size * l) / active.distance)
         },
 
         reset() {

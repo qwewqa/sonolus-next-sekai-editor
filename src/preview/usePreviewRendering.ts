@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, shallowRef, watch, watchEffect, type Ref } f
 import { isAppActive } from '../activity'
 import { view } from '../editor/view'
 import { state } from '../history'
+import { isPlaying } from '../player'
 import { settings } from '../settings'
 import type { State } from '../state'
 import { hasSameChartData } from '../state/data'
@@ -185,6 +186,7 @@ export const usePreviewRendering = (
                 ),
             )
             const overlay = selectionCanvas?.value
+            const leftLimit = !isPlaying.value
             const args = [
                 view.cursorTime,
                 renderSize.width,
@@ -215,6 +217,7 @@ export const usePreviewRendering = (
                     objects.size || stages.size
                         ? { objects, stages, outline: outline.add }
                         : undefined,
+                    leftLimit,
                 )
                 if (ctx) {
                     const scale = args[4] / 2

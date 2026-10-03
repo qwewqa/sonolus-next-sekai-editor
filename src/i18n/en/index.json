@@ -12,6 +12,9 @@
         "stageTransformEvent": "Stage Transform Event"
     },
     "commands": {
+        "elevation": {
+            "title": "Elevation editor"
+        },
         "bgm": {
             "title": "BGM",
             "changed": "Changed BGM",
@@ -504,6 +507,25 @@
             }
         }
     },
+    "elevation": {
+        "edit": "Edit elevations",
+        "header": "Elevation editor",
+        "beat": "Beat",
+        "snap": "Snap",
+        "sideBySide": "Side by side",
+        "auto": "Auto",
+        "allow": "Allow",
+        "disallow": "Don't allow",
+        "off": "Off",
+        "canvas": "Note elevations",
+        "axis": "Elevation",
+        "offset": "Display offset",
+        "inherited": "Inherited elevation",
+        "empty": "No notes at this beat",
+        "history": "Changed note elevation",
+        "close": "Close elevation editor",
+        "resize": "Resize elevation editor"
+    },
     "contextMenu": {
         "title": "Selection actions",
         "paste": "Paste",
@@ -625,6 +647,9 @@
         }
     },
     "tools": {
+        "elevation": {
+            "title": "Elevation editor"
+        },
         "bpm": {
             "title": "BPM",
             "adding": "Adding {0} BPM objects",

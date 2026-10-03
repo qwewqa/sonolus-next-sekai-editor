@@ -320,7 +320,7 @@ const getNearestNoteInSlide = (slideId: SlideId, beat: number) => {
     return notes[index - 1] ?? notes[index]
 }
 
-const getPropertiesFromSelection = (beat: number) => {
+export const getSlidePropertiesFromSelection = (beat: number) => {
     const note = getNoteFromSelection()
     const nearest = note && getNearestNoteInSlide(note.slideId, beat)
 
@@ -368,6 +368,8 @@ const getPropertiesFromSelection = (beat: number) => {
     }
 }
 
+const getPropertiesFromSelection = getSlidePropertiesFromSelection
+
 const tryFind = (
     x: number,
     y: number,
@@ -380,7 +382,7 @@ const tryFind = (
     return hit ? [hit] : [undefined, yToValidBeat(y), xToValidLane(x)]
 }
 
-const getSelectedSlideId = () => {
+export const getSelectedSlideId = () => {
     if (!selectedEntities.value.every((entity) => entity.type === 'note')) return
 
     const [entity] = selectedEntities.value

@@ -326,7 +326,15 @@ export const createNoteRenderer = () => {
         beginFrame(timestamp: number) {
             frame = timestamp
         },
-        draw(context: EditorDrawContext, entity: NoteEntity, highlighted: boolean, opacity = 1) {
+        draw(
+            context: EditorDrawContext,
+            entity: NoteEntity,
+            highlighted: boolean,
+            opacity = 1,
+            position?: { left: number; y: number; size?: number },
+        ) {
+            if (position?.size !== undefined && position.size !== entity.size)
+                entity = { ...entity, size: position.size, useInfoOf: entity.useInfoOf ?? entity }
             const { ctx, state, scale, recentlyActive } = context
             if (opacity <= 0 || scale <= 0 || context.pixelRatio <= 0) return
             const infos = state.store.slides.info.get(entity.slideId)
@@ -335,8 +343,8 @@ export const createNoteRenderer = () => {
             const outline =
                 (type === 'anchor' || type === 'tick') && (highlighted || recentlyActive)
             if (type === 'anchor' && !outline) return
-            const x = entity.left
-            const y = beatToTime(state.bpms, entity.beat) * context.ups - 0.3
+            const x = position?.left ?? entity.left
+            const y = position?.y ?? beatToTime(state.bpms, entity.beat) * context.ups - 0.3
             ctx.save()
             ctx.globalAlpha *= opacity
             const sprite = getSprite(context, entity, type, outline)

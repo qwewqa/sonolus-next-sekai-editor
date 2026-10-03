@@ -1,6 +1,6 @@
 import type { Command } from '..'
 import { i18n } from '../../../i18n'
-import { settings } from '../../../settings'
+import { getVerticalScale, setVerticalScale } from '../../navigation'
 import { notify } from '../../notification'
 import ZoomYOutIcon from './ZoomYOutIcon.vue'
 
@@ -11,7 +11,7 @@ export const zoomYOut: Command = {
     },
 
     execute() {
-        settings.pps /= 1.1
+        setVerticalScale(getVerticalScale() / 1.1)
 
         notify(() => i18n.value.commands.zooms.zoomYOut.zoomed)
     },

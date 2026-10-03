@@ -8,6 +8,7 @@ import { cut } from './cut'
 import { deselect } from './deselect'
 import { division } from './divisions'
 import { divisionCustom } from './divisions/custom'
+import { elevation } from './elevation'
 import { eraser } from './eraser'
 import { event } from './events'
 import { cameraEvent } from './events/camera'
@@ -100,6 +101,7 @@ export const commands = {
     offset,
 
     select,
+    elevation,
     deselect,
     eraser,
     brush,

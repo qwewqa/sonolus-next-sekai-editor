@@ -2,6 +2,7 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { Chart } from '../chart'
 import { addToGroups, type Groups } from '../chart/groups'
 import { addDefaultStageToStages, type Stages } from '../chart/stages'
+import { closeElevationEditor, isElevationSideBySide } from '../editor/elevation/state'
 import { switchToolTo } from '../editor/tools'
 import { i18n } from '../i18n'
 import { showModal } from '../modals'
@@ -113,6 +114,7 @@ export const resetState = (
     filename?: string,
     handle?: FileSystemFileHandle,
 ) => {
+    if (!isElevationSideBySide.value) closeElevationEditor()
     index.value = 0
     states.splice(0, states.length, {
         isDirty,

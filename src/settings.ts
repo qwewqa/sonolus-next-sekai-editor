@@ -128,6 +128,17 @@ const settingsProperties = {
 
     pps: number(1000, 100, 10000),
 
+    elevationEditorWidth: number(50, 20, 80),
+
+    elevationSnap: Type.Union(
+        [0, 1, 2, 4, 8, 16, 32, 64].map((value) => Type.Literal(value)),
+        { default: 8 },
+    ),
+    elevationEditorSideBySide: Type.Union(
+        [Type.Literal('auto'), Type.Literal('allow'), Type.Literal('disallow')],
+        { default: 'auto' },
+    ),
+
     locale: Type.Union(
         Object.keys(localizations).map((locale) => Type.Literal(locale)),
         { default: defaultLocale },
@@ -191,6 +202,7 @@ const settingsProperties = {
                         'brush',
                         'eraser',
                         'deselect',
+                        'elevation',
                         'select',
                     ],
                     ['note3', 'note2', 'note1', 'note0', 'note'],
@@ -292,6 +304,7 @@ const settingsProperties = {
                 speedUp: "'",
                 speedDown: ';',
                 select: 'f',
+                elevation: 't',
                 deselect: 'Escape',
                 eraser: 'g',
                 brush: 'b',
@@ -427,7 +440,6 @@ export const settings = Object.defineProperties(
     Object.fromEntries(
         Object.entries(settingsProperties).map(([key, schema]) => {
             const defaultValue = Value.Create(schema)
-
             const prop = shallowRef(
                 normalize(schema, migrateSetting(key, storageGet(key, defaultValue))),
             )
