@@ -43,6 +43,8 @@ export type NoteEntity = BaseEntity & {
     useInfoOf?: NoteEntity
 }
 
+export const getNoteInteractionWidth = (size: number) => Math.max(1.5, size)
+
 export const toNoteEntity = (
     slideId: SlideId,
     object: NoteObject,

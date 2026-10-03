@@ -78,6 +78,7 @@ import { getOnlyEntityType } from './entityType'
 import {
     hitAllEntitiesAtPoint,
     hitAllEntitiesInSelection,
+    isNoteResizeStart,
     modifyEntities,
     offset,
     resize,
@@ -109,7 +110,7 @@ export const select: Tool = {
     title: () => i18n.value.tools.select.title,
 
     hover(x, y, modifiers) {
-        const entities = modifyEntities(hitAllEntitiesAtPoint(x, y), modifiers)
+        const entities = modifyEntities(hitAllEntitiesAtPoint(x, y, 0.5), modifiers)
 
         view.entities = {
             hovered: entities,
@@ -547,11 +548,7 @@ const toMovedNoteObject = (
     beat: number,
     focus: Entity,
 ): NoteObject => {
-    if (
-        focus.type === 'note' &&
-        onlyType === 'note' &&
-        (startLane <= focus.left + 0.5 || startLane >= focus.left + focus.size - 0.5)
-    ) {
+    if (focus.type === 'note' && onlyType === 'note' && isNoteResizeStart(focus, startLane)) {
         const isLeft = startLane >= focus.left + focus.size / 2
 
         const [left, size] = resize(

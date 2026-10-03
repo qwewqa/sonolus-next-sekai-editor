@@ -37,7 +37,7 @@ export const generateSlideNotes: Tool = {
     title: () => i18n.value.tools.generateSlideNotes.title,
 
     hover(x, y) {
-        const entities = hitEntitiesAtPoint('note', x, y)
+        const entities = hitEntitiesAtPoint('note', x, y, 0.5)
 
         view.entities = {
             hovered: entities,

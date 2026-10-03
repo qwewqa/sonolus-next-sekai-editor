@@ -38,7 +38,7 @@ export const eraser: Tool = {
     title: () => i18n.value.tools.eraser.title,
 
     hover(x, y) {
-        const entities = hitAllEntitiesAtPoint(x, y)
+        const entities = hitAllEntitiesAtPoint(x, y, 0.5)
 
         view.entities = {
             hovered: entities.some((entity) => selectedEntities.value.includes(entity))

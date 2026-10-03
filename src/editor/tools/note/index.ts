@@ -28,7 +28,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
-import { hitEntitiesAtPoint, modifyEntities, offset, resize } from '../utils'
+import { hitEntitiesAtPoint, isNoteResizeStart, modifyEntities, offset, resize } from '../utils'
 import NotePropertiesModal from './NotePropertiesModal.vue'
 import NoteSidebar from './NoteSidebar.vue'
 
@@ -69,7 +69,7 @@ export const note: Tool = {
     sidebar: NoteSidebar,
 
     hover(x, y, modifiers) {
-        const [entity, beat, lane] = tryFind(x, y)
+        const [entity, beat, lane] = tryFind(x, y, 0.5)
         if (entity) {
             view.entities = {
                 hovered: modifyEntities([entity], modifiers),
@@ -161,7 +161,7 @@ export const note: Tool = {
             focusEntityAtBeat(entity.beat)
 
             const lane = xToLane(x)
-            if (lane > entity.left + 0.5 && lane < entity.left + entity.size - 0.5) {
+            if (!isNoteResizeStart(entity, lane)) {
                 notify(interpolate(() => i18n.value.tools.note.moving, '1'))
 
                 active = {
@@ -351,8 +351,12 @@ const getPropertiesFromSelection = () => {
     }
 }
 
-const tryFind = (x: number, y: number): [NoteEntity] | [undefined, number, number] => {
-    const [hit] = hitEntitiesAtPoint('note', x, y)
+const tryFind = (
+    x: number,
+    y: number,
+    minimumNoteWidth = 1.5,
+): [NoteEntity] | [undefined, number, number] => {
+    const [hit] = hitEntitiesAtPoint('note', x, y, minimumNoteWidth)
         .filter((entity) => view.groupId === undefined || entity.groupId === view.groupId)
         .sort((a, b) => +selectedEntities.value.includes(b) - +selectedEntities.value.includes(a))
 

@@ -123,7 +123,7 @@ export const brush: Tool = {
     sidebar: BrushSidebar,
 
     hover(x, y, modifiers) {
-        const entities = modifyEntities(hitAllEntitiesAtPoint(x, y), modifiers)
+        const entities = modifyEntities(hitAllEntitiesAtPoint(x, y, 0.5), modifiers)
 
         view.entities = {
             hovered: entities,

@@ -1,10 +1,17 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
+import { getNoteInteractionWidth } from '../../state/entities/slides/note'
 import { align, clamp } from '../../utils/math'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { view, xToLane, yToTime, type Selection } from '../view'
 
 export const offset = (startLane: number, lane: number) => align(lane - startLane)
+
+export const isNoteResizeStart = (note: { left: number; size: number }, lane: number) => {
+    const center = note.left + note.size / 2
+    const moveHalfWidth = getNoteInteractionWidth(note.size) / 2 - 0.5
+    return lane <= center - moveHalfWidth || lane >= center + moveHalfWidth
+}
 
 export const resize = (anchor: number, lane: number, min = 0, max = Number.POSITIVE_INFINITY) => {
     const size = clamp(Math.abs(align(lane) - anchor), min, max)
@@ -12,15 +19,50 @@ export const resize = (anchor: number, lane: number, min = 0, max = Number.POSIT
     return [anchor - (lane >= anchor ? 0 : size), size] as const
 }
 
-export const hitEntitiesAtPoint = <T extends EntityType>(type: T, x: number, y: number) =>
-    hitEntities(type, xToLane(x - 10), xToLane(x + 10), yToTime(y + 10), yToTime(y - 10)).filter(
-        isVisible,
+export const hitEntitiesAtPoint = <T extends EntityType>(
+    type: T,
+    x: number,
+    y: number,
+    minimumNoteWidth = 1.5,
+) =>
+    filterPointHits(
+        hitEntities(
+            type,
+            xToLane(x - 10),
+            xToLane(x + 10),
+            yToTime(y + 10),
+            yToTime(y - 10),
+            minimumNoteWidth,
+        ),
+        x,
+        minimumNoteWidth,
     )
 
-export const hitAllEntitiesAtPoint = (x: number, y: number) =>
-    hitAllEntities(xToLane(x - 10), xToLane(x + 10), yToTime(y + 10), yToTime(y - 10)).filter(
-        isVisible,
+export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1.5) =>
+    filterPointHits(
+        hitAllEntities(
+            xToLane(x - 10),
+            xToLane(x + 10),
+            yToTime(y + 10),
+            yToTime(y - 10),
+            minimumNoteWidth,
+        ),
+        x,
+        minimumNoteWidth,
     )
+
+const filterPointHits = <T extends Entity>(entities: T[], x: number, minimumNoteWidth: number) => {
+    const hits = entities.filter(isVisible)
+    const lane = xToLane(x)
+    const isDirectNote = (entity: T) =>
+        entity.type === 'note' &&
+        entity.hitbox &&
+        lane >= entity.hitbox.lane - Math.max(entity.hitbox.w, minimumNoteWidth / 2) &&
+        lane <= entity.hitbox.lane + Math.max(entity.hitbox.w, minimumNoteWidth / 2)
+    return hits.some(isDirectNote)
+        ? hits.filter((entity) => entity.type !== 'note' || isDirectNote(entity))
+        : hits
+}
 
 export const hitEntitiesInSelection = <T extends EntityType>(type: T, selection: Selection) =>
     hitEntities(

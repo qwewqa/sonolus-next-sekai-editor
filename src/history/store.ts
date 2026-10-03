@@ -67,9 +67,15 @@ export const hitEntities = <T extends EntityType>(
     laneMax: number,
     timeMin: number,
     timeMax: number,
+    minimumNoteWidth = 0,
 ) =>
-    hitEntitiesByGetter(laneMin, laneMax, timeMin, timeMax, (minKey, maxKey) =>
-        cullEntities(type, minKey, maxKey),
+    hitEntitiesByGetter(
+        laneMin,
+        laneMax,
+        timeMin,
+        timeMax,
+        (minKey, maxKey) => cullEntities(type, minKey, maxKey),
+        minimumNoteWidth,
     )
 
 export const hitAllEntities = (
@@ -77,7 +83,8 @@ export const hitAllEntities = (
     laneMax: number,
     timeMin: number,
     timeMax: number,
-) => hitEntitiesByGetter(laneMin, laneMax, timeMin, timeMax, cullAllEntities)
+    minimumNoteWidth = 0,
+) => hitEntitiesByGetter(laneMin, laneMax, timeMin, timeMax, cullAllEntities, minimumNoteWidth)
 
 const hitEntitiesByGetter = <T extends Entity>(
     laneMin: number,
@@ -85,6 +92,7 @@ const hitEntitiesByGetter = <T extends Entity>(
     timeMin: number,
     timeMax: number,
     getEntities: (minKey: number, maxKey: number) => Set<T>,
+    minimumNoteWidth: number,
 ) => {
     const spu = view.w / settings.width / settings.pps
 
@@ -93,10 +101,11 @@ const hitEntitiesByGetter = <T extends Entity>(
     const minKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMin - 0.4 * spu)))
     const maxKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMax + 0.4 * spu)))
 
-    return [...getEntities(minKey, maxKey)].filter(({ hitbox }) => {
+    return [...getEntities(minKey, maxKey)].filter(({ type, hitbox }) => {
         if (!hitbox) return false
 
-        const { lane, w } = hitbox
+        const { lane } = hitbox
+        const w = type === 'note' ? Math.max(hitbox.w, minimumNoteWidth / 2) : hitbox.w
         const h = hitbox.h * spu
 
         const time = beatToTime(bpms.value, hitbox.beat)
