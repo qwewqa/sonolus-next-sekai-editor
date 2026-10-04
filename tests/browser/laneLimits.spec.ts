@@ -86,7 +86,8 @@ test('lane commands have their own default group, persist and accept a custom ra
     expect(layout.groups[index]).toEqual(['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'])
     expect(layout.groups[index - 1]).toContain('laneDivisionCustom')
     expect(layout.groups.find((group) => group.includes('select'))).not.toContain('elevation')
-    expect(layout.groups.find((group) => group.includes('zoomYOut'))).toContain('elevation')
+    expect(layout.groups.find((group) => group.includes('zoomYOut'))).not.toContain('elevation')
+    expect(layout.groups.find((group) => group.includes('scaleWidth'))).toContain('elevation')
     await page.evaluate(async () => {
         const { commands } = await import('/src/editor/commands/index.ts')
         void commands.laneLimitCustom.execute()

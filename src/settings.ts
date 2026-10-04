@@ -204,6 +204,7 @@ const settingsProperties = {
                         'select',
                     ],
                     [
+                        'elevation',
                         'scaleWidth',
                         'scaleElevation',
                         'scaleBeat',
@@ -280,7 +281,7 @@ const settingsProperties = {
                         'laneDivision1',
                     ],
                     ['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'],
-                    ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut', 'elevation'],
+                    ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut'],
                 ] satisfies CommandName[][],
             },
         ),

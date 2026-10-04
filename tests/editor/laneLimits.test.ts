@@ -60,7 +60,7 @@ test('point events use their horizontal editing coordinate without changing othe
     assert.equal(constrainLaneObject(bpm, 6), bpm)
 })
 
-test('former default toolbar moves elevation to view controls and inserts lane limits after divisions', () => {
+test('former default toolbar moves elevation to transforms and inserts lane limits after divisions', () => {
     const groups = [
         [
             'increaseNoteSize',
@@ -73,6 +73,7 @@ test('former default toolbar moves elevation to view controls and inserts lane l
         ],
         ['laneDivisionCustom', 'laneDivision1'],
         ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut'],
+        ['scaleWidth', 'flip'],
     ]
     const migrated = migrateToolbar(groups)
     assert.equal(groups[0]?.includes('elevation'), true)
@@ -85,8 +86,22 @@ test('former default toolbar moves elevation to view controls and inserts lane l
         'select',
     ])
     assert.deepEqual(migrated[2], ['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'])
-    assert.equal(migrated[3]?.at(-1), 'elevation')
+    assert.deepEqual(migrated[4], ['elevation', 'scaleWidth', 'flip'])
+    assert.equal(migrated[3]?.includes('elevation'), false)
     assert.equal(migrateToolbar(migrated), migrated)
     const custom = [['elevation', 'select']]
     assert.equal(migrateToolbar(custom), custom)
+})
+
+test('previous default view group moves elevation to transforms without duplicating lane controls', () => {
+    const groups = [
+        ['scaleWidth', 'scaleElevation', 'flip'],
+        ['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'],
+        ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut', 'elevation'],
+    ]
+    const migrated = migrateToolbar(groups)
+    assert.deepEqual(migrated[0], ['elevation', 'scaleWidth', 'scaleElevation', 'flip'])
+    assert.deepEqual(migrated[2], ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut'])
+    assert.equal(migrated.length, groups.length)
+    assert.equal(migrateToolbar(migrated), migrated)
 })

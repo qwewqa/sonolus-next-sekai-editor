@@ -8,31 +8,25 @@ const formerSelection = [
     'select',
 ]
 
+const formerView = ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut', 'elevation']
+const matches = (group: unknown[], names: string[]) =>
+    group.length === names.length && group.every((name, index) => name === names[index])
+
 export const migrateToolbar = (groups: unknown[][]) => {
-    if (
-        !groups.some(
-            (group) =>
-                group.length === formerSelection.length &&
-                group.every((name, index) => name === formerSelection[index]),
-        )
+    const sourceIndex = groups.findIndex(
+        (group) => matches(group, formerSelection) || matches(group, formerView),
     )
-        return groups
+    if (sourceIndex === -1) return groups
     const result = groups.map((group) => [...group])
-    const selection = result.find(
-        (group) =>
-            group.length === formerSelection.length &&
-            group.every((name, index) => name === formerSelection[index]),
-    )
-    if (selection) selection.splice(selection.indexOf('elevation'), 1)
-    const zooms = result.find(
-        (group) =>
-            group.length === 4 &&
-            ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut'].every(
-                (name, index) => name === group[index],
-            ),
-    )
-    if (zooms) zooms.push('elevation')
-    else result.push(['elevation'])
+    const source = result[sourceIndex]
+    if (source) source.splice(source.indexOf('elevation'), 1)
+    if (!result.some((group) => group.includes('elevation'))) {
+        const transforms = result.find(
+            (group) => group.includes('scaleWidth') && group.includes('flip'),
+        )
+        if (transforms) transforms.unshift('elevation')
+        else result.push(['elevation'])
+    }
     if (
         !result.some((group) =>
             group.some((name) => typeof name === 'string' && name.startsWith('laneLimit')),

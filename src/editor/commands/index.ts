@@ -111,6 +111,7 @@ export const commands = {
     deselect,
     eraser,
     brush,
+    elevation,
     flip,
     flipVertical,
     scaleBeat,
@@ -208,7 +209,6 @@ export const commands = {
     zoomXOut,
     zoomYIn,
     zoomYOut,
-    elevation,
 
     help,
     settings,
