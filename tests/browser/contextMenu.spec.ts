@@ -91,6 +91,25 @@ test('right clicking a selected member preserves the whole selection', async ({ 
     expect((await snapshot(page)).selected).toEqual([{ type: 'note', beat: 7, left: 3, size: 2 }])
 })
 
+test('empty right clicks deselect first and only open a menu without a selection', async ({
+    page,
+}) => {
+    await selectTwo(page)
+    await page.keyboard.press('a')
+    const before = await page.evaluate(() => window.editorTest.view.cursorTime)
+    await click(page, -5, 11)
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    expect((await snapshot(page)).selected).toEqual([])
+    expect((await snapshot(page)).notes).toHaveLength(4)
+    expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(before)
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+    await click(page, -5, 11)
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: 'Edit elevations', exact: true })).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toHaveCount(0)
+})
+
 test('modified right clicks and right drags select without opening a menu', async ({ page }) => {
     await click(page, -3, 3, 'left')
     await page.keyboard.down('Control')
@@ -124,6 +143,11 @@ test('the menu stays in the viewport and supports keyboard navigation and dismis
     await page.mouse.click(bounds.x + bounds.width - 10, bounds.y + bounds.height - 10, {
         button: 'right',
     })
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    expect((await snapshot(page)).selected).toEqual([])
+    await page.mouse.click(bounds.x + bounds.width - 10, bounds.y + bounds.height - 10, {
+        button: 'right',
+    })
     const menu = page.getByRole('menu')
     await expect(menu).toBeVisible()
     const rect = await menu.boundingBox()
@@ -131,10 +155,11 @@ test('the menu stays in the viewport and supports keyboard navigation and dismis
     expect(rect!.x + rect!.width).toBeLessThanOrEqual(1600)
     expect(rect!.y + rect!.height).toBeLessThanOrEqual(1000)
     await page.keyboard.press('End')
-    await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toBeFocused()
+    await expect(menu.getByRole('menuitem', { name: 'Edit elevations', exact: true })).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(menu).toHaveCount(0)
-    expect((await snapshot(page)).selected).toHaveLength(2)
+    expect((await snapshot(page)).selected).toHaveLength(0)
+    await selectTwo(page)
     await click(page, -3, 3)
     await page.keyboard.press('End')
     await page.keyboard.press('Enter')
@@ -164,8 +189,9 @@ test('the initial BPM only offers applicable clipboard actions', async ({ page }
         )
         if (!bpm) throw new Error('Missing initial BPM')
         history.replaceState({ ...history.state.value, selectedEntities: [bpm] })
+        window.editorTest.view.time = 1
     })
-    await click(page, 8, 4)
+    await click(page, 6.5, 0)
     const menu = page.getByRole('menu')
     await expect(menu).toBeVisible()
     await expect(menu.getByRole('menuitem', { name: 'Copy', exact: true })).toBeVisible()
@@ -298,12 +324,13 @@ test('menus fit desktop and narrow viewports with readable selection actions', a
     await page.screenshot({ path: testInfo.outputPath('desktop-multiple-notes-menu.png') })
     await page.keyboard.press('Escape')
     await page.setViewportSize({ width: 390, height: 600 })
-    const bounds = await page.locator('canvas.editor-chart').boundingBox()
-    if (!bounds) throw new Error('Missing canvas')
-    await page.mouse.click(bounds.x + bounds.width - 5, bounds.y + bounds.height - 5, {
-        button: 'right',
+    await page.evaluate(() => {
+        window.editorTest.view.time = 3.8
     })
+    await expect.poll(() => page.evaluate(() => window.editorTest.view.w)).toBe(390)
+    await click(page, 1, 5)
     await expect(menu).toBeVisible()
+    expect((await snapshot(page)).selected).toHaveLength(2)
     const rect = await menu.boundingBox()
     if (!rect) throw new Error('Missing menu')
     expect(rect.x).toBeGreaterThanOrEqual(4)

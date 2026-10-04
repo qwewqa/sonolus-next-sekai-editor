@@ -285,7 +285,7 @@ test('opening uses the selected note beat instead of the caret beat', async ({ p
     expect((await rows(page)).map((row) => row.beat)).toEqual([8])
 })
 
-test('context actions open the clicked note beat or empty-space beat despite a stale selection', async ({
+test('context actions open the clicked note beat or empty-space beat after deselection', async ({
     page,
 }) => {
     await page.evaluate(() => {
@@ -304,10 +304,58 @@ test('context actions open the clicked note beat or empty-space beat despite a s
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     const empty = await page.evaluate(() => window.editorTest.point(-5, 7))
     await page.mouse.click(empty.x, empty.y, { button: 'right' })
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
+    await page.mouse.click(empty.x, empty.y, { button: 'right' })
     await page.getByRole('menuitem', { name: 'Edit elevations', exact: true }).click()
     await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
     await expect.poll(() => rows(page)).toEqual([])
 })
+
+for (const split of [false, true]) {
+    test(`empty elevation right clicks clear off-beat selections before opening a menu (${split ? 'split' : 'replacement'})`, async ({
+        page,
+    }) => {
+        await page.evaluate((split) => {
+            window.editorTest.settings.mouseSecondaryTool = 'selectContextMenu'
+            window.editorTest.settings.elevationEditorSideBySide = split ? 'allow' : 'disallow'
+        }, split)
+        await open(page)
+        const before = await page.evaluate(() => {
+            const { history, view } = window.editorTest
+            const note = [...history.state.value.store.slides.note.values()]
+                .flat()
+                .find((note) => note.beat === 8)!
+            history.replaceState({ ...history.state.value, selectedEntities: [note] })
+            return {
+                beat: window.elevationTest.scene.elevationLayout.value.rows[0]!.note.beat,
+                cursor: view.cursorTime,
+            }
+        })
+        const empty = await at(page, 5, 1)
+        await page.mouse.click(empty.x, empty.y, { button: 'right' })
+        await expect(page.getByRole('menu')).toHaveCount(0)
+        expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
+        await expect(page.locator('.elevation-canvas')).toBeVisible()
+        await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue(
+            String(before.beat),
+        )
+        expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(before.cursor)
+        expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+        await page.mouse.click(empty.x, empty.y, { button: 'right' })
+        await expect(page.getByRole('menu')).toBeVisible()
+        await expect(page.getByRole('menuitem', { name: 'Delete', exact: true })).toHaveCount(0)
+        await page.keyboard.press('Escape')
+        const note = await point(page)
+        await page.mouse.click(note.x, note.y, { button: 'right' })
+        await expect(page.getByRole('menuitem', { name: 'Delete', exact: true })).toBeVisible()
+        expect(
+            (await page.evaluate(() => window.editorTest.snapshot())).selected.map(
+                (note) => note.beat,
+            ),
+        ).toEqual([before.beat])
+    })
+}
 
 test('body drags edit lane and snapped elevation live with one undo step', async ({ page }) => {
     await open(page)

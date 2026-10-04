@@ -1,5 +1,6 @@
 import { shallowRef } from 'vue'
 import { selectedEntities } from '../history/selectedEntities'
+import { deselect } from './commands/deselect'
 import { editorNavigation } from './navigation'
 import { select } from './tools/select'
 import { hitAllEntitiesAtPoint } from './tools/utils'
@@ -12,6 +13,11 @@ export const closeContextMenu = () => {
 
 export const openContextMenu = (x: number, y: number) => {
     const hits = hitAllEntitiesAtPoint(x, y)
+    if (!hits.length && selectedEntities.value.length) {
+        closeContextMenu()
+        void deselect.execute()
+        return
+    }
     if (
         !selectedEntities.value.length ||
         (hits.length && !hits.some((entity) => selectedEntities.value.includes(entity)))
