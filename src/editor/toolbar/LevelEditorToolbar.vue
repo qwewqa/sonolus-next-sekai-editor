@@ -26,18 +26,6 @@ watch(
     { immediate: true },
 )
 
-watch(
-    [toolbar, () => settings.maxLane],
-    ([groups, maxLane]) => {
-        const name =
-            maxLane === 0 ? 'laneLimitNone' : maxLane === 6 ? 'laneLimitSix' : 'laneLimitCustom'
-        groups.forEach((group, index) => {
-            if (group.includes(name)) activeNames.value[index] = name
-        })
-    },
-    { immediate: true },
-)
-
 const activeIndex = ref(-1)
 
 const onOverMain = (event: PointerEvent, index: number) => {
@@ -61,8 +49,7 @@ const onClickSub = (index: number, name: CommandName) => {
     void commands[name].execute()
 
     activeIndex.value = -1
-    activeNames.value[index] =
-        toolbar.value[index]?.find((name) => commands[name].isActive?.()) ?? name
+    activeNames.value[index] = name
 }
 
 const onOverBackdrop = (event: PointerEvent) => {

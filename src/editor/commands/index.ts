@@ -81,7 +81,6 @@ import { zoomYIn } from './zooms/zoomYIn'
 import { zoomYOut } from './zooms/zoomYOut'
 
 export type Command = {
-    isActive?: () => boolean
     title: () => string
     icon: {
         is: Component
