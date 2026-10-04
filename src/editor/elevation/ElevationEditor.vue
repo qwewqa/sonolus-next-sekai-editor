@@ -839,7 +839,7 @@ onUnmounted(() => {
                     i18n.elevation.header
                 }}</strong>
                 <button
-                    class="absolute -right-1 -top-1 flex size-8 items-center justify-center rounded text-lg leading-none hover:bg-white/10"
+                    class="absolute -right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded text-lg leading-none hover:bg-white/10"
                     :aria-label="i18n.elevation.close"
                     :title="i18n.elevation.close"
                     @click="closeElevationEditor"
@@ -847,10 +847,10 @@ onUnmounted(() => {
                     ×
                 </button>
             </div>
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <div class="flex items-center gap-2">
+            <div class="elevation-controls flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div class="flex items-center">
                     <button
-                        class="rounded px-2 py-1 hover:bg-white/10 disabled:opacity-25"
+                        class="h-7 w-5 shrink-0 rounded hover:bg-white/10 disabled:opacity-25"
                         aria-label="Previous beat"
                         title="Previous beat"
                         :disabled="previousBeat === undefined"
@@ -858,10 +858,10 @@ onUnmounted(() => {
                     >
                         ‹
                     </button>
-                    <label class="flex items-center gap-2"
-                        >{{ i18n.elevation.beat
-                        }}<input
-                            class="w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
+                    <label class="flex items-center gap-1"
+                        ><span class="w-7">{{ i18n.elevation.beat }}</span
+                        ><input
+                            class="h-7 w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
                             type="number"
                             min="0"
                             :step="1 / view.division"
@@ -870,7 +870,7 @@ onUnmounted(() => {
                             @change="onBeatInput"
                     /></label>
                     <button
-                        class="rounded px-2 py-1 hover:bg-white/10 disabled:opacity-25"
+                        class="h-7 w-5 shrink-0 rounded hover:bg-white/10 disabled:opacity-25"
                         aria-label="Next beat"
                         title="Next beat"
                         :disabled="nextBeat === undefined"
@@ -879,11 +879,11 @@ onUnmounted(() => {
                         ›
                     </button>
                 </div>
-                <label class="flex items-center gap-2"
-                    >{{ i18n.elevation.snap
-                    }}<select
+                <label class="elevation-snap flex items-center gap-1"
+                    ><span class="w-7">{{ i18n.elevation.snap }}</span
+                    ><select
                         v-model="settings.elevationSnap"
-                        class="rounded border border-white/10 bg-bg px-2 py-1 text-white"
+                        class="h-7 w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
                         aria-label="Elevation snapping"
                     >
                         <option :value="0">{{ i18n.elevation.off }}</option>
@@ -900,3 +900,20 @@ onUnmounted(() => {
         </div>
     </section>
 </template>
+
+<style scoped>
+.elevation-header {
+    container-type: inline-size;
+}
+
+@container (max-width: 16rem) {
+    .elevation-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .elevation-snap {
+        margin-left: 1.25rem;
+    }
+}
+</style>

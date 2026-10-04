@@ -8,6 +8,8 @@ const settle = (page: Page) =>
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     })
 
+test.use({ isMobile: true, hasTouch: true })
+
 test.beforeEach(async ({ page }) => {
     await page.route('**/resource/skin.scp*', (route) => route.fulfill({ body: resource('skins') }))
     await page.route('**/resource/particle.scp*', (route) =>
@@ -77,6 +79,25 @@ for (const { width, height } of [
                     }
                     const title = (await page.locator('.elevation-header strong').boundingBox())!
                     expect(title.x + title.width).toBeLessThanOrEqual(button.x)
+                    const beat = (await page
+                        .getByRole('spinbutton', { name: 'Beat', exact: true })
+                        .boundingBox())!
+                    const snap = (await page
+                        .getByRole('combobox', { name: 'Elevation snapping', exact: true })
+                        .boundingBox())!
+                    expect(beat.height).toBe(snap.height)
+                    expect(snap.y === beat.y || snap.x === beat.x).toBe(true)
+                    for (const box of [beat, snap]) {
+                        expect(box.x).toBeGreaterThanOrEqual(header.x)
+                        expect(box.x + box.width).toBeLessThanOrEqual(header.x + header.width)
+                    }
+                    if (!split) {
+                        expect(
+                            await page
+                                .locator('.elevation-header strong')
+                                .evaluate((element) => element.scrollWidth <= element.clientWidth),
+                        ).toBe(true)
+                    }
                 }
                 await assertClear()
                 await tab.click()
@@ -112,7 +133,9 @@ for (const { width, height } of [
     }
 }
 
-test('left preview tab keeps its existing position and collapse behavior', async ({ page }) => {
+test('left preview tab keeps its existing position and collapse behavior', async ({
+    page,
+}, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 })
     await page.evaluate(() => {
         const { settings } = window.editorTest
@@ -134,4 +157,16 @@ test('left preview tab keeps its existing position and collapse behavior', async
     await expect.poll(async () => (await tab.boundingBox())!.x).toBe(0)
     await tab.click()
     await expect(page.locator('.preview')).toBeVisible()
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-editor')).toBeVisible()
+    const beat = (await page.getByRole('spinbutton', { name: 'Beat', exact: true }).boundingBox())!
+    const snap = (await page
+        .getByRole('combobox', { name: 'Elevation snapping', exact: true })
+        .boundingBox())!
+    expect(beat.height).toBe(snap.height)
+    expect(beat.y).toBe(snap.y)
+    await page.screenshot({
+        path: testInfo.outputPath('landscape-elevation.png'),
+        style: '.notification { visibility:hidden }',
+    })
 })

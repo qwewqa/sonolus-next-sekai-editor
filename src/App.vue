@@ -199,7 +199,7 @@ const onFocus = (event: FocusEvent) => {
 
 <style scoped>
 .preview-tab-over-title :deep(.elevation-header strong) {
-    max-width: calc(50% - 2.5rem);
+    max-width: calc(50% - 1.5rem);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
