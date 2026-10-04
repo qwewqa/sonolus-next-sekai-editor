@@ -177,13 +177,7 @@ export const drawConnector = (
             (head.visualProgress < context.layout.progressStart &&
                 tail.visualProgress < context.layout.progressStart) ||
             (head.visualProgress > context.layout.progressCutoff &&
-                tail.visualProgress > context.layout.progressCutoff) ||
-            (head.visualProgress === tail.visualProgress &&
-                !(
-                    context.leftLimit &&
-                    (head.transform?.projection.elevation ?? 0) !==
-                        (tail.transform?.projection.elevation ?? 0)
-                ))
+                tail.visualProgress > context.layout.progressCutoff)
         )
             return
     }
@@ -365,6 +359,12 @@ export const drawConnector = (
                 ? { bl: a.left, br: a.right, tl: b.left, tr: b.right }
                 : { bl: b.left, br: b.right, tl: a.left, tr: a.right }
 
+        if (
+            triangleArea(layout.bl, layout.tl, layout.tr) === 0 &&
+            triangleArea(layout.bl, layout.tr, layout.br) === 0
+        )
+            return
+
         drawQuad(layout, baseA, Math.min(a.elevation, b.elevation))
     }
 
@@ -482,3 +482,6 @@ const MAX_FLATTEN_DEPTH = 8
 
 const chordError = (a: Vec, b: Vec, p: Vec, t: number) =>
     Math.hypot(p.x - lerp(a.x, b.x, t), p.y - lerp(a.y, b.y, t))
+
+const triangleArea = (a: Vec, b: Vec, c: Vec) =>
+    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)

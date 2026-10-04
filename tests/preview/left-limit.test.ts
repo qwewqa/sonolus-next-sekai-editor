@@ -197,7 +197,12 @@ test('same-beat elevation transitions remain separate visible connectors before 
     const draws = capture(source, time, true).filter(([sprite]) => sprite === connectorSprite)
     assert.ok(draws.length >= 2)
     assert.ok(draws.every(([, quad]) => Math.abs(quad.tl.y - quad.bl.y) > 0))
-    assert.ok(capture(source, time - 0.1, true).some(([sprite]) => sprite === connectorSprite))
+    for (const now of [time - 0.25, time - 0.1, time - 1e-6]) {
+        const paused = capture(source, now, true).filter(([sprite]) => sprite === connectorSprite)
+        const playing = capture(source, now, false).filter(([sprite]) => sprite === connectorSprite)
+        assert.ok(playing.length >= 2)
+        assert.deepEqual(playing, paused)
+    }
     assert.equal(
         capture(source, time, false).filter(([sprite]) => sprite === connectorSprite).length,
         0,

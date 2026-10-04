@@ -112,3 +112,37 @@ test('connectors, moving slide heads, and stage events highlight their visible o
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
+
+test('selected invisible anchors show a preview line that respects the highlight toggle', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view, history } = window.editorTest
+        const base = fixtures.interaction.slides[0]?.[0]
+        if (!base) throw new Error('Missing fixture')
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [[{ ...base, beat: 6, elevation: 2, noteType: 'anchor' }]],
+            },
+            3,
+        )
+        view.cursorTime = 3
+        const anchor = [...history.state.value.store.slides.note.values()].flat()[0]
+        if (!anchor) throw new Error('Missing anchor')
+        history.replaceState({ ...history.state.value, selectedEntities: [anchor] })
+    })
+    await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
+    const highlighting = page.locator('.preview').getByLabel('Highlight Selection', { exact: true })
+    await highlighting.uncheck()
+    await expect.poll(() => outlinePixels(page)).toBe(0)
+    await highlighting.check()
+    await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
+    await page.evaluate(() => {
+        window.editorTest.view.cursorTime = 3.1
+    })
+    await expect.poll(() => outlinePixels(page)).toBe(0)
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(1)
+})

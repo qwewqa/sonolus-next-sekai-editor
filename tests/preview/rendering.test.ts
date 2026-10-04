@@ -257,6 +257,44 @@ test('connectors between elevations draw their segments at changing depths', () 
     assert.ok(draws.at(-1)!.z[1]! - draws[0]!.z[1]! > 0.9)
 })
 
+test('equal-progress connectors use projected geometry in paused and playing frames', () => {
+    const context = createContext()
+    const head = endpoint({ transform: identityStageTransform })
+    for (const transform of [
+        { ...identityStageTransform, ty: 0.5 },
+        { ...identityStageTransform, sr: Math.PI / 4 },
+        {
+            ...identityStageTransform,
+            projection: { ...identityStageScreenTransform, a12: 0.5, elevation: 2 },
+        },
+    ]) {
+        const tail = endpoint({ easeFrac: 1, transform })
+        const playing = connector(context, head, tail)
+        const paused = connector({ ...context, leftLimit: true }, head, tail)
+        assert.ok(playing.length > 0)
+        assert.deepEqual(playing, paused)
+        assert.ok(
+            playing.every(({ quad }) =>
+                Object.values(quad).every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y)),
+            ),
+        )
+    }
+})
+
+test('equal-progress connectors with no projected area emit no geometry', () => {
+    const context = createContext()
+    for (const leftLimit of [false, true]) {
+        assert.equal(
+            connector(
+                { ...context, leftLimit },
+                endpoint(),
+                endpoint({ lane: 2, size: 1, easeFrac: 1 }),
+            ).length,
+            0,
+        )
+    }
+})
+
 test('sim lines connect equal lanes on different stages and scale thickness by projection', () => {
     const context = createContext()
     const left: StageTransform = { ...identityStageTransform, tx: -0.5 }

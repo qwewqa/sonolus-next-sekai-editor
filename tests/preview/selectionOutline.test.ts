@@ -28,3 +28,15 @@ test('overlaid sprites retain outlines and neighboring objects retain their own 
     outline.add(quad(1, 2), {})
     assert.equal(outline.edges().length, 8)
 })
+
+test('explicit selection lines remain visible beside sliced and degenerate outlines', () => {
+    const outline = createSelectionOutline()
+    const a = { x: 0, y: 2 }
+    const b = { x: 1, y: 2 }
+    outline.add({ bl: a, br: b, tr: b, tl: a }, {})
+    assert.equal(outline.edges().length, 0)
+    outline.addLine(a, b)
+    assert.deepEqual(outline.edges(), [{ a, b }])
+    outline.add(quad(0, 1), {})
+    assert.equal(outline.edges().length, 5)
+})

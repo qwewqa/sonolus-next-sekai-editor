@@ -44,7 +44,15 @@ import {
     type StageTransform,
 } from './layout'
 import { interpolateVisualMasks, maskedNoteExtents, noVisualMask, type VisualMask } from './mask'
-import { ease, lerp, remapClamped, transformQuadAffine, unlerpClamped, type Quad } from './math'
+import {
+    ease,
+    lerp,
+    remapClamped,
+    transformQuadAffine,
+    unlerpClamped,
+    type Quad,
+    type Vec,
+} from './math'
 import {
     ConnectorKind,
     NoteKind,
@@ -53,7 +61,7 @@ import {
     type PreviewChart,
     type PreviewNote,
 } from './model'
-import { drawNote, drawSlideNoteHead, getNoteSpriteSet } from './note'
+import { drawNote, drawSlideNoteHead, getNoteSelectionLine, getNoteSpriteSet } from './note'
 import { LANE_PARTICLE_LAYER, PARTICLE_LAYER, drawParticleEffect, hashSeed } from './particleDraw'
 import { drawSimLine } from './simLine'
 import { findSlideConnector } from './slide'
@@ -154,6 +162,7 @@ export const renderPreviewFrame = (
         objects: ReadonlySet<object>
         stages?: ReadonlySet<number>
         outline: (quad: Quad, source?: object) => void
+        line?: (a: Vec, b: Vec, source?: object) => void
     },
     leftLimit = false,
 ) => {
@@ -613,6 +622,20 @@ export const renderPreviewFrame = (
     }
 
     const paintNote = (note: PreviewNote, paint: PreviewRenderer['draw']) => {
+        if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) {
+            if (!note.source || !selection?.objects.has(note.source) || !selection.line) return
+            const line = getNoteSelectionLine(
+                context,
+                visualLane(note),
+                note.size,
+                visualProgress(note),
+                visualStageAffine(note),
+                visualNoteAlpha(note),
+                visualMaskAt(note, now),
+            )
+            if (line) selection.line(line.a, line.b, note.source)
+            return
+        }
         drawNote(
             context,
             paint,
@@ -638,7 +661,6 @@ export const renderPreviewFrame = (
         leftLimit,
     )) {
         if (hasReached(note.targetTime)) continue
-        if (note.kind === NoteKind.anchor || note.kind === NoteKind.hideTick) continue
         if (groupHidesNotes(note)) continue
         paintNote(note, selectedDraw(note.source))
     }
@@ -650,12 +672,7 @@ export const renderPreviewFrame = (
                 !selection.objects.has(note.source)
             )
                 continue
-            if (
-                note.kind === NoteKind.anchor ||
-                note.kind === NoteKind.hideTick ||
-                groupHidesNotes(note)
-            )
-                continue
+            if (groupHidesNotes(note)) continue
             paintNote(note, (sprite, quad, _z, alpha) => {
                 if (sprite && alpha > 0) selection.outline(quad, note.source)
             })

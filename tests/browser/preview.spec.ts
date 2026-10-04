@@ -312,6 +312,40 @@ test.describe('preview transport', () => {
         await page.clock.runFor(1)
     })
 
+    test('same-beat elevation connectors keep identical geometry when playback starts', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const { fixtures, show, view, settings } = window.editorTest
+            const base = fixtures.interaction.slides[0]![0]!
+            show(
+                {
+                    ...fixtures.interaction,
+                    slides: [
+                        [
+                            { ...base, beat: 8, left: -1, size: 2, elevation: 1 },
+                            { ...base, beat: 8, left: -1, size: 2, elevation: 4 },
+                        ],
+                    ],
+                },
+                3,
+            )
+            view.cursorTime = 3
+            settings.previewShowEffects = false
+        })
+        await page.clock.runFor(32)
+        const paused = await page.evaluate(() => window.previewTest.vertices)
+        expect(paused.length).toBeGreaterThan(0)
+        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await expect(page.getByRole('button', { name: 'Pause preview', exact: true })).toBeVisible()
+        await page.clock.runFor(32)
+        expect(await cursor(page)).toBe(3)
+        expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(paused)
+        await page.getByRole('button', { name: 'Pause preview', exact: true }).click()
+        await page.clock.runFor(32)
+        expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(paused)
+    })
+
     test('touch taps and Space/Enter activate each step once without editor shortcuts', async ({
         page,
     }) => {

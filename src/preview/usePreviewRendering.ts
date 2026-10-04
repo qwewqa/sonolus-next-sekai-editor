@@ -215,7 +215,7 @@ export const usePreviewRendering = (
                     getChart(),
                     ...args,
                     objects.size || stages.size
-                        ? { objects, stages, outline: outline.add }
+                        ? { objects, stages, outline: outline.add, line: outline.addLine }
                         : undefined,
                     leftLimit,
                 )

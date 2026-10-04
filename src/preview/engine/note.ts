@@ -26,7 +26,7 @@ import {
     type StageScreenTransform,
 } from './layout'
 import { maskedNoteExtents, type VisualMask } from './mask'
-import { clamp, easeInCubic, transformQuadAffine, type Quad } from './math'
+import { applyAffine, clamp, easeInCubic, transformQuadAffine, type Quad } from './math'
 import { NoteKind, type NoteKindValue } from './model'
 
 type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
@@ -94,6 +94,30 @@ const slimBodyKinds = new Set<NoteKindValue>([
 const getNoteBodyLayer = (kind: NoteKindValue) => {
     if (slimBodyKinds.has(kind)) return LAYER_NOTE_SLIM_BODY
     return LAYER_NOTE_BODY
+}
+
+export const getNoteSelectionLine = (
+    context: PreviewFrameContext,
+    lane: number,
+    size: number,
+    visualProgress: number,
+    transform: StageScreenTransform,
+    noteAlpha: number,
+    mask?: VisualMask,
+) => {
+    if (
+        visualProgress < context.layout.progressStart ||
+        visualProgress > context.layout.progressCutoff ||
+        noteAlpha <= 0
+    )
+        return
+    if (mask) ({ lane, size } = maskedNoteExtents(lane, size, mask))
+    if (size <= 0) return
+    const travel = approach(context.layout, visualProgress)
+    return {
+        a: applyAffine(transform, transformedVecAt(context.layout, lane - size, travel)),
+        b: applyAffine(transform, transformedVecAt(context.layout, lane + size, travel)),
+    }
 }
 
 export const drawNote = (
