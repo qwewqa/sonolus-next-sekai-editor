@@ -145,6 +145,74 @@ test.afterEach(async ({ page }) => {
     expect(errors.get(page)).toEqual([])
 })
 
+test.describe('phone elevation scale', () => {
+    test.use({
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+    })
+
+    test('signed and multi-digit numbers align with the grid', async ({ page }, testInfo) => {
+        await open(page)
+        const labels = await page.evaluate(async () => {
+            const labels = new Map<
+                string,
+                {
+                    align: CanvasTextAlign
+                    anchor: number
+                    right: number
+                    middle: number
+                    grid: number
+                }
+            >()
+            const fillText = CanvasRenderingContext2D.prototype.fillText
+            CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+                if (
+                    this.canvas instanceof HTMLCanvasElement &&
+                    this.canvas.classList.contains('elevation-canvas') &&
+                    /^-?\d+$/.test(text)
+                ) {
+                    const metrics = this.measureText(text)
+                    labels.set(text, {
+                        align: this.textAlign,
+                        anchor: x,
+                        right: x + metrics.actualBoundingBoxRight,
+                        middle:
+                            y +
+                            (metrics.actualBoundingBoxDescent - metrics.actualBoundingBoxAscent) /
+                                2,
+                        grid: window.elevationTest.scene.elevationLayout.value.yAt(Number(text)),
+                    })
+                }
+                if (maxWidth === undefined) fillText.call(this, text, x, y)
+                else fillText.call(this, text, x, y, maxWidth)
+            }
+            const viewport = window.elevationTest.viewport.elevationViewport
+            viewport.center = 4.5
+            viewport.scale = 30
+            await window.editorTest.nextTick()
+            await new Promise<void>((resolve) =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+            )
+            CanvasRenderingContext2D.prototype.fillText = fillText
+            return [...labels.entries()]
+        })
+        expect(labels.map(([text]) => text)).toEqual(expect.arrayContaining(['-1', '0', '10']))
+        for (const [text, label] of labels) {
+            expect(label.align, text).toBe('right')
+            expect(label.anchor, text).toBe(28)
+            expect(label.right, text).toBeGreaterThan(25)
+            expect(label.right, text).toBeLessThan(29)
+            expect(Math.abs(label.middle - label.grid), text).toBeLessThanOrEqual(0.5)
+        }
+        await page.screenshot({
+            path: testInfo.outputPath('phone-elevation-numbers.png'),
+            style: '.notification { visibility:hidden }',
+        })
+    })
+})
+
 test('elevation mode replaces the chart and closes back to the previous tool', async ({ page }) => {
     await page.keyboard.press('a')
     await open(page)

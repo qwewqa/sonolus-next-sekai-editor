@@ -636,6 +636,11 @@ watchEffect(() => {
         const min = layout.elevationCenter - layout.height / 2 / layout.elevationScale
         const max = layout.elevationCenter + layout.height / 2 / layout.elevationScale
         const division = layout.elevationScale >= 60 ? 8 : layout.elevationScale >= 30 ? 4 : 1
+        ctx.save()
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'alphabetic'
+        const digits = ctx.measureText('0123456789')
+        const labelBaseline = (digits.actualBoundingBoxAscent - digits.actualBoundingBoxDescent) / 2
         for (let i = Math.ceil(min * division); i <= Math.floor(max * division); i++) {
             const y = layout.yAt(i / division)
             ctx.strokeStyle = i === 0 ? '#ffffff80' : i % division === 0 ? '#ffffff40' : '#ffffff0d'
@@ -645,15 +650,17 @@ watchEffect(() => {
             ctx.stroke()
             if (i % division === 0) {
                 ctx.fillStyle = '#ffffff80'
-                ctx.fillText(`${i / division}`, 12, y + 4)
+                ctx.fillText(`${i / division}`, 28, y + labelBaseline)
             }
         }
+        ctx.restore()
         for (
             let lane = Math.ceil(layout.laneLeft);
             lane <= layout.laneLeft + layout.width / layout.laneScale;
             lane++
         ) {
             const x = layout.xAt(lane)
+            if (x < 38) continue
             ctx.strokeStyle =
                 lane === -6 || lane === 6 ? '#ffffff80' : lane % 2 === 0 ? '#ffffff40' : '#ffffff0d'
             ctx.beginPath()
