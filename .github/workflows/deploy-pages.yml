@@ -5,6 +5,7 @@ on:
         branches: ['preview']
     pull_request:
         branches: ['preview']
+    workflow_dispatch:
 
 permissions:
     contents: read
@@ -16,6 +17,8 @@ concurrency:
 jobs:
     check:
         uses: ./.github/workflows/check.yml
+        with:
+            skip_browser_checks: ${{ github.event_name == 'push' }}
 
     build:
         needs: check
@@ -35,6 +38,7 @@ jobs:
             - name: Install browser
               run: npx playwright install --with-deps chromium
             - run: npm run test:browser
+              if: github.event_name != 'push'
             - run: npm run build:release
               env:
                   PREVIEW_SKIN_URL: ${{ vars.PREVIEW_SKIN_URL }}

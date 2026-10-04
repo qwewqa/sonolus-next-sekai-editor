@@ -6,6 +6,10 @@ on:
     pull_request:
         branches: ['main']
     workflow_call:
+        inputs:
+            skip_browser_checks:
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -30,6 +34,7 @@ jobs:
             - run: npm run test:release
 
     compatibility:
+        if: ${{ !inputs.skip_browser_checks }}
         needs: check
         runs-on: ubuntu-latest
         timeout-minutes: 15
