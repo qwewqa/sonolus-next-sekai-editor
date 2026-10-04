@@ -426,7 +426,7 @@ const controls: Pick<
     },
     dragUpdate(x, y, modifiers) {
         if (adding) {
-            const [left, size] = resize(adding.lane, xToLane(x), 1)
+            const [left, size] = resize(adding.lane, xToLane(x), 1 / view.laneDivision)
             creating.value = ghostRows([
                 previewElevationNote(
                     left,
@@ -500,7 +500,7 @@ const controls: Pick<
         }
         if (adding) {
             const current = adding
-            const [left, size] = resize(current.lane, xToLane(x), 1)
+            const [left, size] = resize(current.lane, xToLane(x), 1 / view.laneDivision)
             const elevation = snapElevation(yToElevation(y), settings.elevationSnap)
             cancel()
             createElevationNote(left, elevation, elevationBeat.value, current.slide, size)

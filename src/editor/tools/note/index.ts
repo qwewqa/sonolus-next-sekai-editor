@@ -202,7 +202,7 @@ export const note: Tool = {
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
-                const [left, size] = resize(active.lane, lane, 1)
+                const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
 
                 view.entities = {
                     hovered: [],
@@ -222,7 +222,7 @@ export const note: Tool = {
                 const [left, size] = resize(
                     active.lane,
                     lane,
-                    1,
+                    1 / view.laneDivision,
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
@@ -264,7 +264,7 @@ export const note: Tool = {
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
-                const [left, size] = resize(active.lane, lane, 1)
+                const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
 
                 add({
                     beat,
@@ -279,7 +279,7 @@ export const note: Tool = {
                 const [left, size] = resize(
                     active.lane,
                     lane,
-                    1,
+                    1 / view.laneDivision,
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),

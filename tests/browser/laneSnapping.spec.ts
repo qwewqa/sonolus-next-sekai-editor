@@ -96,6 +96,53 @@ test('note size buttons use the lane division and keep the zero-size bound', asy
     expect(sizes).toEqual([2.25, 2, 0])
 })
 
+for (const tool of ['note', 'slide', 'select'] as const) {
+    test(`${tool} drags allow note widths down to one lane division`, async ({ page }) => {
+        for (const division of [1, 4, 8]) {
+            await page.evaluate(
+                async ({ tool, division }) => {
+                    const { show, fixtures, view } = window.editorTest
+                    const chart = fixtures.interaction
+                    show(
+                        {
+                            ...chart,
+                            slides: [[{ ...chart.slides[0]![0]!, beat: 4, left: 1, size: 2 }]],
+                        },
+                        3,
+                    )
+                    view.laneDivision = division
+                    const { switchToolTo } = await import('/src/editor/tools/index.ts')
+                    switchToolTo(tool)
+                },
+                { tool, division },
+            )
+            const edge = await page.evaluate(() => window.editorTest.point(2.95, 4))
+            const end = await page.evaluate(() => window.editorTest.point(1.01, 4))
+            await page.mouse.move(edge.x, edge.y)
+            await page.mouse.down()
+            await page.mouse.move(end.x, end.y, { steps: 4 })
+            await page.mouse.up()
+            expect((await page.evaluate(() => window.editorTest.snapshot())).notes[0]!.size).toBe(
+                1 / division,
+            )
+            await page.keyboard.press('z')
+            expect((await page.evaluate(() => window.editorTest.snapshot())).notes[0]!.size).toBe(2)
+            if (tool === 'select') continue
+            const start = await page.evaluate(() => window.editorTest.point(-4, 8))
+            const finish = await page.evaluate(() => window.editorTest.point(-3.9, 8))
+            await page.mouse.move(start.x, start.y)
+            await page.mouse.down()
+            await page.mouse.move(start.x + 30, start.y)
+            await page.mouse.move(finish.x, finish.y, { steps: 4 })
+            await page.mouse.up()
+            const created = (await page.evaluate(() => window.editorTest.snapshot())).notes.find(
+                (note) => note.beat === 8,
+            )!
+            expect(created.size).toBe(1 / division)
+        }
+    })
+}
+
 test('elevation placement and resizing use the same fractional lane grid', async ({ page }) => {
     await page.evaluate(() => {
         const { show, fixtures, view } = window.editorTest
@@ -130,6 +177,21 @@ test('elevation placement and resizing use the same fractional lane grid', async
     expect((await page.evaluate(() => window.editorTest.snapshot())).notes[0]!.size).toBe(2.5)
     await page.keyboard.press('z')
     expect((await page.evaluate(() => window.editorTest.snapshot())).notes[0]!.size).toBe(2)
+    const start = await page.evaluate(async () => {
+        const { elevationLayout } = await import('/src/editor/elevation/scene.ts')
+        const layout = elevationLayout.value
+        const box = document.querySelector('canvas.elevation-canvas')!.getBoundingClientRect()
+        return { x: box.x + layout.xAt(-4), y: box.y + layout.yAt(4), dx: layout.laneScale * 0.1 }
+    })
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 30, start.y)
+    await page.mouse.move(start.x + start.dx, start.y, { steps: 4 })
+    await page.mouse.up()
+    const created = (await page.evaluate(() => window.editorTest.snapshot())).notes.find(
+        (note) => note.left === -4,
+    )!
+    expect(created.size).toBe(0.25)
 })
 
 for (const mode of ['relative', 'absolute'] as const) {

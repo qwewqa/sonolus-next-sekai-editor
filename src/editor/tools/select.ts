@@ -567,7 +567,7 @@ const toMovedNoteObject = (
         const [left, size] = resize(
             entity.left + (isLeft ? 0 : entity.size),
             entity.left + (isLeft ? entity.size : 0) + (lane - startLane),
-            1,
+            1 / view.laneDivision,
             Number.POSITIVE_INFINITY,
             entity.left + (isLeft ? entity.size : 0),
         )
