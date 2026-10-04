@@ -125,7 +125,7 @@ const onFocus = (event: FocusEvent) => {
             <div
                 ref="previewDivider"
                 class="relative z-30 shrink-0 bg-preview"
-                :class="previewPosition === 'left' ? 'w-0' : 'h-0'"
+                :class="previewPosition === 'left' ? 'preview-left-divider w-0' : 'h-0'"
             >
                 <button
                     class="preview-panel-toggle absolute flex items-center justify-center bg-button shadow-md transition-colors hover:shadow-accent active:bg-accent active:fill-button"
@@ -198,6 +198,14 @@ const onFocus = (event: FocusEvent) => {
 </template>
 
 <style scoped>
+@media (max-height: 15rem) {
+    .preview-left-divider .preview-panel-toggle {
+        top: 0;
+        height: clamp(1rem, calc(100dvh - 5.5rem), 4rem);
+        transform: none;
+    }
+}
+
 .preview-tab-over-title :deep(.elevation-header strong) {
     max-width: calc(50% - 1.5rem);
     overflow: hidden;

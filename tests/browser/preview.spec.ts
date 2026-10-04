@@ -995,6 +995,7 @@ test('a tiny left preview opens settings beside the bar without hiding its clock
             hit: [
                 ...document.querySelectorAll('.preview-transport button'),
                 document.querySelector('.preview-controls button')!,
+                document.querySelector('.preview-panel-toggle')!,
             ].map((button) => {
                 const box = button.getBoundingClientRect()
                 const front = document.elementFromPoint(
@@ -1008,10 +1009,14 @@ test('a tiny left preview opens settings beside the bar without hiding its clock
     expect(geometry.right).toBeLessThanOrEqual(346)
     expect(geometry.bottom).toBeLessThanOrEqual(116)
     expect(geometry.clockClear).toBe(true)
-    expect(geometry.hit).toEqual(Array(8).fill(true))
+    expect(geometry.hit).toEqual(Array(9).fill(true))
     const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
     await antialias.uncheck()
     await expect(antialias).not.toBeChecked()
+    await page.locator('.preview-panel-toggle').click()
+    await expect(page.locator('.preview')).toHaveCount(0)
+    await page.locator('.preview-panel-toggle').click()
+    await expect(page.locator('.preview')).toBeVisible()
 })
 
 test('preview restores lost contexts, uploads each atlas once and releases decoded resources', async ({
