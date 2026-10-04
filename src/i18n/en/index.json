@@ -47,6 +47,14 @@
             "title": "Deselect",
             "deselected": "Deselected all objects"
         },
+        "laneLimits": {
+            "none": "No Lane Limit",
+            "six": "Limit to ±6 Lanes",
+            "custom": "Custom Lane Limit",
+            "maximum": "Maximum Lane (±)",
+            "limited": "Lane limit: ±{0}",
+            "unlimited": "No lane limit"
+        },
         "laneDivisions": {
             "title": "1/{0} Lane Division",
             "switched": "Switched to 1/{0} lane division",

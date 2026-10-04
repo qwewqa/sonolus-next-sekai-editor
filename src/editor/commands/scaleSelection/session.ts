@@ -7,10 +7,12 @@ import {
     setPreviewEdit,
     type PreviewEdit,
 } from '../../../preview/edit'
+import { settings } from '../../../settings'
 import type { State } from '../../../state'
 import { hasSameChartData } from '../../../state/data'
 import type { Entity } from '../../../state/entities'
 import { isEditableEntity, type EditableEntity } from '../../../state/operations/editable'
+import { getMaterializedNotePositions } from '../../../state/operations/notePositions'
 import { scaleSelection } from '../../../state/operations/scaleSelection'
 import {
     canScaleSelection,
@@ -21,8 +23,11 @@ import {
     getTranslatedSelectionValues,
     type ScaleAxis,
 } from '../../../state/operations/scaleValues'
+import { transformSelection } from '../../../state/operations/transformSelection'
 import { translateSelection } from '../../../state/operations/translateSelection'
 import { interpolate } from '../../../utils/interpolate'
+import { clamp } from '../../../utils/math'
+import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { toolName } from '../../tools/state'
 import { view } from '../../view'
@@ -39,6 +44,9 @@ export type ScalingSession = {
 }
 
 type ScalingDrag = {
+    baseline: EditableEntity
+    bounds: { min: number; max: number }
+    attached: boolean
     id: number
     source: State
     value: number
@@ -272,6 +280,10 @@ export const beginScalingDrag = (entity: EditableEntity, value: number, edge?: '
     )
     const { min, max } = extrema(source, session.axis)
     const bounds = getScaleBounds(currentEntity, session.axis)
+    const materialized =
+        settings.maxLane > 0 && session.axis === 'width' && currentEntity.type === 'note'
+            ? getMaterializedNotePositions(source, [currentEntity]).get(currentEntity)
+            : undefined
     const entityValue =
         session.axis === 'width' && edge ? bounds[edge] : getScaleValue(currentEntity, session.axis)
     if (!(max > min) || !Number.isFinite(entityValue)) return false
@@ -283,6 +295,11 @@ export const beginScalingDrag = (entity: EditableEntity, value: number, edge?: '
             ? edge !== undefined && entityValue !== anchor
             : entityValue === min || entityValue === max)
     drag = {
+        baseline,
+        bounds: materialized
+            ? { min: materialized.left, max: materialized.left + materialized.size }
+            : getScaleBounds(currentEntity, 'width'),
+        attached: materialized !== undefined,
         id: session.id,
         source,
         value,
@@ -310,11 +327,38 @@ export const updateScalingDrag = (value: number) => {
         !sourceIsCurrent(session)
     )
         return false
-    if (active.lastValue === value) return true
-    const delta = value - active.value
+    let delta = value - active.value
+    if (delta === 0 && active.lastValue === undefined) return true
     const source = active.source
     const selected = source.selectedEntities
     const axis = session.axis
+    if (axis === 'width' && settings.maxLane > 0) {
+        if (active.endpoint) {
+            delta =
+                clamp(active.entityValue + delta, -settings.maxLane, settings.maxLane) -
+                active.entityValue
+        } else if (active.attached) {
+            const constrained = constrainLaneObject({
+                left: active.bounds.min + delta,
+                size: active.bounds.max - active.bounds.min,
+            })
+            delta = constrained.left - active.bounds.min
+        }
+    }
+    const effectiveValue = active.value + delta
+    if (active.lastValue === effectiveValue) return true
+    const constrainDraft = (result: State) => {
+        if (!(settings.maxLane > 0) || active.attached) return result
+        mapDraftEntities(result)
+        const focus = draftByBaseline.get(active.baseline)
+        if (!focus) return result
+        const constrained = constrainLaneObject(focus, {
+            resizing: axis === 'width' && active.endpoint,
+        })
+        return constrained === focus
+            ? result
+            : transformSelection(result, result.selectedEntities, new Map([[focus, constrained]]))
+    }
     if (active.endpoint) {
         const anchor = active.anchor
         const ratio =
@@ -336,9 +380,12 @@ export const updateScalingDrag = (value: number) => {
         )
             return false
         anchorSide = active.entityValue < active.anchor ? 'max' : 'min'
-        active.lastValue = value
+        active.lastValue = effectiveValue
         return publishDraft(
-            () => (ratio === 1 ? source : scaleSelection(source, selected, axis, ratio, anchor)),
+            () =>
+                constrainDraft(
+                    ratio === 1 ? source : scaleSelection(source, selected, axis, ratio, anchor),
+                ),
             factor,
         )
     }
@@ -352,9 +399,12 @@ export const updateScalingDrag = (value: number) => {
         )
     )
         return false
-    active.lastValue = value
+    active.lastValue = effectiveValue
     return publishDraft(
-        () => (delta === 0 ? source : translateSelection(source, selected, axis, delta)),
+        () =>
+            constrainDraft(
+                delta === 0 ? source : translateSelection(source, selected, axis, delta),
+            ),
         active.factor,
     )
 }

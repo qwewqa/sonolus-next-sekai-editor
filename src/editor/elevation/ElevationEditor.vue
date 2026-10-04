@@ -25,6 +25,7 @@ import { cancelTouchControls } from '../controls/touch'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { closeContextMenu, contextMenu } from '../contextMenu'
+import { constrainLaneObject } from '../laneLimits'
 import { isSidebarVisible } from '../sidebars'
 import { panelTools, tools, toolName, type Tool } from '../tools'
 import { applyBrushToEntities } from '../tools/brush'
@@ -144,6 +145,9 @@ const availableCommands: CommandName[] = [
     'laneDivision12',
     'laneDivision16',
     'laneDivisionCustom',
+    'laneLimitNone',
+    'laneLimitSix',
+    'laneLimitCustom',
     'zoomXIn',
     'zoomXOut',
     'zoomYIn',
@@ -243,11 +247,23 @@ const edit = (active: NonNullable<typeof drag>) => {
                       active.movingEdge,
                   )
                 : [note.left + active.deltaLane, note.size]
-            const replacement = editSelectedNote(transaction, note, {
-                left,
-                size,
-                elevation: note.elevation + active.deltaElevation,
-            })[0]
+            const replacement = editSelectedNote(
+                transaction,
+                note,
+                constrainLaneObject(
+                    {
+                        left,
+                        size,
+                        elevation: note.elevation + active.deltaElevation,
+                    },
+                    {
+                        enabled:
+                            note === active.row.note &&
+                            (active.deltaLane !== 0 || active.deltaElevation !== 0),
+                        resizing: active.resizing,
+                    },
+                ),
+            )[0]
             return replacement ? [[note, replacement] as const] : []
         }),
     )

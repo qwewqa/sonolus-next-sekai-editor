@@ -15,6 +15,7 @@ import { addNote } from '../../../state/mutations/slides/note'
 import { editSelectedNote } from '../../../state/operations/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
@@ -79,11 +80,14 @@ export const note: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toNoteEntity(createSlideId(), {
-                        beat,
-                        left: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toNoteEntity(
+                        createSlideId(),
+                        constrainLaneObject({
+                            beat,
+                            left: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -138,11 +142,13 @@ export const note: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                left: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    left: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -207,12 +213,18 @@ export const note: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toNoteEntity(createSlideId(), {
-                            beat,
-                            ...getPropertiesFromSelection(),
-                            left,
-                            size,
-                        }),
+                        toNoteEntity(
+                            createSlideId(),
+                            constrainLaneObject(
+                                {
+                                    beat,
+                                    ...getPropertiesFromSelection(),
+                                    left,
+                                    size,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -227,7 +239,10 @@ export const note: Tool = {
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
                 )
-                const object = { ...active.entity, left, size }
+                const object = constrainLaneObject(
+                    { ...active.entity, left, size },
+                    { resizing: true },
+                )
 
                 view.entities = {
                     hovered: [],
@@ -238,11 +253,11 @@ export const note: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
-                const object = {
+                const object = constrainLaneObject({
                     ...active.entity,
                     beat,
                     left: active.entity.left + offset(active.lane, lane, active.entity.left),
-                }
+                })
 
                 view.entities = {
                     hovered: [],
@@ -266,12 +281,17 @@ export const note: Tool = {
                 const beat = yToValidBeat(y)
                 const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
 
-                add({
-                    beat,
-                    ...getPropertiesFromSelection(),
-                    left,
-                    size,
-                })
+                add(
+                    constrainLaneObject(
+                        {
+                            beat,
+                            ...getPropertiesFromSelection(),
+                            left,
+                            size,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
@@ -285,21 +305,30 @@ export const note: Tool = {
                         (active.lane === active.entity.left ? active.entity.size : 0),
                 )
 
-                edit(active.entity, {
-                    ...active.entity,
-                    left,
-                    size,
-                })
+                edit(
+                    active.entity,
+                    constrainLaneObject(
+                        {
+                            ...active.entity,
+                            left,
+                            size,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

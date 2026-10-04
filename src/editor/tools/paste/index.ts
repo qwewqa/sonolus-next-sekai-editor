@@ -53,6 +53,7 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import type { Modifiers } from '../../controls/gestures/pointer'
+import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { alignLane, view, xToLane, yToBeatOffset } from '../../view'
 import { getOnlyEntityType } from '../entityType'
@@ -406,17 +407,18 @@ const toMovedTimeScaleObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): TimeScaleObject => ({
-    ...entity,
-    groupId: view.groupId ?? entity.groupId,
-    beat,
-    editorLane:
-        onlyType === 'timeScale'
-            ? flip
-                ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
-                : entity.editorLane - alignLane(startLane) + alignLane(lane)
-            : entity.editorLane,
-})
+): TimeScaleObject =>
+    constrainLaneObject({
+        ...entity,
+        groupId: view.groupId ?? entity.groupId,
+        beat,
+        editorLane:
+            onlyType === 'timeScale'
+                ? flip
+                    ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
+                    : entity.editorLane - alignLane(startLane) + alignLane(lane)
+                : entity.editorLane,
+    })
 
 const toMovedCameraEventObject = (
     entity: CameraEventJointEntity,
@@ -424,15 +426,16 @@ const toMovedCameraEventObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): CameraEventObject => ({
-    ...entity,
-    beat,
-    cameraLeft: flip
-        ? -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane)
-        : entity.cameraLeft - alignLane(startLane) + alignLane(lane),
-    cameraZoomTargetLane: flip ? -entity.cameraZoomTargetLane : entity.cameraZoomTargetLane,
-    cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
-})
+): CameraEventObject =>
+    constrainLaneObject({
+        ...entity,
+        beat,
+        cameraLeft: flip
+            ? -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane)
+            : entity.cameraLeft - alignLane(startLane) + alignLane(lane),
+        cameraZoomTargetLane: flip ? -entity.cameraZoomTargetLane : entity.cameraZoomTargetLane,
+        cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
+    })
 
 const toMovedStageMaskEventObject = (
     entity: StageMaskEventJointEntity,
@@ -440,14 +443,15 @@ const toMovedStageMaskEventObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): StageMaskEventObject => ({
-    ...entity,
-    stageId: view.stageId ?? entity.stageId,
-    beat,
-    maskLeft: flip
-        ? -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane)
-        : entity.maskLeft - alignLane(startLane) + alignLane(lane),
-})
+): StageMaskEventObject =>
+    constrainLaneObject({
+        ...entity,
+        stageId: view.stageId ?? entity.stageId,
+        beat,
+        maskLeft: flip
+            ? -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane)
+            : entity.maskLeft - alignLane(startLane) + alignLane(lane),
+    })
 
 const toMovedStagePivotEventObject = (
     entity: StagePivotEventJointEntity,
@@ -455,14 +459,15 @@ const toMovedStagePivotEventObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): StagePivotEventObject => ({
-    ...entity,
-    stageId: view.stageId ?? entity.stageId,
-    beat,
-    pivotLane: flip
-        ? -entity.pivotLane + alignLane(startLane) + alignLane(lane)
-        : entity.pivotLane - alignLane(startLane) + alignLane(lane),
-})
+): StagePivotEventObject =>
+    constrainLaneObject({
+        ...entity,
+        stageId: view.stageId ?? entity.stageId,
+        beat,
+        pivotLane: flip
+            ? -entity.pivotLane + alignLane(startLane) + alignLane(lane)
+            : entity.pivotLane - alignLane(startLane) + alignLane(lane),
+    })
 
 const toMovedStageStyleEventObject = (
     onlyType: EntityType | undefined,
@@ -471,19 +476,20 @@ const toMovedStageStyleEventObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): StageStyleEventObject => ({
-    ...entity,
-    stageId: view.stageId ?? entity.stageId,
-    beat,
-    editorLane:
-        onlyType === 'stageStyleEventJoint'
-            ? flip
-                ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
-                : entity.editorLane - alignLane(startLane) + alignLane(lane)
-            : entity.editorLane,
-    leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
-    rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
-})
+): StageStyleEventObject =>
+    constrainLaneObject({
+        ...entity,
+        stageId: view.stageId ?? entity.stageId,
+        beat,
+        editorLane:
+            onlyType === 'stageStyleEventJoint'
+                ? flip
+                    ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
+                    : entity.editorLane - alignLane(startLane) + alignLane(lane)
+                : entity.editorLane,
+        leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
+        rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
+    })
 
 const toMovedStageTransformEventObject = (
     entity: StageTransformEventJointEntity,
@@ -491,15 +497,16 @@ const toMovedStageTransformEventObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): StageTransformEventObject => ({
-    ...entity,
-    stageId: view.stageId ?? entity.stageId,
-    beat,
-    rotation: flip ? -entity.rotation : entity.rotation,
-    xTranslation: flip
-        ? -entity.xTranslation + alignLane(startLane) + alignLane(lane)
-        : entity.xTranslation - alignLane(startLane) + alignLane(lane),
-})
+): StageTransformEventObject =>
+    constrainLaneObject({
+        ...entity,
+        stageId: view.stageId ?? entity.stageId,
+        beat,
+        rotation: flip ? -entity.rotation : entity.rotation,
+        xTranslation: flip
+            ? -entity.xTranslation + alignLane(startLane) + alignLane(lane)
+            : entity.xTranslation - alignLane(startLane) + alignLane(lane),
+    })
 
 const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
     none: 'none',
@@ -517,16 +524,23 @@ export const toMovedNoteObject = (
     lane: number,
     beat: number,
     flip: boolean,
-): NoteObject => ({
-    ...entity,
-    groupId: view.groupId ?? entity.groupId,
-    stageId: view.stageId ?? entity.stageId,
-    beat,
-    left: flip
-        ? -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane)
-        : entity.left - alignLane(startLane) + alignLane(lane),
-    flickDirection: flip ? flippedFlickDirections[entity.flickDirection] : entity.flickDirection,
-})
+    limited = true,
+): NoteObject =>
+    constrainLaneObject(
+        {
+            ...entity,
+            groupId: view.groupId ?? entity.groupId,
+            stageId: view.stageId ?? entity.stageId,
+            beat,
+            left: flip
+                ? -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane)
+                : entity.left - alignLane(startLane) + alignLane(lane),
+            flickDirection: flip
+                ? flippedFlickDirections[entity.flickDirection]
+                : entity.flickDirection,
+        },
+        { enabled: limited },
+    )
 
 type Create<T extends Entity> = (
     onlyType: EntityType | undefined,

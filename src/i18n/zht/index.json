@@ -47,6 +47,14 @@
       "title": "取消選擇",
       "deselected": "已取消選取所有對象"
     },
+    "laneLimits": {
+      "none": "不限制軌道",
+      "six": "限制為 ±6 軌道",
+      "custom": "自訂軌道限制",
+      "maximum": "最大軌道（±）",
+      "limited": "軌道限制：±{0}",
+      "unlimited": "不限制軌道"
+    },
     "laneDivisions": {
       "title": "1/{0} 軌道細分",
       "switched": "已切換到 1/{0} 軌道細分",

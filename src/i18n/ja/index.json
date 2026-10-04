@@ -47,6 +47,14 @@
       "title": "選択解除",
       "deselected": "すべてのオブジェクトを選択解除しました"
     },
+    "laneLimits": {
+      "none": "レーン制限なし",
+      "six": "±6レーンに制限",
+      "custom": "カスタムレーン制限",
+      "maximum": "最大レーン（±）",
+      "limited": "レーン制限：±{0}",
+      "unlimited": "レーン制限なし"
+    },
     "laneDivisions": {
       "title": "レーン分割 1/{0}",
       "switched": "レーン分割を1/{0}に変更しました",

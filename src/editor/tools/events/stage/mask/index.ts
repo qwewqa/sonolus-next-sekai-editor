@@ -16,6 +16,7 @@ import { addStageMaskEventJoint } from '../../../../../state/mutations/events/st
 import { editSelectedStageMaskEvent } from '../../../../../state/operations/events/stage/mask'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
+import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import { showToolModal } from '../../../../toolModals'
@@ -75,11 +76,13 @@ export const stageMaskEvent: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toStageMaskEventJointEntity({
-                        beat,
-                        maskLeft: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toStageMaskEventJointEntity(
+                        constrainLaneObject({
+                            beat,
+                            maskLeft: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -156,11 +159,13 @@ export const stageMaskEvent: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                maskLeft: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    maskLeft: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -245,12 +250,17 @@ export const stageMaskEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageMaskEventJointEntity({
-                            beat,
-                            ...getPropertiesFromSelection(),
-                            maskLeft,
-                            maskSize,
-                        }),
+                        toStageMaskEventJointEntity(
+                            constrainLaneObject(
+                                {
+                                    beat,
+                                    ...getPropertiesFromSelection(),
+                                    maskLeft,
+                                    maskSize,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -269,11 +279,16 @@ export const stageMaskEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageMaskEventJointEntity({
-                            ...active.entity,
-                            maskLeft,
-                            maskSize,
-                        }),
+                        toStageMaskEventJointEntity(
+                            constrainLaneObject(
+                                {
+                                    ...active.entity,
+                                    maskLeft,
+                                    maskSize,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 break
@@ -284,13 +299,15 @@ export const stageMaskEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageMaskEventJointEntity({
-                            ...active.entity,
-                            beat,
-                            maskLeft:
-                                active.entity.maskLeft +
-                                offset(active.lane, lane, active.entity.maskLeft),
-                        }),
+                        toStageMaskEventJointEntity(
+                            constrainLaneObject({
+                                ...active.entity,
+                                beat,
+                                maskLeft:
+                                    active.entity.maskLeft +
+                                    offset(active.lane, lane, active.entity.maskLeft),
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -324,12 +341,17 @@ export const stageMaskEvent: Tool = {
                 const beat = yToValidBeat(y)
                 const [maskLeft, maskSize] = resize(active.lane, lane)
 
-                add({
-                    beat,
-                    ...getPropertiesFromSelection(),
-                    maskLeft,
-                    maskSize,
-                })
+                add(
+                    constrainLaneObject(
+                        {
+                            beat,
+                            ...getPropertiesFromSelection(),
+                            maskLeft,
+                            maskSize,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
@@ -343,22 +365,32 @@ export const stageMaskEvent: Tool = {
                         (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
                 )
 
-                edit(active.entity, {
-                    ...active.entity,
-                    maskLeft,
-                    maskSize,
-                })
+                edit(
+                    active.entity,
+                    constrainLaneObject(
+                        {
+                            ...active.entity,
+                            maskLeft,
+                            maskSize,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    maskLeft:
-                        active.entity.maskLeft + offset(active.lane, lane, active.entity.maskLeft),
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        maskLeft:
+                            active.entity.maskLeft +
+                            offset(active.lane, lane, active.entity.maskLeft),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

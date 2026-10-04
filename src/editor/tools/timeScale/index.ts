@@ -17,6 +17,7 @@ import {
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
@@ -55,16 +56,18 @@ export const timeScale: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toTimeScaleEntity({
-                        groupId: view.groupId ?? defaultGroupId.value,
-                        beat,
-                        editorLane: lane,
-                        timeScale: 1,
-                        skip: 0,
-                        timeScaleEase: 'none',
-                        timeScaleTransition: 'timeScale',
-                        hideNotes: false,
-                    }),
+                    toTimeScaleEntity(
+                        constrainLaneObject({
+                            groupId: view.groupId ?? defaultGroupId.value,
+                            beat,
+                            editorLane: lane,
+                            timeScale: 1,
+                            skip: 0,
+                            timeScaleEase: 'none',
+                            timeScaleTransition: 'timeScale',
+                            hideNotes: false,
+                        }),
+                    ),
                 ],
             }
         }
@@ -98,28 +101,31 @@ export const timeScale: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
-                        editMoveOrReplace(entity, {
-                            groupId: entity.groupId,
-                            beat: entity.beat,
-                            editorLane: entity.editorLane,
-                            timeScale: entity.timeScale,
-                            skip: entity.skip,
-                            timeScaleTransition: entity.timeScaleTransition,
-                            ...(entity.timeScaleEase === 'none' && !entity.hideNotes
-                                ? {
-                                      timeScaleEase: 'linear',
-                                      hideNotes: false,
-                                  }
-                                : entity.timeScaleEase !== 'none' && !entity.hideNotes
-                                  ? {
-                                        timeScaleEase: 'none',
-                                        hideNotes: true,
-                                    }
-                                  : {
-                                        timeScaleEase: 'none',
-                                        hideNotes: false,
-                                    }),
-                        })
+                        editMoveOrReplace(
+                            entity,
+                            constrainLaneObject({
+                                groupId: entity.groupId,
+                                beat: entity.beat,
+                                editorLane: entity.editorLane,
+                                timeScale: entity.timeScale,
+                                skip: entity.skip,
+                                timeScaleTransition: entity.timeScaleTransition,
+                                ...(entity.timeScaleEase === 'none' && !entity.hideNotes
+                                    ? {
+                                          timeScaleEase: 'linear',
+                                          hideNotes: false,
+                                      }
+                                    : entity.timeScaleEase !== 'none' && !entity.hideNotes
+                                      ? {
+                                            timeScaleEase: 'none',
+                                            hideNotes: true,
+                                        }
+                                      : {
+                                            timeScaleEase: 'none',
+                                            hideNotes: false,
+                                        }),
+                            }),
+                        )
                     } else {
                         void showToolModal(TimeScalePropertiesModal, {})
                     }
@@ -138,7 +144,7 @@ export const timeScale: Tool = {
                 }
             }
         } else {
-            const object: TimeScaleObject = {
+            const object: TimeScaleObject = constrainLaneObject({
                 groupId: view.groupId ?? defaultGroupId.value,
                 beat,
                 editorLane: lane,
@@ -147,7 +153,7 @@ export const timeScale: Tool = {
                 timeScaleEase: 'none',
                 timeScaleTransition: 'timeScale',
                 hideNotes: false,
-            }
+            })
 
             const overlap = find(view.groupId, object.beat)
             if (overlap) {
@@ -213,16 +219,18 @@ export const timeScale: Tool = {
                     view.entities = {
                         hovered: [],
                         creating: [
-                            toTimeScaleEntity({
-                                groupId: view.groupId ?? defaultGroupId.value,
-                                beat,
-                                editorLane: lane,
-                                timeScale: 1,
-                                skip: 0,
-                                timeScaleEase: 'none',
-                                timeScaleTransition: 'timeScale',
-                                hideNotes: false,
-                            }),
+                            toTimeScaleEntity(
+                                constrainLaneObject({
+                                    groupId: view.groupId ?? defaultGroupId.value,
+                                    beat,
+                                    editorLane: lane,
+                                    timeScale: 1,
+                                    skip: 0,
+                                    timeScaleEase: 'none',
+                                    timeScaleTransition: 'timeScale',
+                                    hideNotes: false,
+                                }),
+                            ),
                         ],
                     }
                     focusEntityAtBeat(beat)
@@ -231,7 +239,7 @@ export const timeScale: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
-                const object: TimeScaleObject = {
+                const object: TimeScaleObject = constrainLaneObject({
                     groupId: active.entity.groupId,
                     beat,
                     editorLane: lane,
@@ -240,7 +248,7 @@ export const timeScale: Tool = {
                     timeScaleEase: active.entity.timeScaleEase,
                     timeScaleTransition: active.entity.timeScaleTransition,
                     hideNotes: active.entity.hideNotes,
-                }
+                })
 
                 view.entities = {
                     hovered: [],
@@ -275,7 +283,7 @@ export const timeScale: Tool = {
 
                     void showToolModal(TimeScalePropertiesModal, {})
                 } else {
-                    const object: TimeScaleObject = {
+                    const object: TimeScaleObject = constrainLaneObject({
                         groupId: view.groupId ?? defaultGroupId.value,
                         beat,
                         editorLane: lane,
@@ -284,7 +292,7 @@ export const timeScale: Tool = {
                         timeScaleEase: 'none',
                         timeScaleTransition: 'timeScale',
                         hideNotes: false,
-                    }
+                    })
 
                     const overlap = find(view.groupId, object.beat)
                     if (overlap) {
@@ -301,16 +309,19 @@ export const timeScale: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                editMoveOrReplace(active.entity, {
-                    groupId: active.entity.groupId,
-                    beat,
-                    editorLane: lane,
-                    timeScale: active.entity.timeScale,
-                    skip: active.entity.skip,
-                    timeScaleEase: active.entity.timeScaleEase,
-                    timeScaleTransition: active.entity.timeScaleTransition,
-                    hideNotes: active.entity.hideNotes,
-                })
+                editMoveOrReplace(
+                    active.entity,
+                    constrainLaneObject({
+                        groupId: active.entity.groupId,
+                        beat,
+                        editorLane: lane,
+                        timeScale: active.entity.timeScale,
+                        skip: active.entity.skip,
+                        timeScaleEase: active.entity.timeScaleEase,
+                        timeScaleTransition: active.entity.timeScaleTransition,
+                        hideNotes: active.entity.hideNotes,
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

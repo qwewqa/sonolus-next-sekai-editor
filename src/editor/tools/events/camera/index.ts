@@ -15,6 +15,7 @@ import { addCameraEventJoint } from '../../../../state/mutations/events/camera'
 import { editSelectedCameraEvent } from '../../../../state/operations/events/camera'
 import { createTransaction, type Transaction } from '../../../../state/transaction'
 import { interpolate } from '../../../../utils/interpolate'
+import { constrainLaneObject } from '../../../laneLimits'
 import { notify } from '../../../notification'
 import { isSidebarVisible } from '../../../sidebars'
 import { showToolModal } from '../../../toolModals'
@@ -79,11 +80,13 @@ export const cameraEvent: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toCameraEventJointEntity({
-                        beat,
-                        cameraLeft: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toCameraEventJointEntity(
+                        constrainLaneObject({
+                            beat,
+                            cameraLeft: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -160,11 +163,13 @@ export const cameraEvent: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                cameraLeft: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    cameraLeft: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -252,12 +257,17 @@ export const cameraEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toCameraEventJointEntity({
-                            beat,
-                            ...getPropertiesFromSelection(),
-                            cameraLeft,
-                            cameraSize,
-                        }),
+                        toCameraEventJointEntity(
+                            constrainLaneObject(
+                                {
+                                    beat,
+                                    ...getPropertiesFromSelection(),
+                                    cameraLeft,
+                                    cameraSize,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -276,11 +286,16 @@ export const cameraEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toCameraEventJointEntity({
-                            ...active.entity,
-                            cameraLeft,
-                            cameraSize,
-                        }),
+                        toCameraEventJointEntity(
+                            constrainLaneObject(
+                                {
+                                    ...active.entity,
+                                    cameraLeft,
+                                    cameraSize,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 break
@@ -291,13 +306,15 @@ export const cameraEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toCameraEventJointEntity({
-                            ...active.entity,
-                            beat,
-                            cameraLeft:
-                                active.entity.cameraLeft +
-                                offset(active.lane, lane, active.entity.cameraLeft),
-                        }),
+                        toCameraEventJointEntity(
+                            constrainLaneObject({
+                                ...active.entity,
+                                beat,
+                                cameraLeft:
+                                    active.entity.cameraLeft +
+                                    offset(active.lane, lane, active.entity.cameraLeft),
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -331,12 +348,17 @@ export const cameraEvent: Tool = {
                 const beat = yToValidBeat(y)
                 const [cameraLeft, cameraSize] = resize(active.lane, lane, 6, 24)
 
-                add({
-                    beat,
-                    ...getPropertiesFromSelection(),
-                    cameraLeft,
-                    cameraSize,
-                })
+                add(
+                    constrainLaneObject(
+                        {
+                            beat,
+                            ...getPropertiesFromSelection(),
+                            cameraLeft,
+                            cameraSize,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
@@ -350,23 +372,32 @@ export const cameraEvent: Tool = {
                         (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
                 )
 
-                edit(active.entity, {
-                    ...active.entity,
-                    cameraLeft,
-                    cameraSize,
-                })
+                edit(
+                    active.entity,
+                    constrainLaneObject(
+                        {
+                            ...active.entity,
+                            cameraLeft,
+                            cameraSize,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    cameraLeft:
-                        active.entity.cameraLeft +
-                        offset(active.lane, lane, active.entity.cameraLeft),
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        cameraLeft:
+                            active.entity.cameraLeft +
+                            offset(active.lane, lane, active.entity.cameraLeft),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

@@ -47,6 +47,14 @@
       "title": "Désélectionner",
       "deselected": "Tout désélectionné"
     },
+    "laneLimits": {
+      "none": "Sans limite de voie",
+      "six": "Limiter à ±6 voies",
+      "custom": "Limite de voie personnalisée",
+      "maximum": "Voie maximale (±)",
+      "limited": "Limite de voie : ±{0}",
+      "unlimited": "Sans limite de voie"
+    },
     "laneDivisions": {
       "title": "Division de voie 1/{0}",
       "switched": "Division de voie réglée sur 1/{0}",

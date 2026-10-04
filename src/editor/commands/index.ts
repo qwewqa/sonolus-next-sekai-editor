@@ -27,6 +27,7 @@ import { groupPrev } from './groups/groupPrev'
 import { help } from './help'
 import { jumpDown } from './jumps/jumpDown'
 import { jumpUp } from './jumps/jumpUp'
+import { laneLimitCustom, laneLimitNone, laneLimitSix } from './laneLimits'
 import { makeVertical } from './makeVertical'
 import { manageGroups } from './manageGroups'
 import { manageStages } from './manageStages'
@@ -80,6 +81,7 @@ import { zoomYIn } from './zooms/zoomYIn'
 import { zoomYOut } from './zooms/zoomYOut'
 
 export type Command = {
+    isActive?: () => boolean
     title: () => string
     icon: {
         is: Component
@@ -106,7 +108,6 @@ export const commands = {
     offset,
 
     select,
-    elevation,
     deselect,
     eraser,
     brush,
@@ -198,12 +199,16 @@ export const commands = {
     laneDivision12: division(12, 'lane'),
     laneDivision16: division(16, 'lane'),
     laneDivisionCustom,
+    laneLimitNone,
+    laneLimitSix,
+    laneLimitCustom,
     laneSnapping,
 
     zoomXIn,
     zoomXOut,
     zoomYIn,
     zoomYOut,
+    elevation,
 
     help,
     settings,

@@ -16,6 +16,7 @@ import { addStageTransformEventJoint } from '../../../../../state/mutations/even
 import { editSelectedStageTransformEvent } from '../../../../../state/operations/events/stage/transform'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
+import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import { showToolModal } from '../../../../toolModals'
@@ -69,11 +70,13 @@ export const stageTransformEvent: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toStageTransformEventJointEntity({
-                        beat,
-                        xTranslation: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toStageTransformEventJointEntity(
+                        constrainLaneObject({
+                            beat,
+                            xTranslation: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -151,11 +154,13 @@ export const stageTransformEvent: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                xTranslation: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    xTranslation: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -218,11 +223,13 @@ export const stageTransformEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageTransformEventJointEntity({
-                            beat,
-                            xTranslation: lane,
-                            ...getPropertiesFromSelection(),
-                        }),
+                        toStageTransformEventJointEntity(
+                            constrainLaneObject({
+                                beat,
+                                xTranslation: lane,
+                                ...getPropertiesFromSelection(),
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -234,11 +241,13 @@ export const stageTransformEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageTransformEventJointEntity({
-                            ...active.entity,
-                            beat,
-                            xTranslation: lane,
-                        }),
+                        toStageTransformEventJointEntity(
+                            constrainLaneObject({
+                                ...active.entity,
+                                beat,
+                                xTranslation: lane,
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -271,22 +280,27 @@ export const stageTransformEvent: Tool = {
             case 'add': {
                 const beat = yToValidBeat(y)
 
-                add({
-                    beat,
-                    xTranslation: lane,
-                    ...getPropertiesFromSelection(),
-                })
+                add(
+                    constrainLaneObject({
+                        beat,
+                        xTranslation: lane,
+                        ...getPropertiesFromSelection(),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    xTranslation: lane,
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        xTranslation: lane,
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

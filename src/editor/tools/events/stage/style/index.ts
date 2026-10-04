@@ -21,6 +21,7 @@ import { addStageStyleEventJoint } from '../../../../../state/mutations/events/s
 import { editSelectedStageStyleEvent } from '../../../../../state/operations/events/stage/style'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
+import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import { showToolModal } from '../../../../toolModals'
@@ -79,11 +80,13 @@ export const stageStyleEvent: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toStageStyleEventJointEntity({
-                        beat,
-                        editorLane: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toStageStyleEventJointEntity(
+                        constrainLaneObject({
+                            beat,
+                            editorLane: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -161,11 +164,13 @@ export const stageStyleEvent: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                editorLane: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    editorLane: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -228,11 +233,13 @@ export const stageStyleEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageStyleEventJointEntity({
-                            beat,
-                            editorLane: lane,
-                            ...getPropertiesFromSelection(),
-                        }),
+                        toStageStyleEventJointEntity(
+                            constrainLaneObject({
+                                beat,
+                                editorLane: lane,
+                                ...getPropertiesFromSelection(),
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -244,11 +251,13 @@ export const stageStyleEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStageStyleEventJointEntity({
-                            ...active.entity,
-                            beat,
-                            editorLane: lane,
-                        }),
+                        toStageStyleEventJointEntity(
+                            constrainLaneObject({
+                                ...active.entity,
+                                beat,
+                                editorLane: lane,
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -281,22 +290,27 @@ export const stageStyleEvent: Tool = {
             case 'add': {
                 const beat = yToValidBeat(y)
 
-                add({
-                    beat,
-                    editorLane: lane,
-                    ...getPropertiesFromSelection(),
-                })
+                add(
+                    constrainLaneObject({
+                        beat,
+                        editorLane: lane,
+                        ...getPropertiesFromSelection(),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    editorLane: lane,
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        editorLane: lane,
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

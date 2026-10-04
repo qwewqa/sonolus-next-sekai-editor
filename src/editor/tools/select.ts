@@ -63,6 +63,7 @@ import {
     type TransactionOptions,
 } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
+import { constrainLaneObject } from '../laneLimits'
 import { notify } from '../notification'
 import {
     focusEntityAtBeat,
@@ -429,14 +430,18 @@ const toMovedTimeScaleObject = (
     lane: number,
     beat: number,
     focus: Entity,
-): TimeScaleObject => ({
-    ...entity,
-    beat,
-    editorLane:
-        onlyType === 'timeScale'
-            ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
-            : entity.editorLane,
-})
+): TimeScaleObject =>
+    constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            editorLane:
+                onlyType === 'timeScale'
+                    ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
+                    : entity.editorLane,
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 
 const toMovedCameraEventObject = (
     onlyType: EntityType | undefined,
@@ -462,18 +467,27 @@ const toMovedCameraEventObject = (
                 (startLane >= focus.cameraLeft + focus.cameraSize / 2 ? entity.cameraSize : 0),
         )
 
-        return {
-            ...entity,
-            cameraLeft,
-            cameraSize,
-        }
+        return constrainLaneObject(
+            {
+                ...entity,
+                cameraLeft,
+                cameraSize,
+            },
+            {
+                enabled: entity === focus && (lane !== startLane || beat !== entity.beat),
+                resizing: true,
+            },
+        )
     }
 
-    return {
-        ...entity,
-        beat,
-        cameraLeft: entity.cameraLeft + offset(startLane, lane, getLaneAnchor(focus)),
-    }
+    return constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            cameraLeft: entity.cameraLeft + offset(startLane, lane, getLaneAnchor(focus)),
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 }
 
 const toMovedStageMaskEventObject = (
@@ -499,18 +513,27 @@ const toMovedStageMaskEventObject = (
                 (startLane >= focus.maskLeft + focus.maskSize / 2 ? entity.maskSize : 0),
         )
 
-        return {
-            ...entity,
-            maskLeft,
-            maskSize,
-        }
+        return constrainLaneObject(
+            {
+                ...entity,
+                maskLeft,
+                maskSize,
+            },
+            {
+                enabled: entity === focus && (lane !== startLane || beat !== entity.beat),
+                resizing: true,
+            },
+        )
     }
 
-    return {
-        ...entity,
-        beat,
-        maskLeft: entity.maskLeft + offset(startLane, lane, getLaneAnchor(focus)),
-    }
+    return constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            maskLeft: entity.maskLeft + offset(startLane, lane, getLaneAnchor(focus)),
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 }
 
 const toMovedStagePivotEventObject = (
@@ -519,11 +542,15 @@ const toMovedStagePivotEventObject = (
     lane: number,
     beat: number,
     focus: Entity,
-): StagePivotEventObject => ({
-    ...entity,
-    beat,
-    pivotLane: entity.pivotLane + offset(startLane, lane, getLaneAnchor(focus)),
-})
+): StagePivotEventObject =>
+    constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            pivotLane: entity.pivotLane + offset(startLane, lane, getLaneAnchor(focus)),
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 
 const toMovedStageStyleEventObject = (
     onlyType: EntityType | undefined,
@@ -532,14 +559,18 @@ const toMovedStageStyleEventObject = (
     lane: number,
     beat: number,
     focus: Entity,
-): StageStyleEventObject => ({
-    ...entity,
-    beat,
-    editorLane:
-        onlyType === 'stageStyleEventJoint'
-            ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
-            : entity.editorLane,
-})
+): StageStyleEventObject =>
+    constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            editorLane:
+                onlyType === 'stageStyleEventJoint'
+                    ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
+                    : entity.editorLane,
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 
 const toMovedStageTransformEventObject = (
     entity: StageTransformEventJointEntity,
@@ -547,11 +578,15 @@ const toMovedStageTransformEventObject = (
     lane: number,
     beat: number,
     focus: Entity,
-): StageTransformEventObject => ({
-    ...entity,
-    beat,
-    xTranslation: entity.xTranslation + offset(startLane, lane, getLaneAnchor(focus)),
-})
+): StageTransformEventObject =>
+    constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            xTranslation: entity.xTranslation + offset(startLane, lane, getLaneAnchor(focus)),
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 
 const toMovedNoteObject = (
     onlyType: EntityType | undefined,
@@ -572,18 +607,27 @@ const toMovedNoteObject = (
             entity.left + (isLeft ? entity.size : 0),
         )
 
-        return {
-            ...entity,
-            left,
-            size,
-        }
+        return constrainLaneObject(
+            {
+                ...entity,
+                left,
+                size,
+            },
+            {
+                enabled: entity === focus && (lane !== startLane || beat !== entity.beat),
+                resizing: true,
+            },
+        )
     }
 
-    return {
-        ...entity,
-        beat,
-        left: entity.left + offset(startLane, lane, getLaneAnchor(focus)),
-    }
+    return constrainLaneObject(
+        {
+            ...entity,
+            beat,
+            left: entity.left + offset(startLane, lane, getLaneAnchor(focus)),
+        },
+        { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
+    )
 }
 
 type Create<T extends Entity> = (

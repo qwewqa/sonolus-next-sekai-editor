@@ -8,6 +8,7 @@ import { addNote } from '../../state/mutations/slides/note'
 import { createTransaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
 import type { Modifiers } from '../controls/gestures/pointer'
+import { constrainLaneObject } from '../laneLimits'
 import { notify } from '../notification'
 import { getNotePropertiesFromSelection } from '../tools/note'
 import { getPasteNoteEntities, pasteAtPosition, toMovedNoteObject } from '../tools/paste'
@@ -26,13 +27,19 @@ export const previewElevationNote = (
         ? getSlidePropertiesFromSelection(beat)
         : getNotePropertiesFromSelection()
     const stage = getElevationStageProps(properties.stageId, beat)
-    return toNoteEntity(asSlide ? (getSelectedSlideId() ?? createSlideId()) : createSlideId(), {
-        ...properties,
-        beat,
-        left: lane - stage.pivotLane,
-        elevation: elevation - stage.elevation,
-        size: size ?? properties.size,
-    })
+    return toNoteEntity(
+        asSlide ? (getSelectedSlideId() ?? createSlideId()) : createSlideId(),
+        constrainLaneObject(
+            {
+                ...properties,
+                beat,
+                left: lane - stage.pivotLane,
+                elevation: elevation - stage.elevation,
+                size: size ?? properties.size,
+            },
+            { resizing: size !== undefined },
+        ),
+    )
 }
 
 export const createElevationNote = (
@@ -69,9 +76,18 @@ const getElevationPaste = (lane: number, elevation: number, beat: number, modifi
     const mapNote = (note: NoteEntity, destinationBeat: number) => {
         const source = getElevationStageProps(note.stageId, note.beat)
         const destination = getElevationStageProps(view.stageId ?? note.stageId, destinationBeat)
-        return {
+        const moved = toMovedNoteObject(
+            note,
+            data.lane,
+            lane,
+            destinationBeat,
+            modifiers.shift,
+            false,
+        )
+        return constrainLaneObject({
+            ...moved,
             left:
-                toMovedNoteObject(note, data.lane, lane, destinationBeat, modifiers.shift).left +
+                moved.left +
                 direction * (source.pivotLane - firstStage.pivotLane) -
                 destination.pivotLane,
             elevation:
@@ -80,7 +96,7 @@ const getElevationPaste = (lane: number, elevation: number, beat: number, modifi
                 elevation -
                 baseElevation -
                 destination.elevation,
-        }
+        })
     }
     return { notes, mapNote, beatOffset: beat - data.beat, startLane: data.lane }
 }
@@ -97,18 +113,7 @@ export const previewElevationPaste = (
         const destinationBeat = note.beat + paste.beatOffset
         return destinationBeat < 0
             ? []
-            : [
-                  toNoteEntity(note.slideId, {
-                      ...toMovedNoteObject(
-                          note,
-                          paste.startLane,
-                          lane,
-                          destinationBeat,
-                          modifiers.shift,
-                      ),
-                      ...paste.mapNote(note, destinationBeat),
-                  }),
-              ]
+            : [toNoteEntity(note.slideId, paste.mapNote(note, destinationBeat))]
     })
 }
 

@@ -16,6 +16,7 @@ import { addNote, replaceNote } from '../../../state/mutations/slides/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
+import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
@@ -80,11 +81,14 @@ export const slide: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toNoteEntity(getSelectedSlideId() ?? createSlideId(), {
-                        beat,
-                        left: lane,
-                        ...getPropertiesFromSelection(beat),
-                    }),
+                    toNoteEntity(
+                        getSelectedSlideId() ?? createSlideId(),
+                        constrainLaneObject({
+                            beat,
+                            left: lane,
+                            ...getPropertiesFromSelection(beat),
+                        }),
+                    ),
                 ],
             }
         }
@@ -139,11 +143,14 @@ export const slide: Tool = {
                 }
             }
         } else {
-            add(getSelectedSlideId() ?? createSlideId(), {
-                beat,
-                left: lane,
-                ...getPropertiesFromSelection(beat),
-            })
+            add(
+                getSelectedSlideId() ?? createSlideId(),
+                constrainLaneObject({
+                    beat,
+                    left: lane,
+                    ...getPropertiesFromSelection(beat),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -208,12 +215,18 @@ export const slide: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toNoteEntity(getSelectedSlideId() ?? createSlideId(), {
-                            beat,
-                            ...getPropertiesFromSelection(beat),
-                            left,
-                            size,
-                        }),
+                        toNoteEntity(
+                            getSelectedSlideId() ?? createSlideId(),
+                            constrainLaneObject(
+                                {
+                                    beat,
+                                    ...getPropertiesFromSelection(beat),
+                                    left,
+                                    size,
+                                },
+                                { resizing: true },
+                            ),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -228,7 +241,10 @@ export const slide: Tool = {
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
                 )
-                const object = { ...active.entity, left, size }
+                const object = constrainLaneObject(
+                    { ...active.entity, left, size },
+                    { resizing: true },
+                )
 
                 view.entities = {
                     hovered: [],
@@ -239,11 +255,11 @@ export const slide: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
-                const object = {
+                const object = constrainLaneObject({
                     ...active.entity,
                     beat,
                     left: active.entity.left + offset(active.lane, lane, active.entity.left),
-                }
+                })
 
                 view.entities = {
                     hovered: [],
@@ -267,12 +283,18 @@ export const slide: Tool = {
                 const beat = yToValidBeat(y)
                 const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
 
-                add(getSelectedSlideId() ?? createSlideId(), {
-                    beat,
-                    ...getPropertiesFromSelection(beat),
-                    left,
-                    size,
-                })
+                add(
+                    getSelectedSlideId() ?? createSlideId(),
+                    constrainLaneObject(
+                        {
+                            beat,
+                            ...getPropertiesFromSelection(beat),
+                            left,
+                            size,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
@@ -286,21 +308,30 @@ export const slide: Tool = {
                         (active.lane === active.entity.left ? active.entity.size : 0),
                 )
 
-                edit(active.entity, {
-                    ...active.entity,
-                    left,
-                    size,
-                })
+                edit(
+                    active.entity,
+                    constrainLaneObject(
+                        {
+                            ...active.entity,
+                            left,
+                            size,
+                        },
+                        { resizing: true },
+                    ),
+                )
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

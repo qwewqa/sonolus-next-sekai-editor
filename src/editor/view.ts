@@ -11,6 +11,7 @@ import { computedArray } from '../utils/array'
 import { align, clamp, lerp, unlerp } from '../utils/math'
 import { optional } from '../utils/optional'
 import { requestAudioPreview } from './audioPreview'
+import type { Modifiers } from './controls/gestures/pointer'
 import { integrateScrollInertia } from './inertia'
 import { editorNavigation, getControlBounds } from './navigation'
 
@@ -70,6 +71,7 @@ export const view = shallowReactive({
     pointer: {
         x: 0,
         y: 0,
+        modifiers: { ctrl: false, shift: false },
     },
     selection: optional<Selection>(),
     entities: {
@@ -306,12 +308,13 @@ const panView = (t: number) => {
     }
 }
 
-export const updateViewPointer = (pointer?: { x: number; y: number }) => {
+export const updateViewPointer = (pointer?: { x: number; y: number; modifiers?: Modifiers }) => {
     if (!pointer) return
 
     view.pointer = {
         x: pointer.x,
         y: pointer.y,
+        modifiers: pointer.modifiers ?? view.pointer.modifiers,
     }
 
     updateViewLastActive()

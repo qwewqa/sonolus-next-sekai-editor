@@ -47,6 +47,14 @@
       "title": "取消选择",
       "deselected": "已取消选择所有对象"
     },
+    "laneLimits": {
+      "none": "不限制轨道",
+      "six": "限制为 ±6 轨道",
+      "custom": "自定义轨道限制",
+      "maximum": "最大轨道（±）",
+      "limited": "轨道限制：±{0}",
+      "unlimited": "不限制轨道"
+    },
     "laneDivisions": {
       "title": "1/{0} 轨道细分",
       "switched": "已切换到 1/{0} 轨道细分",

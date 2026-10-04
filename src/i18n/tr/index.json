@@ -47,6 +47,14 @@
       "title": "Seçimi kaldır",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı"
     },
+    "laneLimits": {
+      "none": "Şerit Sınırı Yok",
+      "six": "±6 Şeritle Sınırla",
+      "custom": "Özel Şerit Sınırı",
+      "maximum": "Maksimum Şerit (±)",
+      "limited": "Şerit sınırı: ±{0}",
+      "unlimited": "Şerit sınırı yok"
+    },
     "laneDivisions": {
       "title": "1/{0} Şerit Bölümü",
       "switched": "1/{0} şerit bölümüne geçildi",

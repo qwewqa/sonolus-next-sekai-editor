@@ -18,6 +18,8 @@ const shortcut = computed(() => formatShortcut(settings.keyboardShortcuts[props.
     <button
         class="flex items-center rounded-full bg-button p-2 shadow-md transition-colors hover:shadow-accent active:bg-accent active:fill-button active:text-button"
         :title
+        :aria-pressed="commands[name].isActive?.()"
+        :class="{ 'ring-2 ring-accent': commands[name].isActive?.() }"
     >
         <component :is="commands[name].icon.is" class="size-4" v-bind="commands[name].icon.props" />
         <template v-if="showLabel">

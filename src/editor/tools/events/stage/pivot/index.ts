@@ -16,6 +16,7 @@ import { addStagePivotEventJoint } from '../../../../../state/mutations/events/s
 import { editSelectedStagePivotEvent } from '../../../../../state/operations/events/stage/pivot'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
+import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
 import { showToolModal } from '../../../../toolModals'
@@ -69,11 +70,13 @@ export const stagePivotEvent: Tool = {
             view.entities = {
                 hovered: [],
                 creating: [
-                    toStagePivotEventJointEntity({
-                        beat,
-                        pivotLane: lane,
-                        ...getPropertiesFromSelection(),
-                    }),
+                    toStagePivotEventJointEntity(
+                        constrainLaneObject({
+                            beat,
+                            pivotLane: lane,
+                            ...getPropertiesFromSelection(),
+                        }),
+                    ),
                 ],
             }
         }
@@ -151,11 +154,13 @@ export const stagePivotEvent: Tool = {
                 }
             }
         } else {
-            add({
-                beat,
-                pivotLane: lane,
-                ...getPropertiesFromSelection(),
-            })
+            add(
+                constrainLaneObject({
+                    beat,
+                    pivotLane: lane,
+                    ...getPropertiesFromSelection(),
+                }),
+            )
             focusEntityAtBeat(beat)
         }
     },
@@ -218,11 +223,13 @@ export const stagePivotEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStagePivotEventJointEntity({
-                            beat,
-                            pivotLane: lane,
-                            ...getPropertiesFromSelection(),
-                        }),
+                        toStagePivotEventJointEntity(
+                            constrainLaneObject({
+                                beat,
+                                pivotLane: lane,
+                                ...getPropertiesFromSelection(),
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -234,11 +241,13 @@ export const stagePivotEvent: Tool = {
                 view.entities = {
                     hovered: [],
                     creating: [
-                        toStagePivotEventJointEntity({
-                            ...active.entity,
-                            beat,
-                            pivotLane: lane,
-                        }),
+                        toStagePivotEventJointEntity(
+                            constrainLaneObject({
+                                ...active.entity,
+                                beat,
+                                pivotLane: lane,
+                            }),
+                        ),
                     ],
                 }
                 focusEntityAtBeat(beat)
@@ -271,22 +280,27 @@ export const stagePivotEvent: Tool = {
             case 'add': {
                 const beat = yToValidBeat(y)
 
-                add({
-                    beat,
-                    pivotLane: lane,
-                    ...getPropertiesFromSelection(),
-                })
+                add(
+                    constrainLaneObject({
+                        beat,
+                        pivotLane: lane,
+                        ...getPropertiesFromSelection(),
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(active.entity, {
-                    ...active.entity,
-                    beat,
-                    pivotLane: lane,
-                })
+                move(
+                    active.entity,
+                    constrainLaneObject({
+                        ...active.entity,
+                        beat,
+                        pivotLane: lane,
+                    }),
+                )
                 focusEntityAtBeat(beat)
                 break
             }

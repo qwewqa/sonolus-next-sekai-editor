@@ -3,6 +3,7 @@ import Value from 'typebox/value'
 import { shallowRef, watch } from 'vue'
 import { noteStyles, noteStyleSchema } from './chart/noteStyle'
 import { isCommandName, type CommandName } from './editor/commands'
+import { migrateToolbar } from './editor/toolbar/migrate'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './preview/options'
@@ -126,6 +127,9 @@ const settingsProperties = {
 
     width: number(16, 16, 100),
 
+    maxLane: Type.Number({ default: 0, minimum: 0 }),
+    customMaxLane: Type.Number({ default: 6, exclusiveMinimum: 0 }),
+
     pps: number(1000, 100, 10000),
 
     beatDisplay: Type.Union([Type.Literal('beat'), Type.Literal('measure'), Type.Literal('both')], {
@@ -197,7 +201,6 @@ const settingsProperties = {
                         'brush',
                         'eraser',
                         'deselect',
-                        'elevation',
                         'select',
                     ],
                     [
@@ -276,7 +279,8 @@ const settingsProperties = {
                         'laneDivision2',
                         'laneDivision1',
                     ],
-                    ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut'],
+                    ['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'],
+                    ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut', 'elevation'],
                 ] satisfies CommandName[][],
             },
         ),
@@ -443,11 +447,14 @@ const migratePreset = (value: unknown) => {
     return preset
 }
 
-const migrateSetting = (key: string, value: unknown) =>
-    (key === 'defaultNotePropertiesPresets' || key === 'defaultSlidePropertiesPresets') &&
-    Array.isArray(value)
+const migrateSetting = (key: string, value: unknown) => {
+    if (key === 'toolbar' && Array.isArray(value) && value.every(Array.isArray))
+        return migrateToolbar(value)
+    return (key === 'defaultNotePropertiesPresets' || key === 'defaultSlidePropertiesPresets') &&
+        Array.isArray(value)
         ? value.map(migratePreset)
         : value
+}
 
 const normalize = <T extends Type.TSchema>(schema: T, value: unknown) =>
     Value.Decode(schema, Value.Repair(schema, value))

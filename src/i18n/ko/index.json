@@ -47,6 +47,14 @@
       "title": "선택 해제",
       "deselected": "모든 객체 선택 해제됨"
     },
+    "laneLimits": {
+      "none": "레인 제한 없음",
+      "six": "±6레인으로 제한",
+      "custom": "사용자 지정 레인 제한",
+      "maximum": "최대 레인 (±)",
+      "limited": "레인 제한: ±{0}",
+      "unlimited": "레인 제한 없음"
+    },
     "laneDivisions": {
       "title": "레인 분할 1/{0}",
       "switched": "레인 분할을 1/{0}로 변경함",

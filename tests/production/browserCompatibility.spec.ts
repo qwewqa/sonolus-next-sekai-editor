@@ -157,18 +157,51 @@ test('note rendering works when roundRect is unavailable', async ({ page }) => {
         await opening
     ).setFiles({ name: 'fallback.usc', mimeType: 'application/json', buffer: chart })
     await expect(page.locator('.notification')).toHaveText('Opened level')
-    const pixels = await page
-        .locator('canvas.editor-chart')
-        .evaluate((canvas: HTMLCanvasElement) => {
-            const ctx = canvas.getContext('2d')!
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-            let colored = 0
-            for (let i = 0; i < data.length; i += 4)
-                if (data[i + 3]! > 0 && (data[i] !== data[i + 1] || data[i + 1] !== data[i + 2]))
-                    colored++
-            return colored
-        })
-    expect(pixels).toBeGreaterThan(10)
+    await expect
+        .poll(() =>
+            page.locator('canvas.editor-chart').evaluate((canvas: HTMLCanvasElement) => {
+                const ctx = canvas.getContext('2d')!
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+                let colored = 0
+                for (let i = 0; i < data.length; i += 4)
+                    if (data[i + 3]! > 0 && data[i + 1]! - data[i]! > 10 && data[i + 2]! > 180)
+                        colored++
+                return colored
+            }),
+        )
+        .toBeGreaterThan(10)
+})
+
+test('lane limit commands clamp note placement in the production editor', async ({
+    page,
+}, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByTitle('No Lane Limit', { exact: true }).tap()
+    await page.getByTitle('Custom Lane Limit', { exact: true }).tap()
+    await page.getByRole('spinbutton', { name: 'Maximum Lane (±)' }).fill('2')
+    await page.getByRole('button', { name: 'Confirm', exact: true }).tap()
+    await page.keyboard.press('a')
+    const bounds = await page.locator('canvas.editor-chart').boundingBox()
+    if (!bounds) throw new Error('Missing editor canvas')
+    await page.mouse.click(
+        bounds.x + bounds.width / 2 + (bounds.width * 7) / 16,
+        bounds.y + bounds.height / 2 - 90,
+    )
+    const saving = page.waitForEvent('download')
+    await page.keyboard.press('p')
+    const path = testInfo.outputPath('lane-limit.leveldata.gz')
+    await (await saving).saveAs(path)
+    const level = JSON.parse(gunzipSync(await readFile(path)).toString()) as {
+        entities: { archetype: string; data: { name: string; value?: number }[] }[]
+    }
+    const notes = level.entities.filter((entity) => /Note$/.test(entity.archetype))
+    expect(notes).toHaveLength(2)
+    for (const note of notes) {
+        const lane = note.data.find((field) => field.name === 'lane')!.value!
+        const halfWidth = note.data.find((field) => field.name === 'size')!.value!
+        expect(lane - halfWidth).toBeGreaterThanOrEqual(-2)
+        expect(lane + halfWidth).toBeLessThanOrEqual(2)
+    }
 })
 
 test('preview decodes textures and renders after opening and resizing', async ({ page }) => {
