@@ -1273,7 +1273,7 @@ test('elevation toolbar offers spatial actions and omits time reversal', async (
         editor.getByRole('button', { name: 'Flip horizontally', exact: true }),
     ).toBeVisible()
     await expect(
-        editor.getByRole('button', { name: 'Combine into slide', exact: true }),
+        editor.getByRole('button', { name: 'Combine into Slide', exact: true }),
     ).toBeVisible()
     await expect(editor.getByRole('button', { name: 'Flip vertically', exact: true })).toHaveCount(
         0,

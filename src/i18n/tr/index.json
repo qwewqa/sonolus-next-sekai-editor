@@ -96,7 +96,7 @@
       "made": "{0} nota dikey düzenlendi"
     },
     "splitHold": {
-      "title": "Basılı notayı böl",
+      "title": "Kaydırmayı Böl",
       "noConnections": "Bölmek için devamında bağlantısı olan bir nota seçin",
       "split": "{0} bağlantı bölündü"
     },

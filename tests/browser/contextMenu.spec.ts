@@ -115,7 +115,7 @@ test('plain right click selects a note and deletion is undoable', async ({ page 
     expect((await snapshot(page)).selected).toEqual([{ type: 'note', beat: 3, left: -4, size: 2 }])
     expect((await snapshot(page)).notes).toHaveLength(4)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
-    await expect(menu.getByRole('menuitem', { name: /Combine into slide/ })).toHaveCount(0)
+    await expect(menu.getByRole('menuitem', { name: /Combine into Slide/ })).toHaveCount(0)
     await menu.getByRole('menuitem', { name: 'Delete', exact: true }).click()
     await expect(menu).toHaveCount(0)
     expect((await snapshot(page)).notes).toHaveLength(3)
@@ -131,7 +131,7 @@ test('right clicking a selected member preserves the whole selection', async ({ 
     const menu = page.getByRole('menu')
     await expect(menu).toBeVisible()
     expect((await snapshot(page)).selected).toHaveLength(2)
-    await expect(menu.getByRole('menuitem', { name: /Combine into slide/ })).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: /Combine into Slide/ })).toBeVisible()
     await menu.getByRole('menuitem', { name: 'Delete', exact: true }).click()
     expect((await snapshot(page)).notes).toHaveLength(2)
     await page.keyboard.press('z')
@@ -245,7 +245,7 @@ test('the initial BPM only offers applicable clipboard actions', async ({ page }
     await expect(menu).toBeVisible()
     await expect(menu.getByRole('menuitem', { name: 'Copy', exact: true })).toBeVisible()
     await expect(
-        menu.getByRole('menuitem', { name: /Edit Properties|Flip|Delete|Cut|Combine into slide/ }),
+        menu.getByRole('menuitem', { name: /Edit Properties|Flip|Delete|Cut|Combine into Slide/ }),
     ).toHaveCount(0)
     await page.keyboard.press('Escape')
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
@@ -293,7 +293,7 @@ test('filtered notes are not selected by a context click', async ({ page }) => {
     const menu = page.getByRole('menu')
     await expect(menu).toBeVisible()
     expect((await snapshot(page)).selected).toEqual([])
-    await expect(menu.getByRole('menuitem', { name: /Delete|Cut|Combine into slide/ })).toHaveCount(
+    await expect(menu.getByRole('menuitem', { name: /Delete|Cut|Combine into Slide/ })).toHaveCount(
         0,
     )
     await page.keyboard.press('Escape')
@@ -369,7 +369,7 @@ test('menus fit desktop and narrow viewports with readable selection actions', a
     await page.keyboard.press('Escape')
     await selectTwo(page)
     await click(page, -3, 3)
-    await expect(menu.getByRole('menuitem', { name: /Combine into slide/ })).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: /Combine into Slide/ })).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('desktop-multiple-notes-menu.png') })
     await page.keyboard.press('Escape')
     await page.setViewportSize({ width: 390, height: 600 })

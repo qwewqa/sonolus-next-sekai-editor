@@ -96,12 +96,12 @@
             "made": "Made {0} notes vertical"
         },
         "splitHold": {
-            "title": "Split hold",
-            "noConnections": "Select a note with a following connection to split",
-            "split": "Split {0} connections"
+            "title": "Split Slide",
+            "noConnections": "Select a slide note with a connection to the next note",
+            "split": "Split {0} slide connections"
         },
         "combineNotes": {
-            "title": "Combine into slide",
+            "title": "Combine into Slide",
             "noSelected": "No notes selected to combine",
             "sameSlide": "Selected notes already belong to the same slide",
             "combined": "Combined {0} notes into one slide"

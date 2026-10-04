@@ -21,7 +21,7 @@ test('splits after each selected note, preserves selection and supports undo and
         history.replaceState({ ...source, selectedEntities: [notes[1]!, notes[3]!] })
         settings.toolbar = [['splitHold']]
     })
-    await page.getByRole('button', { name: 'Split hold', exact: true }).click()
+    await page.getByRole('button', { name: 'Split Slide', exact: true }).click()
     const snapshot = () =>
         page.evaluate(() => {
             const source = window.editorTest.history.state.value
@@ -196,7 +196,7 @@ test('standalone notes and tails are no-ops; mixed selections retain unrelated o
     })
 })
 
-test('context menu offers Split hold only for notes with a following connection', async ({
+test('context menu offers Split Slide only for notes with a following connection', async ({
     page,
 }) => {
     await page.evaluate(() => {
@@ -208,7 +208,7 @@ test('context menu offers Split hold only for notes with a following connection'
     })
     const point = await page.evaluate(() => window.editorTest.point(-3, 4))
     await page.mouse.click(point.x, point.y, { button: 'right' })
-    await page.getByRole('menuitem', { name: 'Split hold', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Split Slide', exact: true }).click()
     expect(
         await page.evaluate(() =>
             [...window.editorTest.history.state.value.store.slides.note.values()].map((notes) =>
@@ -221,7 +221,7 @@ test('context menu offers Split hold only for notes with a following connection'
     ])
     await page.mouse.click(point.x, point.y, { button: 'right' })
     await expect(page.getByRole('menu')).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: 'Split hold', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: 'Split Slide', exact: true })).toHaveCount(0)
     await page.keyboard.press('Escape')
     await page.keyboard.press('z')
     expect(
@@ -233,7 +233,7 @@ test('context menu offers Split hold only for notes with a following connection'
     ).toEqual([[3, 4, 5, 6]])
 })
 
-test('localized Split hold works in the elevation editor on a phone', async ({
+test('localized Split Slide works in the elevation editor on a phone', async ({
     page,
 }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -255,7 +255,7 @@ test('localized Split hold works in the elevation editor on a phone', async ({
         openElevationEditor(4)
     })
     await expect(page.locator('canvas.elevation-canvas')).toBeVisible()
-    const button = page.getByRole('button', { name: 'ホールドを分割', exact: true })
+    const button = page.getByRole('button', { name: 'スライドを分割', exact: true })
     await expect(button).toBeVisible()
     const bounds = await button.boundingBox()
     expect(bounds!.x).toBeGreaterThanOrEqual(0)
