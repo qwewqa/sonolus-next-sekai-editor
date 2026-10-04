@@ -67,14 +67,6 @@ onMounted(() => {
                             @input="update"
                         />
                     </label>
-                    <div class="flex items-center justify-between gap-3">
-                        <span>{{
-                            session?.axis === 'elevation'
-                                ? i18n.commands.scaleSelection.pivotElevation
-                                : i18n.commands.scaleSelection.pivotBeat
-                        }}</span>
-                        <span class="px-4 py-1 tabular-nums">{{ session?.pivot }}</span>
-                    </div>
                     <p v-if="session && !session.valid" role="alert" class="text-sm">
                         {{ i18n.commands.scaleSelection.invalidFactor }}
                     </p>

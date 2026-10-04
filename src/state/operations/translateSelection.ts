@@ -1,18 +1,15 @@
 import type { State } from '..'
 import type { Entity } from '../entities'
-import { getScaledSelectionValues, type ScaleAxis } from './scaleValues'
+import { getTranslatedSelectionValues, type ScaleAxis } from './scaleValues'
 import { transformSelection } from './transformSelection'
 
-export { canScaleSelection, type ScaleAxis } from './scaleValues'
-
-export const scaleSelection = (
+export const translateSelection = (
     source: State,
     selected: Entity[],
     axis: ScaleAxis,
-    factor: number,
-    anchor?: number,
+    delta: number,
 ): State => {
-    const values = getScaledSelectionValues(selected, axis, factor, source, anchor)
+    const values = getTranslatedSelectionValues(selected, axis, delta, source)
     return values
         ? transformSelection(
               source,

@@ -162,7 +162,10 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 cancelled.tool.dragCancel?.()
                 // Selection tools update the current selection while dragging.
                 // Restore it only if no committed edit/reset replaced the store.
-                if (state.value.store === cancelled.state.store) {
+                if (
+                    state.value.store === cancelled.state.store &&
+                    state.value.selectedEntities !== cancelled.state.selectedEntities
+                ) {
                     replaceState({
                         ...state.value,
                         selectedEntities: cancelled.state.selectedEntities,

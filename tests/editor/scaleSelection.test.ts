@@ -8,6 +8,7 @@ import {
     getScaleEntities,
     getScalePivot,
     getScaledSelectionValues,
+    getTranslatedSelectionValues,
 } from '../../src/state/operations/scaleValues'
 
 const source = <T extends EntityType>(type: T, beat: number, elevation = 0) =>
@@ -31,6 +32,49 @@ const emptyState = () =>
         },
         0,
     )
+
+test('scaling can anchor either endpoint while preserving ties', () => {
+    const first = source('note', 3, 1)
+    const middle = source('note', 5, 3)
+    const last = source('note', 8, 5)
+    const tied = source('note', 8, 5)
+    const selected = [first, middle, last, tied]
+    assert.deepEqual(
+        [...getScaledSelectionValues(selected, 'beat', 0.5, undefined, 8)!.values()],
+        [5.5, 6.5, 8, 8],
+    )
+    assert.deepEqual(
+        [...getScaledSelectionValues(selected, 'elevation', 2, undefined, 5)!.values()],
+        [-3, 1, 5, 5],
+    )
+    assert.equal(getScaledSelectionValues(selected, 'beat', 2, undefined, 8), undefined)
+    assert.equal(getScaledSelectionValues(selected, 'beat', 2, undefined, NaN), undefined)
+})
+
+test('translation moves all eligible values equally and retains negative authored timing', () => {
+    const first = source('note', 3, 1)
+    const middle = source('note', 5, 3)
+    const last = source('note', 8, 5)
+    const bpm = source('bpm', -2)
+    const stage = source('stageTransformEventJoint', 6, 2)
+    const selected = [first, middle, last, bpm, stage, first]
+    assert.deepEqual(
+        [...getTranslatedSelectionValues(selected, 'beat', -1)!.values()],
+        [2, 4, 7, -3, 5],
+    )
+    assert.deepEqual(
+        [...getTranslatedSelectionValues(selected, 'elevation', -2)!.values()],
+        [-1, 1, 3, 0],
+    )
+    assert.equal(getTranslatedSelectionValues(selected, 'beat', -4), undefined)
+    assert.equal(getTranslatedSelectionValues(selected, 'beat', Infinity), undefined)
+    assert.equal(getTranslatedSelectionValues(selected, 'elevation', NaN), undefined)
+    assert.equal(getTranslatedSelectionValues(selected, 'beat', 0), undefined)
+    assert.deepEqual(
+        selected.map((entity) => entity.beat),
+        [3, 5, 8, -2, 6, 3],
+    )
+})
 
 test('beat scaling includes every editable event family and anchors the earliest eligible beat', () => {
     const selected = [
@@ -185,6 +229,11 @@ test('attached slide interiors are read-only in elevation while endpoints and be
     assert.deepEqual(
         [...getScaledSelectionValues([tail, interior, head], 'elevation', 2, state)!.values()],
         [5, 1],
+    )
+    assert.equal(interior.elevation, 9)
+    assert.deepEqual(
+        [...getTranslatedSelectionValues([tail, interior, head], 'elevation', 1, state)!.values()],
+        [4, 2],
     )
     assert.equal(interior.elevation, 9)
 })

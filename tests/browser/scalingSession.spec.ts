@@ -44,38 +44,60 @@ const summary = (page: Page) =>
             dirty: history.isDirty.value,
         }
     })
-const seed = async (page: Page, elevation = false) => {
-    await page.evaluate(async (elevation) => {
-        const { fixtures, show, history, settings } = window.editorTest
-        settings.mouseSecondaryTool = 'selectContextMenu'
-        const base = fixtures.interaction.slides[0]![0]!
-        show(
-            {
-                ...fixtures.interaction,
-                slides: [
-                    [{ ...base, beat: 3, left: -4, size: 2, elevation: 1 }],
-                    [{ ...base, beat: elevation ? 3 : 5, left: 0, size: 2, elevation: 3 }],
-                    [{ ...base, beat: 8, left: 4, size: 2, elevation: 4 }],
-                ],
-            },
-            3,
-        )
-        const source = history.state.value
-        const selectedEntities = [...source.store.slides.note.values()].flat().slice(0, 2)
-        history.replaceState({ ...source, selectedEntities })
-        const urls = new Map(
-            performance
-                .getEntriesByType('resource')
-                .map((entry) => [new URL(entry.name).pathname, entry.name]),
-        )
-        window.scalingTest = {
-            source: history.state.value,
-            preview: await import(urls.get('/src/preview/edit.ts') ?? '/src/preview/edit.ts'),
-            scene: await import(
-                urls.get('/src/editor/elevation/scene.ts') ?? '/src/editor/elevation/scene.ts'
-            ),
-        }
-    }, elevation)
+const seed = async (page: Page, elevation = false, three = false) => {
+    await page.evaluate(
+        async ({ elevation, three }) => {
+            const { fixtures, show, history, settings } = window.editorTest
+            settings.mouseSecondaryTool = 'selectContextMenu'
+            const base = fixtures.interaction.slides[0]![0]!
+            show(
+                {
+                    ...fixtures.interaction,
+                    slides: [
+                        [{ ...base, beat: 3, left: -4, size: 2, elevation: 1 }],
+                        [
+                            {
+                                ...base,
+                                beat: elevation ? 3 : 5,
+                                left: 0,
+                                size: 2,
+                                elevation: three ? 2 : 3,
+                            },
+                        ],
+                        [
+                            {
+                                ...base,
+                                beat: three ? (elevation ? 3 : 7) : 8,
+                                left: 4,
+                                size: 2,
+                                elevation: three ? 3 : 4,
+                            },
+                        ],
+                        ...(three ? [[{ ...base, beat: 9, left: -8, size: 2, elevation: 4 }]] : []),
+                    ],
+                },
+                3,
+            )
+            const source = history.state.value
+            const selectedEntities = [...source.store.slides.note.values()]
+                .flat()
+                .slice(0, three ? 3 : 2)
+            history.replaceState({ ...source, selectedEntities })
+            const urls = new Map(
+                performance
+                    .getEntriesByType('resource')
+                    .map((entry) => [new URL(entry.name).pathname, entry.name]),
+            )
+            window.scalingTest = {
+                source: history.state.value,
+                preview: await import(urls.get('/src/preview/edit.ts') ?? '/src/preview/edit.ts'),
+                scene: await import(
+                    urls.get('/src/editor/elevation/scene.ts') ?? '/src/editor/elevation/scene.ts'
+                ),
+            }
+        },
+        { elevation, three },
+    )
     await settle(page)
 }
 const chartPoint = (page: Page, lane: number, beat: number) =>
@@ -106,10 +128,12 @@ const open = async (page: Page, axis: 'beat' | 'elevation' = 'beat') => {
 }
 const factor = (page: Page) =>
     panel(page).getByRole('spinbutton', { name: 'Scale factor', exact: true })
-const touch = (page: Page, type: string, point: { x: number; y: number }) =>
+const touch = (page: Page, type: string, point: { x: number; y: number }, elevation = false) =>
     page.evaluate(
-        ({ type, point }) => {
-            const target = document.querySelector('canvas.editor-chart')!
+        ({ type, point, elevation }) => {
+            const target = document.querySelector(
+                elevation ? '.elevation-canvas' : 'canvas.editor-chart',
+            )!
             const changedTouches = [
                 new Touch({ identifier: 17, target, clientX: point.x, clientY: point.y }),
             ]
@@ -117,8 +141,62 @@ const touch = (page: Page, type: string, point: { x: number; y: number }) =>
                 new TouchEvent(type, { changedTouches, bubbles: true, cancelable: true }),
             )
         },
-        { type, point },
+        { type, point, elevation },
     )
+
+const axisPosition = async (
+    page: Page,
+    axis: 'beat' | 'elevation',
+    left: number,
+    value: number,
+) => {
+    if (axis === 'beat') return chartPoint(page, left + 1, value)
+    const local = await page.evaluate(
+        ({ left, value }) => {
+            const layout = window.scalingTest.scene.elevationLayout.value
+            const row = layout.rows.find((row) => row.note.left === left)!
+            return { x: row.x, y: row.y + layout.yAt(value) - layout.yAt(row.elevation) }
+        },
+        { left, value },
+    )
+    const bounds = await page.locator('.elevation-canvas').boundingBox()
+    if (!bounds) throw new Error('Missing elevation canvas')
+    return { x: bounds.x + local.x, y: bounds.y + local.y }
+}
+const dragAxis = async (
+    page: Page,
+    axis: 'beat' | 'elevation',
+    left: number,
+    from: number,
+    to: number,
+) => {
+    const start = await axisPosition(page, axis, left, from)
+    const end = await axisPosition(page, axis, left, to)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(end.x, end.y, { steps: 4 })
+    await page.mouse.up()
+    await settle(page)
+}
+const prepareThree = async (page: Page, axis: 'beat' | 'elevation') => {
+    await seed(page, axis === 'elevation', true)
+    if (axis === 'elevation') {
+        await page.evaluate(() => {
+            window.editorTest.settings.elevationEditorSideBySide = 'allow'
+        })
+        await page.keyboard.press('t')
+        await expect(page.locator('.elevation-canvas')).toBeVisible()
+    }
+    await open(page, axis)
+}
+const expectDraftAxis = async (page: Page, axis: 'beat' | 'elevation', values: number[]) => {
+    const state = await summary(page)
+    expect(state.draft).toHaveLength(values.length)
+    for (const [index, value] of values.entries())
+        expect(state.draft[index]![axis]).toBeCloseTo(value, 8)
+    expect(state.sourceUnchanged).toBe(true)
+    expect(state.canUndo).toBe(false)
+}
 
 test.beforeEach(async ({ page }) => {
     const messages: string[] = []
@@ -168,6 +246,7 @@ test('live factor leaves chart history untouched until Apply, with one undo', as
     await settle(page)
     await expect(factor(page)).toHaveValue('1')
     await expect(factor(page)).toHaveAttribute('step', '0.1')
+    await expect(panel(page).getByText('Earliest beat', { exact: true })).toHaveCount(0)
     await expect(page.getByTitle('Switch to Select tool', { exact: true })).toHaveCount(0)
     const original = await page.evaluate(() => ({
         chart: document.querySelector<HTMLCanvasElement>('canvas.editor-chart')!.toDataURL(),
@@ -247,14 +326,6 @@ test('dragging a selected note scales from the fixed earliest beat and rejects c
     await expect(panel(page).getByRole('button', { name: 'Apply', exact: true })).toBeEnabled()
     expect(Number(await factor(page).inputValue())).toBeGreaterThan(0)
     await page.mouse.up()
-    await factor(page).fill('1')
-    const pivot = await chartPoint(page, -3, 3)
-    await page.mouse.move(pivot.x, pivot.y)
-    await page.mouse.down()
-    await page.mouse.move(pivot.x, pivot.y - 80, { steps: 3 })
-    await page.mouse.up()
-    await expect(factor(page)).toHaveValue('1')
-    expect((await summary(page)).draftDifferent).toBe(false)
     await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
     expect((await summary(page)).sourceUnchanged).toBe(true)
 })
@@ -303,6 +374,7 @@ test('elevation scaling stays live in its pane and drags from the lowest selecte
     await page.keyboard.press('t')
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await open(page, 'elevation')
+    await expect(panel(page).getByText('Lowest elevation', { exact: true })).toHaveCount(0)
     await expect(page.locator('.elevation-editor .scaling-panel')).toHaveCount(1)
     await expect(
         page.locator('.elevation-editor').getByTitle('Switch to Select tool', { exact: true }),
@@ -517,4 +589,132 @@ test('the spinner increments by tenths while a manually typed finer factor appli
     await page.keyboard.press('z')
     expect((await summary(page)).stored.map((note) => note.beat)).toEqual([3, 5, 8])
     expect((await summary(page)).canUndo).toBe(false)
+})
+
+for (const axis of ['beat', 'elevation'] as const) {
+    test(`${axis} endpoints scale around the opposite end and gesture cancellation retains earlier edits`, async ({
+        page,
+    }) => {
+        await prepareThree(page, axis)
+        const elevation = axis === 'elevation'
+        const original = elevation ? [1, 2, 3, 4] : [3, 5, 7, 9]
+        await dragAxis(page, axis, -4, original[0]!, elevation ? 1.5 : 4)
+        await expectDraftAxis(page, axis, elevation ? [1.5, 2.25, 3, 4] : [4, 5.5, 7, 9])
+        await dragAxis(page, axis, 4, original[2]!, elevation ? 3.5 : 8)
+        const composed = elevation ? [1.5, 2.5, 3.5, 4] : [4, 6, 8, 9]
+        await expectDraftAxis(page, axis, composed)
+        const factorBefore = await factor(page).inputValue()
+        const start = await axisPosition(page, axis, 0, composed[1]!)
+        const end = await axisPosition(page, axis, 0, composed[1]! + (elevation ? 0.25 : 0.5))
+        await touch(page, 'touchstart', start, elevation)
+        await touch(page, 'touchmove', end, elevation)
+        await settle(page)
+        await expectDraftAxis(
+            page,
+            axis,
+            composed.map((value, index) => (index < 3 ? value + (elevation ? 0.25 : 0.5) : value)),
+        )
+        await expect(factor(page)).toHaveValue(factorBefore)
+        await touch(page, 'touchcancel', end, elevation)
+        await settle(page)
+        await expectDraftAxis(page, axis, composed)
+        await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+        await expect(panel(page)).toHaveCount(0)
+        await expectDraftAxis(page, axis, original)
+        expect((await summary(page)).draftDifferent).toBe(false)
+    })
+
+    test(`${axis} interior drags translate the selection and compose with numeric and endpoint scaling in one undo`, async ({
+        page,
+    }) => {
+        await prepareThree(page, axis)
+        const elevation = axis === 'elevation'
+        await dragAxis(page, axis, 0, elevation ? 2 : 5, elevation ? 2.5 : 6)
+        await expectDraftAxis(page, axis, elevation ? [1.5, 2.5, 3.5, 4] : [4, 6, 8, 9])
+        await expect(factor(page)).toHaveValue('1')
+        await factor(page).fill('1.5')
+        await settle(page)
+        await expectDraftAxis(page, axis, elevation ? [1.5, 3, 4.5, 4] : [4, 7, 10, 9])
+        await dragAxis(page, axis, 4, elevation ? 4.5 : 10, elevation ? 5 : 12)
+        const applied = elevation ? [1.5, 3.25, 5, 4] : [4, 8, 12, 9]
+        await expectDraftAxis(page, axis, applied)
+        await panel(page).getByRole('button', { name: 'Apply', exact: true }).click()
+        await expect(panel(page)).toHaveCount(0)
+        const result = await summary(page)
+        for (const [index, value] of applied.entries())
+            expect(result.stored[index]![axis]).toBeCloseTo(value, 8)
+        expect(result.canUndo).toBe(true)
+        await page.keyboard.press('z')
+        await expectDraftAxis(page, axis, elevation ? [1, 2, 3, 4] : [3, 5, 7, 9])
+        await page.keyboard.press('y')
+        const redone = await summary(page)
+        for (const [index, value] of applied.entries())
+            expect(redone.stored[index]![axis]).toBeCloseTo(value, 8)
+    })
+}
+
+test('attached slide interiors translate selected elevation endpoints without rewriting authored attachment values', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history, settings } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [
+                    [
+                        { ...base, beat: 3, left: -4, size: 2, elevation: 1 },
+                        { ...base, beat: 3, left: 0, size: 2, elevation: 0, isAttached: true },
+                        { ...base, beat: 3, left: 4, size: 2, elevation: 5 },
+                    ],
+                ],
+            },
+            3,
+        )
+        const selectedEntities = [...history.state.value.store.slides.note.values()].flat()
+        history.replaceState({ ...history.state.value, selectedEntities })
+        window.scalingTest.source = history.state.value
+        settings.elevationEditorSideBySide = 'allow'
+    })
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-canvas')).toBeVisible()
+    await open(page, 'elevation')
+    const begun = await page.evaluate(async () => {
+        const urls = new Map(
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => [new URL(entry.name).pathname, entry.name]),
+        )
+        const session = await import(
+            urls.get('/src/editor/commands/scaleSelection/session.ts') ??
+                '/src/editor/commands/scaleSelection/session.ts'
+        )
+        const note = window.scalingTest.source.selectedEntities.find(
+            (entity) => entity.type === 'note' && entity.isAttached,
+        )!
+        if (note.type !== 'note') throw new Error('Missing attached note')
+        const row = window.scalingTest.scene.elevationLayout.value.rows.find(
+            (row) => row.note === note,
+        )!
+        if (!row.attached) throw new Error('Missing attached elevation row')
+        const begun = session.beginScalingDrag(note, row.elevation)
+        const updated = session.updateScalingDrag(row.elevation + 1)
+        session.endScalingDrag()
+        return { begun, updated }
+    })
+    expect(begun).toEqual({ begun: true, updated: true })
+    await expectDraftAxis(page, 'elevation', [2, 0, 6])
+    await expect(factor(page)).toHaveValue('1')
+    expect(
+        await page.evaluate(() =>
+            window.scalingTest.preview
+                .getPreviewState(window.editorTest.history.state.value)
+                .selectedEntities.filter((entity) => entity.type === 'note')
+                .map((note) => note.isAttached),
+        ),
+    ).toEqual([false, true, false])
+    await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expectDraftAxis(page, 'elevation', [1, 0, 5])
+    expect((await summary(page)).draftDifferent).toBe(false)
 })

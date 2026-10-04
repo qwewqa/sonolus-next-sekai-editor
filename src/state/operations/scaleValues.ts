@@ -98,6 +98,7 @@ export const getScaledSelectionValues = (
     axis: ScaleAxis,
     factor: number,
     source?: State,
+    anchor?: number,
 ): Map<EditableEntity, number> | undefined => {
     if (
         !Number.isFinite(factor) ||
@@ -107,29 +108,54 @@ export const getScaledSelectionValues = (
     )
         return
     const entities = getScaleEntities(selected, axis, source)
-    const pivot = getScalePivot(entities, axis, source)
-    if (pivot === undefined) return
+    const pivot = anchor ?? getScalePivot(entities, axis, source)
+    if (pivot === undefined || !Number.isFinite(pivot)) return
+    return transformValues(entities, axis, (value) => pivot + (value - pivot) * factor, source)
+}
+
+export const getTranslatedSelectionValues = (
+    selected: Entity[],
+    axis: ScaleAxis,
+    delta: number,
+    source?: State,
+): Map<EditableEntity, number> | undefined => {
+    if (!Number.isFinite(delta) || delta === 0) return
+    return transformValues(
+        getScaleEntities(selected, axis, source),
+        axis,
+        (value) => value + delta,
+        source,
+    )
+}
+
+const transformValues = (
+    entities: EditableEntity[],
+    axis: ScaleAxis,
+    transform: (value: number) => number,
+    source?: State,
+) => {
     const values = new Map<EditableEntity, number>()
     let previousValue: number | undefined
-    let previousScaled: number | undefined
+    let previousTransformed: number | undefined
     for (const entity of [...entities].sort((a, b) => valueOf(a, axis) - valueOf(b, axis))) {
         const value = valueOf(entity, axis)
-        const scaled = pivot + (value - pivot) * factor
+        const transformed = transform(value)
         if (
-            !Number.isFinite(scaled) ||
-            (axis === 'beat' && !Number.isSafeInteger(Math.floor(scaled)))
+            !Number.isFinite(transformed) ||
+            (axis === 'beat' &&
+                ((transformed < 0 && value >= 0) || !Number.isSafeInteger(Math.floor(transformed))))
         )
             return
         if (
             previousValue !== undefined &&
             value > previousValue &&
-            previousScaled !== undefined &&
-            scaled <= previousScaled
+            previousTransformed !== undefined &&
+            transformed <= previousTransformed
         )
             return
-        values.set(entity, scaled)
+        values.set(entity, transformed)
         previousValue = value
-        previousScaled = scaled
+        previousTransformed = transformed
     }
     if (axis === 'beat' && source && !isWithinGridBudget(source, values)) return
     return new Map(entities.map((entity) => [entity, values.get(entity) ?? valueOf(entity, axis)]))
