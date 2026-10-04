@@ -71,6 +71,23 @@
       "title": "Dikey çevir",
       "flipped": "{0} nesne dikey çevrildi"
     },
+    "scaleBeat": {
+      "title": "Vuruşları ölçekle",
+      "noSelected": "Ölçeklemek için farklı vuruşlarda en az iki nesne seçin",
+      "scaled": "{0} nesnenin vuruşları ölçeklendi"
+    },
+    "scaleElevation": {
+      "title": "Yükseklikleri ölçekle",
+      "noSelected": "Ölçeklemek için farklı yüksekliklerde en az iki nota veya sahne dönüşümü seçin",
+      "scaled": "{0} nesnenin yükseklikleri ölçeklendi"
+    },
+    "scaleSelection": {
+      "factor": "Ölçek katsayısı",
+      "pivotBeat": "En erken vuruş",
+      "pivotElevation": "En düşük yükseklik",
+      "apply": "Uygula",
+      "invalidFactor": "Sonucu editörün desteklediği aralıkta tutan pozitif bir ölçek katsayısı girin"
+    },
     "combineNotes": {
       "title": "Kaydırmada birleştir",
       "noSelected": "Birleştirilecek nota seçilmedi",

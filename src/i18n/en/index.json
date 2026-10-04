@@ -71,6 +71,23 @@
             "title": "Flip vertically",
             "flipped": "Flipped {0} objects vertically"
         },
+        "scaleBeat": {
+            "title": "Scale beats",
+            "noSelected": "Select at least two objects at different beats to scale",
+            "scaled": "Scaled beats of {0} objects"
+        },
+        "scaleElevation": {
+            "title": "Scale elevations",
+            "noSelected": "Select at least two notes or stage transforms with different elevations to scale",
+            "scaled": "Scaled elevations of {0} objects"
+        },
+        "scaleSelection": {
+            "factor": "Scale factor",
+            "pivotBeat": "Earliest beat",
+            "pivotElevation": "Lowest elevation",
+            "apply": "Apply",
+            "invalidFactor": "Enter a positive scale factor that keeps the result within the editor’s supported range"
+        },
         "combineNotes": {
             "title": "Combine into slide",
             "noSelected": "No notes selected to combine",

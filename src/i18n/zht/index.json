@@ -71,6 +71,23 @@
       "title": "垂直翻轉",
       "flipped": "已垂直翻轉 {0} 個物件"
     },
+    "scaleBeat": {
+      "title": "縮放節拍間距",
+      "noSelected": "請選取至少兩個位於不同節拍的物件進行縮放",
+      "scaled": "已縮放 {0} 個物件的節拍間距"
+    },
+    "scaleElevation": {
+      "title": "縮放高度間距",
+      "noSelected": "請選取至少兩個高度不同的音符或舞台變換進行縮放",
+      "scaled": "已縮放 {0} 個物件的高度間距"
+    },
+    "scaleSelection": {
+      "factor": "縮放倍率",
+      "pivotBeat": "最早節拍",
+      "pivotElevation": "最低高度",
+      "apply": "套用",
+      "invalidFactor": "請輸入正縮放倍率，使結果保持在編輯器支援的範圍內"
+    },
     "combineNotes": {
       "title": "合併為滑條",
       "noSelected": "未選取要合併的音符",

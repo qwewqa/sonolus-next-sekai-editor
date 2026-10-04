@@ -71,6 +71,23 @@
       "title": "상하 뒤집기",
       "flipped": "객체 {0}개 상하 뒤집음"
     },
+    "scaleBeat": {
+      "title": "박자 확대/축소",
+      "noSelected": "서로 다른 박자에 있는 객체를 두 개 이상 선택하세요",
+      "scaled": "객체 {0}개의 박자를 확대/축소함"
+    },
+    "scaleElevation": {
+      "title": "높이 확대/축소",
+      "noSelected": "높이가 다른 노트 또는 스테이지 변형을 두 개 이상 선택하세요",
+      "scaled": "객체 {0}개의 높이를 확대/축소함"
+    },
+    "scaleSelection": {
+      "factor": "배율",
+      "pivotBeat": "가장 이른 박자",
+      "pivotElevation": "가장 낮은 높이",
+      "apply": "적용",
+      "invalidFactor": "결과가 편집기에서 지원하는 범위 내에 있도록 양의 배율을 입력하세요"
+    },
     "combineNotes": {
       "title": "슬라이드로 연결",
       "noSelected": "연결할 노트가 선택되지 않음",

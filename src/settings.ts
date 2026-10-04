@@ -187,6 +187,8 @@ const settingsProperties = {
                         'play',
                     ],
                     [
+                        'scaleElevation',
+                        'scaleBeat',
                         'combineNotes',
                         'flipVertical',
                         'flip',

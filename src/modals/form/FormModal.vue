@@ -4,6 +4,7 @@ import BaseModal from '../BaseModal.vue'
 
 defineProps<{
     title: string
+    submitLabel?: string
 }>()
 
 defineEmits<{
@@ -23,7 +24,7 @@ defineEmits<{
                 <input
                     class="w-32 rounded-full bg-accent px-4 py-1 shadow-md transition-colors hover:shadow-accent active:bg-button active:text-accent"
                     type="submit"
-                    :value="i18n.modals.form.confirm"
+                    :value="submitLabel ?? i18n.modals.form.confirm"
                 />
             </div>
         </form>

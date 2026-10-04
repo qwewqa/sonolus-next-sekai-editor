@@ -1282,6 +1282,106 @@ test('elevation toolbar offers spatial actions and omits time reversal', async (
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('context elevation scaling preserves the lowest note and keeps the pane open', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history, settings } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [
+                    [{ ...base, beat: 6, left: -3, elevation: 2 }],
+                    [{ ...base, beat: 6, left: 1, elevation: 4 }],
+                ],
+            },
+            3,
+        )
+        settings.mouseSecondaryTool = 'selectContextMenu'
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+    })
+    await open(page)
+    const hit = await point(page)
+    await page.mouse.click(hit.x, hit.y, { button: 'right' })
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem', { name: 'Scale beats', exact: true })).toHaveCount(0)
+    await menu.getByRole('menuitem', { name: 'Scale elevations', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('0.5')
+    await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(page.locator('.elevation-editor')).toBeVisible()
+    expect((await notes(page)).map((note) => note.elevation).sort((a, b) => a - b)).toEqual([2, 3])
+    await page.keyboard.press('z')
+    expect((await notes(page)).map((note) => note.elevation).sort((a, b) => a - b)).toEqual([2, 4])
+})
+
+for (const width of [1600, 375, 320]) {
+    test(`elevation management and chart controls remain usable at width ${width}`, async ({
+        page,
+    }, testInfo) => {
+        await page.setViewportSize({ width, height: width === 1600 ? 1000 : 812 })
+        await page.evaluate(async () => {
+            const { history } = window.editorTest
+            const { addToStages } = await import('/src/chart/stages.ts')
+            const stages = new Map(history.state.value.stages)
+            while (stages.size === history.state.value.stages.size) addToStages(stages)
+            history.replaceState({ ...history.state.value, isDynamicStages: true })
+        })
+        await open(page)
+        const editor = page.locator('.elevation-editor')
+        for (const [name, collection] of [
+            ['Manage groups', 'groups'],
+            ['Manage stages', 'stages'],
+        ] as const) {
+            const before = await page.evaluate(
+                (key) => window.editorTest.history.state.value[key].size,
+                collection,
+            )
+            await editor.getByRole('button', { name, exact: true }).first().click()
+            const dialog = page.getByRole('dialog')
+            await expect(dialog).toBeVisible()
+            await dialog.getByRole('button', { name: 'Add', exact: true }).click()
+            await expect
+                .poll(() =>
+                    page.evaluate(
+                        (key) => window.editorTest.history.state.value[key].size,
+                        collection,
+                    ),
+                )
+                .toBe(before + 1)
+            await dialog.locator('.bg-header button').click()
+            await expect(editor).toBeVisible()
+            await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue(
+                '6',
+            )
+        }
+        for (const name of ['Open', 'Play', '1/1']) {
+            const button = editor.getByRole('button', { name, exact: true }).first()
+            await expect(button).toBeVisible()
+            const hit = await button.evaluate((element) => {
+                const bounds = element.getBoundingClientRect()
+                return element.contains(
+                    document.elementFromPoint(
+                        bounds.x + bounds.width / 2,
+                        bounds.y + bounds.height / 2,
+                    ),
+                )
+            })
+            expect(hit).toBe(true)
+        }
+        await page.mouse.move(0, 0)
+        await page.screenshot({
+            path: testInfo.outputPath('elevation-management.png'),
+            style: '.notification { visibility:hidden }',
+        })
+    })
+}
+
 test('keyboard panning uses the active elevation pane width after resizing the split', async ({
     page,
 }) => {

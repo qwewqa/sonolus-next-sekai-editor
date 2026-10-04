@@ -39,6 +39,55 @@ test.afterEach(async ({ page }) => {
     expect(runtimeErrors.get(page)).toEqual([])
 })
 
+test('context beat scaling fixes the first beat and is undoable', async ({ page }) => {
+    await selectTwo(page)
+    await click(page, -3, 3)
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem', { name: 'Scale elevations', exact: true })).toHaveCount(
+        0,
+    )
+    await menu.getByRole('menuitem', { name: 'Scale beats', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('2')
+    await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    expect((await snapshot(page)).selected.map((note) => note.beat).sort((a, b) => a - b)).toEqual([
+        3, 7,
+    ])
+    await page.keyboard.press('z')
+    expect((await snapshot(page)).selected.map((note) => note.beat).sort((a, b) => a - b)).toEqual([
+        3, 5,
+    ])
+})
+
+test('localized scale controls fit a narrow phone and reject invalid factors', async ({
+    page,
+}, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 812 })
+    await page.evaluate(() => {
+        window.editorTest.settings.locale = 'fr'
+    })
+    await expect.poll(() => page.evaluate(() => window.editorTest.view.w)).toBe(320)
+    await selectTwo(page)
+    await click(page, -3, 3)
+    await page.getByRole('menuitem', { name: 'Mettre les temps à l’échelle', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    const input = dialog.getByRole('spinbutton', { name: 'Facteur d’échelle', exact: true })
+    await input.fill('0')
+    await dialog.getByRole('button', { name: 'Appliquer', exact: true }).click()
+    await expect(dialog.getByRole('alert')).toBeVisible()
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+    const bounds = await dialog.boundingBox()
+    expect(bounds!.x).toBeGreaterThanOrEqual(0)
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320)
+    await page.screenshot({ path: testInfo.outputPath('phone-scale-validation.png') })
+    await input.fill('1')
+    await dialog.getByRole('button', { name: 'Appliquer', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+})
+
 test('the new secondary button option is selectable and persisted in settings', async ({
     page,
 }) => {

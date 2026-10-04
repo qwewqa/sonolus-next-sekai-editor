@@ -71,6 +71,23 @@
       "title": "上下反転",
       "flipped": "{0}個のオブジェクトを上下反転しました"
     },
+    "scaleBeat": {
+      "title": "拍を拡大・縮小",
+      "noSelected": "異なる拍にあるオブジェクトを2つ以上選択してください",
+      "scaled": "{0}個のオブジェクトの拍を拡大・縮小しました"
+    },
+    "scaleElevation": {
+      "title": "高さを拡大・縮小",
+      "noSelected": "高さが異なるノーツまたはステージ変形イベントを2つ以上選択してください",
+      "scaled": "{0}個のオブジェクトの高さを拡大・縮小しました"
+    },
+    "scaleSelection": {
+      "factor": "倍率",
+      "pivotBeat": "最初の拍",
+      "pivotElevation": "最低の高さ",
+      "apply": "適用",
+      "invalidFactor": "結果がエディターの対応範囲内に収まる、正の倍率を入力してください"
+    },
     "combineNotes": {
       "title": "スライドに結合",
       "noSelected": "結合するノーツが選択されていません",

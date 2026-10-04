@@ -71,6 +71,23 @@
       "title": "Retourner verticalement",
       "flipped": "{0} objets retournés verticalement"
     },
+    "scaleBeat": {
+      "title": "Mettre les temps à l’échelle",
+      "noSelected": "Sélectionnez au moins deux objets à des temps différents",
+      "scaled": "Temps de {0} objets mis à l’échelle"
+    },
+    "scaleElevation": {
+      "title": "Mettre les élévations à l’échelle",
+      "noSelected": "Sélectionnez au moins deux notes ou transformations de scène à des élévations différentes",
+      "scaled": "Élévations de {0} objets mises à l’échelle"
+    },
+    "scaleSelection": {
+      "factor": "Facteur d’échelle",
+      "pivotBeat": "Premier temps",
+      "pivotElevation": "Élévation minimale",
+      "apply": "Appliquer",
+      "invalidFactor": "Saisissez un facteur d’échelle positif qui maintient le résultat dans les limites prises en charge par l’éditeur"
+    },
     "combineNotes": {
       "title": "Combiner en slide",
       "noSelected": "Aucune note sélectionnée à combiner",

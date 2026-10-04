@@ -5,6 +5,7 @@ import { selectedEntities } from '../history/selectedEntities'
 import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { isEditableEntity } from '../state/operations/editable'
+import { canScaleSelection } from '../state/operations/scaleValues'
 import { formatShortcut } from '../utils/format'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import DeleteIcon from './commands/reset/ResetIcon.vue'
@@ -63,6 +64,9 @@ const actions = computed(() => {
             transforms.push('flip')
         if (new Set(selection.filter(isEditableEntity).map((entity) => entity.beat)).size > 1)
             transforms.push('flipVertical')
+        if (canScaleSelection(selection, 'beat')) transforms.push('scaleBeat')
+        if (canScaleSelection(selection, 'elevation', state.value))
+            transforms.push('scaleElevation')
         if (
             new Set(selection.flatMap((entity) => (entity.type === 'note' ? [entity.slideId] : [])))
                 .size > 1

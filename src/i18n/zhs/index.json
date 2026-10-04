@@ -71,6 +71,23 @@
       "title": "垂直翻转",
       "flipped": "已垂直翻转 {0} 个对象"
     },
+    "scaleBeat": {
+      "title": "缩放节拍间距",
+      "noSelected": "请选择至少两个位于不同节拍的对象进行缩放",
+      "scaled": "已缩放 {0} 个对象的节拍间距"
+    },
+    "scaleElevation": {
+      "title": "缩放高度间距",
+      "noSelected": "请选择至少两个高度不同的音符或舞台变换进行缩放",
+      "scaled": "已缩放 {0} 个对象的高度间距"
+    },
+    "scaleSelection": {
+      "factor": "缩放倍数",
+      "pivotBeat": "最早节拍",
+      "pivotElevation": "最低高度",
+      "apply": "应用",
+      "invalidFactor": "请输入正缩放倍数，使结果保持在编辑器支持的范围内"
+    },
     "combineNotes": {
       "title": "合并为长按音符",
       "noSelected": "未选择要合并的音符",
