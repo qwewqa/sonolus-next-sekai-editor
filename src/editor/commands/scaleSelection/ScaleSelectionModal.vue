@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, onMounted, watch } from 'vue'
+import { computed, ref, useTemplateRef, onMounted, onUnmounted, watch } from 'vue'
 import { i18n } from '../../../i18n'
 import BaseModal from '../../../modals/BaseModal.vue'
+import { modals } from '../../../modals'
 import { getScaleLabels } from './labels'
 import {
     scalingSession,
@@ -39,9 +40,34 @@ const cancel = () => {
 const apply = () => {
     if (applyScalingSession()) emit('close')
 }
+const onKeydown = (event: KeyboardEvent) => {
+    const modal = modals.at(-1)
+    if (
+        event.key !== 'Enter' ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.repeat ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        (event.target instanceof Element && event.target.closest('button')) ||
+        !modal ||
+        !('sessionId' in modal.props) ||
+        modal.props.sessionId !== props.sessionId
+    )
+        return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    apply()
+}
 onMounted(() => {
+    window.addEventListener('keydown', onKeydown, true)
     input.value?.focus()
     input.value?.select()
+})
+onUnmounted(() => {
+    window.removeEventListener('keydown', onKeydown, true)
 })
 </script>
 

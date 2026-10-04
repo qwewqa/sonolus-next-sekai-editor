@@ -229,6 +229,30 @@ test.afterEach(async ({ page }) => {
     expect(errors.get(page)).toEqual([])
 })
 
+for (const axis of ['beat', 'elevation'] as const) {
+    test(`Enter applies ${axis} scaling after editing and dragging`, async ({ page }) => {
+        await prepareThree(page, axis)
+        await factor(page).fill('0')
+        await factor(page).press('Enter')
+        await expect(panel(page)).toBeVisible()
+        expect((await summary(page)).canUndo).toBe(false)
+        await factor(page).fill('2')
+        await factor(page).press('Enter')
+        await expect(panel(page)).toHaveCount(0)
+        expect((await summary(page)).canUndo).toBe(true)
+        await page.keyboard.press('z')
+        await open(page, axis)
+        await dragAxis(page, axis, -4, axis === 'beat' ? 3 : 1, axis === 'beat' ? 2 : 0)
+        await page.locator('body').evaluate((body) => {
+            if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+            body.focus()
+        })
+        await page.keyboard.press('Enter')
+        await expect(panel(page)).toHaveCount(0)
+        expect((await summary(page)).canUndo).toBe(true)
+    })
+}
+
 test('live factor leaves chart history untouched until Apply, with one undo', async ({
     page,
 }, testInfo) => {

@@ -192,6 +192,15 @@ const settingsProperties = {
                     ],
                     ['paste', 'cut', 'copy', 'redo', 'undo'],
                     [
+                        'increaseNoteSize',
+                        'decreaseNoteSize',
+                        'brush',
+                        'eraser',
+                        'deselect',
+                        'elevation',
+                        'select',
+                    ],
+                    [
                         'scaleWidth',
                         'scaleElevation',
                         'scaleBeat',
@@ -200,15 +209,6 @@ const settingsProperties = {
                         'splitHold',
                         'flipVertical',
                         'flip',
-                    ],
-                    [
-                        'increaseNoteSize',
-                        'decreaseNoteSize',
-                        'brush',
-                        'eraser',
-                        'deselect',
-                        'elevation',
-                        'select',
                     ],
                     ['note3', 'note2', 'note1', 'note0', 'note'],
                     [

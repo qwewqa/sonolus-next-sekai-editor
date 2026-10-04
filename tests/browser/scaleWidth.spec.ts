@@ -146,7 +146,7 @@ test('width factor previews positions and sizes, Apply creates one undo', async 
         [8, 4],
     ])
     expect(draft.dirty).toBe(false)
-    await panel(page).getByRole('button', { name: 'Apply', exact: true }).click()
+    await factor(page).press('Enter')
     expect((await snapshot(page)).stored.map(({ left, size }) => [left, size])).toEqual([
         [-4, 3],
         [2, 3],
