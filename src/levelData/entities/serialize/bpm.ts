@@ -14,5 +14,9 @@ export const serializeBpmsToLevelDataEntities = (store: Store) =>
                 name: EngineArchetypeDataName.Bpm,
                 value: bpm.bpm,
             },
+            {
+                name: 'meter',
+                value: bpm.meter,
+            },
         ],
     }))

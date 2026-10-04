@@ -611,7 +611,13 @@
       "showOtherGroups": "显示其他群组",
       "showStageName": "显示舞台名称",
       "showOtherStages": "显示其他舞台",
-      "showOtherObjects": "显示其他对象"
+      "showOtherObjects": "显示其他对象",
+      "beatDisplay": {
+        "title": "节拍显示",
+        "beat": "节拍",
+        "measure": "小节",
+        "both": "两者"
+      }
     },
     "keyboardShortcuts": {
       "title": "键盘快捷键"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "连接颜色"
+      },
+      "meter": {
+        "label": "每小节拍数"
       }
     },
     "confirm": {

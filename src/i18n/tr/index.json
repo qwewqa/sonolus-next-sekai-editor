@@ -611,7 +611,13 @@
       "showOtherGroups": "Diğer Grupları Göster",
       "showStageName": "Sahne Adını Göster",
       "showOtherStages": "Diğer Sahneleri Göster",
-      "showOtherObjects": "Diğer Nesneleri Göster"
+      "showOtherObjects": "Diğer Nesneleri Göster",
+      "beatDisplay": {
+        "title": "Vuruş Gösterimi",
+        "beat": "Vuruş",
+        "measure": "Ölçü",
+        "both": "Her İkisi"
+      }
     },
     "keyboardShortcuts": {
       "title": "Klavye Kısayolları"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "Bağlayıcı Rengi"
+      },
+      "meter": {
+        "label": "Ölçü"
       }
     },
     "confirm": {

@@ -114,11 +114,18 @@ export const parseSusChart = (sus: Sus) => {
         })
     }
 
-    for (const bpmChange of sus.bpmChanges) {
-        chart.bpms.push({
-            beat: bpmChange.tick / sus.ticksPerBeat,
-            bpm: bpmChange.bpm,
-        })
+    const bpmChanges = new Map(sus.bpmChanges.map((change) => [change.tick, change.bpm]))
+    const meterChanges = new Map(
+        (sus.meterChanges ?? []).map((change) => [change.tick, change.meter]),
+    )
+    let bpm = 60
+    let meter = 4
+    for (const tick of [...new Set([...bpmChanges.keys(), ...meterChanges.keys()])].sort(
+        (a, b) => a - b,
+    )) {
+        bpm = bpmChanges.get(tick) ?? bpm
+        meter = meterChanges.get(tick) ?? meter
+        chart.bpms.push({ beat: tick / sus.ticksPerBeat, bpm, meter })
     }
 
     for (const note of sus.tapNotes) {

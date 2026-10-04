@@ -179,6 +179,7 @@ export const bpm: Tool = {
                 const object: BpmObject = {
                     beat,
                     bpm: active.entity.bpm,
+                    meter: active.entity.meter,
                 }
 
                 view.entities = {
@@ -235,6 +236,7 @@ export const bpm: Tool = {
                 editMoveOrReplace(active.entity, {
                     beat,
                     bpm: active.entity.bpm,
+                    meter: active.entity.meter,
                 })
                 focusEntityAtBeat(beat)
                 break
@@ -275,7 +277,7 @@ const previewMove = (entity: BpmEntity, object: BpmObject) => {
     setPreviewEdit(source, () => {
         const transaction = createTransaction(source, { autoAddGroup: false })
         return transaction.commit(applyBpmEdit(transaction, entity, object))
-    }, [entity, object.beat, object.bpm])
+    }, [entity, object.beat, object.bpm, object.meter])
 }
 
 const editMoveOrReplace = (entity: BpmEntity, object: Partial<BpmObject>) => {

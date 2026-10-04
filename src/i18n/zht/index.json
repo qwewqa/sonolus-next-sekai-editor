@@ -611,7 +611,13 @@
       "showOtherGroups": "顯示其他圖層",
       "showStageName": "顯示舞台名稱",
       "showOtherStages": "顯示其他舞台",
-      "showOtherObjects": "顯示其他物件"
+      "showOtherObjects": "顯示其他物件",
+      "beatDisplay": {
+        "title": "節拍顯示",
+        "beat": "節拍",
+        "measure": "小節",
+        "both": "兩者"
+      }
     },
     "keyboardShortcuts": {
       "title": "鍵盤快捷鍵"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "連接線顏色"
+      },
+      "meter": {
+        "label": "每小節拍數"
       }
     },
     "confirm": {

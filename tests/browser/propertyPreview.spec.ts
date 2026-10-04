@@ -147,8 +147,8 @@ test('moving the initial BPM onto an existing BPM previews the same replacement 
         })
     })
     const beat = page.getByLabel('Beat', { exact: true })
-    await expect(beat).toHaveValue('0')
-    await beat.fill('12')
+    await expect(beat).toHaveValue('1')
+    await beat.fill('13')
     const previewBpms = await page.evaluate(() => {
         const current = window.editorTest.history.state.value
         const preview = window.propertyPreview.getPreviewState(current)
@@ -182,8 +182,8 @@ test('a time-scale beat draft replaces the destination without duplicating it', 
         })
     })
     const beat = page.getByLabel('Beat', { exact: true })
-    await expect(beat).toHaveValue('4.5')
-    await beat.fill('14.5')
+    await expect(beat).toHaveValue('5.5')
+    await beat.fill('15.5')
     const previewTimeScales = await page.evaluate(() => {
         const preview = window.propertyPreview.getPreviewState(
             window.editorTest.history.state.value,

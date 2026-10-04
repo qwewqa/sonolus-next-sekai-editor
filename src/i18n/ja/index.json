@@ -611,7 +611,13 @@
       "showOtherGroups": "他のグループを表示",
       "showStageName": "ステージ名を表示",
       "showOtherStages": "他のステージを表示",
-      "showOtherObjects": "他のオブジェクトを表示"
+      "showOtherObjects": "他のオブジェクトを表示",
+      "beatDisplay": {
+        "title": "拍の表示",
+        "beat": "拍",
+        "measure": "小節",
+        "both": "両方"
+      }
     },
     "keyboardShortcuts": {
       "title": "キーボードショートカット"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "接続の色"
+      },
+      "meter": {
+        "label": "拍子"
       }
     },
     "confirm": {

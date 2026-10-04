@@ -13,6 +13,7 @@ export const editSelectedBpm = (
     return addBpm(transaction, {
         beat: object.beat ?? entity.beat,
         bpm: object.bpm ?? entity.bpm,
+        meter: object.meter ?? entity.meter,
     })
 }
 
@@ -31,5 +32,9 @@ export const editBpm = (
         (candidate) => candidate.beat === beat,
     )
     if (overlap) removeBpm(transaction, overlap)
-    return addBpm(transaction, { beat, bpm: object.bpm ?? entity.bpm })
+    return addBpm(transaction, {
+        beat,
+        bpm: object.bpm ?? entity.bpm,
+        meter: object.meter ?? entity.meter,
+    })
 }

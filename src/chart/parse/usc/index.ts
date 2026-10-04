@@ -41,6 +41,7 @@ export const parseUscChart = (objects: UscObject[]) => {
                 chart.bpms.push({
                     beat: object.beat,
                     bpm: object.bpm,
+                    meter: 4,
                 })
                 break
             case 'timeScaleGroup':

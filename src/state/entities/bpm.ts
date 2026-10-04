@@ -4,6 +4,7 @@ import type { BpmObject } from '../../chart/bpm'
 export type BpmEntity = BaseEntity & {
     type: 'bpm'
     bpm: number
+    meter: number
 }
 
 export const toBpmEntity = (object: BpmObject): BpmEntity => ({
@@ -17,4 +18,5 @@ export const toBpmEntity = (object: BpmObject): BpmEntity => ({
 
     beat: object.beat,
     bpm: object.bpm,
+    meter: object.meter ?? 4,
 })

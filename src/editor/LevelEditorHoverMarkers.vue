@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { settings } from '../settings'
 import { timeToBeat } from '../state/integrals/bpms'
-import { formatBeat, formatTime } from '../utils/format'
+import { formatTime } from '../utils/format'
+import { formatBeatPosition } from './beatDisplay'
 import { sceneBpms } from './sceneState'
 import { view } from './view'
 
@@ -19,6 +20,6 @@ const hover = computed(() => ({
         :style="{ top: `${hover.top}px` }"
     >
         <span>{{ formatTime(hover.time) }}</span>
-        <span>{{ formatBeat(hover.beat) }}</span>
+        <span>{{ formatBeatPosition(sceneBpms, hover.beat, settings.beatDisplay, true) }}</span>
     </div>
 </template>

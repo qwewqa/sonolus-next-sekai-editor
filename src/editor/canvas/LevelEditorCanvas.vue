@@ -109,6 +109,7 @@ watchEffect(
         const currentTimes = times.value
         const division = view.division
         const laneDivision = view.laneDivision
+        const beatDisplay = settings.beatDisplay
         const cursor = view.cursorTime
         const currentWaveform = settings.waveform === 'off' ? undefined : inputs.state.bgm.waveform
         const offset = inputs.state.bgm.offset + bgmOffsetDelta.value
@@ -125,7 +126,7 @@ watchEffect(
             if (!ctx) return
             const context = { ...inputs, ctx }
             waveform.draw(context, currentWaveform, offset, currentTimes)
-            drawGrid(context, currentBeats, currentTimes, division, laneDivision)
+            drawGrid(context, currentBeats, currentTimes, division, laneDivision, beatDisplay)
             ctx.save()
             ctx.strokeStyle = '#fff'
             ctx.beginPath()

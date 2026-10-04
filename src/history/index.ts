@@ -27,6 +27,7 @@ const createDefaultChart = (): Chart => {
             {
                 beat: 0,
                 bpm: 60,
+                meter: 4,
             },
         ],
         groups,

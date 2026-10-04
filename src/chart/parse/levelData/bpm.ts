@@ -1,6 +1,6 @@
 import { EngineArchetypeDataName, EngineArchetypeName } from '@sonolus/core'
 import Type from 'typebox'
-import { getValue, type ParseCtx } from '.'
+import { getOptionalValue, getValue, type ParseCtx } from '.'
 import { beatSchema } from './schemas'
 
 export const parseBpmsToChart = ({ chart, entities }: ParseCtx) => {
@@ -10,6 +10,7 @@ export const parseBpmsToChart = ({ chart, entities }: ParseCtx) => {
         chart.bpms.push({
             beat: getValue(entity, EngineArchetypeDataName.Beat, beatSchema),
             bpm: getValue(entity, EngineArchetypeDataName.Bpm, valueSchema),
+            meter: getOptionalValue(entity, 'meter', valueSchema) ?? 4,
         })
     }
 }

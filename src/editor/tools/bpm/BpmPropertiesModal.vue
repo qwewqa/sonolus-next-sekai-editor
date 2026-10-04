@@ -2,18 +2,21 @@
 import { i18n } from '../../../i18n'
 import MultiBeatField from '../../../modals/form/MultiBeatField.vue'
 import MultiBpmField from '../../../modals/form/MultiBpmField.vue'
+import MultiMeterField from '../../../modals/form/MultiMeterField.vue'
 import PropertiesModal from '../../../modals/form/PropertiesModal.vue'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
 
 const { entities, createModel } = useSelectedEntitiesProperties((entity) => entity.type === 'bpm')
 
 const bpm = createModel('bpm')
+const meter = createModel('meter')
 const beat = createModel('beat')
 </script>
 
 <template>
     <PropertiesModal :title="i18n.tools.bpm.modal.title">
         <MultiBpmField v-model="bpm" />
+        <MultiMeterField v-model="meter" />
         <MultiBeatField v-if="entities.length === 1" v-model="beat" />
     </PropertiesModal>
 </template>

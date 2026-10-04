@@ -8,6 +8,7 @@ import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
 import type { StageMaskEventJointEntity } from '../../src/state/entities/events/joints/stage/mask'
+import { calculateBpms } from '../../src/state/integrals/bpms'
 
 class RecordingCanvas {
     globalAlpha = 1
@@ -205,7 +206,7 @@ test('event connections reuse geometry while scrolling but invalidate for BPM ed
         assert.notEqual(canvas.strokes[4]?.path, canvas.strokes[0]?.path)
         assert.equal((canvas.strokes[4]?.path as TestPath).d.includes('M -4 -20'), true)
 
-        context.state = { ...context.state, bpms: [{ x: 0, y: 0, s: 1 }] }
+        context.state = { ...context.state, bpms: calculateBpms([{ x: 0, y: 0, s: 1 }]) }
         drawEvent(context, entity, false)
         assert.notEqual(canvas.strokes[6]?.path, canvas.strokes[4]?.path)
         assert.equal((canvas.strokes[6]?.path as TestPath).d.includes('M -4 -40'), true)

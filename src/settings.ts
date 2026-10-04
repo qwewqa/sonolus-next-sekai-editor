@@ -128,6 +128,10 @@ const settingsProperties = {
 
     pps: number(1000, 100, 10000),
 
+    beatDisplay: Type.Union([Type.Literal('beat'), Type.Literal('measure'), Type.Literal('both')], {
+        default: 'measure',
+    }),
+
     elevationEditorWidth: number(50, 20, 80),
 
     elevationSnap: Type.Union(

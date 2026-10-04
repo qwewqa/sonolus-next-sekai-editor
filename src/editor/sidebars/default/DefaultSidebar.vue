@@ -5,6 +5,7 @@ import { i18n } from '../../../i18n'
 import MultiAnchorField from '../../../modals/form/MultiAnchorField.vue'
 import MultiBeatField from '../../../modals/form/MultiBeatField.vue'
 import MultiBpmField from '../../../modals/form/MultiBpmField.vue'
+import MultiMeterField from '../../../modals/form/MultiMeterField.vue'
 import MultiCameraLeftField from '../../../modals/form/MultiCameraLeftField.vue'
 import MultiCameraRotationField from '../../../modals/form/MultiCameraRotationField.vue'
 import MultiCameraSizeField from '../../../modals/form/MultiCameraSizeField.vue'
@@ -70,6 +71,7 @@ const { entities, types, noteFields, createModel } = useSelectedEntitiesProperti
 const beat = createModel('beat')
 const editorLane = createModel('editorLane')
 const bpm = createModel('bpm')
+const meter = createModel('meter')
 const groupId = createModel('groupId')
 const stageId = createModel('stageId')
 const timeScale = createModel('timeScale')
@@ -134,6 +136,7 @@ const connectorPresentation = createModel('connectorPresentation')
         <div v-if="!entities.length">{{ i18n.sidebars.default.none }}</div>
         <template v-else>
             <MultiBpmField v-if="types.bpm" v-model="bpm" />
+            <MultiMeterField v-if="types.bpm" v-model="meter" />
             <MultiTimeScaleField v-if="types.timeScale" v-model="timeScale" />
             <MultiSkipField v-if="types.timeScale" v-model="skip" />
             <MultiTimeScaleEaseField v-if="types.timeScale" v-model="timeScaleEase" />

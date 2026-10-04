@@ -41,6 +41,7 @@ export type Sus = {
     ticksPerBeat: number
     timeScaleChanges: TimeScaleChangeObject[]
     bpmChanges: BpmChangeObject[]
+    meterChanges?: { tick: number; meter: number }[]
     tapNotes: NoteObject[]
     directionalNotes: NoteObject[]
     slides: SlideObject[]
@@ -128,6 +129,12 @@ export const parseSus = (data: string[]): Sus => {
         ticksPerBeat,
         timeScaleChanges,
         bpmChanges,
+        meterChanges: barLengths
+            .map(({ measure, length }) => ({
+                tick: toTick(measure, 0, 1),
+                meter: length,
+            }))
+            .sort((a, b) => a.tick - b.tick),
         tapNotes,
         directionalNotes,
         slides,
@@ -188,7 +195,9 @@ const getBarLengths = (lines: Line[], measureChanges: MeasureChange[]) => {
             (measureChanges.find(([changeIndex]) => changeIndex <= index)?.[1] ?? 0)
         if (Number.isNaN(measure)) continue
 
-        barLengths.push({ measure, length: +data })
+        const length = +data
+        if (!Number.isFinite(length) || length <= 0) throw new Error('Invalid meter')
+        barLengths.push({ measure, length })
     }
 
     return barLengths

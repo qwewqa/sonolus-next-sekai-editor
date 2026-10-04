@@ -9,6 +9,7 @@ import type { ElevationRow } from '../../src/editor/elevation/layout'
 import { connectorColors } from '../../src/editor/utils/connectorColors'
 import { toConnectorEntity } from '../../src/state/entities/slides/connector'
 import type { NoteEntity } from '../../src/state/entities/slides/note'
+import { calculateBpms } from '../../src/state/integrals/bpms'
 
 const note = (properties: Partial<NoteEntity> = {}) =>
     ({
@@ -266,10 +267,10 @@ test('guide opacity interpolates in time across BPM changes', () => {
         tail = note()
     const segmentHead = note({ beat: 0, connectorType: 'guide', connectorGuideAlpha: 0 })
     const segmentTail = note({ beat: 8, connectorGuideAlpha: 1 })
-    const bpms = [
+    const bpms = calculateBpms([
         { x: 0, y: 0, s: 0.5 },
         { x: 4, y: 2, s: 1 },
-    ]
+    ])
     const [connection] = getElevationConnections(
         [row(head), row(tail)],
         [[connect(head, tail, segmentHead, segmentTail)]],

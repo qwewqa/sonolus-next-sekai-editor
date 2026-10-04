@@ -1,6 +1,7 @@
-import { beatToTime } from '../../state/integrals/bpms'
-import { formatIntegerBeat, formatIntegerTime } from '../../utils/format'
+import { beatToTime, getMeasureBeats } from '../../state/integrals/bpms'
+import { formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
+import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
@@ -10,6 +11,7 @@ export const drawGrid = (
     times: Range<number>,
     division: number,
     laneDivision = 1,
+    beatDisplay: BeatDisplay = 'measure',
 ) => {
     const { ctx, bounds, scale, state, ups } = context
     ctx.save()
@@ -41,9 +43,10 @@ export const drawGrid = (
 
     const min = Math.ceil(beats.min * division)
     const max = Math.floor(beats.max * division)
+    const showMeasures = beatDisplay !== 'beat'
     if (max - min <= 100) {
         for (const isBeat of [false, true]) {
-            ctx.globalAlpha = isBeat ? 0.5 : 0.25
+            ctx.globalAlpha = showMeasures ? (isBeat ? 0.35 : 0.15) : isBeat ? 0.5 : 0.25
             ctx.beginPath()
             for (let i = min; i <= max; i++) {
                 if ((i % division === 0) !== isBeat) continue
@@ -55,11 +58,23 @@ export const drawGrid = (
         }
     }
 
+    if (showMeasures) {
+        ctx.globalAlpha = 0.7
+        ctx.lineWidth = 3 / scale
+        ctx.beginPath()
+        for (const beat of getMeasureBeats(state.bpms, beats.min, beats.max)) {
+            const y = beatToTime(state.bpms, beat) * ups
+            ctx.moveTo(-6, y)
+            ctx.lineTo(6, y)
+        }
+        ctx.stroke()
+    }
+
     ctx.globalAlpha = 0.5
     for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
         drawText(
             context,
-            formatIntegerBeat(beat),
+            formatBeatPosition(state.bpms, beat, beatDisplay),
             6.1,
             beatToTime(state.bpms, beat) * ups,
             '#fff',

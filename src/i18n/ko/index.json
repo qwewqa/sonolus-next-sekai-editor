@@ -611,7 +611,13 @@
       "showOtherGroups": "다른 그룹 보기",
       "showStageName": "스테이지 이름 보이기",
       "showOtherStages": "다른 스테이지 보기",
-      "showOtherObjects": "다른 객체 표시"
+      "showOtherObjects": "다른 객체 표시",
+      "beatDisplay": {
+        "title": "박자 표시",
+        "beat": "박",
+        "measure": "마디",
+        "both": "둘 다"
+      }
     },
     "keyboardShortcuts": {
       "title": "키보드 단축키"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "커넥터 색상"
+      },
+      "meter": {
+        "label": "박자"
       }
     },
     "confirm": {

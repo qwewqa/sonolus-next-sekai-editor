@@ -4,6 +4,7 @@ import { createConnectorRenderer } from '../../src/editor/canvas/connectors'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { toConnectorEntity } from '../../src/state/entities/slides/connector'
 import type { NoteEntity } from '../../src/state/entities/slides/note'
+import { calculateBpms } from '../../src/state/integrals/bpms'
 
 type Command = [string, ...number[]]
 
@@ -179,10 +180,10 @@ test('compound easing joins at the attachment midpoint and clips each half', () 
 
 test('guide fades retain time-based alpha across BPM changes and segment boundaries', () => {
     const { context, gradients, renderer } = fixture()
-    context.state.bpms = [
+    context.state.bpms = calculateBpms([
         { x: 0, y: 0, s: 0.5 },
         { x: 4, y: 2, s: 0.25 },
-    ]
+    ])
     const first = note(0, -3, 2, { connectorType: 'guide', connectorGuideAlpha: 0 })
     const last = note(8, 3, 4)
     const entity = toConnectorEntity(note(2, 0, 0), note(6, 0, 0), first, last, first, last)
@@ -284,7 +285,7 @@ test('connector path cache survives panning, but updates for zoom and BPM edits'
     assert.notEqual(fills[2]!.path, fills[0]!.path)
     assert.deepEqual(fills[2]!.path.commands[1], ['L', 4, -8])
 
-    context.state.bpms = [{ x: 0, y: 0, s: 1 }]
+    context.state.bpms = calculateBpms([{ x: 0, y: 0, s: 1 }])
     renderer.draw(context, entity, false)
     assert.notEqual(fills[3]!.path, fills[2]!.path)
     assert.deepEqual(fills[3]!.path.commands[1], ['L', 4, -8])

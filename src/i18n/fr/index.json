@@ -611,7 +611,13 @@
       "showOtherGroups": "Afficher les autres groupes",
       "showStageName": "Afficher le nom de la scène",
       "showOtherStages": "Afficher les autres scènes",
-      "showOtherObjects": "Afficher les autres objets"
+      "showOtherObjects": "Afficher les autres objets",
+      "beatDisplay": {
+        "title": "Affichage des temps",
+        "beat": "Temps",
+        "measure": "Mesure",
+        "both": "Les deux"
+      }
     },
     "keyboardShortcuts": {
       "title": "Raccourcis Clavier"
@@ -1169,6 +1175,9 @@
       },
       "connectorStyle": {
         "label": "Couleur du connecteur"
+      },
+      "meter": {
+        "label": "Temps par mesure"
       }
     },
     "confirm": {

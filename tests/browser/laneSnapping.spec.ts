@@ -151,7 +151,7 @@ test('elevation placement and resizing use the same fractional lane grid', async
     })
     await page.keyboard.press('t')
     const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('4')
+    await beat.fill('5')
     await beat.press('Tab')
     await page.locator('.elevation-editor').focus()
     await page.keyboard.press('a')
@@ -298,10 +298,10 @@ test('elevation beat arrows step by the current division through empty beats and
 }) => {
     await page.keyboard.press('t')
     const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('4')
+    await beat.fill('5')
     await beat.press('Tab')
     await page.getByRole('button', { name: 'Next beat', exact: true }).click()
-    await expect(beat).toHaveValue('4.25')
+    await expect(beat).toHaveValue('5.25')
     expect(
         await page.evaluate(async () => {
             const { elevationLayout } = await import('/src/editor/elevation/scene.ts')
@@ -309,13 +309,13 @@ test('elevation beat arrows step by the current division through empty beats and
         }),
     ).toBe(0)
     await page.getByRole('button', { name: 'Previous beat', exact: true }).click()
-    await expect(beat).toHaveValue('4')
+    await expect(beat).toHaveValue('5')
     await page.evaluate(() => {
         window.editorTest.view.division = 3
     })
     await page.getByRole('button', { name: 'Next beat', exact: true }).click()
-    expect(Number(await beat.inputValue())).toBeCloseTo(4 + 1 / 3)
-    await beat.fill('0')
+    expect(Number(await beat.inputValue())).toBeCloseTo(5 + 1 / 3)
+    await beat.fill('1')
     await beat.press('Tab')
     await expect(page.getByRole('button', { name: 'Previous beat', exact: true })).toBeDisabled()
     expect(await beat.evaluate((input) => getComputedStyle(input).appearance)).toBe('textfield')

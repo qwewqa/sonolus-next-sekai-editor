@@ -38,6 +38,7 @@ import LevelEditorToolbar from '../toolbar/LevelEditorToolbar.vue'
 import EditorToolModalHost from '../EditorToolModalHost.vue'
 import { hasToolModal } from '../toolModals'
 import type { CommandName } from '../commands'
+import { fromDisplayedBeat, toDisplayedBeat } from '../beatDisplay'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
 import { alignLane, view, focusViewAtBeat } from '../view'
 import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
@@ -545,7 +546,12 @@ const changeBeat = (beat: number) => {
     fitViewport()
 }
 const onBeatInput = (event: Event) => {
-    changeBeat(Number((event.target as HTMLInputElement).value))
+    const input = event.target as HTMLInputElement
+    if (!Number.isFinite(input.valueAsNumber) || input.valueAsNumber < 1) {
+        input.value = `${toDisplayedBeat(elevationBeat.value)}`
+        return
+    }
+    changeBeat(fromDisplayedBeat(input.valueAsNumber))
 }
 const onKeydown = (event: KeyboardEvent) => {
     if (modals.length) return
@@ -908,9 +914,9 @@ onUnmounted(() => {
                         ><input
                             class="h-7 w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
                             type="number"
-                            min="0"
+                            min="1"
                             :step="1 / view.division"
-                            :value="elevationBeat"
+                            :value="toDisplayedBeat(elevationBeat)"
                             :aria-label="i18n.elevation.beat"
                             @change="onBeatInput"
                     /></label>

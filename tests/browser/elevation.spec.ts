@@ -243,10 +243,10 @@ test('only exact-beat notes appear and all editor filters still apply', async ({
     await open(page)
     expect((await rows(page)).map((row) => row.beat)).toEqual([6])
     const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('7')
+    await beat.fill('8')
     await beat.press('Tab')
     await expect.poll(() => rows(page)).toEqual([])
-    await beat.fill('8')
+    await beat.fill('9')
     await beat.press('Tab')
     await expect.poll(async () => (await rows(page)).map((row) => row.beat)).toEqual([8])
     await page.evaluate(() => {
@@ -281,7 +281,7 @@ test('opening uses the selected note beat instead of the caret beat', async ({ p
         history.replaceState({ ...history.state.value, selectedEntities: [note] })
     })
     await open(page)
-    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('8')
+    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('9')
     expect((await rows(page)).map((row) => row.beat)).toEqual([8])
 })
 
@@ -299,7 +299,7 @@ test('context actions open the clicked note beat or empty-space beat after desel
     await page.getByRole('menuitem', { name: 'Edit Elevations', exact: true }).click()
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await install(page)
-    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('6')
+    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
     await page.getByRole('button', { name: 'Close elevation editor', exact: true }).click()
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     const empty = await page.evaluate(() => window.editorTest.point(-5, 7))
@@ -308,7 +308,7 @@ test('context actions open the clicked note beat or empty-space beat after desel
     expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
     await page.mouse.click(empty.x, empty.y, { button: 'right' })
     await page.getByRole('menuitem', { name: 'Edit Elevations', exact: true }).click()
-    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
+    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('8')
     await expect.poll(() => rows(page)).toEqual([])
 })
 
@@ -338,7 +338,7 @@ for (const split of [false, true]) {
         expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
         await expect(page.locator('.elevation-canvas')).toBeVisible()
         await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue(
-            String(before.beat),
+            String(before.beat + 1),
         )
         expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(before.cursor)
         expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
@@ -638,7 +638,7 @@ test('wheel scrolling and keyboard zoom navigate the elevation view without edit
     await page.keyboard.press('ArrowUp')
     await expect.poll(async () => (await viewport()).center).not.toBe(zoomed.center)
     expect(await notes(page)).toEqual(initial)
-    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('6')
+    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
@@ -728,15 +728,15 @@ for (const sideBySide of ['disallow', 'allow'] as const) {
         const propertyBeat = page
             .locator('.relative.z-10.bg-modal')
             .getByRole('spinbutton', { name: 'Beat', exact: true })
-        await expect(propertyBeat).toHaveValue('6')
-        await propertyBeat.fill('7')
+        await expect(propertyBeat).toHaveValue('7')
+        await propertyBeat.fill('8')
         await propertyBeat.press('Tab')
         await expect.poll(() => rows(page)).toEqual([])
         await expect(
             page
                 .locator('.elevation-editor')
                 .getByRole('spinbutton', { name: 'Beat', exact: true }),
-        ).toHaveValue('6')
+        ).toHaveValue('7')
         const box = await page.locator('.elevation-canvas').boundingBox()
         if (!box) throw new Error('Missing elevation canvas')
         await page.mouse.click(box.x + 5, box.y + 100)
@@ -884,7 +884,7 @@ test('resetting the chart keeps elevation mode open safely with the new chart', 
     const beat = page
         .locator('.elevation-editor')
         .getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('5')
+    await beat.fill('6')
     await beat.press('Tab')
     await expect.poll(async () => (await rows(page)).map((row) => row.beat)).toEqual([5])
 })
@@ -1010,12 +1010,12 @@ test('main note selection and blank caret taps follow the beat while a mixed-bea
         await page.mouse.click(target.x, target.y)
     }
     await chartClick(4, 8)
-    await expect(beat).toHaveValue('8')
+    await expect(beat).toHaveValue('9')
     await chartClick(-5, 7)
-    await expect(beat).toHaveValue('7')
+    await expect(beat).toHaveValue('8')
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3.5)
     await chartClick(1, 6)
-    await expect(beat).toHaveValue('6')
+    await expect(beat).toHaveValue('7')
     await page.keyboard.down('Control')
     await chartClick(4, 8)
     await page.keyboard.up('Control')
@@ -1027,7 +1027,7 @@ test('main note selection and blank caret taps follow the beat while a mixed-bea
                 .sort((a, b) => a - b),
         ),
     ).toEqual([6, 8])
-    await expect(beat).toHaveValue('6')
+    await expect(beat).toHaveValue('7')
     expect((await rows(page)).map((row) => row.beat)).toEqual([6])
 })
 
@@ -1041,9 +1041,9 @@ test('the elevation Beat input updates the main caret and brings that beat into 
     const beat = page
         .locator('.elevation-editor')
         .getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('40')
+    await beat.fill('41')
     await beat.press('Tab')
-    await expect(beat).toHaveValue('40')
+    await expect(beat).toHaveValue('41')
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(20)
     const chart = await page.locator('canvas.editor-chart').boundingBox()
     if (!chart) throw new Error('Missing chart canvas')
@@ -1082,7 +1082,7 @@ test('cut and paste within elevation mode preserve the same beat and exact ancho
     expect((await notes(page)).find((note) => note.beat === 6)).toEqual(initial[0])
     await expect(
         page.locator('.elevation-editor').getByRole('spinbutton', { name: 'Beat', exact: true }),
-    ).toHaveValue('6')
+    ).toHaveValue('7')
     await page.keyboard.press('z')
     expect(await notes(page)).toEqual([initial[1]])
     await page.keyboard.press('z')
@@ -1357,7 +1357,7 @@ for (const width of [1600, 375, 320]) {
             await dialog.locator('.bg-header button').click()
             await expect(editor).toBeVisible()
             await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue(
-                '6',
+                '7',
             )
         }
         for (const name of ['Open', 'Play', '1/1']) {

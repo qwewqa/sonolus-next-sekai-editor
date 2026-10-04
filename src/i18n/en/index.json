@@ -611,7 +611,13 @@
             "showOtherGroups": "Show Other Groups",
             "showStageName": "Show Stage Name",
             "showOtherStages": "Show Other Stages",
-            "showOtherObjects": "Show Other Objects"
+            "showOtherObjects": "Show Other Objects",
+            "beatDisplay": {
+                "title": "Beat Display",
+                "beat": "Beat",
+                "measure": "Measure",
+                "both": "Both"
+            }
         },
         "keyboardShortcuts": {
             "title": "Keyboard Shortcuts"
@@ -1169,6 +1175,9 @@
             },
             "connectorStyle": {
                 "label": "Connector Color"
+            },
+            "meter": {
+                "label": "Meter"
             }
         },
         "confirm": {

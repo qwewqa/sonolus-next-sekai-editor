@@ -41,6 +41,22 @@ test('the last tick-resolution request still takes effect', () => {
     assert.equal(actual.tapNotes[0]?.tick, 3840)
 })
 
+test('SUS bar lengths preserve the meter and zero-based tick positions', () => {
+    const actual = parseSus([...header, '#00202:3', '#00402:2.5', '#00412:11'])
+    assert.deepEqual(actual.meterChanges, [
+        { tick: 0, meter: 4 },
+        { tick: 3840, meter: 3 },
+        { tick: 6720, meter: 2.5 },
+    ])
+    assert.equal(actual.tapNotes[0]!.tick, 6720)
+})
+
+test('SUS rejects nonpositive and nonfinite meters', () => {
+    for (const value of ['0', '-1', 'Infinity', 'NaN']) {
+        assert.throws(() => parseSus([...header, `#00202:${value}`]), /Invalid meter/)
+    }
+})
+
 test('mixed-case SUS channels connect notes without merging stream types', () => {
     const actual = parseSus([
         ...header,

@@ -45,6 +45,16 @@ watch(
 
         <ToggleField v-model="settings.autoSave" :label="i18n.settings.editor.autoSave" />
 
+        <SelectField
+            v-model="settings.beatDisplay"
+            :label="i18n.settings.editor.beatDisplay.title"
+            :options="[
+                [i18n.settings.editor.beatDisplay.beat, 'beat'],
+                [i18n.settings.editor.beatDisplay.measure, 'measure'],
+                [i18n.settings.editor.beatDisplay.both, 'both'],
+            ]"
+        />
+
         <NumberField
             v-model="settings.autoSaveDelay"
             :label="i18n.settings.editor.autoSaveDelay"
