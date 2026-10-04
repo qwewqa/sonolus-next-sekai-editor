@@ -124,9 +124,9 @@ const execute = (name: ActionName) => {
     dismiss(true)
     if (name === 'editElevations') {
         if (point) {
-            const note = hitAllEntitiesAtPoint(point.x, point.y).find(
-                (entity) => entity.type === 'note' && selectedEntities.value.includes(entity),
-            )
+            const note = (
+                point.selection ? selectedEntities.value : hitAllEntitiesAtPoint(point.x, point.y)
+            ).find((entity) => entity.type === 'note' && selectedEntities.value.includes(entity))
             openElevationEditor(
                 note?.beat ??
                     editorNavigation.value?.positionAtPoint(point.x, point.y).beat ??
@@ -175,6 +175,8 @@ watch(
         () => view.stageId,
         () => view.visibilities,
         () => view.snapping,
+        () => view.laneDivision,
+        () => view.laneSnapping,
     ],
     () => {
         dismiss()
@@ -183,7 +185,7 @@ watch(
 )
 
 const onKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' || settings.keyboardShortcuts.openContextMenu === event.key) {
         event.preventDefault()
         dismiss(true)
     } else if (event.key === 'Tab') {
@@ -244,10 +246,16 @@ onUnmounted(() => {
     <Teleport to="body">
         <div
             v-if="contextMenu"
+            class="fixed inset-0 z-40 bg-black/20 sm:hidden"
+            aria-hidden="true"
+            @pointerdown.prevent.stop="dismiss()"
+        />
+        <div
+            v-if="contextMenu"
             ref="menu"
             role="menu"
             :aria-label="i18n.contextMenu.title"
-            class="fixed z-50 flex max-h-[calc(100dvh-0.5rem)] w-max min-w-[min(12rem,calc(100vw-0.5rem))] max-w-[calc(100vw-0.5rem)] flex-col overflow-y-auto rounded-lg bg-modal p-1 text-sm text-fg shadow-xl"
+            class="context-menu fixed z-50 flex max-h-[calc(100dvh-0.5rem)] w-max min-w-[min(12rem,calc(100vw-0.5rem))] max-w-[calc(100vw-0.5rem)] flex-col overflow-y-auto rounded-lg bg-modal p-1 text-sm text-fg shadow-xl"
             :style="{ left: `${position.left}px`, top: `${position.top}px` }"
             @keydown.stop="onKeydown"
             @contextmenu.prevent
@@ -264,7 +272,7 @@ onUnmounted(() => {
                     type="button"
                     role="menuitem"
                     tabindex="-1"
-                    class="flex w-full items-center gap-3 rounded px-3 py-2 text-left hover:bg-button focus:bg-button focus:outline-none active:bg-accent active:text-on-accent"
+                    class="flex min-h-11 w-full items-center gap-3 rounded px-3 py-2 text-left hover:bg-button focus:bg-button focus:outline-none active:bg-accent active:text-on-accent sm:min-h-0"
                     @click="execute(name)"
                 >
                     <component
@@ -282,3 +290,16 @@ onUnmounted(() => {
         </div>
     </Teleport>
 </template>
+
+<style scoped>
+@media (width < 640px) {
+    .context-menu {
+        left: 8px !important;
+        right: 8px;
+        top: auto !important;
+        bottom: 8px;
+        width: auto;
+        max-height: min(70dvh, calc(100dvh - 16px));
+    }
+}
+</style>

@@ -3,6 +3,7 @@ import { bgm } from './bgm'
 import { bpm } from './bpm'
 import { brush } from './brush'
 import { combineNotes } from './combineNotes'
+import { openContextMenu } from './contextMenu'
 import { copy } from './copy'
 import { cut } from './cut'
 import { deselect } from './deselect'
@@ -206,6 +207,7 @@ export const commands = {
     help,
     settings,
     fullscreen,
+    openContextMenu,
 }
 
 export type CommandName = keyof typeof commands

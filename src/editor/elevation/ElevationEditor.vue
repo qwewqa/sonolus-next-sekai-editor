@@ -842,6 +842,15 @@ onMounted(() => {
         },
         positionAtPoint,
         pasteAtPoint,
+        getContextMenuPoint: () => {
+            const layout = elevationLayout.value
+            const selected = new Set(state.value.selectedEntities)
+            const row = layout.rows.find((row) => selected.has(row.note))
+            return {
+                x: elevationBounds.x + (row?.x ?? layout.xAt(0)),
+                y: elevationBounds.y + (row?.y ?? layout.yAt(elevationViewport.center)),
+            }
+        },
     }
     activate()
 })

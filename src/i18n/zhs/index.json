@@ -401,6 +401,9 @@
       "modal": {
         "title": "默认{0}属性"
       }
+    },
+    "openContextMenu": {
+      "title": "打开上下文菜单"
     }
   },
   "help": {

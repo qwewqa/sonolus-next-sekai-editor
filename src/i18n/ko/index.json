@@ -401,6 +401,9 @@
       "modal": {
         "title": "기본 {0} 속성"
       }
+    },
+    "openContextMenu": {
+      "title": "상황별 메뉴 열기"
     }
   },
   "help": {

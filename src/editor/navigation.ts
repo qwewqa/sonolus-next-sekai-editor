@@ -13,6 +13,7 @@ export type EditorNavigation = {
     selectPoint: (x: number, y: number) => void
     positionAtPoint: (x: number, y: number) => { lane: number; beat: number; elevation: number }
     pasteAtPoint: (x: number, y: number, modifiers: Modifiers) => Promise<boolean>
+    getContextMenuPoint?: () => { x: number; y: number }
 }
 
 export const editorNavigation = shallowRef<EditorNavigation>()

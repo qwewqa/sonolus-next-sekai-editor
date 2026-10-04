@@ -401,6 +401,9 @@
       "modal": {
         "title": "Propriétés par défaut de {0}"
       }
+    },
+    "openContextMenu": {
+      "title": "Ouvrir le menu contextuel"
     }
   },
   "help": {

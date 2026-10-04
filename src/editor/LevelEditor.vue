@@ -12,7 +12,7 @@ import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
 import ElevationEditor from './elevation/ElevationEditor.vue'
 import { isElevationEditorOpen, isElevationSideBySide } from './elevation/state'
 import LevelEditorContextMenu from './LevelEditorContextMenu.vue'
-import { useControlLifecycle } from './controls'
+import { activateEditorNavigation, useControlLifecycle } from './controls'
 import { cancelMouseControls } from './controls/mouse'
 import { cancelTouchControls } from './controls/touch'
 import { useFocusControl } from './controls/focus'
@@ -202,6 +202,8 @@ const stage = computed(() =>
                 ref="container"
                 class="relative min-w-0 flex-1 overflow-hidden"
                 tabindex="-1"
+                @pointerenter="activateEditorNavigation()"
+                @focusin="activateEditorNavigation()"
                 @pointerdown="container?.focus()"
             >
                 <template v-if="view.w && view.h">

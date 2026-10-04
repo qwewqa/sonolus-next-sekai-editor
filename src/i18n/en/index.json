@@ -401,6 +401,9 @@
             "modal": {
                 "title": "Default {0} Properties"
             }
+        },
+        "openContextMenu": {
+            "title": "Open Context Menu"
         }
     },
     "help": {

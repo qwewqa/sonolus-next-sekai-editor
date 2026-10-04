@@ -13,7 +13,7 @@ const toolbar = computed<CommandName[][]>(() => [
             props.available ? group.filter((name) => props.available?.includes(name)) : group,
         )
         .filter((group) => group.length),
-    ['fullscreen', 'settings', 'help'],
+    ['fullscreen', 'settings', 'openContextMenu', 'help'],
 ])
 
 const activeNames = ref<CommandName[]>([])

@@ -401,6 +401,9 @@
       "modal": {
         "title": "デフォルトの{0}設定"
       }
+    },
+    "openContextMenu": {
+      "title": "コンテキストメニューを開く"
     }
   },
   "help": {
