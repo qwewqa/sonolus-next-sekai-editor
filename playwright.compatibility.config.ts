@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 import config from './playwright.config'
 
 export default defineConfig({
@@ -12,5 +12,39 @@ export default defineConfig({
     projects: [
         { name: 'firefox', use: { browserName: 'firefox' } },
         { name: 'webkit', use: { browserName: 'webkit' } },
+        {
+            name: 'firefox-production',
+            testDir: './tests/production',
+            testMatch: 'browserCompatibility.spec.ts',
+            use: { browserName: 'firefox', baseURL: 'http://127.0.0.1:5211' },
+        },
+        {
+            name: 'webkit-production',
+            testDir: './tests/production',
+            testMatch: 'browserCompatibility.spec.ts',
+            use: { browserName: 'webkit', baseURL: 'http://127.0.0.1:5211' },
+        },
+        {
+            name: 'mobile-webkit-production',
+            testDir: './tests/production',
+            testMatch: 'browserCompatibility.spec.ts',
+            use: {
+                ...devices['iPhone 13'],
+                browserName: 'webkit',
+                baseURL: 'http://127.0.0.1:5211',
+            },
+        },
+    ],
+    webServer: [
+        ...(Array.isArray(config.webServer)
+            ? config.webServer
+            : config.webServer
+              ? [config.webServer]
+              : []),
+        {
+            command: 'npx vite preview --host 127.0.0.1 --port 5211 --strictPort',
+            url: 'http://127.0.0.1:5211',
+            reuseExistingServer: false,
+        },
     ],
 })

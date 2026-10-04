@@ -146,7 +146,22 @@ const roundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: num
     // SVG does not paint rectangles with a negative width. Clamp each radius
     // independently, as SVG does for very narrow notes.
     if (w <= 0) return
-    ctx.roundRect(x, y, w, h, { x: Math.min(0.1, w / 2), y: Math.min(0.1, h / 2) })
+    const rx = Math.min(0.1, w / 2)
+    const ry = Math.min(0.1, h / 2)
+    if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(x, y, w, h, { x: rx, y: ry })
+        return
+    }
+    ctx.moveTo(x + rx, y)
+    ctx.lineTo(x + w - rx, y)
+    ctx.ellipse(x + w - rx, y + ry, rx, ry, 0, -Math.PI / 2, 0)
+    ctx.lineTo(x + w, y + h - ry)
+    ctx.ellipse(x + w - rx, y + h - ry, rx, ry, 0, 0, Math.PI / 2)
+    ctx.lineTo(x + rx, y + h)
+    ctx.ellipse(x + rx, y + h - ry, rx, ry, 0, Math.PI / 2, Math.PI)
+    ctx.lineTo(x, y + ry)
+    ctx.ellipse(x + rx, y + ry, rx, ry, 0, Math.PI, Math.PI * 1.5)
+    ctx.closePath()
 }
 
 const drawArtwork = (

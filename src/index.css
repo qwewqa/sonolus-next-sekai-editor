@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+    :root {
+        --viewport-height: 100dvh;
+    }
+}
+
 html[data-app-inactive] *,
 html[data-app-inactive] *::before,
 html[data-app-inactive] *::after {

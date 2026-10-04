@@ -201,7 +201,7 @@ const onFocus = (event: FocusEvent) => {
 @media (max-height: 15rem) {
     .preview-left-divider .preview-panel-toggle {
         top: 0;
-        height: clamp(1rem, calc(100dvh - 5.5rem), 4rem);
+        height: clamp(1rem, calc(var(--viewport-height) - 5.5rem), 4rem);
         transform: none;
     }
 }

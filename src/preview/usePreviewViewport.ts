@@ -129,14 +129,14 @@ export const usePreviewViewport = (container: Readonly<Ref<HTMLElement | null>>)
                 left: `${beside}px`,
                 right: 'auto',
                 maxWidth: `${remainingWidth}px`,
-                maxHeight: 'calc(100dvh - 8px)',
+                maxHeight: 'calc(var(--viewport-height) - 8px)',
             }
         }
         // Undocked settings may extend below a short preview. Fit their measured
         // content when the screen has room, including rows wrapped by wider fonts.
         const maxHeight = canDockTransport.value
             ? `${Math.max(controlsHeaderHeight.value, imageBottom - top)}px`
-            : `min(calc(100dvh - ${top + 4}px), max(11rem, ${controlsHeight.value}px, calc(100% - ${top + 4}px)))`
+            : `min(calc(var(--viewport-height) - ${top + 4}px), max(11rem, ${controlsHeight.value}px, calc(100% - ${top + 4}px)))`
         return {
             top: `${top}px`,
             // Keep a gap above the docked bar and let the settings body scroll. When

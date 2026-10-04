@@ -29,6 +29,8 @@ export const updateClipboard = async () => {
         if (!text) return
 
         updateClipboardEntries(text)
+    } catch {
+        return
     } finally {
         isUpdating = false
     }
@@ -38,14 +40,22 @@ export const setClipboardData = (data: ClipboardData) => {
     const text = JSON.stringify(data)
     updateClipboardEntries(text)
 
-    void navigator.clipboard.writeText(text)
+    void writeClipboardText(text)
 }
 
 export const setClipboardEntry = (entry: ClipboardEntry) => {
     clipboardEntries.value.splice(clipboardEntries.value.indexOf(entry), 1)
     clipboardEntries.value.unshift(markRaw(entry))
 
-    void navigator.clipboard.writeText(entry.text)
+    void writeClipboardText(entry.text)
+}
+
+const writeClipboardText = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+    } catch {
+        return
+    }
 }
 
 const updateClipboardEntries = (text: string) => {

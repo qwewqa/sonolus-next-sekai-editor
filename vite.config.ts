@@ -6,6 +6,9 @@ import { version } from './package.json'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    build: {
+        target: ['chrome106', 'edge106', 'firefox105', 'safari16', 'ios16'],
+    },
     css: {
         postcss: {
             plugins: [tailwind(), autoprefixer()],

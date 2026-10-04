@@ -270,7 +270,7 @@ const onSpeedKeydown = (event: KeyboardEvent) => {
 .preview-controls {
     container-type: inline-size;
     /* A short preview must still leave room to reach the expanded settings. */
-    max-height: min(calc(100dvh - 0.5rem), max(11rem, calc(100% - 0.5rem)));
+    max-height: min(calc(var(--viewport-height) - 0.5rem), max(11rem, calc(100% - 0.5rem)));
 }
 
 @container (max-width: 12rem) {

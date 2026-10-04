@@ -256,7 +256,7 @@ onUnmounted(() => {
             ref="menu"
             role="menu"
             :aria-label="i18n.contextMenu.title"
-            class="context-menu fixed z-50 flex max-h-[calc(100dvh-0.5rem)] w-max min-w-[min(12rem,calc(100vw-0.5rem))] max-w-[calc(100vw-0.5rem)] flex-col overflow-y-auto rounded-lg bg-modal p-1 text-sm text-fg shadow-xl"
+            class="context-menu fixed z-50 flex max-h-[calc(var(--viewport-height)-0.5rem)] w-max min-w-[min(12rem,calc(100vw-0.5rem))] max-w-[calc(100vw-0.5rem)] flex-col overflow-y-auto rounded-lg bg-modal p-1 text-sm text-fg shadow-xl"
             :style="{ left: `${position.left}px`, top: `${position.top}px` }"
             @keydown.stop="onKeydown"
             @contextmenu.prevent
@@ -300,7 +300,7 @@ onUnmounted(() => {
         top: auto !important;
         bottom: 8px;
         width: auto;
-        max-height: min(70dvh, calc(100dvh - 16px));
+        max-height: min(calc(var(--viewport-height) * 0.7), calc(var(--viewport-height) - 16px));
     }
 }
 </style>
