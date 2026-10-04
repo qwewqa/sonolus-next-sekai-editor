@@ -8,7 +8,7 @@ defineProps<{ title: string }>()
         class="relative flex items-center justify-center whitespace-nowrap text-xs"
     >
         <svg
-            class="absolute -top-1.5 h-1.5 w-4"
+            class="absolute -top-1 h-1.5 w-4"
             viewBox="0 0 24 8"
             xmlns="http://www.w3.org/2000/svg"
         >
