@@ -20,63 +20,100 @@ test.beforeEach(async ({ page }) => {
     await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 3))
 })
 
-test('portrait preview tab reserves space above the chart and elevation controls', async ({
-    page,
-}, testInfo) => {
-    await page.setViewportSize({ width: 375, height: 812 })
-    await page.evaluate(() => {
-        const { settings } = window.editorTest
-        settings.previewPosition = 'auto'
-        settings.previewHeight = 200
-        settings.showPreview = true
-        settings.elevationEditorSideBySide = 'disallow'
-    })
-    const tab = page.locator('.preview-panel-toggle')
-    const assertBelowTab = async (selector: string) => {
-        await settle(page)
-        const button = (await tab.boundingBox())!
-        const panel = (await page.locator(selector).boundingBox())!
-        expect(button.height).toBe(16)
-        expect(panel.y).toBeGreaterThanOrEqual(button.y + button.height)
-        const unobscured = await page.locator(selector).evaluate((element) => {
-            const rect = element.getBoundingClientRect()
-            const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + 8)
-            return element.contains(target) || !!target?.closest('.editor')?.contains(element)
-        })
-        expect(unobscured).toBe(true)
+for (const { width, height } of [
+    { width: 320, height: 568 },
+    { width: 375, height: 812 },
+    { width: 430, height: 932 },
+    { width: 768, height: 1024 },
+]) {
+    for (const split of [false, true]) {
+        test(
+            'top preview tab shares the title row at ' +
+                width +
+                'px (' +
+                (split ? 'split' : 'replacement') +
+                ')',
+            async ({ page }, testInfo) => {
+                await page.setViewportSize({ width, height })
+                await page.evaluate((split) => {
+                    const { settings } = window.editorTest
+                    settings.previewPosition = 'top'
+                    settings.previewHeight = 200
+                    settings.showPreview = true
+                    settings.elevationEditorSideBySide = split ? 'allow' : 'disallow'
+                }, split)
+                const tab = page.locator('.preview-panel-toggle')
+                await page.keyboard.press('t')
+                await expect(page.locator('.elevation-editor')).toBeVisible()
+                const assertClear = async () => {
+                    await settle(page)
+                    const button = (await tab.boundingBox())!
+                    const header = (await page.locator('.elevation-header').boundingBox())!
+                    expect(button.height).toBe(16)
+                    expect(button.y).toBe(header.y)
+                    for (const control of [
+                        page.getByRole('spinbutton', { name: 'Beat', exact: true }),
+                        page.getByRole('combobox', { name: 'Elevation snapping', exact: true }),
+                        page.getByRole('button', { name: 'Close elevation editor', exact: true }),
+                    ]) {
+                        const box = (await control.boundingBox())!
+                        expect(
+                            button.x + button.width <= box.x ||
+                                box.x + box.width <= button.x ||
+                                button.y + button.height <= box.y ||
+                                box.y + box.height <= button.y,
+                        ).toBe(true)
+                        expect(
+                            await control.evaluate((element) => {
+                                const r = element.getBoundingClientRect()
+                                return element.contains(
+                                    document.elementFromPoint(
+                                        r.x + r.width / 2,
+                                        r.y + r.height / 2,
+                                    ),
+                                )
+                            }),
+                        ).toBe(true)
+                    }
+                    const title = (await page.locator('.elevation-header strong').boundingBox())!
+                    expect(title.x + title.width).toBeLessThanOrEqual(button.x)
+                }
+                await assertClear()
+                await tab.click()
+                await expect(page.locator('.preview')).toHaveCount(0)
+                await assertClear()
+                await page.getByRole('spinbutton', { name: 'Beat', exact: true }).fill('7')
+                await page.getByRole('spinbutton', { name: 'Beat', exact: true }).press('Tab')
+                await page
+                    .getByRole('combobox', { name: 'Elevation snapping', exact: true })
+                    .selectOption('4')
+                await tab.click()
+                await expect(page.locator('.preview')).toBeVisible()
+                const before = (await page.locator('.preview').boundingBox())!
+                const handle = (await tab.boundingBox())!
+                await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+                await page.mouse.down()
+                await page.mouse.move(handle.x + handle.width / 2, handle.y + 70, { steps: 4 })
+                await page.mouse.up()
+                await expect
+                    .poll(async () => (await page.locator('.preview').boundingBox())!.height)
+                    .toBeGreaterThan(before.height)
+                await assertClear()
+                await page.screenshot({
+                    path: testInfo.outputPath('compact-preview-elevation.png'),
+                    style: '.notification { visibility:hidden }',
+                })
+                await page
+                    .getByRole('button', { name: 'Close elevation editor', exact: true })
+                    .click()
+                await expect(page.locator('canvas.editor-chart')).toBeVisible()
+            },
+        )
     }
-    await assertBelowTab('canvas.editor-chart')
-    await tab.click()
-    await expect(page.locator('.preview')).toHaveCount(0)
-    await assertBelowTab('canvas.editor-chart')
-    await page.keyboard.press('t')
-    await expect(page.locator('.elevation-editor')).toBeVisible()
-    await assertBelowTab('.elevation-header')
-    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
-    await beat.fill('7')
-    await beat.press('Tab')
-    await expect(beat).toHaveValue('7')
-    await page.getByRole('combobox', { name: 'Elevation snapping', exact: true }).selectOption('4')
-    await tab.click()
-    await expect(page.locator('.preview')).toBeVisible()
-    await assertBelowTab('.elevation-header')
-    const before = (await page.locator('.preview').boundingBox())!
-    const handle = (await tab.boundingBox())!
-    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(handle.x + handle.width / 2, handle.y + 70, { steps: 4 })
-    await page.mouse.up()
-    await expect
-        .poll(async () => (await page.locator('.preview').boundingBox())!.height)
-        .toBeGreaterThan(before.height)
-    await assertBelowTab('.elevation-header')
-    await page.screenshot({ path: testInfo.outputPath('portrait-preview-elevation.png') })
-    await page.getByRole('button', { name: 'Close elevation editor', exact: true }).click()
-    await expect(page.locator('canvas.editor-chart')).toBeVisible()
-    await assertBelowTab('canvas.editor-chart')
-})
+}
 
 test('left preview tab keeps its existing position and collapse behavior', async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
     await page.evaluate(() => {
         const { settings } = window.editorTest
         settings.previewPosition = 'left'

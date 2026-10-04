@@ -835,7 +835,9 @@ onUnmounted(() => {
             @keydown.stop
         >
             <div class="relative flex flex-wrap items-center gap-x-3 gap-y-2 pr-8">
-                <strong class="flex-grow text-white/90">{{ i18n.elevation.header }}</strong>
+                <strong class="flex-grow text-white/90" :title="i18n.elevation.header">{{
+                    i18n.elevation.header
+                }}</strong>
                 <button
                     class="absolute -right-1 -top-1 flex size-8 items-center justify-center rounded text-lg leading-none hover:bg-white/10"
                     :aria-label="i18n.elevation.close"

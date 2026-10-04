@@ -3,6 +3,8 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import LevelEditor from './editor/LevelEditor.vue'
 import LevelEditorSidebar from './editor/LevelEditorSidebar.vue'
 import { currentSidebar } from './editor/sidebars'
+import { isElevationEditorOpen } from './editor/elevation/state'
+import { elevationBounds } from './editor/elevation/viewport'
 import { i18n } from './i18n'
 import ModalManager from './modals/ModalManager.vue'
 import LevelPreview from './preview/LevelPreview.vue'
@@ -28,6 +30,15 @@ const previewPosition = computed(() =>
         : screenSm.value
           ? 'left'
           : 'top',
+)
+
+const previewDivider = useTemplateRef<HTMLDivElement>('previewDivider')
+const previewTabStyle = computed(() =>
+    previewPosition.value === 'top' && isElevationEditorOpen.value
+        ? {
+              left: `${elevationBounds.x + elevationBounds.w / 2 - (previewDivider.value?.getBoundingClientRect().left ?? 0)}px`,
+          }
+        : undefined,
 )
 
 type Panel = 'preview' | 'sidebar'
@@ -85,6 +96,9 @@ const onFocus = (event: FocusEvent) => {
 <template>
     <div
         class="flex h-screen w-screen overflow-hidden"
+        :class="{
+            'preview-tab-over-title': previewPosition === 'top' && isElevationEditorOpen,
+        }"
         @pointermove="onDrag"
         @pointerup="onStopDragging"
     >
@@ -109,8 +123,9 @@ const onFocus = (event: FocusEvent) => {
             </div>
 
             <div
+                ref="previewDivider"
                 class="relative z-30 shrink-0 bg-preview"
-                :class="previewPosition === 'left' ? 'w-0' : 'h-4'"
+                :class="previewPosition === 'left' ? 'w-0' : 'h-0'"
             >
                 <button
                     class="preview-panel-toggle absolute flex items-center justify-center bg-button shadow-md transition-colors hover:shadow-accent active:bg-accent active:fill-button"
@@ -119,6 +134,7 @@ const onFocus = (event: FocusEvent) => {
                             ? 'left-0 top-1/2 h-16 w-4 -translate-y-1/2 cursor-col-resize rounded-r-full'
                             : 'left-1/2 top-0 h-4 w-16 -translate-x-1/2 cursor-row-resize rounded-b-full'
                     "
+                    :style="previewTabStyle"
                     :aria-label="i18n.settings.preview.title"
                     :aria-expanded="settings.showPreview"
                     @click="onToggle('preview')"
@@ -180,3 +196,12 @@ const onFocus = (event: FocusEvent) => {
 
     <ModalManager />
 </template>
+
+<style scoped>
+.preview-tab-over-title :deep(.elevation-header strong) {
+    max-width: calc(50% - 2.5rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
