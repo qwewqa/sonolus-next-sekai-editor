@@ -88,6 +88,13 @@
       "apply": "应用",
       "invalidFactor": "请输入正缩放倍数，使结果保持在编辑器支持的范围内"
     },
+    "makeVertical": {
+      "title": "转为垂直排列",
+      "noSelected": "请选择至少一个音符转为垂直排列",
+      "unchanged": "所选音符已垂直排列",
+      "invalid": "无法在编辑器支持的范围内将所选对象转为垂直排列",
+      "made": "已将 {0} 个音符转为垂直排列"
+    },
     "combineNotes": {
       "title": "合并为长按音符",
       "noSelected": "未选择要合并的音符",

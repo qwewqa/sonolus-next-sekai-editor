@@ -93,6 +93,7 @@ const availableCommands: CommandName[] = [
     'combineNotes',
     'scaleBeat',
     'scaleElevation',
+    'makeVertical',
     'increaseNoteSize',
     'decreaseNoteSize',
     'note',

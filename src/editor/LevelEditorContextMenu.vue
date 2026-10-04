@@ -5,6 +5,7 @@ import { selectedEntities } from '../history/selectedEntities'
 import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { isEditableEntity } from '../state/operations/editable'
+import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { formatShortcut } from '../utils/format'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
@@ -67,6 +68,7 @@ const actions = computed(() => {
         if (canScaleSelection(selection, 'beat')) transforms.push('scaleBeat')
         if (canScaleSelection(selection, 'elevation', state.value))
             transforms.push('scaleElevation')
+        if (canMakeVertical(selection, state.value)) transforms.push('makeVertical')
         if (
             new Set(selection.flatMap((entity) => (entity.type === 'note' ? [entity.slideId] : [])))
                 .size > 1

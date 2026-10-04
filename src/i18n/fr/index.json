@@ -88,6 +88,13 @@
       "apply": "Appliquer",
       "invalidFactor": "Saisissez un facteur d’échelle positif qui maintient le résultat dans les limites prises en charge par l’éditeur"
     },
+    "makeVertical": {
+      "title": "Disposer verticalement",
+      "noSelected": "Sélectionnez au moins une note à disposer verticalement",
+      "unchanged": "Les notes sélectionnées sont déjà disposées verticalement",
+      "invalid": "La sélection ne peut pas être disposée verticalement dans les limites prises en charge par l’éditeur",
+      "made": "{0} notes disposées verticalement"
+    },
     "combineNotes": {
       "title": "Combiner en slide",
       "noSelected": "Aucune note sélectionnée à combiner",

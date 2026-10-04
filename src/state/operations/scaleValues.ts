@@ -37,7 +37,7 @@ export const canScaleSelection = (selected: Entity[], axis: ScaleAxis, source?: 
     )
 }
 
-const withinGridBudget = (source: State, values: Map<EditableEntity, number>) => {
+export const isWithinGridBudget = (source: State, values: Map<EditableEntity, number>) => {
     const spans = new Map<
         string,
         { beforeMin: number; beforeMax: number; afterMin: number; afterMax: number }
@@ -131,6 +131,6 @@ export const getScaledSelectionValues = (
         previousValue = value
         previousScaled = scaled
     }
-    if (axis === 'beat' && source && !withinGridBudget(source, values)) return
+    if (axis === 'beat' && source && !isWithinGridBudget(source, values)) return
     return new Map(entities.map((entity) => [entity, values.get(entity) ?? valueOf(entity, axis)]))
 }

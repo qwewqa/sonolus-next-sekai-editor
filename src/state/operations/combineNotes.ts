@@ -1,13 +1,13 @@
 import type { State } from '..'
-import { attachEasedFrac, buildPreviewChart } from '../../preview/engine/chart'
+import { buildPreviewChart } from '../../preview/engine/chart'
 import { getStageProps } from '../../preview/engine/stage'
 import type { Entity } from '../entities'
 import { createSlideId } from '../entities/slides'
-import type { NoteEntity } from '../entities/slides/note'
 import { beatToTime } from '../integrals/bpms'
 import { addNote, removeNote } from '../mutations/slides/note'
 import { createTransaction } from '../transaction'
 import { connectorProperties } from './connectorProperties'
+import { getMaterializedNotePositions } from './notePositions'
 
 export const combineNotes = (source: State, selected: Entity[]): State => {
     const slideIds = new Set(
@@ -38,36 +38,11 @@ export const combineNotes = (source: State, selected: Entity[]): State => {
             ? buildPreviewChart(source, 10)
             : undefined
     const stages = chart?.stages ?? []
-    const compiledBySource = new Map(
-        chart?.notes.flatMap((note) => (note.source ? [[note.source, note] as const] : [])) ?? [],
+    const positions = getMaterializedNotePositions(
+        source,
+        unordered.map(({ note }) => note),
+        chart,
     )
-    const positions = new Map<NoteEntity, { left: number; size: number; elevation: number }>()
-    for (const { note, attached } of unordered) {
-        if (!attached) continue
-        const compiled = compiledBySource.get(note)
-        if (!compiled?.isAttached || !compiled.attachHead || !compiled.attachTail) continue
-        const props = (index: number) => {
-            const stage = stages[index]
-            return stage
-                ? getStageProps(stage, compiled.targetTime)
-                : { pivotLane: 0, elevation: 0 }
-        }
-        const head = compiled.attachHead
-        const tail = compiled.attachTail
-        const headStage = props(head.stageIndex)
-        const tailStage = props(tail.stageIndex)
-        const stage = props(compiled.stageIndex)
-        const frac = attachEasedFrac(compiled)
-        const headLane = head.lane + headStage.pivotLane
-        const tailLane = tail.lane + tailStage.pivotLane
-        const headElevation = (head.elevation ?? 0) + headStage.elevation
-        const tailElevation = (tail.elevation ?? 0) + tailStage.elevation
-        positions.set(note, {
-            left: headLane + (tailLane - headLane) * frac - stage.pivotLane - compiled.size,
-            size: compiled.size * 2,
-            elevation: headElevation + (tailElevation - headElevation) * frac - stage.elevation,
-        })
-    }
     const stageIndexes = new Map([...source.stages.keys()].map((id, index) => [id, index]))
     const elevation = (item: (typeof unordered)[number] | undefined) => {
         if (!item) return 0

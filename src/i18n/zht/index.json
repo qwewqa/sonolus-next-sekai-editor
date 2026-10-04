@@ -88,6 +88,13 @@
       "apply": "套用",
       "invalidFactor": "請輸入正縮放倍率，使結果保持在編輯器支援的範圍內"
     },
+    "makeVertical": {
+      "title": "轉為垂直排列",
+      "noSelected": "請選取至少一個音符轉為垂直排列",
+      "unchanged": "所選音符已垂直排列",
+      "invalid": "無法在編輯器支援的範圍內將所選物件轉為垂直排列",
+      "made": "已將 {0} 個音符轉為垂直排列"
+    },
     "combineNotes": {
       "title": "合併為滑條",
       "noSelected": "未選取要合併的音符",

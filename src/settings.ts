@@ -189,6 +189,7 @@ const settingsProperties = {
                     [
                         'scaleElevation',
                         'scaleBeat',
+                        'makeVertical',
                         'combineNotes',
                         'flipVertical',
                         'flip',

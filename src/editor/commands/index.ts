@@ -26,6 +26,7 @@ import { groupPrev } from './groups/groupPrev'
 import { help } from './help'
 import { jumpDown } from './jumps/jumpDown'
 import { jumpUp } from './jumps/jumpUp'
+import { makeVertical } from './makeVertical'
 import { manageGroups } from './manageGroups'
 import { manageStages } from './manageStages'
 import { createNote, note } from './note'
@@ -110,6 +111,7 @@ export const commands = {
     flipVertical,
     scaleBeat,
     scaleElevation,
+    makeVertical,
     combineNotes,
     cut,
     copy,

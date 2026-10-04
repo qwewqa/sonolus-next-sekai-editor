@@ -88,6 +88,13 @@
             "apply": "Apply",
             "invalidFactor": "Enter a positive scale factor that keeps the result within the editor’s supported range"
         },
+        "makeVertical": {
+            "title": "Make vertical",
+            "noSelected": "Select at least one note to make vertical",
+            "unchanged": "Selected notes are already vertical",
+            "invalid": "Selection cannot be made vertical within the editor’s supported range",
+            "made": "Made {0} notes vertical"
+        },
         "combineNotes": {
             "title": "Combine into slide",
             "noSelected": "No notes selected to combine",

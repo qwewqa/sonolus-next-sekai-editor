@@ -88,6 +88,13 @@
       "apply": "Uygula",
       "invalidFactor": "Sonucu editörün desteklediği aralıkta tutan pozitif bir ölçek katsayısı girin"
     },
+    "makeVertical": {
+      "title": "Dikey düzenle",
+      "noSelected": "Dikey düzenlemek için en az bir nota seçin",
+      "unchanged": "Seçilen notalar zaten dikey düzenlenmiş",
+      "invalid": "Seçim, editörün desteklediği aralıkta dikey düzenlenemiyor",
+      "made": "{0} nota dikey düzenlendi"
+    },
     "combineNotes": {
       "title": "Kaydırmada birleştir",
       "noSelected": "Birleştirilecek nota seçilmedi",
