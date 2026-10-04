@@ -65,7 +65,7 @@ const activate = () => {
     if (navigation) activateEditorNavigation(navigation)
 }
 const xToLane = (x: number) =>
-    ((x - elevationBounds.x) / elevationBounds.w - 0.5) * settings.width + view.lane
+    elevationLayout.value.laneLeft + (x - elevationBounds.x) / elevationLayout.value.laneScale
 const availableCommands: CommandName[] = [
     'select',
     'elevation',
@@ -116,7 +116,7 @@ const fitViewport = () => {
     fitElevationViewport(elevationBounds.h, elevationNotes.value, {
         top:
             (header.value?.clientHeight ?? 80) +
-            Math.max(20, (1.25 * elevationBounds.w) / settings.width),
+            Math.max(20, 1.25 * elevationLayout.value.laneScale),
         bottom: 140,
     })
 }
@@ -650,7 +650,7 @@ watchEffect(() => {
         }
         for (
             let lane = Math.ceil(layout.laneLeft);
-            lane <= layout.laneLeft + settings.width;
+            lane <= layout.laneLeft + layout.width / layout.laneScale;
             lane++
         ) {
             const x = layout.xAt(lane)
@@ -776,6 +776,7 @@ onMounted(() => {
             closeContextMenu()
             elevationViewport.center += pixels / elevationViewport.scale
         },
+        getScaleX: () => elevationLayout.value.laneScale,
         getScaleY: () => elevationViewport.scale,
         setScaleY: (scale) => {
             viewportAdjusted = true

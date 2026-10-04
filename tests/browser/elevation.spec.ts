@@ -1170,7 +1170,9 @@ test('keyboard panning uses the active elevation pane width after resizing the s
     const before = await page.evaluate(() => ({
         lane: window.editorTest.view.lane,
         time: window.editorTest.view.time,
-        width: window.editorTest.settings.width,
+        width:
+            window.elevationTest.scene.elevationLayout.value.width /
+            window.elevationTest.scene.elevationLayout.value.laneScale,
     }))
     await page.keyboard.press('ArrowRight')
     await expect

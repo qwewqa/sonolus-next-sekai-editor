@@ -90,13 +90,14 @@ export const elevationNotes = computed(() => {
     }
     return notes
 })
-export const elevationLayout = computed(() =>
-    layoutElevationNotes(elevationNotes.value, {
+export const elevationLayout = computed(() => {
+    const width = settings.width * 1.1
+    return layoutElevationNotes(elevationNotes.value, {
         width: elevationBounds.w,
         height: elevationBounds.h,
-        laneLeft: view.lane - settings.width / 2,
-        laneScale: elevationBounds.w / settings.width,
+        laneLeft: view.lane - width / 2,
+        laneScale: elevationBounds.w / width,
         elevationCenter: elevationViewport.center,
         elevationScale: elevationViewport.scale,
-    }),
-)
+    })
+})

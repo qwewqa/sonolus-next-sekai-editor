@@ -210,7 +210,8 @@ export const ups = computed(() => viewBox.value.ups)
 
 export const scrollViewXBy = (dx: number, smooth = false) => {
     updateViewLastActive()
-    const width = getControlBounds(view).w
+    const laneScale =
+        editorNavigation.value?.getScaleX?.() ?? getControlBounds(view).w / settings.width
 
     if (smooth) {
         view.scrollingX = {
@@ -223,18 +224,14 @@ export const scrollViewXBy = (dx: number, smooth = false) => {
                 time: time.value.now + 0.25,
                 viewLane: clamp(
                     (view.scrollingX?.type === 'ease' ? view.scrollingX.to.viewLane : view.lane) +
-                        (dx / width) * settings.width,
+                        dx / laneScale,
                     -settings.maxScrollX,
                     settings.maxScrollX,
                 ),
             },
         }
     } else {
-        view.lane = clamp(
-            view.lane + (dx / width) * settings.width,
-            -settings.maxScrollX,
-            settings.maxScrollX,
-        )
+        view.lane = clamp(view.lane + dx / laneScale, -settings.maxScrollX, settings.maxScrollX)
     }
 }
 

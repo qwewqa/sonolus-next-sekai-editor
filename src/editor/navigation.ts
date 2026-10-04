@@ -6,6 +6,7 @@ import type { Modifiers } from './controls/gestures/pointer'
 export type EditorNavigation = {
     bounds: { x: number; y: number; w: number; h: number }
     scrollY: (pixels: number) => void
+    getScaleX?: () => number
     getScaleY: () => number
     setScaleY: (scale: number) => void
     hitPoint: (x: number, y: number, minimumNoteWidth: number) => Entity[]
