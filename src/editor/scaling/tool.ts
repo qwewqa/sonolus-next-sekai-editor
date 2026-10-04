@@ -1,6 +1,6 @@
 import { timeToBeat, type BpmIntegral } from '../../state/integrals/bpms'
 import { isEditableEntity, type EditableEntity } from '../../state/operations/editable'
-import { getScaleBounds, getScaleValue } from '../../state/operations/scaleValues'
+import { getScaleBounds, getScaleEntities, getScaleValue } from '../../state/operations/scaleValues'
 import { align } from '../../utils/math'
 import { getScaleLabels } from '../commands/scaleSelection/labels'
 import {
@@ -11,6 +11,7 @@ import {
     scalingSession,
     updateScalingDrag,
 } from '../commands/scaleSelection/session'
+import { elevationNotes } from '../elevation/scene'
 import { editorNavigation } from '../navigation'
 import { hitAllSceneEntities, hitSceneEntities, sceneBpms } from '../sceneState'
 import type { Tool } from '../tools'
@@ -91,12 +92,22 @@ export const scalingTool: Tool = {
         const value = pointerValue(x, y)
         const started = selectedEntitiesAtPoint(x, y, 1.5).some((entity) => {
             if (scalingSession.value?.axis !== 'width') return beginScalingDrag(entity, value)
-            const bounds = getScaleBounds(entity, 'width')
+            const session = scalingSession.value
+            const baseline = getScalingBaselineEntity(entity)
+            if (!baseline) return false
+            const row =
+                editorNavigation.value && entity.type === 'note'
+                    ? elevationNotes.value.find((row) => row.note === entity)
+                    : undefined
+            const bounds = row
+                ? { min: row.lane - row.size / 2, max: row.lane + row.size / 2 }
+                : getScaleBounds(entity, 'width')
             const size = bounds.max - bounds.min
             const hasEdges =
-                entity.type === 'note' ||
-                entity.type === 'cameraEventJoint' ||
-                entity.type === 'stageMaskEventJoint'
+                (entity.type === 'note' ||
+                    entity.type === 'cameraEventJoint' ||
+                    entity.type === 'stageMaskEventJoint') &&
+                getScaleEntities(session.selected, 'width', session.source).includes(baseline)
             const edge =
                 hasEdges && isNoteResizeStart({ left: bounds.min, size }, value)
                     ? value < (bounds.min + bounds.max) / 2

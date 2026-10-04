@@ -435,6 +435,90 @@ test('camera width limits reject invalid factors without destroying the valid pr
     expect((await snapshot(page)).sourceUnchanged).toBe(true)
 })
 
+test('elevation width drags use the visible note bounds after stage pivots', async ({ page }) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history, settings } = window.editorTest
+        const note = fixtures.interaction.slides[0]![0]!
+        const pivot = fixtures.events.stagePivotEvents[0]!
+        settings.elevationEditorSideBySide = 'allow'
+        show(
+            {
+                ...fixtures.interaction,
+                isDynamicStages: true,
+                slides: [[{ ...note, beat: 3, left: -4, size: 2, elevation: 3 }]],
+                stagePivotEvents: [{ ...pivot, stageId: note.stageId, beat: 0, pivotLane: 5 }],
+            },
+            3,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+        window.widthTest.source = history.state.value
+    })
+    await settle(page)
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-canvas')).toBeVisible()
+    const hit = await point(page, 2, true)
+    await page.mouse.click(hit.x, hit.y, { button: 'right' })
+    await page.getByRole('menuitem', { name: 'Scale Width', exact: true }).click()
+    await drag(page, 2, 3, true)
+    await expectWidths(page, [[-3, 2]])
+    await expect(factor(page)).toHaveValue('1')
+    await drag(page, 4, 5, true)
+    await expectWidths(page, [[-3, 3]])
+    await expect(factor(page)).toHaveValue('1.5')
+    await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+})
+
+test('an attached interior moves selected endpoints while keeping its attachment', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history, settings } = window.editorTest
+        const note = fixtures.interaction.slides[0]![0]!
+        settings.elevationEditorSideBySide = 'allow'
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [
+                    [
+                        { ...note, beat: 3, left: -4, size: 2, elevation: 1 },
+                        { ...note, beat: 3, left: 0, size: 2, elevation: 3, isAttached: true },
+                        { ...note, beat: 3, left: 4, size: 2, elevation: 5 },
+                    ],
+                ],
+            },
+            3,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+        window.widthTest.source = history.state.value
+    })
+    await settle(page)
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-canvas')).toBeVisible()
+    await open(page, true)
+    await drag(page, 1, 2, true)
+    await expectWidths(page, [
+        [-3, 2],
+        [1, 2],
+        [5, 2],
+    ])
+    await expect(factor(page)).toHaveValue('1')
+    expect(
+        await page.evaluate(() =>
+            window.widthTest.preview
+                .getPreviewState(window.editorTest.history.state.value)
+                .selectedEntities.filter((entity) => entity.type === 'note')
+                .map((note) => note.isAttached),
+        ),
+    ).toEqual([false, true, false])
+    await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+})
+
 test('the separate transform group remains reachable on a short portrait phone', async ({
     page,
 }) => {

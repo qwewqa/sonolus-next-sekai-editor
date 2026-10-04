@@ -16,7 +16,9 @@ export const calculateBpms = (bpms: (Integral & { meter?: number })[]): BpmInteg
     let measure = 0
     let measureBeat = 0
     return integrate(bpms.sort((a, b) => a.x - b.x)).map((integral) => {
-        measure += Math.ceil(roundBoundary((integral.x - measureBeat) / meter))
+        const elapsed = integral.x - measureBeat
+        const measures = Math.ceil(roundBoundary(elapsed / meter))
+        measure += elapsed > 0 ? Math.max(1, measures) : measures
         measureBeat = integral.x
         meter = integral.meter ?? 4
         return { ...integral, meter, measure, measureBeat }

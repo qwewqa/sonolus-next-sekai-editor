@@ -87,6 +87,28 @@ test('mobile backdrop dismisses without placing notes or changing the selection'
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+for (const width of [640, 844]) {
+    test(`touch context actions fit a short landscape viewport at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 390 })
+        await selectTwo(page)
+        await openFromToolbar(page)
+        const menu = page.getByRole('menu')
+        const box = (await menu.boundingBox())!
+        expect(box.x).toBeGreaterThanOrEqual(0)
+        expect(box.x + box.width).toBeLessThanOrEqual(width)
+        expect(box.y).toBeGreaterThanOrEqual(0)
+        expect(box.y + box.height).toBeLessThanOrEqual(390)
+        const remove = menu.getByRole('menuitem', { name: 'Delete', exact: true })
+        await remove.scrollIntoViewIfNeeded()
+        await expect(remove).toBeInViewport()
+        await remove.tap()
+        await expect(menu).toHaveCount(0)
+        expect((await page.evaluate(() => window.editorTest.snapshot())).notes).toHaveLength(2)
+        await page.keyboard.press('z')
+        expect((await page.evaluate(() => window.editorTest.snapshot())).notes).toHaveLength(4)
+    })
+}
+
 test('context command supports an assigned hotkey and preserves selection regardless of pointer position', async ({
     page,
 }) => {
@@ -108,6 +130,44 @@ test('context command supports an assigned hotkey and preserves selection regard
     await page.keyboard.press('F9')
     await expect(page.getByRole('menu')).toHaveCount(0)
     expect((await page.evaluate(() => window.editorTest.snapshot())).notes).toEqual(before.notes)
+})
+
+test('context shortcut can be assigned and cleared through settings without a default binding', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await selectTwo(page)
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    const binding = dialog
+        .locator('label')
+        .filter({ has: page.getByText('Open Context Menu', { exact: true }) })
+        .getByRole('button')
+    await expect(binding).toHaveText('Unassigned')
+    await binding.click()
+    await binding.press('F9')
+    await expect(binding).toHaveText('F9')
+    expect(
+        await page.evaluate(
+            () =>
+                JSON.parse(
+                    localStorage.getItem('sonolus-next-sekai-editor.keyboardShortcuts') ?? '{}',
+                ).openContextMenu,
+        ),
+    ).toBe('F9')
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await page.keyboard.press('F9')
+    await expect(page.getByRole('menu')).toBeVisible()
+    await page.keyboard.press('F9')
+    await page.keyboard.press(',')
+    await binding.click()
+    await binding.click()
+    await expect(binding).toHaveText('Unassigned')
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('F9')
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toHaveLength(2)
 })
 
 test('empty-caret toolbar context uses the chart beat and keeps the current editing tool', async ({

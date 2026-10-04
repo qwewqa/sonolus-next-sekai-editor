@@ -76,6 +76,30 @@ test('fractional BPM boundaries do not add a spurious measure through floating p
     assert.deepEqual(beatToMeasure(changes, 1 / 3 + 6), { measure: 4, beat: 1 })
 })
 
+test('closely spaced BPM changes still start separate measures', () => {
+    for (const [meter, beat] of [
+        [4, 1e-10],
+        [1e12, 1],
+    ] as const) {
+        const changes = calculateBpms(
+            [
+                { beat: 0, bpm: 120, meter },
+                { beat, bpm: 120, meter },
+            ].map(toBpmIntegral),
+        )
+        assert.deepEqual(beatToMeasure(changes, beat), { measure: 2, beat: 1 })
+    }
+})
+
+test('negative authored BPM positions retain their measure offsets', () => {
+    const changes = calculateBpms([
+        toBpmIntegral({ beat: -4, bpm: 120 }),
+        toBpmIntegral({ beat: 0, bpm: 120 }),
+    ])
+    assert.deepEqual(beatToMeasure(changes, -4), { measure: 0, beat: 1 })
+    assert.deepEqual(beatToMeasure(changes, 0), { measure: 1, beat: 1 })
+})
+
 test('meter edits change labels without changing chart timing', () => {
     const changes = [
         { beat: 0, bpm: 120 },
