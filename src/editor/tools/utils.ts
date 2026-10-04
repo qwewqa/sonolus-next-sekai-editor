@@ -1,12 +1,41 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
 import { getNoteInteractionWidth } from '../../state/entities/slides/note'
-import { align, clamp } from '../../utils/math'
+import { clamp } from '../../utils/math'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
+import { snappedOffset } from '../snapping'
 import { view, xToLane, yToTime, type Selection } from '../view'
 
-export const offset = (startLane: number, lane: number) => align(lane - startLane)
+export const offset = (startLane: number, lane: number, anchor = startLane) =>
+    snappedOffset(startLane, lane, anchor, view.laneDivision, view.laneSnapping)
+
+export const getLaneAnchor = (entity: Entity) => {
+    switch (entity.type) {
+        case 'note':
+            return entity.left
+        case 'connector':
+            return entity.head.left
+        case 'cameraEventJoint':
+            return entity.cameraLeft
+        case 'stageMaskEventJoint':
+            return entity.maskLeft
+        case 'stagePivotEventJoint':
+            return entity.pivotLane
+        case 'stageTransformEventJoint':
+            return entity.xTranslation
+        case 'timeScale':
+        case 'stageStyleEventJoint':
+            return entity.editorLane
+        case 'bpm':
+        case 'cameraEventConnection':
+        case 'stageMaskEventConnection':
+        case 'stagePivotEventConnection':
+        case 'stageStyleEventConnection':
+        case 'stageTransformEventConnection':
+            return undefined
+    }
+}
 
 export const isNoteResizeStart = (note: { left: number; size: number }, lane: number) => {
     const center = note.left + note.size / 2
@@ -14,8 +43,15 @@ export const isNoteResizeStart = (note: { left: number; size: number }, lane: nu
     return lane <= center - moveHalfWidth || lane >= center + moveHalfWidth
 }
 
-export const resize = (anchor: number, lane: number, min = 0, max = Number.POSITIVE_INFINITY) => {
-    const size = clamp(Math.abs(align(lane) - anchor), min, max)
+export const resize = (
+    anchor: number,
+    lane: number,
+    min = 0,
+    max = Number.POSITIVE_INFINITY,
+    startEdge = anchor,
+) => {
+    const edge = startEdge + offset(startEdge, lane, startEdge)
+    const size = clamp(Math.abs(edge - anchor), min, max)
 
     return [anchor - (lane >= anchor ? 0 : size), size] as const
 }

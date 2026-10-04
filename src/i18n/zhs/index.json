@@ -47,6 +47,22 @@
       "title": "取消选择",
       "deselected": "已取消选择所有对象"
     },
+    "laneDivisions": {
+      "title": "1/{0} 轨道细分",
+      "switched": "已切换到 1/{0} 轨道细分",
+      "custom": {
+        "title": "自定义轨道细分",
+        "modal": {
+          "title": "自定义轨道细分",
+          "division": "细分"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "轨道吸附",
+      "absolute": "已切换到绝对轨道吸附",
+      "relative": "已切换到相对轨道吸附"
+    },
     "divisions": {
       "title": "切换到 1/{0} 分割",
       "switched": "已切换到 1/{0} 分割",

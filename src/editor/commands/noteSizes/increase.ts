@@ -12,7 +12,7 @@ export const increaseNoteSize: Command = {
     },
 
     execute() {
-        view.noteSize++
+        view.noteSize += 1 / view.laneDivision
 
         notify(interpolate(() => i18n.value.commands.noteSizes.changed, `${view.noteSize}`))
     },

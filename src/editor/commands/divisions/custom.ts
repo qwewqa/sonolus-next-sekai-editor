@@ -6,22 +6,38 @@ import { notify } from '../../notification'
 import { view } from '../../view'
 import TextIcon from '../TextIcon.vue'
 import CustomDivisionModal from './CustomDivisionModal.vue'
+import LaneDivisionIcon from './LaneDivisionIcon.vue'
 
-export const divisionCustom: Command = {
-    title: () => i18n.value.commands.divisions.custom.title,
+const createCustomDivision = (axis: 'beat' | 'lane'): Command => ({
+    title: () =>
+        axis === 'lane'
+            ? i18n.value.commands.laneDivisions.custom.title
+            : i18n.value.commands.divisions.custom.title,
     icon: {
-        is: TextIcon,
+        is: axis === 'lane' ? LaneDivisionIcon : TextIcon,
         props: {
             title: '1/n',
         },
     },
 
     async execute() {
-        const division: number | undefined = await showModal(CustomDivisionModal, {})
-        if (!division) return
+        const division: number | undefined = await showModal(CustomDivisionModal, { axis })
+        if (!division || !Number.isSafeInteger(division) || division < 1) return
 
-        view.division = division
+        if (axis === 'lane') view.laneDivision = division
+        else view.division = division
 
-        notify(interpolate(() => i18n.value.commands.divisions.switched, `${division}`))
+        notify(
+            interpolate(
+                () =>
+                    axis === 'lane'
+                        ? i18n.value.commands.laneDivisions.switched
+                        : i18n.value.commands.divisions.switched,
+                `${division}`,
+            ),
+        )
     },
-}
+})
+
+export const divisionCustom = createCustomDivision('beat')
+export const laneDivisionCustom = createCustomDivision('lane')

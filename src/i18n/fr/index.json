@@ -47,6 +47,22 @@
       "title": "Désélectionner",
       "deselected": "Tout désélectionné"
     },
+    "laneDivisions": {
+      "title": "Division de voie 1/{0}",
+      "switched": "Division de voie réglée sur 1/{0}",
+      "custom": {
+        "title": "Division de voie personnalisée",
+        "modal": {
+          "title": "Division de voie personnalisée",
+          "division": "Division"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "Alignement des voies",
+      "absolute": "Alignement absolu des voies activé",
+      "relative": "Alignement relatif des voies activé"
+    },
     "divisions": {
       "title": "Passer à la division en 1/{0}",
       "switched": "Division en 1/{0} sélectionnée",

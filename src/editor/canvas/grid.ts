@@ -9,6 +9,7 @@ export const drawGrid = (
     beats: Range<number>,
     times: Range<number>,
     division: number,
+    laneDivision = 1,
 ) => {
     const { ctx, bounds, scale, state, ups } = context
     ctx.save()
@@ -22,6 +23,18 @@ export const drawGrid = (
             if ((i === 1 || i === 13 ? 0.5 : i % 2 ? 0.25 : 0.05) !== alpha) continue
             ctx.moveTo(i - 7, Math.min(0, bounds.b))
             ctx.lineTo(i - 7, bounds.t)
+        }
+        ctx.stroke()
+    }
+
+    if (laneDivision > 1 && scale / laneDivision >= 8 && laneDivision <= 32) {
+        ctx.globalAlpha = 0.025
+        ctx.beginPath()
+        for (let i = -6 * laneDivision; i <= 6 * laneDivision; i++) {
+            if (i % laneDivision === 0) continue
+            const lane = i / laneDivision
+            ctx.moveTo(lane, Math.min(0, bounds.b))
+            ctx.lineTo(lane, bounds.t)
         }
         ctx.stroke()
     }

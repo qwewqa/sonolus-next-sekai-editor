@@ -12,7 +12,7 @@ export const decreaseNoteSize: Command = {
     },
 
     execute() {
-        view.noteSize = Math.max(0, view.noteSize - 1)
+        view.noteSize = Math.max(0, view.noteSize - 1 / view.laneDivision)
 
         notify(interpolate(() => i18n.value.commands.noteSizes.changed, `${view.noteSize}`))
     },

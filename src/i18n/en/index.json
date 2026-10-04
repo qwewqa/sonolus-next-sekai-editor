@@ -47,6 +47,22 @@
             "title": "Deselect",
             "deselected": "Deselected all objects"
         },
+        "laneDivisions": {
+            "title": "1/{0} Lane Division",
+            "switched": "Switched to 1/{0} lane division",
+            "custom": {
+                "title": "Custom Lane Division",
+                "modal": {
+                    "title": "Custom Lane Division",
+                    "division": "Division"
+                }
+            }
+        },
+        "laneSnapping": {
+            "title": "Lane Snapping",
+            "absolute": "Switched to absolute lane snapping",
+            "relative": "Switched to relative lane snapping"
+        },
         "divisions": {
             "title": "1/{0} Division",
             "switched": "Switched to 1/{0} division",

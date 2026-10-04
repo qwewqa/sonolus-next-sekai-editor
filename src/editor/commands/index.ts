@@ -7,7 +7,7 @@ import { copy } from './copy'
 import { cut } from './cut'
 import { deselect } from './deselect'
 import { division } from './divisions'
-import { divisionCustom } from './divisions/custom'
+import { divisionCustom, laneDivisionCustom } from './divisions/custom'
 import { elevation } from './elevation'
 import { eraser } from './eraser'
 import { event } from './events'
@@ -51,6 +51,7 @@ import { select } from './select'
 import { settings } from './settings'
 import { createSlide, slide } from './slide'
 import { snapping } from './snapping'
+import { laneSnapping } from './snapping/lane'
 import { speedDown } from './speeds/speedDown'
 import { speedUp } from './speeds/speedUp'
 import { splitHold } from './splitHold'
@@ -186,6 +187,16 @@ export const commands = {
     division16: division(16),
     divisionCustom,
     snapping,
+    laneDivision1: division(1, 'lane'),
+    laneDivision2: division(2, 'lane'),
+    laneDivision3: division(3, 'lane'),
+    laneDivision4: division(4, 'lane'),
+    laneDivision6: division(6, 'lane'),
+    laneDivision8: division(8, 'lane'),
+    laneDivision12: division(12, 'lane'),
+    laneDivision16: division(16, 'lane'),
+    laneDivisionCustom,
+    laneSnapping,
 
     zoomXIn,
     zoomXOut,

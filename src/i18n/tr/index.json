@@ -47,6 +47,22 @@
       "title": "Seçimi kaldır",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı"
     },
+    "laneDivisions": {
+      "title": "1/{0} Şerit Bölümü",
+      "switched": "1/{0} şerit bölümüne geçildi",
+      "custom": {
+        "title": "Özel Şerit Bölümü",
+        "modal": {
+          "title": "Özel Şerit Bölümü",
+          "division": "Bölüm"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "Şerit Hizalama",
+      "absolute": "Mutlak şerit hizalamaya geçildi",
+      "relative": "Göreli şerit hizalamaya geçildi"
+    },
     "divisions": {
       "title": "1/{0} bölümüne geç",
       "switched": "1/{0} bölümüne geçildi",

@@ -37,6 +37,9 @@ export const view = shallowReactive({
     division: 4,
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     snapping: 'absolute' as 'absolute' | 'relative',
+    laneDivision: 1,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    laneSnapping: 'relative' as 'absolute' | 'relative',
 
     groupId: optional<GroupId>(),
     stageId: optional<StageId>(),
@@ -320,7 +323,9 @@ export const updateViewLastActive = () => {
 
 export const xToLane = (x: number) => ((x - view.x) / view.w - 0.5) * settings.width + view.lane
 
-export const xToValidLane = (x: number) => align(xToLane(x))
+export const alignLane = (lane: number) => align(lane, view.laneDivision)
+
+export const xToValidLane = (x: number) => alignLane(xToLane(x))
 
 export const yToTime = (y: number) => (0.5 * view.h - y + view.y) / settings.pps + view.time
 

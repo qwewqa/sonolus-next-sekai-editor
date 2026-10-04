@@ -4,19 +4,35 @@ import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { view } from '../../view'
 import TextIcon from '../TextIcon.vue'
+import LaneDivisionIcon from './LaneDivisionIcon.vue'
 
-export const division = (division: number): Command => ({
-    title: interpolate(() => i18n.value.commands.divisions.title, `${division}`),
+export const division = (division: number, axis: 'beat' | 'lane' = 'beat'): Command => ({
+    title: interpolate(
+        () =>
+            axis === 'lane'
+                ? i18n.value.commands.laneDivisions.title
+                : i18n.value.commands.divisions.title,
+        `${division}`,
+    ),
     icon: {
-        is: TextIcon,
+        is: axis === 'lane' ? LaneDivisionIcon : TextIcon,
         props: {
             title: `1/${division}`,
         },
     },
 
     execute() {
-        view.division = division
+        if (axis === 'lane') view.laneDivision = division
+        else view.division = division
 
-        notify(interpolate(() => i18n.value.commands.divisions.switched, `${division}`))
+        notify(
+            interpolate(
+                () =>
+                    axis === 'lane'
+                        ? i18n.value.commands.laneDivisions.switched
+                        : i18n.value.commands.divisions.switched,
+                `${division}`,
+            ),
+        )
     },
 })

@@ -47,6 +47,22 @@
       "title": "선택 해제",
       "deselected": "모든 객체 선택 해제됨"
     },
+    "laneDivisions": {
+      "title": "레인 분할 1/{0}",
+      "switched": "레인 분할을 1/{0}로 변경함",
+      "custom": {
+        "title": "사용자 지정 레인 분할",
+        "modal": {
+          "title": "사용자 지정 레인 분할",
+          "division": "분할"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "레인 스냅",
+      "absolute": "절대 레인 스냅으로 변경함",
+      "relative": "상대 레인 스냅으로 변경함"
+    },
     "divisions": {
       "title": "1/{0}분할로 변경",
       "switched": "1/{0}분할로 변경됨",

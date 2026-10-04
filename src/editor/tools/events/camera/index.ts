@@ -264,7 +264,14 @@ export const cameraEvent: Tool = {
                 break
             }
             case 'edit': {
-                const [cameraLeft, cameraSize] = resize(active.lane, lane, 6, 24)
+                const [cameraLeft, cameraSize] = resize(
+                    active.lane,
+                    lane,
+                    6,
+                    24,
+                    active.entity.cameraLeft +
+                        (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
+                )
 
                 view.entities = {
                     hovered: [],
@@ -287,7 +294,9 @@ export const cameraEvent: Tool = {
                         toCameraEventJointEntity({
                             ...active.entity,
                             beat,
-                            cameraLeft: active.entity.cameraLeft + offset(active.lane, lane),
+                            cameraLeft:
+                                active.entity.cameraLeft +
+                                offset(active.lane, lane, active.entity.cameraLeft),
                         }),
                     ],
                 }
@@ -332,7 +341,14 @@ export const cameraEvent: Tool = {
                 break
             }
             case 'edit': {
-                const [cameraLeft, cameraSize] = resize(active.lane, lane, 6, 24)
+                const [cameraLeft, cameraSize] = resize(
+                    active.lane,
+                    lane,
+                    6,
+                    24,
+                    active.entity.cameraLeft +
+                        (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
+                )
 
                 edit(active.entity, {
                     ...active.entity,
@@ -347,7 +363,9 @@ export const cameraEvent: Tool = {
                 move(active.entity, {
                     ...active.entity,
                     beat,
-                    cameraLeft: active.entity.cameraLeft + offset(active.lane, lane),
+                    cameraLeft:
+                        active.entity.cameraLeft +
+                        offset(active.lane, lane, active.entity.cameraLeft),
                 })
                 focusEntityAtBeat(beat)
                 break

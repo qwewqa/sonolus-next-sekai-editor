@@ -219,7 +219,14 @@ export const note: Tool = {
                 break
             }
             case 'edit': {
-                const [left, size] = resize(active.lane, lane, 1)
+                const [left, size] = resize(
+                    active.lane,
+                    lane,
+                    1,
+                    Number.POSITIVE_INFINITY,
+                    active.entity.left +
+                        (active.lane === active.entity.left ? active.entity.size : 0),
+                )
                 const object = { ...active.entity, left, size }
 
                 view.entities = {
@@ -234,7 +241,7 @@ export const note: Tool = {
                 const object = {
                     ...active.entity,
                     beat,
-                    left: active.entity.left + offset(active.lane, lane),
+                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
                 }
 
                 view.entities = {
@@ -269,7 +276,14 @@ export const note: Tool = {
                 break
             }
             case 'edit': {
-                const [left, size] = resize(active.lane, lane, 1)
+                const [left, size] = resize(
+                    active.lane,
+                    lane,
+                    1,
+                    Number.POSITIVE_INFINITY,
+                    active.entity.left +
+                        (active.lane === active.entity.left ? active.entity.size : 0),
+                )
 
                 edit(active.entity, {
                     ...active.entity,
@@ -284,7 +298,7 @@ export const note: Tool = {
                 move(active.entity, {
                     ...active.entity,
                     beat,
-                    left: active.entity.left + offset(active.lane, lane),
+                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
                 })
                 focusEntityAtBeat(beat)
                 break

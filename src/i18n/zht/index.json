@@ -47,6 +47,22 @@
       "title": "取消選擇",
       "deselected": "已取消選取所有對象"
     },
+    "laneDivisions": {
+      "title": "1/{0} 軌道細分",
+      "switched": "已切換到 1/{0} 軌道細分",
+      "custom": {
+        "title": "自訂軌道細分",
+        "modal": {
+          "title": "自訂軌道細分",
+          "division": "細分"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "軌道吸附",
+      "absolute": "已切換到絕對軌道吸附",
+      "relative": "已切換到相對軌道吸附"
+    },
     "divisions": {
       "title": "切換到 1/{0} 拍分割",
       "switched": "已切換到 1/{0} 拍分割",

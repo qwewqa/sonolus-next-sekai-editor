@@ -47,6 +47,22 @@
       "title": "選択解除",
       "deselected": "すべてのオブジェクトを選択解除しました"
     },
+    "laneDivisions": {
+      "title": "レーン分割 1/{0}",
+      "switched": "レーン分割を1/{0}に変更しました",
+      "custom": {
+        "title": "カスタムレーン分割",
+        "modal": {
+          "title": "カスタムレーン分割",
+          "division": "分割数"
+        }
+      }
+    },
+    "laneSnapping": {
+      "title": "レーンスナップ",
+      "absolute": "レーンの絶対スナップに切り替えました",
+      "relative": "レーンの相対スナップに切り替えました"
+    },
     "divisions": {
       "title": "拍を1/{0}ずつ分割",
       "switched": "拍を1/{0}ずつ分割しました",

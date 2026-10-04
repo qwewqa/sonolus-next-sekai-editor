@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { i18n } from '../../../i18n'
 import FormModal from '../../../modals/form/FormModal.vue'
 import NumberField from '../../../modals/form/NumberField.vue'
@@ -9,19 +9,22 @@ defineEmits<{
     close: [division?: number]
 }>()
 
-const model = ref(view.division)
+const { axis = 'beat' } = defineProps<{ axis?: 'beat' | 'lane' }>()
+const labels = computed(() =>
+    axis === 'lane'
+        ? i18n.value.commands.laneDivisions.custom.modal
+        : i18n.value.commands.divisions.custom.modal,
+)
+const model = ref(axis === 'lane' ? view.laneDivision : view.division)
 </script>
 
 <template>
-    <FormModal
-        :title="i18n.commands.divisions.custom.modal.title"
-        @close="$emit('close')"
-        @submit="$emit('close', model)"
-    >
+    <FormModal :title="labels.title" @close="$emit('close')" @submit="$emit('close', model)">
         <NumberField
             v-model="model"
-            :label="i18n.commands.divisions.custom.modal.division"
+            :label="labels.division"
             :min="1"
+            :max="Number.MAX_SAFE_INTEGER"
             :step="1"
         />
     </FormModal>

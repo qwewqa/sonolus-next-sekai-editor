@@ -52,10 +52,9 @@ import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScal
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
-import { align } from '../../../utils/math'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { notify } from '../../notification'
-import { view, xToLane, yToBeatOffset } from '../../view'
+import { alignLane, view, xToLane, yToBeatOffset } from '../../view'
 import { getOnlyEntityType } from '../entityType'
 import PasteSidebar from './PasteSidebar.vue'
 
@@ -414,8 +413,8 @@ const toMovedTimeScaleObject = (
     editorLane:
         onlyType === 'timeScale'
             ? flip
-                ? -entity.editorLane + align(startLane) + align(lane)
-                : entity.editorLane - align(startLane) + align(lane)
+                ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
+                : entity.editorLane - alignLane(startLane) + alignLane(lane)
             : entity.editorLane,
 })
 
@@ -429,8 +428,8 @@ const toMovedCameraEventObject = (
     ...entity,
     beat,
     cameraLeft: flip
-        ? -(entity.cameraLeft + entity.cameraSize) + align(startLane) + align(lane)
-        : entity.cameraLeft - align(startLane) + align(lane),
+        ? -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane)
+        : entity.cameraLeft - alignLane(startLane) + alignLane(lane),
     cameraZoomTargetLane: flip ? -entity.cameraZoomTargetLane : entity.cameraZoomTargetLane,
     cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
 })
@@ -446,8 +445,8 @@ const toMovedStageMaskEventObject = (
     stageId: view.stageId ?? entity.stageId,
     beat,
     maskLeft: flip
-        ? -(entity.maskLeft + entity.maskSize) + align(startLane) + align(lane)
-        : entity.maskLeft - align(startLane) + align(lane),
+        ? -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane)
+        : entity.maskLeft - alignLane(startLane) + alignLane(lane),
 })
 
 const toMovedStagePivotEventObject = (
@@ -461,8 +460,8 @@ const toMovedStagePivotEventObject = (
     stageId: view.stageId ?? entity.stageId,
     beat,
     pivotLane: flip
-        ? -entity.pivotLane + align(startLane) + align(lane)
-        : entity.pivotLane - align(startLane) + align(lane),
+        ? -entity.pivotLane + alignLane(startLane) + alignLane(lane)
+        : entity.pivotLane - alignLane(startLane) + alignLane(lane),
 })
 
 const toMovedStageStyleEventObject = (
@@ -479,8 +478,8 @@ const toMovedStageStyleEventObject = (
     editorLane:
         onlyType === 'stageStyleEventJoint'
             ? flip
-                ? -entity.editorLane + align(startLane) + align(lane)
-                : entity.editorLane - align(startLane) + align(lane)
+                ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
+                : entity.editorLane - alignLane(startLane) + alignLane(lane)
             : entity.editorLane,
     leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
     rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
@@ -498,8 +497,8 @@ const toMovedStageTransformEventObject = (
     beat,
     rotation: flip ? -entity.rotation : entity.rotation,
     xTranslation: flip
-        ? -entity.xTranslation + align(startLane) + align(lane)
-        : entity.xTranslation - align(startLane) + align(lane),
+        ? -entity.xTranslation + alignLane(startLane) + alignLane(lane)
+        : entity.xTranslation - alignLane(startLane) + alignLane(lane),
 })
 
 const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
@@ -524,8 +523,8 @@ export const toMovedNoteObject = (
     stageId: view.stageId ?? entity.stageId,
     beat,
     left: flip
-        ? -(entity.left + entity.size) + align(startLane) + align(lane)
-        : entity.left - align(startLane) + align(lane),
+        ? -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane)
+        : entity.left - alignLane(startLane) + alignLane(lane),
     flickDirection: flip ? flippedFlickDirections[entity.flickDirection] : entity.flickDirection,
 })
 

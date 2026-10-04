@@ -14,7 +14,7 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
 import { createTransaction } from '../../state/transaction'
-import { align, clamp } from '../../utils/math'
+import { clamp } from '../../utils/math'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
 import type { EditorDrawContext } from '../canvas/types'
@@ -39,7 +39,7 @@ import EditorToolModalHost from '../EditorToolModalHost.vue'
 import { hasToolModal } from '../toolModals'
 import type { CommandName } from '../commands'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
-import { view, focusViewAtBeat } from '../view'
+import { alignLane, view, focusViewAtBeat } from '../view'
 import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
 import {
     createElevationNote,
@@ -130,6 +130,16 @@ const availableCommands: CommandName[] = [
     'division12',
     'division16',
     'divisionCustom',
+    'laneSnapping',
+    'laneDivision1',
+    'laneDivision2',
+    'laneDivision3',
+    'laneDivision4',
+    'laneDivision6',
+    'laneDivision8',
+    'laneDivision12',
+    'laneDivision16',
+    'laneDivisionCustom',
     'zoomXIn',
     'zoomXOut',
     'zoomYIn',
@@ -211,7 +221,13 @@ const edit = (active: NonNullable<typeof drag>) => {
     const replacements = new Map(
         active.targets.flatMap((note) => {
             const [left, size] = active.resizing
-                ? resize(active.anchor, active.movingEdge + active.deltaLane)
+                ? resize(
+                      active.anchor,
+                      active.movingEdge + active.deltaLane,
+                      0,
+                      Number.POSITIVE_INFINITY,
+                      active.movingEdge,
+                  )
                 : [note.left + active.deltaLane, note.size]
             const replacement = editSelectedNote(transaction, note, {
                 left,
@@ -297,7 +313,7 @@ const controls: Pick<
         if (!hovered.value && (toolName.value === 'note' || toolName.value === 'slide'))
             creating.value = ghostRows([
                 previewElevationNote(
-                    align(position.lane),
+                    alignLane(position.lane),
                     position.elevation,
                     position.beat,
                     toolName.value === 'slide',
@@ -335,7 +351,7 @@ const controls: Pick<
             if (!row) {
                 const position = positionAtPoint(x, y)
                 createElevationNote(
-                    align(position.lane),
+                    alignLane(position.lane),
                     position.elevation,
                     position.beat,
                     toolName.value === 'slide',
@@ -366,7 +382,7 @@ const controls: Pick<
         if (!row && (toolName.value === 'note' || toolName.value === 'slide')) {
             const position = positionAtPoint(x, y)
             adding = {
-                lane: align(position.lane),
+                lane: alignLane(position.lane),
                 elevation: position.elevation,
                 slide: toolName.value === 'slide',
             }
@@ -453,9 +469,11 @@ const controls: Pick<
             return
         }
         if (!drag) return
-        const deltaLane = drag.resizing
-            ? align(xToLane(x) - drag.lane)
-            : offset(drag.lane, xToLane(x))
+        const deltaLane = offset(
+            drag.lane,
+            xToLane(x),
+            drag.resizing ? drag.movingEdge : drag.row.note.left,
+        )
         const delta = yToElevation(y) - drag.elevation
         const deltaElevation = drag.resizing
             ? 0
@@ -508,29 +526,14 @@ const controls: Pick<
     dragCancel: cancel,
 }
 
-const committedNotes = computed(() => state.value.store.slides.note)
-const visibleBeats = computed(() =>
-    [
-        ...new Set(
-            [...committedNotes.value.values()].flatMap((slide) =>
-                slide
-                    .filter(
-                        (note) =>
-                            view.visibilities.note &&
-                            (view.groupId === undefined || note.groupId === view.groupId) &&
-                            (view.stageId === undefined || note.stageId === view.stageId),
-                    )
-                    .map((note) => note.beat),
-            ),
-        ),
-    ].sort((a, b) => a - b),
-)
-const previousBeat = computed(() =>
-    visibleBeats.value.filter((beat) => beat < elevationBeat.value - 1e-7).pop(),
-)
-const nextBeat = computed(() =>
-    visibleBeats.value.find((beat) => beat > elevationBeat.value + 1e-7),
-)
+const previousBeat = computed(() => {
+    const beat = Math.max(0, elevationBeat.value - 1 / view.division)
+    return beat < elevationBeat.value ? beat : undefined
+})
+const nextBeat = computed(() => {
+    const beat = elevationBeat.value + 1 / view.division
+    return Number.isFinite(beat) && beat > elevationBeat.value ? beat : undefined
+})
 const changeBeat = (beat: number) => {
     if (!Number.isFinite(beat)) return
     cancelMouseControls()
@@ -683,11 +686,16 @@ watchEffect(() => {
             }
         }
         ctx.restore()
+        const laneDivision =
+            layout.laneScale / view.laneDivision >= 8 && view.laneDivision <= 32
+                ? view.laneDivision
+                : 1
         for (
-            let lane = Math.ceil(layout.laneLeft);
-            lane <= layout.laneLeft + layout.width / layout.laneScale;
-            lane++
+            let i = Math.ceil(layout.laneLeft * laneDivision);
+            i <= (layout.laneLeft + layout.width / layout.laneScale) * laneDivision;
+            i++
         ) {
+            const lane = i / laneDivision
             const x = layout.xAt(lane)
             if (x < 38) continue
             ctx.strokeStyle =
@@ -939,6 +947,17 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.elevation-beat-field input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.elevation-beat-field input::-webkit-inner-spin-button,
+.elevation-beat-field input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
 .elevation-header {
     container-type: inline-size;
 }

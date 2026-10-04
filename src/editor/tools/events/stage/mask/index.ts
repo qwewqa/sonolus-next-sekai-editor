@@ -257,7 +257,14 @@ export const stageMaskEvent: Tool = {
                 break
             }
             case 'edit': {
-                const [maskLeft, maskSize] = resize(active.lane, lane)
+                const [maskLeft, maskSize] = resize(
+                    active.lane,
+                    lane,
+                    0,
+                    Number.POSITIVE_INFINITY,
+                    active.entity.maskLeft +
+                        (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
+                )
 
                 view.entities = {
                     hovered: [],
@@ -280,7 +287,9 @@ export const stageMaskEvent: Tool = {
                         toStageMaskEventJointEntity({
                             ...active.entity,
                             beat,
-                            maskLeft: active.entity.maskLeft + offset(active.lane, lane),
+                            maskLeft:
+                                active.entity.maskLeft +
+                                offset(active.lane, lane, active.entity.maskLeft),
                         }),
                     ],
                 }
@@ -325,7 +334,14 @@ export const stageMaskEvent: Tool = {
                 break
             }
             case 'edit': {
-                const [maskLeft, maskSize] = resize(active.lane, lane)
+                const [maskLeft, maskSize] = resize(
+                    active.lane,
+                    lane,
+                    0,
+                    Number.POSITIVE_INFINITY,
+                    active.entity.maskLeft +
+                        (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
+                )
 
                 edit(active.entity, {
                     ...active.entity,
@@ -340,7 +356,8 @@ export const stageMaskEvent: Tool = {
                 move(active.entity, {
                     ...active.entity,
                     beat,
-                    maskLeft: active.entity.maskLeft + offset(active.lane, lane),
+                    maskLeft:
+                        active.entity.maskLeft + offset(active.lane, lane, active.entity.maskLeft),
                 })
                 focusEntityAtBeat(beat)
                 break
