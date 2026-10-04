@@ -7,6 +7,7 @@ import { settings } from '../settings'
 import { isEditableEntity } from '../state/operations/editable'
 import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
+import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { formatShortcut } from '../utils/format'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import DeleteIcon from './commands/reset/ResetIcon.vue'
@@ -74,6 +75,7 @@ const actions = computed(() => {
                 .size > 1
         )
             transforms.push('combineNotes')
+        if (getSplitHoldNotes(state.value, selection).length) transforms.push('splitHold')
     }
     if (transforms.length) groups.push(transforms)
     if (canEditElevations) groups.push(['editElevations'])

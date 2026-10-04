@@ -95,6 +95,11 @@
             "invalid": "Selection cannot be made vertical within the editor’s supported range",
             "made": "Made {0} notes vertical"
         },
+        "splitHold": {
+            "title": "Split hold",
+            "noConnections": "Select a note with a following connection to split",
+            "split": "Split {0} connections"
+        },
         "combineNotes": {
             "title": "Combine into slide",
             "noSelected": "No notes selected to combine",

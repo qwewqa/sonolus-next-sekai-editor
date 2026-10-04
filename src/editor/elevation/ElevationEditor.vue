@@ -93,6 +93,7 @@ const availableCommands: CommandName[] = [
     'redo',
     'flip',
     'combineNotes',
+    'splitHold',
     'scaleBeat',
     'scaleElevation',
     'makeVertical',

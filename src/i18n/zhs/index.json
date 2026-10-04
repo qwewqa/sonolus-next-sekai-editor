@@ -95,6 +95,11 @@
       "invalid": "无法在编辑器支持的范围内将所选对象转为垂直排列",
       "made": "已将 {0} 个音符转为垂直排列"
     },
+    "splitHold": {
+      "title": "拆分长按",
+      "noConnections": "请选择具有后续连接的音符",
+      "split": "已拆分 {0} 个连接"
+    },
     "combineNotes": {
       "title": "合并为长按音符",
       "noSelected": "未选择要合并的音符",

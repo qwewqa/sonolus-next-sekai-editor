@@ -95,6 +95,11 @@
       "invalid": "La sélection ne peut pas être disposée verticalement dans les limites prises en charge par l’éditeur",
       "made": "{0} notes disposées verticalement"
     },
+    "splitHold": {
+      "title": "Scinder le slide",
+      "noConnections": "Sélectionnez une note suivie d’une connexion à scinder",
+      "split": "{0} connexions scindées"
+    },
     "combineNotes": {
       "title": "Combiner en slide",
       "noSelected": "Aucune note sélectionnée à combiner",

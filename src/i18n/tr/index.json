@@ -95,6 +95,11 @@
       "invalid": "Seçim, editörün desteklediği aralıkta dikey düzenlenemiyor",
       "made": "{0} nota dikey düzenlendi"
     },
+    "splitHold": {
+      "title": "Basılı notayı böl",
+      "noConnections": "Bölmek için devamında bağlantısı olan bir nota seçin",
+      "split": "{0} bağlantı bölündü"
+    },
     "combineNotes": {
       "title": "Kaydırmada birleştir",
       "noSelected": "Birleştirilecek nota seçilmedi",

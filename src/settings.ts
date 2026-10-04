@@ -191,6 +191,7 @@ const settingsProperties = {
                         'scaleBeat',
                         'makeVertical',
                         'combineNotes',
+                        'splitHold',
                         'flipVertical',
                         'flip',
                         'paste',

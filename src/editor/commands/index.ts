@@ -53,6 +53,7 @@ import { createSlide, slide } from './slide'
 import { snapping } from './snapping'
 import { speedDown } from './speeds/speedDown'
 import { speedUp } from './speeds/speedUp'
+import { splitHold } from './splitHold'
 import { stageAll } from './stages/stageAll'
 import { stageNext } from './stages/stageNext'
 import { stagePrev } from './stages/stagePrev'
@@ -113,6 +114,7 @@ export const commands = {
     scaleElevation,
     makeVertical,
     combineNotes,
+    splitHold,
     cut,
     copy,
     paste,
