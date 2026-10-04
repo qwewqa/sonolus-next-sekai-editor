@@ -540,6 +540,7 @@
         "editor": {
             "title": "Editor",
             "locale": "Language",
+            "elevationSideBySide": "Elevation Editor Side by Side",
             "autoSave": "Auto Save",
             "autoSaveDelay": "Auto Save Delay",
             "waveformVisualization": {

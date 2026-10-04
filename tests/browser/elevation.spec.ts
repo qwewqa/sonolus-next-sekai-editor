@@ -787,8 +787,20 @@ test('side-by-side Auto adapts to available width and the explicit options overr
         window.editorTest.settings.previewWidth = 280
     })
     await open(page)
-    const preference = page.getByRole('combobox', { name: 'Side by side', exact: true })
-    await expect(preference).toHaveValue('auto')
+    await expect(page.locator('.elevation-header select')).toHaveCount(1)
+    const setPreference = async (value: 'auto' | 'allow' | 'disallow') => {
+        await page.keyboard.press(',')
+        const dialog = page.getByRole('dialog')
+        await expect(dialog).toBeVisible()
+        const preference = dialog
+            .locator('label')
+            .filter({ has: page.getByText('Elevation Editor Side by Side', { exact: true }) })
+            .getByRole('combobox')
+        await preference.selectOption(value)
+        await expect(preference).toHaveValue(value)
+        await dialog.locator('.bg-header button').click()
+        await expect(dialog).toHaveCount(0)
+    }
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await expect(page.locator('.preview')).toBeVisible()
@@ -799,12 +811,12 @@ test('side-by-side Auto adapts to available width and the explicit options overr
         path: testInfo.outputPath('elevation-side-by-side.png'),
         style: '.notification { visibility: hidden }',
     })
-    await preference.selectOption('disallow')
+    await setPreference('disallow')
     await expect(page.locator('canvas.editor-chart')).toHaveCount(0)
     await page.setViewportSize({ width: 700, height: 700 })
-    await preference.selectOption('auto')
+    await setPreference('auto')
     await expect(page.locator('canvas.editor-chart')).toHaveCount(0)
-    await preference.selectOption('allow')
+    await setPreference('allow')
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     const chartBounds = await page.locator('canvas.editor-chart').boundingBox()

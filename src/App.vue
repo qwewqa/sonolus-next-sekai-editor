@@ -3,6 +3,7 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import LevelEditor from './editor/LevelEditor.vue'
 import LevelEditorSidebar from './editor/LevelEditorSidebar.vue'
 import { currentSidebar } from './editor/sidebars'
+import { i18n } from './i18n'
 import ModalManager from './modals/ModalManager.vue'
 import LevelPreview from './preview/LevelPreview.vue'
 import { screenSm, screenWidth } from './screen'
@@ -105,14 +106,21 @@ const onFocus = (event: FocusEvent) => {
                 "
             >
                 <LevelPreview v-if="settings.showPreview" />
+            </div>
 
+            <div
+                class="relative z-30 shrink-0 bg-preview"
+                :class="previewPosition === 'left' ? 'w-0' : 'h-4'"
+            >
                 <button
-                    class="absolute flex items-center justify-center bg-button shadow-md transition-colors hover:shadow-accent active:bg-accent active:fill-button"
+                    class="preview-panel-toggle absolute flex items-center justify-center bg-button shadow-md transition-colors hover:shadow-accent active:bg-accent active:fill-button"
                     :class="
                         previewPosition === 'left'
-                            ? 'left-full top-1/2 h-16 w-4 -translate-y-1/2 cursor-col-resize rounded-r-full'
-                            : 'left-1/2 top-full h-4 w-16 -translate-x-1/2 cursor-row-resize rounded-b-full'
+                            ? 'left-0 top-1/2 h-16 w-4 -translate-y-1/2 cursor-col-resize rounded-r-full'
+                            : 'left-1/2 top-0 h-4 w-16 -translate-x-1/2 cursor-row-resize rounded-b-full'
                     "
+                    :aria-label="i18n.settings.preview.title"
+                    :aria-expanded="settings.showPreview"
                     @click="onToggle('preview')"
                     @pointerdown="onStartDragging('preview')"
                     @focus="onFocus"

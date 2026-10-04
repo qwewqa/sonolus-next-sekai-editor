@@ -836,18 +836,6 @@ onUnmounted(() => {
         >
             <div class="relative flex flex-wrap items-center gap-x-3 gap-y-2 pr-8">
                 <strong class="flex-grow text-white/90">{{ i18n.elevation.header }}</strong>
-                <label class="flex items-center gap-2"
-                    >{{ i18n.elevation.sideBySide
-                    }}<select
-                        v-model="settings.elevationEditorSideBySide"
-                        class="rounded border border-white/10 bg-bg px-2 py-1 text-white"
-                        :aria-label="i18n.elevation.sideBySide"
-                    >
-                        <option value="auto">{{ i18n.elevation.auto }}</option>
-                        <option value="allow">{{ i18n.elevation.allow }}</option>
-                        <option value="disallow">{{ i18n.elevation.disallow }}</option>
-                    </select></label
-                >
                 <button
                     class="absolute -right-1 -top-1 flex size-8 items-center justify-center rounded text-lg leading-none hover:bg-white/10"
                     :aria-label="i18n.elevation.close"

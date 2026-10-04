@@ -33,6 +33,16 @@ watch(
             :options="Object.entries(localizations).map(([locale, { title }]) => [title, locale])"
         />
 
+        <SelectField
+            v-model="settings.elevationEditorSideBySide"
+            :label="i18n.settings.editor.elevationSideBySide"
+            :options="[
+                [i18n.elevation.auto, 'auto'],
+                [i18n.elevation.allow, 'allow'],
+                [i18n.elevation.disallow, 'disallow'],
+            ]"
+        />
+
         <ToggleField v-model="settings.autoSave" :label="i18n.settings.editor.autoSave" />
 
         <NumberField
