@@ -12,6 +12,9 @@
     "stageTransformEvent": "스테이지 변형 이벤트"
   },
   "commands": {
+    "elevation": {
+      "title": "높이 편집기"
+    },
     "bgm": {
       "title": "배경음",
       "changed": "배경음 변경됨",
@@ -24,10 +27,10 @@
       }
     },
     "brush": {
-      "title": "붓 도구로 변경",
-      "switched": "붓 도구로 변경됨",
+      "title": "브러시 도구로 변경",
+      "switched": "브러시 도구로 변경됨",
       "modal": {
-        "title": "붓 속성"
+        "title": "브러시 속성"
       }
     },
     "copy": {
@@ -60,9 +63,19 @@
       "switched": "지우개 도구로 변경됨"
     },
     "flip": {
-      "title": "뒤집기",
+      "title": "좌우 뒤집기",
       "noSelected": "뒤집을 객체 없음",
       "flipped": "객체 {0}개 뒤집음"
+    },
+    "flipVertical": {
+      "title": "상하 뒤집기",
+      "flipped": "객체 {0}개 상하 뒤집음"
+    },
+    "combineNotes": {
+      "title": "슬라이드로 연결",
+      "noSelected": "연결할 노트가 선택되지 않음",
+      "sameSlide": "선택한 노트가 이미 같은 슬라이드에 속함",
+      "combined": "노트 {0}개를 하나의 슬라이드로 연결함"
     },
     "fullscreen": {
       "title": "전체 화면",
@@ -83,6 +96,10 @@
         "all": "모든 그룹으로 변경됨",
         "one": "{0}번 그룹으로 전환됨"
       }
+    },
+    "generateSlideNotes": {
+      "title": "슬라이드 노트 생성 도구로 변경",
+      "switched": "슬라이드 노트 생성 도구로 변경됨"
     },
     "help": {
       "title": "도움말"
@@ -130,8 +147,8 @@
           "all": "모든 스테이지 전환됨",
           "one": "{0}번 스테이지로 전환됨"
         },
-        "moveUp": "다음 스테이지로 변경",
-        "moveDown": "이전 스테이지로 변경",
+        "moveUp": "스테이지를 위로 이동",
+        "moveDown": "스테이지를 아래로 이동",
         "moved": "{0}번 스테이지 이동됨",
         "properties": {
           "title": "스테이지 속성 편집",
@@ -156,6 +173,15 @@
         "title": "노트 기본 속성"
       }
     },
+    "noteSizes": {
+      "increase": {
+        "title": "노트 크기 늘리기"
+      },
+      "decrease": {
+        "title": "노트 크기 줄이기"
+      },
+      "changed": "노트 크기를 {0}(으)로 변경함"
+    },
     "offset": {
       "title": "오프셋 도구로 전환",
       "switched": "오프셋 도구로 전환됨"
@@ -177,7 +203,7 @@
       "title": "속성",
       "changed": "속성 변경됨",
       "modal": {
-        "life": "Life"
+        "life": "라이프"
       }
     },
     "redo": {
@@ -232,9 +258,9 @@
       }
     },
     "snapping": {
-      "title": "부착 중",
-      "absolute": "절대 기준 부착으로 변경",
-      "relative": "상대 기준 부착으로 변경"
+      "title": "스냅",
+      "absolute": "절대 스냅으로 변경",
+      "relative": "상대 스냅으로 변경"
     },
     "speeds": {
       "speedDown": {
@@ -380,7 +406,7 @@
         "shift": "Shift 키를 사용하면 관련된 모든 노트 객체에 적용됩니다."
       },
       "brushTool": {
-        "title": "붓 도구",
+        "title": "브러시 도구",
         "brush": "객체를 눌러 칠합니다.",
         "deselect": "빈 곳을 눌러 모든 객체를 선택 해제합니다.",
         "brushMultiple": "드래그하여 여러 객체를 칠합니다.",
@@ -412,6 +438,12 @@
         "shift": "Shift 키: 모든 관련 노트 개체에 적용",
         "properties": "슬라이드 도구 다시 선택: 프리셋 또는 기본 속성 변경"
       },
+      "generateSlideNotesTool": {
+        "title": "슬라이드 노트 생성 도구",
+        "generate": "노트 1개를 탭하거나 드래그하여 선택하면 슬라이드 전체에 노트를 생성합니다.",
+        "generateMultiple": "노트 2개를 탭하거나 드래그하여 선택하면 두 노트 사이에 노트를 생성합니다.",
+        "deselect": "빈 공간을 탭하여 모든 객체의 선택을 해제합니다."
+      },
       "bpmTool": {
         "title": "BPM 도구",
         "select": "BPM 개체 탭: 개체 1개 선택",
@@ -442,7 +474,7 @@
         "select": "스테이지 마스크 이벤트 객체를 탭하여 객체 1개를 선택합니다.",
         "edit": "스테이지 마스크 이벤트 객체 1개를 눌러 편집합니다.",
         "add": "추가하려면 빈 공간을 탭하세요.",
-        "move": "드래그하여 스테이지 마스트 이벤트 객체를 이동합니다.",
+        "move": "스테이지 마스크 이벤트 객체 1개를 드래그하여 이동합니다.",
         "ctrl": "Ctrl 키를 누른 채 객체를 선택하면 선택 항목에 추가됩니다.",
         "properties": "기본 속성을 변경하려면 스테이지 마스크 이벤트 도구를 다시 선택합니다."
       },
@@ -475,11 +507,43 @@
       }
     }
   },
+  "elevation": {
+    "edit": "높이 편집",
+    "header": "높이 편집기",
+    "beat": "비트",
+    "previousBeat": "이전 비트",
+    "nextBeat": "다음 비트",
+    "snap": "스냅",
+    "snapping": "높이 스냅",
+    "sideBySide": "나란히 표시",
+    "auto": "자동",
+    "allow": "허용",
+    "disallow": "허용 안 함",
+    "off": "꺼짐",
+    "canvas": "노트 높이",
+    "axis": "높이",
+    "offset": "표시 오프셋",
+    "inherited": "상속된 높이",
+    "empty": "이 비트에 노트가 없음",
+    "history": "노트 높이 변경됨",
+    "close": "높이 편집기 닫기",
+    "resize": "높이 편집기 크기 조절"
+  },
+  "contextMenu": {
+    "title": "선택 항목 작업",
+    "paste": "붙여넣기",
+    "selectSlideNotes": "슬라이드 노트 선택",
+    "delete": "삭제"
+  },
   "settings": {
     "title": "설정",
+    "resetSettings": "설정 초기화",
+    "resetSettingsHint": "키보드 단축키는 유지하고 설정을 기본값으로 복원합니다.",
+    "resetKeybinds": "단축키 초기화",
     "editor": {
       "title": "편집기",
       "locale": "언어",
+      "elevationSideBySide": "높이 편집기 나란히 표시",
       "autoSave": "자동 저장",
       "autoSaveDelay": "자동 저장 주기",
       "waveformVisualization": {
@@ -490,8 +554,8 @@
         "changed": "변경된 파형 설정을 적용하려면 BGM 파일을 다시 불러와야 합니다."
       },
       "maxScrollX": "최대 스크롤 X",
-      "dragToPanY": "드래그하여 Y 움직이기",
-      "dragToPanX": "드래그하여 X 움직이기",
+      "dragToPanY": "드래그하여 Y축 이동",
+      "dragToPanX": "드래그하여 X축 이동",
       "autoAddGroup": "자동 그룹 추가",
       "showGroupName": "그룹 이름 표시",
       "showOtherGroups": "다른 그룹 보기",
@@ -507,22 +571,23 @@
       "secondaryTool": {
         "title": "보조 도구",
         "eraser": "지우개",
-        "select": "선택"
+        "select": "선택",
+        "selectContextMenu": "선택 + 컨텍스트 메뉴"
       },
       "smoothScrolling": "부드러운 스크롤"
     },
     "play": {
       "title": "플레이",
-      "bgmVolume": "배경 음량",
-      "sfxVolume": "효과 음량",
+      "bgmVolume": "배경음 음량",
+      "sfxVolume": "효과음 음량",
       "startPosition": {
         "title": "재생 시작 위치",
         "view": "현재 화면",
-        "cursor": "마우스 위치"
+        "cursor": "커서 위치"
       },
       "follow": "따라가기",
       "followPosition": "따라가기 위치",
-      "previewDuration": "미리보기 시간(밀리초 ms)"
+      "previewDuration": "미리보기 시간 (밀리초)"
     },
     "preview": {
       "title": "미리보기",
@@ -531,6 +596,19 @@
         "auto": "자동",
         "top": "상단",
         "left": "좌측"
+      },
+      "noteSpeed": "노트 속도",
+      "renderScale": "렌더링 배율",
+      "showEffects": "효과",
+      "highlightSelection": "선택 항목 강조",
+      "antialias": "안티앨리어싱",
+      "aspectRatio": "화면 비율",
+      "showPreview": "미리보기 표시",
+      "controls": {
+        "title": "미리보기 설정 패널",
+        "auto": "자동",
+        "expanded": "펼침",
+        "collapsed": "접힘"
       }
     },
     "toolbar": {
@@ -549,7 +627,7 @@
     "default": {
       "title": "객체 속성",
       "none": "선택된 객체 없음",
-      "edited": "{0}개 ​​객체 편집됨"
+      "edited": "{0}개 객체 편집됨"
     },
     "view": {
       "title": "보기",
@@ -573,6 +651,9 @@
     }
   },
   "tools": {
+    "elevation": {
+      "title": "높이 편집기"
+    },
     "bpm": {
       "title": "BPM",
       "adding": "{0}개의 BPM 객체 추가",
@@ -592,14 +673,20 @@
       "brushing": "{0}개 객체에 브러시 적용",
       "brushed": "{0}개 객체에 브러시 적용됨",
       "sidebar": {
-        "title": "붓 속성"
+        "title": "브러시 속성"
       }
     },
     "eraser": {
       "title": "지우개",
       "deselected": "모든 객체 선택 해제됨",
-      "erasing": "{0}개 ​​객체 지우기",
+      "erasing": "{0}개 객체 지우기",
       "erased": "{0}개 객체 삭제됨"
+    },
+    "generateSlideNotes": {
+      "title": "슬라이드 노트 생성",
+      "deselected": "모든 객체 선택 해제됨",
+      "selecting": "객체 {0}개 선택 중",
+      "generated": "객체 {0}개 생성됨"
     },
     "note": {
       "title": "노트 #{0}",
@@ -607,7 +694,7 @@
       "added": "{0}개의 노트 객체 추가됨",
       "editing": "{0}개 노트 객체 편집",
       "edited": "{0}개 노트 객체 편집됨",
-      "moving": "{0}개의 노트 객체 이동됨",
+      "moving": "{0}개 노트 객체 이동",
       "moved": "{0}개 노트 객체 이동됨",
       "selected": "{0}개의 노트 객체 선택됨",
       "modal": {
@@ -631,7 +718,7 @@
     "select": {
       "title": "선택",
       "deselected": "모든 객체 선택 해제됨",
-      "selecting": "{0}개 ​​객체 선택",
+      "selecting": "{0}개 객체 선택",
       "selected": "{0}개의 객체 선택됨",
       "moving": "{0}개 객체 이동",
       "moved": "{0}개의 객체 이동됨"
@@ -693,7 +780,7 @@
       "generating": "커버 생성 중..."
     },
     "previewEditor": {
-      "title": "편집기 미리보기",
+      "title": "미리보기 편집기",
       "bgm": "배경음",
       "start": "시작",
       "end": "끝",
@@ -717,7 +804,9 @@
     "initialize": "초기화",
     "autoSave": {
       "title": "자동 저장",
-      "importing": "레벨 가져오는 중..."
+      "importing": "레벨 가져오는 중...",
+      "disabled": "채보 크기가 커서 자동 저장이 비활성화되었습니다. 직접 저장해 주세요.",
+      "failed": "최근 변경 사항을 자동 저장하지 못했습니다. 브라우저 저장 공간이 가득 찼거나 사용할 수 없을 수 있습니다. 이 탭을 닫기 전에 채보를 파일로 저장해 주세요."
     },
     "changes": {
       "title": "변경 사항",
@@ -781,11 +870,14 @@
       "connectorEase": {
         "label": "커넥터 이징",
         "linear": "선형",
-        "in": "In",
-        "out": "Out",
-        "inOut": "In-Out",
-        "outIn": "Out-In",
+        "in": "가속",
+        "out": "감속",
+        "inOut": "가속-감속",
+        "outIn": "감속-가속",
         "none": "없음"
+      },
+      "connectorIsFake": {
+        "label": "페이크 커넥터"
       },
       "connectorGuideAlpha": {
         "label": "가이드 불투명도"
@@ -818,7 +910,8 @@
       "connectorType": {
         "label": "커넥터 유형",
         "active": "슬라이드",
-        "guide": "가이드"
+        "guide": "가이드",
+        "damage": "대미지"
       },
       "copyProperties": {
         "label": "속성 복사"
@@ -835,15 +928,18 @@
         "label": "분할 간격"
       },
       "editorLane": {
-        "label": "레인 편집기"
+        "label": "편집기 레인"
+      },
+      "elevation": {
+        "label": "높이"
       },
       "eventEase": {
         "label": "이벤트 이징",
         "linear": "선형",
-        "in": "In",
-        "out": "Out",
-        "inOut": "In-Out",
-        "outIn": "Out-In",
+        "in": "가속",
+        "out": "감속",
+        "inOut": "가속-감속",
+        "outIn": "감속-가속",
         "none": "없음"
       },
       "file": {
@@ -886,7 +982,10 @@
         "label": "처음부터"
       },
       "isFullWidth": {
-        "label": "최대 너비"
+        "label": "전체 너비"
+      },
+      "isMaskNotes": {
+        "label": "노트 마스킹"
       },
       "isUntilEnd": {
         "label": "끝까지"
@@ -921,16 +1020,21 @@
       },
       "key": {
         "input": "입력 키",
-        "press": "키 입력..."
+        "press": "키를 누르거나 다시 클릭하여 삭제",
+        "clear": "다시 클릭하여 단축키 삭제",
+        "unassigned": "미지정"
       },
       "maskLeft": {
-        "label": "레인 마스크"
+        "label": "마스크 레인"
       },
       "maskSize": {
-        "label": "사이즈 마스크"
+        "label": "마스크 크기"
       },
       "name": {
         "label": "이름"
+      },
+      "noteAlpha": {
+        "label": "노트 불투명도"
       },
       "noteType": {
         "label": "노트 유형",
@@ -982,7 +1086,16 @@
       "timeScaleEase": {
         "label": "시간 배율 이징",
         "none": "없음",
-        "linear": "선형"
+        "linear": "선형",
+        "inQuad": "2차 가속",
+        "outQuad": "2차 감속",
+        "inOutQuad": "2차 가속-감속",
+        "outInQuad": "2차 감속-가속"
+      },
+      "timeScaleTransition": {
+        "label": "시간 배율 전환",
+        "timeScale": "시간 배율",
+        "scroll": "스크롤"
       },
       "toggle": {
         "enabled": "활성화됨",
@@ -999,6 +1112,13 @@
       },
       "yOffsetBeat": {
         "label": "Y 오프셋(비트)"
+      },
+      "noteStyle": {
+        "label": "노트 색상",
+        "default": "기본"
+      },
+      "connectorStyle": {
+        "label": "커넥터 색상"
       }
     },
     "confirm": {
@@ -1010,6 +1130,29 @@
     },
     "loading": {
       "loading": "불러오는 중..."
+    }
+  },
+  "preview": {
+    "settings": "미리보기 설정",
+    "minimizeSettings": "미리보기 설정 접기",
+    "showSettings": "미리보기 설정 표시",
+    "loadingSkin": "스킨 불러오는 중...",
+    "skinUnavailable": "미리보기 스킨을 불러오지 못했습니다.",
+    "graphicsUnavailable": "미리보기 그래픽을 시작하지 못했습니다.",
+    "graphicsHelp": "브라우저에서 그래픽 가속과 WebGL이 활성화되어 있는지 확인하고, 필요하면 브라우저를 다시 시작해 주세요.",
+    "errorDetails": "오류 상세 정보",
+    "reload": "새로고침",
+    "transport": {
+      "hide": "재생 컨트롤 숨기기",
+      "show": "재생 컨트롤 표시",
+      "time": "미리보기 시간",
+      "controls": "미리보기 재생 컨트롤",
+      "pause": "미리보기 일시정지",
+      "play": "미리보기 재생",
+      "back": "{0}밀리초 뒤로",
+      "forward": "{0}밀리초 앞으로",
+      "holdBackward": "길게 눌러 {0}배속으로 되감기",
+      "holdForward": "길게 눌러 {0}배속으로 빨리감기"
     }
   }
 }

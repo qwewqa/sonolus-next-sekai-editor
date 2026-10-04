@@ -3,7 +3,18 @@
   "group": {
     "default": "默认"
   },
+  "events": {
+    "event": "事件",
+    "cameraEvent": "镜头事件",
+    "stageMaskEvent": "舞台遮罩事件",
+    "stagePivotEvent": "舞台支点事件",
+    "stageStyleEvent": "舞台样式事件",
+    "stageTransformEvent": "舞台变换事件"
+  },
   "commands": {
+    "elevation": {
+      "title": "高度编辑器"
+    },
     "bgm": {
       "title": "背景音乐",
       "changed": "已更改背景音乐",
@@ -52,9 +63,24 @@
       "switched": "已切换到橡皮擦工具"
     },
     "flip": {
-      "title": "翻转",
+      "title": "水平翻转",
       "noSelected": "未选择要翻转的对象",
       "flipped": "已翻转 {0} 个对象"
+    },
+    "flipVertical": {
+      "title": "垂直翻转",
+      "flipped": "已垂直翻转 {0} 个对象"
+    },
+    "combineNotes": {
+      "title": "合并为长按音符",
+      "noSelected": "未选择要合并的音符",
+      "sameSlide": "所选音符已属于同一条长按音符",
+      "combined": "已将 {0} 个音符合并为一条长按音符"
+    },
+    "fullscreen": {
+      "title": "全屏",
+      "toggled": "已切换全屏模式",
+      "unsupported": "您的设备不支持全屏"
     },
     "groups": {
       "groupAll": {
@@ -71,6 +97,10 @@
         "one": "已切换到 {0} 群组"
       }
     },
+    "generateSlideNotes": {
+      "title": "切换到生成长按节点工具",
+      "switched": "已切换到生成长按节点工具"
+    },
     "help": {
       "title": "帮助"
     },
@@ -80,6 +110,57 @@
       },
       "jumpUp": {
         "title": "跳至结尾"
+      }
+    },
+    "manageGroups": {
+      "title": "管理群组",
+      "modal": {
+        "title": "管理群组",
+        "switch": "切换到群组",
+        "switched": {
+          "all": "已切换到所有群组",
+          "one": "已切换到 {0} 群组"
+        },
+        "moveUp": "上移群组",
+        "moveDown": "下移群组",
+        "moved": "已移动 {0} 群组",
+        "properties": {
+          "title": "编辑群组属性",
+          "modal": {
+            "title": "群组属性",
+            "forceNoteSpeed": "强制音符速度",
+            "edited": "已编辑 {0} 群组属性"
+          }
+        },
+        "delete": "删除群组",
+        "deleted": "已删除 {0} 群组",
+        "add": "添加",
+        "added": "已添加 {0} 群组"
+      }
+    },
+    "manageStages": {
+      "title": "管理舞台",
+      "modal": {
+        "title": "管理舞台",
+        "switch": "切换到舞台",
+        "switched": {
+          "all": "已切换到所有舞台",
+          "one": "已切换到 {0} 舞台"
+        },
+        "moveUp": "上移舞台",
+        "moveDown": "下移舞台",
+        "moved": "已移动 {0} 舞台",
+        "properties": {
+          "title": "编辑舞台属性",
+          "modal": {
+            "title": "舞台属性",
+            "edited": "已编辑 {0} 舞台属性"
+          }
+        },
+        "delete": "删除舞台",
+        "deleted": "已删除 {0} 舞台",
+        "add": "添加",
+        "added": "已添加 {0} 舞台"
       }
     },
     "note": {
@@ -92,11 +173,24 @@
         "title": "默认音符属性"
       }
     },
+    "noteSizes": {
+      "increase": {
+        "title": "增大音符尺寸"
+      },
+      "decrease": {
+        "title": "减小音符尺寸"
+      },
+      "changed": "已将音符尺寸更改为 {0}"
+    },
+    "offset": {
+      "title": "切换到偏移工具",
+      "switched": "已切换到偏移工具"
+    },
     "open": {
-      "title": "开启",
+      "title": "打开",
       "loading": "正在加载文件...",
       "importing": "正在导入关卡...",
-      "opened": "已开启关卡"
+      "opened": "已打开关卡"
     },
     "paste": {
       "title": "切换到粘贴工具",
@@ -105,9 +199,16 @@
     "play": {
       "title": "播放"
     },
+    "properties": {
+      "title": "属性",
+      "changed": "已更改属性",
+      "modal": {
+        "life": "生命值"
+      }
+    },
     "redo": {
       "title": "重做",
-      "noState": "无重做事件",
+      "noState": "没有可重做的操作",
       "redid": "已重做 “{0}”"
     },
     "reset": {
@@ -169,16 +270,59 @@
         "title": "加速"
       }
     },
+    "stages": {
+      "stageAll": {
+        "title": "切换到所有舞台"
+      },
+      "stagePrev": {
+        "title": "切换到上一舞台"
+      },
+      "stageNext": {
+        "title": "切换到下一舞台"
+      },
+      "switched": {
+        "all": "已切换到所有舞台",
+        "one": "已切换到 {0} 舞台"
+      }
+    },
     "stop": {
       "title": "停止"
     },
+    "toggleVolume": {
+      "title": "切换{0}音量",
+      "toggled": "已切换{0}音量",
+      "type": {
+        "bgm": "背景音乐",
+        "sfx": "音效"
+      }
+    },
     "undo": {
-      "title": "撤消",
-      "noState": "无撤消事件",
-      "undid": "已撤消 “{0}”"
+      "title": "撤销",
+      "noState": "没有可撤销的操作",
+      "undid": "已撤销“{0}”"
     },
     "utilities": {
       "title": "工具"
+    },
+    "visibilities": {
+      "cycle": {
+        "title": "循环切换对象可见性",
+        "cycled": "已循环切换对象可见性"
+      },
+      "toggle": {
+        "title": "切换{0}可见性",
+        "toggled": "已切换{0}可见性",
+        "types": {
+          "note": "音符",
+          "cameraEvent": "镜头事件",
+          "stageMaskEvent": "舞台遮罩事件",
+          "stagePivotEvent": "舞台支点事件",
+          "stageStyleEvent": "舞台样式事件",
+          "stageTransformEvent": "舞台变换事件",
+          "timeScale": "时间尺度",
+          "bpm": "BPM"
+        }
+      }
     },
     "zooms": {
       "zoomXIn": {
@@ -205,6 +349,13 @@
     "timeScale": {
       "title": "切换到时间尺度工具",
       "switched": "已切换到时间尺度工具"
+    },
+    "events": {
+      "title": "切换到{0}工具",
+      "switched": "已切换到{0}工具",
+      "modal": {
+        "title": "默认{0}属性"
+      }
     }
   },
   "help": {
@@ -214,17 +365,20 @@
         "title": "触控屏",
         "tap": "单指轻触即可点击。",
         "drag": "单指拖曳即可拖动。",
+        "quickScroll": "在快速滚动区域内单指拖动即可滚动。",
+        "deselect": "双指轻触即可取消选择。",
         "scrollY": "双指垂直平移即可纵向滚动。",
         "scrollX": "双指水平平移即可横向滚动。",
         "zoomY": "双指垂直捏合可纵向缩放。",
-        "zoomX": "双指水平捏合可横向缩放。"
+        "zoomX": "双指水平捏合可横向缩放。",
+        "play": "三指轻触即可播放。"
       },
       "mouse": {
-        "title": "滑鼠",
-        "tapPrimary": "左键单击即可点击主要工具。",
-        "dragPrimary": "左键拖曳以拖动主要工具。",
-        "tapSecondary": "右键单击即可点击辅助工具。",
-        "dragSecondary": "右键拖曳以拖动辅助工具。",
+        "title": "鼠标",
+        "tapPrimary": "左键单击使用主要工具。",
+        "dragPrimary": "按住左键拖动，使用主要工具进行拖动操作。",
+        "tapSecondary": "右键单击使用辅助工具。",
+        "dragSecondary": "按住右键拖动，使用辅助工具进行拖动操作。",
         "scrollY": "滚动滚轮即可垂直滚动。",
         "scrollX": "按下 Shift 键并滚动滚轮以水平滚动。",
         "zoomY": "按下 Ctrl 键并滚动滚轮以垂直缩放。",
@@ -232,31 +386,31 @@
       },
       "keyboard": {
         "title": "键盘",
-        "single": "单击执行。",
+        "single": "按一次即可执行。",
         "multiple": "长按即可执行多次。"
       },
       "selectTool": {
         "title": "选择工具",
-        "select": "点击 1 个对象选择 ，重复点击即可在重叠对象之间循环选择。",
+        "select": "点击对象即可选择 1 个对象，重复点击可在重叠对象之间切换。",
         "deselect": "点击空白处取消选择所有对象。",
         "move": "拖动对象即可移动多个对象。",
         "selectMultiple": "拖动框选多个对象。",
         "ctrl": "按下 Ctrl 键并点击对象即可添加到选择中。",
-        "shift": "按下 Shift 键对即可操作所有相关的音符。"
+        "shift": "按下 Shift 键即可操作所有相关音符。"
       },
       "eraserTool": {
         "title": "橡皮擦工具",
         "erase": "点击要擦除的对象。",
         "deselect": "点击空白处即可取消选择所有对象。",
         "eraseMultiple": "拖动以框选擦除多个对象。",
-        "shift": "按下 Shift 键对即可操作所有相关的音符。"
+        "shift": "按下 Shift 键即可操作所有相关音符。"
       },
       "brushTool": {
         "title": "笔刷工具",
         "brush": "点击要刷的对象。",
         "deselect": "点击空白处可取消选择所有对象。",
         "brushMultiple": "拖动框选以刷多个对象。",
-        "shift": "按下 Shift 键对即可操作所有相关的音符。"
+        "shift": "按下 Shift 键即可操作所有相关音符。"
       },
       "pasteTool": {
         "title": "粘贴工具",
@@ -270,7 +424,7 @@
         "add": "点击空白处即可添加音符。",
         "move": "拖动 1 个音符进行移动。",
         "ctrl": "按下 Ctrl 键并点击对象即可添加到选择中。",
-        "shift": "按下 Shift 键对即可操作所有相关的音符。",
+        "shift": "按下 Shift 键即可操作所有相关音符。",
         "properties": "再次切换音符工具即可更改预设或默认属性。"
       },
       "slideTool": {
@@ -281,8 +435,14 @@
         "connect": "选择 1 个音符后，点击空白处即可添加并连接音符。",
         "move": "拖动 1 个音符进行移动。",
         "ctrl": "按下 Ctrl 键并点击对象即可添加到选择中。",
-        "shift": "按下 Shift 键对即可操作所有相关的音符。",
+        "shift": "按下 Shift 键即可操作所有相关音符。",
         "properties": "再次切换长按音符工具即可更改预设或默认属性。"
+      },
+      "generateSlideNotesTool": {
+        "title": "生成长按节点工具",
+        "generate": "点击或拖动选择 1 个音符，即可为整条长按音符生成节点。",
+        "generateMultiple": "点击或拖动选择 2 个音符，即可在两者之间生成节点。",
+        "deselect": "点击空白处即可取消选择所有对象。"
       },
       "bpmTool": {
         "title": "BPM 工具",
@@ -299,14 +459,91 @@
         "add": "点击空白处即可添加。",
         "move": "拖动 1 个时间尺度对象进行移动。",
         "ctrl": "按下 Ctrl 键并点击对象即可添加到选择中。"
+      },
+      "cameraEventTool": {
+        "title": "镜头事件工具",
+        "select": "点击镜头事件对象即可选择 1 个对象。",
+        "edit": "点击 1 个镜头事件对象进行编辑。",
+        "add": "点击空白处即可添加。",
+        "move": "拖动 1 个镜头事件对象进行移动。",
+        "ctrl": "按下 Ctrl 键即可将对象添加到选择中。",
+        "properties": "再次切换到镜头事件工具即可更改默认属性。"
+      },
+      "stageMaskEventTool": {
+        "title": "舞台遮罩事件工具",
+        "select": "点击舞台遮罩事件对象即可选择 1 个对象。",
+        "edit": "点击 1 个舞台遮罩事件对象进行编辑。",
+        "add": "点击空白处即可添加。",
+        "move": "拖动 1 个舞台遮罩事件对象进行移动。",
+        "ctrl": "按下 Ctrl 键即可将对象添加到选择中。",
+        "properties": "再次切换到舞台遮罩事件工具即可更改默认属性。"
+      },
+      "stagePivotEventTool": {
+        "title": "舞台支点事件工具",
+        "select": "点击舞台支点事件对象即可选择 1 个对象。",
+        "edit": "点击 1 个舞台支点事件对象进行编辑。",
+        "add": "点击空白处即可添加。",
+        "move": "拖动 1 个舞台支点事件对象进行移动。",
+        "ctrl": "按下 Ctrl 键即可将对象添加到选择中。",
+        "properties": "再次切换到舞台支点事件工具即可更改默认属性。"
+      },
+      "stageStyleEventTool": {
+        "title": "舞台样式事件工具",
+        "select": "点击舞台样式事件对象即可选择 1 个对象。",
+        "edit": "点击 1 个舞台样式事件对象进行编辑。",
+        "add": "点击空白处即可添加。",
+        "move": "拖动 1 个舞台样式事件对象进行移动。",
+        "ctrl": "按下 Ctrl 键即可将对象添加到选择中。",
+        "properties": "再次切换到舞台样式事件工具即可更改默认属性。"
+      },
+      "stageTransformEventTool": {
+        "title": "舞台变换事件工具",
+        "select": "点击舞台变换事件对象即可选择 1 个对象。",
+        "edit": "点击 1 个舞台变换事件对象进行编辑。",
+        "add": "点击空白处即可添加。",
+        "move": "拖动 1 个舞台变换事件对象进行移动。",
+        "ctrl": "按下 Ctrl 键即可将对象添加到选择中。",
+        "properties": "再次切换到舞台变换事件工具即可更改默认属性。"
       }
     }
   },
+  "elevation": {
+    "edit": "编辑高度",
+    "header": "高度编辑器",
+    "beat": "节拍",
+    "previousBeat": "上一节拍",
+    "nextBeat": "下一节拍",
+    "snap": "吸附",
+    "snapping": "高度吸附",
+    "sideBySide": "并排显示",
+    "auto": "自动",
+    "allow": "允许",
+    "disallow": "不允许",
+    "off": "关",
+    "canvas": "音符高度",
+    "axis": "高度",
+    "offset": "显示偏移",
+    "inherited": "继承的高度",
+    "empty": "此节拍没有音符",
+    "history": "已更改音符高度",
+    "close": "关闭高度编辑器",
+    "resize": "调整高度编辑器大小"
+  },
+  "contextMenu": {
+    "title": "选择操作",
+    "paste": "粘贴",
+    "selectSlideNotes": "选择长按音符节点",
+    "delete": "删除"
+  },
   "settings": {
     "title": "设置",
+    "resetSettings": "重置设置",
+    "resetSettingsHint": "恢复默认设置，保留键盘快捷键。",
+    "resetKeybinds": "重置快捷键",
     "editor": {
       "title": "编辑器",
       "locale": "语言",
+      "elevationSideBySide": "高度编辑器并排显示",
       "autoSave": "自动保存",
       "autoSaveDelay": "自动保存延迟",
       "waveformVisualization": {
@@ -316,18 +553,26 @@
         "volume": "音量",
         "changed": "您已更改波形可视化选项，请再次选择背景音乐文件以生效更改。"
       },
+      "maxScrollX": "最大横向滚动范围",
       "dragToPanY": "拖动以纵向平移",
-      "dragToPanX": "拖动以横向平移"
+      "dragToPanX": "拖动以横向平移",
+      "autoAddGroup": "自动添加群组",
+      "showGroupName": "显示群组名称",
+      "showOtherGroups": "显示其他群组",
+      "showStageName": "显示舞台名称",
+      "showOtherStages": "显示其他舞台",
+      "showOtherObjects": "显示其他对象"
     },
     "keyboardShortcuts": {
       "title": "键盘快捷键"
     },
     "mouse": {
-      "title": "滑鼠",
+      "title": "鼠标",
       "secondaryTool": {
         "title": "辅助工具",
         "eraser": "橡皮擦",
-        "select": "选择"
+        "select": "选择",
+        "selectContextMenu": "选择 + 右键菜单"
       },
       "smoothScrolling": "平滑滚动"
     },
@@ -335,8 +580,14 @@
       "title": "播放",
       "bgmVolume": "背景音乐音量",
       "sfxVolume": "音效音量",
+      "startPosition": {
+        "title": "开始位置",
+        "view": "当前视图",
+        "cursor": "光标"
+      },
       "follow": "跟随",
-      "followPosition": "跟随位置"
+      "followPosition": "跟随位置",
+      "previewDuration": "预览时长（毫秒）"
     },
     "preview": {
       "title": "预览",
@@ -345,6 +596,19 @@
         "auto": "自动",
         "top": "顶部",
         "left": "左边"
+      },
+      "noteSpeed": "音符速度",
+      "renderScale": "渲染比例",
+      "showEffects": "特效",
+      "highlightSelection": "高亮所选对象",
+      "antialias": "抗锯齿",
+      "aspectRatio": "宽高比",
+      "showPreview": "显示预览",
+      "controls": {
+        "title": "预览设置面板",
+        "auto": "自动",
+        "expanded": "展开",
+        "collapsed": "收起"
       }
     },
     "toolbar": {
@@ -355,6 +619,7 @@
     },
     "touch": {
       "title": "触控",
+      "quickScrollZone": "快速滚动区域",
       "scrollInertia": "滚动惯性"
     }
   },
@@ -363,10 +628,34 @@
       "title": "对象属性",
       "none": "未选择对象",
       "edited": "已编辑 {0} 个对象"
+    },
+    "view": {
+      "title": "视图",
+      "tool": "工具",
+      "division": "分割",
+      "snapping": {
+        "label": "吸附",
+        "absolute": "绝对",
+        "relative": "相对"
+      }
+    }
+  },
+  "statusBar": {
+    "group": {
+      "all": "所有群组",
+      "one": "{0} 群组"
+    },
+    "stage": {
+      "all": "所有舞台",
+      "one": "{0} 舞台"
     }
   },
   "tools": {
+    "elevation": {
+      "title": "高度编辑器"
+    },
     "bpm": {
+      "title": "BPM",
       "adding": "添加 {0} 个 BPM 对象",
       "added": "已添加 {0} 个 BPM 对象",
       "edited": "已编辑 {0} 个 BPM 对象",
@@ -379,19 +668,28 @@
       }
     },
     "brush": {
+      "title": "笔刷",
       "deselected": "取消选择所有对象",
-      "brushing": "刷 {0} 个物体",
+      "brushing": "正在刷 {0} 个对象",
       "brushed": "已刷 {0} 个对象",
       "sidebar": {
         "title": "笔刷属性"
       }
     },
     "eraser": {
+      "title": "橡皮擦",
       "deselected": "取消选择所有对象",
       "erasing": "擦除 {0} 个对象",
       "erased": "已擦除 {0} 个对象"
     },
+    "generateSlideNotes": {
+      "title": "生成长按节点",
+      "deselected": "已取消选择所有对象",
+      "selecting": "正在选择 {0} 个对象",
+      "generated": "已生成 {0} 个对象"
+    },
     "note": {
+      "title": "音符 #{0}",
       "adding": "添加 {0} 个音符",
       "added": "已添加 {0} 个音符",
       "editing": "编辑 {0} 个音符",
@@ -406,13 +704,19 @@
         "title": "默认音符属性"
       }
     },
+    "offset": {
+      "title": "偏移",
+      "changed": "已更改背景音乐偏移"
+    },
     "paste": {
+      "title": "粘贴",
       "pasted": "已粘贴 {0} 个对象",
       "sidebar": {
         "title": "剪贴板记录"
       }
     },
     "select": {
+      "title": "选择",
       "deselected": "取消选择所有对象",
       "selecting": "选择 {0} 个对象",
       "selected": "已选择 {0} 个对象",
@@ -420,6 +724,7 @@
       "moved": "已移动 {0} 个对象"
     },
     "slide": {
+      "title": "长按音符 #{0}",
       "adding": "添加 {0} 个音符",
       "added": "已添加 {0} 个音符",
       "editing": "编辑 {0} 个音符",
@@ -435,6 +740,7 @@
       }
     },
     "timeScale": {
+      "title": "时间尺度",
       "adding": "添加 {0} 个时间尺度对象",
       "added": "已添加 {0} 个时间尺度对象",
       "edited": "已编辑 {0} 个时间尺度对象",
@@ -444,6 +750,21 @@
       "selected": "已选择 {0} 个时间尺度对象",
       "modal": {
         "title": "时间尺度属性"
+      }
+    },
+    "events": {
+      "adding": "正在添加 {0} 个{1}对象",
+      "added": "已添加 {0} 个{1}对象",
+      "editing": "正在编辑 {0} 个{1}对象",
+      "edited": "已编辑 {0} 个{1}对象",
+      "moving": "正在移动 {0} 个{1}对象",
+      "moved": "已移动 {0} 个{1}对象",
+      "selected": "已选择 {0} 个{1}对象",
+      "modal": {
+        "title": "{0}属性"
+      },
+      "sidebar": {
+        "title": "默认{0}属性"
       }
     }
   },
@@ -483,21 +804,65 @@
     "initialize": "初始化",
     "autoSave": {
       "title": "自动保存",
-      "importing": "正在导入关卡..."
+      "importing": "正在导入关卡...",
+      "disabled": "由于谱面过大，此谱面已停用自动保存。请手动保存。",
+      "failed": "自动保存未能保存最新更改。浏览器存储空间可能已满或不可用。关闭此标签页前，请将谱面保存为文件。"
     },
     "changes": {
-      "title": "更动",
+      "title": "更改",
       "message": "谱面更改可能会丢失。是否继续？"
+    },
+    "dynamicStages": {
+      "title": "动态舞台",
+      "message": "此功能需要动态舞台。是否启用动态舞台？",
+      "enabled": "已启用动态舞台"
     }
   },
   "modals": {
     "form": {
       "confirm": "确认",
+      "anchor": {
+        "label": "对齐基准",
+        "default": "默认",
+        "center": "中心"
+      },
       "beat": {
         "label": "节拍"
       },
+      "borderStyle": {
+        "default": "默认",
+        "light": "细",
+        "medium": "中等",
+        "disabled": "禁用"
+      },
       "bpm": {
         "label": "BPM"
+      },
+      "cameraLeft": {
+        "label": "镜头轨道偏移"
+      },
+      "cameraRotation": {
+        "label": "镜头旋转"
+      },
+      "cameraSize": {
+        "label": "镜头尺寸偏移"
+      },
+      "cameraStageTilt": {
+        "label": "镜头舞台倾斜"
+      },
+      "cameraZoom": {
+        "label": "镜头缩放"
+      },
+      "cameraZoomTargetLane": {
+        "label": "镜头缩放目标轨道"
+      },
+      "cameraZoomTargetY": {
+        "label": "镜头缩放目标 Y 坐标"
+      },
+      "cameraZoomVerticalAlign": {
+        "label": "镜头缩放垂直对齐",
+        "default": "默认",
+        "center": "中心"
       },
       "connectorActiveIsCritical": {
         "label": "关键长按音符"
@@ -505,11 +870,14 @@
       "connectorEase": {
         "label": "连接缓动",
         "linear": "线性",
-        "in": "緩入",
-        "out": "緩出",
-        "inOut": "緩入 - 緩出",
-        "outIn": "緩出 - 緩入",
+        "in": "缓入",
+        "out": "缓出",
+        "inOut": "缓入后缓出",
+        "outIn": "缓出后缓入",
         "none": "无"
+      },
+      "connectorIsFake": {
+        "label": "假连接"
       },
       "connectorGuideAlpha": {
         "label": "引导不透明度"
@@ -524,10 +892,55 @@
         "cyan": "青",
         "black": "黑"
       },
+      "connectorIsPassThrough": {
+        "label": "穿透连接"
+      },
+      "connectorLayer": {
+        "label": "连接图层",
+        "top": "上层",
+        "bottom": "下层",
+        "under": "最底层",
+        "over": "最顶层"
+      },
+      "connectorPresentation": {
+        "label": "连接显示方式",
+        "default": "默认",
+        "fullscreen": "全屏"
+      },
       "connectorType": {
         "label": "连接类型",
         "active": "长按音符",
-        "guide": "引导"
+        "guide": "引导",
+        "damage": "伤害"
+      },
+      "copyProperties": {
+        "label": "复制属性"
+      },
+      "divisionLineAlpha": {
+        "label": "分割线不透明度"
+      },
+      "divisionParity": {
+        "label": "分割奇偶性",
+        "even": "偶数",
+        "odd": "奇数"
+      },
+      "divisionSize": {
+        "label": "分割尺寸"
+      },
+      "editorLane": {
+        "label": "编辑器轨道"
+      },
+      "elevation": {
+        "label": "高度"
+      },
+      "eventEase": {
+        "label": "事件缓动",
+        "linear": "线性",
+        "in": "缓入",
+        "out": "缓出",
+        "inOut": "缓入后缓出",
+        "outIn": "缓出后缓入",
+        "none": "无"
       },
       "file": {
         "select": "选择文件..."
@@ -542,8 +955,16 @@
         "downLeft": "左下",
         "downRight": "右下"
       },
+      "generateSimLines": {
+        "label": "生成同时线",
+        "global": "全局",
+        "isolated": "独立"
+      },
       "group": {
         "label": "群组"
+      },
+      "hideNotes": {
+        "label": "隐藏音符"
       },
       "isAttached": {
         "label": "依附"
@@ -557,24 +978,98 @@
       "isFake": {
         "label": "假键"
       },
+      "isFromStart": {
+        "label": "从开头起"
+      },
+      "isFullWidth": {
+        "label": "全宽"
+      },
+      "isMaskNotes": {
+        "label": "遮罩音符"
+      },
+      "isUntilEnd": {
+        "label": "直到结尾"
+      },
+      "judgmentLineAlpha": {
+        "label": "判定线不透明度"
+      },
+      "judgmentLineColor": {
+        "label": "判定线颜色",
+        "neutral": "白",
+        "red": "红",
+        "green": "绿",
+        "blue": "蓝",
+        "yellow": "黄",
+        "purple": "紫",
+        "cyan": "青",
+        "black": "黑"
+      },
+      "judgmentLineStyle": {
+        "label": "判定线样式",
+        "default": "默认",
+        "singleLine": "单线"
+      },
+      "laneAlpha": {
+        "label": "轨道不透明度"
+      },
       "left": {
         "label": "轨道"
       },
+      "leftBorderStyle": {
+        "label": "左边框样式"
+      },
       "key": {
         "input": "输入键",
-        "press": "按一个键..."
+        "press": "按一个键，或再次点击以清除",
+        "clear": "再次点击以移除此快捷键",
+        "unassigned": "未设置"
+      },
+      "maskLeft": {
+        "label": "遮罩轨道"
+      },
+      "maskSize": {
+        "label": "遮罩尺寸"
+      },
+      "name": {
+        "label": "名称"
+      },
+      "noteAlpha": {
+        "label": "音符不透明度"
       },
       "noteType": {
         "label": "音符类型",
         "default": "默认",
-        "trace": "迹",
-        "anchor": "锚",
-        "damage": "损害",
+        "trace": "描迹",
+        "anchor": "锚点",
+        "damage": "伤害",
         "forceTick": "强制中继点",
         "forceNonTick": "强制非中继点"
       },
+      "pivotLane": {
+        "label": "支点轨道"
+      },
       "preset": {
         "label": "预设"
+      },
+      "rightBorderStyle": {
+        "label": "右边框样式"
+      },
+      "rotation": {
+        "label": "旋转"
+      },
+      "sfx": {
+        "label": "音效",
+        "default": "默认",
+        "none": "无",
+        "normalTap": "点击",
+        "criticalTap": "点击（关键）",
+        "normalFlick": "滑动",
+        "criticalFlick": "滑动（关键）",
+        "normalTrace": "描迹",
+        "criticalTrace": "描迹（关键）",
+        "normalTick": "中继点",
+        "criticalTick": "中继点（关键）",
+        "damage": "伤害"
       },
       "size": {
         "label": "尺寸"
@@ -582,17 +1077,48 @@
       "skip": {
         "label": "略过（节拍）"
       },
+      "stage": {
+        "label": "舞台"
+      },
       "timeScale": {
         "label": "时间尺度"
       },
       "timeScaleEase": {
         "label": "时间尺度缓动",
         "none": "无",
-        "linear": "线性"
+        "linear": "线性",
+        "inQuad": "二次缓入",
+        "outQuad": "二次缓出",
+        "inOutQuad": "二次缓入后缓出",
+        "outInQuad": "二次缓出后缓入"
+      },
+      "timeScaleTransition": {
+        "label": "时间尺度过渡",
+        "timeScale": "时间尺度",
+        "scroll": "滚动"
       },
       "toggle": {
         "enabled": "启用",
         "disabled": "禁用"
+      },
+      "xTranslation": {
+        "label": "X 平移"
+      },
+      "yTranslation": {
+        "label": "Y 平移"
+      },
+      "yOffset": {
+        "label": "Y 偏移"
+      },
+      "yOffsetBeat": {
+        "label": "Y 偏移（节拍）"
+      },
+      "noteStyle": {
+        "label": "音符颜色",
+        "default": "默认"
+      },
+      "connectorStyle": {
+        "label": "连接颜色"
       }
     },
     "confirm": {
@@ -603,7 +1129,30 @@
       "ok": "好的"
     },
     "loading": {
-      "loading": "加载中 ..."
+      "loading": "加载中..."
+    }
+  },
+  "preview": {
+    "settings": "预览设置",
+    "minimizeSettings": "收起预览设置",
+    "showSettings": "显示预览设置",
+    "loadingSkin": "正在加载皮肤...",
+    "skinUnavailable": "无法加载预览皮肤。",
+    "graphicsUnavailable": "无法启动预览图形。",
+    "graphicsHelp": "请检查浏览器是否已启用图形加速和 WebGL，必要时重启浏览器。",
+    "errorDetails": "错误详情",
+    "reload": "重新加载",
+    "transport": {
+      "hide": "隐藏播放控件",
+      "show": "显示播放控件",
+      "time": "预览时间",
+      "controls": "预览播放控件",
+      "pause": "暂停预览",
+      "play": "播放预览",
+      "back": "后退 {0} 毫秒",
+      "forward": "前进 {0} 毫秒",
+      "holdBackward": "按住以 {0} 倍速后退",
+      "holdForward": "按住以 {0} 倍速前进"
     }
   }
 }

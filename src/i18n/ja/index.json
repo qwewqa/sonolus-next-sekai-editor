@@ -3,7 +3,18 @@
   "group": {
     "default": "デフォルト"
   },
+  "events": {
+    "event": "イベント",
+    "cameraEvent": "カメライベント",
+    "stageMaskEvent": "ステージマスクイベント",
+    "stagePivotEvent": "ステージ支点イベント",
+    "stageStyleEvent": "ステージスタイルイベント",
+    "stageTransformEvent": "ステージ変形イベント"
+  },
   "commands": {
+    "elevation": {
+      "title": "高さエディター"
+    },
     "bgm": {
       "title": "BGM",
       "changed": "BGMを変更しました",
@@ -52,9 +63,19 @@
       "switched": "消去ツールに切り替えました"
     },
     "flip": {
-      "title": "反転",
+      "title": "左右反転",
       "noSelected": "反転するオブジェクトが選択されていません",
-      "flipped": "{0}個のオブジェクトを反転しました"
+      "flipped": "{0}個のオブジェクトを左右反転しました"
+    },
+    "flipVertical": {
+      "title": "上下反転",
+      "flipped": "{0}個のオブジェクトを上下反転しました"
+    },
+    "combineNotes": {
+      "title": "スライドに結合",
+      "noSelected": "結合するノーツが選択されていません",
+      "sameSlide": "選択したノーツはすでに同じスライドに属しています",
+      "combined": "{0}個のノーツを1つのスライドに結合しました"
     },
     "fullscreen": {
       "title": "フルスクリーン",
@@ -73,8 +94,12 @@
       },
       "switched": {
         "all": "全てのグループに切り替えました",
-        "one": "{0} のグループに切り替え"
+        "one": "{0}グループに切り替えました"
       }
+    },
+    "generateSlideNotes": {
+      "title": "スライドノーツ生成ツールに切り替え",
+      "switched": "スライドノーツ生成ツールに切り替えました"
     },
     "help": {
       "title": "ヘルプ"
@@ -87,6 +112,57 @@
         "title": "最上部に移動"
       }
     },
+    "manageGroups": {
+      "title": "グループを管理",
+      "modal": {
+        "title": "グループ管理",
+        "switch": "グループに切り替え",
+        "switched": {
+          "all": "すべてのグループに切り替えました",
+          "one": "{0}グループに切り替えました"
+        },
+        "moveUp": "グループを上へ移動",
+        "moveDown": "グループを下へ移動",
+        "moved": "{0}グループを移動しました",
+        "properties": {
+          "title": "グループの設定を編集",
+          "modal": {
+            "title": "グループの設定",
+            "forceNoteSpeed": "ノーツ速度を固定",
+            "edited": "{0}グループの設定を編集しました"
+          }
+        },
+        "delete": "グループを削除",
+        "deleted": "{0}グループを削除しました",
+        "add": "追加",
+        "added": "{0}グループを追加しました"
+      }
+    },
+    "manageStages": {
+      "title": "ステージを管理",
+      "modal": {
+        "title": "ステージ管理",
+        "switch": "ステージに切り替え",
+        "switched": {
+          "all": "すべてのステージに切り替えました",
+          "one": "{0}ステージに切り替えました"
+        },
+        "moveUp": "ステージを上へ移動",
+        "moveDown": "ステージを下へ移動",
+        "moved": "{0}ステージを移動しました",
+        "properties": {
+          "title": "ステージの設定を編集",
+          "modal": {
+            "title": "ステージの設定",
+            "edited": "{0}ステージの設定を編集しました"
+          }
+        },
+        "delete": "ステージを削除",
+        "deleted": "{0}ステージを削除しました",
+        "add": "追加",
+        "added": "{0}ステージを追加しました"
+      }
+    },
     "note": {
       "title": {
         "default": "ノーツツールに切り替え",
@@ -96,6 +172,19 @@
       "modal": {
         "title": "デフォルトのノーツ設定"
       }
+    },
+    "noteSizes": {
+      "increase": {
+        "title": "ノーツの幅を広げる"
+      },
+      "decrease": {
+        "title": "ノーツの幅を狭める"
+      },
+      "changed": "ノーツの幅を{0}に変更しました"
+    },
+    "offset": {
+      "title": "オフセットツールに切り替え",
+      "switched": "オフセットツールに切り替えました"
     },
     "open": {
       "title": "ファイルを開く",
@@ -181,16 +270,59 @@
         "title": "再生速度アップ"
       }
     },
+    "stages": {
+      "stageAll": {
+        "title": "すべてのステージに切り替え"
+      },
+      "stagePrev": {
+        "title": "前のステージに切り替え"
+      },
+      "stageNext": {
+        "title": "次のステージに切り替え"
+      },
+      "switched": {
+        "all": "すべてのステージに切り替えました",
+        "one": "{0}ステージに切り替えました"
+      }
+    },
     "stop": {
       "title": "停止"
     },
+    "toggleVolume": {
+      "title": "{0}の音声を切り替え",
+      "toggled": "{0}の音声を切り替えました",
+      "type": {
+        "bgm": "BGM",
+        "sfx": "SE"
+      }
+    },
     "undo": {
-      "title": "やり直す",
-      "noState": "やり直すものがありません",
-      "undid": "\"{0}\"をやり直しました"
+      "title": "元に戻す",
+      "noState": "元に戻す操作がありません",
+      "undid": "「{0}」を元に戻しました"
     },
     "utilities": {
       "title": "便利ツール"
+    },
+    "visibilities": {
+      "cycle": {
+        "title": "オブジェクトの表示を順に切り替え",
+        "cycled": "オブジェクトの表示を切り替えました"
+      },
+      "toggle": {
+        "title": "{0}の表示を切り替え",
+        "toggled": "{0}の表示を切り替えました",
+        "types": {
+          "note": "ノーツ",
+          "cameraEvent": "カメライベント",
+          "stageMaskEvent": "ステージマスクイベント",
+          "stagePivotEvent": "ステージ支点イベント",
+          "stageStyleEvent": "ステージスタイルイベント",
+          "stageTransformEvent": "ステージ変形イベント",
+          "timeScale": "ハイスピード",
+          "bpm": "BPM"
+        }
+      }
     },
     "zooms": {
       "zoomXIn": {
@@ -217,6 +349,13 @@
     "timeScale": {
       "title": "ハイスピードツールに切り替え",
       "switched": "ハイスピードツールに切り替えました"
+    },
+    "events": {
+      "title": "{0}ツールに切り替え",
+      "switched": "{0}ツールに切り替えました",
+      "modal": {
+        "title": "デフォルトの{0}設定"
+      }
     }
   },
   "help": {
@@ -224,13 +363,15 @@
       "title": "ヘルプ",
       "touchscreen": {
         "title": "タッチスクリーン",
-        "tap": "1 本指でタッチすると、ツールを使用できます。",
+        "tap": "1本指でタッチすると、ツールを使用できます。",
         "drag": "1本指をタッチしながら動かすと、ドラッグできます。",
-        "quickScroll": "クイックスクロールゾーンで ドラッグすると、スクロールできます。",
+        "quickScroll": "クイックスクロールゾーンでドラッグすると、スクロールできます。",
+        "deselect": "2本指でタップすると、選択を解除できます。",
         "scrollY": "2本指で縦方向に動かすと、縦にスクロールできます。",
         "scrollX": "2本指で横方向に動かすと、横にスクロールできます。",
         "zoomY": "2本指で縦方向に拡大/縮小すると、縦方向にズームできます。",
-        "zoomX": "2本指で横方向に拡大/縮小すると、横方向にズームできます。"
+        "zoomX": "2本指で横方向に拡大/縮小すると、横方向にズームできます。",
+        "play": "3本指でタップすると、再生できます。"
       },
       "mouse": {
         "title": "マウス",
@@ -239,7 +380,7 @@
         "tapSecondary": "右クリックでサブツールを使用できます。",
         "dragSecondary": "右ドラッグでサブツールでドラッグできます。",
         "scrollY": "マウスホイールでスクロールできます。",
-        "scrollX": "Shift+ホイールスクロールで横方向にズームできます。",
+        "scrollX": "Shift+ホイールスクロールで横方向にスクロールできます。",
         "zoomY": "Ctrl+ホイールスクロールで縦方向にズームできます。",
         "zoomX": "Ctrl+Shift+ホイールスクロールで横方向にズームできます。"
       },
@@ -254,22 +395,22 @@
         "deselect": "空白部分をタッチ/クリックすると、すべてのオブジェクトを選択解除できます。",
         "move": "オブジェクトをドラッグすると、複数のオブジェクトを移動できます。",
         "selectMultiple": "空白部分をドラッグすると、複数のオブジェクトを選択できます。",
-        "ctrl": "Ctrl+ドラッグでオブジェクトを追加で選択できます。",
-        "shift": "Shiftキーで同じホールドに属するホールドノーツをまとめて選択できます。"
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "shift": "Shiftキーで同じスライドに属するノーツをまとめて操作できます。"
       },
       "eraserTool": {
         "title": "消去ツール",
         "erase": "オブジェクトをタッチ/クリックすると消去できます。",
         "deselect": "空白部分をタッチ/クリックすると、すべてのオブジェクトを選択解除できます。",
         "eraseMultiple": "ドラッグすると複数のオブジェクトを消去できます。",
-        "shift": "Shiftキーで同じホールドに属するホールドノーツをまとめて消去できます。"
+        "shift": "Shiftキーで同じスライドに属するノーツをまとめて消去できます。"
       },
       "brushTool": {
         "title": "ブラシツール",
         "brush": "オブジェクトをタッチ/クリックすると、ブラシをかけられます。",
         "deselect": "空白部分をタッチ/クリックすると、すべてのオブジェクトを選択解除できます。",
         "brushMultiple": "オブジェクトをまとめてドラッグすると、まとめてブラシできます。",
-        "shift": "Shiftキーで同じホールドに属するホールドノーツをまとめてブラシできます。"
+        "shift": "Shiftキーで同じスライドに属するノーツをまとめてブラシできます。"
       },
       "pasteTool": {
         "title": "ペーストツール",
@@ -282,9 +423,9 @@
         "edit": "単一のノーツをタッチ/クリックすると編集できます。",
         "add": "空白部分をタッチ/クリックすると、ノーツを追加できます。",
         "move": "単一のノーツをドラッグすると移動できます。",
-        "ctrl": "Ctrl+ドラッグでオブジェクトを追加で選択できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
         "shift": "Shiftキーで関連性のあるノーツをまとめて操作できます。",
-        "properties": "ノーツツールを再選択するとデフォルトの設定を変更できます。"
+        "properties": "ノーツツールを再選択するとプリセットやデフォルトの設定を変更できます。"
       },
       "slideTool": {
         "title": "スライドツール",
@@ -292,10 +433,16 @@
         "edit": "選択済みのノーツをタッチ/クリックすると編集できます。",
         "add": "空白部分をタッチ/クリックすると、ノーツを追加できます。",
         "connect": "単一のスライドノーツを選択した状態で空白部分をタッチ/クリックすると、連結した状態で追加できます。",
-        "move": "単一のシングルホールドノーツをドラッグすると移動できます。",
-        "ctrl": "Ctrl+ドラッグでオブジェクトを追加で選択できます。",
-        "shift": "Shiftキーで同じスライドに属するノーツをまとめて選択できます。",
-        "properties": "スライドツールを再選択するとデフォルトの設定を変更できます。"
+        "move": "単一のノーツをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "shift": "Shiftキーで同じスライドに属するノーツをまとめて操作できます。",
+        "properties": "スライドツールを再選択するとプリセットやデフォルトの設定を変更できます。"
+      },
+      "generateSlideNotesTool": {
+        "title": "スライドノーツ生成ツール",
+        "generate": "タッチ/クリックまたはドラッグで1つのノーツを選択すると、スライド全体にノーツを生成できます。",
+        "generateMultiple": "タッチ/クリックまたはドラッグで2つのノーツを選択すると、その間にノーツを生成できます。",
+        "deselect": "空白部分をタッチ/クリックすると、すべてのオブジェクトを選択解除できます。"
       },
       "bpmTool": {
         "title": "BPMツール",
@@ -303,7 +450,7 @@
         "edit": "単一のBPMオブジェクトをタッチ/クリックすると編集できます。",
         "add": "空白部分をタッチ/クリックすると、オブジェクトを追加できます。",
         "move": "単一のBPMオブジェクトをドラッグすると移動できます。",
-        "ctrl": "Ctrl+ドラッグでオブジェクトを追加で選択できます。"
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。"
       },
       "timeScaleTool": {
         "title": "ハイスピードツール",
@@ -311,15 +458,92 @@
         "edit": "ハイスピードオブジェクトをタッチ/クリックすると編集できます。",
         "add": "空白部分をタッチ/クリックすると、オブジェクトを追加できます。",
         "move": "単一のハイスピードオブジェクトをドラッグすると移動できます。",
-        "ctrl": "Ctrl+ドラッグでオブジェクトを追加で選択できます。"
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。"
+      },
+      "cameraEventTool": {
+        "title": "カメライベントツール",
+        "select": "カメライベントをタッチ/クリックすると選択できます。",
+        "edit": "単一のカメライベントをタッチ/クリックすると編集できます。",
+        "add": "空白部分をタッチ/クリックすると、イベントを追加できます。",
+        "move": "単一のカメライベントをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "properties": "カメライベントツールを再選択するとデフォルトの設定を変更できます。"
+      },
+      "stageMaskEventTool": {
+        "title": "ステージマスクイベントツール",
+        "select": "ステージマスクイベントをタッチ/クリックすると選択できます。",
+        "edit": "単一のステージマスクイベントをタッチ/クリックすると編集できます。",
+        "add": "空白部分をタッチ/クリックすると、イベントを追加できます。",
+        "move": "単一のステージマスクイベントをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "properties": "ステージマスクイベントツールを再選択するとデフォルトの設定を変更できます。"
+      },
+      "stagePivotEventTool": {
+        "title": "ステージ支点イベントツール",
+        "select": "ステージ支点イベントをタッチ/クリックすると選択できます。",
+        "edit": "単一のステージ支点イベントをタッチ/クリックすると編集できます。",
+        "add": "空白部分をタッチ/クリックすると、イベントを追加できます。",
+        "move": "単一のステージ支点イベントをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "properties": "ステージ支点イベントツールを再選択するとデフォルトの設定を変更できます。"
+      },
+      "stageStyleEventTool": {
+        "title": "ステージスタイルイベントツール",
+        "select": "ステージスタイルイベントをタッチ/クリックすると選択できます。",
+        "edit": "単一のステージスタイルイベントをタッチ/クリックすると編集できます。",
+        "add": "空白部分をタッチ/クリックすると、イベントを追加できます。",
+        "move": "単一のステージスタイルイベントをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "properties": "ステージスタイルイベントツールを再選択するとデフォルトの設定を変更できます。"
+      },
+      "stageTransformEventTool": {
+        "title": "ステージ変形イベントツール",
+        "select": "ステージ変形イベントをタッチ/クリックすると選択できます。",
+        "edit": "単一のステージ変形イベントをタッチ/クリックすると編集できます。",
+        "add": "空白部分をタッチ/クリックすると、イベントを追加できます。",
+        "move": "単一のステージ変形イベントをドラッグすると移動できます。",
+        "ctrl": "Ctrlキーを押しながら操作すると、選択にオブジェクトを追加できます。",
+        "properties": "ステージ変形イベントツールを再選択するとデフォルトの設定を変更できます。"
       }
     }
   },
+  "elevation": {
+    "edit": "高さを編集",
+    "header": "高さエディター",
+    "beat": "拍",
+    "previousBeat": "前の拍",
+    "nextBeat": "次の拍",
+    "snap": "スナップ",
+    "snapping": "高さのスナップ",
+    "sideBySide": "並べて表示",
+    "auto": "自動",
+    "allow": "許可",
+    "disallow": "許可しない",
+    "off": "オフ",
+    "canvas": "ノーツの高さ",
+    "axis": "高さ",
+    "offset": "表示オフセット",
+    "inherited": "継承した高さ",
+    "empty": "この拍にはノーツがありません",
+    "history": "ノーツの高さを変更",
+    "close": "高さエディターを閉じる",
+    "resize": "高さエディターのサイズを変更"
+  },
+  "contextMenu": {
+    "title": "選択対象の操作",
+    "paste": "貼り付け",
+    "selectSlideNotes": "スライドのノーツを選択",
+    "delete": "削除"
+  },
   "settings": {
     "title": "設定",
+    "resetSettings": "設定をリセット",
+    "resetSettingsHint": "キーボードショートカットを保持して、設定を初期値に戻します。",
+    "resetKeybinds": "ショートカットをリセット",
     "editor": {
       "title": "エディター",
       "locale": "言語",
+      "elevationSideBySide": "高さエディターを並べて表示",
       "autoSave": "自動保存",
       "autoSaveDelay": "自動保存の間隔(分)",
       "waveformVisualization": {
@@ -329,9 +553,15 @@
         "volume": "音量",
         "changed": "波形の可視化設定を変更しました。この変更を反映するには、BGMファイルを再度選択してください。"
       },
-      "lockScrollX": "横方向スクロールの固定",
+      "maxScrollX": "横方向の最大スクロール量",
       "dragToPanY": "ドラッグ中の縦方向スクロール",
-      "dragToPanX": "ドラッグ中の横方向スクロール"
+      "dragToPanX": "ドラッグ中の横方向スクロール",
+      "autoAddGroup": "グループを自動追加",
+      "showGroupName": "グループ名を表示",
+      "showOtherGroups": "他のグループを表示",
+      "showStageName": "ステージ名を表示",
+      "showOtherStages": "他のステージを表示",
+      "showOtherObjects": "他のオブジェクトを表示"
     },
     "keyboardShortcuts": {
       "title": "キーボードショートカット"
@@ -341,7 +571,8 @@
       "secondaryTool": {
         "title": "サブツール",
         "eraser": "消去",
-        "select": "選択"
+        "select": "選択",
+        "selectContextMenu": "選択＋コンテキストメニュー"
       },
       "smoothScrolling": "スムーズスクロール"
     },
@@ -355,15 +586,29 @@
         "cursor": "カーソル位置"
       },
       "follow": "再生時の自動スクロール",
-      "followPosition": "自動スクロール位置"
+      "followPosition": "自動スクロール位置",
+      "previewDuration": "プレビューの長さ (ミリ秒)"
     },
     "preview": {
       "title": "プレビュー",
       "position": {
-        "title": "譜面位置",
+        "title": "プレビュー位置",
         "auto": "自動",
         "top": "上",
         "left": "左"
+      },
+      "noteSpeed": "ノーツ速度",
+      "renderScale": "描画解像度",
+      "showEffects": "エフェクト",
+      "highlightSelection": "選択対象を強調表示",
+      "antialias": "アンチエイリアス",
+      "aspectRatio": "アスペクト比",
+      "showPreview": "プレビューを表示",
+      "controls": {
+        "title": "プレビュー設定パネル",
+        "auto": "自動",
+        "expanded": "展開",
+        "collapsed": "折りたたみ"
       }
     },
     "toolbar": {
@@ -383,22 +628,47 @@
       "title": "オブジェクトの設定",
       "none": "選択されたオブジェクトがありません",
       "edited": "{0}個のオブジェクトを編集しました"
+    },
+    "view": {
+      "title": "表示",
+      "tool": "ツール",
+      "division": "分割数",
+      "snapping": {
+        "label": "スナップ",
+        "absolute": "絶対",
+        "relative": "相対"
+      }
+    }
+  },
+  "statusBar": {
+    "group": {
+      "all": "すべてのグループ",
+      "one": "{0}グループ"
+    },
+    "stage": {
+      "all": "すべてのステージ",
+      "one": "{0}ステージ"
     }
   },
   "tools": {
+    "elevation": {
+      "title": "高さエディター"
+    },
     "bpm": {
+      "title": "BPM",
       "adding": "{0} 個のBPMオブジェクトを追加します",
       "added": "{0} 個のBPMオブジェクトを追加しました",
       "edited": "{0} 個のBPMオブジェクトを編集しました",
       "moving": "{0} 個のBPMオブジェクトを移動します",
       "moved": "{0} 個のBPMオブジェクトを移動しました",
-      "replaced": "{0} 個のBPMオブジェクトを置き換えしました",
+      "replaced": "{0}個のBPMオブジェクトを置き換えました",
       "selected": "{0} 個のBPMオブジェクトを選択しました",
       "modal": {
         "title": "BPMの設定"
       }
     },
     "brush": {
+      "title": "ブラシ",
       "deselected": "すべてのオブジェクトを選択解除しました",
       "brushing": "{0}個のオブジェクトに反映します",
       "brushed": "{0}個のオブジェクトに反映しました",
@@ -407,17 +677,25 @@
       }
     },
     "eraser": {
+      "title": "消去",
       "deselected": "すべてのオブジェクトを選択解除しました",
       "erasing": "{0}個のオブジェクトを消去します",
       "erased": "{0}個のオブジェクトを消去しました"
     },
+    "generateSlideNotes": {
+      "title": "スライドノーツ生成",
+      "deselected": "すべてのオブジェクトを選択解除しました",
+      "selecting": "{0}個のオブジェクトを選択します",
+      "generated": "{0}個のオブジェクトを生成しました"
+    },
     "note": {
+      "title": "ノーツ #{0}",
       "adding": "{0}個のノーツを追加します",
       "added": "{0}個のノーツを追加しました",
       "editing": "{0}個のノーツを編集します",
       "edited": "{0}個のノーツを編集しました",
       "moving": "{0}個のノーツを移動します",
-      "moved": "{0}個のタップノーツを移動しました",
+      "moved": "{0}個のノーツを移動しました",
       "selected": "{0}個のノーツを選択しました",
       "modal": {
         "title": "ノーツ設定"
@@ -426,13 +704,19 @@
         "title": "デフォルトのノーツ設定"
       }
     },
+    "offset": {
+      "title": "オフセット",
+      "changed": "BGMのオフセットを変更しました"
+    },
     "paste": {
+      "title": "ペースト",
       "pasted": "{0}個のオブジェクトを貼り付けました",
       "sidebar": {
         "title": "クリップボードの履歴"
       }
     },
     "select": {
+      "title": "選択",
       "deselected": "全オブジェクトを選択解除しました",
       "selecting": "{0}個のオブジェクトを選択します",
       "selected": "{0}個のオブジェクトを選択しました",
@@ -440,7 +724,8 @@
       "moved": "{0}個のオブジェクトを移動しました"
     },
     "slide": {
-      "adding": "{0}個のノーツを移動します",
+      "title": "スライド #{0}",
+      "adding": "{0}個のノーツを追加します",
       "added": "{0}個のノーツを追加しました",
       "editing": "{0}個のノーツを編集します",
       "edited": "{0}個のノーツを編集しました",
@@ -455,15 +740,31 @@
       }
     },
     "timeScale": {
+      "title": "ハイスピード",
       "adding": "{0}個のハイスピードオブジェクトを追加します",
       "added": "{0}個のハイスピードオブジェクトを追加しました",
       "edited": "{0}個のハイスピードオブジェクトを編集しました",
       "moving": "{0}個のハイスピードオブジェクトを移動します",
       "moved": "{0}個のハイスピードオブジェクトを移動しました",
-      "replaced": "{0}個のハイスピードオブジェクトを置き換えしました",
+      "replaced": "{0}個のハイスピードオブジェクトを置き換えました",
       "selected": "{0}個のハイスピードオブジェクトを選択しました",
       "modal": {
         "title": "ハイスピードの設定"
+      }
+    },
+    "events": {
+      "adding": "{0}個の{1}を追加します",
+      "added": "{0}個の{1}を追加しました",
+      "editing": "{0}個の{1}を編集します",
+      "edited": "{0}個の{1}を編集しました",
+      "moving": "{0}個の{1}を移動します",
+      "moved": "{0}個の{1}を移動しました",
+      "selected": "{0}個の{1}を選択しました",
+      "modal": {
+        "title": "{0}の設定"
+      },
+      "sidebar": {
+        "title": "デフォルトの{0}設定"
       }
     }
   },
@@ -503,36 +804,83 @@
     "initialize": "初期化",
     "autoSave": {
       "title": "自動保存",
-      "importing": "譜面をインポートしています..."
+      "importing": "譜面をインポートしています...",
+      "disabled": "譜面のサイズが大きいため、自動保存は無効になっています。手動で保存してください。",
+      "failed": "最新の変更を自動保存できませんでした。ブラウザーのストレージが満杯か、利用できない可能性があります。このタブを閉じる前に、譜面をファイルに保存してください。"
     },
     "changes": {
       "title": "変更",
       "message": "譜面に加えた変更が失われる可能性があります。\n続行しますか?"
+    },
+    "dynamicStages": {
+      "title": "動的ステージ",
+      "message": "この機能には動的ステージが必要です。動的ステージを有効にしますか？",
+      "enabled": "動的ステージを有効にしました"
     }
   },
   "modals": {
     "form": {
       "confirm": "確認",
+      "anchor": {
+        "label": "基準位置",
+        "default": "デフォルト",
+        "center": "中央"
+      },
       "beat": {
         "label": "拍"
       },
+      "borderStyle": {
+        "default": "デフォルト",
+        "light": "薄い",
+        "medium": "標準",
+        "disabled": "無効"
+      },
       "bpm": {
         "label": "BPM"
+      },
+      "cameraLeft": {
+        "label": "カメラの移動レーン"
+      },
+      "cameraRotation": {
+        "label": "カメラの回転"
+      },
+      "cameraSize": {
+        "label": "カメラの移動幅"
+      },
+      "cameraStageTilt": {
+        "label": "カメラのステージ傾斜"
+      },
+      "cameraZoom": {
+        "label": "カメラのズーム"
+      },
+      "cameraZoomTargetLane": {
+        "label": "ズームの中心レーン"
+      },
+      "cameraZoomTargetY": {
+        "label": "ズームの中心Y座標"
+      },
+      "cameraZoomVerticalAlign": {
+        "label": "ズームの縦方向基準",
+        "default": "デフォルト",
+        "center": "中央"
       },
       "connectorActiveIsCritical": {
         "label": "スライドクリティカル"
       },
       "connectorEase": {
-        "label": "中継点の加減速",
+        "label": "接続の加減速",
         "linear": "直線",
         "in": "加速",
         "out": "減速",
         "inOut": "加速-減速",
         "outIn": "減速-加速",
-        "none": "直進"
+        "none": "なし"
+      },
+      "connectorIsFake": {
+        "label": "フェイク接続"
       },
       "connectorGuideAlpha": {
-        "label": "ガイドの透明度"
+        "label": "ガイドの不透明度"
       },
       "colors": {
         "neutral": "灰",
@@ -544,15 +892,55 @@
         "cyan": "水",
         "black": "黒"
       },
+      "connectorIsPassThrough": {
+        "label": "接続の通り抜け"
+      },
       "connectorLayer": {
-        "label": "中継点レイヤー",
+        "label": "接続レイヤー",
         "top": "前",
-        "bottom": "奥"
+        "bottom": "奥",
+        "under": "最背面",
+        "over": "最前面"
+      },
+      "connectorPresentation": {
+        "label": "接続の表示方式",
+        "default": "デフォルト",
+        "fullscreen": "全画面"
       },
       "connectorType": {
-        "label": "スライド/ガイド",
+        "label": "接続タイプ",
         "active": "スライド",
-        "guide": "ガイド"
+        "guide": "ガイド",
+        "damage": "ダメージ"
+      },
+      "copyProperties": {
+        "label": "設定をコピー"
+      },
+      "divisionLineAlpha": {
+        "label": "分割線の不透明度"
+      },
+      "divisionParity": {
+        "label": "分割の偶奇",
+        "even": "偶数",
+        "odd": "奇数"
+      },
+      "divisionSize": {
+        "label": "分割幅"
+      },
+      "editorLane": {
+        "label": "エディター内のレーン"
+      },
+      "elevation": {
+        "label": "高さ"
+      },
+      "eventEase": {
+        "label": "イベントの加減速",
+        "linear": "線形",
+        "in": "加速",
+        "out": "減速",
+        "inOut": "加速→減速",
+        "outIn": "減速→加速",
+        "none": "なし"
       },
       "file": {
         "select": "ファイルを選択してください..."
@@ -567,6 +955,11 @@
         "downLeft": "左下",
         "downRight": "右下"
       },
+      "generateSimLines": {
+        "label": "同時押し線の生成",
+        "global": "全体",
+        "isolated": "個別"
+      },
       "group": {
         "label": "グループ"
       },
@@ -574,7 +967,7 @@
         "label": "ノーツを非表示"
       },
       "isAttached": {
-        "label": "無視中継点化"
+        "label": "位置追従"
       },
       "isConnectorSeparator": {
         "label": "スライド設定分割"
@@ -585,12 +978,63 @@
       "isFake": {
         "label": "フェイク"
       },
+      "isFromStart": {
+        "label": "最初から"
+      },
+      "isFullWidth": {
+        "label": "全幅"
+      },
+      "isMaskNotes": {
+        "label": "ノーツをマスク"
+      },
+      "isUntilEnd": {
+        "label": "最後まで"
+      },
+      "judgmentLineAlpha": {
+        "label": "判定ラインの不透明度"
+      },
+      "judgmentLineColor": {
+        "label": "判定ラインの色",
+        "neutral": "灰",
+        "red": "赤",
+        "green": "緑",
+        "blue": "青",
+        "yellow": "黄",
+        "purple": "紫",
+        "cyan": "水色",
+        "black": "黒"
+      },
+      "judgmentLineStyle": {
+        "label": "判定ラインの表示方式",
+        "default": "デフォルト",
+        "singleLine": "単線"
+      },
+      "laneAlpha": {
+        "label": "レーンの不透明度"
+      },
       "left": {
         "label": "レーン"
       },
+      "leftBorderStyle": {
+        "label": "左枠の表示方式"
+      },
       "key": {
         "input": "キーを入力",
-        "press": "キーを押してください..."
+        "press": "キーを押すか、もう一度クリックして削除",
+        "clear": "もう一度クリックすると、このショートカットを削除できます",
+        "unassigned": "未割り当て"
+      },
+      "maskLeft": {
+        "label": "マスクのレーン"
+      },
+      "maskSize": {
+        "label": "マスクの幅"
+      },
+      "name": {
+        "label": "名前"
+      },
+      "noteAlpha": {
+        "label": "ノーツの不透明度"
       },
       "noteType": {
         "label": "ノーツ種",
@@ -601,8 +1045,17 @@
         "forceTick": "強制中継点",
         "forceNonTick": "中継点タップ"
       },
+      "pivotLane": {
+        "label": "支点レーン"
+      },
       "preset": {
         "label": "プリセット"
+      },
+      "rightBorderStyle": {
+        "label": "右枠の表示方式"
+      },
+      "rotation": {
+        "label": "回転"
       },
       "sfx": {
         "label": "SE",
@@ -624,17 +1077,48 @@
       "skip": {
         "label": "スキップ拍数"
       },
+      "stage": {
+        "label": "ステージ"
+      },
       "timeScale": {
         "label": "ハイスピード"
       },
       "timeScaleEase": {
         "label": "ハイスピード変化",
         "none": "なし",
-        "linear": "直線"
+        "linear": "直線",
+        "inQuad": "2次加速",
+        "outQuad": "2次減速",
+        "inOutQuad": "2次加速→減速",
+        "outInQuad": "2次減速→加速"
+      },
+      "timeScaleTransition": {
+        "label": "ハイスピードの遷移方式",
+        "timeScale": "ハイスピード",
+        "scroll": "スクロール"
       },
       "toggle": {
         "enabled": "有効",
         "disabled": "無効"
+      },
+      "xTranslation": {
+        "label": "X方向の移動量"
+      },
+      "yTranslation": {
+        "label": "Y方向の移動量"
+      },
+      "yOffset": {
+        "label": "Yオフセット"
+      },
+      "yOffsetBeat": {
+        "label": "Yオフセット (拍)"
+      },
+      "noteStyle": {
+        "label": "ノーツの色",
+        "default": "デフォルト"
+      },
+      "connectorStyle": {
+        "label": "接続の色"
       }
     },
     "confirm": {
@@ -645,7 +1129,30 @@
       "ok": "OK"
     },
     "loading": {
-      "loading": "読み込み中 ..."
+      "loading": "読み込み中..."
+    }
+  },
+  "preview": {
+    "settings": "プレビュー設定",
+    "minimizeSettings": "プレビュー設定を折りたたむ",
+    "showSettings": "プレビュー設定を表示",
+    "loadingSkin": "スキンを読み込み中...",
+    "skinUnavailable": "プレビュー用スキンを読み込めませんでした。",
+    "graphicsUnavailable": "プレビューの描画を開始できませんでした。",
+    "graphicsHelp": "ブラウザーでグラフィックスアクセラレーションとWebGLが有効になっていることを確認し、必要に応じてブラウザーを再起動してください。",
+    "errorDetails": "エラーの詳細",
+    "reload": "再読み込み",
+    "transport": {
+      "hide": "再生コントロールを非表示",
+      "show": "再生コントロールを表示",
+      "time": "プレビューの再生位置",
+      "controls": "プレビューの再生コントロール",
+      "pause": "プレビューを一時停止",
+      "play": "プレビューを再生",
+      "back": "{0}ミリ秒戻る",
+      "forward": "{0}ミリ秒進む",
+      "holdBackward": "長押しで{0}倍速で巻き戻し",
+      "holdForward": "長押しで{0}倍速で早送り"
     }
   }
 }

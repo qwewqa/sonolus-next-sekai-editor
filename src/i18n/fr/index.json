@@ -3,10 +3,21 @@
   "group": {
     "default": "Par défaut"
   },
+  "events": {
+    "event": "événement",
+    "cameraEvent": "Événement de caméra",
+    "stageMaskEvent": "Événement de masque de scène",
+    "stagePivotEvent": "Événement de pivot de scène",
+    "stageStyleEvent": "Événement de style de scène",
+    "stageTransformEvent": "Événement de transformation de scène"
+  },
   "commands": {
+    "elevation": {
+      "title": "Éditeur d’élévation"
+    },
     "bgm": {
       "title": "Musique",
-      "changed": "Musique Modifiée",
+      "changed": "Musique modifiée",
       "modal": {
         "file": "Fichier",
         "offset": "Décalage (ms)",
@@ -56,6 +67,21 @@
       "noSelected": "Aucun objet sélectionné à retourner",
       "flipped": "{0} objets retournés"
     },
+    "flipVertical": {
+      "title": "Retourner verticalement",
+      "flipped": "{0} objets retournés verticalement"
+    },
+    "combineNotes": {
+      "title": "Combiner en slide",
+      "noSelected": "Aucune note sélectionnée à combiner",
+      "sameSlide": "Les notes sélectionnées appartiennent déjà au même slide",
+      "combined": "{0} notes combinées en un slide"
+    },
+    "fullscreen": {
+      "title": "Plein écran",
+      "toggled": "Mode plein écran modifié",
+      "unsupported": "Votre appareil ne prend pas en charge le plein écran"
+    },
     "groups": {
       "groupAll": {
         "title": "Passer à tous les groupes"
@@ -71,6 +97,10 @@
         "one": "Groupe {0} activé"
       }
     },
+    "generateSlideNotes": {
+      "title": "Passer à l’outil Générer les notes de slide",
+      "switched": "Outil Générer les notes de slide activé"
+    },
     "help": {
       "title": "Aide"
     },
@@ -80,6 +110,57 @@
       },
       "jumpUp": {
         "title": "Aller en Haut"
+      }
+    },
+    "manageGroups": {
+      "title": "Gérer les groupes",
+      "modal": {
+        "title": "Gérer les groupes",
+        "switch": "Passer au groupe",
+        "switched": {
+          "all": "Tous les groupes activés",
+          "one": "Groupe {0} activé"
+        },
+        "moveUp": "Monter le groupe",
+        "moveDown": "Descendre le groupe",
+        "moved": "Groupe {0} déplacé",
+        "properties": {
+          "title": "Modifier les propriétés du groupe",
+          "modal": {
+            "title": "Propriétés du groupe",
+            "forceNoteSpeed": "Imposer la vitesse des notes",
+            "edited": "Propriétés du groupe {0} modifiées"
+          }
+        },
+        "delete": "Supprimer le groupe",
+        "deleted": "Groupe {0} supprimé",
+        "add": "Ajouter",
+        "added": "Groupe {0} ajouté"
+      }
+    },
+    "manageStages": {
+      "title": "Gérer les scènes",
+      "modal": {
+        "title": "Gérer les scènes",
+        "switch": "Passer à la scène",
+        "switched": {
+          "all": "Toutes les scènes activées",
+          "one": "Scène {0} activée"
+        },
+        "moveUp": "Monter la scène",
+        "moveDown": "Descendre la scène",
+        "moved": "Scène {0} déplacée",
+        "properties": {
+          "title": "Modifier les propriétés de la scène",
+          "modal": {
+            "title": "Propriétés de la scène",
+            "edited": "Propriétés de la scène {0} modifiées"
+          }
+        },
+        "delete": "Supprimer la scène",
+        "deleted": "Scène {0} supprimée",
+        "add": "Ajouter",
+        "added": "Scène {0} ajoutée"
       }
     },
     "note": {
@@ -92,6 +173,19 @@
         "title": "Propriétés des Notes par défaut"
       }
     },
+    "noteSizes": {
+      "increase": {
+        "title": "Augmenter la taille des notes"
+      },
+      "decrease": {
+        "title": "Réduire la taille des notes"
+      },
+      "changed": "Taille des notes modifiée : {0}"
+    },
+    "offset": {
+      "title": "Passer à l’outil Décalage",
+      "switched": "Outil Décalage activé"
+    },
     "open": {
       "title": "Ouvrir",
       "loading": "Chargement du fichier...",
@@ -103,7 +197,14 @@
       "switched": "Outil Coller activé"
     },
     "play": {
-      "title": "Jouer"
+      "title": "Lire"
+    },
+    "properties": {
+      "title": "Propriétés",
+      "changed": "Propriétés modifiées",
+      "modal": {
+        "life": "Vie"
+      }
     },
     "redo": {
       "title": "Refaire",
@@ -112,7 +213,7 @@
     },
     "reset": {
       "title": "Réinitialiser",
-      "reset": "Réinitialiser le niveau"
+      "reset": "Niveau réinitialisé"
     },
     "save": {
       "title": "Sauvegarder",
@@ -169,16 +270,59 @@
         "title": "Accélérer"
       }
     },
+    "stages": {
+      "stageAll": {
+        "title": "Passer à toutes les scènes"
+      },
+      "stagePrev": {
+        "title": "Passer à la scène précédente"
+      },
+      "stageNext": {
+        "title": "Passer à la scène suivante"
+      },
+      "switched": {
+        "all": "Toutes les scènes activées",
+        "one": "Scène {0} activée"
+      }
+    },
     "stop": {
       "title": "Arrêter"
     },
+    "toggleVolume": {
+      "title": "Activer/désactiver le son : {0}",
+      "toggled": "Son {0} activé/désactivé",
+      "type": {
+        "bgm": "Musique",
+        "sfx": "Effets sonores"
+      }
+    },
     "undo": {
-      "title": "Défaire",
-      "noState": "Rien à défaire",
+      "title": "Annuler",
+      "noState": "Rien à annuler",
       "undid": "\"{0}\" annulé"
     },
     "utilities": {
       "title": "Utilitaires"
+    },
+    "visibilities": {
+      "cycle": {
+        "title": "Changer la visibilité des objets",
+        "cycled": "Visibilité des objets modifiée"
+      },
+      "toggle": {
+        "title": "Afficher/masquer : {0}",
+        "toggled": "Visibilité de {0} modifiée",
+        "types": {
+          "note": "Note",
+          "cameraEvent": "Événement de caméra",
+          "stageMaskEvent": "Événement de masque de scène",
+          "stagePivotEvent": "Événement de pivot de scène",
+          "stageStyleEvent": "Événement de style de scène",
+          "stageTransformEvent": "Événement de transformation de scène",
+          "timeScale": "Échelle de temps",
+          "bpm": "BPM"
+        }
+      }
     },
     "zooms": {
       "zoomXIn": {
@@ -205,6 +349,13 @@
     "timeScale": {
       "title": "Passer à l'outil Échelle de Temps",
       "switched": "Outil Échelle de Temps activé"
+    },
+    "events": {
+      "title": "Passer à l’outil {0}",
+      "switched": "Outil {0} activé",
+      "modal": {
+        "title": "Propriétés par défaut de {0}"
+      }
     }
   },
   "help": {
@@ -212,23 +363,26 @@
       "title": "Aide",
       "touchscreen": {
         "title": "Écran Tactile",
-        "tap": "Appuyez d'un seul doigt pour appuyer.",
+        "tap": "Appuyez avec un doigt pour agir.",
         "drag": "Glissez d'un seul doigt pour faire glisser.",
+        "quickScroll": "Glissez un doigt dans la zone de défilement rapide pour faire défiler.",
+        "deselect": "Appuyez avec deux doigts pour désélectionner.",
         "scrollY": "Glissez deux doigts verticalement pour faire défiler.",
         "scrollX": "Glissez deux doigts horizontalement pour faire défiler.",
         "zoomY": "Pincez verticalement avec deux doigts pour zoomer l'axe Y.",
-        "zoomX": "Pincez horizontalement avec deux doigts pour zoomer l'axe X."
+        "zoomX": "Pincez horizontalement avec deux doigts pour zoomer l'axe X.",
+        "play": "Appuyez avec trois doigts pour lancer la lecture."
       },
       "mouse": {
         "title": "Souris",
-        "tapPrimary": "Clic gauche pour appuyer avec l'outil principal.",
-        "dragPrimary": "Clic gauche et glisser pour faire glisser avec l'outil principal.",
-        "tapSecondary": "Clic droit pour appuyer avec l'outil secondaire.",
-        "dragSecondary": "Clic droit et glisser pour faire glisser avec l'outil secondaire.",
+        "tapPrimary": "Cliquez avec le bouton gauche pour utiliser l’outil principal.",
+        "dragPrimary": "Cliquez avec le bouton gauche et glissez pour utiliser l’outil principal.",
+        "tapSecondary": "Cliquez avec le bouton droit pour utiliser l’outil secondaire.",
+        "dragSecondary": "Cliquez avec le bouton droit et glissez pour utiliser l’outil secondaire.",
         "scrollY": "Utilisez la molette pour faire défiler verticalement.",
         "scrollX": "Utilisez la molette avec la touche Maj pour faire défiler horizontalement.",
         "zoomY": "Utilisez la molette avec la touche Ctrl pour zoomer verticalement.",
-        "zoomX": "Utilisez la molette avec les touche Ctrl et Maj pour zoomer horizontalement."
+        "zoomX": "Utilisez la molette avec les touches Ctrl et Maj pour zoomer horizontalement."
       },
       "keyboard": {
         "title": "Clavier",
@@ -278,11 +432,17 @@
         "select": "Appuyez sur des objets Note pour sélectionner 1 objet.",
         "edit": "Appuyez sur 1 objet Note pour le modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
-        "connect": "Appuyez sur une zone vide avec 1 objet Note selectionné pour connecter.",
+        "connect": "Appuyez sur une zone vide avec une note sélectionnée pour la connecter.",
         "move": "Glissez 1 objet Note pour le déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés.",
         "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
+      },
+      "generateSlideNotesTool": {
+        "title": "Outil Générer les notes de slide",
+        "generate": "Appuyez ou glissez pour sélectionner une note et générer les notes de tout le slide.",
+        "generateMultiple": "Appuyez ou glissez pour sélectionner deux notes et générer les notes entre elles.",
+        "deselect": "Appuyez sur une zone vide pour tout désélectionner."
       },
       "bpmTool": {
         "title": "Outil BPM",
@@ -299,25 +459,109 @@
         "add": "Appuyez sur une zone vide pour ajouter.",
         "move": "Glissez 1 objet Échelle de Temps pour le déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection."
+      },
+      "cameraEventTool": {
+        "title": "Outil Événement de caméra",
+        "select": "Appuyez sur un événement pour le sélectionner.",
+        "edit": "Appuyez sur un événement pour le modifier.",
+        "add": "Appuyez sur une zone vide pour ajouter un événement.",
+        "move": "Glissez un événement pour le déplacer.",
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "properties": "Passez à nouveau à l’outil Événement de caméra pour modifier les propriétés par défaut."
+      },
+      "stageMaskEventTool": {
+        "title": "Outil Événement de masque de scène",
+        "select": "Appuyez sur un événement pour le sélectionner.",
+        "edit": "Appuyez sur un événement pour le modifier.",
+        "add": "Appuyez sur une zone vide pour ajouter un événement.",
+        "move": "Glissez un événement pour le déplacer.",
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "properties": "Passez à nouveau à l’outil Événement de masque de scène pour modifier les propriétés par défaut."
+      },
+      "stagePivotEventTool": {
+        "title": "Outil Événement de pivot de scène",
+        "select": "Appuyez sur un événement pour le sélectionner.",
+        "edit": "Appuyez sur un événement pour le modifier.",
+        "add": "Appuyez sur une zone vide pour ajouter un événement.",
+        "move": "Glissez un événement pour le déplacer.",
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "properties": "Passez à nouveau à l’outil Événement de pivot de scène pour modifier les propriétés par défaut."
+      },
+      "stageStyleEventTool": {
+        "title": "Outil Événement de style de scène",
+        "select": "Appuyez sur un événement pour le sélectionner.",
+        "edit": "Appuyez sur un événement pour le modifier.",
+        "add": "Appuyez sur une zone vide pour ajouter un événement.",
+        "move": "Glissez un événement pour le déplacer.",
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "properties": "Passez à nouveau à l’outil Événement de style de scène pour modifier les propriétés par défaut."
+      },
+      "stageTransformEventTool": {
+        "title": "Outil Événement de transformation de scène",
+        "select": "Appuyez sur un événement pour le sélectionner.",
+        "edit": "Appuyez sur un événement pour le modifier.",
+        "add": "Appuyez sur une zone vide pour ajouter un événement.",
+        "move": "Glissez un événement pour le déplacer.",
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "properties": "Passez à nouveau à l’outil Événement de transformation de scène pour modifier les propriétés par défaut."
       }
     }
   },
+  "elevation": {
+    "edit": "Modifier les élévations",
+    "header": "Éditeur d’élévation",
+    "beat": "Temps",
+    "previousBeat": "Temps précédent",
+    "nextBeat": "Temps suivant",
+    "snap": "Alignement",
+    "snapping": "Alignement de l’élévation",
+    "sideBySide": "Côte à côte",
+    "auto": "Auto",
+    "allow": "Autoriser",
+    "disallow": "Ne pas autoriser",
+    "off": "Désactivé",
+    "canvas": "Élévation des notes",
+    "axis": "Élévation",
+    "offset": "Décalage d’affichage",
+    "inherited": "Élévation héritée",
+    "empty": "Aucune note à ce temps",
+    "history": "Élévation des notes modifiée",
+    "close": "Fermer l’éditeur d’élévation",
+    "resize": "Redimensionner l’éditeur d’élévation"
+  },
+  "contextMenu": {
+    "title": "Actions sur la sélection",
+    "paste": "Coller",
+    "selectSlideNotes": "Sélectionner les notes du slide",
+    "delete": "Supprimer"
+  },
   "settings": {
     "title": "Paramètres",
+    "resetSettings": "Réinitialiser les paramètres",
+    "resetSettingsHint": "Rétablir les paramètres par défaut en conservant les raccourcis clavier.",
+    "resetKeybinds": "Réinitialiser les raccourcis",
     "editor": {
       "title": "Éditeur",
       "locale": "Langue",
+      "elevationSideBySide": "Éditeur d’élévation côte à côte",
       "autoSave": "Sauvegarde Automatique",
       "autoSaveDelay": "Délai de la Sauvegarde Automatique",
       "waveformVisualization": {
-        "title": "Visualisation en forme d'onde",
+        "title": "Visualisation de la forme d’onde",
         "off": "Désactivée",
         "fft": "FFT",
         "volume": "Volume",
-        "changed": "Vous avez modifié la visualisation en forme d'onde, rechargez le fichier audio pour appliquer ce changement."
+        "changed": "Le mode de visualisation de la forme d’onde a changé. Rechargez le fichier audio pour appliquer ce changement."
       },
-      "dragToPanY": "Glissez pour déplacer Y",
-      "dragToPanX": "Glissez pour déplacer X"
+      "maxScrollX": "Défilement horizontal maximal",
+      "dragToPanY": "Glisser pour déplacer la vue verticalement",
+      "dragToPanX": "Glisser pour déplacer la vue horizontalement",
+      "autoAddGroup": "Ajout automatique de groupes",
+      "showGroupName": "Afficher le nom du groupe",
+      "showOtherGroups": "Afficher les autres groupes",
+      "showStageName": "Afficher le nom de la scène",
+      "showOtherStages": "Afficher les autres scènes",
+      "showOtherObjects": "Afficher les autres objets"
     },
     "keyboardShortcuts": {
       "title": "Raccourcis Clavier"
@@ -327,16 +571,23 @@
       "secondaryTool": {
         "title": "Outil Secondaire",
         "eraser": "Gomme",
-        "select": "Sélectionner"
+        "select": "Sélectionner",
+        "selectContextMenu": "Sélection + menu contextuel"
       },
       "smoothScrolling": "Défilement Fluide"
     },
     "play": {
-      "title": "Jouer",
+      "title": "Lecture",
       "bgmVolume": "Volume de la Musique",
       "sfxVolume": "Volume des Effets Sonores",
+      "startPosition": {
+        "title": "Position de départ",
+        "view": "Vue",
+        "cursor": "Curseur"
+      },
       "follow": "Suivre",
-      "followPosition": "Suivre la Position"
+      "followPosition": "Suivre la Position",
+      "previewDuration": "Durée de l’aperçu (ms)"
     },
     "preview": {
       "title": "Aperçu",
@@ -345,16 +596,30 @@
         "auto": "Auto",
         "top": "Haut",
         "left": "Gauche"
+      },
+      "noteSpeed": "Vitesse des notes",
+      "renderScale": "Échelle de rendu",
+      "showEffects": "Effets",
+      "highlightSelection": "Mettre la sélection en évidence",
+      "antialias": "Anticrénelage",
+      "aspectRatio": "Rapport d’aspect",
+      "showPreview": "Afficher l’aperçu",
+      "controls": {
+        "title": "Panneau des paramètres de l’aperçu",
+        "auto": "Auto",
+        "expanded": "Déployé",
+        "collapsed": "Réduit"
       }
     },
     "toolbar": {
-      "title": "Barre d'outil",
+      "title": "Barre d’outils",
       "modal": {
         "title": "Sélectionner l'outil"
       }
     },
     "touch": {
-      "title": "Touche",
+      "title": "Tactile",
+      "quickScrollZone": "Zone de défilement rapide",
       "scrollInertia": "Inertie de défilement"
     }
   },
@@ -363,10 +628,34 @@
       "title": "Propriétés d'Objet",
       "none": "Aucun objet sélectionné",
       "edited": "{0} objets modifiés"
+    },
+    "view": {
+      "title": "Vue",
+      "tool": "Outil",
+      "division": "Division",
+      "snapping": {
+        "label": "Alignement",
+        "absolute": "Absolu",
+        "relative": "Relatif"
+      }
+    }
+  },
+  "statusBar": {
+    "group": {
+      "all": "tous les groupes",
+      "one": "groupe {0}"
+    },
+    "stage": {
+      "all": "toutes les scènes",
+      "one": "scène {0}"
     }
   },
   "tools": {
+    "elevation": {
+      "title": "Éditeur d’élévation"
+    },
     "bpm": {
+      "title": "BPM",
       "adding": "Ajout de {0} objets BPM",
       "added": "{0} objets BPM ajoutés",
       "edited": "{0} objets BPM modifiés",
@@ -379,25 +668,34 @@
       }
     },
     "brush": {
+      "title": "Pinceau",
       "deselected": "Tout désélectionné",
       "brushing": "Peinture de {0} objets",
-      "brushed": "{0} objects peints",
+      "brushed": "{0} objets peints",
       "sidebar": {
         "title": "Propriétés du Pinceau"
       }
     },
     "eraser": {
+      "title": "Gomme",
       "deselected": "Tout désélectionné",
       "erasing": "Effacement de {0} objets",
       "erased": "{0} objets effacés"
     },
+    "generateSlideNotes": {
+      "title": "Générer les notes de slide",
+      "deselected": "Tout désélectionné",
+      "selecting": "Sélection de {0} objets",
+      "generated": "{0} objets générés"
+    },
     "note": {
+      "title": "Note n° {0}",
       "adding": "Ajout de {0} objets Note",
       "added": "{0} objets Note ajoutés",
       "editing": "Modification de {0} objets Note",
       "edited": "{0} objets Note modifiés",
       "moving": "Déplacement de {0} objets Note",
-      "moved": "{0} Note objects déplacés",
+      "moved": "{0} objets Note déplacés",
       "selected": "{0} objets Note sélectionnés",
       "modal": {
         "title": "Propriétés de Note"
@@ -406,20 +704,27 @@
         "title": "Propriétés de Note par défaut"
       }
     },
+    "offset": {
+      "title": "Décalage",
+      "changed": "Décalage de la musique modifié"
+    },
     "paste": {
+      "title": "Coller",
       "pasted": "{0} objets collés",
       "sidebar": {
         "title": "Historique du presse-papiers"
       }
     },
     "select": {
+      "title": "Sélectionner",
       "deselected": "Tout désélectionné",
       "selecting": "Sélection de {0} objets",
-      "selected": "{0} objets séléctionnés",
+      "selected": "{0} objets sélectionnés",
       "moving": "Déplacement de {0} objets",
-      "moved": "{0} objects déplacés"
+      "moved": "{0} objets déplacés"
     },
     "slide": {
+      "title": "Slide n° {0}",
       "adding": "Ajout de {0} objets Note",
       "added": "{0} objets Note ajoutés",
       "editing": "Modification de {0} objets Note",
@@ -435,6 +740,7 @@
       }
     },
     "timeScale": {
+      "title": "Échelle de temps",
       "adding": "Ajout de {0} objets Échelle de Temps",
       "added": "{0} objets Échelle de Temps ajoutés",
       "edited": "{0} objets Échelle de Temps modifiés",
@@ -444,6 +750,21 @@
       "selected": "{0} objets Échelle de Temps sélectionnés",
       "modal": {
         "title": "Propriétés de l'Échelle de Temps"
+      }
+    },
+    "events": {
+      "adding": "Ajout de {0} objets {1}",
+      "added": "{0} objets {1} ajoutés",
+      "editing": "Modification de {0} objets {1}",
+      "edited": "{0} objets {1} modifiés",
+      "moving": "Déplacement de {0} objets {1}",
+      "moved": "{0} objets {1} déplacés",
+      "selected": "{0} objets {1} sélectionnés",
+      "modal": {
+        "title": "Propriétés de {0}"
+      },
+      "sidebar": {
+        "title": "Propriétés par défaut de {0}"
       }
     }
   },
@@ -463,8 +784,8 @@
       "bgm": "Musique",
       "start": "Début",
       "end": "Fin",
-      "fadeStart": "Début du Fondu",
-      "fadeEnd": "Fin du Fondu",
+      "fadeStart": "Durée du fondu d’entrée",
+      "fadeEnd": "Durée du fondu de sortie",
       "generate": "Générer",
       "loading": "Chargement du fichier...",
       "decoding": "Décodage audio...",
@@ -483,33 +804,80 @@
     "initialize": "Initialiser",
     "autoSave": {
       "title": "Sauvegarde Automatique",
-      "importing": "Importation du niveau…"
+      "importing": "Importation du niveau…",
+      "disabled": "La sauvegarde automatique est désactivée pour ce niveau en raison de sa taille. Veuillez sauvegarder manuellement.",
+      "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet."
     },
     "changes": {
       "title": "Modifications",
       "message": "Les modifications apportées au niveau peuvent être perdues. Continuer?"
+    },
+    "dynamicStages": {
+      "title": "Scènes dynamiques",
+      "message": "Cette fonctionnalité nécessite les scènes dynamiques. Voulez-vous les activer ?",
+      "enabled": "Scènes dynamiques activées"
     }
   },
   "modals": {
     "form": {
       "confirm": "Confirmer",
+      "anchor": {
+        "label": "Ancrage",
+        "default": "Par défaut",
+        "center": "Centre"
+      },
       "beat": {
         "label": "Temps"
       },
+      "borderStyle": {
+        "default": "Par défaut",
+        "light": "Léger",
+        "medium": "Moyen",
+        "disabled": "Désactivé"
+      },
       "bpm": {
         "label": "BPM"
+      },
+      "cameraLeft": {
+        "label": "Décalage horizontal de la caméra"
+      },
+      "cameraRotation": {
+        "label": "Rotation de la caméra"
+      },
+      "cameraSize": {
+        "label": "Largeur du décalage de la caméra"
+      },
+      "cameraStageTilt": {
+        "label": "Inclinaison de la scène dans la caméra"
+      },
+      "cameraZoom": {
+        "label": "Zoom de la caméra"
+      },
+      "cameraZoomTargetLane": {
+        "label": "Voie cible du zoom de la caméra"
+      },
+      "cameraZoomTargetY": {
+        "label": "Position Y cible du zoom de la caméra"
+      },
+      "cameraZoomVerticalAlign": {
+        "label": "Alignement vertical du zoom de la caméra",
+        "default": "Par défaut",
+        "center": "Centre"
       },
       "connectorActiveIsCritical": {
         "label": "Slide Critique"
       },
       "connectorEase": {
-        "label": "Accélération du Connecteur",
+        "label": "Interpolation du connecteur",
         "linear": "Linéaire",
-        "in": "In",
-        "out": "Out",
-        "inOut": "In-Out",
-        "outIn": "Out-In",
+        "in": "Accélération",
+        "out": "Décélération",
+        "inOut": "Accélération puis décélération",
+        "outIn": "Décélération puis accélération",
         "none": "Aucune"
+      },
+      "connectorIsFake": {
+        "label": "Connecteur factice"
       },
       "connectorGuideAlpha": {
         "label": "Opacité du Guide"
@@ -524,10 +892,55 @@
         "cyan": "Cyan",
         "black": "Noir"
       },
+      "connectorIsPassThrough": {
+        "label": "Traverser la ligne de jugement"
+      },
+      "connectorLayer": {
+        "label": "Couche du connecteur",
+        "top": "Supérieure",
+        "bottom": "Inférieure",
+        "under": "Tout derrière",
+        "over": "Tout devant"
+      },
+      "connectorPresentation": {
+        "label": "Présentation du connecteur",
+        "default": "Par défaut",
+        "fullscreen": "Plein écran"
+      },
       "connectorType": {
         "label": "Type de Connecteur",
         "active": "Slide",
-        "guide": "Guide"
+        "guide": "Guide",
+        "damage": "Dégâts"
+      },
+      "copyProperties": {
+        "label": "Copier les propriétés"
+      },
+      "divisionLineAlpha": {
+        "label": "Opacité des lignes de division"
+      },
+      "divisionParity": {
+        "label": "Parité des divisions",
+        "even": "Paire",
+        "odd": "Impaire"
+      },
+      "divisionSize": {
+        "label": "Taille des divisions"
+      },
+      "editorLane": {
+        "label": "Voie dans l’éditeur"
+      },
+      "elevation": {
+        "label": "Élévation"
+      },
+      "eventEase": {
+        "label": "Interpolation de l’événement",
+        "linear": "Linéaire",
+        "in": "Accélération",
+        "out": "Décélération",
+        "inOut": "Accélération puis décélération",
+        "outIn": "Décélération puis accélération",
+        "none": "Aucune"
       },
       "file": {
         "select": "Sélectionner le Fichier..."
@@ -542,8 +955,16 @@
         "downLeft": "Bas à Gauche",
         "downRight": "Bas à Droite"
       },
+      "generateSimLines": {
+        "label": "Générer les lignes de simultanéité",
+        "global": "Globalement",
+        "isolated": "Par scène"
+      },
       "group": {
         "label": "Groupe"
+      },
+      "hideNotes": {
+        "label": "Masquer les notes"
       },
       "isAttached": {
         "label": "Attaché"
@@ -555,44 +976,149 @@
         "label": "Critique"
       },
       "isFake": {
-        "label": "Faux"
+        "label": "Factice"
+      },
+      "isFromStart": {
+        "label": "Depuis le début"
+      },
+      "isFullWidth": {
+        "label": "Pleine largeur"
+      },
+      "isMaskNotes": {
+        "label": "Masquer les notes"
+      },
+      "isUntilEnd": {
+        "label": "Jusqu’à la fin"
+      },
+      "judgmentLineAlpha": {
+        "label": "Opacité de la ligne de jugement"
+      },
+      "judgmentLineColor": {
+        "label": "Couleur de la ligne de jugement",
+        "neutral": "Neutre",
+        "red": "Rouge",
+        "green": "Vert",
+        "blue": "Bleu",
+        "yellow": "Jaune",
+        "purple": "Violet",
+        "cyan": "Cyan",
+        "black": "Noir"
+      },
+      "judgmentLineStyle": {
+        "label": "Style de la ligne de jugement",
+        "default": "Par défaut",
+        "singleLine": "Ligne simple"
+      },
+      "laneAlpha": {
+        "label": "Opacité des voies"
       },
       "left": {
         "label": "Voie"
       },
+      "leftBorderStyle": {
+        "label": "Style de bordure (gauche)"
+      },
       "key": {
         "input": "Touche de Saisie",
-        "press": "Appuyez sur une touche..."
+        "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
+        "clear": "Cliquez à nouveau pour supprimer ce raccourci",
+        "unassigned": "Non attribué"
+      },
+      "maskLeft": {
+        "label": "Voie du masque"
+      },
+      "maskSize": {
+        "label": "Taille du masque"
+      },
+      "name": {
+        "label": "Nom"
+      },
+      "noteAlpha": {
+        "label": "Opacité des notes"
       },
       "noteType": {
         "label": "Type de Note",
         "default": "Par défaut",
         "trace": "Trace",
         "anchor": "Ancre",
-        "damage": "Dégât",
-        "forceTick": "Force Tique",
-        "forceNonTick": "Force Non Tique"
+        "damage": "Dégâts",
+        "forceTick": "Forcer le tick",
+        "forceNonTick": "Forcer l’absence de tick"
+      },
+      "pivotLane": {
+        "label": "Voie du pivot"
       },
       "preset": {
         "label": "Préréglage"
+      },
+      "rightBorderStyle": {
+        "label": "Style de bordure (droite)"
+      },
+      "rotation": {
+        "label": "Rotation"
+      },
+      "sfx": {
+        "label": "Effets sonores",
+        "default": "Par défaut",
+        "none": "Aucun",
+        "normalTap": "Tap",
+        "criticalTap": "Tap (critique)",
+        "normalFlick": "Flick",
+        "criticalFlick": "Flick (critique)",
+        "normalTrace": "Trace",
+        "criticalTrace": "Trace (critique)",
+        "normalTick": "Tick",
+        "criticalTick": "Tick (critique)",
+        "damage": "Dégâts"
       },
       "size": {
         "label": "Taille"
       },
       "skip": {
-        "label": "Sauter (temps)"
+        "label": "Intervalle (temps)"
+      },
+      "stage": {
+        "label": "Scène"
       },
       "timeScale": {
         "label": "Échelle de Temps"
       },
       "timeScaleEase": {
-        "label": "Accélération de l'Échelle de Temps",
+        "label": "Interpolation de l’échelle de temps",
         "none": "Aucune",
-        "linear": "Linéaire"
+        "linear": "Linéaire",
+        "inQuad": "Accélération quadratique",
+        "outQuad": "Décélération quadratique",
+        "inOutQuad": "Accélération puis décélération quadratiques",
+        "outInQuad": "Décélération puis accélération quadratiques"
+      },
+      "timeScaleTransition": {
+        "label": "Transition de l’échelle de temps",
+        "timeScale": "Échelle de temps",
+        "scroll": "Défilement"
       },
       "toggle": {
         "enabled": "Activé",
         "disabled": "Désactivé"
+      },
+      "xTranslation": {
+        "label": "Translation X"
+      },
+      "yTranslation": {
+        "label": "Translation Y"
+      },
+      "yOffset": {
+        "label": "Décalage Y"
+      },
+      "yOffsetBeat": {
+        "label": "Décalage Y (temps)"
+      },
+      "noteStyle": {
+        "label": "Couleur des notes",
+        "default": "Par défaut"
+      },
+      "connectorStyle": {
+        "label": "Couleur du connecteur"
       }
     },
     "confirm": {
@@ -604,6 +1130,29 @@
     },
     "loading": {
       "loading": "Chargement ..."
+    }
+  },
+  "preview": {
+    "settings": "Paramètres de l’aperçu",
+    "minimizeSettings": "Réduire les paramètres de l’aperçu",
+    "showSettings": "Afficher les paramètres de l’aperçu",
+    "loadingSkin": "Chargement du skin...",
+    "skinUnavailable": "Le skin de l’aperçu n’a pas pu être chargé.",
+    "graphicsUnavailable": "Le rendu de l’aperçu n’a pas pu démarrer.",
+    "graphicsHelp": "Vérifiez que l’accélération graphique et WebGL sont activés dans votre navigateur, puis redémarrez-le si nécessaire.",
+    "errorDetails": "Détails de l’erreur",
+    "reload": "Recharger",
+    "transport": {
+      "hide": "Masquer les commandes de lecture",
+      "show": "Afficher les commandes de lecture",
+      "time": "Temps de l’aperçu",
+      "controls": "Commandes de lecture de l’aperçu",
+      "pause": "Mettre l’aperçu en pause",
+      "play": "Lire l’aperçu",
+      "back": "Reculer de {0} ms",
+      "forward": "Avancer de {0} ms",
+      "holdBackward": "Maintenir pour reculer à {0}×",
+      "holdForward": "Maintenir pour avancer à {0}×"
     }
   }
 }

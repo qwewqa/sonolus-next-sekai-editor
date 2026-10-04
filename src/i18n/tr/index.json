@@ -3,13 +3,24 @@
   "group": {
     "default": "Varsayılan"
   },
+  "events": {
+    "event": "olay",
+    "cameraEvent": "Kamera Olayı",
+    "stageMaskEvent": "Sahne Maskesi Olayı",
+    "stagePivotEvent": "Sahne Dönme Merkezi Olayı",
+    "stageStyleEvent": "Sahne Stili Olayı",
+    "stageTransformEvent": "Sahne Dönüşüm Olayı"
+  },
   "commands": {
+    "elevation": {
+      "title": "Yükseklik editörü"
+    },
     "bgm": {
-      "title": "Arkaplan Müziği",
-      "changed": "Arkaplan Müziği Değiştirildi",
+      "title": "Arka Plan Müziği",
+      "changed": "Arka plan müziği değiştirildi",
       "modal": {
         "file": "Dosya",
-        "offset": "Denge Ayarı (ms)",
+        "offset": "Zaman Kayması (ms)",
         "loading": "Dosya yükleniyor...",
         "decoding": "Ses çözümleniyor...",
         "generating": "Dalga formu oluşturuluyor..."
@@ -30,7 +41,7 @@
     "cut": {
       "title": "Kes",
       "noSelected": "Kesilecek nesne seçilmedi",
-      "cut": "{0} nesneyi kes"
+      "cut": "{0} nesne kesildi"
     },
     "deselect": {
       "title": "Seçimi kaldır",
@@ -52,9 +63,24 @@
       "switched": "Silgi aracına geçildi"
     },
     "flip": {
-      "title": "Çevir",
-      "noSelected": "Çevirilecek nesne seçilmedi",
-      "flipped": "{0} nesne çevrildi"
+      "title": "Yatay çevir",
+      "noSelected": "Çevrilecek nesne seçilmedi",
+      "flipped": "{0} nesne yatay çevrildi"
+    },
+    "flipVertical": {
+      "title": "Dikey çevir",
+      "flipped": "{0} nesne dikey çevrildi"
+    },
+    "combineNotes": {
+      "title": "Kaydırmada birleştir",
+      "noSelected": "Birleştirilecek nota seçilmedi",
+      "sameSlide": "Seçilen notalar zaten aynı kaydırmaya ait",
+      "combined": "{0} nota tek kaydırmada birleştirildi"
+    },
+    "fullscreen": {
+      "title": "Tam ekran",
+      "toggled": "Tam ekran değiştirildi",
+      "unsupported": "Cihazınız tam ekranı desteklemiyor"
     },
     "groups": {
       "groupAll": {
@@ -71,6 +97,10 @@
         "one": "{0} grubuna geçildi"
       }
     },
+    "generateSlideNotes": {
+      "title": "Kaydırma Notası Oluşturma aracına geç",
+      "switched": "Kaydırma Notası Oluşturma aracına geçildi"
+    },
     "help": {
       "title": "Yardım"
     },
@@ -82,15 +112,79 @@
         "title": "Yukarı Atla"
       }
     },
+    "manageGroups": {
+      "title": "Grupları yönet",
+      "modal": {
+        "title": "Grupları Yönet",
+        "switch": "Gruba geç",
+        "switched": {
+          "all": "Tüm gruplara geçildi",
+          "one": "{0} grubuna geçildi"
+        },
+        "moveUp": "Grubu yukarı taşı",
+        "moveDown": "Grubu aşağı taşı",
+        "moved": "{0} grup taşındı",
+        "properties": {
+          "title": "Grup özelliklerini düzenle",
+          "modal": {
+            "title": "Grup Özellikleri",
+            "forceNoteSpeed": "Nota Hızını Sabitle",
+            "edited": "{0} grup özellikleri düzenlendi"
+          }
+        },
+        "delete": "Grubu sil",
+        "deleted": "{0} grup silindi",
+        "add": "Ekle",
+        "added": "{0} grup eklendi"
+      }
+    },
+    "manageStages": {
+      "title": "Sahneleri yönet",
+      "modal": {
+        "title": "Sahneleri Yönet",
+        "switch": "Sahneye geç",
+        "switched": {
+          "all": "Tüm sahnelere geçildi",
+          "one": "{0} sahnesine geçildi"
+        },
+        "moveUp": "Sahneyi yukarı taşı",
+        "moveDown": "Sahneyi aşağı taşı",
+        "moved": "{0} sahne taşındı",
+        "properties": {
+          "title": "Sahne özelliklerini düzenle",
+          "modal": {
+            "title": "Sahne Özellikleri",
+            "edited": "{0} sahne özellikleri düzenlendi"
+          }
+        },
+        "delete": "Sahneyi sil",
+        "deleted": "{0} sahne silindi",
+        "add": "Ekle",
+        "added": "{0} sahne eklendi"
+      }
+    },
     "note": {
       "title": {
         "default": "Nota Aracına Geç",
-        "preset": "#{0} Nota Aracına Geç "
+        "preset": "#{0} Nota Aracına Geç"
       },
       "switched": "#{0} Nota Aracına Geçildi",
       "modal": {
         "title": "Varsayılan Nota Özellikleri"
       }
+    },
+    "noteSizes": {
+      "increase": {
+        "title": "Nota Boyutunu Büyüt"
+      },
+      "decrease": {
+        "title": "Nota Boyutunu Küçült"
+      },
+      "changed": "Nota boyutu {0} olarak değiştirildi"
+    },
+    "offset": {
+      "title": "Zaman Kayması aracına geç",
+      "switched": "Zaman Kayması aracına geçildi"
     },
     "open": {
       "title": "Aç",
@@ -105,14 +199,21 @@
     "play": {
       "title": "Oynat"
     },
+    "properties": {
+      "title": "Özellikler",
+      "changed": "Özellikler değiştirildi",
+      "modal": {
+        "life": "Can"
+      }
+    },
     "redo": {
       "title": "Yeniden Yap",
       "noState": "Yeniden yapılacak bir şey yok",
-      "redid": "\"{0}\" yeniden düzenlendi"
+      "redid": "\"{0}\" yeniden yapıldı"
     },
     "reset": {
       "title": "Sıfırla",
-      "reset": "Seviyeyi sıfırla"
+      "reset": "Seviye sıfırlandı"
     },
     "save": {
       "title": "Kaydet",
@@ -157,7 +258,7 @@
       }
     },
     "snapping": {
-      "title": "Hizala",
+      "title": "Hizalama",
       "absolute": "Mutlak hizalamaya geç",
       "relative": "Göreceli hizalamaya geç"
     },
@@ -169,8 +270,31 @@
         "title": "Hızı Yükselt"
       }
     },
+    "stages": {
+      "stageAll": {
+        "title": "Tüm sahnelere geç"
+      },
+      "stagePrev": {
+        "title": "Önceki sahneye geç"
+      },
+      "stageNext": {
+        "title": "Sonraki sahneye geç"
+      },
+      "switched": {
+        "all": "Tüm sahnelere geçildi",
+        "one": "{0} sahnesine geçildi"
+      }
+    },
     "stop": {
       "title": "Durdur"
+    },
+    "toggleVolume": {
+      "title": "{0} sesini aç/kapat",
+      "toggled": "{0} sesi açıldı/kapatıldı",
+      "type": {
+        "bgm": "Arka Plan Müziği",
+        "sfx": "Ses Efektleri"
+      }
     },
     "undo": {
       "title": "Geri al",
@@ -180,22 +304,42 @@
     "utilities": {
       "title": "Araçlar"
     },
+    "visibilities": {
+      "cycle": {
+        "title": "Nesne Görünürlüklerini Değiştir",
+        "cycled": "Nesne görünürlükleri değiştirildi"
+      },
+      "toggle": {
+        "title": "{0} görünürlüğünü aç/kapat",
+        "toggled": "{0} görünürlüğü değiştirildi",
+        "types": {
+          "note": "Nota",
+          "cameraEvent": "Kamera Olayı",
+          "stageMaskEvent": "Sahne Maskesi Olayı",
+          "stagePivotEvent": "Sahne Dönme Merkezi Olayı",
+          "stageStyleEvent": "Sahne Stili Olayı",
+          "stageTransformEvent": "Sahne Dönüşüm Olayı",
+          "timeScale": "Zaman Ölçeği",
+          "bpm": "BPM"
+        }
+      }
+    },
     "zooms": {
       "zoomXIn": {
-        "title": "X’ i Yakınlaştır ",
-        "zoomed": "X'e %10 yakınlaştırılma yapıldı"
+        "title": "X Ekseninde Yakınlaştır",
+        "zoomed": "X ekseninde %10 yakınlaştırıldı"
       },
       "zoomXOut": {
-        "title": "X’ i Uzaklaştır ",
-        "zoomed": "X %10 oranında uzaklaştırıldı"
+        "title": "X Ekseninde Uzaklaştır",
+        "zoomed": "X ekseninde %10 uzaklaştırıldı"
       },
       "zoomYIn": {
-        "title": "Y'ye yakınlaştır",
-        "zoomed": "Y'de %10 yakınlaştırma yapıldı"
+        "title": "Y Ekseninde Yakınlaştır",
+        "zoomed": "Y ekseninde %10 yakınlaştırıldı"
       },
       "zoomYOut": {
-        "title": "Y’ yi Uzaklaştır ",
-        "zoomed": "Y %10 oranında uzaklaştırıldı"
+        "title": "Y Ekseninde Uzaklaştır",
+        "zoomed": "Y ekseninde %10 uzaklaştırıldı"
       }
     },
     "bpm": {
@@ -205,6 +349,13 @@
     "timeScale": {
       "title": "Zaman Ölçeği aracına geç",
       "switched": "Zaman Ölçeği aracına geçildi"
+    },
+    "events": {
+      "title": "{0} aracına geç",
+      "switched": "{0} aracına geçildi",
+      "modal": {
+        "title": "Varsayılan {0} Özellikleri"
+      }
     }
   },
   "help": {
@@ -214,15 +365,18 @@
         "title": "Dokunmatik Ekran",
         "tap": "Dokunmak için tek parmakla dokunun.",
         "drag": "Tek parmakla sürükleyin.",
+        "quickScroll": "Kaydırmak için hızlı kaydırma alanında tek parmakla sürükleyin.",
+        "deselect": "Seçimi kaldırmak için iki parmakla dokunun.",
         "scrollY": "Kaydırmak için iki parmağınızı dikey olarak kaydırın.",
         "scrollX": "Kaydırmak için iki parmağınızı yatay olarak kaydırın.",
-        "zoomY": "Y’ yi yakınlaştırmak için iki parmağınızı dikey olarak sıkıştırın.",
-        "zoomX": "X’ i yakınlaştırmak için iki parmağınızı yatay olarak sıkıştırın."
+        "zoomY": "Y ekseninde yakınlaştırmak için iki parmakla dikey kıstırma hareketi yapın.",
+        "zoomX": "X ekseninde yakınlaştırmak için iki parmakla yatay kıstırma hareketi yapın.",
+        "play": "Oynatmak için üç parmakla dokunun."
       },
       "mouse": {
         "title": "Fare",
         "tapPrimary": "Birincil araçla dokunmak için sol tıklayın.",
-        "dragPrimary": "Birincil araçla sürüklemek için sol tıkla ve sürükle.",
+        "dragPrimary": "Birincil araçla sürüklemek için sol tıklayıp sürükleyin.",
         "tapSecondary": "İkincil araçla dokunmak için sağ tıklayın.",
         "dragSecondary": "Sağ tıklayıp sürükleyerek ikincil aracı kullanın.",
         "scrollY": "Dikey kaydırma için tekerleği çevirin.",
@@ -236,8 +390,8 @@
         "multiple": "Birden fazla kez çalıştırmak için uzun basın."
       },
       "selectTool": {
-        "title": "Araç Seç",
-        "select": "Nesnelere dokunarak 1 nesne seç, üst üste gelen nesneler arasında sırayla geçiş yapın.",
+        "title": "Seçim Aracı",
+        "select": "1 nesne seçmek ve Üst üste gelen nesneler arasında geçiş yapmak için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "move": "Birden fazla nesneyi taşımak için nesneleri sürükleyin.",
         "selectMultiple": "Birden fazla nesneyi seçmek için boş alanı sürükleyin.",
@@ -246,7 +400,7 @@
       },
       "eraserTool": {
         "title": "Silgi Aracı",
-        "erase": "Silmek istediğin nesnelere dokunun.",
+        "erase": "Silmek için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "eraseMultiple": "Birden fazla nesneyi silmek için sürükleyin.",
         "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın."
@@ -260,7 +414,7 @@
       },
       "pasteTool": {
         "title": "Yapıştırma Aracı",
-        "paste": "Yapıştırmak için dokun.",
+        "paste": "Yapıştırmak için dokunun.",
         "shift": "Nesneleri çevirmek için Shift tuşunu kullanın."
       },
       "noteTool": {
@@ -271,7 +425,7 @@
         "move": "1 Nota nesnesini taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın.",
-        "properties": "Ön ayarlanmış veya varsayılan özellikleri değiştirmek için tekrar Nota Aracı’na geçin."
+        "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Nota aracına geçin."
       },
       "slideTool": {
         "title": "Kaydırma Aracı",
@@ -282,13 +436,19 @@
         "move": "1 Nota nesnesini taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın.",
-        "properties": "Ön ayarlı veya varsayılan özellikleri değiştirmek için  Kaydırma Aracına tekrar geçin."
+        "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
+      },
+      "generateSlideNotesTool": {
+        "title": "Kaydırma Notası Oluşturma Aracı",
+        "generate": "Tüm kaydırma boyunca nota oluşturmak için dokunarak veya sürükleyerek 1 nota seçin.",
+        "generateMultiple": "Aralarında nota oluşturmak için dokunarak veya sürükleyerek 2 nota seçin.",
+        "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun."
       },
       "bpmTool": {
         "title": "BPM Aracı",
         "select": "1 nesne seçmek için BPM nesnelerine dokunun.",
         "edit": "Düzenlemek için 1 BPM nesnesine dokunun.",
-        "add": "Eklemek için boş alana dokun.",
+        "add": "Eklemek için boş alana dokunun.",
         "move": "Taşımak için 1 BPM nesnesini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın."
       },
@@ -296,17 +456,94 @@
         "title": "Zaman Ölçeği Aracı",
         "select": "1 nesne seçmek için Zaman Ölçeği nesnelerine dokunun.",
         "edit": "Düzenlemek için 1 Zaman Ölçeği nesnesine dokunun.",
-        "add": "Eklemek için boş alana dokun.",
+        "add": "Eklemek için boş alana dokunun.",
         "move": "Taşımak için 1 Zaman Ölçeği nesnesini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın."
+      },
+      "cameraEventTool": {
+        "title": "Kamera Olayı Aracı",
+        "select": "1 nesne seçmek için Kamera Olayı nesnelerine dokunun.",
+        "edit": "Düzenlemek için 1 Kamera Olayı nesnesine dokunun.",
+        "add": "Eklemek için boş alana dokunun.",
+        "move": "Taşımak için 1 Kamera Olayı nesnesini sürükleyin.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
+        "properties": "Varsayılan Özellikleri değiştirmek için tekrar Kamera Olayı aracına geçin."
+      },
+      "stageMaskEventTool": {
+        "title": "Sahne Maskesi Olayı Aracı",
+        "select": "1 nesne seçmek için Sahne Maskesi Olayı nesnelerine dokunun.",
+        "edit": "Düzenlemek için 1 Sahne Maskesi Olayı nesnesine dokunun.",
+        "add": "Eklemek için boş alana dokunun.",
+        "move": "Taşımak için 1 Sahne Maskesi Olayı nesnesini sürükleyin.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
+        "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Maskesi Olayı aracına geçin."
+      },
+      "stagePivotEventTool": {
+        "title": "Sahne Dönme Merkezi Olayı Aracı",
+        "select": "1 nesne seçmek için Sahne Dönme Merkezi Olayı nesnelerine dokunun.",
+        "edit": "Düzenlemek için 1 Sahne Dönme Merkezi Olayı nesnesine dokunun.",
+        "add": "Eklemek için boş alana dokunun.",
+        "move": "Taşımak için 1 Sahne Dönme Merkezi Olayı nesnesini sürükleyin.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
+        "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Dönme Merkezi Olayı aracına geçin."
+      },
+      "stageStyleEventTool": {
+        "title": "Sahne Stili Olayı Aracı",
+        "select": "1 nesne seçmek için Sahne Stili Olayı nesnelerine dokunun.",
+        "edit": "Düzenlemek için 1 Sahne Stili Olayı nesnesine dokunun.",
+        "add": "Eklemek için boş alana dokunun.",
+        "move": "Taşımak için 1 Sahne Stili Olayı nesnesini sürükleyin.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
+        "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Stili Olayı aracına geçin."
+      },
+      "stageTransformEventTool": {
+        "title": "Sahne Dönüşüm Olayı Aracı",
+        "select": "1 nesne seçmek için Sahne Dönüşüm Olayı nesnelerine dokunun.",
+        "edit": "Düzenlemek için 1 Sahne Dönüşüm Olayı nesnesine dokunun.",
+        "add": "Eklemek için boş alana dokunun.",
+        "move": "Taşımak için 1 Sahne Dönüşüm Olayı nesnesini sürükleyin.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
+        "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Dönüşüm Olayı aracına geçin."
       }
     }
   },
+  "elevation": {
+    "edit": "Yükseklikleri düzenle",
+    "header": "Yükseklik editörü",
+    "beat": "Vuruş",
+    "previousBeat": "Önceki vuruş",
+    "nextBeat": "Sonraki vuruş",
+    "snap": "Hizalama",
+    "snapping": "Yükseklik hizalaması",
+    "sideBySide": "Yan yana",
+    "auto": "Otomatik",
+    "allow": "İzin ver",
+    "disallow": "İzin verme",
+    "off": "Kapalı",
+    "canvas": "Nota yükseklikleri",
+    "axis": "Yükseklik",
+    "offset": "Görünüm kayması",
+    "inherited": "Devralınan yükseklik",
+    "empty": "Bu vuruşta nota yok",
+    "history": "Nota yüksekliği değiştirildi",
+    "close": "Yükseklik editörünü kapat",
+    "resize": "Yükseklik editörünü yeniden boyutlandır"
+  },
+  "contextMenu": {
+    "title": "Seçim işlemleri",
+    "paste": "Yapıştır",
+    "selectSlideNotes": "Kaydırma Notalarını Seç",
+    "delete": "Sil"
+  },
   "settings": {
     "title": "Ayarlar",
+    "resetSettings": "Ayarları Sıfırla",
+    "resetSettingsHint": "Klavye kısayollarını koruyarak varsayılan ayarları geri yükler.",
+    "resetKeybinds": "Kısayolları Sıfırla",
     "editor": {
       "title": "Editör",
       "locale": "Dil",
+      "elevationSideBySide": "Yükseklik Editörünü Yan Yana Göster",
       "autoSave": "Otomatik Kaydet",
       "autoSaveDelay": "Otomatik Kaydetme Gecikmesi",
       "waveformVisualization": {
@@ -314,10 +551,17 @@
         "off": "Kapalı",
         "fft": "FFT",
         "volume": "Ses",
-        "changed": "Dalga formu görselleştirmesini değiştirdin, bu değişikliğin etkili olması için BGM (Arka Plan Sesi) dosyasını tekrar seç."
+        "changed": "Dalga formu görselleştirmesi değiştirildi. Değişikliğin uygulanması için arka plan müziği dosyasını tekrar seçin."
       },
-      "dragToPanY": "Y’ yi kaydırmak için sürükle",
-      "dragToPanX": "X’ i kaydırmak için sürükle"
+      "maxScrollX": "En Fazla X Kaydırması",
+      "dragToPanY": "Y Eksenini Kaydırmak İçin Sürükle",
+      "dragToPanX": "X Eksenini Kaydırmak İçin Sürükle",
+      "autoAddGroup": "Otomatik Grup Ekle",
+      "showGroupName": "Grup Adını Göster",
+      "showOtherGroups": "Diğer Grupları Göster",
+      "showStageName": "Sahne Adını Göster",
+      "showOtherStages": "Diğer Sahneleri Göster",
+      "showOtherObjects": "Diğer Nesneleri Göster"
     },
     "keyboardShortcuts": {
       "title": "Klavye Kısayolları"
@@ -327,24 +571,44 @@
       "secondaryTool": {
         "title": "İkincil Araç",
         "eraser": "Silgi",
-        "select": "Seç"
+        "select": "Seç",
+        "selectContextMenu": "Seç + Bağlam Menüsü"
       },
       "smoothScrolling": "Pürüzsüz Kaydırma"
     },
     "play": {
       "title": "Oynat",
-      "bgmVolume": "Arkaplan Müziği Sesi",
+      "bgmVolume": "Arka Plan Müziği Sesi",
       "sfxVolume": "Ses Efekti Sesi",
+      "startPosition": {
+        "title": "Başlangıç Konumu",
+        "view": "Görünüm",
+        "cursor": "İmleç"
+      },
       "follow": "Takip Et",
-      "followPosition": "Pozisyonu Takip Et"
+      "followPosition": "Pozisyonu Takip Et",
+      "previewDuration": "Önizleme Süresi (ms)"
     },
     "preview": {
       "title": "Önizleme",
       "position": {
-        "title": "Pozisyon",
+        "title": "Konum",
         "auto": "Otomatik",
         "top": "Üst",
         "left": "Sol"
+      },
+      "noteSpeed": "Nota Hızı",
+      "renderScale": "Çizim Ölçeği",
+      "showEffects": "Efektler",
+      "highlightSelection": "Seçimi Vurgula",
+      "antialias": "Kenar Yumuşatma",
+      "aspectRatio": "En Boy Oranı",
+      "showPreview": "Önizlemeyi Göster",
+      "controls": {
+        "title": "Önizleme Ayarları Paneli",
+        "auto": "Otomatik",
+        "expanded": "Genişletilmiş",
+        "collapsed": "Daraltılmış"
       }
     },
     "toolbar": {
@@ -355,7 +619,8 @@
     },
     "touch": {
       "title": "Dokunma",
-      "scrollInertia": "Kaydırma Eylemsizliği"
+      "quickScrollZone": "Hızlı Kaydırma Alanı",
+      "scrollInertia": "Kaydırma Ataleti"
     }
   },
   "sidebars": {
@@ -363,10 +628,34 @@
       "title": "Nesne Özellikleri",
       "none": "Hiçbir nesne seçilmedi",
       "edited": "{0} nesne düzenlendi"
+    },
+    "view": {
+      "title": "Görünüm",
+      "tool": "Araç",
+      "division": "Bölüm",
+      "snapping": {
+        "label": "Hizalama",
+        "absolute": "Mutlak",
+        "relative": "Göreceli"
+      }
+    }
+  },
+  "statusBar": {
+    "group": {
+      "all": "tüm gruplar",
+      "one": "{0} grubu"
+    },
+    "stage": {
+      "all": "tüm sahneler",
+      "one": "{0} sahnesi"
     }
   },
   "tools": {
+    "elevation": {
+      "title": "Yükseklik editörü"
+    },
     "bpm": {
+      "title": "BPM",
       "adding": "{0} BPM nesnesi ekleniyor",
       "added": "{0} BPM nesnesi eklendi",
       "edited": "{0} BPM nesnesi düzenlendi",
@@ -379,6 +668,7 @@
       }
     },
     "brush": {
+      "title": "Fırça",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı",
       "brushing": "{0} nesne fırçalanıyor",
       "brushed": "{0} nesne fırçalandı",
@@ -387,18 +677,26 @@
       }
     },
     "eraser": {
+      "title": "Silgi",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı",
       "erasing": "{0} nesne siliniyor",
       "erased": "{0} nesne silindi"
     },
+    "generateSlideNotes": {
+      "title": "Kaydırma Notaları Oluştur",
+      "deselected": "Tüm nesnelerin seçimi kaldırıldı",
+      "selecting": "{0} nesne seçiliyor",
+      "generated": "{0} nesne oluşturuldu"
+    },
     "note": {
+      "title": "Nota #{0}",
       "adding": "{0} Nota nesnesi ekleniyor",
       "added": "{0} Nota nesnesi eklendi",
-      "editing": "{0} Nota nesnesi\n düzenleniyor",
+      "editing": "{0} Nota nesnesi düzenleniyor",
       "edited": "{0} Nota nesnesi düzenlendi",
-      "moving": "{0} Nota nesnelerini taşınıyor",
+      "moving": "{0} Nota nesnesi taşınıyor",
       "moved": "{0} Nota nesnesi taşındı",
-      "selected": " {0} Nota nesnesi seçildi",
+      "selected": "{0} Nota nesnesi seçildi",
       "modal": {
         "title": "Nota Özellikleri"
       },
@@ -406,20 +704,27 @@
         "title": "Varsayılan Nota Özellikleri"
       }
     },
+    "offset": {
+      "title": "Zaman Kayması",
+      "changed": "Arka plan müziğinin zaman kayması değiştirildi"
+    },
     "paste": {
+      "title": "Yapıştır",
       "pasted": "{0} nesne yapıştırıldı",
       "sidebar": {
         "title": "Pano Geçmişi"
       }
     },
     "select": {
+      "title": "Seç",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı",
       "selecting": "{0} nesne seçiliyor",
-      "selected": " {0} nesne seçildi",
+      "selected": "{0} nesne seçildi",
       "moving": "{0} nesne taşınıyor",
       "moved": "{0} nesne taşındı"
     },
     "slide": {
+      "title": "Kaydırma #{0}",
       "adding": "{0} Nota nesnesi ekleniyor",
       "added": "{0} Nota nesnesi eklendi",
       "editing": "{0} Nota nesnesi düzenleniyor",
@@ -435,15 +740,31 @@
       }
     },
     "timeScale": {
-      "adding": "{0} Zaman Ölçeği nesneleri ekleniyor",
+      "title": "Zaman Ölçeği",
+      "adding": "{0} Zaman Ölçeği nesnesi ekleniyor",
       "added": "{0} Zaman Ölçeği nesnesi eklendi",
       "edited": "{0} Zaman Ölçeği nesnesi düzenlendi",
       "moving": "{0} Zaman Ölçeği nesnesi taşınıyor",
       "moved": "{0} Zaman Ölçeği nesnesi taşındı",
-      "replaced": "{0} Zaman Ölçeği nesneleri değiştirildi",
-      "selected": " {0} Zaman Ölçeği nesnesi seçildi",
+      "replaced": "{0} Zaman Ölçeği nesnesi değiştirildi",
+      "selected": "{0} Zaman Ölçeği nesnesi seçildi",
       "modal": {
         "title": "Zaman Ölçeği Özellikleri"
+      }
+    },
+    "events": {
+      "adding": "{0} {1} nesnesi ekleniyor",
+      "added": "{0} {1} nesnesi eklendi",
+      "editing": "{0} {1} nesnesi düzenleniyor",
+      "edited": "{0} {1} nesnesi düzenlendi",
+      "moving": "{0} {1} nesnesi taşınıyor",
+      "moved": "{0} {1} nesnesi taşındı",
+      "selected": "{0} {1} nesnesi seçildi",
+      "modal": {
+        "title": "{0} Özellikleri"
+      },
+      "sidebar": {
+        "title": "Varsayılan {0} Özellikleri"
       }
     }
   },
@@ -463,8 +784,8 @@
       "bgm": "Arka Plan Müziği",
       "start": "Başlangıç",
       "end": "Son",
-      "fadeStart": "Solma Başlangıcı",
-      "fadeEnd": "Solma Bitişi",
+      "fadeStart": "Ses Geçişi Başlangıcı",
+      "fadeEnd": "Ses Geçişi Bitişi",
       "generate": "Oluştur",
       "loading": "Dosya yükleniyor...",
       "decoding": "Ses çözümleniyor...",
@@ -483,21 +804,65 @@
     "initialize": "Başlat",
     "autoSave": {
       "title": "Otomatik Kaydet",
-      "importing": "Seviye içe aktarılıyor…"
+      "importing": "Seviye içe aktarılıyor…",
+      "disabled": "Seviyenizin boyutu nedeniyle bu seviyede otomatik kaydetme devre dışı. Lütfen elle kaydedin.",
+      "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin."
     },
     "changes": {
       "title": "Değişiklikler",
-      "message": "Haritadaki değişiklikler kaybolabilir. Devam etmek istiyor musun?"
+      "message": "Haritadaki değişiklikler kaybolabilir. Devam etmek istiyor musunuz?"
+    },
+    "dynamicStages": {
+      "title": "Dinamik Sahneler",
+      "message": "Bu özellik dinamik sahneler gerektirir. Dinamik sahneleri etkinleştirmek istiyor musunuz?",
+      "enabled": "Dinamik sahneler etkinleştirildi"
     }
   },
   "modals": {
     "form": {
       "confirm": "Onayla",
+      "anchor": {
+        "label": "Sabit Nokta",
+        "default": "Varsayılan",
+        "center": "Merkez"
+      },
       "beat": {
         "label": "Vuruş"
       },
+      "borderStyle": {
+        "default": "Varsayılan",
+        "light": "Hafif",
+        "medium": "Orta",
+        "disabled": "Devre Dışı"
+      },
       "bpm": {
         "label": "BPM"
+      },
+      "cameraLeft": {
+        "label": "Kamera Şerit Kayması"
+      },
+      "cameraRotation": {
+        "label": "Kamera Dönüşü"
+      },
+      "cameraSize": {
+        "label": "Kamera Boyut Kayması"
+      },
+      "cameraStageTilt": {
+        "label": "Kamera Sahne Eğimi"
+      },
+      "cameraZoom": {
+        "label": "Kamera Yakınlaştırması"
+      },
+      "cameraZoomTargetLane": {
+        "label": "Kamera Yakınlaştırma Hedef Şeridi"
+      },
+      "cameraZoomTargetY": {
+        "label": "Kamera Yakınlaştırma Hedefi Y"
+      },
+      "cameraZoomVerticalAlign": {
+        "label": "Kamera Yakınlaştırma Dikey Hizalaması",
+        "default": "Varsayılan",
+        "center": "Merkez"
       },
       "connectorActiveIsCritical": {
         "label": "Kritik Kaydırma"
@@ -511,8 +876,11 @@
         "outIn": "Çıkış-Giriş",
         "none": "Hiçbiri"
       },
+      "connectorIsFake": {
+        "label": "Sahte Bağlayıcı"
+      },
       "connectorGuideAlpha": {
-        "label": "Guide Saydamlığı"
+        "label": "Kılavuz Opaklığı"
       },
       "colors": {
         "neutral": "Nötr",
@@ -524,10 +892,55 @@
         "cyan": "Camgöbeği",
         "black": "Siyah"
       },
+      "connectorIsPassThrough": {
+        "label": "Vuruş Çizgisinden Geçen Bağlayıcı"
+      },
+      "connectorLayer": {
+        "label": "Bağlayıcı Katmanı",
+        "top": "Üst",
+        "bottom": "Alt",
+        "under": "En Alt",
+        "over": "En Üst"
+      },
+      "connectorPresentation": {
+        "label": "Bağlayıcı Görünümü",
+        "default": "Varsayılan",
+        "fullscreen": "Tam Ekran"
+      },
       "connectorType": {
         "label": "Bağlayıcı Tipi",
         "active": "Kaydırma",
-        "guide": "Guide"
+        "guide": "Kılavuz",
+        "damage": "Hasar"
+      },
+      "copyProperties": {
+        "label": "Özellikleri Kopyala"
+      },
+      "divisionLineAlpha": {
+        "label": "Bölüm Çizgisi Opaklığı"
+      },
+      "divisionParity": {
+        "label": "Bölüm Tekliği/Çiftliği",
+        "even": "Çift",
+        "odd": "Tek"
+      },
+      "divisionSize": {
+        "label": "Bölüm Boyutu"
+      },
+      "editorLane": {
+        "label": "Editör Şeridi"
+      },
+      "elevation": {
+        "label": "Yükseklik"
+      },
+      "eventEase": {
+        "label": "Olay Yumuşatması",
+        "linear": "Doğrusal",
+        "in": "Giriş",
+        "out": "Çıkış",
+        "inOut": "Giriş-Çıkış",
+        "outIn": "Çıkış-Giriş",
+        "none": "Hiçbiri"
       },
       "file": {
         "select": "Dosya Seç..."
@@ -542,8 +955,16 @@
         "downLeft": "Sol Aşağı",
         "downRight": "Sağ Aşağı"
       },
+      "generateSimLines": {
+        "label": "Eşzamanlılık Çizgileri Oluştur",
+        "global": "Genel",
+        "isolated": "Ayrı"
+      },
       "group": {
         "label": "Grup"
+      },
+      "hideNotes": {
+        "label": "Notaları Gizle"
       },
       "isAttached": {
         "label": "Ekli"
@@ -557,24 +978,98 @@
       "isFake": {
         "label": "Sahte"
       },
+      "isFromStart": {
+        "label": "Başlangıçtan İtibaren"
+      },
+      "isFullWidth": {
+        "label": "Tam Genişlik"
+      },
+      "isMaskNotes": {
+        "label": "Notaları Maskele"
+      },
+      "isUntilEnd": {
+        "label": "Sona Kadar"
+      },
+      "judgmentLineAlpha": {
+        "label": "Vuruş Çizgisi Opaklığı"
+      },
+      "judgmentLineColor": {
+        "label": "Vuruş Çizgisi Rengi",
+        "neutral": "Nötr",
+        "red": "Kırmızı",
+        "green": "Yeşil",
+        "blue": "Mavi",
+        "yellow": "Sarı",
+        "purple": "Mor",
+        "cyan": "Camgöbeği",
+        "black": "Siyah"
+      },
+      "judgmentLineStyle": {
+        "label": "Vuruş Çizgisi Stili",
+        "default": "Varsayılan",
+        "singleLine": "Tek Çizgi"
+      },
+      "laneAlpha": {
+        "label": "Şerit Opaklığı"
+      },
       "left": {
-        "label": "Lane"
+        "label": "Şerit"
+      },
+      "leftBorderStyle": {
+        "label": "Kenarlık Stili (Sol)"
       },
       "key": {
-        "input": "Giriş Anahtarı",
-        "press": "Bir tuşa basın..."
+        "input": "Tuş Girin",
+        "press": "Bir tuşa basın veya temizlemek için tekrar tıklayın",
+        "clear": "Bu kısayolu kaldırmak için tekrar tıklayın",
+        "unassigned": "Atanmamış"
+      },
+      "maskLeft": {
+        "label": "Maske Şeridi"
+      },
+      "maskSize": {
+        "label": "Maske Boyutu"
+      },
+      "name": {
+        "label": "Ad"
+      },
+      "noteAlpha": {
+        "label": "Nota Opaklığı"
       },
       "noteType": {
         "label": "Nota Türü",
         "default": "Varsayılan",
-        "trace": "Trace",
+        "trace": "İz",
         "anchor": "Sabit Nokta",
         "damage": "Hasar",
-        "forceTick": "Zorla İşaretle",
-        "forceNonTick": "Tıklamamaya Zorla"
+        "forceTick": "Ara Vuruşu Zorla",
+        "forceNonTick": "Ara Vuruşu Devre Dışı Bırak"
+      },
+      "pivotLane": {
+        "label": "Dönme Merkezi Şeridi"
       },
       "preset": {
         "label": "Ön ayar"
+      },
+      "rightBorderStyle": {
+        "label": "Kenarlık Stili (Sağ)"
+      },
+      "rotation": {
+        "label": "Dönüş"
+      },
+      "sfx": {
+        "label": "Ses Efekti",
+        "default": "Varsayılan",
+        "none": "Hiçbiri",
+        "normalTap": "Dokunma",
+        "criticalTap": "Dokunma (Kritik)",
+        "normalFlick": "Fiske",
+        "criticalFlick": "Fiske (Kritik)",
+        "normalTrace": "İz",
+        "criticalTrace": "İz (Kritik)",
+        "normalTick": "Ara Vuruş",
+        "criticalTick": "Ara Vuruş (Kritik)",
+        "damage": "Hasar"
       },
       "size": {
         "label": "Boyut"
@@ -582,17 +1077,48 @@
       "skip": {
         "label": "Atla (vuruşlar)"
       },
+      "stage": {
+        "label": "Sahne"
+      },
       "timeScale": {
         "label": "Zaman Ölçeği"
       },
       "timeScaleEase": {
         "label": "Zaman Ölçeği Yumuşatması",
         "none": "Hiçbiri",
-        "linear": "Doğrusal"
+        "linear": "Doğrusal",
+        "inQuad": "İkinci Derece Giriş",
+        "outQuad": "İkinci Derece Çıkış",
+        "inOutQuad": "İkinci Derece Giriş-Çıkış",
+        "outInQuad": "İkinci Derece Çıkış-Giriş"
+      },
+      "timeScaleTransition": {
+        "label": "Zaman Ölçeği Geçişi",
+        "timeScale": "Zaman Ölçeği",
+        "scroll": "Kaydırma"
       },
       "toggle": {
-        "enabled": "Etkinleştirilmiş",
-        "disabled": " Devre Dışı"
+        "enabled": "Etkin",
+        "disabled": "Devre Dışı"
+      },
+      "xTranslation": {
+        "label": "X Ötelemesi"
+      },
+      "yTranslation": {
+        "label": "Y Ötelemesi"
+      },
+      "yOffset": {
+        "label": "Y Kayması"
+      },
+      "yOffsetBeat": {
+        "label": "Y Kayması (Vuruş)"
+      },
+      "noteStyle": {
+        "label": "Nota Rengi",
+        "default": "Varsayılan"
+      },
+      "connectorStyle": {
+        "label": "Bağlayıcı Rengi"
       }
     },
     "confirm": {
@@ -600,10 +1126,33 @@
       "cancel": "İptal Et"
     },
     "info": {
-      "ok": "Ok"
+      "ok": "Tamam"
     },
     "loading": {
       "loading": "Yükleniyor..."
+    }
+  },
+  "preview": {
+    "settings": "Önizleme ayarları",
+    "minimizeSettings": "Önizleme ayarlarını daralt",
+    "showSettings": "Önizleme ayarlarını göster",
+    "loadingSkin": "Görünüm yükleniyor...",
+    "skinUnavailable": "Önizleme görünümü yüklenemedi.",
+    "graphicsUnavailable": "Önizleme grafikleri başlatılamadı.",
+    "graphicsHelp": "Tarayıcınızda grafik hızlandırmanın ve WebGL özelliğinin etkin olduğunu kontrol edin. Gerekirse tarayıcıyı yeniden başlatın.",
+    "errorDetails": "Hata ayrıntıları",
+    "reload": "Yeniden yükle",
+    "transport": {
+      "hide": "Oynatma denetimlerini gizle",
+      "show": "Oynatma denetimlerini göster",
+      "time": "Önizleme zamanı",
+      "controls": "Önizleme oynatma denetimleri",
+      "pause": "Önizlemeyi duraklat",
+      "play": "Önizlemeyi oynat",
+      "back": "{0} ms geri",
+      "forward": "{0} ms ileri",
+      "holdBackward": "{0}× hızla geri gitmek için basılı tutun",
+      "holdForward": "{0}× hızla ileri gitmek için basılı tutun"
     }
   }
 }
