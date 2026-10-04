@@ -1,10 +1,10 @@
 import type { Command } from '..'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { settings } from '../../../settings'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import { switchToolTo, toolName } from '../../tools'
 import { defaultSlidePropertiesPresetIndex } from '../../tools/slide'
 import DefaultSlidePropertiesModal from './DefaultSlidePropertiesModal.vue'
@@ -23,7 +23,7 @@ export const slide: Command = {
                     (defaultSlidePropertiesPresetIndex.value + 1) %
                     settings.defaultSlidePropertiesPresets.length
             } else {
-                await showModal(DefaultSlidePropertiesModal, {})
+                await showToolModal(DefaultSlidePropertiesModal, {})
             }
         } else {
             switchToolTo('slide')
@@ -50,7 +50,7 @@ export const createSlide = (index: number): Command => ({
     async execute() {
         if (toolName.value === 'slide' && defaultSlidePropertiesPresetIndex.value === index) {
             if (!isSidebarVisible.value) {
-                await showModal(DefaultSlidePropertiesModal, {})
+                await showToolModal(DefaultSlidePropertiesModal, {})
             }
         } else {
             defaultSlidePropertiesPresetIndex.value = index

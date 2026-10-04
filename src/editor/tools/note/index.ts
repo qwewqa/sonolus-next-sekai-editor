@@ -6,7 +6,6 @@ import { defaultGroupId } from '../../../history/groups.ts'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages.ts'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import { settings } from '../../../settings'
 import type { Entity } from '../../../state/entities'
@@ -18,6 +17,7 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import { quickEdit } from '../../utils/quickEdit'
 import {
     focusEntityAtBeat,
@@ -121,7 +121,7 @@ export const note: Tool = {
                     if (isSidebarVisible.value) {
                         quickEdit(defaultNoteProperties.value)
                     } else {
-                        void showModal(NotePropertiesModal, {})
+                        void showToolModal(NotePropertiesModal, {})
                     }
                 } else {
                     replaceState({

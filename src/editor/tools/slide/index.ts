@@ -7,7 +7,6 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages.ts'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import { settings } from '../../../settings'
 import type { Entity } from '../../../state/entities'
@@ -19,6 +18,7 @@ import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import { quickEdit } from '../../utils/quickEdit'
 import {
     focusEntityAtBeat,
@@ -122,7 +122,7 @@ export const slide: Tool = {
                     if (isSidebarVisible.value) {
                         quickEdit(defaultSlideProperties.value)
                     } else {
-                        void showModal(SlidePropertiesModal, {})
+                        void showToolModal(SlidePropertiesModal, {})
                     }
                 } else {
                     replaceState({

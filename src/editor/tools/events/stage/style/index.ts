@@ -11,7 +11,6 @@ import { pushState, replaceState, state } from '../../../../../history'
 import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages'
 import { i18n } from '../../../../../i18n'
-import { showModal } from '../../../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../../../preview/edit'
 import type { Entity } from '../../../../../state/entities'
 import {
@@ -24,6 +23,7 @@ import { createTransaction, type Transaction } from '../../../../../state/transa
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
+import { showToolModal } from '../../../../toolModals'
 import {
     focusEntityAtBeat,
     setViewHover,
@@ -138,7 +138,7 @@ export const stageStyleEvent: Tool = {
                             )[entity.eventEase],
                         })
                     } else {
-                        void showModal(StageStyleEventPropertiesModal, {})
+                        void showToolModal(StageStyleEventPropertiesModal, {})
                     }
                 } else {
                     replaceState({

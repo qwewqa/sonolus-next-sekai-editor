@@ -1,3 +1,4 @@
+import { isToolModalOpen } from '../../../../modals'
 import { deselect } from '../../../commands/deselect'
 import type { Recognizer } from './recognizer'
 
@@ -5,6 +6,7 @@ export const twoTap = (): Recognizer<2> => ({
     count: 2,
 
     recognize([, p1], [, p2]) {
+        if (isToolModalOpen.value) return false
         if (p1.isActive && p2.isActive) return false
         if (p1.t - p1.st > 250 || p2.t - p2.st > 250) return false
         if (

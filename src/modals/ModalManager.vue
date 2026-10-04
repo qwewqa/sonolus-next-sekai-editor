@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { modals, type Modal } from '.'
+import { computed } from 'vue'
+import { closeModal, modals, type Modal } from '.'
+
+const regularModals = computed(() => modals.filter((modal) => modal.presentation !== 'tool'))
 
 const onClick = (event: MouseEvent, modal: Modal) => {
     if (event.target !== event.currentTarget) return
 
-    close(modal)
-}
-
-const close = (modal: Modal, result?: never) => {
-    const index = modals.indexOf(modal)
-    if (index !== -1) modals.splice(index, 1)
-
-    modal.resolve(result)
+    closeModal(modal)
 }
 
 const vOpen = {
@@ -29,13 +25,13 @@ const vOpen = {
 
 <template>
     <dialog
-        v-for="modal in modals"
+        v-for="modal in regularModals"
         :key="modal.id"
         v-open
         class="flex max-h-full w-full max-w-2xl flex-col rounded-xl bg-modal text-fg shadow-xl backdrop:bg-bg/75"
         @click="onClick($event, modal)"
-        @close="close(modal)"
+        @close="closeModal(modal)"
     >
-        <component :is="modal.is" v-bind="modal.props" @close="close(modal, $event)" />
+        <component :is="modal.is" v-bind="modal.props" @close="closeModal(modal, $event)" />
     </dialog>
 </template>

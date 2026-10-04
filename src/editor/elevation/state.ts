@@ -3,7 +3,8 @@ import { bpms } from '../../history/bpms'
 import { selectedEntities } from '../../history/selectedEntities'
 import { beatToTime, timeToBeat } from '../../state/integrals/bpms'
 import { editorNavigation } from '../navigation'
-import { switchToolTo, toolName, type ToolName } from '../tools'
+import { switchToolTo, type ToolName } from '../tools'
+import { toolName } from '../tools/state'
 import { view } from '../view'
 
 export const elevationBeat = ref(0)

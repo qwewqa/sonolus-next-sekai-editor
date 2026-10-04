@@ -2,10 +2,11 @@ import { computed } from 'vue'
 import { state } from '.'
 import { view } from '../editor/view'
 import { settings } from '../settings'
+import type { State } from '../state'
 import type { Entity, EntityOfType, EntityType } from '../state/entities'
-import { beatToTime, timeToBeat } from '../state/integrals/bpms'
+import { beatToTime, timeToBeat, type BpmIntegral } from '../state/integrals/bpms'
+import type { Store } from '../state/store'
 import { beatToKey } from '../state/store/grid'
-import { bpms } from './bpms'
 
 export const store = computed(() => state.value.store)
 
@@ -25,13 +26,18 @@ export const getAllEntities = () => {
     return entities
 }
 
-export const cullEntities = <T extends EntityType>(type: T, minKey: number, maxKey: number) => {
+export const cullEntities = <T extends EntityType>(
+    type: T,
+    minKey: number,
+    maxKey: number,
+    source: Store = store.value,
+) => {
     if (!Number.isFinite(maxKey)) maxKey = minKey
 
     const culled = new Set<EntityOfType<T>>()
 
     for (let i = minKey; i <= maxKey; i++) {
-        const entities = store.value.grid[type].get(i)
+        const entities = source.grid[type].get(i)
         if (!entities) continue
 
         for (const entity of entities) {
@@ -42,12 +48,12 @@ export const cullEntities = <T extends EntityType>(type: T, minKey: number, maxK
     return culled
 }
 
-export const cullAllEntities = (minKey: number, maxKey: number) => {
+export const cullAllEntities = (minKey: number, maxKey: number, source: Store = store.value) => {
     if (!Number.isFinite(maxKey)) maxKey = minKey
 
     const culled = new Set<Entity>()
 
-    for (const map of Object.values(store.value.grid)) {
+    for (const map of Object.values(source.grid)) {
         for (let i = minKey; i <= maxKey; i++) {
             const entities = map.get(i)
             if (!entities) continue
@@ -68,14 +74,16 @@ export const hitEntities = <T extends EntityType>(
     timeMin: number,
     timeMax: number,
     minimumNoteWidth = 0,
+    source: State = state.value,
 ) =>
     hitEntitiesByGetter(
         laneMin,
         laneMax,
         timeMin,
         timeMax,
-        (minKey, maxKey) => cullEntities(type, minKey, maxKey),
+        (minKey, maxKey) => cullEntities(type, minKey, maxKey, source.store),
         minimumNoteWidth,
+        source.bpms,
     )
 
 export const hitAllEntities = (
@@ -84,7 +92,17 @@ export const hitAllEntities = (
     timeMin: number,
     timeMax: number,
     minimumNoteWidth = 0,
-) => hitEntitiesByGetter(laneMin, laneMax, timeMin, timeMax, cullAllEntities, minimumNoteWidth)
+    source: State = state.value,
+) =>
+    hitEntitiesByGetter(
+        laneMin,
+        laneMax,
+        timeMin,
+        timeMax,
+        (minKey, maxKey) => cullAllEntities(minKey, maxKey, source.store),
+        minimumNoteWidth,
+        source.bpms,
+    )
 
 const hitEntitiesByGetter = <T extends Entity>(
     laneMin: number,
@@ -93,13 +111,14 @@ const hitEntitiesByGetter = <T extends Entity>(
     timeMax: number,
     getEntities: (minKey: number, maxKey: number) => Set<T>,
     minimumNoteWidth: number,
+    integrals: BpmIntegral[],
 ) => {
     const spu = view.w / settings.width / settings.pps
 
     // Include the tallest hitbox (BPM, h = 0.4) across beat-bucket boundaries.
     // The exact hitbox filter below still decides which objects are selected.
-    const minKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMin - 0.4 * spu)))
-    const maxKey = beatToKey(timeToBeat(bpms.value, Math.max(0, timeMax + 0.4 * spu)))
+    const minKey = beatToKey(timeToBeat(integrals, Math.max(0, timeMin - 0.4 * spu)))
+    const maxKey = beatToKey(timeToBeat(integrals, Math.max(0, timeMax + 0.4 * spu)))
 
     return [...getEntities(minKey, maxKey)].filter(({ type, hitbox }) => {
         if (!hitbox) return false
@@ -108,7 +127,7 @@ const hitEntitiesByGetter = <T extends Entity>(
         const w = type === 'note' ? Math.max(hitbox.w, minimumNoteWidth / 2) : hitbox.w
         const h = hitbox.h * spu
 
-        const time = beatToTime(bpms.value, hitbox.beat)
+        const time = beatToTime(integrals, hitbox.beat)
 
         return laneMax > lane - w && laneMin < lane + w && timeMax > time - h && timeMin < time + h
     })

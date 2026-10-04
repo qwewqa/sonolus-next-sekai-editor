@@ -1,7 +1,18 @@
 <script setup lang="ts">
-defineProps<{
+import { inject, watch } from 'vue'
+import { modalTitleKey } from './title'
+
+const props = defineProps<{
     title: string
 }>()
+
+const modalTitle = inject(modalTitleKey, undefined)
+if (modalTitle)
+    watch(
+        () => props.title,
+        (title) => (modalTitle.value = title),
+        { immediate: true },
+    )
 
 defineEmits<{
     close: []

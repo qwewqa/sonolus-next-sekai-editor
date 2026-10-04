@@ -1,10 +1,10 @@
 import type { Command } from '..'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { settings } from '../../../settings'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import { switchToolTo, toolName } from '../../tools'
 import { defaultNotePropertiesPresetIndex } from '../../tools/note'
 import DefaultNotePropertiesModal from './DefaultNotePropertiesModal.vue'
@@ -23,7 +23,7 @@ export const note: Command = {
                     (defaultNotePropertiesPresetIndex.value + 1) %
                     settings.defaultNotePropertiesPresets.length
             } else {
-                await showModal(DefaultNotePropertiesModal, {})
+                await showToolModal(DefaultNotePropertiesModal, {})
             }
         } else {
             switchToolTo('note')
@@ -50,7 +50,7 @@ export const createNote = (index: number): Command => ({
     async execute() {
         if (toolName.value === 'note' && defaultNotePropertiesPresetIndex.value === index) {
             if (!isSidebarVisible.value) {
-                await showModal(DefaultNotePropertiesModal, {})
+                await showToolModal(DefaultNotePropertiesModal, {})
             }
         } else {
             defaultNotePropertiesPresetIndex.value = index

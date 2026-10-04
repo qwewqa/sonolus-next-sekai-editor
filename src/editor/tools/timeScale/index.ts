@@ -6,7 +6,6 @@ import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../../state/entities/timeScale'
@@ -20,6 +19,7 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import {
     focusEntityAtBeat,
     setViewHover,
@@ -121,7 +121,7 @@ export const timeScale: Tool = {
                                     }),
                         })
                     } else {
-                        void showModal(TimeScalePropertiesModal, {})
+                        void showToolModal(TimeScalePropertiesModal, {})
                     }
                 } else {
                     replaceState({
@@ -157,7 +157,7 @@ export const timeScale: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            void showModal(TimeScalePropertiesModal, {})
+            void showToolModal(TimeScalePropertiesModal, {})
         }
     },
 
@@ -273,7 +273,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    void showModal(TimeScalePropertiesModal, {})
+                    void showToolModal(TimeScalePropertiesModal, {})
                 } else {
                     const object: TimeScaleObject = {
                         groupId: view.groupId ?? defaultGroupId.value,
@@ -294,7 +294,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    void showModal(TimeScalePropertiesModal, {})
+                    void showToolModal(TimeScalePropertiesModal, {})
                 }
                 break
             }

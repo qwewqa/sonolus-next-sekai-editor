@@ -75,7 +75,7 @@ test('localized scale controls fit a narrow phone and reject invalid factors', a
     const dialog = page.getByRole('dialog')
     const input = dialog.getByRole('spinbutton', { name: 'Facteur d’échelle', exact: true })
     await input.fill('0')
-    await dialog.getByRole('button', { name: 'Appliquer', exact: true }).click()
+    await expect(dialog.getByRole('button', { name: 'Appliquer', exact: true })).toBeDisabled()
     await expect(dialog.getByRole('alert')).toBeVisible()
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
     const bounds = await dialog.boundingBox()

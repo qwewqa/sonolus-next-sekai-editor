@@ -4,7 +4,6 @@ import { pushState, replaceState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
-import { showModal } from '../../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../../preview/edit'
 import type { Entity } from '../../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../../state/entities/bpm'
@@ -15,6 +14,7 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { isSidebarVisible } from '../../sidebars'
+import { showToolModal } from '../../toolModals'
 import { focusEntityAtBeat, setViewHover, snapYToBeat, view, yToValidBeat } from '../../view'
 import { hitEntitiesAtPoint } from '../utils'
 import BpmPropertiesModal from './BpmPropertiesModal.vue'
@@ -80,7 +80,7 @@ export const bpm: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (!isSidebarVisible.value) {
-                        void showModal(BpmPropertiesModal, {})
+                        void showToolModal(BpmPropertiesModal, {})
                     }
                 } else {
                     replaceState({
@@ -110,7 +110,7 @@ export const bpm: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            void showModal(BpmPropertiesModal, {})
+            void showToolModal(BpmPropertiesModal, {})
         }
     },
 
@@ -210,7 +210,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    void showModal(BpmPropertiesModal, {})
+                    void showToolModal(BpmPropertiesModal, {})
                 } else {
                     const object: BpmObject = {
                         beat,
@@ -225,7 +225,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    void showModal(BpmPropertiesModal, {})
+                    void showToolModal(BpmPropertiesModal, {})
                 }
                 break
             }

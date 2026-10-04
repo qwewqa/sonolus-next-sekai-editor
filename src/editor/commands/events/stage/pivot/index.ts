@@ -1,10 +1,10 @@
 import type { Command } from '../../..'
 import { checkDynamicStages } from '../../../../../history/dynamicStages'
 import { i18n } from '../../../../../i18n'
-import { showModal } from '../../../../../modals'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
 import { isSidebarVisible } from '../../../../sidebars'
+import { showToolModal } from '../../../../toolModals'
 import { switchToolTo, toolName } from '../../../../tools'
 import EventIcon from '../../EventIcon.vue'
 import DefaultStagePivotEventPropertiesModal from './DefaultStagePivotEventPropertiesModal.vue'
@@ -26,7 +26,7 @@ export const stagePivotEvent: Command = {
 
         if (toolName.value === 'stagePivotEvent') {
             if (!isSidebarVisible.value) {
-                void showModal(DefaultStagePivotEventPropertiesModal, {})
+                void showToolModal(DefaultStagePivotEventPropertiesModal, {})
             }
         } else {
             switchToolTo('stagePivotEvent')

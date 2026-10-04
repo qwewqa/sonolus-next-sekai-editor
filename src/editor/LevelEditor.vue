@@ -21,6 +21,8 @@ import LevelEditorHoverMarkers from './LevelEditorHoverMarkers.vue'
 import LevelEditorNotification from './LevelEditorNotification.vue'
 import LevelEditorRangeMarkers from './LevelEditorRangeMarkers.vue'
 import LevelEditorToolbar from './toolbar/LevelEditorToolbar.vue'
+import EditorToolModalHost from './EditorToolModalHost.vue'
+import { hasToolModal } from './toolModals'
 import { tool } from './tools'
 import { brushProperties } from './tools/brush'
 import { view } from './view'
@@ -207,7 +209,8 @@ const stage = computed(() =>
                     <LevelEditorHoverMarkers />
                     <LevelEditorCanvas />
                 </template>
-                <LevelEditorToolbar />
+                <LevelEditorToolbar v-if="!hasToolModal('main')" />
+                <EditorToolModalHost pane="main" />
             </div>
             <div
                 v-if="isElevationEditorOpen && isElevationSideBySide"

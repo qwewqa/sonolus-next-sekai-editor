@@ -2,7 +2,6 @@
 import { computed, onMounted, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 import { beats, times } from '..'
 import { isAppActive } from '../../activity'
-import { state } from '../../history'
 import { defaultGroupId } from '../../history/groups'
 import { settings } from '../../settings'
 import type { Entity } from '../../state/entities'
@@ -10,6 +9,7 @@ import { beatToTime, timeToBeat } from '../../state/integrals/bpms'
 import { activateEditorNavigation, controlsForNavigation } from '../controls'
 import { computedVisibleEntities, isEntityInBeatRange } from '../entities/visibility'
 import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../entities/visible'
+import { isScenePreview, sceneState } from '../sceneState'
 import { bgmOffsetDelta } from '../tools/offset'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import { createConnectorRenderer } from './connectors'
@@ -42,8 +42,8 @@ const artRange = computed(() => {
     const scale = view.w / viewBox.value.w
     const padding = (1.25 * scale + 4) / settings.pps
     return {
-        min: timeToBeat(state.value.bpms, Math.max(0, times.value.min - padding)),
-        max: timeToBeat(state.value.bpms, times.value.max + padding),
+        min: timeToBeat(sceneState.value.bpms, Math.max(0, times.value.min - padding)),
+        max: timeToBeat(sceneState.value.bpms, times.value.max + padding),
     }
 })
 const artEntities = computedVisibleEntities(
@@ -68,7 +68,7 @@ const contextInputs = computed(() => ({
     pixelRatio: pixelRatio.value,
     bounds: viewBox.value,
     ups: viewBox.value.ups,
-    state: state.value,
+    state: sceneState.value,
     defaultGroupId: defaultGroupId.value,
     showStageName: settings.showStageName,
     showGroupName: settings.showGroupName,
@@ -109,8 +109,8 @@ watchEffect(
         const currentTimes = times.value
         const division = view.division
         const cursor = view.cursorTime
-        const currentWaveform = settings.waveform === 'off' ? undefined : state.value.bgm.waveform
-        const offset = state.value.bgm.offset + bgmOffsetDelta.value
+        const currentWaveform = settings.waveform === 'off' ? undefined : inputs.state.bgm.waveform
+        const offset = inputs.state.bgm.offset + bgmOffsetDelta.value
         void waveformVersion.value
         chartFrame.schedule((timestamp) => {
             notes.beginFrame(timestamp)
@@ -150,7 +150,7 @@ watchEffect(
         const canvas = overlayCanvas.value
         const inputs = contextInputs.value
         if (!canvas || !inputs.width || !inputs.height) return
-        const creating = view.entities.creating
+        const creating = isScenePreview.value ? [] : view.entities.creating
         const range = artRange.value
         const hovered = hoveredEntities.value
         const selected = visibleSelectedEntities.value

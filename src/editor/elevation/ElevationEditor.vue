@@ -35,6 +35,8 @@ import { defaultSlideProperties } from '../tools/slide'
 import SlidePropertiesModal from '../tools/slide/SlidePropertiesModal.vue'
 import { quickEdit } from '../utils/quickEdit'
 import LevelEditorToolbar from '../toolbar/LevelEditorToolbar.vue'
+import EditorToolModalHost from '../EditorToolModalHost.vue'
+import { hasToolModal } from '../toolModals'
 import type { CommandName } from '../commands'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
 import { view, focusViewAtBeat } from '../view'
@@ -190,8 +192,8 @@ const hit = (x: number, y: number, minimum = 1.5) => {
     )
     return (direct.length ? direct : matches).sort(
         (a, b) =>
-            +state.value.selectedEntities.includes(b.note) -
-                +state.value.selectedEntities.includes(a.note) ||
+            +elevationState.value.selectedEntities.includes(b.note) -
+                +elevationState.value.selectedEntities.includes(a.note) ||
             Math.abs(a.y - y + elevationBounds.y) - Math.abs(b.y - y + elevationBounds.y),
     )[0]
 }
@@ -861,7 +863,8 @@ onUnmounted(() => {
                 :aria-label="i18n.elevation.canvas"
             />
         </div>
-        <LevelEditorToolbar :available="availableCommands" />
+        <LevelEditorToolbar v-if="!hasToolModal('elevation')" :available="availableCommands" />
+        <EditorToolModalHost pane="elevation" />
         <div
             ref="header"
             class="elevation-header absolute inset-x-0 top-0 flex flex-col gap-2 border-b border-white/10 bg-preview px-3 py-2 text-xs text-white/75"

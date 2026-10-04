@@ -1,6 +1,9 @@
-import { computed, ref, shallowRef, type Component } from 'vue'
+import { computed, shallowRef, type Component } from 'vue'
+import { isToolModalOpen } from '../../modals'
+import { scalingSession } from '../commands/scaleSelection/session'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
+import { scalingTool } from '../scaling/tool'
 import { view } from '../view'
 import { bpm } from './bpm'
 import { brush } from './brush'
@@ -17,6 +20,7 @@ import { offset } from './offset'
 import { paste } from './paste'
 import { select } from './select'
 import { slide } from './slide'
+import { toolName } from './state'
 import { timeScale } from './timeScale'
 
 export type Tool = {
@@ -59,16 +63,28 @@ export const tools = {
 
 export type ToolName = keyof typeof tools
 
-export const toolName = ref<ToolName>('select')
+export { toolName } from './state'
 
 export const panelTools = shallowRef<Partial<Record<ToolName, Tool>>>({})
 
-export const tool = computed(() =>
+const normalTool = computed(() =>
     editorNavigation.value
         ? (panelTools.value[toolName.value] ?? tools[toolName.value])
         : toolName.value === 'elevation'
           ? tools.select
           : tools[toolName.value],
+)
+
+const inspectingTool: Tool = {
+    title: () => normalTool.value.title(),
+    get sidebar() {
+        return normalTool.value.sidebar
+    },
+    secondaryTool: false,
+}
+
+export const tool = computed(() =>
+    scalingSession.value ? scalingTool : isToolModalOpen.value ? inspectingTool : normalTool.value,
 )
 
 export const switchToolTo = (tool: ToolName) => {

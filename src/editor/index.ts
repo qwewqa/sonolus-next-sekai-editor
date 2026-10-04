@@ -1,9 +1,9 @@
 import { computed } from 'vue'
-import { bpms } from '../history/bpms'
 import { settings } from '../settings'
 import { timeToBeat } from '../state/integrals/bpms'
 import { beatToKey } from '../state/store/grid'
 import { computedRange } from '../utils/range'
+import { sceneBpms } from './sceneState'
 import { view } from './view'
 
 export const times = computed(() => ({
@@ -12,8 +12,8 @@ export const times = computed(() => ({
 }))
 
 export const beats = computed(() => ({
-    min: timeToBeat(bpms.value, times.value.min),
-    max: timeToBeat(bpms.value, times.value.max),
+    min: timeToBeat(sceneBpms.value, times.value.min),
+    max: timeToBeat(sceneBpms.value, times.value.max),
 }))
 
 // Include artwork whose center lies outside the viewport. Diagonal flick
@@ -21,7 +21,7 @@ export const beats = computed(() => ({
 export const keys = computedRange(() => ({
     min: beatToKey(
         timeToBeat(
-            bpms.value,
+            sceneBpms.value,
             Math.max(
                 0,
                 view.time - (0.5 * view.h + (1.25 * view.w) / settings.width + 4) / settings.pps,
@@ -30,7 +30,7 @@ export const keys = computedRange(() => ({
     ),
     max: beatToKey(
         timeToBeat(
-            bpms.value,
+            sceneBpms.value,
             Math.max(
                 0,
                 view.time + (0.5 * view.h + (1.25 * view.w) / settings.width + 4) / settings.pps,
