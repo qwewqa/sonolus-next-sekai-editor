@@ -1221,5 +1221,9 @@
       "holdBackward": "按住以 {0} 倍速后退",
       "holdForward": "按住以 {0} 倍速前进"
     }
+  },
+  "offscreenNotes": {
+    "left": "屏幕左侧外的音符：{0}",
+    "right": "屏幕右侧外的音符：{0}"
   }
 }

@@ -5,6 +5,7 @@ import { clipboardEntry, updateClipboard } from '../../clipboard'
 import { pushState, replaceState, state } from '../../history'
 import { defaultGroupId } from '../../history/groups'
 import { i18n } from '../../i18n'
+import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
 import { modals, showModal } from '../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
@@ -62,6 +63,7 @@ import { drawElevationConnections, getElevationConnections } from './connections
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const container = useTemplateRef<HTMLElement>('container')
 const header = useTemplateRef<HTMLDivElement>('header')
+const headerHeight = ref(80)
 let navigation: EditorNavigation | undefined
 const controlListeners = controlsForNavigation(() => navigation)
 const activate = () => {
@@ -165,6 +167,16 @@ const frame = createFrameScheduler()
 const notes = createNoteRenderer()
 const pixelRatio = ref(devicePixelRatio || 1)
 const hovered = ref<NoteEntity>()
+const offscreenNotes = computed(() => {
+    const selected = new Set(elevationState.value.selectedEntities)
+    return elevationLayout.value.rows.map((row) => ({
+        left: row.x - row.w / 2,
+        right: row.x + row.w / 2,
+        y: row.y,
+        highlighted: selected.has(row.note),
+        opacity: row.attached ? 0.6 : 1,
+    }))
+})
 const creating = ref<ElevationNote[]>([])
 let adding: { lane: number; elevation: number; slide: boolean } | undefined
 let viewportAdjusted = false
@@ -788,6 +800,7 @@ watchEffect(() => {
 onMounted(() => {
     mounted = true
     const updateBounds = () => {
+        headerHeight.value = header.value?.clientHeight ?? 80
         const rect = container.value?.getBoundingClientRect()
         if (!rect) return
         Object.assign(elevationBounds, { x: rect.x, y: rect.y, w: rect.width, h: rect.height })
@@ -886,6 +899,12 @@ onUnmounted(() => {
                 ref="canvas"
                 class="elevation-canvas pointer-events-none absolute size-full"
                 :aria-label="i18n.elevation.canvas"
+            />
+            <OffscreenNoteIndicators
+                :notes="offscreenNotes"
+                :width="elevationBounds.w"
+                :top="headerHeight + 4"
+                :bottom="elevationBounds.h"
             />
         </div>
         <LevelEditorToolbar v-if="!hasToolModal('elevation')" :available="availableCommands" />

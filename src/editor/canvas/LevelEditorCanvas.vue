@@ -12,6 +12,7 @@ import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../e
 import { isScenePreview, sceneState } from '../sceneState'
 import { bgmOffsetDelta } from '../tools/offset'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
+import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid } from './grid'
@@ -61,6 +62,25 @@ const orderedEntities = computed(() =>
     }),
 )
 const hoveredSet = computed(() => new Set(hoveredEntities.value))
+const offscreenNotes = computed(() => {
+    const bounds = viewBox.value
+    const scale = view.w / bounds.w
+    return orderedEntities.value.flatMap(({ entity, highlighted, opacity }) =>
+        entity.type === 'note'
+            ? [
+                  {
+                      left: (entity.left - bounds.l) * scale,
+                      right: (entity.left + entity.size - bounds.l) * scale,
+                      y:
+                          (beatToTime(sceneState.value.bpms, entity.beat) * bounds.ups - bounds.t) *
+                          scale,
+                      highlighted,
+                      opacity,
+                  },
+              ]
+            : [],
+    )
+})
 const contextInputs = computed(() => ({
     width: view.w,
     height: view.h,
@@ -289,6 +309,12 @@ onUnmounted(() => {
             ref="overlay"
             class="editor-overlay pointer-events-none absolute size-full"
             @contextrestored="restoreContext"
+        />
+        <OffscreenNoteIndicators
+            :notes="offscreenNotes"
+            :width="view.w"
+            :top="0"
+            :bottom="view.h"
         />
     </div>
 </template>

@@ -1221,5 +1221,9 @@
       "holdBackward": "{0}× hızla geri gitmek için basılı tutun",
       "holdForward": "{0}× hızla ileri gitmek için basılı tutun"
     }
+  },
+  "offscreenNotes": {
+    "left": "Ekranın solunda kalan notalar: {0}",
+    "right": "Ekranın sağında kalan notalar: {0}"
   }
 }
