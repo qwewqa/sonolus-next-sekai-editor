@@ -1,20 +1,19 @@
 import type { Command } from '..'
-import { i18n } from '../../../i18n'
 import type { ScaleAxis } from '../../../state/operations/scaleValues'
 import { notify } from '../../notification'
 import { showToolModal } from '../../toolModals'
 import ScaleSelectionIcon from './ScaleSelectionIcon.vue'
 import ScaleSelectionModal from './ScaleSelectionModal.vue'
+import { getScaleLabels } from './labels'
 import { beginScalingSession, cancelScalingSession, scalingSession } from './session'
 
 const createScaleCommand = (axis: ScaleAxis): Command => {
-    const labels = () =>
-        axis === 'beat' ? i18n.value.commands.scaleBeat : i18n.value.commands.scaleElevation
+    const labels = () => getScaleLabels(axis)
     return {
         title: () => labels().title,
         icon: {
             is: ScaleSelectionIcon,
-            props: axis === 'elevation' ? { class: '-rotate-90' } : undefined,
+            props: { axis },
         },
         async execute() {
             const session = beginScalingSession(axis)
@@ -29,3 +28,4 @@ const createScaleCommand = (axis: ScaleAxis): Command => {
 }
 export const scaleBeat = createScaleCommand('beat')
 export const scaleElevation = createScaleCommand('elevation')
+export const scaleWidth = createScaleCommand('width')

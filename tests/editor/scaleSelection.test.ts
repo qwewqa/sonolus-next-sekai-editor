@@ -3,10 +3,13 @@ import test from 'node:test'
 import { createState } from '../../src/state'
 import type { EntityOfType, EntityType } from '../../src/state/entities'
 import type { SlideId } from '../../src/state/entities/slides'
+import type { EditableEntity } from '../../src/state/operations/editable'
 import {
     canScaleSelection,
+    getScaleBounds,
     getScaleEntities,
     getScalePivot,
+    getScaleProperties,
     getScaledSelectionValues,
     getTranslatedSelectionValues,
 } from '../../src/state/operations/scaleValues'
@@ -32,6 +35,72 @@ const emptyState = () =>
         },
         0,
     )
+
+test('width scaling uses outer edges, preserves point events and scales sizes together', () => {
+    const first = { ...source('note', 3), left: 2, size: 2 }
+    const last = { ...source('note', 5), left: 6, size: 4 }
+    const pivot = { ...source('stagePivotEventJoint', 4), pivotLane: 5 }
+    const selection = [first, last, pivot]
+    assert.equal(canScaleSelection([first], 'width'), true)
+    assert.deepEqual(getScaleBounds(last, 'width'), { min: 6, max: 10 })
+    const values = getScaledSelectionValues(selection, 'width', 0.5, undefined, 10)!
+    assert.deepEqual([...values.values()], [6, 8, 7.5])
+    assert.deepEqual(getScaleProperties(first, 'width', values.get(first)!, 0.5), {
+        left: 6,
+        size: 1,
+    })
+    assert.deepEqual(getScaleProperties(last, 'width', values.get(last)!, 0.5), {
+        left: 8,
+        size: 2,
+    })
+    assert.deepEqual(getScaleProperties(pivot, 'width', values.get(pivot)!, 0.5), {
+        pivotLane: 7.5,
+    })
+    const translated = getTranslatedSelectionValues(selection, 'width', -3)!
+    assert.deepEqual(getScaleProperties(last, 'width', translated.get(last)!), { left: 3, size: 4 })
+    assert.deepEqual([first.left, first.size, last.left, last.size], [2, 2, 6, 4])
+})
+
+test('width scaling supports each horizontal event field and rejects invalid spans', () => {
+    const entities = [
+        { ...source('cameraEventJoint', 0), cameraLeft: 0, cameraSize: 12 },
+        { ...source('stageMaskEventJoint', 0), maskLeft: 2, maskSize: 4 },
+        { ...source('stageTransformEventJoint', 0), xTranslation: 3 },
+        { ...source('timeScale', 0), editorLane: 4 },
+        { ...source('stageStyleEventJoint', 0), editorLane: 5 },
+    ] as EditableEntity[]
+    const values = getScaledSelectionValues(entities, 'width', 0.5)!
+    assert.deepEqual([...values.values()], [0, 1, 1.5, 2, 2.5])
+    assert.deepEqual(getScaleProperties(entities[0]!, 'width', 0, 0.5), {
+        cameraLeft: 0,
+        cameraSize: 6,
+    })
+    assert.deepEqual(getScaleProperties(entities[1]!, 'width', 1, 0.5), {
+        maskLeft: 1,
+        maskSize: 2,
+    })
+    assert.equal(getScaledSelectionValues(entities, 'width', 0.4), undefined)
+    assert.equal(getScaledSelectionValues(entities, 'width', 3), undefined)
+    assert.equal(canScaleSelection([source('bpm', 0)], 'width'), false)
+    assert.equal(canScaleSelection([{ ...source('note', 0), left: 0, size: 0 }], 'width'), false)
+    assert.equal(canScaleSelection([{ ...source('note', 0), left: 0, size: -1 }], 'width'), false)
+    assert.equal(
+        canScaleSelection([{ ...source('note', 0), left: Infinity, size: 1 }], 'width'),
+        false,
+    )
+    assert.equal(
+        getScaledSelectionValues(
+            [{ ...source('note', 0), left: 1, size: 2 }],
+            'width',
+            Number.MIN_VALUE,
+        ),
+        undefined,
+    )
+    assert.equal(
+        getTranslatedSelectionValues([{ ...source('note', 0), left: 0, size: 2 }], 'width', 1e308),
+        undefined,
+    )
+})
 
 test('scaling can anchor either endpoint while preserving ties', () => {
     const first = source('note', 3, 1)

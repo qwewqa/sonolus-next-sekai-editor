@@ -92,6 +92,11 @@
             "noSelected": "Select at least two objects at different beats to scale",
             "scaled": "Scaled beats of {0} objects"
         },
+        "scaleWidth": {
+            "title": "Scale Width",
+            "noSelected": "Select objects with a horizontal span to scale",
+            "scaled": "Scaled width of {0} objects"
+        },
         "scaleElevation": {
             "title": "Scale Elevations",
             "noSelected": "Select at least two notes or stage transforms with different elevations to scale",

@@ -92,6 +92,11 @@
       "noSelected": "Sélectionnez au moins deux objets à des temps différents",
       "scaled": "Temps de {0} objets mis à l’échelle"
     },
+    "scaleWidth": {
+      "title": "Redimensionner la largeur",
+      "noSelected": "Sélectionnez des objets avec une étendue horizontale à redimensionner",
+      "scaled": "Largeur de {0} objets redimensionnée"
+    },
     "scaleElevation": {
       "title": "Mettre les élévations à l’échelle",
       "noSelected": "Sélectionnez au moins deux notes ou transformations de scène à des élévations différentes",

@@ -41,7 +41,7 @@ import { properties } from './properties'
 import { redo } from './redo'
 import { reset } from './reset'
 import { save } from './save'
-import { scaleBeat, scaleElevation } from './scaleSelection'
+import { scaleBeat, scaleElevation, scaleWidth } from './scaleSelection'
 import { scrollDown } from './scrolls/scrollDown'
 import { scrollLeft } from './scrolls/scrollLeft'
 import { scrollPageDown } from './scrolls/scrollPageDown'
@@ -114,6 +114,7 @@ export const commands = {
     flipVertical,
     scaleBeat,
     scaleElevation,
+    scaleWidth,
     makeVertical,
     combineNotes,
     splitHold,

@@ -1,6 +1,6 @@
 import type { State } from '..'
 import type { Entity } from '../entities'
-import { getTranslatedSelectionValues, type ScaleAxis } from './scaleValues'
+import { getScaleProperties, getTranslatedSelectionValues, type ScaleAxis } from './scaleValues'
 import { transformSelection } from './transformSelection'
 
 export const translateSelection = (
@@ -14,7 +14,12 @@ export const translateSelection = (
         ? transformSelection(
               source,
               selected,
-              new Map([...values].map(([entity, value]) => [entity, { [axis]: value }])),
+              new Map(
+                  [...values].map(([entity, value]) => [
+                      entity,
+                      getScaleProperties(entity, axis, value),
+                  ]),
+              ),
           )
         : source
 }

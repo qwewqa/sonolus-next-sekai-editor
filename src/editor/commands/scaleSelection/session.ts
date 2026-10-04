@@ -1,6 +1,5 @@
 import { shallowRef, watch, type WatchStopHandle } from 'vue'
 import { pushState, state } from '../../../history'
-import { i18n } from '../../../i18n'
 import {
     clearPreviewEdit,
     getPreviewState,
@@ -11,11 +10,13 @@ import {
 import type { State } from '../../../state'
 import { hasSameChartData } from '../../../state/data'
 import type { Entity } from '../../../state/entities'
-import type { NoteEntity } from '../../../state/entities/slides/note'
+import { isEditableEntity, type EditableEntity } from '../../../state/operations/editable'
 import { scaleSelection } from '../../../state/operations/scaleSelection'
 import {
     canScaleSelection,
+    getScaleBounds,
     getScaleEntities,
+    getScaleValue,
     getScaledSelectionValues,
     getTranslatedSelectionValues,
     type ScaleAxis,
@@ -25,6 +26,7 @@ import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { toolName } from '../../tools/state'
 import { view } from '../../view'
+import { getScaleLabels } from './labels'
 
 export type ScalingSession = {
     id: number
@@ -40,7 +42,7 @@ type ScalingDrag = {
     id: number
     source: State
     value: number
-    noteValue: number
+    entityValue: number
     anchor: number
     endpoint: boolean
     factor: number
@@ -63,10 +65,10 @@ let numericBase: State | undefined
 let numericBaseFactor = 1
 let anchorSide: 'min' | 'max' = 'min'
 let mappedState: State | undefined
-let baselineByDraft = new Map<NoteEntity, NoteEntity>()
-let draftByBaseline = new Map<NoteEntity, NoteEntity>()
-let baselineNotes: NoteEntity[] = []
-let baselineNoteSet = new Set<NoteEntity>()
+let baselineByDraft = new Map<EditableEntity, EditableEntity>()
+let draftByBaseline = new Map<EditableEntity, EditableEntity>()
+let baselineEntities: EditableEntity[] = []
+let baselineEntitySet = new Set<EditableEntity>()
 
 const sourceIsCurrent = (session: ScalingSession) => {
     const current = state.value
@@ -80,15 +82,13 @@ const sourceIsCurrent = (session: ScalingSession) => {
     )
 }
 const draftState = () => (ownedEdit ? getPreviewState(state.value, ownedEdit) : state.value)
-const axisValue = (note: NoteEntity, axis: ScaleAxis) =>
-    axis === 'beat' ? note.beat : note.elevation
 const extrema = (source: State, axis: ScaleAxis) => {
     let min = Infinity
     let max = -Infinity
     for (const entity of getScaleEntities(source.selectedEntities, axis, source)) {
-        const value = axis === 'beat' ? entity.beat : 'elevation' in entity ? entity.elevation : NaN
-        min = Math.min(min, value)
-        max = Math.max(max, value)
+        const bounds = getScaleBounds(entity, axis)
+        min = Math.min(min, bounds.min)
+        max = Math.max(max, bounds.max)
     }
     return { min, max }
 }
@@ -122,8 +122,8 @@ export const cancelScalingSession = () => {
     mappedState = undefined
     baselineByDraft.clear()
     draftByBaseline.clear()
-    baselineNotes = []
-    baselineNoteSet.clear()
+    baselineEntities = []
+    baselineEntitySet.clear()
     view.entities = { hovered: [], creating: [] }
 }
 
@@ -134,8 +134,8 @@ export const beginScalingSession = (axis: ScaleAxis) => {
     if (!canScaleSelection(selected, axis, source)) return
     clearPreviewEdit()
     ownerToken = Symbol('scaling')
-    baselineNotes = selected.filter((entity) => entity.type === 'note')
-    baselineNoteSet = new Set(baselineNotes)
+    baselineEntities = selected.filter(isEditableEntity)
+    baselineEntitySet = new Set(baselineEntities)
     numericBase = source
     numericBaseFactor = 1
     anchorSide = 'min'
@@ -218,8 +218,7 @@ export const applyScalingSession = () => {
     }
     const result = draftState()
     const filename = state.value.filename
-    const labels = () =>
-        session.axis === 'beat' ? i18n.value.commands.scaleBeat : i18n.value.commands.scaleElevation
+    const labels = () => getScaleLabels(session.axis)
     const message = interpolate(
         () => labels().scaled,
         String(getScaleEntities(session.selected, session.axis, session.source).length),
@@ -231,47 +230,64 @@ export const applyScalingSession = () => {
     return true
 }
 
-const mapDraftNotes = (draft: State) => {
+const mapDraftEntities = (draft: State) => {
     if (draft === mappedState) return
     mappedState = draft
-    const notes = draft.selectedEntities.filter((entity) => entity.type === 'note')
+    const entities = draft.selectedEntities.filter(isEditableEntity)
     baselineByDraft = new Map()
     draftByBaseline = new Map()
-    for (const [index, note] of notes.entries()) {
-        const baseline = baselineNotes[index]
-        if (!baseline) continue
-        baselineByDraft.set(note, baseline)
-        draftByBaseline.set(baseline, note)
+    const byType = new Map<EditableEntity['type'], EditableEntity[]>()
+    for (const entity of entities) {
+        const bucket = byType.get(entity.type)
+        if (bucket) bucket.push(entity)
+        else byType.set(entity.type, [entity])
+    }
+    const offsets = new Map<EditableEntity['type'], number>()
+    for (const baseline of baselineEntities) {
+        const offset = offsets.get(baseline.type) ?? 0
+        const entity = byType.get(baseline.type)?.[offset]
+        offsets.set(baseline.type, offset + 1)
+        if (!entity) continue
+        baselineByDraft.set(entity, baseline)
+        draftByBaseline.set(baseline, entity)
     }
 }
-export const getScalingBaselineNote = (note: NoteEntity) => {
+export const getScalingBaselineEntity = (entity: EditableEntity) => {
     if (!scalingSession.value) return
-    if (baselineNoteSet.has(note)) return note
-    mapDraftNotes(draftState())
-    return baselineByDraft.get(note)
+    if (baselineEntitySet.has(entity)) return entity
+    mapDraftEntities(draftState())
+    return baselineByDraft.get(entity)
 }
 
-export const beginScalingDrag = (note: NoteEntity, value: number) => {
+export const beginScalingDrag = (entity: EditableEntity, value: number, edge?: 'min' | 'max') => {
     const session = scalingSession.value
-    const baseline = getScalingBaselineNote(note)
+    const baseline = getScalingBaselineEntity(entity)
     if (!session || !baseline || !Number.isFinite(value)) return false
     const source = draftState()
-    mapDraftNotes(source)
-    const currentNote = draftByBaseline.get(baseline)
-    if (!currentNote) return false
+    mapDraftEntities(source)
+    const currentEntity = draftByBaseline.get(baseline)
+    if (!currentEntity) return false
     const eligible = getScaleEntities(source.selectedEntities, session.axis, source).includes(
-        currentNote,
+        currentEntity,
     )
     const { min, max } = extrema(source, session.axis)
-    const noteValue = axisValue(currentNote, session.axis)
-    if (!(max > min) || !Number.isFinite(noteValue)) return false
-    const endpoint = eligible && (noteValue === min || noteValue === max)
+    const bounds = getScaleBounds(currentEntity, session.axis)
+    const entityValue =
+        session.axis === 'width' && edge ? bounds[edge] : getScaleValue(currentEntity, session.axis)
+    if (!(max > min) || !Number.isFinite(entityValue)) return false
+    const anchor =
+        session.axis === 'width' ? (edge === 'min' ? max : min) : entityValue === min ? max : min
+    const endpoint =
+        eligible &&
+        (session.axis === 'width'
+            ? edge !== undefined && entityValue !== anchor
+            : entityValue === min || entityValue === max)
     drag = {
         id: session.id,
         source,
         value,
-        noteValue,
-        anchor: noteValue === min ? max : min,
+        entityValue,
+        anchor,
         endpoint,
         factor: session.factor,
         requestedFactor: session.requestedFactor,
@@ -302,7 +318,7 @@ export const updateScalingDrag = (value: number) => {
     if (active.endpoint) {
         const anchor = active.anchor
         const ratio =
-            (active.noteValue + delta - active.anchor) / (active.noteValue - active.anchor)
+            (active.entityValue + delta - active.anchor) / (active.entityValue - active.anchor)
         const factor = active.factor * ratio
         if (
             !Number.isFinite(ratio) ||
@@ -319,7 +335,7 @@ export const updateScalingDrag = (value: number) => {
                 ))
         )
             return false
-        anchorSide = active.noteValue < active.anchor ? 'max' : 'min'
+        anchorSide = active.entityValue < active.anchor ? 'max' : 'min'
         active.lastValue = value
         return publishDraft(
             () => (ratio === 1 ? source : scaleSelection(source, selected, axis, ratio, anchor)),

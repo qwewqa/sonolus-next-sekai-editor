@@ -92,6 +92,11 @@
       "noSelected": "請選取至少兩個位於不同節拍的物件進行縮放",
       "scaled": "已縮放 {0} 個物件的節拍間距"
     },
+    "scaleWidth": {
+      "title": "縮放寬度",
+      "noSelected": "請選擇具有橫向跨度的物件進行縮放",
+      "scaled": "已縮放 {0} 個物件的寬度"
+    },
     "scaleElevation": {
       "title": "縮放高度間距",
       "noSelected": "請選取至少兩個高度不同的音符或舞台變換進行縮放",

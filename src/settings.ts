@@ -190,7 +190,9 @@ const settingsProperties = {
                         'stop',
                         'play',
                     ],
+                    ['paste', 'cut', 'copy', 'redo', 'undo'],
                     [
+                        'scaleWidth',
                         'scaleElevation',
                         'scaleBeat',
                         'makeVertical',
@@ -198,11 +200,6 @@ const settingsProperties = {
                         'splitHold',
                         'flipVertical',
                         'flip',
-                        'paste',
-                        'cut',
-                        'copy',
-                        'redo',
-                        'undo',
                     ],
                     [
                         'increaseNoteSize',

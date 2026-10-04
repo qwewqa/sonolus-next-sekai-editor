@@ -2,6 +2,7 @@
 import { computed, ref, useTemplateRef, onMounted, watch } from 'vue'
 import { i18n } from '../../../i18n'
 import BaseModal from '../../../modals/BaseModal.vue'
+import { getScaleLabels } from './labels'
 import {
     scalingSession,
     setScalingFactor,
@@ -16,11 +17,7 @@ const session = computed(() =>
 )
 const factor = ref<number | string>(session.value?.requestedFactor ?? 1)
 const input = useTemplateRef<HTMLInputElement>('input')
-const title = computed(() =>
-    session.value?.axis === 'elevation'
-        ? i18n.value.commands.scaleElevation.title
-        : i18n.value.commands.scaleBeat.title,
-)
+const title = computed(() => getScaleLabels(session.value?.axis ?? 'beat').title)
 watch(
     () => session.value?.requestedFactor,
     (value) => {

@@ -97,6 +97,7 @@ const availableCommands: CommandName[] = [
     'splitHold',
     'scaleBeat',
     'scaleElevation',
+    'scaleWidth',
     'makeVertical',
     'increaseNoteSize',
     'decreaseNoteSize',

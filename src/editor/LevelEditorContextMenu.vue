@@ -66,6 +66,7 @@ const actions = computed(() => {
             transforms.push('flip')
         if (new Set(selection.filter(isEditableEntity).map((entity) => entity.beat)).size > 1)
             transforms.push('flipVertical')
+        if (canScaleSelection(selection, 'width', state.value)) transforms.push('scaleWidth')
         if (canScaleSelection(selection, 'beat')) transforms.push('scaleBeat')
         if (canScaleSelection(selection, 'elevation', state.value))
             transforms.push('scaleElevation')

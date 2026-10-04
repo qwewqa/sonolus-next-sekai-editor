@@ -1,12 +1,13 @@
 import type { State } from '..'
 import type { Entity } from '../entities'
-import { isEditableEntity, type EditableEntity } from './editable'
+import { isEditableEntity, type EditableEntity, type EditableObject } from './editable'
 
-export type ScaleAxis = 'beat' | 'elevation'
+export type ScaleAxis = 'beat' | 'elevation' | 'width'
 
 export const getScaleEntities = (selected: Entity[], axis: ScaleAxis, source?: State) =>
     [...new Set(selected.filter(isEditableEntity))].filter((entity) => {
         if (axis === 'beat') return true
+        if (axis === 'width' && entity.type !== 'note') return entity.type !== 'bpm'
         if (entity.type === 'stageTransformEventJoint') return true
         if (entity.type !== 'note') return false
         if (!entity.isAttached) return true
@@ -14,13 +15,62 @@ export const getScaleEntities = (selected: Entity[], axis: ScaleAxis, source?: S
         return slide?.[0] === entity || slide?.at(-1) === entity
     })
 
-const valueOf = (entity: EditableEntity, axis: ScaleAxis) =>
-    axis === 'beat' ? entity.beat : 'elevation' in entity ? entity.elevation : NaN
+const widthKeys = (
+    entity: EditableEntity,
+): [keyof EditableObject, (keyof EditableObject)?] | undefined => {
+    switch (entity.type) {
+        case 'note':
+            return ['left', 'size']
+        case 'cameraEventJoint':
+            return ['cameraLeft', 'cameraSize']
+        case 'stageMaskEventJoint':
+            return ['maskLeft', 'maskSize']
+        case 'stagePivotEventJoint':
+            return ['pivotLane']
+        case 'stageTransformEventJoint':
+            return ['xTranslation']
+        case 'timeScale':
+        case 'stageStyleEventJoint':
+            return ['editorLane']
+        case 'bpm':
+            return undefined
+    }
+}
+
+export const getScaleValue = (entity: EditableEntity, axis: ScaleAxis): number => {
+    if (axis === 'beat') return entity.beat
+    if (axis === 'elevation') return 'elevation' in entity ? entity.elevation : NaN
+    const keys = widthKeys(entity)
+    return keys ? Number((entity as EditableObject)[keys[0]]) : NaN
+}
+
+export const getScaleBounds = (entity: EditableEntity, axis: ScaleAxis) => {
+    const min = getScaleValue(entity, axis)
+    const sizeKey = axis === 'width' ? widthKeys(entity)?.[1] : undefined
+    const size = sizeKey ? Number((entity as EditableObject)[sizeKey]) : 0
+    return { min, max: min + size }
+}
+
+export const getScaleProperties = (
+    entity: EditableEntity,
+    axis: ScaleAxis,
+    value: number,
+    factor = 1,
+): EditableObject => {
+    if (axis !== 'width') return { [axis]: value }
+    const keys = widthKeys(entity)
+    if (!keys) return {}
+    const sizeKey = keys[1]
+    return {
+        [keys[0]]: value,
+        ...(sizeKey ? { [sizeKey]: Number((entity as EditableObject)[sizeKey]) * factor } : {}),
+    }
+}
 
 export const getScalePivot = (selected: Entity[], axis: ScaleAxis, source?: State) => {
     let pivot = Infinity
     for (const entity of getScaleEntities(selected, axis, source)) {
-        const value = valueOf(entity, axis)
+        const value = getScaleValue(entity, axis)
         if (!Number.isFinite(value)) return undefined
         pivot = Math.min(pivot, value)
     }
@@ -31,9 +81,13 @@ export const canScaleSelection = (selected: Entity[], axis: ScaleAxis, source?: 
     const entities = getScaleEntities(selected, axis, source)
     const pivot = getScalePivot(entities, axis, source)
     return (
-        entities.length >= 2 &&
+        entities.length >= (axis === 'width' ? 1 : 2) &&
         pivot !== undefined &&
-        entities.some((entity) => valueOf(entity, axis) > pivot)
+        entities.every((entity) => {
+            const bounds = getScaleBounds(entity, axis)
+            return Number.isFinite(bounds.max) && bounds.max >= bounds.min
+        }) &&
+        entities.some((entity) => getScaleBounds(entity, axis).max > pivot)
     )
 }
 
@@ -110,7 +164,31 @@ export const getScaledSelectionValues = (
     const entities = getScaleEntities(selected, axis, source)
     const pivot = anchor ?? getScalePivot(entities, axis, source)
     if (pivot === undefined || !Number.isFinite(pivot)) return
-    return transformValues(entities, axis, (value) => pivot + (value - pivot) * factor, source)
+    const values = transformValues(
+        entities,
+        axis,
+        (value) => pivot + (value - pivot) * factor,
+        source,
+    )
+    if (axis === 'width' && values && !validWidthValues(values, factor)) return
+    return values
+}
+
+const validWidthValues = (values: Map<EditableEntity, number>, factor: number) => {
+    for (const [entity, left] of values) {
+        const sizeKey = widthKeys(entity)?.[1]
+        const originalSize = sizeKey ? Number((entity as EditableObject)[sizeKey]) : 0
+        const size = originalSize * factor
+        if (
+            !Number.isFinite(size) ||
+            size < 0 ||
+            !Number.isFinite(left + size) ||
+            (originalSize > 0 && !(left + size > left)) ||
+            (entity.type === 'cameraEventJoint' && (size < 6 || size > 24))
+        )
+            return false
+    }
+    return true
 }
 
 export const getTranslatedSelectionValues = (
@@ -120,12 +198,14 @@ export const getTranslatedSelectionValues = (
     source?: State,
 ): Map<EditableEntity, number> | undefined => {
     if (!Number.isFinite(delta) || delta === 0) return
-    return transformValues(
+    const values = transformValues(
         getScaleEntities(selected, axis, source),
         axis,
         (value) => value + delta,
         source,
     )
+    if (axis === 'width' && values && !validWidthValues(values, 1)) return
+    return values
 }
 
 const transformValues = (
@@ -137,8 +217,10 @@ const transformValues = (
     const values = new Map<EditableEntity, number>()
     let previousValue: number | undefined
     let previousTransformed: number | undefined
-    for (const entity of [...entities].sort((a, b) => valueOf(a, axis) - valueOf(b, axis))) {
-        const value = valueOf(entity, axis)
+    for (const entity of [...entities].sort(
+        (a, b) => getScaleValue(a, axis) - getScaleValue(b, axis),
+    )) {
+        const value = getScaleValue(entity, axis)
         const transformed = transform(value)
         if (
             !Number.isFinite(transformed) ||
@@ -158,5 +240,7 @@ const transformValues = (
         previousTransformed = transformed
     }
     if (axis === 'beat' && source && !isWithinGridBudget(source, values)) return
-    return new Map(entities.map((entity) => [entity, values.get(entity) ?? valueOf(entity, axis)]))
+    return new Map(
+        entities.map((entity) => [entity, values.get(entity) ?? getScaleValue(entity, axis)]),
+    )
 }

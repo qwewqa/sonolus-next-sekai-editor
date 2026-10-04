@@ -92,6 +92,11 @@
       "noSelected": "Ölçeklemek için farklı vuruşlarda en az iki nesne seçin",
       "scaled": "{0} nesnenin vuruşları ölçeklendi"
     },
+    "scaleWidth": {
+      "title": "Genişliği Ölçekle",
+      "noSelected": "Ölçeklemek için yatay genişliği olan nesneler seçin",
+      "scaled": "{0} nesnenin genişliği ölçeklendi"
+    },
     "scaleElevation": {
       "title": "Yükseklikleri ölçekle",
       "noSelected": "Ölçeklemek için farklı yüksekliklerde en az iki nota veya sahne dönüşümü seçin",
