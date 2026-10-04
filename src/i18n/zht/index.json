@@ -27,7 +27,7 @@
       }
     },
     "brush": {
-      "title": "切換到筆刷工具",
+      "title": "筆刷",
       "switched": "切換到筆刷工具",
       "modal": {
         "title": "筆刷屬性"
@@ -59,7 +59,7 @@
       }
     },
     "eraser": {
-      "title": "切換到橡皮擦工具",
+      "title": "橡皮擦",
       "switched": "已切換到橡皮擦工具"
     },
     "flip": {
@@ -127,7 +127,7 @@
       }
     },
     "generateSlideNotes": {
-      "title": "切換到滑條音符生成工具",
+      "title": "生成滑條音符",
       "switched": "已切換到滑條音符生成工具"
     },
     "help": {
@@ -194,8 +194,8 @@
     },
     "note": {
       "title": {
-        "default": "切換到音符工具",
-        "preset": "切換到音符工具 #{0}"
+        "default": "音符",
+        "preset": "音符 #{0}"
       },
       "switched": "已切換到音符工具 #{0}",
       "modal": {
@@ -212,7 +212,7 @@
       "changed": "已將音符尺寸更改為 {0}"
     },
     "offset": {
-      "title": "切換到偏移工具",
+      "title": "偏移",
       "switched": "已切換到偏移工具"
     },
     "open": {
@@ -222,7 +222,7 @@
       "opened": "已開啟關卡"
     },
     "paste": {
-      "title": "切換到貼上工具",
+      "title": "貼上",
       "switched": "已切換到貼上工具"
     },
     "play": {
@@ -270,7 +270,7 @@
       }
     },
     "select": {
-      "title": "切換到選擇工具",
+      "title": "選擇",
       "switched": "已切換到選擇工具"
     },
     "settings": {
@@ -278,8 +278,8 @@
     },
     "slide": {
       "title": {
-        "default": "切換到滑條工具",
-        "preset": "切換到滑條工具 #{0}"
+        "default": "滑條",
+        "preset": "滑條 #{0}"
       },
       "switched": "已切換到滑條工具 #{0}",
       "modal": {
@@ -372,15 +372,15 @@
       }
     },
     "bpm": {
-      "title": "切換到 BPM 工具",
+      "title": "BPM",
       "switched": "已切換到 BPM 工具"
     },
     "timeScale": {
-      "title": "切換到時間倍率工具",
+      "title": "時間倍率",
       "switched": "已切換到時間倍率工具"
     },
     "events": {
-      "title": "切換到 {0} 工具",
+      "title": "{0}",
       "switched": "已切換到 {0} 工具",
       "modal": {
         "title": "預設 {0} 屬性"
@@ -466,6 +466,11 @@
         "ctrl": "使用 Ctrl 鍵將物件新增至選取範圍。",
         "shift": "使用 Shift 鍵對所有相關的音符物件進行操作。",
         "properties": "再次切換到滑條工具以變更預設組或預設屬性。"
+      },
+      "splitSlide": {
+        "split": "拆分滑條會切斷每個所選音符到下一個音符的連接，形成獨立的滑條。",
+        "tail": "選取滑條的最後一個音符不會產生變化。",
+        "undo": "所有拆分可一次復原。音符位置與剩餘連接的設定會保留。"
       },
       "generateSlideNotesTool": {
         "title": "滑條音符生成工具",

@@ -27,7 +27,7 @@
       }
     },
     "brush": {
-      "title": "브러시 도구로 변경",
+      "title": "브러시",
       "switched": "브러시 도구로 변경됨",
       "modal": {
         "title": "브러시 속성"
@@ -59,7 +59,7 @@
       }
     },
     "eraser": {
-      "title": "지우개 도구로 변경",
+      "title": "지우개",
       "switched": "지우개 도구로 변경됨"
     },
     "flip": {
@@ -127,7 +127,7 @@
       }
     },
     "generateSlideNotes": {
-      "title": "슬라이드 노트 생성 도구로 변경",
+      "title": "슬라이드 노트 생성",
       "switched": "슬라이드 노트 생성 도구로 변경됨"
     },
     "help": {
@@ -194,8 +194,8 @@
     },
     "note": {
       "title": {
-        "default": "노트 도구로 변경",
-        "preset": "#{0} 노트 도구로 변경"
+        "default": "노트",
+        "preset": "노트 #{0}"
       },
       "switched": "#{0} 노트 도구로 변경됨",
       "modal": {
@@ -212,7 +212,7 @@
       "changed": "노트 크기를 {0}(으)로 변경함"
     },
     "offset": {
-      "title": "오프셋 도구로 전환",
+      "title": "오프셋",
       "switched": "오프셋 도구로 전환됨"
     },
     "open": {
@@ -222,7 +222,7 @@
       "opened": "레벨 열림"
     },
     "paste": {
-      "title": "붙여넣기 도구로 변경",
+      "title": "붙여넣기",
       "switched": "붙여넣기 도구로 변경됨"
     },
     "play": {
@@ -270,7 +270,7 @@
       }
     },
     "select": {
-      "title": "선택 도구로 변경",
+      "title": "선택",
       "switched": "선택 도구로 변경됨"
     },
     "settings": {
@@ -278,8 +278,8 @@
     },
     "slide": {
       "title": {
-        "default": "슬라이드 도구로 변경",
-        "preset": "#{0} 슬라이드 도구로 변경"
+        "default": "슬라이드",
+        "preset": "슬라이드 #{0}"
       },
       "switched": "#{0} 슬라이드 도구로 변경됨",
       "modal": {
@@ -372,15 +372,15 @@
       }
     },
     "bpm": {
-      "title": "BPM 도구로 변경",
+      "title": "BPM",
       "switched": "BPM 도구로 변경됨"
     },
     "timeScale": {
-      "title": "시간 배율 도구로 변경",
+      "title": "시간 배율",
       "switched": "시간 배율 도구로 변경됨"
     },
     "events": {
-      "title": "{0} 도구로 전환",
+      "title": "{0}",
       "switched": "{0} 도구로 전환됨",
       "modal": {
         "title": "기본 {0} 속성"
@@ -466,6 +466,11 @@
         "ctrl": "Ctrl 키: 선택 항목에 개체 추가",
         "shift": "Shift 키: 모든 관련 노트 개체에 적용",
         "properties": "슬라이드 도구 다시 선택: 프리셋 또는 기본 속성 변경"
+      },
+      "splitSlide": {
+        "split": "슬라이드 분할은 선택한 각 노트에서 다음 노트로 이어지는 연결을 끊어 독립된 슬라이드를 만듭니다.",
+        "tail": "슬라이드의 마지막 노트를 선택해도 변화가 없습니다.",
+        "undo": "모든 분할은 한 번에 실행 취소할 수 있습니다. 노트 위치와 남은 연결 설정은 유지됩니다."
       },
       "generateSlideNotesTool": {
         "title": "슬라이드 노트 생성 도구",

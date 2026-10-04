@@ -296,7 +296,7 @@ test('context actions open the clicked note beat or empty-space beat after desel
     await expect(page.getByRole('menuitem').nth(0)).toHaveAccessibleName('Cut')
     await expect(page.getByRole('menuitem').nth(1)).toHaveAccessibleName('Copy')
     await expect(page.getByRole('menuitem').nth(2)).toHaveAccessibleName('Paste')
-    await page.getByRole('menuitem', { name: 'Edit elevations', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Edit Elevations', exact: true }).click()
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await install(page)
     await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('6')
@@ -307,7 +307,7 @@ test('context actions open the clicked note beat or empty-space beat after desel
     await expect(page.getByRole('menu')).toHaveCount(0)
     expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
     await page.mouse.click(empty.x, empty.y, { button: 'right' })
-    await page.getByRole('menuitem', { name: 'Edit elevations', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Edit Elevations', exact: true }).click()
     await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
     await expect.poll(() => rows(page)).toEqual([])
 })
@@ -1270,12 +1270,12 @@ test('elevation toolbar offers spatial actions and omits time reversal', async (
     await open(page)
     const editor = page.locator('.elevation-editor')
     await expect(
-        editor.getByRole('button', { name: 'Flip horizontally', exact: true }),
+        editor.getByRole('button', { name: 'Flip Horizontally', exact: true }),
     ).toBeVisible()
     await expect(
         editor.getByRole('button', { name: 'Combine into Slide', exact: true }),
     ).toBeVisible()
-    await expect(editor.getByRole('button', { name: 'Flip vertically', exact: true })).toHaveCount(
+    await expect(editor.getByRole('button', { name: 'Flip Vertically', exact: true })).toHaveCount(
         0,
     )
     expect(await notes(page)).toHaveLength(2)
@@ -1308,8 +1308,8 @@ test('context elevation scaling preserves the lowest note and keeps the pane ope
     const hit = await point(page)
     await page.mouse.click(hit.x, hit.y, { button: 'right' })
     const menu = page.getByRole('menu')
-    await expect(menu.getByRole('menuitem', { name: 'Scale beats', exact: true })).toHaveCount(0)
-    await menu.getByRole('menuitem', { name: 'Scale elevations', exact: true }).click()
+    await expect(menu.getByRole('menuitem', { name: 'Scale Beats', exact: true })).toHaveCount(0)
+    await menu.getByRole('menuitem', { name: 'Scale Elevations', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('0.5')
     await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
@@ -1335,8 +1335,8 @@ for (const width of [1600, 375, 320]) {
         await open(page)
         const editor = page.locator('.elevation-editor')
         for (const [name, collection] of [
-            ['Manage groups', 'groups'],
-            ['Manage stages', 'stages'],
+            ['Manage Groups', 'groups'],
+            ['Manage Stages', 'stages'],
         ] as const) {
             const before = await page.evaluate(
                 (key) => window.editorTest.history.state.value[key].size,

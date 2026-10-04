@@ -83,6 +83,12 @@ import HelpSection from './HelpSection.vue'
             <li>{{ i18n.help.modal.slideTool.properties }}</li>
         </HelpSection>
 
+        <HelpSection :title="i18n.commands.splitHold.title">
+            <li>{{ i18n.help.modal.splitSlide.split }}</li>
+            <li>{{ i18n.help.modal.splitSlide.tail }}</li>
+            <li>{{ i18n.help.modal.splitSlide.undo }}</li>
+        </HelpSection>
+
         <HelpSection :title="i18n.help.modal.generateSlideNotesTool.title">
             <li>{{ i18n.help.modal.generateSlideNotesTool.generate }}</li>
             <li>{{ i18n.help.modal.generateSlideNotesTool.generateMultiple }}</li>

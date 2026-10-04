@@ -146,10 +146,7 @@ test('color controls commit, undo, and persist in creation presets', async ({ pa
         )
     })
     await expect(
-        page
-            .getByRole('button', { name: 'Switch to Note tool', exact: true })
-            .locator('svg rect')
-            .first(),
+        page.getByRole('button', { name: 'Note', exact: true }).locator('svg rect').first(),
     ).toHaveCSS('fill', 'rgb(223, 250, 255)')
     await page.reload()
     await page.evaluate(installEditorFixture)
@@ -260,10 +257,7 @@ test('legacy guide presets migrate into the shared color and retain their icons 
     ])
     expect(JSON.stringify(migrated)).not.toContain('connectorGuideColor')
     await expect(
-        page
-            .getByRole('button', { name: 'Switch to Slide tool', exact: true })
-            .locator('svg rect')
-            .first(),
+        page.getByRole('button', { name: 'Slide', exact: true }).locator('svg rect').first(),
     ).toHaveCSS('fill', 'rgb(214, 115, 205)')
     await page.reload()
     await page.evaluate(installEditorFixture)

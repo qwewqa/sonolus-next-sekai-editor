@@ -27,7 +27,7 @@
       }
     },
     "brush": {
-      "title": "Passer à l'outil Pinceau",
+      "title": "Pinceau",
       "switched": "Outil Pinceau activé",
       "modal": {
         "title": "Propriétés du Pinceau"
@@ -59,7 +59,7 @@
       }
     },
     "eraser": {
-      "title": "Passer à l'outil Gomme",
+      "title": "Gomme",
       "switched": "Outil Gomme activé"
     },
     "flip": {
@@ -127,7 +127,7 @@
       }
     },
     "generateSlideNotes": {
-      "title": "Passer à l’outil Générer les notes de slide",
+      "title": "Générer les notes de slide",
       "switched": "Outil Générer les notes de slide activé"
     },
     "help": {
@@ -194,8 +194,8 @@
     },
     "note": {
       "title": {
-        "default": "Passer à l'outil Note",
-        "preset": "Passer à l'outil Note #{0}"
+        "default": "Note",
+        "preset": "Note #{0}"
       },
       "switched": "Outil Note #{0} activé",
       "modal": {
@@ -212,7 +212,7 @@
       "changed": "Taille des notes modifiée : {0}"
     },
     "offset": {
-      "title": "Passer à l’outil Décalage",
+      "title": "Décalage",
       "switched": "Outil Décalage activé"
     },
     "open": {
@@ -222,7 +222,7 @@
       "opened": "Niveau ouvert"
     },
     "paste": {
-      "title": "Passer à l'outil Coller",
+      "title": "Coller",
       "switched": "Outil Coller activé"
     },
     "play": {
@@ -270,7 +270,7 @@
       }
     },
     "select": {
-      "title": "Passer à l'outil Sélectionner",
+      "title": "Sélectionner",
       "switched": "Outil Sélectionner activé"
     },
     "settings": {
@@ -278,8 +278,8 @@
     },
     "slide": {
       "title": {
-        "default": "Passer à l'outil Slide",
-        "preset": "Passer à l'outil Slide #{0}"
+        "default": "Slide",
+        "preset": "Slide #{0}"
       },
       "switched": "Outil Slide #{0} activé",
       "modal": {
@@ -372,15 +372,15 @@
       }
     },
     "bpm": {
-      "title": "Passer à l'outil BPM",
+      "title": "BPM",
       "switched": "Outil BPM activé"
     },
     "timeScale": {
-      "title": "Passer à l'outil Échelle de Temps",
+      "title": "Échelle de temps",
       "switched": "Outil Échelle de Temps activé"
     },
     "events": {
-      "title": "Passer à l’outil {0}",
+      "title": "{0}",
       "switched": "Outil {0} activé",
       "modal": {
         "title": "Propriétés par défaut de {0}"
@@ -466,6 +466,11 @@
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés.",
         "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
+      },
+      "splitSlide": {
+        "split": "Scinder le slide coupe la connexion de chaque note sélectionnée vers la note suivante et crée des slides indépendants.",
+        "tail": "Sélectionner la dernière note d’un slide n’a aucun effet.",
+        "undo": "Toutes les coupures forment une seule modification annulable. Les positions des notes et les paramètres des connexions restantes sont conservés."
       },
       "generateSlideNotesTool": {
         "title": "Outil Générer les notes de slide",

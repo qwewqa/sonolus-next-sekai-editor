@@ -118,7 +118,7 @@ const open = async (page: Page, axis: 'beat' | 'elevation' = 'beat') => {
     await page.mouse.click(point.x, point.y, { button: 'right' })
     await page
         .getByRole('menuitem', {
-            name: axis === 'beat' ? 'Scale beats' : 'Scale elevations',
+            name: axis === 'beat' ? 'Scale Beats' : 'Scale Elevations',
             exact: true,
         })
         .click()
@@ -247,7 +247,7 @@ test('live factor leaves chart history untouched until Apply, with one undo', as
     await expect(factor(page)).toHaveValue('1')
     await expect(factor(page)).toHaveAttribute('step', '0.1')
     await expect(panel(page).getByText('Earliest beat', { exact: true })).toHaveCount(0)
-    await expect(page.getByTitle('Switch to Select tool', { exact: true })).toHaveCount(0)
+    await expect(page.getByTitle('Select', { exact: true })).toHaveCount(0)
     const original = await page.evaluate(() => ({
         chart: document.querySelector<HTMLCanvasElement>('canvas.editor-chart')!.toDataURL(),
         preview: [...window.scalingVertices],
@@ -377,13 +377,10 @@ test('elevation scaling stays live in its pane and drags from the lowest selecte
     await expect(panel(page).getByText('Lowest elevation', { exact: true })).toHaveCount(0)
     await expect(page.locator('.elevation-editor .scaling-panel')).toHaveCount(1)
     await expect(
-        page.locator('.elevation-editor').getByTitle('Switch to Select tool', { exact: true }),
+        page.locator('.elevation-editor').getByTitle('Select', { exact: true }),
     ).toHaveCount(0)
     await expect(
-        page
-            .locator('canvas.editor-chart')
-            .locator('../..')
-            .getByTitle('Switch to Select tool', { exact: true }),
+        page.locator('canvas.editor-chart').locator('../..').getByTitle('Select', { exact: true }),
     ).toBeVisible()
     const paneBounds = await page.locator('.elevation-editor').boundingBox()
     const panelBounds = await panel(page).boundingBox()

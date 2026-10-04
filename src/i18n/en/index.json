@@ -4,7 +4,7 @@
         "default": "Default"
     },
     "events": {
-        "event": "event",
+        "event": "Event",
         "cameraEvent": "Camera Event",
         "stageMaskEvent": "Stage Mask Event",
         "stagePivotEvent": "Stage Pivot Event",
@@ -13,7 +13,7 @@
     },
     "commands": {
         "elevation": {
-            "title": "Elevation editor"
+            "title": "Elevation Editor"
         },
         "bgm": {
             "title": "BGM",
@@ -27,7 +27,7 @@
             }
         },
         "brush": {
-            "title": "Switch to Brush tool",
+            "title": "Brush",
             "switched": "Switched to Brush tool",
             "modal": {
                 "title": "Brush Properties"
@@ -48,10 +48,10 @@
             "deselected": "Deselected all objects"
         },
         "divisions": {
-            "title": "Switch to 1/{0} division",
+            "title": "1/{0} Division",
             "switched": "Switched to 1/{0} division",
             "custom": {
-                "title": "Switch to custom division",
+                "title": "Custom Division",
                 "modal": {
                     "title": "Custom Division",
                     "division": "Division"
@@ -59,25 +59,25 @@
             }
         },
         "eraser": {
-            "title": "Switch to Eraser tool",
+            "title": "Eraser",
             "switched": "Switched to Eraser tool"
         },
         "flip": {
-            "title": "Flip horizontally",
+            "title": "Flip Horizontally",
             "noSelected": "No object selected to flip",
             "flipped": "Flipped {0} objects"
         },
         "flipVertical": {
-            "title": "Flip vertically",
+            "title": "Flip Vertically",
             "flipped": "Flipped {0} objects vertically"
         },
         "scaleBeat": {
-            "title": "Scale beats",
+            "title": "Scale Beats",
             "noSelected": "Select at least two objects at different beats to scale",
             "scaled": "Scaled beats of {0} objects"
         },
         "scaleElevation": {
-            "title": "Scale elevations",
+            "title": "Scale Elevations",
             "noSelected": "Select at least two notes or stage transforms with different elevations to scale",
             "scaled": "Scaled elevations of {0} objects"
         },
@@ -89,7 +89,7 @@
             "invalidFactor": "Enter a positive scale factor that keeps the result within the editor’s supported range"
         },
         "makeVertical": {
-            "title": "Make vertical",
+            "title": "Make Vertical",
             "noSelected": "Select at least one note to make vertical",
             "unchanged": "Selected notes are already vertical",
             "invalid": "Selection cannot be made vertical within the editor’s supported range",
@@ -113,13 +113,13 @@
         },
         "groups": {
             "groupAll": {
-                "title": "Switch to all groups"
+                "title": "All Groups"
             },
             "groupPrev": {
-                "title": "Switch to previous group"
+                "title": "Previous Group"
             },
             "groupNext": {
-                "title": "Switch to next group"
+                "title": "Next Group"
             },
             "switched": {
                 "all": "Switched to all groups",
@@ -127,7 +127,7 @@
             }
         },
         "generateSlideNotes": {
-            "title": "Switch to Generate Slide Notes tool",
+            "title": "Generate Slide Notes",
             "switched": "Switched to Generate Slide Notes tool"
         },
         "help": {
@@ -142,7 +142,7 @@
             }
         },
         "manageGroups": {
-            "title": "Manage groups",
+            "title": "Manage Groups",
             "modal": {
                 "title": "Manage Groups",
                 "switch": "Switch to group",
@@ -168,7 +168,7 @@
             }
         },
         "manageStages": {
-            "title": "Manage stages",
+            "title": "Manage Stages",
             "modal": {
                 "title": "Manage Stages",
                 "switch": "Switch to stage",
@@ -194,8 +194,8 @@
         },
         "note": {
             "title": {
-                "default": "Switch to Note tool",
-                "preset": "Switch to Note tool #{0}"
+                "default": "Note",
+                "preset": "Note #{0}"
             },
             "switched": "Switched to Note tool #{0}",
             "modal": {
@@ -212,7 +212,7 @@
             "changed": "Changed note size to {0}"
         },
         "offset": {
-            "title": "Switch to Offset tool",
+            "title": "Offset",
             "switched": "Switched to Offset tool"
         },
         "open": {
@@ -222,7 +222,7 @@
             "opened": "Opened level"
         },
         "paste": {
-            "title": "Switch to Paste tool",
+            "title": "Paste",
             "switched": "Switched to Paste tool"
         },
         "play": {
@@ -270,7 +270,7 @@
             }
         },
         "select": {
-            "title": "Switch to Select tool",
+            "title": "Select",
             "switched": "Switched to Select tool"
         },
         "settings": {
@@ -278,8 +278,8 @@
         },
         "slide": {
             "title": {
-                "default": "Switch to Slide tool",
-                "preset": "Switch to Slide tool #{0}"
+                "default": "Slide",
+                "preset": "Slide #{0}"
             },
             "switched": "Switched to Slide tool #{0}",
             "modal": {
@@ -301,13 +301,13 @@
         },
         "stages": {
             "stageAll": {
-                "title": "Switch to all stages"
+                "title": "All Stages"
             },
             "stagePrev": {
-                "title": "Switch to previous stage"
+                "title": "Previous Stage"
             },
             "stageNext": {
-                "title": "Switch to next stage"
+                "title": "Next Stage"
             },
             "switched": {
                 "all": "Switched to all stages",
@@ -355,32 +355,32 @@
         },
         "zooms": {
             "zoomXIn": {
-                "title": "Zoom in X",
+                "title": "Zoom In X",
                 "zoomed": "Zoomed in X by 10%"
             },
             "zoomXOut": {
-                "title": "Zoom out X",
+                "title": "Zoom Out X",
                 "zoomed": "Zoomed out X by 10%"
             },
             "zoomYIn": {
-                "title": "Zoom in Y",
+                "title": "Zoom In Y",
                 "zoomed": "Zoomed in Y by 10%"
             },
             "zoomYOut": {
-                "title": "Zoom out Y",
+                "title": "Zoom Out Y",
                 "zoomed": "Zoomed out Y by 10%"
             }
         },
         "bpm": {
-            "title": "Switch to BPM tool",
+            "title": "BPM",
             "switched": "Switched to BPM tool"
         },
         "timeScale": {
-            "title": "Switch to Time Scale tool",
+            "title": "Time Scale",
             "switched": "Switched to Time Scale tool"
         },
         "events": {
-            "title": "Switch to {0} tool",
+            "title": "{0}",
             "switched": "Switched to {0} tool",
             "modal": {
                 "title": "Default {0} Properties"
@@ -467,6 +467,11 @@
                 "shift": "Use Shift key to operate on all related Note objects.",
                 "properties": "Switch to Slide Tool again to change preset or default properties."
             },
+            "splitSlide": {
+                "split": "Split Slide cuts the connection from each selected note to the next note, creating independent slides.",
+                "tail": "Selecting the final note of a slide has no effect.",
+                "undo": "All cuts form one undoable edit. Note positions and remaining connector settings are preserved."
+            },
             "generateSlideNotesTool": {
                 "title": "Generate Slide Notes Tool",
                 "generate": "Tap or drag to select 1 Note object to generate notes for the entire slide.",
@@ -537,8 +542,8 @@
         }
     },
     "elevation": {
-        "edit": "Edit elevations",
-        "header": "Elevation editor",
+        "edit": "Edit Elevations",
+        "header": "Elevation Editor",
         "beat": "Beat",
         "previousBeat": "Previous beat",
         "nextBeat": "Next beat",
@@ -681,7 +686,7 @@
     },
     "tools": {
         "elevation": {
-            "title": "Elevation editor"
+            "title": "Elevation Editor"
         },
         "bpm": {
             "title": "BPM",

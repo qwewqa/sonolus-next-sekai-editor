@@ -43,10 +43,10 @@ test('context beat scaling fixes the first beat and is undoable', async ({ page 
     await selectTwo(page)
     await click(page, -3, 3)
     const menu = page.getByRole('menu')
-    await expect(menu.getByRole('menuitem', { name: 'Scale elevations', exact: true })).toHaveCount(
+    await expect(menu.getByRole('menuitem', { name: 'Scale Elevations', exact: true })).toHaveCount(
         0,
     )
-    await menu.getByRole('menuitem', { name: 'Scale beats', exact: true }).click()
+    await menu.getByRole('menuitem', { name: 'Scale Beats', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
     await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('2')
@@ -155,7 +155,7 @@ test('empty right clicks deselect first and only open a menu without a selection
     await click(page, -5, 11)
     const menu = page.getByRole('menu')
     await expect(menu).toBeVisible()
-    await expect(menu.getByRole('menuitem', { name: 'Edit elevations', exact: true })).toBeVisible()
+    await expect(menu.getByRole('menuitem', { name: 'Edit Elevations', exact: true })).toBeVisible()
     await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toHaveCount(0)
 })
 
@@ -204,7 +204,7 @@ test('the menu stays in the viewport and supports keyboard navigation and dismis
     expect(rect!.x + rect!.width).toBeLessThanOrEqual(1600)
     expect(rect!.y + rect!.height).toBeLessThanOrEqual(1000)
     await page.keyboard.press('End')
-    await expect(menu.getByRole('menuitem', { name: 'Edit elevations', exact: true })).toBeFocused()
+    await expect(menu.getByRole('menuitem', { name: 'Edit Elevations', exact: true })).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(menu).toHaveCount(0)
     expect((await snapshot(page)).selected).toHaveLength(0)
@@ -328,7 +328,7 @@ test('visible command shortcuts act once while the menu has focus', async ({ pag
     await click(page, -3, 3)
     const menu = page.getByRole('menu')
     await expect(
-        menu.getByRole('menuitem', { name: 'Flip horizontally', exact: true }),
+        menu.getByRole('menuitem', { name: 'Flip Horizontally', exact: true }),
     ).toContainText('u')
     await page.keyboard.press('u')
     await expect(menu).toHaveCount(0)

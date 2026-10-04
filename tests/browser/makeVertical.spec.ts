@@ -144,7 +144,7 @@ test('the context action uses the earliest selected note and supports one-step u
     )
     const target = await page.evaluate(() => window.editorTest.point(-3, 4))
     await page.mouse.click(target.x, target.y, { button: 'right' })
-    const action = page.getByRole('menuitem', { name: 'Make vertical', exact: true })
+    const action = page.getByRole('menuitem', { name: 'Make Vertical', exact: true })
     await expect(action).toBeVisible()
     await action.click()
     await expect(page.getByRole('menu')).toHaveCount(0)
@@ -172,7 +172,7 @@ test('the context action uses the earliest selected note and supports one-step u
     ])
     await page.mouse.click(target.x, target.y, { button: 'right' })
     await expect(page.getByRole('menu')).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: 'Make vertical', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('menuitem', { name: 'Make Vertical', exact: true })).toHaveCount(0)
     await page.keyboard.press('Escape')
 })
 

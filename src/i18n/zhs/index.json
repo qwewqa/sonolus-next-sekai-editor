@@ -27,7 +27,7 @@
       }
     },
     "brush": {
-      "title": "切换到笔刷工具",
+      "title": "笔刷",
       "switched": "已切换到笔刷工具",
       "modal": {
         "title": "笔刷属性"
@@ -59,7 +59,7 @@
       }
     },
     "eraser": {
-      "title": "切换到橡皮擦工具",
+      "title": "橡皮擦",
       "switched": "已切换到橡皮擦工具"
     },
     "flip": {
@@ -127,7 +127,7 @@
       }
     },
     "generateSlideNotes": {
-      "title": "切换到生成长按节点工具",
+      "title": "生成长按节点",
       "switched": "已切换到生成长按节点工具"
     },
     "help": {
@@ -194,8 +194,8 @@
     },
     "note": {
       "title": {
-        "default": "切换到音符工具",
-        "preset": "切换到音符工具 #{0}"
+        "default": "音符",
+        "preset": "音符 #{0}"
       },
       "switched": "已切换到音符工具 #{0}",
       "modal": {
@@ -212,7 +212,7 @@
       "changed": "已将音符尺寸更改为 {0}"
     },
     "offset": {
-      "title": "切换到偏移工具",
+      "title": "偏移",
       "switched": "已切换到偏移工具"
     },
     "open": {
@@ -222,7 +222,7 @@
       "opened": "已打开关卡"
     },
     "paste": {
-      "title": "切换到粘贴工具",
+      "title": "粘贴",
       "switched": "已切换到粘贴工具"
     },
     "play": {
@@ -270,7 +270,7 @@
       }
     },
     "select": {
-      "title": "切换到选择工具",
+      "title": "选择",
       "switched": "已切换到选择工具"
     },
     "settings": {
@@ -278,8 +278,8 @@
     },
     "slide": {
       "title": {
-        "default": "切换到长按音符工具",
-        "preset": "切换到长按音符工具 #{0}"
+        "default": "长按音符",
+        "preset": "长按音符 #{0}"
       },
       "switched": "已切换到长按音符工具 #{0}",
       "modal": {
@@ -372,15 +372,15 @@
       }
     },
     "bpm": {
-      "title": "切换到 BPM 工具",
+      "title": "BPM",
       "switched": "已切换到 BPM 工具"
     },
     "timeScale": {
-      "title": "切换到时间尺度工具",
+      "title": "时间尺度",
       "switched": "已切换到时间尺度工具"
     },
     "events": {
-      "title": "切换到{0}工具",
+      "title": "{0}",
       "switched": "已切换到{0}工具",
       "modal": {
         "title": "默认{0}属性"
@@ -466,6 +466,11 @@
         "ctrl": "按下 Ctrl 键并点击对象即可添加到选择中。",
         "shift": "按下 Shift 键即可操作所有相关音符。",
         "properties": "再次切换长按音符工具即可更改预设或默认属性。"
+      },
+      "splitSlide": {
+        "split": "拆分长按音符会切断每个所选音符到下一个音符的连接，形成独立的长按音符。",
+        "tail": "选择长按音符的最后一个节点不会产生变化。",
+        "undo": "所有拆分可一次撤销。音符位置和剩余连接的设置保持不变。"
       },
       "generateSlideNotesTool": {
         "title": "生成长按节点工具",

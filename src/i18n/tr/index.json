@@ -27,7 +27,7 @@
       }
     },
     "brush": {
-      "title": "Fırça aracına geç",
+      "title": "Fırça",
       "switched": "Fırça aracına geçildi",
       "modal": {
         "title": "Fırça Özellikleri"
@@ -59,7 +59,7 @@
       }
     },
     "eraser": {
-      "title": "Silgi aracına geç",
+      "title": "Silgi",
       "switched": "Silgi aracına geçildi"
     },
     "flip": {
@@ -127,7 +127,7 @@
       }
     },
     "generateSlideNotes": {
-      "title": "Kaydırma Notası Oluşturma aracına geç",
+      "title": "Kaydırma Notası Oluştur",
       "switched": "Kaydırma Notası Oluşturma aracına geçildi"
     },
     "help": {
@@ -194,8 +194,8 @@
     },
     "note": {
       "title": {
-        "default": "Nota Aracına Geç",
-        "preset": "#{0} Nota Aracına Geç"
+        "default": "Nota",
+        "preset": "Nota #{0}"
       },
       "switched": "#{0} Nota Aracına Geçildi",
       "modal": {
@@ -212,7 +212,7 @@
       "changed": "Nota boyutu {0} olarak değiştirildi"
     },
     "offset": {
-      "title": "Zaman Kayması aracına geç",
+      "title": "Zaman Kayması",
       "switched": "Zaman Kayması aracına geçildi"
     },
     "open": {
@@ -222,7 +222,7 @@
       "opened": "Seviye açıldı"
     },
     "paste": {
-      "title": "Yapıştırma aracına geç",
+      "title": "Yapıştır",
       "switched": "Yapıştırma aracına geçildi"
     },
     "play": {
@@ -270,7 +270,7 @@
       }
     },
     "select": {
-      "title": "Seçim Aracına Geç",
+      "title": "Seçim",
       "switched": "Seçim Aracına Geçildi"
     },
     "settings": {
@@ -278,8 +278,8 @@
     },
     "slide": {
       "title": {
-        "default": "Kaydırma Aracına Geç",
-        "preset": "#{0} Kaydırma Aracına Geç"
+        "default": "Kaydırma",
+        "preset": "Kaydırma #{0}"
       },
       "switched": "#{0} Kaydırma Aracına Geçildi",
       "modal": {
@@ -372,15 +372,15 @@
       }
     },
     "bpm": {
-      "title": "BPM aracına geç",
+      "title": "BPM",
       "switched": "BPM aracına geçildi"
     },
     "timeScale": {
-      "title": "Zaman Ölçeği aracına geç",
+      "title": "Zaman Ölçeği",
       "switched": "Zaman Ölçeği aracına geçildi"
     },
     "events": {
-      "title": "{0} aracına geç",
+      "title": "{0}",
       "switched": "{0} aracına geçildi",
       "modal": {
         "title": "Varsayılan {0} Özellikleri"
@@ -466,6 +466,11 @@
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
+      },
+      "splitSlide": {
+        "split": "Kaydırmayı Böl, seçilen her notanın sonraki notayla bağlantısını keserek bağımsız kaydırmalar oluşturur.",
+        "tail": "Kaydırmanın son notasını seçmek bir değişiklik yapmaz.",
+        "undo": "Tüm kesmeler tek işlem olarak geri alınabilir. Nota konumları ve kalan bağlantı ayarları korunur."
       },
       "generateSlideNotesTool": {
         "title": "Kaydırma Notası Oluşturma Aracı",
