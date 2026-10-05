@@ -530,7 +530,7 @@
         "move": "Glissez 1 objet Échelle de Temps pour le déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "markers": "Les marqueurs en losange utilisent la transition Défilement. Les marqueurs creux sur des lignes pointillées masquent les notes.",
-        "ease": "La courbe à côté de la valeur montre l’interpolation jusqu’au prochain changement du groupe, estompée si rien ne change."
+        "ease": "La courbe à côté de la valeur montre l’interpolation jusqu’au prochain changement du groupe. Elle est estompée quand la vitesse saute simplement : Palier en Accélération, dernier changement ou changement vers la même valeur."
       },
       "cameraEventTool": {
         "title": "Outil Événement de caméra",

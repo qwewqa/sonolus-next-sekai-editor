@@ -130,9 +130,12 @@ const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) =>
 // Lanes, in proportion to the 0.5-lane label font.
 const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.09, stroke: 0.05 }
 
+// A plain jump: Step In, the last change, or one to the same value.
+const INSTANT_ALPHA = 0.4
+
 /**
  * Draws a time scale's ease toward the next change, mirrored when the value
- * decreases and faded when nothing changes. Returns the width it takes.
+ * decreases and faded when the speed simply jumps. Returns the width it takes.
  */
 const drawEaseGlyph = (
     context: EditorDrawContext,
@@ -142,15 +145,14 @@ const drawEaseGlyph = (
     direction: 1 | -1,
     color: string,
 ) => {
-    if (entity.timeScaleEase === 'inStep') return 0
-
     const { ctx, scale } = context
     const next = nextTimeScale(context, entity)
     const { width, height, gap, stroke } = EASE_GLYPH
     const left = direction > 0 ? x : x - width
     const top = y - height / 2
     ctx.save()
-    if (next === null || next?.timeScale === entity.timeScale) ctx.globalAlpha *= 0.5
+    if (entity.timeScaleEase === 'inStep' || next === null || next?.timeScale === entity.timeScale)
+        ctx.globalAlpha *= INSTANT_ALPHA
     ctx.strokeStyle = color
     ctx.lineWidth = Math.max(stroke, 1 / scale)
     ctx.lineCap = 'round'

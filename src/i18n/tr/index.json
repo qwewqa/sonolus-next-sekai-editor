@@ -530,7 +530,7 @@
         "move": "Taşımak için 1 Zaman Ölçeği nesnesini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "markers": "Elmas işaretçiler Kaydırma geçişini kullanır. Noktalı çizgilerdeki içi boş işaretçiler notaları gizler.",
-        "ease": "Değerin yanındaki eğri, gruptaki bir sonraki değişikliğe kadar yumuşatmayı gösterir; hiçbir şey değişmiyorsa soluk görünür."
+        "ease": "Değerin yanındaki eğri, gruptaki bir sonraki değişikliğe kadar yumuşatmayı gösterir; hız doğrudan atladığında (Basamak Giriş, son değişiklik veya aynı değere değişiklik) soluk görünür."
       },
       "cameraEventTool": {
         "title": "Kamera Olayı Aracı",

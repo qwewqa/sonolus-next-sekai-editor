@@ -375,7 +375,8 @@ test('time-scale markers show the transition and whether notes are shown', () =>
             },
             false,
         )
-        return canvas.strokes.map(({ path, color }) => ({ path, color }))
+        // Lines and marker; the ease glyph follows.
+        return canvas.strokes.slice(0, -1).map(({ path, color }) => ({ path, color }))
     }
 
     assert.deepEqual(draw('timeScale', false).slice(-1), [
@@ -493,18 +494,29 @@ test('time-scale eases show their curve toward the next change in the group', ()
     ])
 
     // Without a later change in its group, or toward the same value, the ease fades.
-    assert.equal(glyph(2).glyph?.alpha, 0.5)
-    assert.equal(glyph(3).glyph?.alpha, 0.5)
+    assert.equal(glyph(2).glyph?.alpha, 0.4)
+    assert.equal(glyph(3).glyph?.alpha, 0.4)
 
     // Previews outside the chart have no known next change.
     canvas.strokes = []
     drawEvent(context, { ...entities[3]!, beat: 10 }, false)
     assert.equal(canvas.strokes[2]?.alpha, 1)
 
-    // A held step is the plain change and has no curve.
+    // A held step is the plain jump: its curve shows, faded, and the value keeps its column.
     const step = glyph(4)
-    assert.equal(step.glyph, undefined)
-    assert.ok(Math.abs(step.label!.x - 7.2) < 1e-9)
+    assert.equal(step.glyph?.alpha, 0.4)
+    assert.deepEqual(
+        step.glyph?.path.map(([command, ...xy]) => [command, ...xy.map((v) => +v.toFixed(9))]),
+        [
+            ['M', 7.2, -24.83],
+            ['L', 7.2, -25.17],
+            ['L', 7.5, -25.17],
+        ],
+    )
+    assert.ok(Math.abs(step.label!.x - 7.59) < 1e-9)
+    canvas.strokes = []
+    drawEvent(context, { ...entities[4]!, beat: 10 }, false)
+    assert.equal(canvas.strokes[2]?.alpha, 0.4)
 })
 
 test('event paths draw steps as held values and sample other curves', () => {
