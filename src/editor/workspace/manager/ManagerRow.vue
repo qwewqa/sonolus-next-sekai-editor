@@ -50,6 +50,8 @@ const props = defineProps<{
     partial?: boolean
     /** Shows the row without letting it act, e.g. while a feature is off. */
     disabled?: boolean
+    /** Extra context for screen readers, e.g. the target a folder holds. */
+    description?: string
     /** A folder row: the name toggles whether its members show. */
     folder?: boolean
     /** Whether a folder row's members show. */
@@ -314,6 +316,7 @@ const onRenameBlur = (event: FocusEvent) => {
             class="manager-name"
             :disabled
             :aria-current="current && !folder ? 'true' : undefined"
+            v-bind="description === undefined ? {} : { 'aria-description': description }"
             :aria-expanded="folder ? (expanded ? 'true' : 'false') : undefined"
             :aria-controls="expanded ? controls : undefined"
             :title="nameTitle"

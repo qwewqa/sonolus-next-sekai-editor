@@ -337,20 +337,35 @@ export const addToFolders = (folders: Folders, name: string, index = 0) => {
     return id
 }
 
-/** An entry's name, led by its folder's when another entry shares the name. */
-export const qualifiedName = <K, V extends FolderMember & { name: string }>(
+/** A run of a displayed name: template text, or the folder or entry name it holds. */
+export type NamePart = { text: string; role?: 'folder' | 'name' }
+
+/** Fills a template's `{n}` placeholders with runs of parts, keeping its own text. */
+export const templateParts = (
+    template: string,
+    values: readonly (readonly NamePart[])[],
+): NamePart[] =>
+    template.split(/(\{\d+\})/).flatMap((piece) => {
+        const match = /^\{(\d+)\}$/.exec(piece)
+        if (match) return [...(values[Number(match[1])] ?? [])]
+        return piece ? [{ text: piece }] : []
+    })
+
+/**
+ * An entry's name led by its folder's through a path template such as
+ * "{0} › {1}", as parts, so a display can shorten the folder before the name.
+ */
+export const folderPathParts = <K, V extends FolderMember & { name: string }>(
     entries: ReadonlyMap<K, V>,
     folders: ReadonlyMap<FolderId, FolderObject>,
     id: K,
-    path: (folder: string, name: string) => string,
-) => {
+    path: string,
+): NamePart[] => {
     const entry = entries.get(id)
-    if (!entry) return ''
+    if (!entry) return []
+    const name: NamePart[] = [{ text: entry.name, role: 'name' }]
     const folder = entry.folderId === undefined ? undefined : folders.get(entry.folderId)
-    if (!folder) return entry.name
-    for (const [other, { name }] of entries)
-        if (other !== id && name === entry.name) return path(folder.name, entry.name)
-    return entry.name
+    return folder ? templateParts(path, [[{ text: folder.name, role: 'folder' }], name]) : name
 }
 
 /** Picker options in tree order: loose entries as they come, each folder as a labeled section. */

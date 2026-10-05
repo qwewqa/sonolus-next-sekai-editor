@@ -2,7 +2,7 @@
 import { computed, ref, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
 import { useAutoSave } from '../history/autoSave'
 import { isDynamicStages } from '../history/dynamicStages.ts'
-import { qualifiedName } from '../chart/folders'
+import { folderPathParts, templateParts, type NamePart } from '../chart/folders'
 import { groupFolders, groups } from '../history/groups'
 import { stageFolders, stages } from '../history/stages'
 import { i18n } from '../i18n'
@@ -174,27 +174,43 @@ const onStatusChip = (event: MouseEvent, command: Command) => {
     if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
 }
 
-// Folders tell apart entries that share a name, e.g. "Verse › Lead".
-const folderPath = (folder: string, name: string) =>
-    interpolateRaw(i18n.value.workspace.folders.path, folder, name)
-
-const group = computed(() =>
+// The target leads with its folder, e.g. "Verse › Lead Group", so it reads as
+// inside it; the folder shortens before the name.
+const group = computed((): NamePart[] =>
     view.groupId === undefined
-        ? i18n.value.statusBar.group.all
-        : interpolateRaw(
-              i18n.value.statusBar.group.one,
-              qualifiedName(groups.value, groupFolders.value, view.groupId, folderPath),
-          ),
+        ? [{ text: i18n.value.statusBar.group.all, role: 'name' }]
+        : templateParts(i18n.value.statusBar.group.one, [
+              folderPathParts(
+                  groups.value,
+                  groupFolders.value,
+                  view.groupId,
+                  i18n.value.workspace.folders.path,
+              ),
+          ]),
 )
 
-const stage = computed(() =>
+const stage = computed((): NamePart[] =>
     view.stageId === undefined
-        ? i18n.value.statusBar.stage.all
-        : interpolateRaw(
-              i18n.value.statusBar.stage.one,
-              qualifiedName(stages.value, stageFolders.value, view.stageId, folderPath),
-          ),
+        ? [{ text: i18n.value.statusBar.stage.all, role: 'name' }]
+        : templateParts(i18n.value.statusBar.stage.one, [
+              folderPathParts(
+                  stages.value,
+                  stageFolders.value,
+                  view.stageId,
+                  i18n.value.workspace.folders.path,
+              ),
+          ]),
 )
+
+/** How a run of a scope name shrinks: the folder first, then the name; text stays. */
+const partClass = ({ text, role }: NamePart) =>
+    role === 'folder'
+        ? text.length > 2
+            ? 'status-folder min-w-[2em] truncate'
+            : 'shrink-0'
+        : role === 'name'
+          ? 'min-w-0 truncate'
+          : 'shrink-0 whitespace-pre'
 
 // Shown separately from the authoring target, and only while something is hidden.
 const shownCount = (shown: number, total: number, message: string) => {
@@ -284,7 +300,11 @@ const stageCount = computed(() =>
                 :title="i18n.commands.manageStages.title"
                 @click="onStatusChip($event, manageStages)"
             >
-                <span class="min-w-0 truncate">{{ stage }}</span>
+                <span class="flex min-w-0">
+                    <span v-for="(part, i) in stage" :key="i" :class="partClass(part)">{{
+                        part.text
+                    }}</span>
+                </span>
                 <span
                     v-if="stageCount"
                     class="ml-1 shrink-0 whitespace-nowrap"
@@ -300,7 +320,11 @@ const stageCount = computed(() =>
                 :title="i18n.commands.manageGroups.title"
                 @click="onStatusChip($event, manageGroups)"
             >
-                <span class="min-w-0 truncate">{{ group }}</span>
+                <span class="flex min-w-0">
+                    <span v-for="(part, i) in group" :key="i" :class="partClass(part)">{{
+                        part.text
+                    }}</span>
+                </span>
                 <span
                     v-if="groupCount"
                     class="ml-1 shrink-0 whitespace-nowrap"
@@ -316,6 +340,11 @@ const stageCount = computed(() =>
 </template>
 
 <style scoped>
+/* A long folder name gives way long before the target's own name. */
+.status-folder {
+    flex-shrink: 1000;
+}
+
 .status-chip {
     border-radius: 9999px;
     transition: color 150ms;

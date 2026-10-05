@@ -992,10 +992,27 @@ const entryHandlers = (id: T) => {
  * A collapsed folder holding the target stands in for it with the target's
  * pill, as outline views do, so the target never drops out of sight.
  */
-const holdsTarget = (item: FolderItem) =>
-    !isFolderExpanded(item.id) &&
-    focused.value !== undefined &&
-    item.members.includes(focused.value)
+/** Whether the authoring target is one of a folder's members. */
+const containsTarget = (item: FolderItem) =>
+    focused.value !== undefined && item.members.includes(focused.value)
+
+/** A collapsed folder stands in for the target it hides. */
+const holdsTarget = (item: FolderItem) => !isFolderExpanded(item.id) && containsTarget(item)
+
+/** Members from the folder down to the target, whose guide line leads to it. */
+const isOnTargetPath = (item: FolderItem, id: T) => {
+    const target = focused.value
+    if (target === undefined) return false
+    const end = item.members.indexOf(target)
+    return end >= 0 && item.members.indexOf(id) <= end
+}
+
+/** Names the target a folder holds, for its tooltip and screen readers. */
+const targetDescription = (item: FolderItem) => {
+    const id = focused.value
+    if (!containsTarget(item) || id === undefined) return
+    return label(i18n.value.workspace.manager.target, entryTitle(id, names.value.get(id) ?? ''))
+}
 
 const folderTitle = (item: FolderItem) => {
     const toggle = label(
@@ -1004,10 +1021,11 @@ const folderTitle = (item: FolderItem) => {
             : i18n.value.workspace.folders.expand,
         folderName(item.id),
     )
-    const id = focused.value
-    if (!holdsTarget(item) || id === undefined) return toggle
-    return `${toggle}
-${label(i18n.value.workspace.manager.target, entryTitle(id, names.value.get(id) ?? ''))}`
+    const description = targetDescription(item)
+    return description === undefined
+        ? toggle
+        : `${toggle}
+${description}`
 }
 
 const folderEyeLabel = (item: FolderItem) =>
@@ -1079,6 +1097,10 @@ const folderEyeLabel = (item: FolderItem) =>
                     >
                         <div
                             class="manager-folder-head"
+                            :class="{
+                                'manager-folder-head-path':
+                                    isFolderExpanded(item.id) && containsTarget(item),
+                            }"
                             :data-row="`f${item.id}`"
                             :data-folder-id="item.id"
                             :style="rowStyle(item)"
@@ -1088,6 +1110,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                 :name="folderName(item.id)"
                                 :name-title="folderTitle(item)"
                                 :current="holdsTarget(item)"
+                                :description="targetDescription(item)"
                                 folder
                                 :expanded="isFolderExpanded(item.id)"
                                 :controls="membersId(item.id)"
@@ -1138,6 +1161,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                 :data-row-folder="item.id"
                                 :data-entry-id="id"
                                 :class="{
+                                    'manager-on-path': isOnTargetPath(item, id),
                                     'manager-dragged z-20': isDragged({ type: 'entry', id }),
                                     'manager-dragged-over':
                                         isDragged({ type: 'entry', id }) && isDroppingInto,
@@ -1251,10 +1275,11 @@ const folderEyeLabel = (item: FolderItem) =>
 }
 
 /*
- * Members hang under their folder: a guide line runs down the indent between
- * the eye column and the names (2px row inset + 36px eye + 8px), costing no
- * height. Each member draws its stretch, bridging the gap above it, so the
- * line follows rows that glide aside during a drag.
+ * Members hang under their folder: a guide line runs down the indent below
+ * the folder's chevron (2px row inset + 36px eye + 8px padding + half the
+ * 12px chevron, centered), costing no height. Each member draws its stretch,
+ * bridging the gap above it, so the line follows rows that glide aside
+ * during a drag.
  */
 .manager-members > li {
     position: relative;
@@ -1262,7 +1287,7 @@ const folderEyeLabel = (item: FolderItem) =>
 
 .manager-members > li::before {
     content: '';
-    @apply pointer-events-none absolute -top-1 bottom-0 left-[2.875rem] w-0.5 bg-fg/15;
+    @apply pointer-events-none absolute -top-1 bottom-0 left-[3.1875rem] w-0.5 bg-fg/15;
 }
 
 .manager-members > li:first-child::before {
@@ -1273,14 +1298,33 @@ const folderEyeLabel = (item: FolderItem) =>
     @apply bottom-1 rounded-b-full;
 }
 
+/*
+ * From a folder down to the authoring target the line darkens: it drops from
+ * under the folder's chevron into the target's pill, so the target reads as
+ * inside the folder even while the folder's row sticks above it.
+ */
+.manager-members > li.manager-on-path::before {
+    @apply bg-fg;
+}
+
+.manager-members > li.manager-on-path:first-child::before {
+    @apply top-0;
+}
+
+.manager-folder-head-path::after {
+    content: '';
+    @apply pointer-events-none absolute -bottom-1 left-[3.1875rem] top-[calc(50%+0.5rem)] w-0.5 rounded-t-full bg-fg;
+}
+
 /* A member being dragged leaves its stretch behind. */
 .manager-members > li.manager-dragged::before {
     display: none;
 }
 
 @media (pointer: coarse) {
-    .manager-members > li::before {
-        @apply left-[3.375rem];
+    .manager-members > li::before,
+    .manager-folder-head-path::after {
+        @apply left-[3.8125rem];
     }
 }
 

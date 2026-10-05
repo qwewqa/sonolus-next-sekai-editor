@@ -607,8 +607,91 @@ test('pickers group options by folder and the status bar names shared names by f
     )
 })
 
+test('the folder holding the target leads a dark line to it and names it', async ({ page }) => {
+    await seedGroups(page, [
+        ['Default'],
+        ['Lead', 'Verse'],
+        ['Fill', 'Verse'],
+        ['Echo', 'Verse'],
+        ['Bass', 'Chorus'],
+    ])
+    const groupChip = page.locator('.status-chip').filter({ hasText: 'Group' })
+    const verse = folderRow(page, 'Verse')
+    const head = (name: string) =>
+        panel(page)
+            .locator('.manager-folder-head')
+            .filter({ has: page.locator('.manager-label', { hasText: new RegExp(`^${name}$`) }) })
+    const onPath = panel(page).locator('.manager-on-path .manager-label')
+
+    // Fill, the target, sits in Verse: the line runs from Verse through Lead to Fill.
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = 1002 as never
+    })
+    await expect(head('Verse')).toHaveClass(/manager-folder-head-path/)
+    await expect(head('Chorus')).not.toHaveClass(/manager-folder-head-path/)
+    await expect(onPath).toHaveText(['Lead', 'Fill'])
+    await expect(verse.locator('.manager-name')).toHaveAttribute(
+        'aria-description',
+        'New objects are added to Verse › Fill',
+    )
+    await expect(folderRow(page, 'Chorus').locator('.manager-name')).not.toHaveAttribute(
+        'aria-description',
+        /.*/,
+    )
+    // The status bar always leads with the folder.
+    await expect(groupChip).toHaveText('Verse › Fill Group')
+
+    // Collapsed, the folder takes the target's pill instead of a line.
+    await nameButton(verse, 'Verse').click()
+    await expect(verse).toHaveClass(/manager-row-current/)
+    await expect(head('Verse')).not.toHaveClass(/manager-folder-head-path/)
+    await expect(verse.locator('.manager-name')).toHaveAttribute(
+        'aria-description',
+        'New objects are added to Verse › Fill',
+    )
+
+    // A loose target marks no folder.
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = 1 as never
+    })
+    await expect(panel(page).locator('.manager-folder-head-path')).toHaveCount(0)
+    await expect(onPath).toHaveCount(0)
+    await expect(groupChip).toHaveText('Default Group')
+})
+
 test.describe('touch', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+
+    test('a narrow status bar shortens the folder first and keeps the count', async ({ page }) => {
+        await seedGroups(page, [['Default'], ['Lead Synth Layer', 'An Extremely Long Folder Name']])
+        await page.evaluate(() => {
+            const { view } = window.editorTest
+            view.groupId = 2 as never
+            view.groupVisibility = new Map([[1, 'hidden']]) as never
+        })
+        const chip = page.locator('.status-chip').filter({ hasText: 'Group' })
+        await expect(chip).toContainText('· 1/2')
+        const parts = await chip.evaluate((element) => {
+            const box = element.getBoundingClientRect()
+            const folder = element.querySelector<HTMLElement>('.status-folder')!
+            const spans = [...element.querySelectorAll<HTMLElement>('span')]
+            const name = spans.find((span) => span.textContent === 'Lead Synth Layer')!
+            const count = spans.find((span) => span.textContent.startsWith('· '))!
+            return {
+                folderTruncated: folder.scrollWidth > folder.clientWidth,
+                folderWidth: folder.clientWidth,
+                nameWidth: name.clientWidth,
+                countInside: count.getBoundingClientRect().right <= box.right + 0.5,
+                countWidth: count.getBoundingClientRect().width,
+            }
+        })
+        expect(parts.folderTruncated).toBe(true)
+        // The folder gave way first: the name keeps more room than the folder.
+        expect(parts.nameWidth).toBeGreaterThan(parts.folderWidth)
+        expect(parts.countInside).toBe(true)
+        expect(parts.countWidth).toBeGreaterThan(0)
+        await expect(page.getByText('1/4', { exact: true })).toBeInViewport()
+    })
 
     test('a long press on a folder opens its menu', async ({ page }) => {
         await seedGroups(page, [['Default'], ['Lead', 'Verse']])

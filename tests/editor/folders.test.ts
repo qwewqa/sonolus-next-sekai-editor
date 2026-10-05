@@ -3,12 +3,14 @@ import { test } from 'node:test'
 import {
     buildFolderTree,
     flattenFolderTree,
+    folderPathParts,
     insertFolderInTree,
     moveEntryInTree,
     moveFolderInTree,
     normalizeFolders,
     stepEntryInTree,
     stepFolderInTree,
+    templateParts,
     ungroupInTree,
     type FolderId,
     type FolderObject,
@@ -125,4 +127,28 @@ test('ungrouping leaves members in place; new folders insert empty', () => {
     )
     assert.equal(flat.folders.get(B)?.index, 3)
     assert.deepEqual([...flat.folders.keys()], [A, B])
+})
+
+test('a target name leads with its folder as parts, wrapped by its template', () => {
+    const entries = new Map<number, Entry>([
+        [1, { name: 'Lead', folderId: A }],
+        [2, { name: 'Bridge' }],
+    ])
+    const folders = new Map<FolderId, FolderObject>([[A, { name: 'Verse', index: 0 }]])
+
+    assert.deepEqual(
+        templateParts('{0} Group', [folderPathParts(entries, folders, 1, '{0} › {1}')]),
+        [
+            { text: 'Verse', role: 'folder' },
+            { text: ' › ' },
+            { text: 'Lead', role: 'name' },
+            { text: ' Group' },
+        ],
+    )
+    // Loose entries show just their name; a leading template keeps its text first.
+    assert.deepEqual(
+        templateParts('groupe {0}', [folderPathParts(entries, folders, 2, '{0} › {1}')]),
+        [{ text: 'groupe ' }, { text: 'Bridge', role: 'name' }],
+    )
+    assert.deepEqual(folderPathParts(entries, folders, 3, '{0} › {1}'), [])
 })
