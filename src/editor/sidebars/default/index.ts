@@ -18,7 +18,14 @@ import { editTimeScale } from '../../tools/timeScale'
 import { view } from '../../view'
 export { isEditableEntity } from '../../../state/operations/editable'
 
-export const editSelectedEditableEntities = (object: EditableObject) => {
+/** Edits the selected objects, or only those `only` accepts. */
+export const editSelectedEditableEntities = (
+    object: EditableObject,
+    only?: (entity: Entity) => boolean,
+) => {
+    const count = only ? selectedEntities.value.filter(only).length : selectedEntities.value.length
+    if (!count) return
+
     // Moving objects into a hidden group or stage reveals it, like authoring.
     revealAuthoringTarget(object)
     if (selectedEntities.value.length === 1) {
@@ -29,23 +36,15 @@ export const editSelectedEditableEntities = (object: EditableObject) => {
         editEntity[entity.type]?.(entity as never, object)
     } else {
         pushState(
-            interpolate(
-                () => i18n.value.sidebars.default.edited,
-                `${selectedEntities.value.length}`,
-            ),
-            createEditedEntitiesState(state.value, selectedEntities.value, object),
+            interpolate(() => i18n.value.sidebars.default.edited, `${count}`),
+            createEditedEntitiesState(state.value, selectedEntities.value, object, { only }),
         )
         view.entities = {
             hovered: [],
             creating: [],
         }
 
-        notify(
-            interpolate(
-                () => i18n.value.sidebars.default.edited,
-                `${selectedEntities.value.length}`,
-            ),
-        )
+        notify(interpolate(() => i18n.value.sidebars.default.edited, `${count}`))
     }
 }
 

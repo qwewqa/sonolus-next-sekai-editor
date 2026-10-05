@@ -10,6 +10,8 @@ import { createEditedEntitiesState } from '../../state/operations/edit'
 import type { EditableObject } from '../../state/operations/editable'
 import { entries } from '../../utils/object'
 import { editSelectedEditableEntities } from '../sidebars/default'
+import { coupledKeys } from '../workspace/properties/fields'
+import { aggregateValues } from './aggregate'
 import { getNoteFields, type NoteFields } from './noteFields'
 
 export const useProperties =
@@ -73,6 +75,7 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
             setPreviewEdit(current, () =>
                 createEditedEntitiesState(current, current.selectedEntities, object, {
                     autoAddGroup: false,
+                    only: appliesToEdit(object),
                 }),
             )
             ownedPreview = previewEdit.value
@@ -86,7 +89,7 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
             if (owner !== field) return
             const object = valid && source === historyState.value ? draft.value : undefined
             reset()
-            if (object) editSelectedEditableEntities(object)
+            if (object) editSelectedEditableEntities(object, appliesToEdit(object))
         },
         cancel: (field) => {
             if (owner === field) reset()
@@ -95,37 +98,13 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
     watch(historyState, reset, { flush: 'sync' })
     onScopeDispose(reset)
 
-    const state = computed(() => {
-        const model: Partial<T & EditableObject> = {}
-        const types: Partial<Record<EntityType, boolean>> = {}
-        const noteFields: Partial<NoteFields> = {}
-
-        for (const entity of entities.value) {
-            types[entity.type] = true
-
-            if (entity.type !== 'note') {
-                aggregate(model, entity)
-                continue
-            }
-
-            // A note's value for a field hidden for it (a tail's connector, an
-            // attached tick's lane) is unused, so it cannot make the field mixed.
-            const fields = getNoteFields(entity)
-            aggregate(model, entity, (key) => !(key in fields) || fields[key as keyof NoteFields])
-            aggregate(noteFields, fields)
-        }
-
-        return {
-            model,
-            types,
-            noteFields,
-        }
-    })
+    const state = computed(() => aggregateEntities(entities.value))
 
     return {
         entities,
         types: computed(() => state.value.types),
         noteFields: computed(() => state.value.noteFields),
+        usage: computed(() => state.value.usage),
         createModel: <K extends DistributedKeyOf<T> & keyof EditableObject>(key: K) =>
             computed({
                 get: () => draft.value?.[key] ?? state.value.model[key],
@@ -143,7 +122,8 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                     }
 
                     reset()
-                    editSelectedEditableEntities({ [key]: value })
+                    const object = { [key]: value }
+                    editSelectedEditableEntities(object, appliesToEdit(object))
                 },
             }),
         createEaseModel: <K extends 'connectorEase' | 'eventEase' | 'timeScaleEase'>(key: K) =>
@@ -151,7 +131,7 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                 get: () =>
                     mergeEases(
                         entities.value.flatMap((entity) =>
-                            key in entity && appliesTo(entity, key)
+                            fieldApplies(entity, key)
                                 ? [entity[key as never] as EditableEase<K>]
                                 : [],
                         ),
@@ -160,7 +140,8 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                     if (value === undefined) return
 
                     reset()
-                    editSelectedEditableEntities({ [key]: value })
+                    const object = { [key]: value }
+                    editSelectedEditableEntities(object, appliesToEdit(object))
                 },
             }),
     }
@@ -173,11 +154,48 @@ type EditableEase<K extends keyof EditableObject> = Extract<
 
 type DistributedKeyOf<T> = T extends T ? keyof T : never
 
-const appliesTo = (entity: Entity, key: string) => {
-    if (entity.type !== 'note') return true
+const noteFieldsApply = (fields: NoteFields) => (key: string) =>
+    !(key in fields) || fields[key as keyof NoteFields]
 
-    const fields = getNoteFields(entity)
-    return !(key in fields) || fields[key as keyof NoteFields]
+const appliesTo = (entity: Entity) =>
+    entity.type === 'note' ? noteFieldsApply(getNoteFields(entity)) : () => true
+
+/** Whether an object uses a property; a tail's connector or an attached tick's lane is unused. */
+export const fieldApplies = (entity: Entity, key: string) => key in entity && appliesTo(entity)(key)
+
+/** Selected objects an edit writes to: those using one of its properties. */
+export const appliesToEdit = (object: EditableObject) => {
+    const keys = Object.keys(object).flatMap((key) => [
+        key,
+        ...(coupledKeys[key as keyof EditableObject] ?? []),
+    ])
+    return (entity: Entity) => {
+        const applies = appliesTo(entity)
+        return keys.some((key) => key in entity && applies(key))
+    }
+}
+
+export const aggregateEntities = (entities: readonly Entity[]) => {
+    const types: Partial<Record<EntityType, boolean>> = {}
+    const noteFields: Partial<NoteFields> = {}
+    const noteFieldsOf = new Map<Entity, NoteFields>()
+
+    for (const entity of entities) {
+        types[entity.type] = true
+        if (entity.type !== 'note') continue
+
+        const fields = getNoteFields(entity)
+        noteFieldsOf.set(entity, fields)
+        aggregate(noteFields, fields)
+    }
+
+    // A note's value for a field hidden for it is unused, so it cannot make the field mixed.
+    const { model, usage } = aggregateValues(entities, (entity) => {
+        const fields = noteFieldsOf.get(entity)
+        return fields ? noteFieldsApply(fields) : () => true
+    })
+
+    return { model: model as Partial<EditableObject>, usage, types, noteFields }
 }
 
 const aggregate = <T extends object>(

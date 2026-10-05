@@ -1,318 +1,61 @@
 <script setup lang="ts">
+import { computed, type WritableComputedRef } from 'vue'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
-import MultiAnchorField from '../../../modals/form/MultiAnchorField.vue'
-import MultiBeatField from '../../../modals/form/MultiBeatField.vue'
-import MultiBpmField from '../../../modals/form/MultiBpmField.vue'
-import MultiMeterField from '../../../modals/form/MultiMeterField.vue'
-import MultiCameraLeftField from '../../../modals/form/MultiCameraLeftField.vue'
-import MultiCameraRotationField from '../../../modals/form/MultiCameraRotationField.vue'
-import MultiCameraSizeField from '../../../modals/form/MultiCameraSizeField.vue'
-import MultiCameraStageTiltField from '../../../modals/form/MultiCameraStageTiltField.vue'
-import MultiCameraZoomField from '../../../modals/form/MultiCameraZoomField.vue'
-import MultiCameraZoomTargetLaneField from '../../../modals/form/MultiCameraZoomTargetLaneField.vue'
-import MultiCameraZoomTargetYField from '../../../modals/form/MultiCameraZoomTargetYField.vue'
-import MultiCameraZoomVerticalAlignField from '../../../modals/form/MultiCameraZoomVerticalAlignField.vue'
-import MultiConnectorActiveIsCriticalField from '../../../modals/form/MultiConnectorActiveIsCriticalField.vue'
-import MultiConnectorIsFakeField from '../../../modals/form/MultiConnectorIsFakeField.vue'
-import MultiConnectorEaseField from '../../../modals/form/MultiConnectorEaseField.vue'
-import MultiConnectorGuideAlphaField from '../../../modals/form/MultiConnectorGuideAlphaField.vue'
-import MultiConnectorIsPassThroughField from '../../../modals/form/MultiConnectorIsPassThroughField.vue'
-import MultiConnectorLayerField from '../../../modals/form/MultiConnectorLayerField.vue'
-import MultiConnectorPresentationField from '../../../modals/form/MultiConnectorPresentationField.vue'
-import MultiConnectorTypeField from '../../../modals/form/MultiConnectorTypeField.vue'
-import MultiDivisionLineAlphaField from '../../../modals/form/MultiDivisionLineAlphaField.vue'
-import MultiDivisionParityField from '../../../modals/form/MultiDivisionParityField.vue'
-import MultiDivisionSizeField from '../../../modals/form/MultiDivisionSizeField.vue'
-import MultiEditorLaneField from '../../../modals/form/MultiEditorLaneField.vue'
-import MultiEventEaseField from '../../../modals/form/MultiEventEaseField.vue'
-import MultiFlickDirectionField from '../../../modals/form/MultiFlickDirectionField.vue'
-import MultiGroupField from '../../../modals/form/MultiGroupField.vue'
-import MultiHideNotesField from '../../../modals/form/MultiHideNotesField.vue'
-import MultiIsAttachedField from '../../../modals/form/MultiIsAttachedField.vue'
-import MultiIsConnectorSeparatorField from '../../../modals/form/MultiIsConnectorSeparatorField.vue'
-import MultiIsCriticalField from '../../../modals/form/MultiIsCriticalField.vue'
-import MultiIsFakeField from '../../../modals/form/MultiIsFakeField.vue'
-import MultiIsFullWidthField from '../../../modals/form/MultiIsFullWidthField.vue'
-import MultiJudgmentLineAlphaField from '../../../modals/form/MultiJudgmentLineAlphaField.vue'
-import MultiJudgmentLineColorField from '../../../modals/form/MultiJudgmentLineColorField.vue'
-import MultiJudgmentLineStyleField from '../../../modals/form/MultiJudgmentLineStyleField.vue'
-import MultiLaneAlphaField from '../../../modals/form/MultiLaneAlphaField.vue'
-import MultiLeftBorderStyleField from '../../../modals/form/MultiLeftBorderStyleField.vue'
-import MultiLeftField from '../../../modals/form/MultiLeftField.vue'
-import MultiMaskLeftField from '../../../modals/form/MultiMaskLeftField.vue'
-import MultiMaskSizeField from '../../../modals/form/MultiMaskSizeField.vue'
-import MultiNoteAlphaField from '../../../modals/form/MultiNoteAlphaField.vue'
-import MultiNoteTypeField from '../../../modals/form/MultiNoteTypeField.vue'
-import MultiNoteStyleField from '../../../modals/form/MultiNoteStyleField.vue'
-import MultiConnectorStyleField from '../../../modals/form/MultiConnectorStyleField.vue'
-import MultiPivotLaneField from '../../../modals/form/MultiPivotLaneField.vue'
-import MultiRightBorderStyleField from '../../../modals/form/MultiRightBorderStyleField.vue'
-import MultiRotationField from '../../../modals/form/MultiRotationField.vue'
-import MultiSfxField from '../../../modals/form/MultiSfxField.vue'
-import MultiSizeField from '../../../modals/form/MultiSizeField.vue'
-import MultiSkipField from '../../../modals/form/MultiSkipField.vue'
-import MultiStageField from '../../../modals/form/MultiStageField.vue'
-import MultiTimeScaleEaseField from '../../../modals/form/MultiTimeScaleEaseField.vue'
-import MultiTimeScaleField from '../../../modals/form/MultiTimeScaleField.vue'
-import MultiXTranslationField from '../../../modals/form/MultiXTranslationField.vue'
-import MultiYOffsetBeatField from '../../../modals/form/MultiYOffsetBeatField.vue'
-import MultiYOffsetField from '../../../modals/form/MultiYOffsetField.vue'
-import MultiYTranslationField from '../../../modals/form/MultiYTranslationField.vue'
 import { isEditableEntity } from '../../sidebars/default'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
-import MultiIsMaskNotesField from '../../../modals/form/MultiIsMaskNotesField.vue'
-import MultiElevationField from '../../../modals/form/MultiElevationField.vue'
-import MultiTimeScaleTransitionField from '../../../modals/form/MultiTimeScaleTransitionField.vue'
+import { multiFieldComponents } from './fieldComponents'
+import {
+    propertyFields,
+    propertySections,
+    type PropertyField,
+    type PropertyKey,
+    type PropertySection,
+} from './fields'
 import PropertiesFieldGroup from './PropertiesFieldGroup.vue'
 
 const { entities, types, noteFields, createModel, createEaseModel } =
     useSelectedEntitiesProperties(isEditableEntity)
 
-const beat = createModel('beat')
-const editorLane = createModel('editorLane')
-const bpm = createModel('bpm')
-const meter = createModel('meter')
-const groupId = createModel('groupId')
-const stageId = createModel('stageId')
-const timeScale = createModel('timeScale')
-const skip = createModel('skip')
-const timeScaleEase = createEaseModel('timeScaleEase')
-const timeScaleTransition = createModel('timeScaleTransition')
-const hideNotes = createModel('hideNotes')
-const cameraLeft = createModel('cameraLeft')
-const cameraSize = createModel('cameraSize')
-const cameraZoom = createModel('cameraZoom')
-const cameraZoomTargetLane = createModel('cameraZoomTargetLane')
-const cameraZoomTargetY = createModel('cameraZoomTargetY')
-const cameraZoomVerticalAlign = createModel('cameraZoomVerticalAlign')
-const cameraRotation = createModel('cameraRotation')
-const cameraStageTilt = createModel('cameraStageTilt')
-const maskLeft = createModel('maskLeft')
-const maskSize = createModel('maskSize')
-const isMaskNotes = createModel('isMaskNotes')
-const pivotLane = createModel('pivotLane')
-const divisionSize = createModel('divisionSize')
-const divisionParity = createModel('divisionParity')
-const yOffset = createModel('yOffset')
-const yOffsetBeat = createModel('yOffsetBeat')
-const judgmentLineColor = createModel('judgmentLineColor')
-const judgmentLineStyle = createModel('judgmentLineStyle')
-const leftBorderStyle = createModel('leftBorderStyle')
-const rightBorderStyle = createModel('rightBorderStyle')
-const isFullWidth = createModel('isFullWidth')
-const noteAlpha = createModel('noteAlpha')
-const laneAlpha = createModel('laneAlpha')
-const judgmentLineAlpha = createModel('judgmentLineAlpha')
-const divisionLineAlpha = createModel('divisionLineAlpha')
-const rotation = createModel('rotation')
-const xTranslation = createModel('xTranslation')
-const yTranslation = createModel('yTranslation')
-const elevation = createModel('elevation')
-const anchor = createModel('anchor')
-const eventEase = createEaseModel('eventEase')
-const noteStyle = createModel('noteStyle')
-const connectorStyle = createModel('connectorStyle')
-const noteType = createModel('noteType')
-const isAttached = createModel('isAttached')
-const left = createModel('left')
-const size = createModel('size')
-const isCritical = createModel('isCritical')
-const flickDirection = createModel('flickDirection')
-const isFake = createModel('isFake')
-const sfx = createModel('sfx')
-const isConnectorSeparator = createModel('isConnectorSeparator')
-const connectorType = createModel('connectorType')
-const connectorEase = createEaseModel('connectorEase')
-const connectorIsFake = createModel('connectorIsFake')
-const connectorActiveIsCritical = createModel('connectorActiveIsCritical')
-const connectorGuideAlpha = createModel('connectorGuideAlpha')
-const connectorLayer = createModel('connectorLayer')
-const connectorIsPassThrough = createModel('connectorIsPassThrough')
-const connectorPresentation = createModel('connectorPresentation')
+const models = Object.fromEntries(
+    propertyFields.map((field) => [
+        field.key,
+        field.ease
+            ? createEaseModel(field.key as 'connectorEase')
+            : createModel(field.key as 'beat'),
+    ]),
+) as Record<PropertyKey, WritableComputedRef<unknown>>
+
+const visible = computed(() => {
+    const context = {
+        types: types.value,
+        noteFields: noteFields.value,
+        count: entities.value.length,
+        isDynamicStages: isDynamicStages.value,
+    }
+    const sections = Object.fromEntries(
+        propertySections.map((section) => [section, [] as PropertyField[]]),
+    ) as Record<PropertySection, PropertyField[]>
+    for (const field of propertyFields) {
+        if (field.show(context)) sections[field.section].push(field)
+    }
+    return sections
+})
 </script>
 
 <template>
     <p v-if="!entities.length" class="text-fg/80">{{ i18n.sidebars.default.none }}</p>
     <template v-else>
-        <!-- Position: where the objects sit on the chart. -->
-        <PropertiesFieldGroup>
-            <MultiBeatField
-                v-if="entities.length === 1 || (!types.bpm && !types.timeScale)"
-                v-model="beat"
-            />
-            <MultiEditorLaneField
-                v-if="types.timeScale || types.stageStyleEventJoint"
-                v-model="editorLane"
-            />
-            <MultiLeftField v-if="types.note && noteFields.left !== false" v-model="left" />
-            <MultiSizeField v-if="types.note && noteFields.size !== false" v-model="size" />
-            <MultiCameraLeftField v-if="types.cameraEventJoint" v-model="cameraLeft" />
-            <MultiCameraSizeField v-if="types.cameraEventJoint" v-model="cameraSize" />
-            <MultiMaskLeftField v-if="types.stageMaskEventJoint" v-model="maskLeft" />
-            <MultiMaskSizeField v-if="types.stageMaskEventJoint" v-model="maskSize" />
-            <MultiPivotLaneField v-if="types.stagePivotEventJoint" v-model="pivotLane" />
-            <MultiXTranslationField v-if="types.stageTransformEventJoint" v-model="xTranslation" />
-            <MultiYTranslationField v-if="types.stageTransformEventJoint" v-model="yTranslation" />
-        </PropertiesFieldGroup>
-
-        <!-- Values specific to each object type. -->
-        <PropertiesFieldGroup>
-            <MultiBpmField v-if="types.bpm" v-model="bpm" />
-            <MultiMeterField v-if="types.bpm" v-model="meter" />
-            <MultiTimeScaleField v-if="types.timeScale" v-model="timeScale" />
-            <MultiSkipField v-if="types.timeScale" v-model="skip" />
-            <MultiTimeScaleEaseField v-if="types.timeScale" v-model="timeScaleEase" />
-            <MultiTimeScaleTransitionField v-if="types.timeScale" v-model="timeScaleTransition" />
-            <MultiHideNotesField v-if="types.timeScale" v-model="hideNotes" />
-            <MultiCameraZoomField v-if="types.cameraEventJoint" v-model="cameraZoom" />
-            <MultiCameraZoomTargetLaneField
-                v-if="types.cameraEventJoint"
-                v-model="cameraZoomTargetLane"
-            />
-            <MultiCameraZoomTargetYField
-                v-if="types.cameraEventJoint"
-                v-model="cameraZoomTargetY"
-            />
-            <MultiCameraZoomVerticalAlignField
-                v-if="types.cameraEventJoint"
-                v-model="cameraZoomVerticalAlign"
-            />
-            <MultiCameraRotationField v-if="types.cameraEventJoint" v-model="cameraRotation" />
-            <MultiCameraStageTiltField v-if="types.cameraEventJoint" v-model="cameraStageTilt" />
-            <MultiIsMaskNotesField v-if="types.stageMaskEventJoint" v-model="isMaskNotes" />
-            <MultiDivisionSizeField v-if="types.stagePivotEventJoint" v-model="divisionSize" />
-            <MultiDivisionParityField v-if="types.stagePivotEventJoint" v-model="divisionParity" />
-            <MultiYOffsetField v-if="types.stagePivotEventJoint" v-model="yOffset" />
-            <MultiYOffsetBeatField v-if="types.stagePivotEventJoint" v-model="yOffsetBeat" />
-            <MultiJudgmentLineColorField
-                v-if="types.stageStyleEventJoint"
-                v-model="judgmentLineColor"
-            />
-            <MultiJudgmentLineStyleField
-                v-if="types.stageStyleEventJoint"
-                v-model="judgmentLineStyle"
-            />
-            <MultiLeftBorderStyleField
-                v-if="types.stageStyleEventJoint"
-                v-model="leftBorderStyle"
-            />
-            <MultiRightBorderStyleField
-                v-if="types.stageStyleEventJoint"
-                v-model="rightBorderStyle"
-            />
-            <MultiIsFullWidthField v-if="types.stageStyleEventJoint" v-model="isFullWidth" />
-            <MultiNoteAlphaField v-if="types.stageStyleEventJoint" v-model="noteAlpha" />
-            <MultiLaneAlphaField v-if="types.stageStyleEventJoint" v-model="laneAlpha" />
-            <MultiJudgmentLineAlphaField
-                v-if="types.stageStyleEventJoint"
-                v-model="judgmentLineAlpha"
-            />
-            <MultiDivisionLineAlphaField
-                v-if="types.stageStyleEventJoint"
-                v-model="divisionLineAlpha"
-            />
-            <MultiRotationField v-if="types.stageTransformEventJoint" v-model="rotation" />
-            <MultiAnchorField v-if="types.stageTransformEventJoint" v-model="anchor" />
-            <MultiEventEaseField
-                v-if="
-                    types.cameraEventJoint ||
-                    types.stageMaskEventJoint ||
-                    types.stagePivotEventJoint ||
-                    types.stageStyleEventJoint ||
-                    types.stageTransformEventJoint
-                "
-                v-model="eventEase"
-            />
-            <MultiNoteTypeField v-if="types.note" v-model="noteType" />
-            <MultiIsCriticalField
-                v-if="types.note && noteFields.isCritical !== false"
-                v-model="isCritical"
-            />
-            <MultiFlickDirectionField
-                v-if="types.note && noteFields.flickDirection !== false"
-                v-model="flickDirection"
-            />
-            <MultiIsAttachedField
-                v-if="types.note && noteFields.isAttached !== false"
-                v-model="isAttached"
-            />
-            <MultiNoteStyleField
-                v-if="types.note && noteFields.noteStyle !== false"
-                v-model="noteStyle"
-            />
-            <MultiIsFakeField v-if="types.note && noteFields.isFake !== false" v-model="isFake" />
-            <MultiSfxField v-if="types.note && noteFields.sfx !== false" v-model="sfx" />
-        </PropertiesFieldGroup>
-
-        <!-- The connector leaving each note. -->
-        <PropertiesFieldGroup>
-            <MultiIsConnectorSeparatorField
-                v-if="types.note && noteFields.isConnectorSeparator !== false"
-                v-model="isConnectorSeparator"
-            />
-            <MultiConnectorTypeField
-                v-if="types.note && noteFields.connectorType !== false"
-                v-model="connectorType"
-            />
-            <MultiConnectorStyleField
-                v-if="types.note && noteFields.connectorStyle !== false"
-                v-model="connectorStyle"
-            />
-            <MultiConnectorEaseField
-                v-if="types.note && noteFields.connectorEase !== false"
-                v-model="connectorEase"
-            />
-            <MultiConnectorIsFakeField
-                v-if="types.note && noteFields.connectorIsFake !== false"
-                v-model="connectorIsFake"
-            />
-            <MultiConnectorActiveIsCriticalField
-                v-if="types.note && noteFields.connectorActiveIsCritical !== false"
-                v-model="connectorActiveIsCritical"
-            />
-            <MultiConnectorGuideAlphaField
-                v-if="types.note && noteFields.connectorGuideAlpha !== false"
-                v-model="connectorGuideAlpha"
-            />
-            <MultiConnectorLayerField
-                v-if="types.note && noteFields.connectorLayer !== false"
-                v-model="connectorLayer"
-            />
-            <MultiConnectorIsPassThroughField
-                v-if="types.note && noteFields.connectorIsPassThrough !== false"
-                v-model="connectorIsPassThrough"
-            />
-            <MultiConnectorPresentationField
-                v-if="types.note && noteFields.connectorPresentation !== false"
-                v-model="connectorPresentation"
-            />
-        </PropertiesFieldGroup>
-
-        <!-- Organization: which group and stage own the objects. -->
-        <PropertiesFieldGroup>
-            <MultiGroupField v-if="types.timeScale || types.note" v-model="groupId" />
-            <MultiStageField
-                v-if="
-                    isDynamicStages &&
-                    (types.note ||
-                        types.stageMaskEventJoint ||
-                        types.stagePivotEventJoint ||
-                        types.stageStyleEventJoint ||
-                        types.stageTransformEventJoint)
-                "
-                v-model="stageId"
-            />
-        </PropertiesFieldGroup>
-
-        <!-- Elevation, kept last as an advanced placement value. -->
-        <PropertiesFieldGroup>
-            <MultiElevationField
-                v-if="
-                    types.stageTransformEventJoint || (types.note && noteFields.elevation !== false)
-                "
-                v-model="elevation"
-            />
-        </PropertiesFieldGroup>
+        <template v-for="section in propertySections" :key="section">
+            <PropertiesFieldGroup v-if="visible[section].length">
+                <component
+                    :is="multiFieldComponents[field.key]"
+                    v-for="field in visible[section]"
+                    :key="field.key"
+                    :model-value="models[field.key].value"
+                    @update:model-value="(value: unknown) => (models[field.key].value = value)"
+                />
+            </PropertiesFieldGroup>
+        </template>
     </template>
 </template>
