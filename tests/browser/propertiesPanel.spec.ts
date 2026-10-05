@@ -118,6 +118,55 @@ test.describe('roomy panel', () => {
         await expect.poll(raised).toEqual([])
     })
 
+    test('values of notes a field does not apply to do not make it mixed', async ({ page }) => {
+        await open(page)
+        await page.evaluate(async () => {
+            const { fixtures, show, nextTick } = window.editorTest
+            const base = fixtures.events.slides[0]![0]!
+            const note = (beat: number, values: Partial<typeof base> = {}) => ({
+                ...base,
+                beat,
+                ...values,
+            })
+            show({
+                ...fixtures.events,
+                slides: [
+                    [
+                        note(2, { connectorEase: 'in' }),
+                        // Attached ticks and tails carry connector values the
+                        // slide never uses, as imported charts often do.
+                        note(3, { isAttached: true, connectorEase: 'out', flickDirection: 'up' }),
+                        note(4, { connectorEase: 'out', connectorLayer: 'bottom' }),
+                    ],
+                    [note(6, { connectorEase: 'out' }), note(7)],
+                ],
+            })
+            await nextTick()
+        })
+        const shown = (name: string) =>
+            panel(page).getByRole('combobox', { name, exact: true }).locator('option:checked')
+        const select = (beats: number[]) =>
+            page.evaluate(async (beats) => {
+                const { history, store, nextTick } = window.editorTest
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: [...store.getAllEntities()].filter(
+                        (entity) => entity.type === 'note' && beats.includes(entity.beat),
+                    ),
+                })
+                await nextTick()
+            }, beats)
+
+        await select([2, 3, 4])
+        await expect(shown('Connector Ease')).toHaveText('In')
+        await expect(shown('Connector Layer')).toHaveText('Top')
+        await expect(shown('Flick Direction')).toHaveText('None')
+
+        // Values that genuinely differ are still mixed.
+        await select([2, 6])
+        await expect(shown('Connector Ease')).toHaveText('Mixed')
+    })
+
     test('a typed value commits when the presentation switches', async ({ page }) => {
         await open(page)
         await selectNoteAt(page, 3)

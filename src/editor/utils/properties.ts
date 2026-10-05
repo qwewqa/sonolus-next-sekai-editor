@@ -100,11 +100,18 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
         const noteFields: Partial<NoteFields> = {}
 
         for (const entity of entities.value) {
-            aggregate(model, entity)
-
             types[entity.type] = true
 
-            if (entity.type === 'note') aggregate(noteFields, getNoteFields(entity))
+            if (entity.type !== 'note') {
+                aggregate(model, entity)
+                continue
+            }
+
+            // A note's value for a field hidden for it (a tail's connector, an
+            // attached tick's lane) is unused, so it cannot make the field mixed.
+            const fields = getNoteFields(entity)
+            aggregate(model, entity, (key) => !(key in fields) || fields[key as keyof NoteFields])
+            aggregate(noteFields, fields)
         }
 
         return {
@@ -143,8 +150,14 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
 
 type DistributedKeyOf<T> = T extends T ? keyof T : never
 
-const aggregate = <T extends object>(aggregate: Partial<T>, object: T) => {
+const aggregate = <T extends object>(
+    aggregate: Partial<T>,
+    object: T,
+    include?: (key: keyof T) => boolean,
+) => {
     for (const [key, value] of entries(object)) {
+        if (include && !include(key)) continue
+
         if (key in aggregate) {
             if (aggregate[key] === undefined) continue
 
