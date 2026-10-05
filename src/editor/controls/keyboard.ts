@@ -4,12 +4,17 @@ import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { isInWorkspaceDock } from '../workspace'
 
-const isControl = (target: EventTarget | null) =>
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target instanceof HTMLButtonElement ||
-    (target instanceof HTMLElement && target.isContentEditable)
+// Fields keep every key; buttons keep only the keys that press them.
+const keepsDefault = (event: KeyboardEvent) => {
+    const { target } = event
+    if (target instanceof HTMLButtonElement) return event.key === ' ' || event.key === 'Enter'
+    return (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+    )
+}
 
 const onKeydown = (event: KeyboardEvent) => {
     if (modals.length) return
@@ -27,8 +32,8 @@ const onKeydown = (event: KeyboardEvent) => {
     }
 
     // Handled plain keys skip browser defaults such as Firefox quick find and
-    // WebKit Backspace navigation; combinations and focused controls keep theirs.
-    if (isShortcut && !event.ctrlKey && !event.altKey && !event.metaKey && !isControl(event.target))
+    // WebKit Backspace navigation; browser combinations keep theirs.
+    if (isShortcut && !event.ctrlKey && !event.altKey && !event.metaKey && !keepsDefault(event))
         event.preventDefault()
 }
 

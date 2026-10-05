@@ -120,6 +120,11 @@ test.describe('shortcuts', () => {
         await page.keyboard.type("/'")
         await expect(field).toHaveValue("/'")
         expect(await keyLog(page)).toEqual(['/:false', "':false"])
+
+        // A focused button keeps only the keys that press it.
+        await page.locator('[data-editor-toolbar] button[title="Undo"]').focus()
+        for (const key of ['/', ' ', 'Backspace']) await page.keyboard.press(key)
+        expect(await keyLog(page)).toEqual(['/:true', ' :false', 'Backspace:true'])
     })
 })
 
