@@ -13,7 +13,7 @@ const props = defineProps<{
     name: string
     /** Tooltip for the name, which may be truncated. */
     nameTitle: string
-    /** Whether this row is the authoring target. */
+    /** Whether this row is the authoring target, or a collapsed folder holding it. */
     current: boolean
     shown: boolean
     /** Dims the name, as for hidden entries; band rows keep full-strength text. */
@@ -313,7 +313,7 @@ const onRenameBlur = (event: FocusEvent) => {
             type="button"
             class="manager-name"
             :disabled
-            :aria-current="current ? 'true' : undefined"
+            :aria-current="current && !folder ? 'true' : undefined"
             :aria-expanded="folder ? (expanded ? 'true' : 'false') : undefined"
             :aria-controls="expanded ? controls : undefined"
             :title="nameTitle"

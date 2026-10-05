@@ -1,3 +1,4 @@
+import type { FolderId } from '../../../chart/folders'
 import { addToGroups, type GroupId } from '../../../chart/groups'
 import { pushState, state } from '../../../history'
 import { groupFolders, groups } from '../../../history/groups'
@@ -19,16 +20,15 @@ import { survivingSelection } from './objects'
 
 const nameOf = (groupId: GroupId) => groups.value.get(groupId)?.name ?? ''
 
-export const addGroup = () => {
+/** Adds a group at the end, or at the end of a folder, in one step. */
+export const addGroup = (folder?: FolderId) => {
     const newGroups = new Map(groups.value)
     const [groupId, name] = addToGroups(newGroups)
 
+    const added = { ...state.value, groups: newGroups }
     pushState(
         interpolate(() => i18n.value.commands.manageGroups.modal.added, name),
-        {
-            ...state.value,
-            groups: newGroups,
-        },
+        folder === undefined ? added : groupFolderOps.placedIn(added, groupId, folder),
     )
 
     notify(interpolate(() => i18n.value.commands.manageGroups.modal.added, name))

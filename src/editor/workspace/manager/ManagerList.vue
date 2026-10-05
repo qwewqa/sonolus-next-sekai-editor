@@ -8,6 +8,7 @@ import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
 import { useScrollMemory } from '../useScrollMemory'
 import { isFolderExpanded, setFolderExpanded, type EntryPlace } from './folders'
+import AddIcon from './icons/AddIcon.vue'
 import FolderIcon from './icons/FolderIcon.vue'
 import FolderOpenIcon from './icons/FolderOpenIcon.vue'
 import FolderPlusIcon from './icons/FolderPlusIcon.vue'
@@ -90,17 +91,53 @@ const focusIn = (key: RowKey, selector: string) => {
  * clears the list padding and the sticky Add item.
  */
 const reveal = (key: RowKey) => {
-    const container = list.value
     const row = rowOf(key)
-    if (!container || !row) return
+    if (row) revealRow(row)
+}
+
+const revealRow = (row: HTMLElement) => {
+    const container = list.value
+    if (!container) return
     const bounds = container.getBoundingClientRect()
     const style = getComputedStyle(container)
-    // A floating Add is covered by the list's bottom padding.
-    const top = bounds.top + parseFloat(style.paddingTop)
+    // A floating Add is covered by the list's bottom padding, and a member by
+    // its folder's row, which stays at the top while members scroll by.
+    const head =
+        row.dataset.rowFolder === undefined
+            ? undefined
+            : row.closest('.manager-folder')?.querySelector<HTMLElement>('.manager-folder-head')
+    const top =
+        bounds.top +
+        parseFloat(style.paddingTop) +
+        (head ? parseFloat(getComputedStyle(head).top) + head.offsetHeight : 0)
     const bottom = bounds.bottom - parseFloat(style.paddingBottom)
     const rect = row.getBoundingClientRect()
     if (rect.top < top) container.scrollTop -= top - rect.top
     else if (rect.bottom > bottom) container.scrollTop += rect.bottom - bottom
+}
+
+/**
+ * Up and Down step between the rows' names, from the band's row down, and Home
+ * and End reach the ends, as in a tree; Tab still visits every control.
+ */
+const onKeydown = (event: KeyboardEvent) => {
+    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const target = event.target as HTMLElement
+    if (!target.classList.contains('manager-name')) return
+    event.preventDefault()
+    const names = [...(root.value?.querySelectorAll<HTMLElement>('.manager-name') ?? [])]
+    const index = names.indexOf(target)
+    const next =
+        event.key === 'Home'
+            ? names[0]
+            : event.key === 'End'
+              ? names.at(-1)
+              : names[index + (event.key === 'ArrowUp' ? -1 : 1)]
+    if (!next) return
+    next.focus({ preventScroll: true })
+    const row = next.closest<HTMLElement>('[data-row]')
+    if (row) revealRow(row)
 }
 
 // Inline actions need room beside a useful share of the name. With a mouse
@@ -231,7 +268,13 @@ const onListScroll = () => {
 
 const onAdd = async (event: MouseEvent) => {
     if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
-    const id = props.model.add()
+    await addEntry()
+}
+
+/** Adds an entry, at the end or of an opened folder, and names it right away. */
+const addEntry = async (folder?: FolderId) => {
+    const id = props.model.add(folder)
+    if (folder !== undefined) setFolderExpanded(folder, true)
     await nextTick()
     reveal({ type: 'entry', id })
     // Name the new entry right away: Enter or leaving keeps the typed name,
@@ -320,8 +363,10 @@ const dragThreshold = 5
 const rowGap = 4
 
 const measureRows = (container: HTMLElement, translate: (key: string) => number) => {
+    // Folder rows measure where they lie, not where they stick.
+    container.classList.add('manager-entries-measuring')
     const bounds = container.getBoundingClientRect()
-    return [...container.querySelectorAll<HTMLElement>('[data-row]')].flatMap((element) => {
+    const rows = [...container.querySelectorAll<HTMLElement>('[data-row]')].flatMap((element) => {
         const key = parseRowKey(element.dataset.row)
         if (!key) return []
         const rect = element.getBoundingClientRect()
@@ -339,6 +384,8 @@ const measureRows = (container: HTMLElement, translate: (key: string) => number)
             },
         ]
     })
+    container.classList.remove('manager-entries-measuring')
+    return rows
 }
 
 /** Every shown row's key by its `data-row` value. */
@@ -677,6 +724,7 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
     const manager = i18n.value.workspace.manager
     const folderStrings = i18n.value.workspace.folders
     return [
+        { key: 'add', label: strings.value.add, icon: AddIcon },
         { key: 'rename', label: manager.rename, icon: RenameIcon },
         {
             key: 'solo',
@@ -794,6 +842,9 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
         return
     }
     switch (action) {
+        case 'add':
+            if (key.type === 'folder') await addEntry(key.id)
+            return
         case 'rename':
             startRename(key)
             return
@@ -937,6 +988,28 @@ const entryHandlers = (id: T) => {
     }
 }
 
+/**
+ * A collapsed folder holding the target stands in for it with the target's
+ * pill, as outline views do, so the target never drops out of sight.
+ */
+const holdsTarget = (item: FolderItem) =>
+    !isFolderExpanded(item.id) &&
+    focused.value !== undefined &&
+    item.members.includes(focused.value)
+
+const folderTitle = (item: FolderItem) => {
+    const toggle = label(
+        isFolderExpanded(item.id)
+            ? i18n.value.workspace.folders.collapse
+            : i18n.value.workspace.folders.expand,
+        folderName(item.id),
+    )
+    const id = focused.value
+    if (!holdsTarget(item) || id === undefined) return toggle
+    return `${toggle}
+${label(i18n.value.workspace.manager.target, entryTitle(id, names.value.get(id) ?? ''))}`
+}
+
 const folderEyeLabel = (item: FolderItem) =>
     label(
         shownMembers(item).length < item.members.length || !item.members.length
@@ -947,7 +1020,7 @@ const folderEyeLabel = (item: FolderItem) =>
 </script>
 
 <template>
-    <div ref="root" class="manager-list flex min-h-0 flex-col text-fg">
+    <div ref="root" class="manager-list flex min-h-0 flex-col text-fg" @keydown="onKeydown">
         <div
             class="manager-band relative z-10 shrink-0 bg-header px-1.5 py-1 [@media(pointer:coarse)]:py-0.5"
             :class="{ 'manager-band-raised': scrolled }"
@@ -1005,6 +1078,7 @@ const folderEyeLabel = (item: FolderItem) =>
                         :class="{ 'manager-dragged relative z-20': isDragged(item) }"
                     >
                         <div
+                            class="manager-folder-head"
                             :data-row="`f${item.id}`"
                             :data-folder-id="item.id"
                             :style="rowStyle(item)"
@@ -1012,15 +1086,8 @@ const folderEyeLabel = (item: FolderItem) =>
                             <ManagerRow
                                 class="manager-folder-row"
                                 :name="folderName(item.id)"
-                                :name-title="
-                                    label(
-                                        isFolderExpanded(item.id)
-                                            ? i18n.workspace.folders.collapse
-                                            : i18n.workspace.folders.expand,
-                                        folderName(item.id),
-                                    )
-                                "
-                                :current="false"
+                                :name-title="folderTitle(item)"
+                                :current="holdsTarget(item)"
                                 folder
                                 :expanded="isFolderExpanded(item.id)"
                                 :controls="membersId(item.id)"
@@ -1156,6 +1223,22 @@ const folderEyeLabel = (item: FolderItem) =>
 
 .manager-new-folder-icon {
     @apply size-4 fill-current [@media(pointer:coarse)]:size-5;
+}
+
+/*
+ * While its members scroll by, a folder's row stays at the top of the list so
+ * they keep their context; it sticks at the list's edge, over the top padding,
+ * and covers the members passing under it. A drag works with the rows where
+ * they lie.
+ */
+.manager-folder-head {
+    @apply sticky -top-1.5 z-[1] bg-modal;
+}
+
+.manager-entries-dragging .manager-folder-head,
+.manager-entries-measuring .manager-folder-head {
+    position: relative;
+    top: 0;
 }
 
 /* Out of the way of a row being dragged over it. */

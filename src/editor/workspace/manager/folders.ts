@@ -282,6 +282,17 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
                 }
         },
 
+        /** The state with an entry moved to the end of a folder, as part of another edit. */
+        placedIn(base: State, id: K, folder: FolderId): State {
+            const entries = config.entriesOf(base)
+            const next = moveEntryInTree(buildFolderTree(entries, config.folders()), id, {
+                folder,
+            })
+            if (!next) return base
+            const flat = flattenFolderTree(next, entries, config.folders())
+            return config.withData(base, flat.entries, flat.folders)
+        },
+
         /** Drops deleted entries from the tree, keeping folders in place. */
         commitRemoval(ids: ReadonlySet<K>, base: State, message: () => string) {
             commit(removeEntriesFromTree(tree(), ids), message, config.folders(), base)

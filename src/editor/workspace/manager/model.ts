@@ -1,4 +1,5 @@
 import type { Component, Ref } from 'vue'
+import type { FolderId } from '../../../chart/folders'
 import type { ScopeVisibility } from '../../scope'
 import type { FolderOps } from './folders'
 import type { OwnerKey } from './objects'
@@ -42,8 +43,11 @@ export type ManagerModel<T> = {
     focused: () => T | undefined
     scope: ManagerScope<T>
     strings: () => ManagerStrings
-    /** Adds an entry without changing the authoring target and returns its id. */
-    add: () => T
+    /**
+     * Adds an entry, at the end or of a folder, without changing the authoring
+     * target, and returns its id.
+     */
+    add: (folder?: FolderId) => T
     /** Steps an entry up or down, crossing folder edges one step at a time. */
     move: (id: T, offset: -1 | 1) => void
     /** Renames an entry; blank or unchanged names change nothing. */

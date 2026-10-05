@@ -656,3 +656,118 @@ test('stages get folders too when dynamic stages are on', async ({ page }) => {
         }),
     ).toBeVisible()
 })
+
+test('a collapsed folder holding the target stands in for it with the pill', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro']])
+    const verse = folderRow(page, 'Verse')
+    const name = verse.locator('.manager-name')
+    await nameButton(panel(page), 'Fill').click()
+    await expect(verse).not.toHaveClass(/manager-row-current/)
+
+    await name.click()
+    await expect(name).toHaveAttribute('aria-expanded', 'false')
+    await expect(verse).toHaveClass(/manager-row-current/)
+    // The folder is never the target itself; it only says where the target is.
+    await expect(name).not.toHaveAttribute('aria-current')
+    await expect(name).toHaveAttribute('title', /New objects are added to Verse › Fill/)
+
+    // Another target elsewhere leaves the folder plain.
+    await nameButton(panel(page), 'Outro').click()
+    await expect(verse).not.toHaveClass(/manager-row-current/)
+})
+
+test("a folder's menu adds a group into it in one step", async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Outro']])
+    const verse = folderRow(page, 'Verse')
+    await verse.locator('.manager-name').click()
+    await expect(verse.locator('.manager-name')).toHaveAttribute('aria-expanded', 'false')
+    await verse.getByRole('button', { name: 'More Actions for Verse' }).click()
+    await page.getByRole('menu').getByRole('menuitem', { name: 'Add Group' }).click()
+    // The folder opens and the new group is named right away.
+    const input = panel(page).getByRole('textbox')
+    await expect(input).toBeFocused()
+    await input.fill('Echo')
+    await input.press('Enter')
+    await expect(verse.locator('.manager-name')).toHaveAttribute('aria-expanded', 'true')
+    expect(await tree(page)).toBe('Default [Verse: Lead Echo] Outro')
+    // Adding into the folder is one step; naming is the next.
+    await undo(page)
+    await undo(page)
+    expect(await tree(page)).toBe('Default [Verse: Lead] Outro')
+})
+
+test("a folder's row stays at the top while its members scroll by", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 600 })
+    await seedGroups(page, [
+        ['Default'],
+        ['Intro'],
+        ...Array.from({ length: 16 }, (_, i): [string, string] => [`Part ${i + 1}`, 'Chorus']),
+        ['Outro'],
+    ])
+    const list = panel(page).locator('.manager-entries')
+    const head = panel(page).locator('.manager-folder-head')
+    await list.evaluate((element) => (element.scrollTop = 400))
+    const top = (await list.boundingBox())!.y
+    await expect.poll(async () => Math.round((await head.boundingBox())!.y - top)).toBe(0)
+    // The members passing under it are covered, not drawn over it.
+    const covered = await head.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+        return element.contains(hit)
+    })
+    expect(covered).toBe(true)
+
+    // Revealing a member keeps it clear of the folder's row.
+    await nameButton(panel(page), 'Part 1').focus()
+    await page.keyboard.press('ArrowDown')
+    await expect(nameButton(panel(page), 'Part 2')).toBeFocused()
+    const part = (await nameButton(panel(page), 'Part 2').boundingBox())!
+    const headBox = (await head.boundingBox())!
+    expect(part.y).toBeGreaterThanOrEqual(headBox.y + headBox.height - 1)
+
+    // Dragging measures rows where they lie, not where the folder's row sticks.
+    await list.evaluate((element) => (element.scrollTop = 300))
+    await expect.poll(async () => Math.round((await head.boundingBox())!.y - top)).toBe(0)
+    const listBox = (await list.boundingBox())!
+    const stuck = (await head.boundingBox())!
+    const visible: { name: string; y: number; x: number }[] = []
+    for (let i = 1; i <= 16; i++) {
+        const box = (await nameButton(panel(page), `Part ${i}`).boundingBox())!
+        if (box.y > stuck.y + stuck.height && box.y + box.height < listBox.y + listBox.height - 64)
+            visible.push({ name: `Part ${i}`, y: box.y + box.height / 2, x: box.x + 40 })
+    }
+    const [, to, , from] = visible
+    if (!to || !from) throw new Error('Too few visible members')
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x, to.y - 16, { steps: 8 })
+    await page.mouse.up()
+    // The held member now sits before the one it was dropped above.
+    const order = await tree(page)
+    expect(order.indexOf(`${from.name} `)).toBeLessThan(order.indexOf(`${to.name} `))
+})
+
+test('Up and Down step between names, Home and End reach the ends', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro']])
+    const all = panel(page).locator('.manager-all .manager-name')
+    await all.focus()
+    await page.keyboard.press('ArrowDown')
+    await expect(nameButton(panel(page), 'Default')).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(folderRow(page, 'Verse').locator('.manager-name')).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(nameButton(panel(page), 'Lead')).toBeFocused()
+    await page.keyboard.press('End')
+    await expect(nameButton(panel(page), 'Outro')).toBeFocused()
+    await page.keyboard.press('ArrowUp')
+    await expect(nameButton(panel(page), 'Fill')).toBeFocused()
+    await page.keyboard.press('Home')
+    await expect(all).toBeFocused()
+    // Moving focus is not an edit and never changes the target.
+    expect(await canUndo(page)).toBe(false)
+    expect(await page.evaluate(() => window.editorTest.view.groupId)).toBeUndefined()
+    // Alt+arrows still reorder.
+    await nameButton(panel(page), 'Default').focus()
+    await page.keyboard.press('Alt+ArrowDown')
+    expect(await tree(page)).toBe('[Verse: Default Lead Fill] Outro')
+})

@@ -1,3 +1,4 @@
+import type { FolderId } from '../../../chart/folders'
 import { addToStages, type StageId, type Stages } from '../../../chart/stages'
 import { pushState, state } from '../../../history'
 import { stageFolders, stages } from '../../../history/stages'
@@ -22,16 +23,15 @@ import { survivingSelection } from './objects'
 
 const nameOf = (stageId: StageId) => stages.value.get(stageId)?.name ?? ''
 
-export const addStage = () => {
+/** Adds a stage at the end, or at the end of a folder, in one step. */
+export const addStage = (folder?: FolderId) => {
     const newStages: Stages = new Map(stages.value)
     const [stageId, name] = addToStages(newStages)
 
+    const added = { ...state.value, stages: newStages }
     pushState(
         interpolate(() => i18n.value.commands.manageStages.modal.added, name),
-        {
-            ...state.value,
-            stages: newStages,
-        },
+        folder === undefined ? added : stageFolderOps.placedIn(added, stageId, folder),
     )
 
     notify(interpolate(() => i18n.value.commands.manageStages.modal.added, name))
