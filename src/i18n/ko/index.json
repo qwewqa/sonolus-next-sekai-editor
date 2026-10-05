@@ -1393,7 +1393,18 @@
       "selection": "선택",
       "tool": "도구",
       "view": "보기",
-      "noTool": "현재 도구에는 설정이 없습니다."
+      "noTool": "현재 도구에는 설정이 없습니다.",
+      "kinds": {
+        "note": "노트",
+        "slides": "슬라이드",
+        "bpm": "BPM",
+        "timeScale": "시간 배율",
+        "cameraEventJoint": "카메라 이벤트",
+        "stageMaskEventJoint": "스테이지 마스크 이벤트",
+        "stagePivotEventJoint": "스테이지 피벗 이벤트",
+        "stageStyleEventJoint": "스테이지 스타일 이벤트",
+        "stageTransformEventJoint": "스테이지 변형 이벤트"
+      }
     }
   }
 }

@@ -201,11 +201,12 @@ watchEffect(
     color: rgb(68 68 102 / 0.8);
 }
 
+/* Values line up with the text in the control's pill. */
 .form-field-mixed {
     display: flex;
     flex-wrap: wrap;
-    column-gap: 0.25rem;
     margin-top: 0.125rem;
+    padding-left: 0.625rem;
     font-size: 0.75rem;
     line-height: 1rem;
     color: rgb(68 68 102 / 0.8);
@@ -216,11 +217,6 @@ watchEffect(
     padding: 0.125rem 0.375rem;
     transition-property: color, background-color;
     transition-duration: 150ms;
-}
-
-/* The first value lines up with the text in the control's pill. */
-.form-field-mixed-value:first-child {
-    margin-left: 0.625rem;
 }
 
 .form-field-mixed-value:focus-visible {
@@ -269,7 +265,7 @@ watchEffect(
     }
 
     .form-field-mixed {
-        padding-left: calc(min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) + 0.75rem);
+        padding-left: calc(min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) + 1.375rem);
     }
 
     .form-field-row > :not(.form-field-label) {
@@ -292,11 +288,7 @@ watchEffect(
     }
 
     .form-field-mixed {
-        padding-left: calc(100% - max(6.25rem, 50%));
-    }
-
-    .form-field-mixed-value:first-child {
-        margin-left: 0.375rem;
+        padding-left: calc(100% - max(6.25rem, 50%) + 0.375rem);
     }
 
     .form-field-row
@@ -334,7 +326,7 @@ watchEffect(
     }
 
     .form-field-mixed {
-        padding-left: calc(60% + 0.75rem);
+        padding-left: calc(60% + 1.375rem);
     }
 }
 </style>

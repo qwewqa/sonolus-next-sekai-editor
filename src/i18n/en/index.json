@@ -1393,7 +1393,18 @@
             "selection": "Selection",
             "tool": "Tool",
             "view": "View",
-            "noTool": "The current tool has no settings."
+            "noTool": "The current tool has no settings.",
+            "kinds": {
+                "note": "Notes",
+                "slides": "Slides",
+                "bpm": "BPM",
+                "timeScale": "Time Scales",
+                "cameraEventJoint": "Camera Events",
+                "stageMaskEventJoint": "Stage Mask Events",
+                "stagePivotEventJoint": "Stage Pivot Events",
+                "stageStyleEventJoint": "Stage Style Events",
+                "stageTransformEventJoint": "Stage Transform Events"
+            }
         }
     }
 }

@@ -174,3 +174,29 @@ test.describe('mixed values', () => {
         await expect(type.locator('.form-field-coverage')).toHaveCount(0)
     })
 })
+
+test.describe('selection summary', () => {
+    test('lists each kind and narrows the selection to one', async ({ page }) => {
+        await showSlides(page, [[{ beat: 0 }, { beat: 1 }, { beat: 2 }], [{ beat: 3 }]])
+        await page.evaluate(async () => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'note' || entity.type === 'bpm',
+                ),
+            })
+            await nextTick()
+        })
+        const summary = selection(page).locator('.selection-summary')
+        await expect(summary).toHaveText('Notes 4Slides 1BPM 1')
+        // Several BPM changes hide Beat; narrowing to notes brings it back.
+        await expect(control(page, 'Beat')).toHaveCount(0)
+        await summary.getByRole('button', { name: 'Select only Notes (4)' }).click()
+        expect(await selectedCount(page)).toBe(4)
+        await expect(control(page, 'Beat')).toHaveCount(1)
+        // One kind left: nothing to narrow.
+        await expect(summary.getByRole('button')).toHaveCount(0)
+        await expect(summary).toHaveText('Notes 4Slides 1')
+    })
+})

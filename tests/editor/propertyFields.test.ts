@@ -7,12 +7,14 @@ import {
     propertyFields,
     type SelectionContext,
 } from '../../src/editor/workspace/properties/fields'
+import { summarizeSelection } from '../../src/editor/workspace/properties/summary'
 import {
     formatNumber,
     mixedOptions,
     mixedRange,
     mixedValues,
 } from '../../src/modals/form/fieldUsage'
+import type { Entity } from '../../src/state/entities'
 
 type Row = { kind: string; a?: number; b?: string; hidden?: number }
 
@@ -197,5 +199,32 @@ test('mixed fields name their values, ranges and counts', () => {
             ['In', 2],
             ['Out', 1],
         ],
+    )
+})
+
+test('the selection summary counts kinds in order and only slides of several notes', () => {
+    const entities = [
+        { type: 'bpm' },
+        { type: 'note', slideId: 1 },
+        { type: 'note', slideId: 1 },
+        { type: 'note', slideId: 2 },
+        { type: 'timeScale' },
+        { type: 'note', slideId: 3 },
+    ] as unknown as Entity[]
+    const lengths = new Map([
+        [1, 3],
+        [2, 1],
+        [3, 2],
+    ])
+    assert.deepEqual(
+        summarizeSelection(entities, (slideId) => lengths.get(slideId) ?? 0),
+        {
+            kinds: [
+                { kind: 'note', count: 4 },
+                { kind: 'bpm', count: 1 },
+                { kind: 'timeScale', count: 1 },
+            ],
+            slides: 2,
+        },
     )
 })

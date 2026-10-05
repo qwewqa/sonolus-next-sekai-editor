@@ -1393,7 +1393,18 @@
       "selection": "選取",
       "tool": "工具",
       "view": "檢視",
-      "noTool": "目前的工具沒有設定。"
+      "noTool": "目前的工具沒有設定。",
+      "kinds": {
+        "note": "音符",
+        "slides": "滑條",
+        "bpm": "BPM",
+        "timeScale": "時間倍率",
+        "cameraEventJoint": "攝影機事件",
+        "stageMaskEventJoint": "舞台遮罩事件",
+        "stagePivotEventJoint": "舞台樞軸事件",
+        "stageStyleEventJoint": "舞台樣式事件",
+        "stageTransformEventJoint": "舞台變換事件"
+      }
     }
   }
 }

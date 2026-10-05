@@ -1393,7 +1393,18 @@
       "selection": "Seçim",
       "tool": "Araç",
       "view": "Görünüm",
-      "noTool": "Geçerli aracın ayarı yok."
+      "noTool": "Geçerli aracın ayarı yok.",
+      "kinds": {
+        "note": "Notalar",
+        "slides": "Kaydırmalar",
+        "bpm": "BPM",
+        "timeScale": "Zaman Ölçekleri",
+        "cameraEventJoint": "Kamera Olayları",
+        "stageMaskEventJoint": "Sahne Maskesi Olayları",
+        "stagePivotEventJoint": "Sahne Dönme Merkezi Olayları",
+        "stageStyleEventJoint": "Sahne Stili Olayları",
+        "stageTransformEventJoint": "Sahne Dönüşüm Olayları"
+      }
     }
   }
 }

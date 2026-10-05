@@ -17,6 +17,7 @@ import {
     type PropertySection,
 } from './fields'
 import PropertiesFieldGroup from './PropertiesFieldGroup.vue'
+import SelectionSummary from './SelectionSummary.vue'
 import { selectOnly } from './selectOnly'
 
 const { entities, types, noteFields, usage, createModel, createEaseModel } =
@@ -71,6 +72,7 @@ const usageOf = (field: PropertyField): FieldUsage => ({
 <template>
     <p v-if="!entities.length" class="text-fg/80">{{ i18n.sidebars.default.none }}</p>
     <template v-else>
+        <SelectionSummary :entities />
         <template v-for="section in propertySections" :key="section">
             <PropertiesFieldGroup v-if="visible[section].length">
                 <FieldUsageProvider

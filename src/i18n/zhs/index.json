@@ -1393,7 +1393,18 @@
       "selection": "选择",
       "tool": "工具",
       "view": "视图",
-      "noTool": "当前工具没有设置。"
+      "noTool": "当前工具没有设置。",
+      "kinds": {
+        "note": "音符",
+        "slides": "长按音符",
+        "bpm": "BPM",
+        "timeScale": "时间尺度",
+        "cameraEventJoint": "镜头事件",
+        "stageMaskEventJoint": "舞台遮罩事件",
+        "stagePivotEventJoint": "舞台支点事件",
+        "stageStyleEventJoint": "舞台样式事件",
+        "stageTransformEventJoint": "舞台变换事件"
+      }
     }
   }
 }

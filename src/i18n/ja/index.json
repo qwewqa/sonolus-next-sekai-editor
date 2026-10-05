@@ -1393,7 +1393,18 @@
       "selection": "選択",
       "tool": "ツール",
       "view": "表示",
-      "noTool": "現在のツールには設定がありません。"
+      "noTool": "現在のツールには設定がありません。",
+      "kinds": {
+        "note": "ノーツ",
+        "slides": "スライド",
+        "bpm": "BPM",
+        "timeScale": "ハイスピード",
+        "cameraEventJoint": "カメライベント",
+        "stageMaskEventJoint": "ステージマスクイベント",
+        "stagePivotEventJoint": "ステージ支点イベント",
+        "stageStyleEventJoint": "ステージスタイルイベント",
+        "stageTransformEventJoint": "ステージ変形イベント"
+      }
     }
   }
 }
