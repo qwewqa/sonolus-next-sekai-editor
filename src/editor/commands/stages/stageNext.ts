@@ -3,6 +3,7 @@ import { checkDynamicStages } from '../../../history/dynamicStages.ts'
 import { stages } from '../../../history/stages'
 import { i18n } from '../../../i18n'
 import { stageScope } from '../../scope'
+import { stepFocus } from '../../scopeRules'
 import { view } from '../../view'
 import StageNextIcon from './StageNextIcon.vue'
 
@@ -12,19 +13,12 @@ export const stageNext: Command = {
         is: StageNextIcon,
     },
 
-    // Focusing an entry also reveals it if it was explicitly hidden.
+    // Reveals the next entry; past the last one comes All, which shows everything.
     async execute() {
         if (!(await checkDynamicStages())) return
 
-        const ids = [...stages.value.keys()]
-        const index = view.stageId ? ids.indexOf(view.stageId) : -1
-
-        if (index < 0) {
-            stageScope.focus(ids[0])
-        } else if (index === ids.length - 1) {
-            stageScope.focus(undefined)
-        } else {
-            stageScope.focus(ids[index + 1])
-        }
+        const id = stepFocus([...stages.value.keys()], view.stageId, 1)
+        if (id === undefined) stageScope.focusAll()
+        else stageScope.focus(id)
     },
 }

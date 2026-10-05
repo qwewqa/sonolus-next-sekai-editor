@@ -13,6 +13,7 @@ import {
     createScopeLookup,
     entityScopeIds,
     entityScopeVisibility,
+    followShowOthers,
     resolveScopeVisibility,
     type ScopeOverride,
     type ScopeVisibility,
@@ -31,7 +32,8 @@ import { view } from './view'
  * - Explicit overrides show or hide individual entries. They are transient view
  *   state: never saved, never in history, and never read by the preview,
  *   serialization, or the clipboard. Authoring never reads them either, so
- *   hiding an entry never reassigns newly created objects.
+ *   hiding an entry never reassigns newly created objects. The All commands
+ *   clear them, and changing a show-other setting drops those contradicting it.
  *
  * The pure rules, including how each entity type maps onto groups and stages,
  * live in `scopeRules.ts`.
@@ -118,11 +120,7 @@ const createScope = <T>(options: {
             options.setOverrides(overrides)
         },
 
-        /**
-         * Focuses an entry for authoring and editing, revealing it if hidden.
-         * `focus(undefined)` ("All") only clears the focus: explicit hides
-         * remain, and unfocused entries become fully visible unless hidden.
-         */
+        /** Focuses an entry, revealing it if hidden; `undefined` clears the focus but keeps hides. */
         focus(id: T | undefined) {
             if (id !== undefined && options.getOverrides().get(id) === 'hidden') {
                 const overrides = new Map(options.getOverrides())
@@ -132,8 +130,19 @@ const createScope = <T>(options: {
             options.setFocus(id)
         },
 
+        /** The All command: clears the focus and every override, showing everything. */
+        focusAll() {
+            if (options.getOverrides().size) options.setOverrides(new Map())
+            options.setFocus(undefined)
+        },
+
         shownCount,
         totalCount: computed(() => options.ids().length),
+
+        /** Drops overrides contradicting the show-others setting after it changed. */
+        followSetting() {
+            options.setOverrides(followShowOthers(options.getOverrides(), options.showOthers()))
+        },
 
         /** Drops overrides for entries that no longer exist. */
         prune() {

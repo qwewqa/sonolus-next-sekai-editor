@@ -2,6 +2,7 @@ import type { Command } from '..'
 import { groups } from '../../../history/groups'
 import { i18n } from '../../../i18n'
 import { groupScope } from '../../scope'
+import { stepFocus } from '../../scopeRules'
 import { view } from '../../view'
 import GroupNextIcon from './GroupNextIcon.vue'
 
@@ -11,17 +12,10 @@ export const groupNext: Command = {
         is: GroupNextIcon,
     },
 
-    // Focusing an entry also reveals it if it was explicitly hidden.
+    // Reveals the next entry; past the last one comes All, which shows everything.
     execute() {
-        const ids = [...groups.value.keys()]
-        const index = view.groupId ? ids.indexOf(view.groupId) : -1
-
-        if (index < 0) {
-            groupScope.focus(ids[0])
-        } else if (index === ids.length - 1) {
-            groupScope.focus(undefined)
-        } else {
-            groupScope.focus(ids[index + 1])
-        }
+        const id = stepFocus([...groups.value.keys()], view.groupId, 1)
+        if (id === undefined) groupScope.focusAll()
+        else groupScope.focus(id)
     },
 }

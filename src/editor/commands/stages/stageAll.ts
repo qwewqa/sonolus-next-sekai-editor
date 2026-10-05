@@ -1,7 +1,7 @@
-import { switchToStage } from '.'
 import type { Command } from '..'
 import { checkDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
+import { stageScope } from '../../scope'
 import StageAllIcon from './StageAllIcon.vue'
 
 export const stageAll: Command = {
@@ -10,9 +10,10 @@ export const stageAll: Command = {
         is: StageAllIcon,
     },
 
+    // Clears the focus and every hide, so everything shows.
     async execute() {
         if (!(await checkDynamicStages())) return
 
-        switchToStage(undefined)
+        stageScope.focusAll()
     },
 }

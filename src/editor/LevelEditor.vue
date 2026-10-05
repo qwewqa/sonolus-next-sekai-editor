@@ -147,6 +147,23 @@ watch(
     { immediate: true },
 )
 
+// Changing a show-other setting always shows; synchronous, so no scope snapshot
+// pairs the new setting with stale overrides.
+watch(
+    () => settings.showOtherGroups,
+    () => {
+        groupScope.followSetting()
+    },
+    { flush: 'sync' },
+)
+watch(
+    () => settings.showOtherStages,
+    () => {
+        stageScope.followSetting()
+    },
+    { flush: 'sync' },
+)
+
 watch([groups, () => brushProperties.value.groupId], () => {
     if (!brushProperties.value.groupId) return
     if (groups.value.has(brushProperties.value.groupId)) return
