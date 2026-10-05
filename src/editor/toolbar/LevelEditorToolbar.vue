@@ -94,7 +94,13 @@ const onOverMain = (event: PointerEvent, index: number) => {
     activeIndex.value = index
 }
 
-const onClickMain = (index: number, name: CommandName) => {
+// Pointer clicks return shortcuts to the editor, so Space cannot click the tool again.
+const blurPointerClick = (event: MouseEvent) => {
+    if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
+}
+
+const onClickMain = (event: MouseEvent, index: number, name: CommandName) => {
+    blurPointerClick(event)
     if (activeIndex.value === -1 && toolbar.value[index] && toolbar.value[index].length > 1) {
         activeIndex.value = index
         return
@@ -105,7 +111,8 @@ const onClickMain = (index: number, name: CommandName) => {
     activeIndex.value = -1
 }
 
-const onClickSub = (index: number, name: CommandName) => {
+const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
+    blurPointerClick(event)
     void commands[name].execute()
 
     activeIndex.value = -1
@@ -202,7 +209,7 @@ onBeforeUnmount(() => {
                     :name="activeName"
                     :pressed="isCommandPressed(activeName)"
                     @pointermove="onOverMain($event, i)"
-                    @click="onClickMain(i, activeName)"
+                    @click="onClickMain($event, i, activeName)"
                 />
 
                 <div
@@ -226,7 +233,7 @@ onBeforeUnmount(() => {
                         :name
                         :pressed="isCommandPressed(name)"
                         show-label
-                        @click="onClickSub(i, name)"
+                        @click="onClickSub($event, i, name)"
                     />
                 </div>
             </div>

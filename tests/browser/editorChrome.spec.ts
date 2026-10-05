@@ -94,6 +94,25 @@ test.describe('shortcuts', () => {
     })
 })
 
+test.describe('toolbar', () => {
+    test('a clicked tool keeps no focus for Space to click it again', async ({ page }) => {
+        await boot(page)
+        const undo = page.locator('[data-editor-toolbar] button[title="Undo"]')
+        await undo.evaluate((element) => {
+            const clicks = { count: 0 }
+            element.addEventListener('click', () => clicks.count++)
+            ;(window as unknown as { clicks: typeof clicks }).clicks = clicks
+        })
+        await undo.click()
+        await expect(undo).not.toBeFocused()
+        await page.keyboard.press(' ')
+        await page.keyboard.press('Backspace')
+        expect(
+            await page.evaluate(() => (window as unknown as { clicks: { count: number } }).clicks),
+        ).toEqual({ count: 1 })
+    })
+})
+
 test.describe('toolbar flyouts', () => {
     test('Escape closes an open flyout and returns focus to its tool', async ({ page }) => {
         await boot(page)
