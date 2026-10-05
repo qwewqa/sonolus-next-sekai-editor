@@ -9,6 +9,7 @@ import criticalActiveUrl from './assets/se_live_long_critical.mp3?url'
 import normalTapUrl from './assets/se_live_perfect.mp3?url'
 import normalTraceUrl from './assets/se_live_trace.mp3?url'
 import criticalTraceUrl from './assets/se_live_trace_critical.mp3?url'
+import type { GroupId } from './chart/groups'
 import { bgm } from './history/bgm'
 import { bpms } from './history/bpms'
 import { cullEntities, store } from './history/store'
@@ -18,8 +19,8 @@ import {
     type ActivePlayerAudio,
     type PlayerAudio,
 } from './playerAudio'
+import { shownBeatRanges, spacedTimes, type HideChange } from './playerSections'
 import { settings } from './settings'
-import type { ConnectorEntity } from './state/entities/slides/connector'
 import { createSlideInfoLookup } from './state/entities/slides/lookup'
 import { getActiveNoteRole } from './state/entities/slides/semantics'
 import { beatToTime, timeToBeat } from './state/integrals/bpms'
@@ -56,6 +57,8 @@ const state = shallowRef<{
     scheduledUntil?: number
     bgmNodes: Set<PlayerAudio>
     sfxNodes: Set<PlayerAudio>
+    // Chart time of the last scheduled play of each clip, for spacing.
+    lastSfx: Partial<Record<string, number>>
     actives: {
         normalActive: Set<ActivePlayerAudio>
         criticalActive: Set<ActivePlayerAudio>
@@ -96,6 +99,25 @@ let scheduler: ReturnType<typeof setInterval> | undefined
 let resuming: Promise<void> | undefined
 let areSfxReady = false
 const getSlideInfoLookup = createSlideInfoLookup()
+
+const sfxDistance = 0.02
+
+// Hide-notes changes per group, rebuilt only when time scales change.
+let hideChanges: { grid: unknown; byGroup: Map<GroupId, HideChange[]> } | undefined
+const getHideChanges = (groupId: GroupId) => {
+    const grid = store.value.grid.timeScale
+    if (hideChanges?.grid !== grid) {
+        const byGroup = new Map<GroupId, HideChange[]>()
+        for (const timeScale of new Set([...grid.values()].flatMap((set) => [...set]))) {
+            let changes = byGroup.get(timeScale.groupId)
+            if (!changes) byGroup.set(timeScale.groupId, (changes = []))
+            changes.push({ beat: timeScale.beat, hideNotes: timeScale.hideNotes })
+        }
+        for (const changes of byGroup.values()) changes.sort((a, b) => a.beat - b.beat)
+        hideChanges = { grid, byGroup }
+    }
+    return hideChanges.byGroup.get(groupId) ?? []
+}
 
 const scheduleAudio = () => {
     if (!state.value || !areSfxReady) return
@@ -144,6 +166,10 @@ const scheduleAudio = () => {
 
         if (entity.isFake) continue
 
+        // Anchors are unscored, so the engine never plays them, even with an
+        // explicit sound.
+        if (entity.noteType === 'anchor') continue
+
         if (entity.sfx === 'none') continue
         if (entity.sfx === 'damage') continue
 
@@ -151,8 +177,6 @@ const scheduleAudio = () => {
             targets[entity.sfx].add(entity.beat)
             continue
         }
-
-        if (entity.noteType === 'anchor') continue
 
         if (entity.noteType === 'damage') continue
 
@@ -235,10 +259,17 @@ const scheduleAudio = () => {
     for (const [type, beats] of entries(targets)) {
         if (!sfxBuffers[type]) continue
 
-        for (const beat of beats) {
-            const when =
-                (beatToTime(bpms.value, beat) - state.value.bgmTime) / state.value.speed +
-                state.value.contextTime
+        // Sonolus skips a clip played within 20 ms of the same clip.
+        const times = spacedTimes(
+            [...beats].map((beat) => beatToTime(bpms.value, beat)),
+            sfxDistance,
+            state.value.lastSfx[type],
+        )
+        const last = times.at(-1)
+        if (last !== undefined) state.value.lastSfx[type] = last
+
+        for (const time of times) {
+            const when = (time - state.value.bgmTime) / state.value.speed + state.value.contextTime
             if (when < context.currentTime) continue
 
             schedule(
@@ -251,39 +282,48 @@ const scheduleAudio = () => {
     }
 
     const activeTargets = {
-        normalActive: Array<ConnectorEntity>(),
-        criticalActive: Array<ConnectorEntity>(),
+        normalActive: Array<[number, number]>(),
+        criticalActive: Array<[number, number]>(),
     }
 
     for (const entity of cullEntities('connector', keys.min, keys.max)) {
         if (entity.head.beat >= beats.max || entity.tail.beat <= beats.min) continue
-        if (entity.head.beat < beats.min && !isCatchingUp) continue
-
         if (entity.segmentHead.connectorType !== 'active') continue
 
-        if (entity.segmentHead.connectorActiveIsCritical) {
-            activeTargets.criticalActive.push(entity)
-        } else {
-            activeTargets.normalActive.push(entity)
+        // The hold sound pauses while the segment head's group hides notes.
+        // Cull each shown piece by its own start: a piece beginning when hiding
+        // ends falls in a later window than the connector's head.
+        const pieces = shownBeatRanges(
+            getHideChanges(entity.segmentHead.groupId),
+            entity.head.beat,
+            entity.tail.beat,
+        )
+        for (const piece of pieces) {
+            if (piece[0] >= beats.max || piece[1] <= beats.min) continue
+            if (piece[0] < beats.min && !isCatchingUp) continue
+
+            if (entity.segmentHead.connectorActiveIsCritical) {
+                activeTargets.criticalActive.push(piece)
+            } else {
+                activeTargets.normalActive.push(piece)
+            }
         }
     }
 
-    for (const [type, entities] of entries(activeTargets)) {
+    for (const [type, pieces] of entries(activeTargets)) {
         if (!sfxBuffers[type]) continue
 
-        for (const entity of entities.sort((a, b) => a.head.beat - b.head.beat)) {
+        for (const [start, end] of pieces.sort((a, b) => a[0] - b[0])) {
             scheduleActivePlayerAudio(
                 context,
                 state.value.actives[type],
                 sfxBuffers[type],
-                entity.head.beat,
-                entity.tail.beat,
+                start,
+                end,
                 isSfxEnabled.value ? settings.playSfxVolume : 0,
-                (beatToTime(bpms.value, entity.head.beat) - state.value.bgmTime) /
-                    state.value.speed +
+                (beatToTime(bpms.value, start) - state.value.bgmTime) / state.value.speed +
                     state.value.contextTime,
-                (beatToTime(bpms.value, entity.tail.beat) - state.value.bgmTime) /
-                    state.value.speed +
+                (beatToTime(bpms.value, end) - state.value.bgmTime) / state.value.speed +
                     state.value.contextTime,
             )
         }
@@ -329,6 +369,7 @@ export const startPlayer = (bgmTime: number, speed: number, delay = startupDelay
 
         bgmNodes: new Set(),
         sfxNodes: new Set(),
+        lastSfx: {},
         actives: {
             normalActive: new Set(),
             criticalActive: new Set(),
