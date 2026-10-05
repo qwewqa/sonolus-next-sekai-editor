@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 import ChevronIcon from '../ChevronIcon.vue'
+import CheckedIcon from './icons/CheckedIcon.vue'
 import GripIcon from './icons/GripIcon.vue'
 import HiddenIcon from './icons/HiddenIcon.vue'
+import MixedIcon from './icons/MixedIcon.vue'
 import MoreIcon from './icons/MoreIcon.vue'
 import PartialIcon from './icons/PartialIcon.vue'
+import SelectMultipleIcon from './icons/SelectMultipleIcon.vue'
+import UncheckedIcon from './icons/UncheckedIcon.vue'
 import VisibleIcon from './icons/VisibleIcon.vue'
-import type { ManagerRowAction } from './model'
+import type { ManagerRowAction, SelectModifiers } from './model'
 import { settings } from '../../../settings'
 
 const props = defineProps<{
@@ -62,11 +66,20 @@ const props = defineProps<{
     indented?: boolean
     /** A folder row a dragged entry would drop into. */
     dropTarget?: boolean
+    /** The list is selecting: a check takes the eye's place and the name toggles it. */
+    selecting?: boolean
+    checked?: boolean | 'mixed'
+    checkLabel?: string
+    /** A band button that starts or stops selecting, in the more buttons' column. */
+    modeLabel?: string
+    modeActive?: boolean
 }>()
 
 const emit = defineEmits<{
-    select: []
+    select: [modifiers: SelectModifiers]
     toggle: [solo: boolean]
+    check: [range: boolean]
+    mode: []
     action: [key: string, button: HTMLElement, keyboard: boolean]
     menu: [anchor: HTMLElement]
     renameStart: []
@@ -94,7 +107,7 @@ const onSelect = (event: MouseEvent) => {
         return
     }
     if (event.detail <= 1) currentAtPress = props.current
-    emit('select')
+    emit('select', { range: event.shiftKey, toggle: event.ctrlKey || event.metaKey })
     // Keep focus through a double click so it can start renaming.
     if (event.detail > 1) return
     blurAfterPointer(event)
@@ -103,6 +116,16 @@ const onSelect = (event: MouseEvent) => {
 const onToggle = (event: MouseEvent) => {
     // Alt (or Ctrl/Cmd) shows only this entry, as in layer panels.
     emit('toggle', event.altKey || event.ctrlKey || event.metaKey)
+    blurAfterPointer(event)
+}
+
+const onCheck = (event: MouseEvent) => {
+    emit('check', event.shiftKey)
+    blurAfterPointer(event)
+}
+
+const onMode = (event: MouseEvent) => {
+    emit('mode')
     blurAfterPointer(event)
 }
 
@@ -118,13 +141,16 @@ const onMenu = (event: MouseEvent) => {
     blurAfterPointer(event)
 }
 
+const row = useTemplateRef<HTMLDivElement>('row')
 const more = useTemplateRef<HTMLButtonElement>('more')
 
 // A right click or a long press opens the same menu as the more button, as on
 // rail tabs. Opening never toggles: Android may follow a long press with its
 // own contextmenu event.
 const openMenu = () => {
-    if (more.value && !props.menuOpen) emit('menu', more.value)
+    // Rows without a more button, e.g. while selecting, anchor it themselves.
+    const anchor = more.value ?? row.value
+    if (anchor && !props.menuOpen) emit('menu', anchor)
 }
 
 // iOS fires no contextmenu event for a long press, so a touch held still on the
@@ -177,6 +203,15 @@ const onContextMenu = (event: MouseEvent) => {
     const touch =
         event instanceof PointerEvent ? event.pointerType === 'touch' : lastPointerType === 'touch'
     if (!touch) {
+        // A Control-click on macOS: toggle, as Command-click does.
+        if (
+            event.button === 0 &&
+            event.ctrlKey &&
+            (event.target as Element).closest('.manager-name')
+        ) {
+            emit('select', { range: event.shiftKey, toggle: true })
+            return
+        }
         openMenu()
         return
     }
@@ -220,7 +255,15 @@ const onNamePointerdown = (event: PointerEvent) => {
     onNameLongPressStart(event)
     // A mouse drags rows by their name; touch keeps scrolling the list and
     // drags by the handle instead.
-    if (event.pointerType === 'mouse' && props.dragLabel) emit('dragStart', event)
+    // Modifier clicks select instead.
+    if (
+        event.pointerType === 'mouse' &&
+        props.dragLabel &&
+        !event.shiftKey &&
+        !event.ctrlKey &&
+        !event.metaKey
+    )
+        emit('dragStart', event)
 }
 
 /**
@@ -272,8 +315,10 @@ const onRenameBlur = (event: FocusEvent) => {
 
 <template>
     <div
+        ref="row"
         class="manager-row"
         :class="{
+            'manager-row-selected': selecting && checked === true && !heading && !folder,
             'manager-row-current': current,
             'manager-row-dragging': dragging,
             'manager-row-heading': heading,
@@ -286,6 +331,24 @@ const onRenameBlur = (event: FocusEvent) => {
         @pointerdown.capture="onRowPointerdown"
     >
         <button
+            v-if="selecting"
+            type="button"
+            role="checkbox"
+            class="manager-check manager-icon-button"
+            :disabled
+            :aria-checked="checked === 'mixed' ? 'mixed' : checked ? 'true' : 'false'"
+            :aria-label="checkLabel"
+            :title="checkLabel"
+            @click="onCheck"
+        >
+            <component
+                :is="checked === 'mixed' ? MixedIcon : checked ? CheckedIcon : UncheckedIcon"
+                class="manager-icon fill-current"
+                aria-hidden="true"
+            />
+        </button>
+        <button
+            v-else
             type="button"
             class="manager-eye manager-icon-button"
             :disabled
@@ -316,6 +379,9 @@ const onRenameBlur = (event: FocusEvent) => {
             class="manager-name"
             :disabled
             :aria-current="current && !folder ? 'true' : undefined"
+            :aria-pressed="
+                selecting && !folder && !heading ? (checked ? 'true' : 'false') : undefined
+            "
             v-bind="description === undefined ? {} : { 'aria-description': description }"
             :aria-expanded="folder ? (expanded ? 'true' : 'false') : undefined"
             :aria-controls="expanded ? controls : undefined"
@@ -385,6 +451,19 @@ const onRenameBlur = (event: FocusEvent) => {
         >
             <MoreIcon class="manager-icon fill-current" aria-hidden="true" />
         </button>
+        <button
+            v-else-if="modeLabel"
+            type="button"
+            class="manager-mode manager-icon-button"
+            :class="{ 'manager-icon-button-pressed': modeActive }"
+            :disabled
+            :aria-label="modeLabel"
+            :title="modeLabel"
+            :aria-pressed="modeActive ? 'true' : 'false'"
+            @click="onMode"
+        >
+            <SelectMultipleIcon class="manager-icon fill-current" aria-hidden="true" />
+        </button>
         <!-- Keeps a count in the shared column; without one, the name takes the room. -->
         <span v-else-if="meta !== undefined" class="manager-icon-spacer" aria-hidden="true" />
         <!-- The touch handle sits at the trailing edge, keeping the eye column aligned. -->
@@ -398,7 +477,7 @@ const onRenameBlur = (event: FocusEvent) => {
             <GripIcon class="h-3.5 w-2.5 fill-current" />
         </span>
         <span
-            v-else-if="gripSpace && meta !== undefined"
+            v-else-if="gripSpace && (meta !== undefined || modeLabel)"
             class="manager-grip manager-grip-space"
             aria-hidden="true"
         />
@@ -467,6 +546,20 @@ const onRenameBlur = (event: FocusEvent) => {
 
 .manager-row-heading .manager-icon-button-open:not(:active) {
     @apply bg-white/40;
+}
+
+/* A toggle that is on, such as the band's Select while selecting. */
+.manager-icon-button-pressed:not(:active) {
+    @apply bg-fg text-header;
+}
+
+/* Selected rows while selecting; the target keeps its white pill, ringed. */
+.manager-row-selected:not(.manager-row-current) {
+    @apply bg-accent/40;
+}
+
+.manager-row-selected.manager-row-current {
+    @apply ring-2 ring-inset ring-accent;
 }
 
 .manager-icon-spacer {
@@ -551,7 +644,9 @@ const onRenameBlur = (event: FocusEvent) => {
 @media (hover: hover) {
     /* Hover previews the current pill: most of the way to white on the panel,
        a lighter band on lavender. */
-    .manager-row:not(.manager-row-current):not(.manager-row-dragging):hover {
+    .manager-row:not(.manager-row-current):not(.manager-row-dragging):not(
+            .manager-row-selected
+        ):hover {
         @apply bg-button/70;
     }
 
@@ -559,12 +654,12 @@ const onRenameBlur = (event: FocusEvent) => {
         @apply bg-header-hover;
     }
 
-    .manager-icon-button:hover:not(:active) {
+    .manager-icon-button:hover:not(:active):not(.manager-icon-button-pressed) {
         @apply bg-fg/10;
     }
 
     /* Icon buttons on the lavender band lighten, like other band buttons. */
-    .manager-row-heading .manager-icon-button:hover:not(:active) {
+    .manager-row-heading .manager-icon-button:hover:not(:active):not(.manager-icon-button-pressed) {
         @apply bg-white/40;
     }
 

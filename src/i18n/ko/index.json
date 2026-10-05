@@ -1332,7 +1332,18 @@
       "selected": "객체 {0}개 선택됨",
       "moveSelection": "선택 항목을 여기로 이동",
       "objects": "객체 {0}개",
-      "drag": "드래그하여 {0} 순서 변경"
+      "drag": "드래그하여 {0} 순서 변경",
+      "selectMultiple": "여러 개 선택",
+      "selecting": "{0}개 선택됨",
+      "stopSelecting": "선택 종료",
+      "selectItem": "{0} 선택",
+      "selectAll": "모두 선택",
+      "selectNone": "선택 해제",
+      "showSelected": "선택 항목 표시",
+      "hideSelected": "선택 항목 숨기기",
+      "soloSelected": "선택 항목만 표시",
+      "deleteSelected": "선택 항목 삭제…",
+      "selectionActions": "선택 항목 추가 작업"
     },
     "groups": {
       "deleteFolder": "폴더와 그룹 삭제…",
@@ -1342,7 +1353,12 @@
       "all": "모든 그룹",
       "showAll": "모든 그룹 표시",
       "hideAll": "모든 그룹 숨기기",
-      "add": "그룹 추가"
+      "add": "그룹 추가",
+      "movedSelectedInto": "선택한 그룹 {0}개를 {1} 폴더로 이동함",
+      "movedSelectedOut": "선택한 그룹 {0}개를 폴더에서 꺼냄",
+      "deletedSelected": "선택한 그룹 {0}개 삭제됨",
+      "deleteSelectedTitle": "그룹 삭제",
+      "deleteSelectedMessage": "선택한 그룹 {0}개와 오브젝트 {1}개를 삭제할까요?"
     },
     "stages": {
       "deleteFolder": "폴더와 스테이지 삭제…",
@@ -1354,7 +1370,12 @@
       "hideAll": "모든 스테이지 숨기기",
       "add": "스테이지 추가",
       "disabled": "이 레벨에서는 동적 스테이지가 꺼져 있습니다.",
-      "enable": "동적 스테이지 활성화"
+      "enable": "동적 스테이지 활성화",
+      "movedSelectedInto": "선택한 스테이지 {0}개를 {1} 폴더로 이동함",
+      "movedSelectedOut": "선택한 스테이지 {0}개를 폴더에서 꺼냄",
+      "deletedSelected": "선택한 스테이지 {0}개 삭제됨",
+      "deleteSelectedTitle": "스테이지 삭제",
+      "deleteSelectedMessage": "선택한 스테이지 {0}개와 오브젝트 {1}개를 삭제할까요?"
     },
     "properties": {
       "sections": "속성 섹션",

@@ -199,6 +199,43 @@ export const moveEntryInTree = <K>(
     return sameTree(tree, next) ? undefined : next
 }
 
+/** Entry ids in the tree's depth-first order. */
+export const entriesInTreeOrder = <K>(tree: readonly FolderTreeItem<K>[]): K[] =>
+    tree.flatMap((item) => (item.type === 'entry' ? [item.id] : item.members))
+
+/**
+ * Moves several entries at once, keeping their order: to the end of a folder,
+ * or, with no folder, out of their folders to just below each. Loose entries
+ * stay put then. Returns `undefined` when the folder is missing or nothing changes.
+ */
+export const moveEntriesInTree = <K>(
+    tree: readonly FolderTreeItem<K>[],
+    ids: ReadonlySet<K>,
+    folderId: FolderId | undefined,
+): FolderTreeItem<K>[] | undefined => {
+    let next: FolderTreeItem<K>[]
+    if (folderId === undefined) {
+        next = cloneTree(tree).flatMap((item): FolderTreeItem<K>[] => {
+            if (item.type === 'entry') return [item]
+            const leaving = item.members.filter((id) => ids.has(id))
+            return [
+                { ...item, members: item.members.filter((id) => !ids.has(id)) },
+                ...leaving.map((id) => ({ type: 'entry' as const, id })),
+            ]
+        })
+    } else {
+        const moving = entriesInTreeOrder(tree).filter((id) => ids.has(id))
+        next = removeEntriesFromTree(tree, ids)
+        const folder = next.find(
+            (item): item is Extract<FolderTreeItem<K>, { type: 'folder' }> =>
+                item.type === 'folder' && item.id === folderId,
+        )
+        if (!folder) return
+        folder.members.push(...moving)
+    }
+    return sameTree(tree, next) ? undefined : next
+}
+
 /** Moves a folder with its members before a top-level item, or to the end. */
 export const moveFolderInTree = <K>(
     tree: readonly FolderTreeItem<K>[],

@@ -1332,7 +1332,18 @@
       "selected": "{0} objets sélectionnés",
       "moveSelection": "Déplacer la sélection ici",
       "objects": "{0} objets",
-      "drag": "Faire glisser pour réordonner {0}"
+      "drag": "Faire glisser pour réordonner {0}",
+      "selectMultiple": "Sélection multiple",
+      "selecting": "{0} sélectionné(s)",
+      "stopSelecting": "Terminer la sélection",
+      "selectItem": "Sélectionner {0}",
+      "selectAll": "Tout sélectionner",
+      "selectNone": "Tout désélectionner",
+      "showSelected": "Afficher la sélection",
+      "hideSelected": "Masquer la sélection",
+      "soloSelected": "Afficher uniquement la sélection",
+      "deleteSelected": "Supprimer la sélection…",
+      "selectionActions": "Plus d’actions pour la sélection"
     },
     "groups": {
       "deleteFolder": "Supprimer le dossier et ses groupes…",
@@ -1342,7 +1353,12 @@
       "all": "Tous les groupes",
       "showAll": "Afficher tous les groupes",
       "hideAll": "Masquer tous les groupes",
-      "add": "Ajouter un groupe"
+      "add": "Ajouter un groupe",
+      "movedSelectedInto": "Groupes sélectionnés ({0}) déplacés dans le dossier {1}",
+      "movedSelectedOut": "Groupes sélectionnés ({0}) sortis des dossiers",
+      "deletedSelected": "Groupes sélectionnés ({0}) supprimés",
+      "deleteSelectedTitle": "Supprimer les groupes",
+      "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?"
     },
     "stages": {
       "deleteFolder": "Supprimer le dossier et ses scènes…",
@@ -1354,7 +1370,12 @@
       "hideAll": "Masquer toutes les scènes",
       "add": "Ajouter une scène",
       "disabled": "Les scènes dynamiques sont désactivées pour ce niveau.",
-      "enable": "Activer les scènes dynamiques"
+      "enable": "Activer les scènes dynamiques",
+      "movedSelectedInto": "Scènes sélectionnées ({0}) déplacées dans le dossier {1}",
+      "movedSelectedOut": "Scènes sélectionnées ({0}) sorties des dossiers",
+      "deletedSelected": "Scènes sélectionnées ({0}) supprimées",
+      "deleteSelectedTitle": "Supprimer les scènes",
+      "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?"
     },
     "properties": {
       "sections": "Sections des propriétés",

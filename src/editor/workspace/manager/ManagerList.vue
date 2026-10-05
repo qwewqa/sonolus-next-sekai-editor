@@ -1,26 +1,45 @@
 <script setup lang="ts" generic="T extends number">
-import { computed, nextTick, onUnmounted, shallowRef, useId, useTemplateRef, watch } from 'vue'
-import type { FolderId, FolderTreeItem, FolderTreeRef } from '../../../chart/folders'
+import {
+    computed,
+    nextTick,
+    onMounted,
+    onUnmounted,
+    shallowRef,
+    useId,
+    useTemplateRef,
+    watch,
+} from 'vue'
+import {
+    entriesInTreeOrder,
+    type FolderId,
+    type FolderTreeItem,
+    type FolderTreeRef,
+} from '../../../chart/folders'
 import { i18n } from '../../../i18n'
-import { modals } from '../../../modals'
+import { modals, showModal } from '../../../modals'
+import ConfirmModal from '../../../modals/ConfirmModal.vue'
 import { interpolateRaw } from '../../../utils/interpolate'
 import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
-import { useScrollMemory } from '../useScrollMemory'
+import CloseIcon from '../CloseIcon.vue'
+import { hasScrollMemory, useScrollMemory } from '../useScrollMemory'
 import { isFolderExpanded, setFolderExpanded, type EntryPlace } from './folders'
 import AddIcon from './icons/AddIcon.vue'
 import FolderIcon from './icons/FolderIcon.vue'
 import FolderOpenIcon from './icons/FolderOpenIcon.vue'
 import FolderPlusIcon from './icons/FolderPlusIcon.vue'
+import HiddenIcon from './icons/HiddenIcon.vue'
 import ManagerAddButton from './ManagerAddButton.vue'
+import MoreIcon from './icons/MoreIcon.vue'
 import MoveDownIcon from './icons/MoveDownIcon.vue'
 import MoveHereIcon from './icons/MoveHereIcon.vue'
 import MoveUpIcon from './icons/MoveUpIcon.vue'
 import PropertiesIcon from './icons/PropertiesIcon.vue'
 import RenameIcon from './icons/RenameIcon.vue'
+import SelectMultipleIcon from './icons/SelectMultipleIcon.vue'
 import VisibleIcon from './icons/VisibleIcon.vue'
 import ManagerMenu, { type ManagerMenuItem } from './ManagerMenu.vue'
-import type { ManagerModel, ManagerRowAction } from './model'
+import type { ManagerModel, ManagerRowAction, SelectModifiers } from './model'
 import { canMoveSelectionTo, moveSelectionTo, ownedCounts, selectOwned } from './objects'
 import ManagerRow from './ManagerRow.vue'
 
@@ -54,7 +73,10 @@ type RowKey = { type: 'entry'; id: T } | { type: 'folder'; id: FolderId }
 type FolderItem = Extract<FolderTreeItem<T>, { type: 'folder' }>
 
 const rowKey = (key: RowKey) => `${key.type === 'entry' ? 'e' : 'f'}${String(key.id)}`
-const sameKey = (a: RowKey | undefined, b: RowKey) => a?.type === b.type && a.id === b.id
+/** A menu's subject: a row, or the selection. */
+type MenuKey = RowKey | { type: 'selection'; id?: undefined }
+
+const sameKey = (a: MenuKey | undefined, b: MenuKey) => a?.type === b.type && a.id === b.id
 
 const folderItems = computed(
     () => new Map(tree.value.flatMap((item) => (item.type === 'folder' ? [[item.id, item]] : []))),
@@ -116,14 +138,52 @@ const revealRow = (row: HTMLElement) => {
     else if (rect.bottom > bottom) container.scrollTop += rect.bottom - bottom
 }
 
+const entryOfRow = (element: Element | null | undefined) => {
+    const key = parseRowKey(element?.closest<HTMLElement>('[data-row]')?.dataset.row)
+    return key?.type === 'entry' ? key.id : undefined
+}
+
+/** Escape and Delete while selecting. */
+const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => {
+    if (event.key === 'Escape') {
+        // Also keeps a surrounding dialog open.
+        event.preventDefault()
+        const row = target.closest<HTMLElement>('[data-row]')?.dataset.row
+        stopSelecting()
+        await nextTick()
+        if (row && !target.isConnected)
+            list.value
+                ?.querySelector<HTMLElement>(`[data-row="${row}"] .manager-name`)
+                ?.focus({ preventScroll: true })
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        await onBulkDelete()
+    }
+}
+
 /**
  * Up and Down step between the rows' names, from the band's row down, and Home
- * and End reach the ends, as in a tree; Tab still visits every control.
+ * and End reach the ends, as in a tree; Tab still visits every control. With
+ * Shift they select the entries passed.
  */
 const onKeydown = (event: KeyboardEvent) => {
-    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
     const target = event.target as HTMLElement
+    if (target instanceof HTMLInputElement) return
+    if (selecting.value && ['Escape', 'Delete', 'Backspace'].includes(event.key)) {
+        void onSelectingKeydown(event, target)
+        return
+    }
+    if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === 'a' &&
+        target.classList.contains('manager-name')
+    ) {
+        event.preventDefault()
+        setSelection(allIds.value, anchor)
+        return
+    }
+    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+    if (event.altKey || event.ctrlKey || event.metaKey) return
     if (!target.classList.contains('manager-name')) return
     event.preventDefault()
     const names = [...(root.value?.querySelectorAll<HTMLElement>('.manager-name') ?? [])]
@@ -138,6 +198,14 @@ const onKeydown = (event: KeyboardEvent) => {
     next.focus({ preventScroll: true })
     const row = next.closest<HTMLElement>('[data-row]')
     if (row) revealRow(row)
+    if (!event.shiftKey) return
+    const to = entryOfRow(next)
+    const start = entryOfRow(target) ?? to
+    if ((!selecting.value || anchor === undefined) && start !== undefined) {
+        setSelection(selecting.value ? selected.value : [], start)
+        selectRange(start)
+    }
+    if (to !== undefined) selectRange(to)
 }
 
 // Inline actions need room beside a useful share of the name. With a mouse
@@ -150,6 +218,8 @@ const onPointerChange = () => {
 }
 coarse.addEventListener('change', onPointerChange)
 const listHeight = shallowRef(0)
+// Opening reveals the target once the list knows its size and whether Add floats.
+let revealOnMeasure = false
 const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
         if (entry.target === root.value) width.value = entry.contentRect.width
@@ -158,6 +228,10 @@ const observer = new ResizeObserver((entries) => {
         else listHeight.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
     }
     onListScroll()
+    if (revealOnMeasure && listHeight.value > 0) {
+        revealOnMeasure = false
+        void revealTarget()
+    }
 })
 // Classic scrollbars reserve a gutter at the right (see the styles below). The
 // rows' own 6px inset gives way to it, so they stay as centered as they can.
@@ -187,6 +261,12 @@ const inlineMode = computed(() =>
           ? ('current' as const)
           : ('hover' as const),
 )
+/** Touch drag handles, where names keep enough room beside them. */
+const hasGrip = computed(() => width.value >= 300)
+/** The selection bar's room: a count without its label, a visibility button. */
+const compactBar = computed(() => width.value < (isCoarse.value ? 340 : 280))
+const barVisibility = computed(() => width.value >= (isCoarse.value ? 360 : 300))
+
 /** Whether a row offers its inline actions, which the menu then leaves out. */
 const hasInline = (id: T) =>
     inlineMode.value === 'hover' || (inlineMode.value === 'current' && focused.value === id)
@@ -202,6 +282,18 @@ watch(
     },
     { immediate: true },
 )
+
+// The target's row comes into view when the target changes, e.g. by Next Group,
+// and on opening unless the list remembers where it was.
+const revealTarget = async () => {
+    await nextTick()
+    const id = focused.value
+    if (id !== undefined) reveal({ type: 'entry', id })
+}
+watch(focused, revealTarget)
+onMounted(() => {
+    revealOnMeasure = !hasScrollMemory(props.scrollKey)
+})
 
 // Selection and visibility
 
@@ -243,6 +335,156 @@ const onToggleFolder = (item: FolderItem, soloed: boolean) => {
     else scope.value.setSomeShown(item.members, shownMembers(item).length < item.members.length)
 }
 
+// Selecting entries for bulk actions: view state of this list only.
+
+const selecting = shallowRef(false)
+const selected = shallowRef<ReadonlySet<T>>(new Set())
+/** Where ranges start, and the selection they add to. */
+let anchor: T | undefined
+let rangeBase: ReadonlySet<T> = new Set()
+
+const allIds = computed(() => entriesInTreeOrder(tree.value))
+/** Entries on screen, in order: members of collapsed folders are left out. */
+const visibleIds = computed(() =>
+    tree.value.flatMap((item) =>
+        item.type === 'entry' ? [item.id] : isFolderExpanded(item.id) ? item.members : [],
+    ),
+)
+const selectedIds = computed(() => allIds.value.filter((id) => selected.value.has(id)))
+
+const setSelection = (ids: Iterable<T>, from?: T) => {
+    selecting.value = true
+    selected.value = new Set(ids)
+    anchor = from
+    rangeBase = selected.value
+}
+
+const startSelecting = (ids: readonly T[] = []) => {
+    closeMenu(false)
+    renaming.value = undefined
+    setSelection(ids, ids.at(-1))
+}
+
+const stopSelecting = () => {
+    closeMenu(false)
+    selecting.value = false
+    selected.value = new Set()
+    anchor = undefined
+    rangeBase = new Set()
+}
+
+const toggleSelected = (id: T) => {
+    const next = new Set(selected.value)
+    if (!next.delete(id)) next.add(id)
+    setSelection(next, id)
+}
+
+/** Adds the visible entries from the anchor to this one; a new range replaces the last. */
+const selectRange = (id: T) => {
+    const ids = visibleIds.value
+    const start = anchor ?? focused.value ?? id
+    const from = ids.indexOf(start)
+    const to = ids.indexOf(id)
+    if (from === -1 || to === -1) {
+        toggleSelected(id)
+        return
+    }
+    selecting.value = true
+    anchor = start
+    selected.value = new Set([
+        ...rangeBase,
+        ...ids.slice(Math.min(from, to), Math.max(from, to) + 1),
+    ])
+}
+
+const checkedOf = (ids: readonly T[]) => {
+    const count = ids.filter((id) => selected.value.has(id)).length
+    return count === 0 ? false : count === ids.length ? true : ('mixed' as const)
+}
+
+/** Selects all of these, or none when all already are. */
+const toggleMany = (ids: readonly T[]) => {
+    const all = checkedOf(ids) === true
+    const next = new Set(selected.value)
+    for (const id of ids) {
+        if (all) next.delete(id)
+        else next.add(id)
+    }
+    setSelection(next, anchor)
+}
+
+// Entries that disappear, e.g. after an undo, leave the selection.
+watch(allIds, (ids) => {
+    if (![...selected.value].some((id) => !ids.includes(id))) return
+    selected.value = new Set(ids.filter((id) => selected.value.has(id)))
+    rangeBase = new Set([...rangeBase].filter((id) => selected.value.has(id)))
+    if (anchor !== undefined && !ids.includes(anchor)) anchor = undefined
+})
+
+const onEntrySelect = (id: T, { range, toggle }: SelectModifiers) => {
+    if (range) selectRange(id)
+    else if (toggle || selecting.value) toggleSelected(id)
+    else onSelect(id)
+}
+
+const onFolderSelect = (item: FolderItem, { toggle }: SelectModifiers) => {
+    if (toggle) toggleMany(item.members)
+    else void onExpand(item.id, !isFolderExpanded(item.id))
+}
+
+const onBandSelect = () => {
+    if (selecting.value) toggleMany(allIds.value)
+    else onSelectAll()
+}
+
+const onMode = () => {
+    if (selecting.value) stopSelecting()
+    else startSelecting()
+}
+
+const onBulkVisibility = () => {
+    const ids = selectedIds.value
+    scope.value.setSomeShown(
+        ids,
+        ids.some((id) => !scope.value.isShown(id)),
+    )
+}
+
+const selectionCount = computed(() =>
+    label(i18n.value.workspace.manager.selecting, `${selectedIds.value.length}`),
+)
+
+const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.isShown(id)))
+
+const onBulkDelete = async () => {
+    const ids = new Set(selectedIds.value)
+    if (!ids.size) return
+    const objects = [...ids].reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
+    const confirmed = await showModal(ConfirmModal, {
+        title: () => strings.value.deleteSelectedTitle,
+        message: () => label(strings.value.deleteSelectedMessage, `${ids.size}`, `${objects}`),
+        confirm: () => i18n.value.modals.confirm.delete,
+        destructive: true,
+    })
+    if (!confirmed) return
+    props.model.removeMany(ids)
+    stopSelecting()
+}
+
+const onBulkFolder = async (choice: string) => {
+    const ids = new Set(selectedIds.value)
+    if (!ids.size) return
+    if (choice === 'new') {
+        stopSelecting()
+        await onNewFolder(ids)
+        return
+    }
+    folders.value.placeEntries(ids, choice === 'none' ? undefined : (Number(choice) as FolderId))
+    await nextTick()
+    const first = selectedIds.value[0]
+    if (first !== undefined) reveal({ type: 'entry', id: first })
+}
+
 const onExpand = async (id: FolderId, expanded: boolean, keyboard = false) => {
     setFolderExpanded(id, expanded)
     if (!keyboard) return
@@ -282,10 +524,10 @@ const addEntry = async (folder?: FolderId) => {
     startRename({ type: 'entry', id })
 }
 
-/** Adds a folder, holding an entry if given, and names it right away. */
-const onNewFolder = async (entry?: T, event?: MouseEvent) => {
+/** Adds a folder, holding entries if given, and names it right away. */
+const onNewFolder = async (held?: ReadonlySet<T>, event?: MouseEvent) => {
     if (event && event.detail > 0) (event.currentTarget as HTMLElement).blur()
-    const id = folders.value.create(entry)
+    const id = folders.value.create(held)
     setFolderExpanded(id, true)
     await nextTick()
     reveal({ type: 'folder', id })
@@ -643,7 +885,7 @@ const isDropTarget = (id: FolderId) => {
 // Actions and the menu
 
 const menu = shallowRef<{
-    key: RowKey
+    key: MenuKey
     anchor: HTMLElement
     modals: number
     /** The menu's own actions, or the folder choice for an entry. */
@@ -675,6 +917,7 @@ const entryMenuItems = (id: T): ManagerMenuItem[] => {
             icon: SelectIcon,
             disabled: !counts.value.get(id),
         },
+        { key: 'selectMultiple', label: manager.selectMultiple, icon: SelectMultipleIcon },
     ]
     if (canMoveSelectionTo(props.model.owner, id))
         items.push({ key: 'moveSelection', label: manager.moveSelection, icon: MoveHereIcon })
@@ -739,6 +982,7 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
             icon: SelectIcon,
             disabled: !folderCount(item),
         },
+        { key: 'selectMultiple', label: manager.selectMultiple, icon: SelectMultipleIcon },
         {
             key: 'moveUp',
             label: folderStrings.moveUp,
@@ -762,10 +1006,80 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
     ]
 }
 
+/** Actions on the selection; the bar offers the common ones too. */
+const bulkMenuItems = (): ManagerMenuItem[] => {
+    const manager = i18n.value.workspace.manager
+    const ids = selectedIds.value
+    const none = !ids.length
+    return [
+        {
+            key: 'visibility',
+            label: bulkHidden.value ? manager.showSelected : manager.hideSelected,
+            icon: bulkHidden.value ? VisibleIcon : HiddenIcon,
+            disabled: none,
+        },
+        {
+            key: 'solo',
+            label: isOnlyShown(ids) ? strings.value.showAll : manager.soloSelected,
+            icon: VisibleIcon,
+            disabled: none,
+        },
+        {
+            key: 'select',
+            label: manager.select,
+            icon: SelectIcon,
+            disabled: !ids.some((id) => counts.value.get(id)),
+        },
+        {
+            key: 'moveToFolder',
+            label: i18n.value.workspace.folders.moveTo,
+            icon: FolderIcon,
+            disabled: none,
+            separated: true,
+        },
+        checkedOf(allIds.value) === true
+            ? { key: 'selectNone', label: manager.selectNone, icon: SelectMultipleIcon }
+            : { key: 'selectAll', label: manager.selectAll, icon: SelectMultipleIcon },
+        {
+            key: 'delete',
+            label: manager.deleteSelected,
+            icon: ResetIcon,
+            destructive: true,
+            disabled: none,
+        },
+    ]
+}
+
+/** Folders for the selection, checked when all of it is in one already. */
+const bulkFolderItems = (): ManagerMenuItem[] => {
+    const holders = new Set(selectedIds.value.map((id) => folderOfEntry.value.get(id)))
+    const only = holders.size === 1 ? { folder: [...holders][0] } : undefined
+    return [
+        {
+            key: 'folder:none',
+            label: i18n.value.workspace.folders.none,
+            checked: !!only && only.folder === undefined,
+        },
+        ...[...folderItems.value.keys()].map((folder) => ({
+            key: `folder:${String(folder)}`,
+            label: folderName(folder),
+            checked: only?.folder === folder,
+        })),
+        {
+            key: 'folder:new',
+            label: i18n.value.workspace.folders.newWith,
+            icon: FolderPlusIcon,
+            separated: true,
+        },
+    ]
+}
+
 const menuItems = computed((): ManagerMenuItem[] => {
     const current = menu.value
     if (!current) return []
     const { key } = current
+    if (key.type === 'selection')
+        return current.mode === 'folders' ? bulkFolderItems() : bulkMenuItems()
     if (key.type === 'folder') {
         const item = folderItems.value.get(key.id)
         return item ? folderMenuItems(item) : []
@@ -777,6 +1091,7 @@ const menuLabel = computed(() => {
     const current = menu.value
     if (!current) return ''
     if (current.mode === 'folders') return i18n.value.workspace.folders.moveTo
+    if (current.key.type === 'selection') return i18n.value.workspace.manager.selectionActions
     const name =
         current.key.type === 'entry'
             ? (names.value.get(current.key.id) ?? '')
@@ -787,6 +1102,19 @@ const menuLabel = computed(() => {
 const onMenu = (key: RowKey, anchor: HTMLElement) => {
     if (menu.value && sameKey(menu.value.key, key)) closeMenu(false)
     else menu.value = { key, anchor, modals: modals.length, mode: 'main' }
+}
+
+const onBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders') => {
+    const current = menu.value
+    if (current?.key.type === 'selection' && current.anchor === anchor && current.mode === mode)
+        closeMenu(false)
+    else menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode }
+}
+
+/** A row's own menu while selecting acts on the selection, joined by that row. */
+const onRowBulkMenu = (id: T | undefined, anchor: HTMLElement) => {
+    if (id !== undefined && !selected.value.has(id)) setSelection([...selected.value, id], id)
+    onBulkMenu(anchor, 'main')
 }
 
 function closeMenu(restoreFocus: boolean) {
@@ -800,7 +1128,8 @@ function closeMenu(restoreFocus: boolean) {
 
 // Close when the anchor row disappears, e.g. after an undo.
 watch(tree, () => {
-    if (menu.value && !exists(menu.value.key)) closeMenu(false)
+    const key = menu.value?.key
+    if (key && key.type !== 'selection' && !exists(key)) closeMenu(false)
 })
 
 const focusAfterDelete = (index: number) => {
@@ -826,12 +1155,40 @@ const onMenuSelect = (key: string, keyboard: boolean) => {
         return
     }
     closeMenu(keyboard)
-    void run(current.key, key, keyboard, current.anchor)
+    if (current.key.type === 'selection') void runBulk(key)
+    else void run(current.key, key, keyboard, current.anchor)
 }
 
 const onInlineAction = (id: T, key: string, button: HTMLElement, keyboard: boolean) => {
     closeMenu(false)
     void run({ type: 'entry', id }, key, keyboard, button)
+}
+
+const runBulk = async (action: string) => {
+    if (action.startsWith('folder:')) {
+        await onBulkFolder(action.slice('folder:'.length))
+        return
+    }
+    switch (action) {
+        case 'visibility':
+            onBulkVisibility()
+            return
+        case 'solo':
+            solo(selectedIds.value)
+            return
+        case 'select':
+            selectOwned(props.model.owner, new Set(selectedIds.value))
+            return
+        case 'selectAll':
+            setSelection(allIds.value, anchor)
+            return
+        case 'selectNone':
+            setSelection([])
+            return
+        case 'delete':
+            await onBulkDelete()
+            return
+    }
 }
 
 /** Runs an action; keyboard users keep focus on `anchor` where it remains. */
@@ -847,6 +1204,11 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
             return
         case 'rename':
             startRename(key)
+            return
+        case 'selectMultiple':
+            startSelecting(
+                key.type === 'entry' ? [key.id] : (folderItems.value.get(key.id)?.members ?? []),
+            )
             return
         case 'properties':
             if (key.type === 'entry') props.model.openProperties(key.id)
@@ -902,7 +1264,7 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
 
 const chooseFolder = async (id: T, choice: string) => {
     if (choice === 'new') {
-        await onNewFolder(id)
+        await onNewFolder(new Set([id]))
         return
     }
     if (choice === 'none') {
@@ -922,6 +1284,21 @@ const chooseFolder = async (id: T, choice: string) => {
 }
 
 // Row bindings shared by loose entries and folder members.
+
+/** While selecting, rows trade their eye for a check and set their other actions aside. */
+const selectingProps = (checked: boolean | 'mixed', name: string) =>
+    selecting.value
+        ? {
+              selecting: true,
+              checked,
+              checkLabel: label(i18n.value.workspace.manager.selectItem, name),
+              actions: [],
+              menuLabel: undefined,
+              renameLabel: undefined,
+              dragLabel: undefined,
+              gripSpace: hasGrip.value,
+          }
+        : {}
 
 const entryProps = (id: T, name: string) => ({
     name,
@@ -954,24 +1331,30 @@ const entryProps = (id: T, name: string) => ({
     renameLabel: i18n.value.modals.form.name.label,
     dragLabel: label(i18n.value.workspace.manager.drag, name),
     dragging: isDragged({ type: 'entry', id }),
-    noGrip: width.value < 300,
+    noGrip: !hasGrip.value,
     indented: folderOfEntry.value.has(id),
+    ...selectingProps(selected.value.has(id), name),
 })
 
 const entryHandlers = (id: T) => {
     const key: RowKey = { type: 'entry', id }
     return {
-        select: () => {
-            onSelect(id)
+        select: (modifiers: SelectModifiers) => {
+            onEntrySelect(id, modifiers)
         },
         toggle: (soloed: boolean) => {
             onToggle(id, soloed)
+        },
+        check: (range: boolean) => {
+            if (range) selectRange(id)
+            else toggleSelected(id)
         },
         action: (action: string, button: HTMLElement, keyboard: boolean) => {
             onInlineAction(id, action, button, keyboard)
         },
         menu: (anchor: HTMLElement) => {
-            onMenu(key, anchor)
+            if (selecting.value) onRowBulkMenu(id, anchor)
+            else onMenu(key, anchor)
         },
         renameStart: () => {
             startRename(key)
@@ -1030,7 +1413,12 @@ const folderEyeLabel = (item: FolderItem) =>
 </script>
 
 <template>
-    <div ref="root" class="manager-list flex min-h-0 flex-col text-fg" @keydown="onKeydown">
+    <div
+        ref="root"
+        class="manager-list flex min-h-0 flex-col text-fg"
+        :class="{ 'manager-list-selecting': selecting }"
+        @keydown="onKeydown"
+    >
         <div
             class="manager-band relative z-10 shrink-0 bg-header px-1.5 py-1 [@media(pointer:coarse)]:py-0.5"
             :class="{ 'manager-band-raised': scrolled }"
@@ -1044,12 +1432,19 @@ const folderEyeLabel = (item: FolderItem) =>
                 :current="focused === undefined"
                 :shown="scope.shownCount.value > 0"
                 :partial="scope.shownCount.value > 0 && !allShown"
-                :grip-space="width >= 300"
+                :grip-space="hasGrip"
                 :muted="false"
                 :eye-label="allShown ? strings.hideAll : strings.showAll"
                 :meta="allShown ? undefined : `${scope.shownCount.value}/${scope.totalCount.value}`"
-                @select="onSelectAll"
+                :mode-label="i18n.workspace.manager.selectMultiple"
+                :mode-active="selecting"
+                :selecting
+                :checked="checkedOf(allIds)"
+                :check-label="i18n.workspace.manager.selectAll"
+                @select="onBandSelect"
                 @toggle="onToggleAll"
+                @check="toggleMany(allIds)"
+                @mode="onMode"
             />
         </div>
         <div class="relative flex min-h-0 flex-1 flex-col">
@@ -1059,8 +1454,8 @@ const folderEyeLabel = (item: FolderItem) =>
                 :class="{
                     'manager-entries-dragging': drag?.started,
                     'manager-entries-scrolled': scrolled,
-                    'manager-entries-more': stickyAdd && hiddenBelow,
-                    'manager-entries-floating': stickyAdd,
+                    'manager-entries-more': (stickyAdd || selecting) && hiddenBelow,
+                    'manager-entries-floating': stickyAdd || selecting,
                 }"
                 :style="{ paddingRight: gutterPadding }"
                 @scroll.passive="onListScroll"
@@ -1125,10 +1520,18 @@ const folderEyeLabel = (item: FolderItem) =>
                                 "
                                 :dragging="isDragged(item)"
                                 :drop-target="isDropTarget(item.id)"
-                                :no-grip="width < 300"
-                                @select="onExpand(item.id, !isFolderExpanded(item.id))"
+                                :no-grip="!hasGrip"
+                                v-bind="
+                                    selectingProps(checkedOf(item.members), folderName(item.id))
+                                "
+                                @select="onFolderSelect(item, $event)"
                                 @toggle="onToggleFolder(item, $event)"
-                                @menu="onMenu(item, $event)"
+                                @check="toggleMany(item.members)"
+                                @menu="
+                                    selecting
+                                        ? onRowBulkMenu(undefined, $event)
+                                        : onMenu(item, $event)
+                                "
                                 @rename-start="startRename(item)"
                                 @rename-end="(value, keyboard) => endRename(item, value, keyboard)"
                                 @drag-start="onDragStart(item, $event)"
@@ -1166,7 +1569,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 </template>
                 <!-- In a short panel Add follows the rows. -->
                 <li
-                    v-if="!stickyAdd"
+                    v-if="!stickyAdd && !selecting"
                     class="manager-footer pointer-events-none -mx-1.5 flex items-center gap-1.5 px-1.5 pb-2 pt-3"
                     :style="{ marginRight: gutterPadding && `-${gutterPadding}` }"
                 >
@@ -1185,8 +1588,85 @@ const folderEyeLabel = (item: FolderItem) =>
             <!-- Otherwise it floats in reach over the list, which leaves room below
         its last row and fades rows out behind it only while more lie below.
         The buttons are the only things drawn here. -->
+            <!-- While selecting, the selection's actions take its place, pinned in reach. -->
             <div
-                v-if="stickyAdd"
+                v-if="selecting"
+                class="manager-footer manager-footer-floating manager-selection-bar pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex items-center gap-1.5 px-1.5 pb-2"
+            >
+                <button
+                    type="button"
+                    class="manager-selection-done pointer-events-auto flex min-w-0 items-center rounded-full bg-button p-0.5 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+                    :aria-label="i18n.workspace.manager.stopSelecting"
+                    :title="i18n.workspace.manager.stopSelecting"
+                    @click="stopSelecting"
+                >
+                    <span
+                        class="flex size-9 shrink-0 items-center justify-center [@media(pointer:coarse)]:size-11"
+                    >
+                        <CloseIcon class="size-3.5 [@media(pointer:coarse)]:size-4" />
+                    </span>
+                    <span class="truncate pl-1 tabular-nums" aria-hidden="true">{{
+                        compactBar ? selectedIds.length : selectionCount
+                    }}</span>
+                </button>
+                <span class="sr-only" role="status">{{ selectionCount }}</span>
+                <button
+                    v-if="barVisibility"
+                    type="button"
+                    class="manager-round manager-bulk-visibility"
+                    :disabled="!selectedIds.length"
+                    :aria-label="
+                        bulkHidden
+                            ? i18n.workspace.manager.showSelected
+                            : i18n.workspace.manager.hideSelected
+                    "
+                    :title="
+                        bulkHidden
+                            ? i18n.workspace.manager.showSelected
+                            : i18n.workspace.manager.hideSelected
+                    "
+                    @click="onBulkVisibility"
+                >
+                    <component
+                        :is="bulkHidden ? VisibleIcon : HiddenIcon"
+                        class="manager-new-folder-icon"
+                        aria-hidden="true"
+                    />
+                </button>
+                <button
+                    type="button"
+                    class="manager-round manager-bulk-move"
+                    :disabled="!selectedIds.length"
+                    :aria-label="i18n.workspace.folders.moveTo"
+                    :title="i18n.workspace.folders.moveTo"
+                    aria-haspopup="menu"
+                    @click="onBulkMenu($event.currentTarget as HTMLElement, 'folders')"
+                >
+                    <FolderIcon class="manager-new-folder-icon" aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    class="manager-round manager-bulk-delete"
+                    :disabled="!selectedIds.length"
+                    :aria-label="i18n.workspace.manager.deleteSelected"
+                    :title="i18n.workspace.manager.deleteSelected"
+                    @click="onBulkDelete"
+                >
+                    <ResetIcon class="manager-new-folder-icon" aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    class="manager-round manager-bulk-more"
+                    :aria-label="i18n.workspace.manager.selectionActions"
+                    :title="i18n.workspace.manager.selectionActions"
+                    aria-haspopup="menu"
+                    @click="onBulkMenu($event.currentTarget as HTMLElement, 'main')"
+                >
+                    <MoreIcon class="manager-new-folder-icon" aria-hidden="true" />
+                </button>
+            </div>
+            <div
+                v-else-if="stickyAdd"
                 class="manager-footer manager-footer-floating pointer-events-none absolute bottom-0 left-0 z-10 flex items-center gap-1.5 px-1.5 pb-2"
                 :class="{ 'manager-footer-dragging': drag?.started }"
             >
@@ -1204,7 +1684,7 @@ const folderEyeLabel = (item: FolderItem) =>
         </div>
         <ManagerMenu
             v-if="menu"
-            :key="`${rowKey(menu.key)}-${menu.mode}`"
+            :key="`${menu.key.type === 'selection' ? 'selection' : rowKey(menu.key)}-${menu.mode}`"
             :anchor="menu.anchor"
             :label="menuLabel"
             :items="menuItems"
@@ -1228,8 +1708,13 @@ const folderEyeLabel = (item: FolderItem) =>
 }
 
 /* A round companion to the Add pill, raised the same way. */
-.manager-new-folder {
+.manager-new-folder,
+.manager-round {
     @apply pointer-events-auto flex size-10 shrink-0 items-center justify-center rounded-full bg-button shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:size-12;
+}
+
+.manager-round {
+    @apply disabled:pointer-events-none disabled:opacity-40;
 }
 
 .manager-new-folder-icon {
@@ -1294,7 +1779,8 @@ const folderEyeLabel = (item: FolderItem) =>
  * The target's pill covers its stretch of the line, so a short stretch inside
  * the pill, clear of its edges, marks the target as in the folder.
  */
-.manager-members > li:has(> .manager-row-current)::after {
+.manager-members > li:has(> .manager-row-current)::after,
+.manager-members > li:has(> .manager-row-selected)::after {
     content: '';
     left: var(--guide-x);
     @apply pointer-events-none absolute inset-y-2 w-0.5 rounded-full bg-fg/30;

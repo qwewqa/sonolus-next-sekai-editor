@@ -1332,7 +1332,18 @@
             "selected": "Selected {0} objects",
             "moveSelection": "Move Selection Here",
             "objects": "{0} Objects",
-            "drag": "Drag to Reorder {0}"
+            "drag": "Drag to Reorder {0}",
+            "selectMultiple": "Select Multiple",
+            "selecting": "{0} Selected",
+            "stopSelecting": "Stop Selecting",
+            "selectItem": "Select {0}",
+            "selectAll": "Select All",
+            "selectNone": "Select None",
+            "showSelected": "Show Selected",
+            "hideSelected": "Hide Selected",
+            "soloSelected": "Show Only Selected",
+            "deleteSelected": "Delete Selected…",
+            "selectionActions": "More Actions for Selection"
         },
         "groups": {
             "deleteFolder": "Delete Folder and Groups…",
@@ -1342,7 +1353,12 @@
             "all": "All Groups",
             "showAll": "Show All Groups",
             "hideAll": "Hide All Groups",
-            "add": "Add Group"
+            "add": "Add Group",
+            "movedSelectedInto": "Moved selected groups ({0}) to {1} folder",
+            "movedSelectedOut": "Moved selected groups ({0}) out of folders",
+            "deletedSelected": "Deleted selected groups ({0})",
+            "deleteSelectedTitle": "Delete Groups",
+            "deleteSelectedMessage": "Delete the selected groups ({0}) and their objects ({1})?"
         },
         "stages": {
             "deleteFolder": "Delete Folder and Stages…",
@@ -1354,7 +1370,12 @@
             "hideAll": "Hide All Stages",
             "add": "Add Stage",
             "disabled": "Dynamic stages are off for this level.",
-            "enable": "Enable Dynamic Stages"
+            "enable": "Enable Dynamic Stages",
+            "movedSelectedInto": "Moved selected stages ({0}) to {1} folder",
+            "movedSelectedOut": "Moved selected stages ({0}) out of folders",
+            "deletedSelected": "Deleted selected stages ({0})",
+            "deleteSelectedTitle": "Delete Stages",
+            "deleteSelectedMessage": "Delete the selected stages ({0}) and their objects ({1})?"
         },
         "properties": {
             "sections": "Properties Sections",

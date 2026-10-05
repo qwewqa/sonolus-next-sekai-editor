@@ -1332,7 +1332,18 @@
       "selected": "已选择 {0} 个对象",
       "moveSelection": "将所选移到此处",
       "objects": "{0} 个对象",
-      "drag": "拖动以重新排序 {0}"
+      "drag": "拖动以重新排序 {0}",
+      "selectMultiple": "多选",
+      "selecting": "已选择 {0} 项",
+      "stopSelecting": "结束选择",
+      "selectItem": "选择 {0}",
+      "selectAll": "全选",
+      "selectNone": "取消全选",
+      "showSelected": "显示所选",
+      "hideSelected": "隐藏所选",
+      "soloSelected": "仅显示所选",
+      "deleteSelected": "删除所选…",
+      "selectionActions": "所选项的更多操作"
     },
     "groups": {
       "deleteFolder": "删除文件夹及群组…",
@@ -1342,7 +1353,12 @@
       "all": "所有群组",
       "showAll": "显示所有群组",
       "hideAll": "隐藏所有群组",
-      "add": "添加群组"
+      "add": "添加群组",
+      "movedSelectedInto": "已将所选的 {0} 个群组移至 {1} 文件夹",
+      "movedSelectedOut": "已将所选的 {0} 个群组移出文件夹",
+      "deletedSelected": "已删除所选的 {0} 个群组",
+      "deleteSelectedTitle": "删除群组",
+      "deleteSelectedMessage": "删除所选的 {0} 个群组及其中的 {1} 个对象？"
     },
     "stages": {
       "deleteFolder": "删除文件夹及舞台…",
@@ -1354,7 +1370,12 @@
       "hideAll": "隐藏所有舞台",
       "add": "添加舞台",
       "disabled": "此关卡未启用动态舞台。",
-      "enable": "启用动态舞台"
+      "enable": "启用动态舞台",
+      "movedSelectedInto": "已将所选的 {0} 个舞台移至 {1} 文件夹",
+      "movedSelectedOut": "已将所选的 {0} 个舞台移出文件夹",
+      "deletedSelected": "已删除所选的 {0} 个舞台",
+      "deleteSelectedTitle": "删除舞台",
+      "deleteSelectedMessage": "删除所选的 {0} 个舞台及其中的 {1} 个对象？"
     },
     "properties": {
       "sections": "属性分区",

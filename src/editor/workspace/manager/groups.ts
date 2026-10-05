@@ -121,6 +121,8 @@ export const groupFolderOps = createFolderOps({
         movedEntry: i18n.value.commands.manageGroups.modal.moved,
         deleteFolderTitle: i18n.value.workspace.groups.deleteFolderTitle,
         deleteFolderMessage: i18n.value.workspace.groups.deleteFolderMessage,
+        movedSelectedInto: i18n.value.workspace.groups.movedSelectedInto,
+        movedSelectedOut: i18n.value.workspace.groups.movedSelectedOut,
     }),
 })
 
@@ -134,6 +136,21 @@ export const deleteGroup = (groupId: GroupId) => {
         ids,
         removeGroups(ids),
         interpolate(() => i18n.value.commands.manageGroups.modal.deleted, name),
+    )
+    view.entities = {
+        hovered: [],
+        creating: [],
+    }
+}
+
+/** Deletes groups with their objects as one step, keeping at least one group. */
+export const deleteGroups = (groupIds: ReadonlySet<GroupId>) => {
+    const ids = new Set([...groupIds].filter((id) => groups.value.has(id)))
+    if (!ids.size) return
+    groupFolderOps.commitRemoval(
+        ids,
+        removeGroups(ids),
+        interpolate(() => i18n.value.workspace.groups.deletedSelected, `${ids.size}`),
     )
     view.entities = {
         hovered: [],
@@ -155,6 +172,8 @@ export const groupManager: ManagerModel<GroupId> = {
         moveDown: i18n.value.commands.manageGroups.modal.moveDown,
         delete: i18n.value.commands.manageGroups.modal.delete,
         deleteFolder: i18n.value.workspace.groups.deleteFolder,
+        deleteSelectedTitle: i18n.value.workspace.groups.deleteSelectedTitle,
+        deleteSelectedMessage: i18n.value.workspace.groups.deleteSelectedMessage,
     }),
     add: addGroup,
     move: (id, offset) => {
@@ -162,6 +181,7 @@ export const groupManager: ManagerModel<GroupId> = {
     },
     rename: renameGroup,
     remove: deleteGroup,
+    removeMany: deleteGroups,
     openProperties: openGroupProperties,
     owner: 'groupId',
     folders: groupFolderOps,

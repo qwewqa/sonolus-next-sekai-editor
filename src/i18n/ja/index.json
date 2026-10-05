@@ -1332,7 +1332,18 @@
       "selected": "{0}個のオブジェクトを選択しました",
       "moveSelection": "選択をここに移動",
       "objects": "{0}個のオブジェクト",
-      "drag": "ドラッグして{0}を並べ替え"
+      "drag": "ドラッグして{0}を並べ替え",
+      "selectMultiple": "複数選択",
+      "selecting": "{0}個を選択中",
+      "stopSelecting": "選択を終了",
+      "selectItem": "{0}を選択",
+      "selectAll": "すべて選択",
+      "selectNone": "選択を解除",
+      "showSelected": "選択項目を表示",
+      "hideSelected": "選択項目を非表示",
+      "soloSelected": "選択項目だけを表示",
+      "deleteSelected": "選択項目を削除…",
+      "selectionActions": "選択項目のその他の操作"
     },
     "groups": {
       "deleteFolder": "フォルダーとグループを削除…",
@@ -1342,7 +1353,12 @@
       "all": "すべてのグループ",
       "showAll": "すべてのグループを表示",
       "hideAll": "すべてのグループを非表示",
-      "add": "グループを追加"
+      "add": "グループを追加",
+      "movedSelectedInto": "選択した{0}個のグループを{1}フォルダーに移動しました",
+      "movedSelectedOut": "選択した{0}個のグループをフォルダーから出しました",
+      "deletedSelected": "選択した{0}個のグループを削除しました",
+      "deleteSelectedTitle": "グループを削除",
+      "deleteSelectedMessage": "選択した{0}個のグループと、その{1}個のオブジェクトを削除しますか？"
     },
     "stages": {
       "deleteFolder": "フォルダーとステージを削除…",
@@ -1354,7 +1370,12 @@
       "hideAll": "すべてのステージを非表示",
       "add": "ステージを追加",
       "disabled": "このレベルでは動的ステージがオフです。",
-      "enable": "動的ステージを有効にする"
+      "enable": "動的ステージを有効にする",
+      "movedSelectedInto": "選択した{0}個のステージを{1}フォルダーに移動しました",
+      "movedSelectedOut": "選択した{0}個のステージをフォルダーから出しました",
+      "deletedSelected": "選択した{0}個のステージを削除しました",
+      "deleteSelectedTitle": "ステージを削除",
+      "deleteSelectedMessage": "選択した{0}個のステージと、その{1}個のオブジェクトを削除しますか？"
     },
     "properties": {
       "sections": "プロパティのセクション",

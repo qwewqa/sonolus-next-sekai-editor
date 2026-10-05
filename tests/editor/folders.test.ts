@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
     buildFolderTree,
+    entriesInTreeOrder,
     flattenFolderTree,
     folderPathParts,
     insertFolderInTree,
+    moveEntriesInTree,
     moveEntryInTree,
     moveFolderInTree,
     normalizeFolders,
@@ -151,4 +153,27 @@ test('a target name leads with its folder as parts, wrapped by its template', ()
         [{ text: 'groupe ' }, { text: 'Bridge', role: 'name' }],
     )
     assert.deepEqual(folderPathParts(entries, folders, 3, '{0} › {1}'), [])
+})
+
+test('several entries move into a folder in tree order, as one change', () => {
+    const tree = buildFolderTree(
+        entries(['a'], ['b', A], ['c'], ['d', B], ['e', B]),
+        folders([A, 'F'], [B, 'G']),
+    )
+    assert.deepEqual(entriesInTreeOrder(tree), ['a', 'b', 'c', 'd', 'e'])
+    assert.equal(show(moveEntriesInTree(tree, new Set(['e', 'a', 'd']), A)), '[1: b a d e] c [2: ]')
+    assert.equal(show(moveEntriesInTree(tree, new Set(['b']), A)), undefined)
+    assert.equal(show(moveEntriesInTree(tree, new Set(['a']), 9 as FolderId)), undefined)
+})
+
+test('several entries leave their folders to just below each', () => {
+    const tree = buildFolderTree(
+        entries(['a'], ['b', A], ['c', A], ['d'], ['e', B]),
+        folders([A, 'F'], [B, 'G']),
+    )
+    assert.equal(
+        show(moveEntriesInTree(tree, new Set(['a', 'b', 'e']), undefined)),
+        'a [1: c] b d [2: ] e',
+    )
+    assert.equal(show(moveEntriesInTree(tree, new Set(['a', 'd']), undefined)), undefined)
 })

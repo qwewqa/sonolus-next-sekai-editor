@@ -1332,7 +1332,18 @@
       "selected": "已選取 {0} 個物件",
       "moveSelection": "將所選移至此處",
       "objects": "{0} 個物件",
-      "drag": "拖曳以重新排序 {0}"
+      "drag": "拖曳以重新排序 {0}",
+      "selectMultiple": "多選",
+      "selecting": "已選取 {0} 項",
+      "stopSelecting": "結束選取",
+      "selectItem": "選取 {0}",
+      "selectAll": "全選",
+      "selectNone": "取消全選",
+      "showSelected": "顯示所選",
+      "hideSelected": "隱藏所選",
+      "soloSelected": "僅顯示所選",
+      "deleteSelected": "刪除所選…",
+      "selectionActions": "所選項目的更多操作"
     },
     "groups": {
       "deleteFolder": "刪除資料夾及圖層…",
@@ -1342,7 +1353,12 @@
       "all": "所有圖層",
       "showAll": "顯示所有圖層",
       "hideAll": "隱藏所有圖層",
-      "add": "新增圖層"
+      "add": "新增圖層",
+      "movedSelectedInto": "已將所選的 {0} 個圖層移至 {1} 資料夾",
+      "movedSelectedOut": "已將所選的 {0} 個圖層移出資料夾",
+      "deletedSelected": "已刪除所選的 {0} 個圖層",
+      "deleteSelectedTitle": "刪除圖層",
+      "deleteSelectedMessage": "刪除所選的 {0} 個圖層及其中的 {1} 個物件？"
     },
     "stages": {
       "deleteFolder": "刪除資料夾及舞台…",
@@ -1354,7 +1370,12 @@
       "hideAll": "隱藏所有舞台",
       "add": "新增舞台",
       "disabled": "此關卡未啟用動態舞台。",
-      "enable": "啟用動態舞台"
+      "enable": "啟用動態舞台",
+      "movedSelectedInto": "已將所選的 {0} 個舞台移至 {1} 資料夾",
+      "movedSelectedOut": "已將所選的 {0} 個舞台移出資料夾",
+      "deletedSelected": "已刪除所選的 {0} 個舞台",
+      "deleteSelectedTitle": "刪除舞台",
+      "deleteSelectedMessage": "刪除所選的 {0} 個舞台及其中的 {1} 個物件？"
     },
     "properties": {
       "sections": "屬性分區",

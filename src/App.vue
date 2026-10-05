@@ -54,6 +54,8 @@ const onKeydown = (event: KeyboardEvent) => {
     if (isEditable(target) || target?.closest('[role="menu"]')) return
     // A resize or row drag in the drawer cancels on Escape itself.
     if (document.querySelector('.resize-handle.is-dragging, .manager-row-dragging')) return
+    // A selecting manager list stops selecting on Escape instead.
+    if (target?.closest('.manager-list-selecting')) return
     setDockCollapsed(drawerSide.value, true)
     event.preventDefault()
     event.stopPropagation()

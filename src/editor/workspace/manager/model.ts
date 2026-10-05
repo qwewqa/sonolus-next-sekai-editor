@@ -34,6 +34,9 @@ export type ManagerStrings = {
     moveDown: string
     delete: string
     deleteFolder: string
+    deleteSelectedTitle: string
+    /** {0}: the number of entries, {1}: of their objects. */
+    deleteSelectedMessage: string
 }
 
 /** Everything a manager list needs to present and edit one collection. */
@@ -53,6 +56,8 @@ export type ManagerModel<T> = {
     /** Renames an entry; blank or unchanged names change nothing. */
     rename: (id: T, name: string) => void
     remove: (id: T) => void
+    /** Deletes several entries as one step. */
+    removeMany: (ids: ReadonlySet<T>) => void
     openProperties: (id: T) => void
     /** The object field that assigns notes and events to entries. */
     owner: OwnerKey
@@ -61,6 +66,9 @@ export type ManagerModel<T> = {
 
 /** A name as stored after renaming, or `undefined` when it is blank. */
 export const normalizeName = (name: string) => name.trim() || undefined
+
+/** Modifiers of a click on a row's name: Shift selects a range, Ctrl or Cmd toggles. */
+export type SelectModifiers = { range: boolean; toggle: boolean }
 
 /** A common entry action, shown inline on wide panels and in the menu. */
 export type ManagerRowAction = {

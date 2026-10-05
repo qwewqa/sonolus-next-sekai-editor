@@ -136,6 +136,8 @@ export const stageFolderOps = createFolderOps({
         movedEntry: i18n.value.commands.manageStages.modal.moved,
         deleteFolderTitle: i18n.value.workspace.stages.deleteFolderTitle,
         deleteFolderMessage: i18n.value.workspace.stages.deleteFolderMessage,
+        movedSelectedInto: i18n.value.workspace.stages.movedSelectedInto,
+        movedSelectedOut: i18n.value.workspace.stages.movedSelectedOut,
     }),
 })
 
@@ -149,6 +151,21 @@ export const deleteStage = (stageId: StageId) => {
         ids,
         removeStages(ids),
         interpolate(() => i18n.value.commands.manageStages.modal.deleted, name),
+    )
+    view.entities = {
+        hovered: [],
+        creating: [],
+    }
+}
+
+/** Deletes stages with their objects as one step, keeping at least one stage. */
+export const deleteStages = (stageIds: ReadonlySet<StageId>) => {
+    const ids = new Set([...stageIds].filter((id) => stages.value.has(id)))
+    if (!ids.size) return
+    stageFolderOps.commitRemoval(
+        ids,
+        removeStages(ids),
+        interpolate(() => i18n.value.workspace.stages.deletedSelected, `${ids.size}`),
     )
     view.entities = {
         hovered: [],
@@ -170,6 +187,8 @@ export const stageManager: ManagerModel<StageId> = {
         moveDown: i18n.value.commands.manageStages.modal.moveDown,
         delete: i18n.value.commands.manageStages.modal.delete,
         deleteFolder: i18n.value.workspace.stages.deleteFolder,
+        deleteSelectedTitle: i18n.value.workspace.stages.deleteSelectedTitle,
+        deleteSelectedMessage: i18n.value.workspace.stages.deleteSelectedMessage,
     }),
     add: addStage,
     move: (id, offset) => {
@@ -177,6 +196,7 @@ export const stageManager: ManagerModel<StageId> = {
     },
     rename: renameStage,
     remove: deleteStage,
+    removeMany: deleteStages,
     openProperties: openStageProperties,
     owner: 'stageId',
     folders: stageFolderOps,

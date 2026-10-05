@@ -1332,7 +1332,18 @@
       "selected": "{0} nesne seçildi",
       "moveSelection": "Seçimi buraya taşı",
       "objects": "{0} nesne",
-      "drag": "{0} öğesini yeniden sıralamak için sürükleyin"
+      "drag": "{0} öğesini yeniden sıralamak için sürükleyin",
+      "selectMultiple": "Birden çok seç",
+      "selecting": "{0} seçili",
+      "stopSelecting": "Seçimi bitir",
+      "selectItem": "{0} öğesini seç",
+      "selectAll": "Tümünü seç",
+      "selectNone": "Seçimi kaldır",
+      "showSelected": "Seçilenleri göster",
+      "hideSelected": "Seçilenleri gizle",
+      "soloSelected": "Yalnızca seçilenleri göster",
+      "deleteSelected": "Seçilenleri sil…",
+      "selectionActions": "Seçim için diğer işlemler"
     },
     "groups": {
       "deleteFolder": "Klasörü ve grupları sil…",
@@ -1342,7 +1353,12 @@
       "all": "Tüm gruplar",
       "showAll": "Tüm grupları göster",
       "hideAll": "Tüm grupları gizle",
-      "add": "Grup ekle"
+      "add": "Grup ekle",
+      "movedSelectedInto": "Seçilen gruplar ({0}) {1} klasörüne taşındı",
+      "movedSelectedOut": "Seçilen gruplar ({0}) klasörlerden çıkarıldı",
+      "deletedSelected": "Seçilen gruplar ({0}) silindi",
+      "deleteSelectedTitle": "Grupları sil",
+      "deleteSelectedMessage": "Seçilen gruplar ({0}) ve nesneleri ({1}) silinsin mi?"
     },
     "stages": {
       "deleteFolder": "Klasörü ve sahneleri sil…",
@@ -1354,7 +1370,12 @@
       "hideAll": "Tüm sahneleri gizle",
       "add": "Sahne ekle",
       "disabled": "Bu seviyede dinamik sahneler kapalı.",
-      "enable": "Dinamik sahneleri etkinleştir"
+      "enable": "Dinamik sahneleri etkinleştir",
+      "movedSelectedInto": "Seçilen sahneler ({0}) {1} klasörüne taşındı",
+      "movedSelectedOut": "Seçilen sahneler ({0}) klasörlerden çıkarıldı",
+      "deletedSelected": "Seçilen sahneler ({0}) silindi",
+      "deleteSelectedTitle": "Sahneleri sil",
+      "deleteSelectedMessage": "Seçilen sahneler ({0}) ve nesneleri ({1}) silinsin mi?"
     },
     "properties": {
       "sections": "Özellik bölümleri",

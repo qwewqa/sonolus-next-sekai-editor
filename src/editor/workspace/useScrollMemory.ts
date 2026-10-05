@@ -6,6 +6,9 @@ type ScrollPosition = { top: number; left: number }
 // any component for the rest of the session.
 const positions = new Map<string, ScrollPosition>()
 
+/** Whether a position is remembered under `key`. */
+export const hasScrollMemory = (key: string | undefined) => key !== undefined && positions.has(key)
+
 /**
  * Remembers an element's scroll position under `key` and restores it when the
  * element is mounted again or the key changes (e.g. switching sections in one

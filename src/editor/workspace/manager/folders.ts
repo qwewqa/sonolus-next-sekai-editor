@@ -2,9 +2,11 @@ import { shallowReactive } from 'vue'
 import {
     addToFolders,
     buildFolderTree,
+    entriesInTreeOrder,
     flattenFolderTree,
     folderOfEntry,
     insertFolderInTree,
+    moveEntriesInTree,
     moveEntryInTree,
     moveFolderInTree,
     removeEntriesFromTree,
@@ -56,6 +58,9 @@ export type FolderStrings = {
     movedEntry: string
     deleteFolderTitle: string
     deleteFolderMessage: string
+    /** Moving selected entries ({0}: their count) into a folder ({1}), or out. */
+    movedSelectedInto: string
+    movedSelectedOut: string
 }
 
 /** Folder editing for one collection; every change is one undoable step. */
@@ -109,15 +114,16 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
         name: folderName,
 
         /**
-         * Adds a folder: at the end, or holding an entry where that entry was
-         * (after the folder it leaves). Returns its id.
+         * Adds a folder: at the end, or holding entries where the first of them
+         * was (after the folder it leaves). Returns its id.
          */
-        create(entry?: K) {
+        create(held?: ReadonlySet<K>) {
             const folders: Folders = new Map(config.folders())
             const name = newName()
             const id = addToFolders(folders, name)
             let next = tree()
-            if (entry === undefined) {
+            const entry = held && entriesInTreeOrder(next).find((id) => held.has(id))
+            if (!held || entry === undefined) {
                 next = insertFolderInTree(next, id)
             } else {
                 const holder = folderOfEntry(next, entry)
@@ -132,7 +138,7 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
                     id,
                     after && ({ type: after.type, id: after.id } as FolderTreeRef<K>),
                 )
-                next = moveEntryInTree(next, entry, { folder: id }) ?? next
+                next = moveEntriesInTree(next, held, id) ?? next
             }
             commit(
                 next,
@@ -177,6 +183,24 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
                         )
                       : interpolate(() => config.strings().movedEntry, name)
             commit(next, message)
+        },
+
+        /** Moves entries to a folder's end, or out of their folders, as one step. */
+        placeEntries(ids: ReadonlySet<K>, folder: FolderId | undefined) {
+            const before = tree()
+            const next = moveEntriesInTree(before, ids, folder)
+            if (!next) return
+            const count = `${[...ids].filter((id) => folderOfEntry(before, id)?.id !== folder).length || ids.size}`
+            commit(
+                next,
+                folder === undefined
+                    ? interpolate(() => config.strings().movedSelectedOut, count)
+                    : interpolate(
+                          () => config.strings().movedSelectedInto,
+                          count,
+                          folderName(folder),
+                      ),
+            )
         },
 
         /** Steps an entry, crossing folder edges; collapsed folders are passed whole. */
