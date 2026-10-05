@@ -378,3 +378,33 @@ test('a pressed section tab takes the accent fill, as every pressed control does
         .toBe('rgb(119, 239, 220)')
     await page.mouse.up()
 })
+
+test('view selects return to the current value when a picked command is cancelled', async ({
+    page,
+}) => {
+    await open(page, { propertiesSection: 'view' })
+    const shown = (name: string) =>
+        panel(page)
+            .getByRole('combobox', { name, exact: true })
+            .evaluate((select: HTMLSelectElement) => select.selectedOptions[0]?.text.trim())
+    const dialog = page.getByRole('dialog')
+
+    const division = panel(page).getByRole('combobox', { name: 'Division', exact: true })
+    await division.selectOption({ label: '1/n' })
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect.poll(() => shown('Division')).toBe('1/4')
+    await division.selectOption({ label: '1/n' })
+    await dialog.getByRole('spinbutton').fill('5')
+    await dialog.getByRole('spinbutton').press('Enter')
+    await expect.poll(() => shown('Division')).toBe('1/5')
+
+    // Event tools ask to enable dynamic stages first.
+    const tool = panel(page).getByRole('combobox', { name: 'Tool', exact: true })
+    await tool.selectOption({ label: 'Camera Event' })
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect.poll(() => shown('Tool')).toBe('Select')
+    await tool.selectOption({ label: 'Eraser' })
+    await expect.poll(() => shown('Tool')).toBe('Eraser')
+})
