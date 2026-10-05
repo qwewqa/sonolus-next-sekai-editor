@@ -262,10 +262,10 @@
       "title": "플레이"
     },
     "properties": {
-      "title": "속성",
-      "changed": "속성 변경됨",
+      "title": "레벨 속성",
+      "changed": "레벨 속성 변경됨",
       "modal": {
-        "life": "라이프"
+        "life": "초기 라이프"
       }
     },
     "redo": {
@@ -321,15 +321,15 @@
     },
     "snapping": {
       "title": "스냅",
-      "absolute": "절대 스냅으로 변경",
-      "relative": "상대 스냅으로 변경"
+      "absolute": "절대 스냅으로 변경함",
+      "relative": "상대 스냅으로 변경함"
     },
     "speeds": {
       "speedDown": {
-        "title": "속도 감소"
+        "title": "재생 속도 감소"
       },
       "speedUp": {
-        "title": "속도 증가"
+        "title": "재생 속도 증가"
       }
     },
     "stages": {

@@ -262,10 +262,10 @@
       "title": "再生"
     },
     "properties": {
-      "title": "設定",
-      "changed": "設定を変更しました",
+      "title": "譜面設定",
+      "changed": "譜面設定を変更しました",
       "modal": {
-        "life": "ライフ"
+        "life": "初期ライフ"
       }
     },
     "redo": {
@@ -321,8 +321,8 @@
     },
     "snapping": {
       "title": "分割線スナップ",
-      "absolute": "絶対スナップに切り替え",
-      "relative": "相対スナップに切り替え"
+      "absolute": "絶対スナップに切り替えました",
+      "relative": "相対スナップに切り替えました"
     },
     "speeds": {
       "speedDown": {

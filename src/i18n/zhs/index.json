@@ -262,10 +262,10 @@
       "title": "播放"
     },
     "properties": {
-      "title": "属性",
-      "changed": "已更改属性",
+      "title": "关卡属性",
+      "changed": "已更改关卡属性",
       "modal": {
-        "life": "生命值"
+        "life": "初始生命值"
       }
     },
     "redo": {
@@ -321,15 +321,15 @@
     },
     "snapping": {
       "title": "吸附",
-      "absolute": "切换到绝对吸附",
-      "relative": "切换到相对吸附"
+      "absolute": "已切换到绝对吸附",
+      "relative": "已切换到相对吸附"
     },
     "speeds": {
       "speedDown": {
-        "title": "减速"
+        "title": "减慢播放速度"
       },
       "speedUp": {
-        "title": "加速"
+        "title": "加快播放速度"
       }
     },
     "stages": {
@@ -921,7 +921,7 @@
   "player": {
     "started": "开始播放",
     "stopped": "停止播放",
-    "changed": "速度更改为 {0}x"
+    "changed": "播放速度更改为 {0}×"
   },
   "history": {
     "initialize": "初始化",

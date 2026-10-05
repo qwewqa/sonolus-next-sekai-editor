@@ -262,10 +262,10 @@
             "title": "Play"
         },
         "properties": {
-            "title": "Properties",
-            "changed": "Changed properties",
+            "title": "Level Properties",
+            "changed": "Changed level properties",
             "modal": {
-                "life": "Life"
+                "life": "Initial Life"
             }
         },
         "redo": {
@@ -321,15 +321,15 @@
         },
         "snapping": {
             "title": "Snapping",
-            "absolute": "Switch to absolute snapping",
-            "relative": "Switch to relative snapping"
+            "absolute": "Switched to absolute snapping",
+            "relative": "Switched to relative snapping"
         },
         "speeds": {
             "speedDown": {
-                "title": "Speed Down"
+                "title": "Decrease Playback Speed"
             },
             "speedUp": {
-                "title": "Speed Up"
+                "title": "Increase Playback Speed"
             }
         },
         "stages": {
@@ -590,7 +590,7 @@
         "sideBySide": "Side by Side",
         "auto": "Auto",
         "allow": "Allow",
-        "disallow": "Don't Allow",
+        "disallow": "Don’t Allow",
         "off": "Off",
         "canvas": "Note Elevations",
         "axis": "Elevation",
@@ -921,7 +921,7 @@
     "player": {
         "started": "Started playing",
         "stopped": "Stopped playing",
-        "changed": "Changed speed to {0}x"
+        "changed": "Changed playback speed to {0}×"
     },
     "history": {
         "initialize": "Initialize",
@@ -1279,10 +1279,10 @@
             "cancel": "Cancel"
         },
         "info": {
-            "ok": "Ok"
+            "ok": "OK"
         },
         "loading": {
-            "loading": "Loading ..."
+            "loading": "Loading..."
         }
     },
     "preview": {

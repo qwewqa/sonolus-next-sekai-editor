@@ -181,19 +181,19 @@
         },
         "moveUp": "Grubu yukarı taşı",
         "moveDown": "Grubu aşağı taşı",
-        "moved": "{0} grup taşındı",
+        "moved": "{0} grubu taşındı",
         "properties": {
           "title": "Grup özelliklerini düzenle",
           "modal": {
             "title": "Grup Özellikleri",
             "forceNoteSpeed": "Nota Hızını Sabitle",
-            "edited": "{0} grup özellikleri düzenlendi"
+            "edited": "{0} grubunun özellikleri düzenlendi"
           }
         },
         "delete": "Grubu sil",
-        "deleted": "{0} grup silindi",
+        "deleted": "{0} grubu silindi",
         "add": "Ekle",
-        "added": "{0} grup eklendi"
+        "added": "{0} grubu eklendi"
       }
     },
     "manageStages": {
@@ -207,18 +207,18 @@
         },
         "moveUp": "Sahneyi yukarı taşı",
         "moveDown": "Sahneyi aşağı taşı",
-        "moved": "{0} sahne taşındı",
+        "moved": "{0} sahnesi taşındı",
         "properties": {
           "title": "Sahne özelliklerini düzenle",
           "modal": {
             "title": "Sahne Özellikleri",
-            "edited": "{0} sahne özellikleri düzenlendi"
+            "edited": "{0} sahnesinin özellikleri düzenlendi"
           }
         },
         "delete": "Sahneyi sil",
-        "deleted": "{0} sahne silindi",
+        "deleted": "{0} sahnesi silindi",
         "add": "Ekle",
-        "added": "{0} sahne eklendi"
+        "added": "{0} sahnesi eklendi"
       }
     },
     "note": {
@@ -262,10 +262,10 @@
       "title": "Oynat"
     },
     "properties": {
-      "title": "Özellikler",
-      "changed": "Özellikler değiştirildi",
+      "title": "Seviye Özellikleri",
+      "changed": "Seviye özellikleri değiştirildi",
       "modal": {
-        "life": "Can"
+        "life": "Başlangıç Canı"
       }
     },
     "redo": {
@@ -321,15 +321,15 @@
     },
     "snapping": {
       "title": "Hizalama",
-      "absolute": "Mutlak hizalamaya geç",
-      "relative": "Göreceli hizalamaya geç"
+      "absolute": "Mutlak hizalamaya geçildi",
+      "relative": "Göreceli hizalamaya geçildi"
     },
     "speeds": {
       "speedDown": {
-        "title": "Hızı Azalt"
+        "title": "Oynatma Hızını Azalt"
       },
       "speedUp": {
-        "title": "Hızı Yükselt"
+        "title": "Oynatma Hızını Artır"
       }
     },
     "stages": {
@@ -921,7 +921,7 @@
   "player": {
     "started": "Oynatmaya başlandı",
     "stopped": "Oynatma durduruldu",
-    "changed": "Hız {0}x olarak değiştirildi"
+    "changed": "Oynatma hızı {0}× olarak değiştirildi"
   },
   "history": {
     "initialize": "Başlat",
@@ -1362,13 +1362,13 @@
       "moveDown": "Klasörü aşağı taşı",
       "ungroup": "Klasörü dağıt",
       "path": "{0} › {1}",
-      "added": "{0} klasör eklendi",
+      "added": "{0} klasörü eklendi",
       "renamed": "{0} klasörü {1} olarak yeniden adlandırıldı",
-      "moved": "{0} klasör taşındı",
+      "moved": "{0} klasörü taşındı",
       "movedInto": "{0}, {1} klasörüne taşındı",
       "movedOut": "{0}, {1} klasöründen çıkarıldı",
-      "ungrouped": "{0} klasör dağıtıldı",
-      "deleted": "{0} klasör silindi"
+      "ungrouped": "{0} klasörü dağıtıldı",
+      "deleted": "{0} klasörü silindi"
     },
     "manager": {
       "show": "{0} öğesini göster",

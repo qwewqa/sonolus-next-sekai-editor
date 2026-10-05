@@ -262,10 +262,10 @@
       "title": "Lire"
     },
     "properties": {
-      "title": "Propriétés",
-      "changed": "Propriétés modifiées",
+      "title": "Propriétés du niveau",
+      "changed": "Propriétés du niveau modifiées",
       "modal": {
-        "life": "Vie"
+        "life": "Vie initiale"
       }
     },
     "redo": {
@@ -321,15 +321,15 @@
     },
     "snapping": {
       "title": "Alignement",
-      "absolute": "Passer à l'alignement absolu",
-      "relative": "Passer à l'alignement relatif"
+      "absolute": "Alignement absolu activé",
+      "relative": "Alignement relatif activé"
     },
     "speeds": {
       "speedDown": {
-        "title": "Ralentir"
+        "title": "Ralentir la lecture"
       },
       "speedUp": {
-        "title": "Accélérer"
+        "title": "Accélérer la lecture"
       }
     },
     "stages": {
@@ -921,7 +921,7 @@
   "player": {
     "started": "Lecture démarrée",
     "stopped": "Lecture arrêtée",
-    "changed": "Vitesse modifiée à {0}x"
+    "changed": "Vitesse de lecture modifiée à {0}×"
   },
   "history": {
     "initialize": "Initialiser",
@@ -1279,10 +1279,10 @@
       "cancel": "Annuler"
     },
     "info": {
-      "ok": "Ok"
+      "ok": "OK"
     },
     "loading": {
-      "loading": "Chargement ..."
+      "loading": "Chargement..."
     }
   },
   "preview": {
