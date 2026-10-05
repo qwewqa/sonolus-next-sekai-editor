@@ -5,10 +5,15 @@ import { formatShortcut } from '../../utils/format'
 import { commands, type CommandName } from '../commands'
 import { isCoarsePointer } from '../workspace'
 
-const props = defineProps<{
-    name: CommandName
-    showLabel?: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        name: CommandName
+        showLabel?: boolean
+        /** The tool or mode in use; only the editor's toolbar shows it. */
+        pressed?: boolean
+    }>(),
+    { pressed: undefined },
+)
 
 const title = computed(() => commands[props.name].title())
 
@@ -22,9 +27,15 @@ const shortcut = computed(() =>
 
 <template>
     <button
-        class="flex items-center rounded-full bg-button p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
-        :class="{ '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3': showLabel }"
+        class="flex items-center rounded-full p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
+        :class="[
+            pressed
+                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button'
+                : 'bg-button focus-visible:ring-accent',
+            { '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3': showLabel },
+        ]"
         :title
+        :aria-pressed="pressed"
     >
         <component :is="commands[name].icon.is" class="size-4" v-bind="commands[name].icon.props" />
         <template v-if="showLabel">

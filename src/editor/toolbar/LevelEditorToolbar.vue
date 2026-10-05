@@ -6,6 +6,7 @@ import { isDragging } from '../controls/gestures/recognizers/drag'
 import { isCoarsePointer } from '../workspace'
 import { vScrollEdges } from '../../directives/scrollEdges'
 import LevelEditorToolbarTool from './LevelEditorToolbarTool.vue'
+import { isCommandPressed } from './pressed'
 
 const props = defineProps<{ available?: CommandName[] }>()
 
@@ -24,6 +25,19 @@ watch(
     toolbar,
     (toolbar) => {
         activeNames.value = toolbar.map((commands) => commands[commands.length - 1] ?? 'select')
+    },
+    { immediate: true },
+)
+
+// A group switches to its member whose tool comes into use, nearest its default.
+watch(
+    () => toolbar.value.map((group) => group.filter(isCommandPressed)),
+    (pressed) => {
+        for (const [index, names] of pressed.entries()) {
+            const shown = activeNames.value[index]
+            const name = names[names.length - 1]
+            if (name && shown && !isCommandPressed(shown)) activeNames.value[index] = name
+        }
     },
     { immediate: true },
 )
@@ -186,6 +200,7 @@ onBeforeUnmount(() => {
                 <LevelEditorToolbarTool
                     class="size-[--tool-size] justify-center"
                     :name="activeName"
+                    :pressed="isCommandPressed(activeName)"
                     @pointermove="onOverMain($event, i)"
                     @click="onClickMain(i, activeName)"
                 />
@@ -209,6 +224,7 @@ onBeforeUnmount(() => {
                         :key="j"
                         class="mb-1 w-full"
                         :name
+                        :pressed="isCommandPressed(name)"
                         show-label
                         @click="onClickSub(i, name)"
                     />

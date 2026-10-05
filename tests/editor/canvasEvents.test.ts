@@ -506,7 +506,11 @@ test('time-scale eases show their curve toward the next change in the group', ()
     const step = glyph(4)
     assert.equal(step.glyph?.alpha, 0.4)
     assert.deepEqual(
-        step.glyph?.path.map(([command, ...xy]) => [command, ...xy.map((v) => +v.toFixed(9))]),
+        (step.glyph?.path as [string, number, number][]).map(([command, x, y]) => [
+            command,
+            +x.toFixed(9),
+            +y.toFixed(9),
+        ]),
         [
             ['M', 7.2, -24.83],
             ['L', 7.2, -25.17],
