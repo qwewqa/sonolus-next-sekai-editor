@@ -1,26 +1,19 @@
 <script setup lang="ts">
-import type { CameraZoomVerticalAlign } from '../../chart/events/camera.ts'
-import { i18n } from '../../i18n/index.ts'
-import MultiToggleField from './MultiToggleField.vue'
+import type { CameraZoomVerticalAlign } from '../../chart/events/camera'
+import { i18n } from '../../i18n'
+import ChoiceField from './ChoiceField.vue'
 
-const modelValue = defineModel<
-    CameraZoomVerticalAlign | undefined,
-    string,
-    boolean | undefined,
-    boolean | undefined
->({
-    required: true,
-    get: (value) => (value === undefined ? undefined : value !== 'default'),
-    set: (value): CameraZoomVerticalAlign | undefined =>
-        value === undefined ? undefined : value ? 'center' : 'default',
-})
+const modelValue = defineModel<CameraZoomVerticalAlign | undefined>({ required: true })
 </script>
 
 <template>
-    <MultiToggleField
+    <ChoiceField
         v-model="modelValue"
         :label="i18n.modals.form.cameraZoomVerticalAlign.label"
-        :disabled="i18n.modals.form.cameraZoomVerticalAlign.default"
-        :enabled="i18n.modals.form.cameraZoomVerticalAlign.center"
+        :options="[
+            [i18n.modals.form.cameraZoomVerticalAlign.default, 'default'],
+            [i18n.modals.form.cameraZoomVerticalAlign.center, 'center'],
+        ]"
+        variant="multi"
     />
 </template>

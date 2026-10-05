@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{
     label: string
+    /** Makes the row a plain group whose control is named by this label id. */
+    labelId?: string
 }>()
 </script>
 
@@ -8,12 +10,12 @@ defineProps<{
     <!-- Lays out by the width the field actually receives (dialog, tool modal or
     dock panel), not by the viewport: the wrapper is the query container. -->
     <div class="form-field">
-        <label class="form-field-row">
+        <component :is="labelId === undefined ? 'label' : 'div'" class="form-field-row">
             <span class="form-field-label"
-                ><span class="form-field-text">{{ label }}</span></span
+                ><span :id="labelId" class="form-field-text">{{ label }}</span></span
             >
             <slot />
-        </label>
+        </component>
     </div>
 </template>
 
@@ -148,7 +150,8 @@ defineProps<{
         width: auto;
     }
 
-    .form-field-row > :not(.form-field-label, .form-field-select, .form-field-toggle),
+    .form-field-row
+        > :not(.form-field-label, .form-field-select, .form-field-toggle, .form-field-segmented),
     .form-field-select > select,
     .form-field-toggle > input {
         padding-inline: 0.75rem;

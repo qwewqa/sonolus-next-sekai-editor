@@ -920,6 +920,7 @@
     "form": {
       "confirm": "確認",
       "mixed": "混在",
+      "notSet": "未設定",
       "anchor": {
         "label": "基準位置",
         "default": "デフォルト",

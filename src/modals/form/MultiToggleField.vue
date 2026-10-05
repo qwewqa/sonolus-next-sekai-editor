@@ -5,8 +5,6 @@ import ToggleSwitch from './ToggleSwitch.vue'
 
 defineProps<{
     label: string
-    disabled?: string
-    enabled?: string
 }>()
 
 const modelValue = defineModel<boolean | undefined>({ required: true })
@@ -23,8 +21,8 @@ const modelValue = defineModel<boolean | undefined>({ required: true })
                     modelValue === undefined
                         ? i18n.modals.form.mixed
                         : modelValue
-                          ? (enabled ?? i18n.modals.form.toggle.enabled)
-                          : (disabled ?? i18n.modals.form.toggle.disabled)
+                          ? i18n.modals.form.toggle.enabled
+                          : i18n.modals.form.toggle.disabled
                 "
                 @click="modelValue = !modelValue"
             />

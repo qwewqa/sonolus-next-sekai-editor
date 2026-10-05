@@ -920,6 +920,7 @@
     "form": {
       "confirm": "Confirmer",
       "mixed": "Mixte",
+      "notSet": "Non défini",
       "anchor": {
         "label": "Ancrage",
         "default": "Par défaut",

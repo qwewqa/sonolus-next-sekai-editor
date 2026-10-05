@@ -920,6 +920,7 @@
     "form": {
       "confirm": "确认",
       "mixed": "混合",
+      "notSet": "未设置",
       "anchor": {
         "label": "对齐基准",
         "default": "默认",

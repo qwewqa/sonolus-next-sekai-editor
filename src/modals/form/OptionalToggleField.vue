@@ -4,8 +4,6 @@ import OptionalSelectField from './OptionalSelectField.vue'
 
 defineProps<{
     label: string
-    disabled?: string
-    enabled?: string
 }>()
 
 const modelValue = defineModel<boolean | undefined>({ required: true })
@@ -16,8 +14,8 @@ const modelValue = defineModel<boolean | undefined>({ required: true })
         v-model="modelValue"
         :label
         :options="[
-            [disabled ?? i18n.modals.form.toggle.disabled, false],
-            [enabled ?? i18n.modals.form.toggle.enabled, true],
+            [i18n.modals.form.toggle.disabled, false],
+            [i18n.modals.form.toggle.enabled, true],
         ]"
     />
 </template>

@@ -5,7 +5,7 @@ import { i18n } from '../../../i18n'
 import OptionalGroupField from '../../../modals/form/OptionalGroupField.vue'
 import OptionalStageField from '../../../modals/form/OptionalStageField.vue'
 import SelectField from '../../../modals/form/SelectField.vue'
-import ToggleField from '../../../modals/form/ToggleField.vue'
+import ChoiceField from '../../../modals/form/ChoiceField.vue'
 import { entries } from '../../../utils/object'
 import { commands } from '../../commands'
 import { groupScope, stageScope } from '../../scope'
@@ -69,8 +69,9 @@ const divisionOptions = computed(() =>
 )
 
 const snapping = computed({
-    get: () => view.snapping !== 'absolute',
-    set: () => {
+    get: () => view.snapping,
+    set: (snapping) => {
+        if (snapping === view.snapping) return
         void commands.snapping.execute()
     },
 })
@@ -90,10 +91,12 @@ const snapping = computed({
         :label="i18n.sidebars.view.division"
         :options="divisionOptions"
     />
-    <ToggleField
+    <ChoiceField
         v-model="snapping"
         :label="i18n.sidebars.view.snapping.label"
-        :disabled="i18n.sidebars.view.snapping.absolute"
-        :enabled="i18n.sidebars.view.snapping.relative"
+        :options="[
+            [i18n.sidebars.view.snapping.absolute, 'absolute'],
+            [i18n.sidebars.view.snapping.relative, 'relative'],
+        ]"
     />
 </template>

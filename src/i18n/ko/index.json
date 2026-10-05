@@ -920,6 +920,7 @@
     "form": {
       "confirm": "확인",
       "mixed": "혼합",
+      "notSet": "설정 안 함",
       "anchor": {
         "label": "앵커",
         "default": "기본",

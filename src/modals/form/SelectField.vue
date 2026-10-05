@@ -5,6 +5,7 @@ import BaseField from './BaseField.vue'
 defineProps<{
     label: string
     options: (readonly [string, NoInfer<T>])[]
+    disabled?: boolean
 }>()
 
 const modelValue = defineModel<T>({ required: true })
@@ -12,10 +13,11 @@ const modelValue = defineModel<T>({ required: true })
 
 <template>
     <BaseField :label>
-        <div class="form-field-select group">
+        <div class="form-field-select group" :class="{ 'opacity-40': disabled }">
             <select
                 v-model.lazy="modelValue"
-                class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                :disabled
+                class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 required
             >
                 <option v-for="([name, value], index) in options" :key="index" :value>

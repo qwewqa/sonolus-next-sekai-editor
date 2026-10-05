@@ -920,6 +920,7 @@
     "form": {
       "confirm": "Onayla",
       "mixed": "Karışık",
+      "notSet": "Ayarlanmadı",
       "anchor": {
         "label": "Sabit Nokta",
         "default": "Varsayılan",
