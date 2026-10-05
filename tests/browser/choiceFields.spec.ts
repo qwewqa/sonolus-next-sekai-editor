@@ -88,7 +88,7 @@ test.describe('roomy panel', () => {
         await expect(group.getByRole('radio', { name: 'Relative' })).toBeChecked()
     })
 
-    test('brush fields can return to unchanged, leaving the brush', async ({ page }) => {
+    test('brush fields offer only values; the remove button leaves the brush', async ({ page }) => {
         await open(page, { rightDockWidth: 560 })
         await panel(page).getByRole('combobox', { name: 'Tool', exact: true }).selectOption({
             label: 'Brush',
@@ -98,8 +98,8 @@ test.describe('roomy panel', () => {
             .getByRole('combobox', { name: 'Add Property' })
             .selectOption('timeScaleTransition')
         const group = tool.getByRole('radiogroup', { name: /^Transition/ })
-        // The brush names its unset value "Unchanged".
-        const unchanged = group.getByRole('radio', { name: 'Unchanged', exact: true })
+        // Removing is the row's button; the choice lists values only.
+        await expect(group.getByRole('radio')).toHaveCount(2)
         await expect(group.getByRole('radio', { name: 'Time Scale', exact: true })).toBeChecked()
 
         const brush = () =>
@@ -116,7 +116,7 @@ test.describe('roomy panel', () => {
             })
         await group.getByRole('radio', { name: 'Scroll', exact: true }).click()
         expect(await brush()).toBe('scroll')
-        await unchanged.click()
+        await tool.getByRole('button', { name: 'Remove Time Scale Transition' }).click()
         expect(await brush()).toBeNull()
         await expect(group).toHaveCount(0)
     })

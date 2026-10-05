@@ -12,7 +12,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
-import { useEmptyLabel } from './emptyLabel'
+import { useEmptyLabel, useUnsetChoice } from './emptyLabel'
 import { isUnknownValue, mixedOptions, useFieldUsage } from './fieldUsage'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
@@ -39,6 +39,7 @@ const slots = defineSlots<{
 const id = useId()
 const emptyLabel = useEmptyLabel()
 const notSet = computed(() => emptyLabel?.() ?? i18n.value.modals.form.notSet)
+const unsetChoice = useUnsetChoice()
 const optional = computed(() => props.variant === 'optional')
 const isMixed = computed(() => props.variant === 'multi' && modelValue.value === undefined)
 // Mixed segments list the values in use below, as selects do.
@@ -79,7 +80,13 @@ const measure = () => {
     text.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
     const widths = props.options.map(([name]) => Math.ceil(text.measureText(name).width) + 1)
-    layout.value = choiceLayout(element.clientWidth, widths, optional.value, rem, !!slots.glyph)
+    layout.value = choiceLayout(
+        element.clientWidth,
+        widths,
+        optional.value && unsetChoice,
+        rem,
+        !!slots.glyph,
+    )
     selectGlyph.value = !!slots.glyph && selectGlyphFits(element.clientWidth, widths, rem)
 }
 
@@ -141,7 +148,7 @@ watch(
             <span v-if="isMixed" :id="`${id}-mixed`" class="sr-only">{{
                 i18n.modals.form.mixed
             }}</span>
-            <label v-if="optional" class="relative w-8 flex-none" :title="notSet">
+            <label v-if="optional && unsetChoice" class="relative w-8 flex-none" :title="notSet">
                 <input
                     v-model="modelValue"
                     :class="input"

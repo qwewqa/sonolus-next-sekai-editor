@@ -4,7 +4,7 @@ import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
 import { resyncSelect } from './resync'
 import { i18n } from '../../i18n'
-import { useEmptyLabel } from './emptyLabel'
+import { useEmptyLabel, useUnsetChoice } from './emptyLabel'
 import { isUnknownValue } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
@@ -23,6 +23,7 @@ const modelValue = defineModel<T | undefined>({ required: true })
 
 type Section = { label?: string; options: [string, T][] }
 const injectedEmptyLabel = useEmptyLabel()
+const unsetChoice = useUnsetChoice()
 
 const allSections = computed((): Section[] => props.sections ?? [{ options: props.options ?? [] }])
 const unknown = computed(() =>
@@ -52,7 +53,13 @@ const unknown = computed(() =>
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 @change="resyncSelect($event, () => modelValue)"
             >
-                <option :value="undefined">
+                <!-- Without the choice, an unset value still shows but is never listed. -->
+                <option
+                    v-if="unsetChoice || modelValue === undefined"
+                    :value="undefined"
+                    :disabled="!unsetChoice"
+                    :hidden="!unsetChoice"
+                >
                     {{ emptyLabel ?? injectedEmptyLabel?.() ?? i18n.modals.form.notSet }}
                 </option>
                 <!-- A value no option names; shown, never listed or committed. -->

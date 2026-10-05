@@ -321,10 +321,18 @@ test.describe('unset values', () => {
         await expect(empty(page, 'Note Type')).toHaveText('Auto')
     })
 
-    test('the brush calls its unset value Unchanged', async ({ page }) => {
+    test('brush rows leave through their remove button, not an Unchanged entry', async ({
+        page,
+    }) => {
         await page.keyboard.press('b')
-        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('noteType')
-        await expect(empty(page, 'Note Type')).toHaveText('Unchanged')
+        const add = tool(page).getByRole('combobox', { name: 'Add Property' })
+        await add.selectOption('noteType')
+        const noteType = tool(page).locator('[data-brush-key="noteType"] select')
+        await expect(noteType.locator('option:not([hidden])').first()).toHaveText('Default')
+        await expect(noteType.locator('option', { hasText: 'Unchanged' })).toHaveCount(0)
+        // Either half of an ease may stay Unchanged while the other is set.
+        await add.selectOption('connectorEase')
+        await expect(empty(page, 'Connector Ease')).toHaveText('Unchanged')
     })
 })
 

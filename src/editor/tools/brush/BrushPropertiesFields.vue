@@ -6,7 +6,7 @@ import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages'
 import { i18n } from '../../../i18n'
-import { emptyLabelKey } from '../../../modals/form/emptyLabel'
+import { emptyLabelKey, unsetChoiceKey } from '../../../modals/form/emptyLabel'
 import { isEditableEntity } from '../../../state/operations/editable'
 import { interpolate, interpolateRaw } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -26,6 +26,8 @@ import {
 } from '../../workspace/properties/fields'
 
 provide(emptyLabelKey, () => i18n.value.modals.form.unset.unchanged)
+// Rows leave the brush through their remove button.
+provide(unsetChoiceKey, false)
 
 const createModel = useProperties(brushProperties)
 const models = Object.fromEntries(brushFields.map((field) => [field.key, createModel(field.key)]))

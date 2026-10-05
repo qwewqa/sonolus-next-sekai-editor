@@ -4,3 +4,8 @@ import { inject, type InjectionKey } from 'vue'
 export const emptyLabelKey: InjectionKey<() => string> = Symbol('empty label')
 
 export const useEmptyLabel = () => inject(emptyLabelKey, undefined)
+
+/** Whether optional fields below list their unset value; the brush removes rows instead. */
+export const unsetChoiceKey: InjectionKey<boolean> = Symbol('unset choice')
+
+export const useUnsetChoice = () => inject(unsetChoiceKey, true)

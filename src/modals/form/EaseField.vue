@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="E extends Ease">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import {
     composeEase,
     easeEditParts,
@@ -13,6 +13,7 @@ import {
     type EaseMode,
 } from '../../ease'
 import { i18n } from '../../i18n'
+import { unsetChoiceKey } from './emptyLabel'
 import EaseIcon from './EaseIcon.vue'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
@@ -26,6 +27,9 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<EaseEdit | undefined>({ required: true })
+
+// Either half may stay unset while the other is set.
+if (props.optional) provide(unsetChoiceKey, true)
 
 const family = computed({
     get: () => easeEditParts(modelValue.value).family,
