@@ -68,6 +68,8 @@ export type PropertyField = {
     /** Value labels for the collapsed connector summary and enum toggles. */
     valueLabel?: (t: Localization, value: never) => string
     ease?: boolean
+    /** Only exists with dynamic stages. */
+    dynamicStages?: boolean
     /** Brushable properties with the value an added brush row starts from. */
     brush?: { initial: unknown }
 }
@@ -607,6 +609,7 @@ const fields: PropertyField[] = [
         key: 'stageId',
         section: 'organization',
         kind: 'general',
+        dynamicStages: true,
         label: (t) => t.modals.form.stage.label,
         show: (context) =>
             context.isDynamicStages &&
@@ -670,11 +673,15 @@ export const coupledKeys: Partial<Record<PropertyKey, PropertyKey[]>> = {
     isCritical: ['connectorActiveIsCritical'],
 }
 
+/** Whether the brush may offer a field in this chart mode. */
+export const isBrushAvailable = (field: PropertyField, isDynamicStages: boolean) =>
+    isDynamicStages || (!stageKinds.has(field.kind) && !field.dynamicStages)
+
 /** A brush matching the selection: every brushable value it agrees on. */
 export const pickBrush = ({ model, usage }: Aggregate, isDynamicStages: boolean) => {
     const brush: Record<string, unknown> = {}
     for (const field of brushFields) {
-        if (!isDynamicStages && stageKinds.has(field.kind)) continue
+        if (!isBrushAvailable(field, isDynamicStages)) continue
         // Eases keep the half the selection agrees on.
         const value = field.ease
             ? mergeEases((usage.get(field.key)?.values.keys() ?? []) as Iterable<Ease>)

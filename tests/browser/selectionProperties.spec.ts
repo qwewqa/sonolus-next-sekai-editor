@@ -289,6 +289,15 @@ test.describe('brush', () => {
         await tool(page).getByRole('button', { name: 'Clear', exact: true }).click()
         await expect(tool(page).locator('.brush-empty')).toBeVisible()
     })
+
+    test('never offers the stage without dynamic stages', async ({ page }) => {
+        const add = tool(page).getByRole('combobox', { name: 'Add Property' })
+        await expect(add.locator('option[value="groupId"]')).toHaveCount(1)
+        await expect(add.locator('option[value="stageId"]')).toHaveCount(0)
+        await tool(page).getByRole('button', { name: 'Pick from Selection' }).click()
+        await expect(tool(page).locator('[data-brush-key="groupId"]')).toHaveCount(1)
+        await expect(tool(page).locator('[data-brush-key="stageId"]')).toHaveCount(0)
+    })
 })
 
 test.describe('unset values', () => {

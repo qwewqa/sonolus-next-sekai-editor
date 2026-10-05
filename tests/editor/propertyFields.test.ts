@@ -254,6 +254,12 @@ test('picking a brush keeps agreeing values and the agreeing half of eases', () 
     })
 })
 
+test('picking skips the stage without dynamic stages', () => {
+    const aggregate = aggregateValues([{ stageId: 1, groupId: 2 }], () => () => true)
+    assert.deepEqual(pickBrush(aggregate, false), { groupId: 2 })
+    assert.deepEqual(pickBrush(aggregate, true), { groupId: 2, stageId: 1 })
+})
+
 test('unknown and unset values are told apart from mixed ones', () => {
     const options = [
         ['A', 'a'],

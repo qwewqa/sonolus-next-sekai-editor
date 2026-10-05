@@ -18,9 +18,9 @@ import { optionalFieldComponents } from '../../workspace/properties/fieldCompone
 import {
     brushFields,
     fieldLabel,
+    isBrushAvailable,
     pickBrush,
     propertyKinds,
-    stageKinds,
     type BrushKey,
     type PropertyField,
 } from '../../workspace/properties/fields'
@@ -32,7 +32,7 @@ const models = Object.fromEntries(brushFields.map((field) => [field.key, createM
 
 const root = useTemplateRef<HTMLElement>('root')
 
-const available = (field: PropertyField) => isDynamicStages.value || !stageKinds.has(field.kind)
+const available = (field: PropertyField) => isBrushAvailable(field, isDynamicStages.value)
 
 const isSet = (field: PropertyField & { key: BrushKey }) =>
     brushProperties.value[field.key] !== undefined
