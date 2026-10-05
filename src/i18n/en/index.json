@@ -738,7 +738,9 @@
                 "label": "Snapping",
                 "absolute": "Absolute",
                 "relative": "Relative"
-            }
+            },
+            "group": "Current Group",
+            "stage": "Current Stage"
         }
     },
     "statusBar": {

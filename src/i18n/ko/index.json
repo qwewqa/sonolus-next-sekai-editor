@@ -738,7 +738,9 @@
         "label": "스냅",
         "absolute": "절대",
         "relative": "상대"
-      }
+      },
+      "group": "현재 그룹",
+      "stage": "현재 스테이지"
     }
   },
   "statusBar": {

@@ -738,7 +738,9 @@
         "label": "Hizalama",
         "absolute": "Mutlak",
         "relative": "Göreceli"
-      }
+      },
+      "group": "Geçerli Grup",
+      "stage": "Geçerli Sahne"
     }
   },
   "statusBar": {

@@ -738,7 +738,9 @@
         "label": "吸附",
         "absolute": "绝对",
         "relative": "相对"
-      }
+      },
+      "group": "当前群组",
+      "stage": "当前舞台"
     }
   },
   "statusBar": {

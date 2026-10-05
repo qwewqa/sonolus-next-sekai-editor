@@ -738,7 +738,9 @@
         "label": "吸附",
         "absolute": "絕對",
         "relative": "相對"
-      }
+      },
+      "group": "目前圖層",
+      "stage": "目前舞台"
     }
   },
   "statusBar": {

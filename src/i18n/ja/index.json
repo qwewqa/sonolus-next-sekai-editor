@@ -738,7 +738,9 @@
         "label": "スナップ",
         "absolute": "絶対",
         "relative": "相対"
-      }
+      },
+      "group": "現在のグループ",
+      "stage": "現在のステージ"
     }
   },
   "statusBar": {

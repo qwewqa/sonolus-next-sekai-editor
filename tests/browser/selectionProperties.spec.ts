@@ -341,3 +341,15 @@ test('two-value choices list the values in use while mixed', async ({ page }) =>
     await field.getByRole('button', { name: 'Select only Scroll (2)' }).click()
     expect(await selectedCount(page)).toBe(2)
 })
+
+test('View picks the current group, apart from the selection’s group', async ({ page }) => {
+    await showSlides(page, [[{ beat: 0 }]])
+    const view = panel(page).locator('#properties-section-view')
+    await expect(
+        view
+            .getByRole('combobox', { name: 'Current Group', exact: true })
+            .locator('option:checked'),
+    ).toHaveText('All Groups')
+    await expect(view.getByRole('combobox', { name: 'Group', exact: true })).toHaveCount(0)
+    await expect(control(page, 'Group')).toHaveCount(1)
+})

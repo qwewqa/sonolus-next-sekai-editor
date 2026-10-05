@@ -93,10 +93,16 @@ const snapping = computed({
 
 <template>
     <SelectField v-model="tool" :label="i18n.sidebars.view.tool" :options="toolOptions" />
-    <OptionalGroupField v-model="groupId" :empty-label="i18n.workspace.groups.all" />
+    <!-- The current group and stage, not the selection's: Selection sets ownership. -->
+    <OptionalGroupField
+        v-model="groupId"
+        :label="i18n.sidebars.view.group"
+        :empty-label="i18n.workspace.groups.all"
+    />
     <OptionalStageField
         v-if="isDynamicStages"
         v-model="stageId"
+        :label="i18n.sidebars.view.stage"
         :empty-label="i18n.workspace.stages.all"
     />
     <SizeField v-model="view.noteSize" />

@@ -738,7 +738,9 @@
         "label": "Alignement",
         "absolute": "Absolu",
         "relative": "Relatif"
-      }
+      },
+      "group": "Groupe actuel",
+      "stage": "Scène actuelle"
     }
   },
   "statusBar": {

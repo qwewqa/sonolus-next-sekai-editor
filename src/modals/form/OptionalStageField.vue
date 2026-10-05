@@ -6,6 +6,8 @@ import { i18n } from '../../i18n'
 import OptionalSelectField from './OptionalSelectField.vue'
 
 defineProps<{
+    /** Replaces the field's label, e.g. where it picks the current stage. */
+    label?: string
     /** Text for no stage, e.g. when it means every stage rather than 'unchanged'. */
     emptyLabel?: string
 }>()
@@ -17,7 +19,7 @@ const modelValue = defineModel<StageId | undefined>({ required: true })
     <OptionalSelectField
         v-model="modelValue"
         :empty-label
-        :label="i18n.modals.form.stage.label"
+        :label="label ?? i18n.modals.form.stage.label"
         :sections="folderSections(stages, stageFolders)"
     />
 </template>
