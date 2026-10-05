@@ -109,6 +109,8 @@ import HelpSection from './HelpSection.vue'
             <li>{{ i18n.help.modal.timeScaleTool.add }}</li>
             <li>{{ i18n.help.modal.timeScaleTool.move }}</li>
             <li>{{ i18n.help.modal.timeScaleTool.ctrl }}</li>
+            <li>{{ i18n.help.modal.timeScaleTool.markers }}</li>
+            <li>{{ i18n.help.modal.timeScaleTool.ease }}</li>
         </HelpSection>
 
         <HelpSection :title="i18n.help.modal.cameraEventTool.title">

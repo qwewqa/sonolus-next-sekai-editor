@@ -82,6 +82,10 @@ class RecordingCanvas {
         this.currentPath.push(['L', x, y])
     }
 
+    closePath() {
+        this.currentPath.push(['Z'])
+    }
+
     arc(x: number, y: number, radius: number) {
         this.currentPath.push(['arc', x, y, radius])
     }
@@ -333,10 +337,13 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
         false,
     )
     assert.deepEqual(canvas.strokes[0]?.dash, [0.2, 0.2])
+    // The dotted line stops at the hollow marker.
     assert.deepEqual(canvas.strokes[0]?.path, [
-        ['M', -7, -10],
+        ['M', -6.9, -10],
         ['L', 6, -10],
     ])
+    assert.deepEqual(canvas.strokes[1]?.path, [['arc', -7, -10, 0.1]])
+    assert.equal(canvas.strokes[1]?.color, '#ff0')
     assert.deepEqual(canvas.labels, [
         { text: '2x+1', x: -7.2 - 0.39, y: -9.875, align: 'end', alpha: 1 },
     ])
@@ -347,6 +354,74 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.equal(canvas.labels.length, 0)
     drawEvent(context, mask(2), true)
     assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -9.9, align: 'center', alpha: 1 }])
+})
+
+test('time-scale markers show the transition and whether notes are shown', () => {
+    const { context, canvas } = makeContext()
+    const draw = (timeScaleTransition: 'timeScale' | 'scroll', hideNotes: boolean) => {
+        canvas.strokes = []
+        drawEvent(
+            context,
+            {
+                type: 'timeScale',
+                groupId,
+                beat: 2,
+                editorLane: 0,
+                timeScale: 1,
+                skip: 0,
+                timeScaleEase: 'inStep',
+                timeScaleTransition,
+                hideNotes,
+            },
+            false,
+        )
+        return canvas.strokes.map(({ path, color }) => ({ path, color }))
+    }
+
+    assert.deepEqual(draw('timeScale', false).slice(-1), [
+        { path: [['arc', 0, -10, 0.1]], color: '#fff' },
+    ])
+    const diamond = [
+        ['M', 0, -10.135],
+        ['L', 0.135, -10],
+        ['L', 0, -9.865],
+        ['L', -0.135, -10],
+        ['Z'],
+    ]
+    assert.deepEqual(draw('scroll', false), [
+        {
+            path: [
+                ['M', -6, -10],
+                ['L', 0, -10],
+            ],
+            color: '#ff0',
+        },
+        {
+            path: [
+                ['M', 0, -10],
+                ['L', 6, -10],
+            ],
+            color: '#ff0',
+        },
+        { path: diamond, color: '#fff' },
+    ])
+    assert.deepEqual(draw('scroll', true), [
+        {
+            path: [
+                ['M', -6, -10],
+                ['L', -0.135, -10],
+            ],
+            color: '#ff0',
+        },
+        {
+            path: [
+                ['M', 0.135, -10],
+                ['L', 6, -10],
+            ],
+            color: '#ff0',
+        },
+        { path: diamond, color: '#ff0' },
+    ])
 })
 
 test('time-scale eases show their curve toward the next change in the group', () => {

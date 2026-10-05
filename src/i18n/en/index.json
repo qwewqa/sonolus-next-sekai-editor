@@ -528,7 +528,9 @@
                 "edit": "Tap 1 Time Scale object to edit.",
                 "add": "Tap empty space to add.",
                 "move": "Drag 1 Time Scale object to move.",
-                "ctrl": "Use Ctrl key to add objects to selection."
+                "ctrl": "Use Ctrl key to add objects to selection.",
+                "markers": "Diamond markers use the Scroll transition. Hollow markers on dotted lines hide notes.",
+                "ease": "The curve beside the value shows the ease toward the next change in the group, faded when nothing changes."
             },
             "cameraEventTool": {
                 "title": "Camera Event Tool",

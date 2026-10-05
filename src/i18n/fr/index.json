@@ -528,7 +528,9 @@
         "edit": "Appuyez sur 1 objet Échelle de Temps pour le modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
         "move": "Glissez 1 objet Échelle de Temps pour le déplacer.",
-        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection."
+        "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
+        "markers": "Les marqueurs en losange utilisent la transition Défilement. Les marqueurs creux sur des lignes pointillées masquent les notes.",
+        "ease": "La courbe à côté de la valeur montre l’interpolation jusqu’au prochain changement du groupe, estompée si rien ne change."
       },
       "cameraEventTool": {
         "title": "Outil Événement de caméra",

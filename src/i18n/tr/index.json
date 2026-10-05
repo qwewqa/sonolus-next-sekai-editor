@@ -528,7 +528,9 @@
         "edit": "Düzenlemek için 1 Zaman Ölçeği nesnesine dokunun.",
         "add": "Eklemek için boş alana dokunun.",
         "move": "Taşımak için 1 Zaman Ölçeği nesnesini sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın."
+        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
+        "markers": "Elmas işaretçiler Kaydırma geçişini kullanır. Noktalı çizgilerdeki içi boş işaretçiler notaları gizler.",
+        "ease": "Değerin yanındaki eğri, gruptaki bir sonraki değişikliğe kadar yumuşatmayı gösterir; hiçbir şey değişmiyorsa soluk görünür."
       },
       "cameraEventTool": {
         "title": "Kamera Olayı Aracı",

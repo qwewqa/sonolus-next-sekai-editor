@@ -69,6 +69,32 @@ const marker = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
     ctx.stroke()
 }
 
+const DIAMOND_RADIUS = 0.135
+
+/** Circles change the time scale and diamonds the scroll; hollow ones hide notes. */
+const timeScaleMarker = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    isScroll: boolean,
+    hideNotes: boolean,
+) => {
+    ctx.beginPath()
+    if (isScroll) {
+        ctx.moveTo(x, y - DIAMOND_RADIUS)
+        ctx.lineTo(x + DIAMOND_RADIUS, y)
+        ctx.lineTo(x, y + DIAMOND_RADIUS)
+        ctx.lineTo(x - DIAMOND_RADIUS, y)
+        ctx.closePath()
+    } else {
+        ctx.arc(x, y, 0.1, 0, 2 * Math.PI)
+    }
+    ctx.fillStyle = '#ff0'
+    ctx.strokeStyle = hideNotes ? '#ff0' : '#fff'
+    if (!hideNotes) ctx.fill()
+    ctx.stroke()
+}
+
 const nextTimeScales = new WeakMap<
     StoreGrid['timeScale'],
     Map<TimeScaleEntity, TimeScaleEntity | undefined>
@@ -198,16 +224,18 @@ export const drawEvent = (
         case 'timeScale': {
             const x = entity.editorLane
             const y = beatToTime(state.bpms, entity.beat) * ups
+            const isScroll = entity.timeScaleTransition === 'scroll'
+            // Hollow markers keep the line out of their interior.
+            const gap = entity.hideNotes ? (isScroll ? DIAMOND_RADIUS : 0.1) : 0
             ctx.strokeStyle = '#ff0'
             ctx.globalAlpha *= 0.5
             if (entity.hideNotes) ctx.setLineDash([2 / context.scale, 2 / context.scale])
             ctx.lineDashOffset = 0
-            line(ctx, Math.min(x, -6), y, Math.max(x, 6), y)
+            if (x - gap > Math.min(x, -6)) line(ctx, Math.min(x, -6), y, x - gap, y)
+            if (x + gap < Math.max(x, 6)) line(ctx, x + gap, y, Math.max(x, 6), y)
             ctx.globalAlpha *= 2
             ctx.setLineDash([])
-            ctx.strokeStyle = '#fff'
-            ctx.fillStyle = '#ff0'
-            marker(ctx, x, y)
+            timeScaleMarker(ctx, x, y, isScroll, entity.hideNotes)
             const direction = x > 0 ? 1 : -1
             const labelX = x + 0.2 * direction
             const glyphWidth = drawEaseGlyph(context, entity, labelX, y, direction, '#ff0')
