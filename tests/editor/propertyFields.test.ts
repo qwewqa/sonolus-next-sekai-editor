@@ -261,3 +261,12 @@ test('unknown and unset values are told apart from mixed ones', () => {
     assert.equal(isUnset({ usage: { values: new Map([[1, 2]]), covered: 2, total: 2 } }), false)
     assert.equal(isUnset(undefined), false)
 })
+
+test('unset optional values are not values in use', () => {
+    const { model, usage } = aggregateValues(
+        [{ meter: undefined }, { meter: 3 }, { meter: undefined }],
+        () => () => true,
+    )
+    assert.equal(model.meter, 3)
+    assert.deepEqual(usage.get('meter'), { values: new Map([[3, 1]]), covered: 3, total: 3 })
+})

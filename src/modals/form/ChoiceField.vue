@@ -105,7 +105,7 @@ watch(
 
 // The swapped-in control keeps keyboard focus.
 watch(
-    segmented,
+    [segmented, unknown],
     async () => {
         const focused = !!fieldRoot()?.contains(document.activeElement)
         await nextTick()

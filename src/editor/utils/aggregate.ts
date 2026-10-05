@@ -34,7 +34,8 @@ export const aggregateValues = <T extends object>(
             entry.total++
             if (!applies(key)) continue
             entry.covered++
-            entry.values.set(value, (entry.values.get(value) ?? 0) + 1)
+            // An unset optional value is not a value in use.
+            if (value !== undefined) entry.values.set(value, (entry.values.get(value) ?? 0) + 1)
         }
     }
 
