@@ -11,6 +11,8 @@ export const formatBeatPosition = (
     display: BeatDisplay,
     fractional = false,
 ) => {
+    // Rounds to the shown thousandth first, so 3.9999 reads 2.1 rather than 1.5.
+    if (fractional) chartBeat = Math.round(chartBeat * 1000) / 1000
     const beat = toDisplayedBeat(chartBeat)
     const beatText = fractional ? beat.toFixed(3) : `${beat}`
     if (display === 'beat') return beatText
