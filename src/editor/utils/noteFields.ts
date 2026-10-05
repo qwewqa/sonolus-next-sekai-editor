@@ -1,70 +1,7 @@
 import { store } from '../../history/store'
 import type { NoteEntity } from '../../state/entities/slides/note'
+import { getNoteFieldsIn } from '../../state/operations/properties/noteFields'
 
-export type NoteFields = {
-    elevation: boolean
-    noteStyle: boolean
-    connectorStyle: boolean
-    isAttached: boolean
-    left: boolean
-    size: boolean
-    isCritical: boolean
-    flickDirection: boolean
-    isFake: boolean
-    sfx: boolean
-    isConnectorSeparator: boolean
-    connectorType: boolean
-    connectorEase: boolean
-    connectorIsFake: boolean
-    connectorActiveIsCritical: boolean
-    connectorGuideAlpha: boolean
-    connectorLayer: boolean
-    connectorIsPassThrough: boolean
-    connectorPresentation: boolean
-}
+export type { NoteFields } from '../../state/operations/properties/noteFields'
 
-export const getNoteFields = (note: NoteEntity): NoteFields => {
-    const infos = store.value.slides.info.get(note.slideId)
-    if (!infos) throw new Error('Unexpected missing infos')
-
-    const info = infos.find((info) => info.note === note)
-    if (!info) throw new Error('Unexpected missing info')
-
-    const isFirst = infos[0] === info
-    const isLast = infos[infos.length - 1] === info
-    const isInActive = info.activeHead !== info.activeTail
-    const isActiveHead = info.activeHead === info.note
-    const isActiveTail = info.activeTail === info.note
-    const isInGuide = info.guideHead !== info.guideTail
-    const isGuideHead = info.guideHead === info.note
-    const isGuideTail = info.guideTail === info.note
-    const isInDamage = info.damageHead !== info.damageTail
-    const isDamageHead = info.damageHead === info.note
-
-    return {
-        elevation: isFirst || isLast || !note.isAttached,
-        noteStyle: note.noteType !== 'anchor',
-        connectorStyle: (isFirst || note.isConnectorSeparator) && !isLast,
-        isAttached: !isFirst && !isLast,
-        left: isFirst || isLast || !note.isAttached,
-        size: isFirst || isLast || !note.isAttached,
-        isCritical: note.noteType !== 'anchor' && note.noteType !== 'damage',
-        flickDirection:
-            note.noteType === 'trace' ||
-            (note.noteType === 'default' && (!isInActive || isActiveHead || isActiveTail)) ||
-            note.noteType === 'forceNonTick',
-        isFake: note.noteType !== 'anchor',
-        sfx: !note.isFake,
-        isConnectorSeparator: !isFirst && !isLast,
-        connectorType: (isFirst || note.isConnectorSeparator) && !isLast,
-        connectorEase: (isFirst || !note.isAttached) && !isLast,
-        connectorIsFake:
-            (isInActive && (isActiveHead || note.isConnectorSeparator)) ||
-            (isInDamage && (isDamageHead || note.isConnectorSeparator)),
-        connectorActiveIsCritical: isInActive && (isActiveHead || note.isConnectorSeparator),
-        connectorGuideAlpha: isInGuide && (isGuideHead || note.isConnectorSeparator || isGuideTail),
-        connectorLayer: (isFirst || note.isConnectorSeparator) && !isLast,
-        connectorIsPassThrough: (isFirst || note.isConnectorSeparator) && !isLast,
-        connectorPresentation: (isFirst || note.isConnectorSeparator) && !isLast,
-    }
-}
+export const getNoteFields = (note: NoteEntity) => getNoteFieldsIn(store.value, note)
