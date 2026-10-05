@@ -428,15 +428,15 @@
             "title": "Help",
             "touchscreen": {
                 "title": "Touchscreen",
-                "tap": "One finger tap to tap.",
-                "drag": "One finger drag to drag.",
-                "quickScroll": "One finger drag in quick scroll zone to scroll.",
-                "deselect": "Two finger tap to deselect.",
-                "scrollY": "Two finger pan vertically to scroll.",
-                "scrollX": "Two finger pan horizontally to scroll.",
-                "zoomY": "Two finger pinch vertically to zoom Y.",
-                "zoomX": "Two finger pinch horizontally to zoom X.",
-                "play": "Three finger tap to play."
+                "tap": "One-finger tap to tap.",
+                "drag": "One-finger drag to drag.",
+                "quickScroll": "One-finger drag in the quick scroll zone to scroll.",
+                "deselect": "Two-finger tap to deselect.",
+                "scrollY": "Two-finger pan vertically to scroll.",
+                "scrollX": "Two-finger pan horizontally to scroll.",
+                "zoomY": "Two-finger pinch vertically to zoom Y.",
+                "zoomX": "Two-finger pinch horizontally to zoom X.",
+                "play": "Three-finger tap to play."
             },
             "mouse": {
                 "title": "Mouse",
@@ -447,7 +447,7 @@
                 "scrollY": "Wheel scroll to scroll vertically.",
                 "scrollX": "Wheel scroll with Shift key to scroll horizontally.",
                 "zoomY": "Wheel scroll with Ctrl key to zoom vertically.",
-                "zoomX": "Wheel scroll with Ctrl and Shift key to zoom horizontally."
+                "zoomX": "Wheel scroll with Ctrl and Shift keys to zoom horizontally."
             },
             "keyboard": {
                 "title": "Keyboard",
@@ -511,7 +511,7 @@
             "generateSlideNotesTool": {
                 "title": "Generate Slide Notes Tool",
                 "generate": "Tap or drag to select 1 Note object to generate notes for the entire slide.",
-                "generateMultiple": "Tap or drag select 2 Note objects to generate notes between them.",
+                "generateMultiple": "Tap or drag to select 2 Note objects to generate notes between them.",
                 "deselect": "Tap empty space to deselect all objects."
             },
             "bpmTool": {
@@ -1252,7 +1252,7 @@
                 "label": "Y Offset"
             },
             "yOffsetBeat": {
-                "label": "Y Offset (Beat)"
+                "label": "Y Offset (beats)"
             },
             "noteStyle": {
                 "label": "Note Color",
