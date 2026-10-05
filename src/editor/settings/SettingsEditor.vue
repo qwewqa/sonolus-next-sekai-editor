@@ -103,5 +103,10 @@ watch(
             v-model="settings.showOtherObjects"
             :label="i18n.settings.editor.showOtherObjects"
         />
+
+        <ToggleField
+            v-model="settings.deselectSwitchesToSelect"
+            :label="i18n.settings.editor.deselectSwitchesToSelect"
+        />
     </SettingsSection>
 </template>

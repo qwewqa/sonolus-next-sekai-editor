@@ -176,6 +176,8 @@ const settingsProperties = {
 
     showOtherObjects: Type.Boolean({ default: true }),
 
+    deselectSwitchesToSelect: Type.Boolean({ default: true }),
+
     toolbar: Type.Codec(
         Type.Array(
             Type.Codec(Type.Array(Type.String()))
@@ -301,17 +303,18 @@ const settingsProperties = {
 
     playPreviewDuration: number(500, 0, 1000),
 
-    mouseSecondaryTool: Type.Union([
-        Type.Literal('eraser'),
-        Type.Literal('select'),
-        Type.Literal('selectContextMenu'),
-    ]),
+    mouseSecondaryTool: Type.Union(
+        [Type.Literal('eraser'), Type.Literal('select'), Type.Literal('selectContextMenu')],
+        { default: 'selectContextMenu' },
+    ),
 
     mouseSmoothScrolling: Type.Boolean({ default: true }),
 
     touchQuickScrollZone: number(25, 0, 50),
 
     touchScrollInertia: Type.Boolean({ default: true }),
+
+    touchLongPressContextMenu: Type.Boolean({ default: true }),
 
     keyboardShortcuts: Type.Codec(
         Type.Record(Type.String(), Type.String(), {

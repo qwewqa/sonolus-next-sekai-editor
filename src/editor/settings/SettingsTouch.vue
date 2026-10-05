@@ -20,5 +20,10 @@ import SettingsSection from './SettingsSection.vue'
             v-model="settings.touchScrollInertia"
             :label="i18n.settings.touch.scrollInertia"
         />
+
+        <ToggleField
+            v-model="settings.touchLongPressContextMenu"
+            :label="i18n.settings.touch.longPressContextMenu"
+        />
     </SettingsSection>
 </template>

@@ -628,6 +628,7 @@
       "showStageName": "Sahne Adını Göster",
       "showOtherStages": "Diğer Sahneleri Göster",
       "showOtherObjects": "Diğer Nesneleri Göster",
+      "deselectSwitchesToSelect": "İki kez seçimi kaldırınca Seçim aracına geç",
       "beatDisplay": {
         "title": "Vuruş Gösterimi",
         "beat": "Vuruş",
@@ -692,7 +693,8 @@
     "touch": {
       "title": "Dokunma",
       "quickScrollZone": "Hızlı Kaydırma Alanı",
-      "scrollInertia": "Kaydırma Ataleti"
+      "scrollInertia": "Kaydırma Ataleti",
+      "longPressContextMenu": "Bağlam menüsü için uzun bas"
     }
   },
   "sidebars": {

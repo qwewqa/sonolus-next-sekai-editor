@@ -628,6 +628,7 @@
       "showStageName": "ステージ名を表示",
       "showOtherStages": "他のステージを表示",
       "showOtherObjects": "他のオブジェクトを表示",
+      "deselectSwitchesToSelect": "2回選択解除で選択ツールに切り替え",
       "beatDisplay": {
         "title": "拍の表示",
         "beat": "拍",
@@ -692,7 +693,8 @@
     "touch": {
       "title": "タッチ操作",
       "quickScrollZone": "クイックスクロールゾーンの大きさ(画面右何%)",
-      "scrollInertia": "スクロールの慣性"
+      "scrollInertia": "スクロールの慣性",
+      "longPressContextMenu": "長押しでコンテキストメニュー"
     }
   },
   "sidebars": {

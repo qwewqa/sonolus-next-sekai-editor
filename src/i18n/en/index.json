@@ -628,6 +628,7 @@
             "showStageName": "Show Stage Name",
             "showOtherStages": "Show Other Stages",
             "showOtherObjects": "Show Other Objects",
+            "deselectSwitchesToSelect": "Deselect Twice for Select Tool",
             "beatDisplay": {
                 "title": "Beat Display",
                 "beat": "Beat",
@@ -692,7 +693,8 @@
         "touch": {
             "title": "Touch",
             "quickScrollZone": "Quick Scroll Zone",
-            "scrollInertia": "Scroll Inertia"
+            "scrollInertia": "Scroll Inertia",
+            "longPressContextMenu": "Long Press for Context Menu"
         }
     },
     "sidebars": {

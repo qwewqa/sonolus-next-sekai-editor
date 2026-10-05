@@ -628,6 +628,7 @@
       "showStageName": "스테이지 이름 보이기",
       "showOtherStages": "다른 스테이지 보기",
       "showOtherObjects": "다른 객체 표시",
+      "deselectSwitchesToSelect": "선택 해제를 두 번 하면 선택 도구로 전환",
       "beatDisplay": {
         "title": "박자 표시",
         "beat": "박",
@@ -692,7 +693,8 @@
     "touch": {
       "title": "터치",
       "quickScrollZone": "빠른 스크롤 영역",
-      "scrollInertia": "스크롤 관성"
+      "scrollInertia": "스크롤 관성",
+      "longPressContextMenu": "길게 눌러 컨텍스트 메뉴 열기"
     }
   },
   "sidebars": {

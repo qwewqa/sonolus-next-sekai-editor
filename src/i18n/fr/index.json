@@ -628,6 +628,7 @@
       "showStageName": "Afficher le nom de la scène",
       "showOtherStages": "Afficher les autres scènes",
       "showOtherObjects": "Afficher les autres objets",
+      "deselectSwitchesToSelect": "Désélectionner deux fois pour l’outil Sélection",
       "beatDisplay": {
         "title": "Affichage des temps",
         "beat": "Temps",
@@ -692,7 +693,8 @@
     "touch": {
       "title": "Tactile",
       "quickScrollZone": "Zone de défilement rapide",
-      "scrollInertia": "Inertie de défilement"
+      "scrollInertia": "Inertie de défilement",
+      "longPressContextMenu": "Appui long pour le menu contextuel"
     }
   },
   "sidebars": {

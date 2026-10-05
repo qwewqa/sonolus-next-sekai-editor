@@ -88,23 +88,26 @@ test('localized scale controls fit a narrow phone and reject invalid factors', a
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
-test('the new secondary button option is selectable and persisted in settings', async ({
+test('select with context menu is the default secondary button and others persist', async ({
     page,
 }) => {
+    await page.evaluate(() =>
+        localStorage.removeItem('sonolus-next-sekai-editor.mouseSecondaryTool'),
+    )
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await page.keyboard.press(',')
     const field = page
         .getByRole('dialog')
         .getByRole('combobox', { name: 'Secondary Tool', exact: true })
-    await field.selectOption('select')
+    await expect(field).toHaveValue('selectContextMenu')
+    const stored = () =>
+        page.evaluate(() => localStorage.getItem('sonolus-next-sekai-editor.mouseSecondaryTool'))
+    await field.selectOption('eraser')
+    expect(await stored()).toBe('"eraser"')
     await field.selectOption({ label: 'Select + Context Menu' })
-    expect(await page.evaluate(() => window.editorTest.settings.mouseSecondaryTool)).toBe(
-        'selectContextMenu',
-    )
-    expect(
-        await page.evaluate(() =>
-            localStorage.getItem('sonolus-next-sekai-editor.mouseSecondaryTool'),
-        ),
-    ).toBe('"selectContextMenu"')
+    // The default is not stored, so future default changes still apply.
+    expect(await stored()).toBeNull()
 })
 
 test('plain right click selects a note and deletion is undoable', async ({ page }) => {

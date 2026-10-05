@@ -628,6 +628,7 @@
       "showStageName": "顯示舞台名稱",
       "showOtherStages": "顯示其他舞台",
       "showOtherObjects": "顯示其他物件",
+      "deselectSwitchesToSelect": "連續取消選取切換到選取工具",
       "beatDisplay": {
         "title": "節拍顯示",
         "beat": "節拍",
@@ -692,7 +693,8 @@
     "touch": {
       "title": "觸碰",
       "quickScrollZone": "快速捲動區",
-      "scrollInertia": "滾動慣性"
+      "scrollInertia": "滾動慣性",
+      "longPressContextMenu": "長按開啟右鍵選單"
     }
   },
   "sidebars": {
