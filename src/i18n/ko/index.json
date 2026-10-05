@@ -162,10 +162,10 @@
     },
     "jumps": {
       "jumpDown": {
-        "title": "아래로 점프"
+        "title": "처음으로 이동"
       },
       "jumpUp": {
-        "title": "위로 점프"
+        "title": "끝으로 이동"
       }
     },
     "manageGroups": {

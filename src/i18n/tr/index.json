@@ -162,10 +162,10 @@
     },
     "jumps": {
       "jumpDown": {
-        "title": "Aşağı Atla"
+        "title": "Başa Atla"
       },
       "jumpUp": {
-        "title": "Yukarı Atla"
+        "title": "Sona Atla"
       }
     },
     "manageGroups": {

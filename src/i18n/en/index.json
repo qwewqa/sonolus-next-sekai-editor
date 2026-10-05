@@ -162,10 +162,10 @@
         },
         "jumps": {
             "jumpDown": {
-                "title": "Jump Down"
+                "title": "Jump to Start"
             },
             "jumpUp": {
-                "title": "Jump Up"
+                "title": "Jump to End"
             }
         },
         "manageGroups": {
@@ -625,7 +625,7 @@
             "showStageName": "Show Stage Name",
             "showOtherStages": "Show Other Stages",
             "showOtherObjects": "Show Other Objects",
-            "deselectSwitchesToSelect": "Deselect Twice for Select Tool",
+            "deselectSwitchesToSelect": "Second Deselect Switches to Select Tool",
             "beatDisplay": {
                 "title": "Beat Display",
                 "beat": "Beat",

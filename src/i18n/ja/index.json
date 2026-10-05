@@ -162,10 +162,10 @@
     },
     "jumps": {
       "jumpDown": {
-        "title": "最下部に移動"
+        "title": "先頭に移動"
       },
       "jumpUp": {
-        "title": "最上部に移動"
+        "title": "末尾に移動"
       }
     },
     "manageGroups": {

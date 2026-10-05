@@ -162,10 +162,10 @@
     },
     "jumps": {
       "jumpDown": {
-        "title": "下移"
+        "title": "跳至開頭"
       },
       "jumpUp": {
-        "title": "上移"
+        "title": "跳至結尾"
       }
     },
     "manageGroups": {

@@ -162,10 +162,10 @@
     },
     "jumps": {
       "jumpDown": {
-        "title": "Aller en Bas"
+        "title": "Aller au début"
       },
       "jumpUp": {
-        "title": "Aller en Haut"
+        "title": "Aller à la fin"
       }
     },
     "manageGroups": {
@@ -625,7 +625,7 @@
       "showStageName": "Afficher le nom de la scène",
       "showOtherStages": "Afficher les autres scènes",
       "showOtherObjects": "Afficher les autres objets",
-      "deselectSwitchesToSelect": "Désélectionner deux fois pour l’outil Sélection",
+      "deselectSwitchesToSelect": "Double désélection : outil Sélection",
       "beatDisplay": {
         "title": "Affichage des temps",
         "beat": "Temps",
