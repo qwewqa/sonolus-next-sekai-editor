@@ -777,6 +777,24 @@
             "brushed": "Brushed {0} objects",
             "sidebar": {
                 "title": "Brush Properties"
+            },
+            "add": "Add Property",
+            "pick": "Pick from Selection",
+            "picked": "Picked {0} properties from the selection",
+            "clear": "Clear",
+            "empty": "The brush changes nothing yet. Add a property or pick them from the selection.",
+            "remove": "Remove {0}",
+            "kinds": {
+                "general": "General",
+                "note": "Note",
+                "connector": "Connector",
+                "timeScale": "Time Scale",
+                "camera": "Camera Event",
+                "mask": "Stage Mask Event",
+                "pivot": "Stage Pivot Event",
+                "style": "Stage Style Event",
+                "transform": "Stage Transform Event",
+                "event": "Events"
             }
         },
         "eraser": {

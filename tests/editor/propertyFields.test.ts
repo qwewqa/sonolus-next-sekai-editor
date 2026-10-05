@@ -3,6 +3,7 @@ import test from 'node:test'
 import { aggregateValues, countOptions, valueRange } from '../../src/editor/utils/aggregate'
 import {
     brushFields,
+    pickBrush,
     propertyField,
     propertyFields,
     type SelectionContext,
@@ -227,4 +228,21 @@ test('the selection summary counts kinds in order and only slides of several not
             slides: 2,
         },
     )
+})
+
+test('picking a brush keeps agreeing values and the agreeing half of eases', () => {
+    const notes = [
+        { noteType: 'default', size: 2, connectorEase: 'inQuad', beat: 1, cameraSize: 4 },
+        { noteType: 'default', size: 3, connectorEase: 'inCubic', beat: 2, cameraSize: 4 },
+    ]
+    const aggregate = aggregateValues(notes, () => () => true)
+    assert.deepEqual(pickBrush(aggregate, false), {
+        noteType: 'default',
+        connectorEase: 'mode:in',
+    })
+    assert.deepEqual(pickBrush(aggregate, true), {
+        noteType: 'default',
+        connectorEase: 'mode:in',
+        cameraSize: 4,
+    })
 })

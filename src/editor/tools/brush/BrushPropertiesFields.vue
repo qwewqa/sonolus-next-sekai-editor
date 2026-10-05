@@ -1,170 +1,182 @@
 <script setup lang="ts">
+import { computed, nextTick, useTemplateRef } from 'vue'
 import { brushProperties } from '.'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
-import OptionalAnchorField from '../../../modals/form/OptionalAnchorField.vue'
-import OptionalCameraRotationField from '../../../modals/form/OptionalCameraRotationField.vue'
-import OptionalCameraSizeField from '../../../modals/form/OptionalCameraSizeField.vue'
-import OptionalCameraStageTiltField from '../../../modals/form/OptionalCameraStageTiltField.vue'
-import OptionalCameraZoomField from '../../../modals/form/OptionalCameraZoomField.vue'
-import OptionalCameraZoomTargetLaneField from '../../../modals/form/OptionalCameraZoomTargetLaneField.vue'
-import OptionalCameraZoomTargetYField from '../../../modals/form/OptionalCameraZoomTargetYField.vue'
-import OptionalCameraZoomVerticalAlignField from '../../../modals/form/OptionalCameraZoomVerticalAlignField.vue'
-import OptionalConnectorActiveIsCriticalField from '../../../modals/form/OptionalConnectorActiveIsCriticalField.vue'
-import OptionalConnectorIsFakeField from '../../../modals/form/OptionalConnectorIsFakeField.vue'
-import OptionalConnectorEaseField from '../../../modals/form/OptionalConnectorEaseField.vue'
-import OptionalConnectorGuideAlphaField from '../../../modals/form/OptionalConnectorGuideAlphaField.vue'
-import OptionalConnectorIsPassThroughField from '../../../modals/form/OptionalConnectorIsPassThroughField.vue'
-import OptionalConnectorLayerField from '../../../modals/form/OptionalConnectorLayerField.vue'
-import OptionalConnectorPresentationField from '../../../modals/form/OptionalConnectorPresentationField.vue'
-import OptionalConnectorTypeField from '../../../modals/form/OptionalConnectorTypeField.vue'
-import OptionalDivisionLineAlphaField from '../../../modals/form/OptionalDivisionLineAlphaField.vue'
-import OptionalDivisionParityField from '../../../modals/form/OptionalDivisionParityField.vue'
-import OptionalDivisionSizeField from '../../../modals/form/OptionalDivisionSizeField.vue'
-import OptionalEventEaseField from '../../../modals/form/OptionalEventEaseField.vue'
-import OptionalFlickDirectionField from '../../../modals/form/OptionalFlickDirectionField.vue'
-import OptionalGroupField from '../../../modals/form/OptionalGroupField.vue'
-import OptionalHideNotesField from '../../../modals/form/OptionalHideNotesField.vue'
-import OptionalIsAttachedField from '../../../modals/form/OptionalIsAttachedField.vue'
-import OptionalIsConnectorSeparatorField from '../../../modals/form/OptionalIsConnectorSeparatorField.vue'
-import OptionalIsCriticalField from '../../../modals/form/OptionalIsCriticalField.vue'
-import OptionalIsFakeField from '../../../modals/form/OptionalIsFakeField.vue'
-import OptionalIsFullWidthField from '../../../modals/form/OptionalIsFullWidthField.vue'
-import OptionalJudgmentLineAlphaField from '../../../modals/form/OptionalJudgmentLineAlphaField.vue'
-import OptionalJudgmentLineColorField from '../../../modals/form/OptionalJudgmentLineColorField.vue'
-import OptionalJudgmentLineStyleField from '../../../modals/form/OptionalJudgmentLineStyleField.vue'
-import OptionalLaneAlphaField from '../../../modals/form/OptionalLaneAlphaField.vue'
-import OptionalLeftBorderStyleField from '../../../modals/form/OptionalLeftBorderStyleField.vue'
-import OptionalMaskSizeField from '../../../modals/form/OptionalMaskSizeField.vue'
-import OptionalNoteAlphaField from '../../../modals/form/OptionalNoteAlphaField.vue'
-import OptionalNoteTypeField from '../../../modals/form/OptionalNoteTypeField.vue'
-import OptionalNoteStyleField from '../../../modals/form/OptionalNoteStyleField.vue'
-import OptionalConnectorStyleField from '../../../modals/form/OptionalConnectorStyleField.vue'
-import OptionalRightBorderStyleField from '../../../modals/form/OptionalRightBorderStyleField.vue'
-import OptionalRotationField from '../../../modals/form/OptionalRotationField.vue'
-import OptionalSfxField from '../../../modals/form/OptionalSfxField.vue'
-import OptionalSizeField from '../../../modals/form/OptionalSizeField.vue'
-import OptionalSkipField from '../../../modals/form/OptionalSkipField.vue'
-import OptionalStageField from '../../../modals/form/OptionalStageField.vue'
-import OptionalTimeScaleEaseField from '../../../modals/form/OptionalTimeScaleEaseField.vue'
-import OptionalTimeScaleField from '../../../modals/form/OptionalTimeScaleField.vue'
-import OptionalYOffsetBeatField from '../../../modals/form/OptionalYOffsetBeatField.vue'
-import OptionalYOffsetField from '../../../modals/form/OptionalYOffsetField.vue'
-import OptionalYTranslationField from '../../../modals/form/OptionalYTranslationField.vue'
-import { useProperties } from '../../utils/properties'
-import OptionalIsMaskNotesField from '../../../modals/form/OptionalIsMaskNotesField.vue'
-import OptionalElevationField from '../../../modals/form/OptionalElevationField.vue'
-import OptionalTimeScaleTransitionField from '../../../modals/form/OptionalTimeScaleTransitionField.vue'
+import { defaultGroupId } from '../../../history/groups'
+import { selectedEntities } from '../../../history/selectedEntities'
+import { defaultStageId } from '../../../history/stages'
+import { i18n } from '../../../i18n'
+import { isEditableEntity } from '../../../state/operations/editable'
+import { interpolate, interpolateRaw } from '../../../utils/interpolate'
+import { notify } from '../../notification'
+import { aggregateEntities, useProperties } from '../../utils/properties'
+import { view } from '../../view'
+import CloseIcon from '../../workspace/CloseIcon.vue'
+import AddIcon from '../../workspace/manager/icons/AddIcon.vue'
+import { optionalFieldComponents } from '../../workspace/properties/fieldComponents'
+import {
+    brushFields,
+    pickBrush,
+    propertyKinds,
+    stageKinds,
+    type BrushKey,
+    type PropertyField,
+} from '../../workspace/properties/fields'
 
 const createModel = useProperties(brushProperties)
+const models = Object.fromEntries(brushFields.map((field) => [field.key, createModel(field.key)]))
 
-const groupId = createModel('groupId')
-const stageId = createModel('stageId')
-const noteStyle = createModel('noteStyle')
-const connectorStyle = createModel('connectorStyle')
-const noteType = createModel('noteType')
-const isAttached = createModel('isAttached')
-const size = createModel('size')
-const isCritical = createModel('isCritical')
-const flickDirection = createModel('flickDirection')
-const isFake = createModel('isFake')
-const sfx = createModel('sfx')
-const isConnectorSeparator = createModel('isConnectorSeparator')
-const connectorType = createModel('connectorType')
-const connectorEase = createModel('connectorEase')
-const connectorIsFake = createModel('connectorIsFake')
-const connectorActiveIsCritical = createModel('connectorActiveIsCritical')
-const connectorGuideAlpha = createModel('connectorGuideAlpha')
-const connectorLayer = createModel('connectorLayer')
-const connectorIsPassThrough = createModel('connectorIsPassThrough')
-const connectorPresentation = createModel('connectorPresentation')
-const timeScale = createModel('timeScale')
-const skip = createModel('skip')
-const timeScaleEase = createModel('timeScaleEase')
-const timeScaleTransition = createModel('timeScaleTransition')
-const hideNotes = createModel('hideNotes')
-const cameraSize = createModel('cameraSize')
-const cameraZoom = createModel('cameraZoom')
-const cameraZoomTargetLane = createModel('cameraZoomTargetLane')
-const cameraZoomTargetY = createModel('cameraZoomTargetY')
-const cameraZoomVerticalAlign = createModel('cameraZoomVerticalAlign')
-const cameraRotation = createModel('cameraRotation')
-const cameraStageTilt = createModel('cameraStageTilt')
-const maskSize = createModel('maskSize')
-const isMaskNotes = createModel('isMaskNotes')
-const divisionSize = createModel('divisionSize')
-const divisionParity = createModel('divisionParity')
-const yOffset = createModel('yOffset')
-const yOffsetBeat = createModel('yOffsetBeat')
-const judgmentLineColor = createModel('judgmentLineColor')
-const judgmentLineStyle = createModel('judgmentLineStyle')
-const leftBorderStyle = createModel('leftBorderStyle')
-const rightBorderStyle = createModel('rightBorderStyle')
-const isFullWidth = createModel('isFullWidth')
-const noteAlpha = createModel('noteAlpha')
-const laneAlpha = createModel('laneAlpha')
-const judgmentLineAlpha = createModel('judgmentLineAlpha')
-const divisionLineAlpha = createModel('divisionLineAlpha')
-const rotation = createModel('rotation')
-const yTranslation = createModel('yTranslation')
-const elevation = createModel('elevation')
-const anchor = createModel('anchor')
-const eventEase = createModel('eventEase')
+const root = useTemplateRef<HTMLElement>('root')
+
+const available = (field: PropertyField) => isDynamicStages.value || !stageKinds.has(field.kind)
+
+const isSet = (field: PropertyField & { key: BrushKey }) =>
+    brushProperties.value[field.key] !== undefined
+
+const byKind = (fields: (PropertyField & { key: BrushKey })[]) =>
+    propertyKinds.flatMap((kind) => {
+        const ofKind = fields.filter((field) => field.kind === kind)
+        return ofKind.length ? [{ kind, fields: ofKind }] : []
+    })
+
+// Only properties in the brush are listed; the menu offers the rest.
+const groups = computed(() => byKind(brushFields.filter(isSet)))
+const menu = computed(() =>
+    byKind(brushFields.filter((field) => !isSet(field) && available(field))),
+)
+
+const selection = computed(() => aggregateEntities(selectedEntities.value.filter(isEditableEntity)))
+
+// Values the editor's view already suggests.
+const fromView: Partial<Record<BrushKey, () => unknown>> = {
+    groupId: () => view.groupId ?? defaultGroupId.value,
+    stageId: () => view.stageId ?? defaultStageId.value,
+    size: () => view.noteSize,
+}
+
+const initialValue = (field: PropertyField & { key: BrushKey }) => {
+    // Start from the selection's value when it agrees, as Pick does.
+    const picked = pickBrush(selection.value, isDynamicStages.value)[field.key]
+    if (picked !== undefined) return picked
+    return fromView[field.key]?.() ?? field.brush?.initial
+}
+
+const add = async (event: Event) => {
+    const select = event.currentTarget as HTMLSelectElement
+    const field = brushFields.find((field) => field.key === select.value)
+    select.value = ''
+    if (!field) return
+    brushProperties.value = { ...brushProperties.value, [field.key]: initialValue(field) }
+    await nextTick()
+    root.value
+        ?.querySelector<HTMLElement>(`[data-brush-key="${field.key}"] :is(input, select)`)
+        ?.focus()
+}
+
+const remove = (key: BrushKey) => {
+    const properties = { ...brushProperties.value }
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete properties[key]
+    brushProperties.value = properties
+}
+
+const pick = () => {
+    brushProperties.value = pickBrush(selection.value, isDynamicStages.value)
+    notify(
+        interpolate(
+            () => i18n.value.tools.brush.picked,
+            `${Object.keys(brushProperties.value).length}`,
+        ),
+    )
+}
+
+const clear = () => {
+    brushProperties.value = {}
+}
 </script>
 
 <template>
-    <OptionalNoteTypeField v-model="noteType" />
-    <OptionalNoteStyleField v-model="noteStyle" />
-    <OptionalGroupField v-model="groupId" />
-    <OptionalStageField v-if="isDynamicStages" v-model="stageId" />
-    <OptionalIsAttachedField v-model="isAttached" />
-    <OptionalSizeField v-model="size" />
-    <OptionalIsCriticalField v-model="isCritical" />
-    <OptionalFlickDirectionField v-model="flickDirection" />
-    <OptionalIsFakeField v-model="isFake" />
-    <OptionalSfxField v-model="sfx" />
-    <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
-    <OptionalConnectorTypeField v-model="connectorType" />
-    <OptionalConnectorStyleField v-model="connectorStyle" />
-    <OptionalConnectorEaseField v-model="connectorEase" />
-    <OptionalConnectorIsFakeField v-model="connectorIsFake" />
-    <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />
-    <OptionalConnectorGuideAlphaField v-model="connectorGuideAlpha" />
-    <OptionalConnectorLayerField v-model="connectorLayer" />
-    <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
-    <OptionalConnectorPresentationField v-model="connectorPresentation" />
-    <OptionalTimeScaleField v-model="timeScale" />
-    <OptionalSkipField v-model="skip" />
-    <OptionalTimeScaleEaseField v-model="timeScaleEase" />
-    <OptionalTimeScaleTransitionField v-model="timeScaleTransition" />
-    <OptionalHideNotesField v-model="hideNotes" />
-    <OptionalCameraSizeField v-if="isDynamicStages" v-model="cameraSize" />
-    <OptionalCameraZoomField v-if="isDynamicStages" v-model="cameraZoom" />
-    <OptionalCameraZoomTargetLaneField v-if="isDynamicStages" v-model="cameraZoomTargetLane" />
-    <OptionalCameraZoomTargetYField v-if="isDynamicStages" v-model="cameraZoomTargetY" />
-    <OptionalCameraZoomVerticalAlignField
-        v-if="isDynamicStages"
-        v-model="cameraZoomVerticalAlign"
-    />
-    <OptionalCameraRotationField v-if="isDynamicStages" v-model="cameraRotation" />
-    <OptionalCameraStageTiltField v-if="isDynamicStages" v-model="cameraStageTilt" />
-    <OptionalMaskSizeField v-if="isDynamicStages" v-model="maskSize" />
-    <OptionalIsMaskNotesField v-if="isDynamicStages" v-model="isMaskNotes" />
-    <OptionalDivisionSizeField v-if="isDynamicStages" v-model="divisionSize" />
-    <OptionalDivisionParityField v-if="isDynamicStages" v-model="divisionParity" />
-    <OptionalYOffsetField v-if="isDynamicStages" v-model="yOffset" />
-    <OptionalYOffsetBeatField v-if="isDynamicStages" v-model="yOffsetBeat" />
-    <OptionalJudgmentLineColorField v-if="isDynamicStages" v-model="judgmentLineColor" />
-    <OptionalJudgmentLineStyleField v-if="isDynamicStages" v-model="judgmentLineStyle" />
-    <OptionalLeftBorderStyleField v-if="isDynamicStages" v-model="leftBorderStyle" />
-    <OptionalRightBorderStyleField v-if="isDynamicStages" v-model="rightBorderStyle" />
-    <OptionalIsFullWidthField v-if="isDynamicStages" v-model="isFullWidth" />
-    <OptionalNoteAlphaField v-if="isDynamicStages" v-model="noteAlpha" />
-    <OptionalLaneAlphaField v-if="isDynamicStages" v-model="laneAlpha" />
-    <OptionalJudgmentLineAlphaField v-if="isDynamicStages" v-model="judgmentLineAlpha" />
-    <OptionalDivisionLineAlphaField v-if="isDynamicStages" v-model="divisionLineAlpha" />
-    <OptionalRotationField v-if="isDynamicStages" v-model="rotation" />
-    <OptionalYTranslationField v-if="isDynamicStages" v-model="yTranslation" />
-    <OptionalAnchorField v-if="isDynamicStages" v-model="anchor" />
-    <OptionalEventEaseField v-if="isDynamicStages" v-model="eventEase" />
-    <OptionalElevationField v-model="elevation" />
+    <div ref="root" class="contents">
+        <div class="flex flex-wrap gap-2">
+            <!-- A menu of the properties not in the brush, grouped by kind. -->
+            <label
+                class="brush-add relative flex min-w-0 flex-1 basis-36 items-center rounded-full bg-button shadow-md transition-colors focus-within:ring-2 focus-within:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+            >
+                <AddIcon
+                    class="pointer-events-none absolute left-3 size-3.5 fill-current"
+                    aria-hidden="true"
+                />
+                <select
+                    class="w-full min-w-0 cursor-pointer appearance-none truncate rounded-full bg-transparent py-1 pl-8 pr-4 focus:outline-none [@media(pointer:coarse)]:py-2"
+                    :aria-label="i18n.tools.brush.add"
+                    @change="add"
+                >
+                    <option value="" disabled selected hidden>{{ i18n.tools.brush.add }}</option>
+                    <optgroup
+                        v-for="{ kind, fields } in menu"
+                        :key="kind"
+                        :label="i18n.tools.brush.kinds[kind]"
+                        class="text-fg"
+                    >
+                        <option
+                            v-for="field in fields"
+                            :key="field.key"
+                            :value="field.key"
+                            class="text-fg"
+                        >
+                            {{ field.label(i18n) }}
+                        </option>
+                    </optgroup>
+                </select>
+            </label>
+            <button
+                type="button"
+                class="brush-pick min-w-0 flex-1 basis-36 truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
+                :disabled="!selection.usage.size"
+                @click="pick"
+            >
+                {{ i18n.tools.brush.pick }}
+            </button>
+            <button
+                v-if="groups.length"
+                type="button"
+                class="brush-clear shrink-0 rounded-full px-4 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:bg-header-hover [@media(pointer:coarse)]:py-2"
+                @click="clear"
+            >
+                {{ i18n.tools.brush.clear }}
+            </button>
+        </div>
+
+        <p v-if="!groups.length" class="brush-empty text-fg/80">{{ i18n.tools.brush.empty }}</p>
+        <section
+            v-for="{ kind, fields } in groups"
+            :key="kind"
+            class="brush-group flex flex-col gap-3 border-t border-fg/15 pt-3"
+            :aria-label="i18n.tools.brush.kinds[kind]"
+        >
+            <h3 class="text-xs font-bold text-fg/80">{{ i18n.tools.brush.kinds[kind] }}</h3>
+            <div
+                v-for="field in fields"
+                :key="field.key"
+                class="flex items-start gap-1"
+                :data-brush-key="field.key"
+            >
+                <div class="flex min-w-0 flex-1 flex-col gap-3">
+                    <component
+                        :is="optionalFieldComponents[field.key]"
+                        v-model="models[field.key]!.value"
+                    />
+                </div>
+                <button
+                    type="button"
+                    class="brush-remove -mr-2 flex size-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:bg-header-hover [@media(pointer:coarse)]:size-11"
+                    :aria-label="interpolateRaw(i18n.tools.brush.remove, field.label(i18n))"
+                    :title="interpolateRaw(i18n.tools.brush.remove, field.label(i18n))"
+                    @click="remove(field.key)"
+                >
+                    <CloseIcon class="size-3" />
+                </button>
+            </div>
+        </section>
+    </div>
 </template>

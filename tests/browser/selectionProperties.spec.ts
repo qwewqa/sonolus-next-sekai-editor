@@ -241,3 +241,52 @@ test.describe('connector fields', () => {
             .toBe(0.5)
     })
 })
+
+test.describe('brush', () => {
+    const tool = (page: Page) => panel(page).locator('#properties-section-tool')
+
+    test.beforeEach(async ({ page }) => {
+        await showSlides(page, [
+            [
+                { beat: 0, isCritical: true },
+                { beat: 1, isCritical: true },
+            ],
+        ])
+        await page.keyboard.press('b')
+        await expect(tool(page).getByText('Brush Properties')).toBeVisible()
+    })
+
+    test('starts empty and lists only the properties it sets', async ({ page }) => {
+        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
+
+        // Added properties start from the selection's value when it agrees.
+        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('isCritical')
+        const row = tool(page).locator('[data-brush-key="isCritical"]')
+        await expect(row.locator('select')).toBeFocused()
+        await expect(row.locator('option:checked')).toHaveText('Enabled')
+        await expect(tool(page).locator('.brush-group h3')).toHaveText(['Note'])
+        // A set property leaves the menu.
+        await expect(
+            tool(page)
+                .getByRole('combobox', { name: 'Add Property' })
+                .locator('option[value="isCritical"]'),
+        ).toHaveCount(0)
+
+        await row.getByRole('button', { name: 'Remove Critical' }).click()
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
+        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+    })
+
+    test('picks agreeing values from the selection and clears them', async ({ page }) => {
+        await tool(page).getByRole('button', { name: 'Pick from Selection' }).click()
+        await expect(tool(page).locator('[data-brush-key="isCritical"] option:checked')).toHaveText(
+            'Enabled',
+        )
+        await expect(tool(page).locator('[data-brush-key="connectorType"]')).toHaveCount(1)
+        // Beat and lane are never brushed.
+        await expect(tool(page).locator('[data-brush-key="left"]')).toHaveCount(0)
+        await tool(page).getByRole('button', { name: 'Clear', exact: true }).click()
+        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+    })
+})

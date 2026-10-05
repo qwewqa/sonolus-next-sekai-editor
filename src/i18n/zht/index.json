@@ -777,6 +777,24 @@
       "brushed": "已套用筆刷至 {0} 個物件",
       "sidebar": {
         "title": "筆刷屬性"
+      },
+      "add": "新增屬性",
+      "pick": "從選取項目取得",
+      "picked": "已從選取項目取得 {0} 個屬性",
+      "clear": "清除",
+      "empty": "筆刷尚未變更任何內容。請新增屬性或從選取項目取得。",
+      "remove": "移除{0}",
+      "kinds": {
+        "general": "一般",
+        "note": "音符",
+        "connector": "連接線",
+        "timeScale": "時間倍率",
+        "camera": "攝影機事件",
+        "mask": "舞台遮罩事件",
+        "pivot": "舞台樞軸事件",
+        "style": "舞台樣式事件",
+        "transform": "舞台變換事件",
+        "event": "事件"
       }
     },
     "eraser": {

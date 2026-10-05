@@ -777,6 +777,24 @@
       "brushed": "已刷 {0} 个对象",
       "sidebar": {
         "title": "笔刷属性"
+      },
+      "add": "添加属性",
+      "pick": "从选择中获取",
+      "picked": "已从选择中获取 {0} 个属性",
+      "clear": "清除",
+      "empty": "笔刷尚未更改任何内容。请添加属性或从选择中获取。",
+      "remove": "移除{0}",
+      "kinds": {
+        "general": "常规",
+        "note": "音符",
+        "connector": "连接",
+        "timeScale": "时间尺度",
+        "camera": "镜头事件",
+        "mask": "舞台遮罩事件",
+        "pivot": "舞台支点事件",
+        "style": "舞台样式事件",
+        "transform": "舞台变换事件",
+        "event": "事件"
       }
     },
     "eraser": {

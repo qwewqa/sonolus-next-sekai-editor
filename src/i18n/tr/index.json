@@ -777,6 +777,24 @@
       "brushed": "{0} nesne fırçalandı",
       "sidebar": {
         "title": "Fırça Özellikleri"
+      },
+      "add": "Özellik Ekle",
+      "pick": "Seçimden Al",
+      "picked": "Seçimden {0} özellik alındı",
+      "clear": "Temizle",
+      "empty": "Fırça henüz hiçbir şeyi değiştirmiyor. Bir özellik ekleyin veya seçimden alın.",
+      "remove": "{0} kaldır",
+      "kinds": {
+        "general": "Genel",
+        "note": "Nota",
+        "connector": "Bağlayıcı",
+        "timeScale": "Zaman Ölçeği",
+        "camera": "Kamera Olayı",
+        "mask": "Sahne Maskesi Olayı",
+        "pivot": "Sahne Dönme Merkezi Olayı",
+        "style": "Sahne Stili Olayı",
+        "transform": "Sahne Dönüşüm Olayı",
+        "event": "Olaylar"
       }
     },
     "eraser": {

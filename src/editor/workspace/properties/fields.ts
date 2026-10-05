@@ -1,8 +1,9 @@
-import { easeFamily, easeMode, type Ease } from '../../../ease'
+import { easeFamily, easeMode, mergeEases, type Ease } from '../../../ease'
 import type { i18n } from '../../../i18n'
 import type { EntityType } from '../../../state/entities'
 import type { EditableObject } from '../../../state/operations/editable'
 import type { BrushProperties } from '../../tools/brush'
+import type { Aggregate } from '../../utils/aggregate'
 import type { NoteFields } from '../../utils/noteFields'
 
 type Localization = (typeof i18n)['value']
@@ -647,4 +648,18 @@ export const connectorSummaryKeys: readonly PropertyKey[] = [
 export const coupledKeys: Partial<Record<PropertyKey, PropertyKey[]>> = {
     isFake: ['connectorIsFake'],
     isCritical: ['connectorActiveIsCritical'],
+}
+
+/** A brush matching the selection: every brushable value it agrees on. */
+export const pickBrush = ({ model, usage }: Aggregate, isDynamicStages: boolean) => {
+    const brush: Record<string, unknown> = {}
+    for (const field of brushFields) {
+        if (!isDynamicStages && stageKinds.has(field.kind)) continue
+        // Eases keep the half the selection agrees on.
+        const value = field.ease
+            ? mergeEases((usage.get(field.key)?.values.keys() ?? []) as Iterable<Ease>)
+            : model[field.key]
+        if (value !== undefined) brush[field.key] = value
+    }
+    return brush as BrushProperties
 }
