@@ -62,7 +62,7 @@ const curve = computed(() =>
 <template>
     <template v-if="optional">
         <OptionalSelectField v-model="family" :label :options="familyOptions">
-            <template #leading><EaseIcon v-if="curve" :ease="curve" /></template>
+            <template v-if="curve" #leading><EaseIcon :ease="curve" /></template>
         </OptionalSelectField>
         <OptionalSelectField
             v-model="mode"
@@ -73,7 +73,7 @@ const curve = computed(() =>
     </template>
     <template v-else>
         <MultiSelectField v-model="family" :label :options="familyOptions">
-            <template #leading><EaseIcon v-if="curve" :ease="curve" /></template>
+            <template v-if="curve" #leading><EaseIcon :ease="curve" /></template>
         </MultiSelectField>
         <MultiSelectField
             v-model="mode"

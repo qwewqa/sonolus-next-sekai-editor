@@ -1,0 +1,108 @@
+import { expect, test, type Page } from '@playwright/test'
+import { installCanvasCounters, installEditorFixture } from './editorFixture'
+
+const panel = (page: Page) => page.locator('#workspace-panel-properties')
+const field = (page: Page, label: string) =>
+    panel(page)
+        .locator('.form-field')
+        .filter({ has: page.locator('.form-field-text').getByText(label, { exact: true }) })
+const lead = (page: Page, label: string) => field(page, label).locator('.form-field-select-lead')
+const selectPadding = (page: Page, label: string) =>
+    field(page, label)
+        .locator('select')
+        .evaluate((select) => getComputedStyle(select).paddingLeft)
+
+const open = async (page: Page, settings: Record<string, unknown> = {}) => {
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate((settings) => {
+        const { history, fixtures } = window.editorTest
+        const chart = structuredClone(fixtures.interaction)
+        const [a, b, c, d] = chart.slides.map((slide) => slide[0]!)
+        Object.assign(a!, { noteStyle: 'purple', flickDirection: 'upLeft', connectorStyle: 'red' })
+        Object.assign(b!, { noteStyle: 'red', flickDirection: 'none', connectorStyle: 'black' })
+        Object.assign(c!, { noteStyle: 'default', flickDirection: 'downRight' })
+        // A value from a newer engine that no option names.
+        Object.assign(d!, { noteStyle: 'pink', flickDirection: 'sideways' })
+        // Each head gets a tail, so connector fields show.
+        chart.slides = chart.slides.map(([head]) => [head!, { ...head!, beat: head!.beat + 1 }])
+        chart.timeScales = structuredClone(fixtures.events.timeScales)
+        history.resetState(false, chart, 0, 'glyphs.json')
+        Object.assign(window.editorTest.settings, {
+            showSidebar: true,
+            propertiesConnectorExpanded: true,
+            ...settings,
+        })
+    }, settings)
+    await expect(panel(page)).toBeVisible()
+}
+
+const select = (page: Page, type: string, indices: number[]) =>
+    page.evaluate(
+        async ({ type, indices }) => {
+            const { history, store } = window.editorTest
+            const all = [...store.getAllEntities()]
+                .filter((entity) => entity.type === type)
+                .sort((a, b) => a.beat - b.beat)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: indices.map((index) => all[index]!),
+            })
+            await window.editorTest.nextTick()
+        },
+        { type, indices },
+    )
+
+test('color and flick fields show the current value as the canvas draws it', async ({ page }) => {
+    await open(page)
+    await select(page, 'note', [0])
+    await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('fill', '#dfaaff')
+    await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('stroke', '#bd66ee')
+    await expect(lead(page, 'Connector Color').locator('circle')).toHaveAttribute('fill', '#d6737b')
+    await expect(lead(page, 'Flick Direction').locator('polygon')).toHaveCount(1)
+    await expect(lead(page, 'Flick Direction')).toHaveAttribute('aria-hidden', 'true')
+    // Options stay text.
+    await expect(field(page, 'Note Color').locator('option svg')).toHaveCount(0)
+
+    // Black connectors use the styled connector base; None has no arrow.
+    await select(page, 'note', [2])
+    await expect(lead(page, 'Connector Color').locator('circle')).toHaveAttribute('fill', '#555555')
+    await expect(lead(page, 'Flick Direction')).toHaveCount(0)
+
+    // Default resolves per object: a dashed ring.
+    await select(page, 'note', [4])
+    await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute(
+        'stroke-dasharray',
+        '2.2 2',
+    )
+
+    // Unknown values have no glyph.
+    await select(page, 'note', [6])
+    await expect(lead(page, 'Note Color')).toHaveCount(0)
+    await expect(lead(page, 'Flick Direction')).toHaveCount(0)
+
+    // Mixed values keep their counts in the options and no glyph or inset.
+    await select(page, 'note', [0, 2])
+    await expect(lead(page, 'Note Color')).toHaveCount(0)
+    expect(await selectPadding(page, 'Note Color')).toBe('16px')
+    await expect(
+        field(page, 'Note Color').locator('option', { hasText: 'Purple · 1' }),
+    ).toHaveCount(1)
+    await expect(field(page, 'Note Color').locator('.form-field-mixed-value')).toHaveCount(2)
+})
+
+test('tool presets show glyphs only for values that are set', async ({ page }) => {
+    await open(page, { propertiesSection: 'tool' })
+    await page.evaluate(async () => {
+        const { settings } = window.editorTest
+        const presets = structuredClone(settings.defaultNotePropertiesPresets)
+        presets[0] = { ...presets[0]!, noteStyle: 'cyan', flickDirection: undefined }
+        settings.defaultNotePropertiesPresets = presets
+        const { switchToolTo } = await import('/src/editor/tools/index.ts')
+        switchToolTo('note')
+    })
+    await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('fill', '#83e5ff')
+    await expect(lead(page, 'Flick Direction')).toHaveCount(0)
+})
