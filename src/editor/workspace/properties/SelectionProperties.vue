@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { isEditableEntity } from '.'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
 import MultiAnchorField from '../../../modals/form/MultiAnchorField.vue'
@@ -60,11 +59,12 @@ import MultiXTranslationField from '../../../modals/form/MultiXTranslationField.
 import MultiYOffsetBeatField from '../../../modals/form/MultiYOffsetBeatField.vue'
 import MultiYOffsetField from '../../../modals/form/MultiYOffsetField.vue'
 import MultiYTranslationField from '../../../modals/form/MultiYTranslationField.vue'
+import { isEditableEntity } from '../../sidebars/default'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
-import BaseSidebar from '../BaseSidebar.vue'
 import MultiIsMaskNotesField from '../../../modals/form/MultiIsMaskNotesField.vue'
 import MultiElevationField from '../../../modals/form/MultiElevationField.vue'
 import MultiTimeScaleTransitionField from '../../../modals/form/MultiTimeScaleTransitionField.vue'
+import PropertiesFieldGroup from './PropertiesFieldGroup.vue'
 
 const { entities, types, noteFields, createModel } = useSelectedEntitiesProperties(isEditableEntity)
 
@@ -132,9 +132,31 @@ const connectorPresentation = createModel('connectorPresentation')
 </script>
 
 <template>
-    <BaseSidebar :title="i18n.sidebars.default.title">
-        <div v-if="!entities.length">{{ i18n.sidebars.default.none }}</div>
-        <template v-else>
+    <p v-if="!entities.length" class="text-fg/80">{{ i18n.sidebars.default.none }}</p>
+    <template v-else>
+        <!-- Position: where the objects sit on the chart. -->
+        <PropertiesFieldGroup>
+            <MultiBeatField
+                v-if="entities.length === 1 || (!types.bpm && !types.timeScale)"
+                v-model="beat"
+            />
+            <MultiEditorLaneField
+                v-if="types.timeScale || types.stageStyleEventJoint"
+                v-model="editorLane"
+            />
+            <MultiLeftField v-if="types.note && noteFields.left !== false" v-model="left" />
+            <MultiSizeField v-if="types.note && noteFields.size !== false" v-model="size" />
+            <MultiCameraLeftField v-if="types.cameraEventJoint" v-model="cameraLeft" />
+            <MultiCameraSizeField v-if="types.cameraEventJoint" v-model="cameraSize" />
+            <MultiMaskLeftField v-if="types.stageMaskEventJoint" v-model="maskLeft" />
+            <MultiMaskSizeField v-if="types.stageMaskEventJoint" v-model="maskSize" />
+            <MultiPivotLaneField v-if="types.stagePivotEventJoint" v-model="pivotLane" />
+            <MultiXTranslationField v-if="types.stageTransformEventJoint" v-model="xTranslation" />
+            <MultiYTranslationField v-if="types.stageTransformEventJoint" v-model="yTranslation" />
+        </PropertiesFieldGroup>
+
+        <!-- Values specific to each object type. -->
+        <PropertiesFieldGroup>
             <MultiBpmField v-if="types.bpm" v-model="bpm" />
             <MultiMeterField v-if="types.bpm" v-model="meter" />
             <MultiTimeScaleField v-if="types.timeScale" v-model="timeScale" />
@@ -142,8 +164,6 @@ const connectorPresentation = createModel('connectorPresentation')
             <MultiTimeScaleEaseField v-if="types.timeScale" v-model="timeScaleEase" />
             <MultiTimeScaleTransitionField v-if="types.timeScale" v-model="timeScaleTransition" />
             <MultiHideNotesField v-if="types.timeScale" v-model="hideNotes" />
-            <MultiCameraLeftField v-if="types.cameraEventJoint" v-model="cameraLeft" />
-            <MultiCameraSizeField v-if="types.cameraEventJoint" v-model="cameraSize" />
             <MultiCameraZoomField v-if="types.cameraEventJoint" v-model="cameraZoom" />
             <MultiCameraZoomTargetLaneField
                 v-if="types.cameraEventJoint"
@@ -159,10 +179,7 @@ const connectorPresentation = createModel('connectorPresentation')
             />
             <MultiCameraRotationField v-if="types.cameraEventJoint" v-model="cameraRotation" />
             <MultiCameraStageTiltField v-if="types.cameraEventJoint" v-model="cameraStageTilt" />
-            <MultiMaskLeftField v-if="types.stageMaskEventJoint" v-model="maskLeft" />
-            <MultiMaskSizeField v-if="types.stageMaskEventJoint" v-model="maskSize" />
             <MultiIsMaskNotesField v-if="types.stageMaskEventJoint" v-model="isMaskNotes" />
-            <MultiPivotLaneField v-if="types.stagePivotEventJoint" v-model="pivotLane" />
             <MultiDivisionSizeField v-if="types.stagePivotEventJoint" v-model="divisionSize" />
             <MultiDivisionParityField v-if="types.stagePivotEventJoint" v-model="divisionParity" />
             <MultiYOffsetField v-if="types.stagePivotEventJoint" v-model="yOffset" />
@@ -195,14 +212,6 @@ const connectorPresentation = createModel('connectorPresentation')
                 v-model="divisionLineAlpha"
             />
             <MultiRotationField v-if="types.stageTransformEventJoint" v-model="rotation" />
-            <MultiXTranslationField v-if="types.stageTransformEventJoint" v-model="xTranslation" />
-            <MultiYTranslationField v-if="types.stageTransformEventJoint" v-model="yTranslation" />
-            <MultiElevationField
-                v-if="
-                    types.stageTransformEventJoint || (types.note && noteFields.elevation !== false)
-                "
-                v-model="elevation"
-            />
             <MultiAnchorField v-if="types.stageTransformEventJoint" v-model="anchor" />
             <MultiEventEaseField
                 v-if="
@@ -215,36 +224,6 @@ const connectorPresentation = createModel('connectorPresentation')
                 v-model="eventEase"
             />
             <MultiNoteTypeField v-if="types.note" v-model="noteType" />
-            <MultiNoteStyleField
-                v-if="types.note && noteFields.noteStyle !== false"
-                v-model="noteStyle"
-            />
-            <MultiGroupField v-if="types.timeScale || types.note" v-model="groupId" />
-            <MultiStageField
-                v-if="
-                    isDynamicStages &&
-                    (types.note ||
-                        types.stageMaskEventJoint ||
-                        types.stagePivotEventJoint ||
-                        types.stageStyleEventJoint ||
-                        types.stageTransformEventJoint)
-                "
-                v-model="stageId"
-            />
-            <MultiBeatField
-                v-if="entities.length === 1 || (!types.bpm && !types.timeScale)"
-                v-model="beat"
-            />
-            <MultiEditorLaneField
-                v-if="types.timeScale || types.stageStyleEventJoint"
-                v-model="editorLane"
-            />
-            <MultiIsAttachedField
-                v-if="types.note && noteFields.isAttached !== false"
-                v-model="isAttached"
-            />
-            <MultiLeftField v-if="types.note && noteFields.left !== false" v-model="left" />
-            <MultiSizeField v-if="types.note && noteFields.size !== false" v-model="size" />
             <MultiIsCriticalField
                 v-if="types.note && noteFields.isCritical !== false"
                 v-model="isCritical"
@@ -253,8 +232,20 @@ const connectorPresentation = createModel('connectorPresentation')
                 v-if="types.note && noteFields.flickDirection !== false"
                 v-model="flickDirection"
             />
+            <MultiIsAttachedField
+                v-if="types.note && noteFields.isAttached !== false"
+                v-model="isAttached"
+            />
+            <MultiNoteStyleField
+                v-if="types.note && noteFields.noteStyle !== false"
+                v-model="noteStyle"
+            />
             <MultiIsFakeField v-if="types.note && noteFields.isFake !== false" v-model="isFake" />
             <MultiSfxField v-if="types.note && noteFields.sfx !== false" v-model="sfx" />
+        </PropertiesFieldGroup>
+
+        <!-- The connector leaving each note. -->
+        <PropertiesFieldGroup>
             <MultiIsConnectorSeparatorField
                 v-if="types.note && noteFields.isConnectorSeparator !== false"
                 v-model="isConnectorSeparator"
@@ -295,6 +286,32 @@ const connectorPresentation = createModel('connectorPresentation')
                 v-if="types.note && noteFields.connectorPresentation !== false"
                 v-model="connectorPresentation"
             />
-        </template>
-    </BaseSidebar>
+        </PropertiesFieldGroup>
+
+        <!-- Organization: which group and stage own the objects. -->
+        <PropertiesFieldGroup>
+            <MultiGroupField v-if="types.timeScale || types.note" v-model="groupId" />
+            <MultiStageField
+                v-if="
+                    isDynamicStages &&
+                    (types.note ||
+                        types.stageMaskEventJoint ||
+                        types.stagePivotEventJoint ||
+                        types.stageStyleEventJoint ||
+                        types.stageTransformEventJoint)
+                "
+                v-model="stageId"
+            />
+        </PropertiesFieldGroup>
+
+        <!-- Elevation, kept last as an advanced placement value. -->
+        <PropertiesFieldGroup>
+            <MultiElevationField
+                v-if="
+                    types.stageTransformEventJoint || (types.note && noteFields.elevation !== false)
+                "
+                v-model="elevation"
+            />
+        </PropertiesFieldGroup>
+    </template>
 </template>

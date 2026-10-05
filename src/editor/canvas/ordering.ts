@@ -1,6 +1,5 @@
-import type { GroupId } from '../../chart/groups'
-import type { StageId } from '../../chart/stages'
 import type { Entity, EntityType } from '../../state/entities'
+import { entityScopeVisibility, type ScopeLookup } from '../scopeRules'
 
 const layers = {
     timeScale: 0,
@@ -68,95 +67,44 @@ const getLayer = (entity: Entity) => {
     }
 }
 
-const isEntityVisibleByGroup = (entity: Entity, groupId: GroupId | undefined) => {
-    if (groupId === undefined) return true
-
-    switch (entity.type) {
-        case 'bpm':
-        case 'cameraEventJoint':
-        case 'cameraEventConnection':
-        case 'stageMaskEventJoint':
-        case 'stageMaskEventConnection':
-        case 'stagePivotEventJoint':
-        case 'stagePivotEventConnection':
-        case 'stageStyleEventJoint':
-        case 'stageStyleEventConnection':
-        case 'stageTransformEventJoint':
-        case 'stageTransformEventConnection':
-            return true
-        case 'timeScale':
-        case 'note':
-            return entity.groupId === groupId
-        case 'connector':
-            return entity.attachHead.groupId === groupId || entity.attachTail.groupId === groupId
-    }
-}
-
-const isEntityVisibleByStage = (entity: Entity, stageId: StageId | undefined) => {
-    if (stageId === undefined) return true
-
-    switch (entity.type) {
-        case 'bpm':
-        case 'cameraEventJoint':
-        case 'cameraEventConnection':
-        case 'timeScale':
-            return true
-        case 'note':
-        case 'stageMaskEventJoint':
-        case 'stagePivotEventJoint':
-        case 'stageStyleEventJoint':
-        case 'stageTransformEventJoint':
-            return entity.stageId === stageId
-        case 'stageMaskEventConnection':
-        case 'stagePivotEventConnection':
-        case 'stageStyleEventConnection':
-        case 'stageTransformEventConnection':
-            return entity.min.stageId === stageId
-        case 'connector':
-            return entity.attachHead.stageId === stageId || entity.attachTail.stageId === stageId
-    }
-}
-
 export type EntityVisibility = {
-    groupId: GroupId | undefined
-    stageId: StageId | undefined
+    scope: ScopeLookup
     visibilities: Record<EntityType, boolean>
-    showOtherGroups: boolean
-    showOtherStages: boolean
     showOtherObjects: boolean
 }
 
+/**
+ * Painter order and opacity for the main editor. An entity is drawn unless its
+ * group/stage scope is hidden or its type is hidden (with other objects not
+ * shown); it is drawn at full opacity only when both are fully visible.
+ */
 export const orderEntities = (
     entities: Entity[],
     selected: ReadonlySet<Entity>,
     visibility: EntityVisibility,
 ) =>
     entities
-        .map((entity) => ({
-            entity,
-            isSelected: selected.has(entity),
-            isVisibleByGroup: isEntityVisibleByGroup(entity, visibility.groupId),
-            isVisibleByStage: isEntityVisibleByStage(entity, visibility.stageId),
-            isVisibleByType: visibility.visibilities[entity.type],
-            layer: getLayer(entity),
-        }))
-        .filter(
-            (info) =>
-                (visibility.showOtherGroups || info.isVisibleByGroup) &&
-                (visibility.showOtherStages || info.isVisibleByStage) &&
-                (visibility.showOtherObjects || info.isVisibleByType),
-        )
+        .map((entity) => {
+            const scope = entityScopeVisibility(entity, visibility.scope)
+            const isVisibleByType = visibility.visibilities[entity.type]
+            return {
+                entity,
+                isSelected: selected.has(entity),
+                isDrawn: scope !== 'hidden' && (visibility.showOtherObjects || isVisibleByType),
+                isFull: scope === 'full' && isVisibleByType,
+                layer: getLayer(entity),
+            }
+        })
+        .filter((info) => info.isDrawn)
         .sort(
             (a, b) =>
                 +a.isSelected - +b.isSelected ||
-                +(a.isVisibleByGroup && a.isVisibleByStage && a.isVisibleByType) -
-                    +(b.isVisibleByGroup && b.isVisibleByStage && b.isVisibleByType) ||
+                +a.isFull - +b.isFull ||
                 a.layer - b.layer ||
                 b.entity.beat - a.entity.beat,
         )
         .map((info) => ({
             entity: info.entity,
             highlighted: info.isSelected,
-            opacity:
-                info.isVisibleByGroup && info.isVisibleByStage && info.isVisibleByType ? 1 : 0.25,
+            opacity: info.isFull ? 1 : 0.25,
         }))

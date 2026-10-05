@@ -7,5 +7,4 @@ export const previewAspectRatios: [[string, number], [string, number], [string, 
     ['21:9', 21 / 9],
     ['4:3', 4 / 3],
 ]
-export const previewPositions = ['left', 'top', 'auto'] as const
 export const previewControls = ['auto', 'expanded', 'collapsed'] as const

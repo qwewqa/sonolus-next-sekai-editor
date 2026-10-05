@@ -23,7 +23,7 @@ const onClick = async () => {
 <template>
     <BaseField :label>
         <input
-            class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent active:bg-accent active:text-button"
+            class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
             type="button"
             :value="value ?? i18n.modals.form.file.select"
             @click="onClick"

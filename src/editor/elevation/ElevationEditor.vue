@@ -6,7 +6,7 @@ import { pushState, replaceState, state } from '../../history'
 import { defaultGroupId } from '../../history/groups'
 import { i18n } from '../../i18n'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
-import { modals, showModal } from '../../modals'
+import { modals } from '../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
 import type { State } from '../../state'
@@ -26,7 +26,7 @@ import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { closeContextMenu, contextMenu } from '../contextMenu'
 import { constrainLaneObject } from '../laneLimits'
-import { isSidebarVisible } from '../sidebars'
+import { isSidebarVisible, revealPropertiesSection } from '../sidebars'
 import { panelTools, tools, toolName, type Tool } from '../tools'
 import { applyBrushToEntities } from '../tools/brush'
 import { remove } from '../tools/eraser'
@@ -38,10 +38,16 @@ import SlidePropertiesModal from '../tools/slide/SlidePropertiesModal.vue'
 import { quickEdit } from '../utils/quickEdit'
 import LevelEditorToolbar from '../toolbar/LevelEditorToolbar.vue'
 import EditorToolModalHost from '../EditorToolModalHost.vue'
-import { hasToolModal } from '../toolModals'
+import LevelEditorNotification from '../LevelEditorNotification.vue'
+import ChevronIcon from '../workspace/ChevronIcon.vue'
+import CloseIcon from '../workspace/CloseIcon.vue'
+import { hasToolModal, showToolModal } from '../toolModals'
 import type { CommandName } from '../commands'
 import { fromDisplayedBeat, toDisplayedBeat } from '../beatDisplay'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
+import { scopeLookup } from '../scope'
+import { isScopeReduced } from '../scopeRules'
+import { isInWorkspaceDock } from '../workspace'
 import { alignLane, view, focusViewAtBeat } from '../view'
 import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
 import {
@@ -65,6 +71,13 @@ const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const container = useTemplateRef<HTMLElement>('container')
 const header = useTemplateRef<HTMLDivElement>('header')
 const headerHeight = ref(80)
+// Header controls follow the workspace chrome language: compact dark icon
+// buttons whose hit area grows to 36px (fine) or 44px (coarse), and white
+// pill fields with an accent focus ring on the dark band.
+const headerIconButton =
+    "relative flex size-8 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors before:absolute before:-inset-0.5 before:content-[''] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:before:-inset-1.5"
+const headerField =
+    'elevation-field h-8 w-20 appearance-none rounded-full bg-button px-3 text-base text-fg tabular-nums shadow-md transition-colors hover:shadow-accent focus:outline-none focus:ring-accent active:bg-accent active:text-on-accent'
 let navigation: EditorNavigation | undefined
 const controlListeners = controlsForNavigation(() => navigation)
 const activate = () => {
@@ -307,7 +320,7 @@ const ghostRows = (entities: NoteEntity[]) =>
 const pasteAtPoint = async (x: number, y: number, modifiers: Modifiers) => {
     const source = state.value
     const position = positionAtPoint(x, y)
-    const { groupId, stageId } = view
+    const scope = scopeLookup.value
     try {
         await updateClipboard()
     } catch {
@@ -317,8 +330,7 @@ const pasteAtPoint = async (x: number, y: number, modifiers: Modifiers) => {
         !mounted ||
         !isElevationEditorOpen.value ||
         !hasSameChartData(source, state.value) ||
-        view.groupId !== groupId ||
-        view.stageId !== stageId ||
+        scopeLookup.value !== scope ||
         !sameBeat(elevationBeat.value, position.beat)
     )
         return false
@@ -390,14 +402,16 @@ const controls: Pick<
                 return
             }
             if (!modifiers.ctrl && state.value.selectedEntities.includes(row.note)) {
-                if (isSidebarVisible.value)
+                if (isSidebarVisible.value) {
+                    revealPropertiesSection('selection')
                     quickEdit(
                         toolName.value === 'slide'
                             ? defaultSlideProperties.value
                             : defaultNoteProperties.value,
                     )
-                else
-                    void showModal(
+                } else
+                    // The same docked tool dialog the main editor opens for this gesture.
+                    void showToolModal(
                         toolName.value === 'slide' ? SlidePropertiesModal : NotePropertiesModal,
                         {},
                     )
@@ -583,10 +597,13 @@ const onBeatInput = (event: Event) => {
     changeBeat(fromDisplayedBeat(input.valueAsNumber))
 }
 const onKeydown = (event: KeyboardEvent) => {
-    if (modals.length) return
+    // An open drawer takes Escape first.
+    if (modals.length || event.defaultPrevented) return
     if (editorNavigation.value !== navigation) return
     if (event.key !== 'Escape') return
     if (event.target instanceof Element && event.target.closest('[role=separator]')) return
+    // Workspace panels, their rails and menus handle their own Escape.
+    if (isInWorkspaceDock(event.target instanceof Element ? event.target : null)) return
     event.preventDefault()
     event.stopPropagation()
     if (contextMenu.value) {
@@ -616,7 +633,10 @@ watch(elevationBeat, () => {
     viewportAdjusted = false
     fitViewport()
 })
-watch([() => view.groupId, () => view.stageId, () => view.visibilities], () => {
+// Focus, hidden groups/stages and type filters change which notes are editable.
+// Pure reveals (including authoring revealing its target) never hide a note.
+watch([scopeLookup, () => view.visibilities], ([scope, visibilities], [previous, before]) => {
+    if (visibilities === before && !isScopeReduced(previous, scope)) return
     cancelMouseControls()
     cancelTouchControls()
     cancel()
@@ -923,100 +943,213 @@ onUnmounted(() => {
                 :bottom="elevationBounds.h"
             />
         </div>
+        <!-- Beside the main editor, notifications show in its pane instead. -->
+        <LevelEditorNotification
+            v-if="!isElevationSideBySide"
+            pane="elevation"
+            :inset="headerHeight"
+        />
         <LevelEditorToolbar v-if="!hasToolModal('elevation')" :available="availableCommands" />
         <EditorToolModalHost pane="elevation" />
         <div
             ref="header"
-            class="elevation-header absolute inset-x-0 top-0 flex flex-col gap-2 border-b border-white/10 bg-preview px-3 py-2 text-xs text-white/75"
+            class="elevation-header absolute inset-x-0 top-0 isolate border-b border-white/10 bg-preview text-sm text-white/80"
             @keydown.stop
         >
-            <div class="relative flex flex-wrap items-center gap-x-3 gap-y-2 pr-8">
-                <strong class="flex-grow text-white/90" :title="i18n.elevation.header">{{
-                    i18n.elevation.header
-                }}</strong>
+            <div class="elevation-header-layout px-4">
+                <span
+                    class="elevation-title min-w-0 truncate font-medium text-white"
+                    :title="i18n.elevation.header"
+                    >{{ i18n.elevation.header }}</span
+                >
+                <div class="elevation-controls">
+                    <div class="elevation-beat">
+                        <button
+                            type="button"
+                            :class="headerIconButton"
+                            :aria-label="i18n.elevation.previousBeat"
+                            :title="i18n.elevation.previousBeat"
+                            :disabled="previousBeat === undefined"
+                            @click="previousBeat !== undefined && changeBeat(previousBeat)"
+                        >
+                            <ChevronIcon direction="left" />
+                        </button>
+                        <label class="elevation-beat-field"
+                            ><span class="elevation-label">{{ i18n.elevation.beat }}</span
+                            ><input
+                                :class="headerField"
+                                class="focus:ring-2"
+                                type="number"
+                                min="1"
+                                :step="1 / view.division"
+                                :value="toDisplayedBeat(elevationBeat)"
+                                :aria-label="i18n.elevation.beat"
+                                @change="onBeatInput"
+                        /></label>
+                        <button
+                            type="button"
+                            :class="headerIconButton"
+                            :aria-label="i18n.elevation.nextBeat"
+                            :title="i18n.elevation.nextBeat"
+                            :disabled="nextBeat === undefined"
+                            @click="nextBeat !== undefined && changeBeat(nextBeat)"
+                        >
+                            <ChevronIcon direction="right" />
+                        </button>
+                    </div>
+                    <label class="elevation-snap"
+                        ><span class="elevation-label">{{ i18n.elevation.snap }}</span
+                        ><select
+                            v-model="settings.elevationSnap"
+                            :class="headerField"
+                            class="cursor-pointer focus-visible:ring-2"
+                            :aria-label="i18n.elevation.snapping"
+                        >
+                            <option :value="0">{{ i18n.elevation.off }}</option>
+                            <option
+                                v-for="division in [1, 2, 4, 8, 16, 32, 64]"
+                                :key="division"
+                                :value="division"
+                            >
+                                1/{{ division }}
+                            </option>
+                        </select></label
+                    >
+                </div>
                 <button
-                    class="absolute -right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded text-lg leading-none hover:bg-white/10"
+                    type="button"
+                    class="elevation-close"
+                    :class="headerIconButton"
                     :aria-label="i18n.elevation.close"
                     :title="i18n.elevation.close"
                     @click="closeElevationEditor"
                 >
-                    ×
+                    <CloseIcon class="size-4" />
                 </button>
-            </div>
-            <div class="elevation-controls flex flex-wrap items-center gap-x-3 gap-y-2">
-                <div class="elevation-beat flex items-center">
-                    <button
-                        class="h-7 w-5 shrink-0 rounded hover:bg-white/10 disabled:opacity-25"
-                        :aria-label="i18n.elevation.previousBeat"
-                        :title="i18n.elevation.previousBeat"
-                        :disabled="previousBeat === undefined"
-                        @click="previousBeat !== undefined && changeBeat(previousBeat)"
-                    >
-                        ‹
-                    </button>
-                    <label class="elevation-beat-field flex items-center gap-1"
-                        ><span class="min-w-7">{{ i18n.elevation.beat }}</span
-                        ><input
-                            class="h-7 w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
-                            type="number"
-                            min="1"
-                            :step="1 / view.division"
-                            :value="toDisplayedBeat(elevationBeat)"
-                            :aria-label="i18n.elevation.beat"
-                            @change="onBeatInput"
-                    /></label>
-                    <button
-                        class="h-7 w-5 shrink-0 rounded hover:bg-white/10 disabled:opacity-25"
-                        :aria-label="i18n.elevation.nextBeat"
-                        :title="i18n.elevation.nextBeat"
-                        :disabled="nextBeat === undefined"
-                        @click="nextBeat !== undefined && changeBeat(nextBeat)"
-                    >
-                        ›
-                    </button>
-                </div>
-                <label class="elevation-snap flex items-center gap-1"
-                    ><span class="min-w-7">{{ i18n.elevation.snap }}</span
-                    ><select
-                        v-model="settings.elevationSnap"
-                        class="h-7 w-16 rounded border border-white/10 bg-bg px-2 py-1 text-white"
-                        :aria-label="i18n.elevation.snapping"
-                    >
-                        <option :value="0">{{ i18n.elevation.off }}</option>
-                        <option
-                            v-for="division in [1, 2, 4, 8, 16, 32, 64]"
-                            :key="division"
-                            :value="division"
-                        >
-                            1/{{ division }}
-                        </option>
-                    </select></label
-                >
             </div>
         </div>
     </section>
 </template>
 
 <style scoped>
-.elevation-beat-field input[type='number'] {
-    appearance: textfield;
-    -moz-appearance: textfield;
-}
-
-.elevation-beat-field input::-webkit-inner-spin-button,
-.elevation-beat-field input::-webkit-outer-spin-button {
-    appearance: none;
-    margin: 0;
-}
-
+/*
+ * The header is workspace chrome over the canvas. Its layout follows its own
+ * width; the canvas top margin is measured from the rendered header.
+ * - Wide: the title, controls and close share one 32px row.
+ * - Default: a title row, then one row of controls.
+ * - Narrow: labels and fields in aligned grid columns.
+ * - Narrowest: labels above their fields.
+ */
 .elevation-header {
     container-type: inline-size;
 }
 
-@container (max-width: 18rem) {
+.elevation-header-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        'title close'
+        'controls controls';
+    align-items: center;
+    column-gap: 0.75rem;
+    /* Two rows stay as short as the header was before 32px fields. */
+    row-gap: 0.25rem;
+    padding-block: 0.375rem;
+}
+
+.elevation-title {
+    grid-area: title;
+}
+
+/* The title row stays one text line tall, and the glyph sits on the 16px gutter. */
+.elevation-close {
+    grid-area: close;
+    margin-block: -0.375rem;
+    margin-right: -0.5rem;
+}
+
+.elevation-controls {
+    grid-area: controls;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+}
+
+/* The previous-beat glyph lines up with the title. */
+.elevation-beat {
+    display: flex;
+    align-items: center;
+    margin-left: -0.5rem;
+}
+
+.elevation-beat-field,
+.elevation-snap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.elevation-label {
+    white-space: nowrap;
+}
+
+/* A field's own box wins over the hit area of the stepper beside it. */
+.elevation-field {
+    position: relative;
+    z-index: 1;
+}
+
+/* Spinners are hidden (D8); arrow keys and the wheel still step. */
+.elevation-field[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.elevation-field::-webkit-inner-spin-button,
+.elevation-field::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+@container (min-width: 35rem) {
+    .elevation-header-layout {
+        grid-template-columns: minmax(0, max-content) minmax(max-content, 1fr) auto;
+        grid-template-areas: 'title controls close';
+        column-gap: 1rem;
+        padding-block: 0.5rem;
+    }
+
+    .elevation-close {
+        margin-block: 0;
+    }
+
+    .elevation-controls {
+        flex-wrap: nowrap;
+    }
+
+    .elevation-beat {
+        margin-left: 0;
+    }
+}
+
+/* Each field is sized for its values rather than squeezed to keep one row: the
+   beat holds values such as 123.0625, and snapping at most "1/64". Narrow
+   headers wrap the snap field onto its own row instead. */
+.elevation-beat-field .elevation-field {
+    width: 6rem;
+}
+
+.elevation-snap .elevation-field {
+    width: 4rem;
+}
+
+@container (max-width: 19rem) {
     .elevation-controls {
         display: grid;
-        grid-template-columns: 1.25rem max-content minmax(0, 4.25rem) 1.25rem;
+        grid-template-columns: 2rem minmax(0, max-content) minmax(0, 1fr) 2rem;
+        margin-inline: -0.5rem;
         column-gap: 0;
     }
 
@@ -1026,21 +1159,32 @@ onUnmounted(() => {
         display: contents;
     }
 
-    .elevation-snap span {
+    .elevation-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 0.5rem;
+    }
+
+    .elevation-snap .elevation-label {
         grid-column: 2;
     }
 
-    .elevation-controls input,
-    .elevation-controls select {
-        min-width: 0;
-        width: calc(100% - 0.25rem);
-        margin-left: 0.25rem;
+    /* The next-beat button sits right below the close button here. */
+    .elevation-close::before {
+        bottom: 0;
+    }
+
+    .elevation-controls .elevation-field {
+        width: 100%;
     }
 }
 
 @container (max-width: 12rem) {
+    /* Labels stack above their fields within the header's former height. */
     .elevation-controls {
-        grid-template-columns: 1.25rem minmax(0, 4rem) 1.25rem;
+        grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+        row-gap: 0.25rem;
     }
 
     .elevation-beat-field,
@@ -1048,18 +1192,16 @@ onUnmounted(() => {
         display: flex;
         grid-column: 2;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
+        align-items: stretch;
+        gap: 0;
+    }
+
+    .elevation-label {
+        padding-right: 0;
     }
 
     .elevation-beat > button {
         align-self: end;
-    }
-
-    .elevation-controls input,
-    .elevation-controls select {
-        width: 100%;
-        margin-left: 0;
     }
 }
 </style>

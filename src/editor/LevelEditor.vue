@@ -5,7 +5,6 @@ import { isDynamicStages } from '../history/dynamicStages.ts'
 import { groups } from '../history/groups'
 import { stages } from '../history/stages'
 import { i18n } from '../i18n'
-import { screenSm } from '../screen'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
 import LevelEditorCanvas from './canvas/LevelEditorCanvas.vue'
@@ -13,19 +12,23 @@ import ElevationEditor from './elevation/ElevationEditor.vue'
 import { isElevationEditorOpen, isElevationSideBySide } from './elevation/state'
 import LevelEditorContextMenu from './LevelEditorContextMenu.vue'
 import { activateEditorNavigation, useControlLifecycle } from './controls'
-import { cancelMouseControls } from './controls/mouse'
-import { cancelTouchControls } from './controls/touch'
 import { useFocusControl } from './controls/focus'
 import { useKeyboardControl } from './controls/keyboard'
 import LevelEditorHoverMarkers from './LevelEditorHoverMarkers.vue'
 import LevelEditorNotification from './LevelEditorNotification.vue'
 import LevelEditorRangeMarkers from './LevelEditorRangeMarkers.vue'
+import { groupScope, stageScope } from './scope'
 import LevelEditorToolbar from './toolbar/LevelEditorToolbar.vue'
 import EditorToolModalHost from './EditorToolModalHost.vue'
 import { hasToolModal } from './toolModals'
 import { tool } from './tools'
 import { brushProperties } from './tools/brush'
 import { view } from './view'
+import { manageGroups } from './commands/manageGroups'
+import { manageStages } from './commands/manageStages'
+import type { Command } from './commands'
+import { workspaceLayout } from './workspace'
+import ResizeHandle from './workspace/ResizeHandle.vue'
 
 useFocusControl()
 useKeyboardControl()
@@ -60,45 +63,28 @@ const splitMinimum = computed(() =>
 const splitWidth = computed(() =>
     Math.max(splitMinimum.value, Math.min(100 - splitMinimum.value, settings.elevationEditorWidth)),
 )
-let resizing: { pointerId: number; original: number; left: number; width: number } | undefined
 const setSplitWidth = (width: number) => {
     settings.elevationEditorWidth = Math.max(
         splitMinimum.value,
         Math.min(100 - splitMinimum.value, width),
     )
 }
-const startResize = (event: PointerEvent) => {
-    if (event.button !== 0 || !host.value) return
-    cancelMouseControls()
-    cancelTouchControls()
-    const rect = host.value.getBoundingClientRect()
-    resizing = {
-        pointerId: event.pointerId,
-        original: settings.elevationEditorWidth,
-        left: rect.left,
-        width: rect.width,
-    }
-    ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+// The elevation pane is on the right, so moving the divider right (a positive
+// pixel delta) narrows it. The setting is a percentage of the editor width.
+const pixelsToPercent = (pixels: number) => (pixels / Math.max(1, hostWidth.value)) * 100
+let resizing: { original: number; origin: number } | undefined
+const onResizeStart = () => {
+    resizing = { original: settings.elevationEditorWidth, origin: splitWidth.value }
 }
-const moveResize = (event: PointerEvent) => {
-    if (event.pointerId !== resizing?.pointerId) return
-    setSplitWidth((1 - (event.clientX - resizing.left) / resizing.width) * 100)
+const onResizeMove = (delta: number) => {
+    if (resizing) setSplitWidth(resizing.origin - pixelsToPercent(delta))
 }
-const finishResize = (event: PointerEvent) => {
-    if (event.pointerId !== resizing?.pointerId) return
-    if (event.type === 'pointercancel') settings.elevationEditorWidth = resizing.original
+const onResizeEnd = () => {
     resizing = undefined
 }
-const resizeKey = (event: KeyboardEvent) => {
-    if (event.key === 'ArrowLeft') setSplitWidth(splitWidth.value + 2)
-    else if (event.key === 'ArrowRight') setSplitWidth(splitWidth.value - 2)
-    else if (event.key === 'Escape' && resizing) {
-        settings.elevationEditorWidth = resizing.original
-        resizing = undefined
-    } else if (event.key === 'Home') setSplitWidth(splitMinimum.value)
-    else if (event.key === 'End') setSplitWidth(100 - splitMinimum.value)
-    else return
-    event.preventDefault()
+const onResizeCancel = () => {
+    if (resizing) settings.elevationEditorWidth = resizing.original
+    resizing = undefined
 }
 
 const updateBounds = () => {
@@ -133,19 +119,7 @@ watch(container, (element, _, onCleanup) => {
 })
 
 // Panel layout changes can move the editor without changing its dimensions.
-watch(
-    [
-        screenSm,
-        () => settings.previewPosition,
-        () => settings.showPreview,
-        () => settings.previewWidth,
-        () => settings.previewHeight,
-        () => settings.showSidebar,
-        () => settings.sidebarWidth,
-    ],
-    updateBounds,
-    { flush: 'post' },
-)
+watch(workspaceLayout, updateBounds, { flush: 'post' })
 
 watch([groups, () => view.groupId], () => {
     if (!view.groupId) return
@@ -153,6 +127,24 @@ watch([groups, () => view.groupId], () => {
 
     view.groupId = undefined
 })
+
+// Visibility overrides are view state: drop entries for groups and stages that
+// no longer exist after deletion, undo/redo, history replacement or loading a
+// chart, and every stage entry while dynamic stages are disabled.
+watch(
+    groups,
+    () => {
+        groupScope.prune()
+    },
+    { immediate: true },
+)
+watch(
+    [stages, isDynamicStages],
+    () => {
+        stageScope.prune()
+    },
+    { immediate: true },
+)
 
 watch([groups, () => brushProperties.value.groupId], () => {
     if (!brushProperties.value.groupId) return
@@ -175,6 +167,12 @@ watch([stages, isDynamicStages, () => brushProperties.value.stageId], () => {
     brushProperties.value.stageId = undefined
 })
 
+const onStatusChip = (event: MouseEvent, command: Command) => {
+    void command.execute()
+    // Pointer clicks return keyboard shortcuts to the editor.
+    if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
+}
+
 const group = computed(() =>
     view.groupId === undefined
         ? i18n.value.statusBar.group.all
@@ -192,10 +190,34 @@ const stage = computed(() =>
               stages.value.get(view.stageId)?.name ?? '',
           ),
 )
+
+// Shown separately from the authoring target, and only while something is hidden.
+const shownCount = (shown: number, total: number, message: string) => {
+    if (shown >= total) return
+    return {
+        short: `${shown}/${total}`,
+        label: interpolateRaw(message, `${shown}`, `${total}`),
+    }
+}
+const groupCount = computed(() =>
+    shownCount(
+        groupScope.shownCount.value,
+        groupScope.totalCount.value,
+        i18n.value.statusBar.group.shown,
+    ),
+)
+const stageCount = computed(() =>
+    shownCount(
+        stageScope.shownCount.value,
+        stageScope.totalCount.value,
+        i18n.value.statusBar.stage.shown,
+    ),
+)
 </script>
 
 <template>
-    <div class="flex flex-col">
+    <!-- An own stacking context keeps editor overlays below docks and their popups. -->
+    <div class="isolate flex flex-col">
         <div ref="host" class="relative flex min-h-0 flex-grow select-none overflow-hidden">
             <div
                 v-if="!isElevationEditorOpen || isElevationSideBySide"
@@ -211,6 +233,7 @@ const stage = computed(() =>
                     <LevelEditorHoverMarkers />
                     <LevelEditorCanvas />
                 </template>
+                <LevelEditorNotification pane="main" />
                 <LevelEditorToolbar v-if="!hasToolModal('main')" />
                 <EditorToolModalHost pane="main" />
             </div>
@@ -218,23 +241,19 @@ const stage = computed(() =>
                 v-if="isElevationEditorOpen && isElevationSideBySide"
                 class="relative z-10 w-px flex-none bg-white/10"
             >
-                <div
-                    class="absolute inset-y-0 -left-1.5 w-3 cursor-col-resize touch-none hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-                    role="separator"
-                    tabindex="0"
-                    aria-orientation="vertical"
-                    :aria-label="i18n.elevation.resize"
-                    :title="i18n.elevation.resize"
-                    :aria-valuemin="splitMinimum"
-                    :aria-valuemax="100 - splitMinimum"
-                    :aria-valuenow="Math.round(splitWidth)"
-                    @pointerdown.stop.prevent="startResize"
-                    @pointermove.stop="moveResize"
-                    @pointerup.stop="finishResize"
-                    @pointercancel.stop="finishResize"
-                    @lostpointercapture="finishResize"
-                    @keydown.stop="resizeKey"
-                    @dblclick="settings.elevationEditorWidth = 50"
+                <ResizeHandle
+                    axis="x"
+                    :label="i18n.elevation.resize"
+                    :value="splitWidth"
+                    :min="splitMinimum"
+                    :max="100 - splitMinimum"
+                    @start="onResizeStart"
+                    @move="onResizeMove"
+                    @end="onResizeEnd"
+                    @cancel="onResizeCancel"
+                    @step="setSplitWidth(splitWidth - pixelsToPercent($event))"
+                    @set="setSplitWidth"
+                    @reset="settings.elevationEditorWidth = 50"
                 />
             </div>
             <div
@@ -244,14 +263,85 @@ const stage = computed(() =>
             >
                 <ElevationEditor />
             </div>
-            <LevelEditorNotification />
             <LevelEditorContextMenu />
         </div>
-        <div class="z-10 flex gap-4 bg-preview px-2 py-1 text-xs text-white/50">
-            <span class="flex-grow">{{ tool.title() }}</span>
-            <span v-if="isDynamicStages">{{ stage }}</span>
-            <span>{{ group }}</span>
-            <span>1/{{ view.division }}</span>
+        <!-- Chrome: Meta text in white/80, 24px tall (32px on coarse pointers). -->
+        <div
+            class="z-10 flex gap-4 bg-preview px-2 py-1 text-xs text-white/80 [@media(pointer:coarse)]:py-2"
+        >
+            <span class="min-w-12 flex-grow truncate">{{ tool.title() }}</span>
+            <!-- The scope chips open their managers. Long names truncate while the
+            shown count stays visible. -->
+            <button
+                v-if="isDynamicStages"
+                type="button"
+                class="status-chip relative flex min-w-0 max-w-[40%] px-1"
+                :title="i18n.commands.manageStages.title"
+                @click="onStatusChip($event, manageStages)"
+            >
+                <span class="min-w-0 truncate">{{ stage }}</span>
+                <span
+                    v-if="stageCount"
+                    class="ml-1 shrink-0 whitespace-nowrap"
+                    :title="stageCount.label"
+                >
+                    <span aria-hidden="true">· {{ stageCount.short }}</span>
+                    <span class="sr-only">{{ stageCount.label }}</span>
+                </span>
+            </button>
+            <button
+                type="button"
+                class="status-chip relative flex min-w-0 max-w-[40%] px-1"
+                :title="i18n.commands.manageGroups.title"
+                @click="onStatusChip($event, manageGroups)"
+            >
+                <span class="min-w-0 truncate">{{ group }}</span>
+                <span
+                    v-if="groupCount"
+                    class="ml-1 shrink-0 whitespace-nowrap"
+                    :title="groupCount.label"
+                >
+                    <span aria-hidden="true">· {{ groupCount.short }}</span>
+                    <span class="sr-only">{{ groupCount.label }}</span>
+                </span>
+            </button>
+            <span class="shrink-0">1/{{ view.division }}</span>
         </div>
     </div>
 </template>
+
+<style scoped>
+.status-chip {
+    border-radius: 9999px;
+    transition: color 150ms;
+}
+
+/* The hit area fills the bar's height (24px, or 32px on coarse pointers)
+ * without making the chip or the bar taller. */
+.status-chip::before {
+    content: '';
+    position: absolute;
+    inset: -0.25rem;
+}
+
+@media (pointer: coarse) {
+    .status-chip::before {
+        inset-block: -0.5rem;
+    }
+}
+
+.status-chip:active {
+    color: theme('colors.white');
+}
+
+.status-chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px theme('colors.accent');
+}
+
+@media (hover: hover) {
+    .status-chip:hover {
+        color: theme('colors.white');
+    }
+}
+</style>

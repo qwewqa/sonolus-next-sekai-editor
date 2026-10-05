@@ -21,8 +21,8 @@ const copyProperties = createModel('copyProperties')
 <template>
     <OptionalRotationField v-model="rotation" />
     <OptionalYTranslationField v-model="yTranslation" />
-    <OptionalElevationField v-model="elevation" />
     <OptionalAnchorField v-model="anchor" />
     <OptionalEventEaseField v-model="eventEase" />
+    <OptionalElevationField v-model="elevation" />
     <CopyPropertiesField v-model="copyProperties" />
 </template>

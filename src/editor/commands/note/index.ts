@@ -3,7 +3,7 @@ import { i18n } from '../../../i18n'
 import { settings } from '../../../settings'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { isSidebarVisible } from '../../sidebars'
+import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { switchToolTo, toolName } from '../../tools'
 import { defaultNotePropertiesPresetIndex } from '../../tools/note'
@@ -19,6 +19,7 @@ export const note: Command = {
     async execute() {
         if (toolName.value === 'note') {
             if (isSidebarVisible.value) {
+                revealPropertiesSection('tool')
                 defaultNotePropertiesPresetIndex.value =
                     (defaultNotePropertiesPresetIndex.value + 1) %
                     settings.defaultNotePropertiesPresets.length
@@ -51,6 +52,8 @@ export const createNote = (index: number): Command => ({
         if (toolName.value === 'note' && defaultNotePropertiesPresetIndex.value === index) {
             if (!isSidebarVisible.value) {
                 await showToolModal(DefaultNotePropertiesModal, {})
+            } else {
+                revealPropertiesSection('tool')
             }
         } else {
             defaultNotePropertiesPresetIndex.value = index

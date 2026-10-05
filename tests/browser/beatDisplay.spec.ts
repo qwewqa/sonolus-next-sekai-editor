@@ -215,7 +215,7 @@ test('elevation beat input converts positions once and rejects values below disp
             async () => (await import('/src/editor/elevation/state.ts')).elevationBeat.value,
         ),
     ).toBe(0)
-    await expect(page.getByRole('button', { name: 'Previous beat', exact: true })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Previous Beat', exact: true })).toBeDisabled()
     await beat.fill('0')
     await beat.press('Tab')
     await expect(beat).toHaveValue('1')

@@ -10,6 +10,7 @@ import { activateEditorNavigation, controlsForNavigation } from '../controls'
 import { computedVisibleEntities, isEntityInBeatRange } from '../entities/visibility'
 import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../entities/visible'
 import { isScenePreview, sceneState } from '../sceneState'
+import { scopeLookup } from '../scope'
 import { bgmOffsetDelta } from '../tools/offset'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
@@ -53,11 +54,8 @@ const artEntities = computedVisibleEntities(
 )
 const orderedEntities = computed(() =>
     orderEntities(artEntities.value, selectedEntitySet.value, {
-        groupId: view.groupId,
-        stageId: view.stageId,
+        scope: scopeLookup.value,
         visibilities: view.visibilities,
-        showOtherGroups: settings.showOtherGroups,
-        showOtherStages: settings.showOtherStages,
         showOtherObjects: settings.showOtherObjects,
     }),
 )
@@ -123,8 +121,9 @@ watchEffect(
         const entities = orderedEntities.value
         const hovered = inputs.recentlyActive ? undefined : hoveredSet.value
         const visibilities = view.visibilities
-        const stageId = view.stageId
-        const showOtherStages = settings.showOtherStages
+        // Captured here: the frame callback runs untracked.
+        const scope = scopeLookup.value
+        const showOtherObjects = settings.showOtherObjects
         const currentBeats = beats.value
         const currentTimes = times.value
         const division = view.division
@@ -154,7 +153,7 @@ watchEffect(
             ctx.lineTo(7, cursor * inputs.ups)
             ctx.stroke()
             ctx.restore()
-            drawEventInfinities(context, visibilities, stageId, showOtherStages)
+            drawEventInfinities(context, visibilities, scope, showOtherObjects)
             for (const { entity, highlighted, opacity } of entities) {
                 drawEntity(context, entity, highlighted || !!hovered?.has(entity), opacity)
             }

@@ -8,7 +8,7 @@ defineProps<{
     <section>
         <h2 class="mb-2 font-bold">{{ title }}</h2>
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-3">
             <slot />
         </div>
     </section>

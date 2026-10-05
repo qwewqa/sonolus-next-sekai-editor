@@ -14,6 +14,7 @@ import { requestAudioPreview } from './audioPreview'
 import type { Modifiers } from './controls/gestures/pointer'
 import { integrateScrollInertia } from './inertia'
 import { editorNavigation, getControlBounds } from './navigation'
+import type { ScopeOverride } from './scope'
 
 export type Selection = {
     laneMin: number
@@ -44,6 +45,9 @@ export const view = shallowReactive({
 
     groupId: optional<GroupId>(),
     stageId: optional<StageId>(),
+    // Explicit editor-only visibility overrides; see scope.ts.
+    groupVisibility: new Map() as ReadonlyMap<GroupId, ScopeOverride>,
+    stageVisibility: new Map() as ReadonlyMap<StageId, ScopeOverride>,
 
     visibilities: {
         bpm: true,

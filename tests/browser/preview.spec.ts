@@ -31,6 +31,8 @@ const settle = (page: Page) =>
 
 test.beforeEach(async ({ page }, testInfo) => {
     const transport = testInfo.titlePath.includes('preview transport')
+    // Touch never opens the settings on its own in the default dock.
+    const touch = testInfo.titlePath.some((title) => title.startsWith('on touch'))
     if (transport) await page.clock.install({ time: new Date('2030-01-01T00:00:00Z') })
     await page.route('**/resource/skin.scp*', (route) => route.fulfill({ body: resource('skins') }))
     await page.route('**/resource/particle.scp*', (route) =>
@@ -98,15 +100,17 @@ test.beforeEach(async ({ page }, testInfo) => {
     await page.evaluate((transport) => {
         if (transport) {
             window.editorTest.settings.previewPosition = 'top'
-            window.editorTest.settings.previewHeight = 200
+            window.editorTest.settings.topDockHeight = 200
         }
         window.editorTest.settings.showPreview = true
     }, transport)
     const preview = page.locator('.preview')
-    if (transport)
-        await preview.getByRole('button', { name: 'Show preview settings', exact: true }).click()
-    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
-    await expect(preview.locator('input[type="number"]').first()).toHaveValue('10')
+    if (transport || touch)
+        await preview.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
+    await expect(page.locator('.preview-controls input[type="number"]').first()).toHaveValue('10')
     await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(2)
     await settle(page)
     if (transport) await page.clock.pauseAt(new Date('2030-01-01T00:01:00Z'))
@@ -137,13 +141,23 @@ test('unavailable WebGL reports a graphics error and reload can recover', async 
     const preview = page.locator('.preview')
     await expect(preview.getByText('Preview graphics could not be started.')).toBeVisible()
     await expect(preview.getByText('The preview skin could not be loaded.')).toHaveCount(0)
-    await preview.getByText('Error details').click()
+    await preview.getByText('Error Details').click()
     await expect(
         preview.getByText('WebGL is unavailable or disabled in this browser'),
     ).toBeVisible()
     await page.evaluate(() => window.previewTest.restore!())
+    // A graphics failure retries only the canvas; the decoded skin is reused.
+    const requests: string[] = []
+    page.on('request', (request) => {
+        if (/\/resource\/(skin|particle)\.scp/.test(request.url())) requests.push(request.url())
+    })
     await preview.getByRole('button', { name: 'Reload', exact: true }).click()
-    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
+    await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(4)
+    expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+    expect(requests).toEqual([])
 })
 
 test('preview falls back when antialiasing prevents graphics initialization', async ({ page }) => {
@@ -165,7 +179,9 @@ test('preview falls back when antialiasing prevents graphics initialization', as
         } as typeof original
         window.editorTest.settings.showPreview = true
     })
-    await expect(page.locator('.preview').getByText('Note Speed', { exact: true })).toBeVisible()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
     expect(await page.evaluate(() => window.previewTest.contextRequests)).toEqual([true, false])
     expect(await page.evaluate(() => window.editorTest.settings.previewAntialias)).toBe(true)
 })
@@ -187,11 +203,13 @@ test('texture upload failures stay recoverable without uncaught errors', async (
     })
     const preview = page.locator('.preview')
     await expect(preview.getByText('Preview graphics could not be started.')).toBeVisible()
-    await preview.getByText('Error details').click()
+    await preview.getByText('Error Details').click()
     await expect(preview.getByText('Texture upload failed', { exact: true })).toBeVisible()
     await page.evaluate(() => window.previewTest.restore!())
     await preview.getByRole('button', { name: 'Reload', exact: true }).click()
-    await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
 })
 
 for (const failure of [
@@ -201,17 +219,17 @@ for (const failure of [
     test(`skin failure reports ${failure.detail} and retries a versioned resource`, async ({
         page,
     }) => {
-        await page.evaluate(async () => {
-            window.editorTest.settings.showPreview = false
-            await window.editorTest.nextTick()
-        })
+        // Decoded skins are cached for the page, so start a fresh page whose
+        // first download fails.
         await page.route('**/resource/skin.scp*', (route) => route.fulfill(failure))
+        await page.reload()
+        await page.evaluate(installEditorFixture)
         await page.evaluate(() => {
             window.editorTest.settings.showPreview = true
         })
         const preview = page.locator('.preview')
         await expect(preview.getByText('The preview skin could not be loaded.')).toBeVisible()
-        await preview.getByText('Error details').click()
+        await preview.getByText('Error Details').click()
         await expect(preview.getByText(failure.detail)).toBeVisible()
         await page.route('**/resource/skin.scp*', (route) =>
             route.fulfill({ body: resource('skins') }),
@@ -221,7 +239,9 @@ for (const failure of [
         )
         await preview.getByRole('button', { name: 'Reload', exact: true }).click()
         expect(new URL((await request).url()).searchParams.get('v')).toBeTruthy()
-        await expect(preview.getByText('Note Speed', { exact: true })).toBeVisible()
+        await expect(
+            page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+        ).toBeVisible()
     })
 }
 
@@ -298,10 +318,17 @@ test.describe('preview transport', () => {
     }
 
     test.beforeEach(async ({ page }) => {
-        await page.getByRole('button', { name: 'Minimize preview settings', exact: true }).tap()
-        await page.getByRole('button', { name: 'Show playback controls', exact: true }).tap()
+        await page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }).tap()
+        // A 170 px top panel would lose over 30% of the image to a docked strip,
+        // so the strip shows over it on demand.
+        await page.evaluate(() => (window.editorTest.settings.topDockHeight = 170))
+        await page.setViewportSize({ width: 540, height: 1000 })
+        await page.clock.runFor(32)
+        // A strip shown while it had a place of its own stays up; otherwise show it.
+        const show = page.getByRole('button', { name: 'Show Playback Controls', exact: true })
+        if (await show.count()) await show.tap()
         await expect(
-            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+            page.getByRole('group', { name: 'Preview Playback Controls', exact: true }),
         ).toBeVisible()
         await page.evaluate(() => {
             window.editorTest.settings.playFollow = false
@@ -336,12 +363,12 @@ test.describe('preview transport', () => {
         await page.clock.runFor(32)
         const paused = await page.evaluate(() => window.previewTest.vertices)
         expect(paused.length).toBeGreaterThan(0)
-        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
-        await expect(page.getByRole('button', { name: 'Pause preview', exact: true })).toBeVisible()
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
+        await expect(page.getByRole('button', { name: 'Pause Preview', exact: true })).toBeVisible()
         await page.clock.runFor(32)
         expect(await cursor(page)).toBe(3)
         expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(paused)
-        await page.getByRole('button', { name: 'Pause preview', exact: true }).click()
+        await page.getByRole('button', { name: 'Pause Preview', exact: true }).click()
         await page.clock.runFor(32)
         expect(await page.evaluate(() => window.previewTest.vertices)).toEqual(paused)
     })
@@ -365,13 +392,13 @@ test.describe('preview transport', () => {
             await step.focus()
             await page.keyboard.down(key)
             await expect(
-                page.getByRole('button', { name: 'Play preview', exact: true }),
+                page.getByRole('button', { name: 'Play Preview', exact: true }),
             ).toBeVisible()
             await page.keyboard.down(key) // native repeat must not add another tap
             await page.keyboard.up(key)
             expect(await cursor(page)).toBe(before + 0.01)
             await expect(
-                page.getByRole('button', { name: 'Play preview', exact: true }),
+                page.getByRole('button', { name: 'Play Preview', exact: true }),
             ).toBeVisible()
         }
     })
@@ -431,9 +458,9 @@ test.describe('preview transport', () => {
         await wheel(page, { deltaY: 10000 })
         expect(await cursor(page)).toBe(0)
         await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .getByRole('button', { name: 'Hide Playback Controls', exact: true })
             .click({ position: { x: 12, y: 12 } })
-        await page.getByRole('button', { name: 'Show preview settings', exact: true }).click()
+        await page.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
         expect(await wheel(page, { deltaY: 100 }, '.preview-controls-body')).toEqual({
             prevented: false,
             bubbled: true,
@@ -445,13 +472,13 @@ test.describe('preview transport', () => {
         page,
     }) => {
         await installAudio(page)
-        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
         await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .getByRole('button', { name: 'Hide Playback Controls', exact: true })
             .click({ position: { x: 12, y: 12 } })
         await page.clock.runFor(3500)
         await expect(
-            page.getByRole('button', { name: 'Show playback controls', exact: true }),
+            page.getByRole('button', { name: 'Show Playback Controls', exact: true }),
         ).toBeVisible()
         const before = await cursor(page)
         for (let i = 0; i < 3; i++) {
@@ -467,8 +494,8 @@ test.describe('preview transport', () => {
         expect(await auditions(page)).toEqual([stopped])
         await page.clock.runFor(500)
         expect(await cursor(page)).toBe(stopped)
-        await page.getByRole('button', { name: 'Show playback controls', exact: true }).click()
-        await expect(page.getByRole('button', { name: 'Play preview', exact: true })).toBeVisible()
+        await page.getByRole('button', { name: 'Show Playback Controls', exact: true }).click()
+        await expect(page.getByRole('button', { name: 'Play Preview', exact: true })).toBeVisible()
     })
 
     test('an editor note click supersedes pending wheel audio', async ({ page }) => {
@@ -490,7 +517,7 @@ test.describe('preview transport', () => {
             const stopped = await cursor(page)
             if (reason === 'hide') {
                 await page
-                    .getByRole('button', { name: 'Hide playback controls', exact: true })
+                    .getByRole('button', { name: 'Hide Playback Controls', exact: true })
                     .click({ position: { x: 12, y: 12 } })
             } else if (reason === 'blur') {
                 await page.evaluate(() => {
@@ -625,7 +652,7 @@ test.describe('preview transport', () => {
         await page.keyboard.up('Space')
         await page.clock.runFor(1000)
         expect(await cursor(page)).toBe(stopped)
-        await expect(page.getByRole('button', { name: 'Play preview', exact: true })).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Play Preview', exact: true })).toBeVisible()
     })
 
     test('a pointer step takes over a keyboard hold without losing the press', async ({ page }) => {
@@ -691,7 +718,7 @@ test.describe('preview transport', () => {
             window.editorTest.view.time = 20
             window.editorTest.settings.playStartPosition = 'view'
         })
-        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
         // The UI uses a simulated animation clock; playback follows native audio
         // time. Drive frames while waiting for real playback to advance.
         await expect
@@ -700,136 +727,143 @@ test.describe('preview transport', () => {
                 return cursor(page)
             })
             .toBeGreaterThan(3.3)
-        await page.getByRole('button', { name: 'Pause preview', exact: true }).click()
+        await page.getByRole('button', { name: 'Pause Preview', exact: true }).click()
         const paused = await cursor(page)
         await page.clock.runFor(500)
         expect(await cursor(page)).toBe(paused)
 
-        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
         // These waits check elapsed-time visibility, not intermediate animation
         // frames. Skip frame-by-frame GPU work so slower CI runners stay bounded.
         await page.clock.fastForward(3500)
         await expect(
-            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+            page.getByRole('group', { name: 'Preview Playback Controls', exact: true }),
         ).toBeVisible()
-        const pause = page.getByRole('button', { name: 'Pause preview', exact: true })
+        const pause = page.getByRole('button', { name: 'Pause Preview', exact: true })
         await pause.focus()
         await page.clock.fastForward(3500)
         await expect(pause).toBeFocused()
         await pause.press('Escape')
         await expect(
-            page.getByRole('button', { name: 'Show playback controls', exact: true }),
+            page.getByRole('button', { name: 'Show Playback Controls', exact: true }),
         ).toBeFocused()
         await expect(page.locator('.preview-transport')).toBeHidden()
         await expect(page.locator('.preview-transport')).toHaveAttribute('inert', '')
         await expect(page.locator('.preview-transport')).toHaveAttribute('aria-hidden', 'true')
-        const hiddenTime = await page.locator('.transport-time').textContent()
+        // The corner clock keeps time while the strip is hidden.
+        const corner = page.locator('.transport-corner-time')
+        const hiddenTime = await corner.textContent()
         await page.clock.fastForward(3500)
-        expect(await page.locator('.transport-time').textContent()).toBe(hiddenTime)
-        await page.getByRole('button', { name: 'Show playback controls', exact: true }).click()
+        await expect
+            .poll(async () => {
+                await page.clock.runFor(32)
+                return corner.textContent()
+            })
+            .not.toBe(hiddenTime)
+        await page.getByRole('button', { name: 'Show Playback Controls', exact: true }).click()
         await page.clock.fastForward(3500)
         await expect(
-            page.getByRole('group', { name: 'Preview playback controls', exact: true }),
+            page.getByRole('group', { name: 'Preview Playback Controls', exact: true }),
         ).toBeVisible()
     })
 
-    test('compact timestamp advances during playback with the bar hidden and across resize', async ({
+    test('the time shows in the strip when it has room and in the corner otherwise', async ({
         page,
     }) => {
-        await page.setViewportSize({ width: 390, height: 844 })
-        await page.clock.runFor(32)
         const corner = page.locator('.transport-corner-time')
-        const barTime = page.locator('.transport-time')
-        await expect(corner).toBeVisible()
-        await page.getByRole('button', { name: 'Play preview', exact: true }).click()
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
-        await expect(page.locator('.preview-transport')).toBeHidden()
+        const stripTime = page.locator('.transport-time')
+        const advances = async (clock: typeof corner) => {
+            const first = await clock.textContent()
+            await expect
+                .poll(async () => {
+                    await page.clock.runFor(32)
+                    return clock.textContent()
+                })
+                .not.toBe(first)
+        }
+        // Over the image, the strip may hide, so the time stays in the corner.
+        await expect(stripTime).toHaveCount(0)
         await expect(corner).toBeVisible()
         await expect(corner).toHaveText(/^\d{2}:\d{2}\.\d{3}$/)
-        const first = await corner.textContent()
-        const hiddenTime = await barTime.textContent()
-        await expect
-            .poll(async () => {
-                await page.clock.runFor(32)
-                return corner.textContent()
-            })
-            .not.toBe(first)
-        expect(await barTime.textContent()).toBe(hiddenTime)
-
-        await page.setViewportSize({ width: 800, height: 844 })
-        await page.clock.runFor(32)
-        await expect(corner).toBeHidden()
-        await expect
-            .poll(async () => {
-                await page.clock.runFor(32)
-                return corner.textContent()
-            })
-            .toBe('')
-        const hiddenCorner = await corner.textContent()
-        const before = await cursor(page)
-        await expect
-            .poll(async () => {
-                await page.clock.runFor(32)
-                return cursor(page)
-            })
-            .toBeGreaterThan(before + 0.1)
-        expect(await corner.textContent()).toBe(hiddenCorner)
-        expect(await barTime.textContent()).toBe(hiddenTime)
-
-        await page.setViewportSize({ width: 390, height: 844 })
-        await page.clock.runFor(32)
-        await expect(corner).toBeVisible()
-        await expect(corner).not.toHaveText(first ?? '')
-        await expect(corner).not.toHaveText('')
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
+        await page
+            .getByRole('button', { name: 'Hide Playback Controls', exact: true })
+            .click({ position: { x: 12, y: 12 } })
         await expect(page.locator('.preview-transport')).toBeHidden()
+        await advances(corner)
+
+        // With a strip of its own and room beside its steppers, the strip holds
+        // the time and nothing covers the image, also during playback.
+        await page.setViewportSize({ width: 900, height: 1000 })
+        await page.evaluate(() => (window.editorTest.settings.topDockHeight = 500))
+        await page.clock.runFor(32)
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await expect(stripTime).toBeVisible()
+        await expect(corner).toHaveCount(0)
+        await advances(stripTime)
+        const order = await page.evaluate(() =>
+            [...document.querySelector('.preview-transport')!.children].map((element) =>
+                element.classList.contains('transport-time')
+                    ? 'time'
+                    : element.classList.contains('transport-play')
+                      ? 'play'
+                      : 'steps',
+            ),
+        )
+        expect(order).toEqual(['play', 'time', 'steps'])
+
+        // Show Time controls both clocks.
+        await page.evaluate(() => (window.editorTest.settings.previewShowTime = false))
+        await page.clock.runFor(32)
+        await expect(stripTime).toHaveCount(0)
+        await expect(corner).toHaveCount(0)
     })
 
-    test('wrapping a hidden bar does not dock with its previous height', async ({ page }) => {
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
-        await page.setViewportSize({ width: 390, height: 1000 })
-        await page.evaluate(() => (window.editorTest.settings.previewHeight = 240))
-        await page.clock.runFor(32)
+    test('a narrow strip switches to the compact stepper instead of wrapping', async ({ page }) => {
         const panel = page.locator('.preview-transport')
-        await expect(panel).toBeHidden()
+        const stepSize = page.getByRole('button', { name: /^Step Size: \d+ ms$/i })
+        for (const width of [240, 330, 540]) {
+            await page.setViewportSize({ width, height: 1000 })
+            await page.clock.runFor(32)
+            await expect.poll(() => panel.evaluate((element) => element.clientHeight)).toBe(52)
+        }
+        // At 540 px the six steppers fit on touch, with the time in the corner.
+        await expect(page.getByRole('button', { name: 'Back 100 ms', exact: true })).toBeVisible()
+        await expect(stepSize).toHaveCount(0)
 
-        // The narrow image leaves 82.5 px spare. A stale 44 px bar would appear
-        // to fit, but the wrapped 82 px bar needs 90 px including its margins.
-        await page.setViewportSize({ width: 280, height: 1000 })
+        await page.setViewportSize({ width: 300, height: 1000 })
         await page.clock.runFor(32)
-        await expect.poll(() => panel.evaluate((element) => element.clientHeight)).toBe(82)
-        await expect(panel).toBeHidden()
-        await expect(
-            page.getByRole('button', { name: 'Show playback controls', exact: true }),
-        ).toBeVisible()
-
-        await page.evaluate(() => (window.editorTest.settings.previewHeight = 300))
-        await page.clock.runFor(32)
-        await expect(panel).toBeVisible()
-        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
-        await page.setViewportSize({ width: 390, height: 1000 })
-        await page.clock.runFor(32)
-        await expect.poll(() => panel.evaluate((element) => element.clientHeight)).toBe(44)
-        await expect(panel).toBeVisible()
-        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await expect(page.getByRole('button', { name: 'Back 100 ms', exact: true })).toHaveCount(0)
+        await expect(stepSize).toHaveAccessibleName(/10 ms/)
+        const before = await cursor(page)
+        await page.getByRole('button', { name: 'Forward 10 ms', exact: true }).tap()
+        expect(await cursor(page)).toBeCloseTo(before + 0.01, 10)
+        // The step size cycles 10 → 100 → 1 → 10 and is remembered.
+        for (const [size, next] of [
+            [100, 'Forward 100 ms'],
+            [1, 'Forward 1 ms'],
+            [10, 'Forward 10 ms'],
+        ] as const) {
+            await stepSize.tap()
+            expect(await page.evaluate(() => window.editorTest.settings.previewStepSize)).toBe(size)
+            await expect(page.getByRole('button', { name: next, exact: true })).toBeVisible()
+        }
+        await expect(page.locator('.preview-transport :focus')).toHaveCount(0)
     })
 
     test('space below the viewport shows persistent controls without a tap', async ({ page }) => {
         await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
+            .getByRole('button', { name: 'Hide Playback Controls', exact: true })
             .click({ position: { x: 12, y: 12 } })
         await expect(page.locator('.preview-transport')).toBeHidden()
         await page.setViewportSize({ width: 600, height: 1000 })
-        await page.evaluate(() => (window.editorTest.settings.previewHeight = 500))
+        await page.evaluate(() => (window.editorTest.settings.topDockHeight = 500))
         await page.clock.runFor(32)
-        const panel = page.getByRole('group', { name: 'Preview playback controls', exact: true })
+        const panel = page.getByRole('group', { name: 'Preview Playback Controls', exact: true })
         await expect(panel).toBeVisible()
         await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
         await expect(
-            page.getByRole('button', { name: 'Show preview settings', exact: true }),
+            page.getByRole('button', { name: 'Show Preview Settings', exact: true }),
         ).toBeVisible()
         const geometry = await page.evaluate(() => {
             const viewport = document.querySelector('.preview-viewport')!.getBoundingClientRect()
@@ -839,7 +873,7 @@ test.describe('preview transport', () => {
         })
         expect(geometry.gap).toBeCloseTo(4, 1)
         expect(geometry.bottom).toBeGreaterThanOrEqual(3.9)
-        const play = page.getByRole('button', { name: 'Play preview', exact: true })
+        const play = page.getByRole('button', { name: 'Play Preview', exact: true })
         await play.focus()
         await play.press('Escape')
         await expect(play).not.toBeFocused()
@@ -851,14 +885,24 @@ test.describe('preview transport', () => {
         await page.clock.fastForward(10000)
         await expect(panel).toBeVisible()
 
-        // Losing docking space must not hide controls that were already visible.
-        await page.evaluate(() => (window.editorTest.settings.previewHeight = 200))
+        // A short wide panel shrinks the image a little and keeps the full strip
+        // below it, centered across the panel: never squeezed beside the image.
+        await page.evaluate(() => (window.editorTest.settings.topDockHeight = 230))
         await page.clock.runFor(32)
         await expect(panel).toBeVisible()
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
-        await expect(panel).toBeHidden()
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await expect(page.getByRole('button', { name: 'Back 100 ms', exact: true })).toBeVisible()
+        const below = await page.evaluate(() => {
+            const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+            const strip = document.querySelector('.preview-transport')!.getBoundingClientRect()
+            const preview = document.querySelector('.preview')!.getBoundingClientRect()
+            return {
+                gap: strip.top - image.bottom,
+                center: strip.left + strip.width / 2 - (preview.left + preview.width / 2),
+            }
+        })
+        expect(below.gap).toBeCloseTo(4, 1)
+        expect(below.center).toBeCloseTo(0, 0)
     })
 })
 
@@ -869,7 +913,7 @@ test('paused compact timestamp follows the image through letterboxing and resize
     await page.evaluate(() => {
         const { settings } = window.editorTest
         settings.previewPosition = 'left'
-        settings.previewWidth = 200
+        settings.leftDockWidth = 220
         settings.previewControls = 'expanded'
     })
     await settle(page)
@@ -877,6 +921,7 @@ test('paused compact timestamp follows the image through letterboxing and resize
 
     const geometry = () =>
         page.evaluate(() => {
+            const container = document.querySelector('.preview')!.getBoundingClientRect()
             const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
             const time = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
             const front = document.elementFromPoint(
@@ -884,76 +929,106 @@ test('paused compact timestamp follows the image through letterboxing and resize
                 time.y + time.height / 2,
             )
             return {
-                imageTop: image.top,
-                imageLeft: image.left,
+                imageTop: image.top - container.top,
+                imageLeft: image.left - container.left,
                 x: time.left - image.left,
                 y: time.top - image.top,
-                coveredBySettings: !!front?.closest('.preview-controls'),
+                covered: !!front?.closest('.preview-controls, .preview-settings-toggle'),
             }
         })
+    // A tall side panel keeps the image at its top, with the bar right below.
     await expect(page.locator('.transport-corner-time')).toBeVisible()
-    const letterboxed = await geometry()
-    expect(letterboxed.imageTop).toBeGreaterThan(200)
-    expect(letterboxed.x).toBeCloseTo(4, 1)
-    expect(letterboxed.y).toBeCloseTo(4, 1)
-    expect(letterboxed.coveredBySettings).toBe(false)
+    const side = await geometry()
+    expect(side.imageTop).toBe(0)
+    expect(side.x).toBeCloseTo(4, 1)
+    // The 20 px chip is centered on the 36 px settings toggle beside it.
+    expect(side.y).toBeCloseTo(12, 1)
+    expect(side.covered).toBe(false)
 
+    // A short top panel letterboxes the image horizontally; its full-width
+    // strip then has room for the time, so no chip covers the image.
     await page.setViewportSize({ width: 390, height: 844 })
     await page.evaluate(() => {
         const { settings } = window.editorTest
         settings.previewPosition = 'top'
-        settings.previewHeight = 200
+        settings.topDockHeight = 200
     })
     await settle(page)
-    const resized = await geometry()
-    expect(resized.imageLeft).toBeGreaterThan(10)
-    expect(resized.x).toBeCloseTo(4, 1)
-    expect(resized.y).toBeCloseTo(4, 1)
+    await expect(page.locator('.transport-corner-time')).toHaveCount(0)
+    await expect(page.locator('.transport-time')).toBeVisible()
+    const letterbox = await page.evaluate(() => {
+        const container = document.querySelector('.preview')!.getBoundingClientRect()
+        const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+        return image.left - container.left
+    })
+    expect(letterbox).toBeGreaterThan(10)
 })
 
-test('expanded preview settings leave docked playback buttons reachable', async ({ page }) => {
+const overlapArea = (
+    a: { left: number; top: number; right: number; bottom: number },
+    b: { left: number; top: number; right: number; bottom: number },
+) =>
+    Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+    Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top))
+
+const readPreviewChrome = (page: Page) =>
+    page.evaluate(() => {
+        const box = (selector: string) => {
+            const element = document.querySelector(selector)
+            if (!element) return
+            const { left, top, right, bottom } = element.getBoundingClientRect()
+            return { left, top, right, bottom }
+        }
+        const reachable = (element: Element | null) => {
+            if (!element) return false
+            const rect = element.getBoundingClientRect()
+            const front = document.elementFromPoint(
+                rect.x + rect.width / 2,
+                rect.y + rect.height / 2,
+            )
+            return element === front || element.contains(front)
+        }
+        const body = document.querySelector('.preview-controls-body')!
+        return {
+            preview: box('.preview')!,
+            image: box('.preview-viewport')!,
+            bar: box('.preview-transport'),
+            settings: box('.preview-controls')!,
+            clock: box('.transport-corner-time'),
+            viewport: { width: innerWidth, height: innerHeight },
+            headerReachable: reachable(document.querySelector('.preview-controls button')),
+            scrolls: body.scrollHeight > body.clientHeight,
+            transportReachable: [...document.querySelectorAll('.preview-transport button')].map(
+                reachable,
+            ),
+        }
+    })
+
+test('expanded preview settings leave docked playback buttons and the clock reachable', async ({
+    page,
+}) => {
     await page.getByRole('radio', { name: '21:9', exact: true }).check()
     await page.setViewportSize({ width: 700, height: 200 })
     await page.evaluate(() => {
         const { settings } = window.editorTest
         settings.previewPosition = 'left'
-        settings.previewWidth = 250
+        settings.leftDockWidth = 250
         settings.previewControls = 'expanded'
     })
     await settle(page)
     await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
     await expect(page.locator('.preview-controls')).toBeVisible()
-    const geometry = await page.evaluate(() => {
-        const bar = document.querySelector('.preview-transport')!.getBoundingClientRect()
-        const settings = document.querySelector('.preview-controls')!.getBoundingClientRect()
-        const clock = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
-        const header = document.querySelector('.preview-controls button')!
-        const headerBox = header.getBoundingClientRect()
-        const headerFront = document.elementFromPoint(
-            headerBox.x + headerBox.width / 2,
-            headerBox.y + headerBox.height / 2,
-        )
-        const body = document.querySelector('.preview-controls-body')!
-        return {
-            gap: bar.top - settings.bottom,
-            clockGap: settings.top - clock.bottom,
-            headerReachable: header === headerFront || header.contains(headerFront),
-            scrolls: body.scrollHeight > body.clientHeight,
-            hit: [...document.querySelectorAll('.preview-transport button')].map((button) => {
-                const rect = button.getBoundingClientRect()
-                const front = document.elementFromPoint(
-                    rect.x + rect.width / 2,
-                    rect.y + rect.height / 2,
-                )
-                return front === button || button.contains(front)
-            }),
-        }
-    })
-    expect(geometry.gap).toBeCloseTo(4, 1)
-    expect(geometry.clockGap).toBeCloseTo(4, 1)
+    const geometry = await readPreviewChrome(page)
+    // The short panel opens its settings beside the dock, within the screen.
+    expect(geometry.settings.left).toBeGreaterThanOrEqual(geometry.preview.right)
+    expect(geometry.settings.right).toBeLessThanOrEqual(geometry.viewport.width)
+    expect(geometry.settings.bottom).toBeLessThanOrEqual(geometry.viewport.height)
+    expect(overlapArea(geometry.settings, geometry.bar!)).toBe(0)
+    expect(overlapArea(geometry.settings, geometry.clock!)).toBe(0)
     expect(geometry.headerReachable).toBe(true)
     expect(geometry.scrolls).toBe(true)
-    expect(geometry.hit).toEqual(Array(7).fill(true))
+    expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
+    expect(geometry.transportReachable.every(Boolean)).toBe(true)
 
     // The settings body scrolls instead of making its lower controls unreachable.
     const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
@@ -962,64 +1037,62 @@ test('expanded preview settings leave docked playback buttons reachable', async 
     await expect(page.locator('.preview-transport')).toBeVisible()
 })
 
-test('a tiny left preview opens settings beside the bar without hiding its clock', async ({
-    page,
-}) => {
-    await page.getByRole('radio', { name: '21:9', exact: true }).check()
-    await page.setViewportSize({ width: 350, height: 120 })
-    await page.evaluate(() => {
-        const { settings } = window.editorTest
-        settings.previewPosition = 'left'
-        settings.previewWidth = 70
-        settings.previewControls = 'expanded'
-    })
-    await settle(page)
-    await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const bar = document.querySelector('.preview-transport')!.getBoundingClientRect()
-                const settings = document
-                    .querySelector('.preview-controls')!
-                    .getBoundingClientRect()
-                return settings.left - bar.right
-            }),
+for (const side of ['left', 'right'] as const) {
+    test(`a short ${side} preview opens settings beside the dock without hiding its controls`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 568, height: 320 })
+        await page.evaluate((side) => {
+            const { settings } = window.editorTest
+            settings.previewPosition = side
+            settings.leftDockWidth = 220
+            settings.rightDockWidth = 220
+            settings.previewControls = 'collapsed'
+        }, side)
+        await settle(page)
+        // The toggle mirrors the clock in the image's top-right corner.
+        const toggle = page.getByRole('button', { name: 'Show Preview Settings', exact: true })
+        const before = await readPreviewChrome(page)
+        const toggleBox = (await toggle.boundingBox())!
+        expect(toggleBox.width).toBe(36)
+        expect(toggleBox.x + toggleBox.width).toBeCloseTo(before.image.right - 4, 1)
+        expect(toggleBox.y).toBeCloseTo(before.image.top + 4, 1)
+        // The clock chip shares the toggle's center line in the opposite corner.
+        expect((before.clock!.top + before.clock!.bottom) / 2).toBeCloseTo(
+            toggleBox.y + toggleBox.height / 2,
+            1,
         )
-        .toBeCloseTo(4, 1)
-    const geometry = await page.evaluate(() => {
-        const settings = document.querySelector('.preview-controls')!.getBoundingClientRect()
-        const clock = document.querySelector('.transport-corner-time')!.getBoundingClientRect()
-        return {
-            right: settings.right,
-            bottom: settings.bottom,
-            clockClear: clock.right < settings.left,
-            hit: [
-                ...document.querySelectorAll('.preview-transport button'),
-                document.querySelector('.preview-controls button')!,
-                document.querySelector('.preview-panel-toggle')!,
-            ].map((button) => {
-                const box = button.getBoundingClientRect()
-                const front = document.elementFromPoint(
-                    box.x + box.width / 2,
-                    box.y + box.height / 2,
-                )
-                return button === front || button.contains(front)
-            }),
-        }
-    })
-    expect(geometry.right).toBeLessThanOrEqual(346)
-    expect(geometry.bottom).toBeLessThanOrEqual(116)
-    expect(geometry.clockClear).toBe(true)
-    expect(geometry.hit).toEqual(Array(9).fill(true))
-    const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
-    await antialias.uncheck()
-    await expect(antialias).not.toBeChecked()
-    await page.locator('.preview-panel-toggle').click()
-    await expect(page.locator('.preview')).toHaveCount(0)
-    await page.locator('.preview-panel-toggle').click()
-    await expect(page.locator('.preview')).toBeVisible()
-})
+        await toggle.click()
+        await expect(toggle).toBeHidden()
+        await expect
+            .poll(async () => {
+                const { settings, preview } = await readPreviewChrome(page)
+                return side === 'left'
+                    ? settings.left - preview.right
+                    : preview.left - settings.right
+            })
+            .toBeCloseTo(4, 1)
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.settings.left).toBeGreaterThanOrEqual(4)
+        expect(geometry.settings.right).toBeLessThanOrEqual(geometry.viewport.width - 4)
+        expect(geometry.settings.bottom).toBeLessThanOrEqual(geometry.viewport.height - 4)
+        expect(overlapArea(geometry.settings, geometry.preview)).toBe(0)
+        expect(geometry.headerReachable).toBe(true)
+        expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
+        expect(geometry.transportReachable.every(Boolean)).toBe(true)
+        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        await antialias.uncheck()
+        await expect(antialias).not.toBeChecked()
+        // A pointer change returns focus, so editor shortcuts keep working.
+        await expect(page.locator('.preview-controls :focus')).toHaveCount(0)
 
-test('preview restores lost contexts, uploads each atlas once and releases decoded resources', async ({
+        await page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }).click()
+        await expect(toggle).toBeVisible()
+        await expect(page.locator('.preview-controls')).toBeHidden()
+    })
+}
+
+test('preview restores lost contexts and reuses decoded atlases for every new context', async ({
     page,
 }) => {
     const preview = page.locator('.preview')
@@ -1055,12 +1128,28 @@ test('preview restores lost contexts, uploads each atlas once and releases decod
         .toBeGreaterThan(initialFrames)
     expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
 
-    await preview.getByText('Antialias', { exact: true }).click()
+    await page.getByRole('checkbox', { name: 'Antialias', exact: true }).uncheck()
     await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(6)
-    expect(await page.evaluate(() => window.previewTest.closes)).toBe(0)
+
+    // Closing keeps the decoded atlases for the next preview; reopening only
+    // uploads them into its new context.
+    const requests: string[] = []
+    page.on('request', (request) => {
+        if (/\/resource\/(skin|particle)\.scp/.test(request.url())) requests.push(request.url())
+    })
     await page.evaluate(() => (window.editorTest.settings.showPreview = false))
     await expect(preview).toHaveCount(0)
-    expect(await page.evaluate(() => window.previewTest.closes)).toBe(2)
+    await page.evaluate(() => (window.editorTest.settings.showPreview = true))
+    await expect(preview).toBeVisible()
+    await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(8)
+    await settle(page)
+    expect(
+        await page.evaluate(() => ({
+            bitmaps: window.previewTest.bitmaps,
+            closes: window.previewTest.closes,
+        })),
+    ).toEqual({ bitmaps: 2, closes: 0 })
+    expect(requests).toEqual([])
 })
 
 test('dragging and property input update actual preview geometry before committing', async ({
@@ -1121,7 +1210,7 @@ test('unfocused preview defers geometry, compilation and renderer creation until
         window.dispatchEvent(new Event('blur'))
         return { frames: window.previewTest.frames, uploads: window.previewTest.uploads }
     })
-    await page.locator('.preview').getByText('Antialias', { exact: true }).click()
+    await page.locator('.preview-controls').getByText('Antialias', { exact: true }).click()
     for (let i = 0; i < 3; i++) {
         await page.evaluate(async () => {
             const { setPreviewEdit } = await import('/src/preview/edit.ts')
@@ -1329,11 +1418,14 @@ test.describe('preview background camera', () => {
 test.describe('preview aspect ratios', () => {
     test.use({ deviceScaleFactor: 1.25 })
 
-    const expectViewport = async (page: Page, ratio: number) => {
+    // Side panels keep the image at their top; top panels center it. Either way
+    // the bar docks below the image when that shrinks it by at most a fifth.
+    const expectViewport = async (page: Page, ratio: number, anchor: 'start' | 'center') => {
         const dimensions = await page.evaluate(() => {
             const container = document.querySelector<HTMLElement>('.preview')!
             const viewport = document.querySelector<HTMLElement>('.preview-viewport')!
             const canvas = viewport.querySelector('canvas')!
+            const bar = document.querySelector<HTMLElement>('.preview-transport')!
             const box = (element: HTMLElement) => {
                 const { x, y, width, height } = element.getBoundingClientRect()
                 return { x, y, width, height }
@@ -1342,6 +1434,8 @@ test.describe('preview aspect ratios', () => {
                 container: box(container),
                 viewport: box(viewport),
                 canvas: box(canvas),
+                barHeight: bar.getBoundingClientRect().height,
+                docked: !document.querySelector('.preview-transport-toggle'),
                 styleWidth: Number.parseFloat(viewport.style.width),
                 styleHeight: Number.parseFloat(viewport.style.height),
                 backingWidth: canvas.width,
@@ -1350,10 +1444,15 @@ test.describe('preview aspect ratios', () => {
                 pixelRatio: devicePixelRatio,
             }
         })
-        const expectedWidth = Math.min(
-            dimensions.container.width,
-            dimensions.container.height * ratio,
-        )
+        const { container } = dimensions
+        const reserve = dimensions.barHeight + 8
+        const full = Math.min(container.width, container.height * ratio)
+        const dockedWidth = Math.min(container.width, (container.height - reserve) * ratio)
+        // Below the image when that keeps 70% of its size; otherwise full size,
+        // with the strip shown over it on demand. It is never beside the image.
+        const below = dockedWidth >= full * 0.7
+        expect(dimensions.docked).toBe(below)
+        const expectedWidth = below ? dockedWidth : full
         // CSSOM serializes declarations with less precision than the JS layout.
         expect(Math.abs(dimensions.styleWidth - expectedWidth)).toBeLessThan(0.001)
         expect(dimensions.styleWidth / dimensions.styleHeight).toBeCloseTo(ratio, 4)
@@ -1365,25 +1464,25 @@ test.describe('preview aspect ratios', () => {
             Math.abs(
                 dimensions.viewport.x +
                     dimensions.viewport.width / 2 -
-                    (dimensions.container.x + dimensions.container.width / 2),
+                    (container.x + container.width / 2),
             ),
         ).toBeLessThan(0.03)
-        expect(
-            Math.abs(
-                dimensions.viewport.y +
-                    dimensions.viewport.height / 2 -
-                    (dimensions.container.y + dimensions.container.height / 2),
-            ),
-        ).toBeLessThan(0.03)
+        const expectedTop = !below
+            ? (container.height - expectedWidth / ratio) / 2
+            : anchor === 'start'
+              ? 0
+              : (container.height - expectedWidth / ratio - reserve) / 2
+        expect(Math.abs(dimensions.viewport.y - container.y - expectedTop)).toBeLessThan(0.03)
         expect(dimensions.aspect).toBeCloseTo(ratio, 10)
         expect(dimensions.pixelRatio).toBe(1.25)
         return dimensions
     }
 
-    test('presets fit and center the selected viewport through resize without idle drawing', async ({
+    test('presets fit the selected viewport through resize and placement without idle drawing', async ({
         page,
     }) => {
         const group = page.getByRole('radiogroup', { name: 'Aspect ratio' })
+        await page.evaluate(() => (window.editorTest.settings.previewControls = 'expanded'))
         await expect(group.getByRole('radio', { name: '16:9', exact: true })).toBeChecked()
         const uploads = await page.evaluate(() => window.previewTest.uploads)
         for (const size of [
@@ -1399,28 +1498,41 @@ test.describe('preview aspect ratios', () => {
                 await group.getByRole('radio', { name: label, exact: true }).check()
                 await settle(page)
                 await expect(group.locator('input:checked')).toHaveCount(1)
-                await expectViewport(page, ratio)
+                await expectViewport(page, ratio, 'start')
             }
         }
         // The top panel fits by height, unlike the width-limited left panel.
-        await page.evaluate(() => (window.editorTest.settings.previewPosition = 'top'))
-        await settle(page)
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
-        for (const [label, ratio] of [
-            ['16:9', 16 / 9],
-            ['21:9', 21 / 9],
-            ['4:3', 4 / 3],
-        ] as const) {
-            await group.getByRole('radio', { name: label, exact: true }).check()
+        for (const topDockHeight of [0, 160]) {
+            await page.evaluate((topDockHeight) => {
+                window.editorTest.settings.previewPosition = 'top'
+                window.editorTest.settings.previewControls = 'expanded'
+                window.editorTest.settings.topDockHeight = topDockHeight
+            }, topDockHeight)
             await settle(page)
-            await expectViewport(page, ratio)
+            // A bar shown while docked stays over a shorter image until dismissed;
+            // hide it so the image returns to its centered, full-height fit.
+            const hide = page.getByRole('button', { name: 'Hide Playback Controls', exact: true })
+            if (await hide.count()) {
+                await hide.click({ position: { x: 12, y: 12 } })
+                // That press outside a form open under the dock also closed it.
+                await page.evaluate(() => (window.editorTest.settings.previewControls = 'expanded'))
+            }
+            for (const [label, ratio] of [
+                ['16:9', 16 / 9],
+                ['21:9', 21 / 9],
+                ['4:3', 4 / 3],
+            ] as const) {
+                await group.getByRole('radio', { name: label, exact: true }).check()
+                await settle(page)
+                await expectViewport(page, ratio, 'center')
+            }
         }
         const frames = await page.evaluate(() => window.previewTest.frames)
         await page.waitForTimeout(150)
         expect(await page.evaluate(() => window.previewTest.frames)).toBe(frames)
-        expect(await page.evaluate(() => window.previewTest.uploads)).toBe(uploads)
+        expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+        // Moving the panel recreates its context but never re-decodes the atlases.
+        expect(await page.evaluate(() => window.previewTest.uploads)).toBe(uploads + 2)
     })
 
     test('arrow navigation retains radio focus without invoking editor shortcuts', async ({
@@ -1445,15 +1557,17 @@ test.describe('preview aspect ratios', () => {
         page,
     }) => {
         await page.setViewportSize({ width: 1069, height: 733 })
+        // An automatically opened form closes when the narrower panel sends it beside.
+        await page.evaluate(() => (window.editorTest.settings.previewControls = 'expanded'))
         await page.getByRole('radio', { name: '21:9', exact: true }).check()
         await settle(page)
-        const original = await expectViewport(page, 21 / 9)
+        const original = await expectViewport(page, 21 / 9, 'start')
         const vertices = await page.evaluate(() => window.previewTest.vertices)
-        const quality = page.locator('.preview input[type="number"]').nth(1)
+        const quality = page.locator('.preview-controls input[type="number"]').nth(1)
         await quality.fill('0.25')
         await quality.press('Tab')
         await settle(page)
-        const reduced = await expectViewport(page, 21 / 9)
+        const reduced = await expectViewport(page, 21 / 9, 'start')
         expect(reduced.backingWidth).toBe(Math.round(original.styleWidth * 1.25 * 0.25))
         expect(reduced.backingHeight).toBe(Math.round(original.styleHeight * 1.25 * 0.25))
         expect(reduced.backingWidth).toBeLessThan(original.backingWidth)
@@ -1525,36 +1639,43 @@ test.describe('preview aspect ratios', () => {
             window.dispatchEvent(new Event('focus'))
         })
         await settle(page)
-        await expectViewport(page, 4 / 3)
+        await expectViewport(page, 4 / 3, 'start')
         expect(await page.evaluate(() => window.previewTest.frames)).toBe(before.frames + 1)
         expect(await page.evaluate(() => window.previewTest.uploads)).toBe(before.uploads)
     })
 
-    test('wrapped settings labels use available screen height and still scroll in a short window', async ({
+    test('long settings labels use available screen height and still scroll in a short window', async ({
         page,
     }) => {
-        // Wider text reproduces platform font metrics that wrap the last aspect
-        // option onto another row. The panel must fit its content when it can.
+        // Wider text stands in for longer translations and platform font metrics.
         await page.addStyleTag({
-            content: '.preview-controls { font-family: monospace; font-size: 14px; }',
+            content: '.preview-controls { font-family: monospace; font-size: 16px; }',
         })
-        await page.getByRole('radio', { name: '21:9', exact: true }).check()
         await page.evaluate(() => {
             window.editorTest.settings.previewPosition = 'top'
-            window.editorTest.settings.previewHeight = 80
+            window.editorTest.settings.topDockHeight = 140
+            window.editorTest.settings.previewControls = 'expanded'
         })
-        await page.setViewportSize({ width: 1069, height: 400 })
+        await page.setViewportSize({ width: 1069, height: 900 })
         await settle(page)
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
         const controls = page.locator('.preview-controls')
         const body = controls.locator('.preview-controls-body')
         const antialias = controls.getByLabel('Antialias', { exact: true })
         const aspect = controls.getByRole('radiogroup', { name: 'Aspect Ratio', exact: true })
-        const first = await aspect.getByRole('radio', { name: '16:9', exact: true }).boundingBox()
-        const last = await aspect.getByRole('radio', { name: '4:3', exact: true }).boundingBox()
-        expect(last!.y).toBeGreaterThan(first!.y)
+        // Aspect Ratio stays one row, and the form extends below the short panel
+        // instead of scrolling while the screen has room.
+        const first = (await aspect
+            .getByRole('radio', { name: '16:9', exact: true })
+            .boundingBox())!
+        const last = (await aspect.getByRole('radio', { name: '4:3', exact: true }).boundingBox())!
+        expect(last.y).toBe(first.y)
+        expect(
+            await controls.evaluate(
+                (panel) =>
+                    panel.getBoundingClientRect().bottom >
+                    document.querySelector('.preview')!.getBoundingClientRect().bottom,
+            ),
+        ).toBe(true)
         await expect(antialias).toBeInViewport()
         await expect
             .poll(() => body.evaluate((element) => element.scrollHeight - element.clientHeight))
@@ -1562,19 +1683,27 @@ test.describe('preview aspect ratios', () => {
         await antialias.uncheck()
         await expect(antialias).not.toBeChecked()
 
-        await page.getByRole('button', { name: 'Minimize preview settings', exact: true }).click()
-        await page.getByRole('button', { name: 'Show preview settings', exact: true }).click()
+        await page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }).click()
+        await page.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
         await settle(page)
         await expect(antialias).toBeInViewport()
         await expect
             .poll(() => body.evaluate((element) => element.scrollHeight - element.clientHeight))
             .toBe(0)
 
+        // Even when the window itself is short, the header remains reachable
+        // and only the settings body scrolls.
         await page.setViewportSize({ width: 1069, height: 128 })
         await settle(page)
-        expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
-            true,
-        )
+        await expect
+            .poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight))
+            .toBe(true)
+        expect(
+            await controls.evaluate((panel) => panel.getBoundingClientRect().bottom),
+        ).toBeLessThanOrEqual(124)
+        await expect(
+            page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }),
+        ).toBeInViewport()
         await antialias.scrollIntoViewIfNeeded()
         await expect(antialias).toBeInViewport()
         await antialias.check()
@@ -1584,67 +1713,74 @@ test.describe('preview aspect ratios', () => {
         await expect(speed).toBeInViewport()
     })
 
-    test('controls stay within narrow panels and scroll into view in short top panels', async ({
+    test('settings fit wide panels, open beside narrow ones, and stay within small screens', async ({
         page,
     }) => {
-        await page.setViewportSize({ width: 1069, height: 733 })
-        await page.getByRole('radio', { name: '21:9', exact: true }).check()
-        await settle(page)
         const controls = page.locator('.preview-controls')
-        const antialias = controls.getByLabel('Antialias', { exact: true })
-        await expect(antialias).toBeInViewport()
-        expect(
-            await controls.evaluate((panel) => {
-                const container = panel.parentElement!.getBoundingClientRect()
+        const fits = () =>
+            controls.evaluate((panel) => {
                 const bounds = panel.getBoundingClientRect()
                 return (
-                    bounds.left >= container.left &&
-                    bounds.right <= container.right &&
-                    bounds.top >= container.top &&
-                    bounds.bottom <= container.bottom &&
+                    bounds.left >= 0 &&
+                    bounds.right <= innerWidth &&
+                    bounds.bottom <= innerHeight &&
                     panel.scrollWidth <= panel.clientWidth &&
-                    [...panel.querySelectorAll('input, span')].every((element) => {
+                    [...panel.querySelectorAll('input, select, span')].every((element) => {
                         const rect = element.getBoundingClientRect()
-                        return rect.left >= bounds.left && rect.right <= bounds.right
+                        return (
+                            rect.width === 0 ||
+                            (rect.left >= bounds.left - 0.5 && rect.right <= bounds.right + 0.5)
+                        )
                     })
                 )
-            }),
-        ).toBe(true)
+            })
+        const placement = () =>
+            page.evaluate(() => {
+                const preview = document.querySelector('.preview')!.getBoundingClientRect()
+                const panel = document.querySelector('.preview-controls')!.getBoundingClientRect()
+                return panel.left >= preview.left && panel.right <= preview.right
+                    ? 'inside'
+                    : panel.left >= preview.right
+                      ? 'beside'
+                      : 'overlapping'
+            })
 
+        // A 320 px left panel holds the whole form below its playback bar.
+        await page.evaluate(() => (window.editorTest.settings.leftDockWidth = 320))
+        await settle(page)
+        await expect.poll(placement).toBe('inside')
+        expect(await fits()).toBe(true)
+
+        // The default 260 px panel at this size is too narrow for the form.
+        await page.setViewportSize({ width: 1069, height: 733 })
+        await page.evaluate(() => (window.editorTest.settings.leftDockWidth = 0))
+        await settle(page)
+        await expect.poll(placement).toBe('beside')
+        expect(await fits()).toBe(true)
+
+        // A phone keeps the form within its width, stacking labels when narrow.
         await page.evaluate(() => {
             window.editorTest.settings.previewPosition = 'top'
-            window.editorTest.settings.previewHeight = 80
+            window.editorTest.settings.previewControls = 'expanded'
         })
-        await page.setViewportSize({ width: 1069, height: 400 })
-        await settle(page)
-        await page
-            .getByRole('button', { name: 'Hide playback controls', exact: true })
-            .click({ position: { x: 12, y: 12 } })
-        await expect(antialias).toBeInViewport()
-        await antialias.uncheck()
-        await expect(antialias).not.toBeChecked()
-
-        // Even when the window itself is short, the header remains reachable
-        // and only the settings body scrolls.
-        await page.setViewportSize({ width: 1069, height: 128 })
-        await settle(page)
-        expect(
-            await controls
-                .locator('.preview-controls-body')
-                .evaluate((panel) => panel.scrollHeight > panel.clientHeight),
-        ).toBe(true)
-        await antialias.scrollIntoViewIfNeeded()
-        await expect(antialias).toBeInViewport()
-        await antialias.check()
-        await expect(antialias).toBeChecked()
-        const speed = controls.locator('input[type="number"]').first()
-        await speed.scrollIntoViewIfNeeded()
-        await expect(speed).toBeInViewport()
+        for (const width of [390, 250]) {
+            await page.setViewportSize({ width, height: 700 })
+            await settle(page)
+            await expect.poll(fits).toBe(true)
+            const antialias = controls.getByLabel('Antialias', { exact: true })
+            await antialias.scrollIntoViewIfNeeded()
+            await antialias.uncheck()
+            await expect(antialias).not.toBeChecked()
+            await antialias.check()
+        }
+        const label = (await controls.getByText('Antialias', { exact: true }).boundingBox())!
+        const field = (await controls.getByText('Enabled').last().boundingBox())!
+        expect(field.y).toBeGreaterThanOrEqual(label.y + label.height)
     })
 })
 
 test('preview options share persisted settings with the main options menu', async ({ page }) => {
-    const preview = page.locator('.preview')
+    const preview = page.locator('.preview-controls')
     for (const label of ['Note Speed', 'Render Scale']) {
         await expect(preview.getByText(label, { exact: true })).toBeVisible()
         await expect(preview.getByRole('slider', { name: label, exact: true })).toHaveAttribute(
@@ -1656,10 +1792,27 @@ test('preview options share persisted settings with the main options menu', asyn
             label,
         )
     }
-    for (const label of ['Position', 'Aspect Ratio']) {
-        await expect(preview.getByText(label, { exact: true })).toBeVisible()
-        await expect(preview.getByRole('radiogroup', { name: label, exact: true })).toBeVisible()
-    }
+    await expect(
+        preview.getByRole('radiogroup', { name: 'Aspect Ratio', exact: true }),
+    ).toBeVisible()
+    await expect(preview.getByRole('combobox', { name: 'Position', exact: true })).toHaveValue(
+        'auto',
+    )
+    // Both entry points list the shared options in the same order.
+    const order = [
+        'Note Speed',
+        'Highlight Selection',
+        'Effects',
+        'Show Time',
+        'Aspect Ratio',
+        'Render Scale',
+        'Antialias',
+    ]
+    expect(
+        (await preview.locator('.preview-setting-label').allTextContents()).map((text) =>
+            text.trim(),
+        ),
+    ).toEqual([...order, 'Position'])
     const speed = preview.getByRole('spinbutton', { name: 'Note Speed', exact: true })
     const scale = preview.getByRole('spinbutton', { name: 'Render Scale', exact: true })
     await speed.fill('9.25')
@@ -1676,6 +1829,19 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(dialog.getByRole('combobox', { name: 'Aspect Ratio', exact: true })).toHaveValue(
         String(4 / 3),
     )
+    const section = dialog
+        .locator('section')
+        .filter({ has: page.getByRole('heading', { name: 'Preview', exact: true }) })
+    expect(
+        await section
+            .locator('label')
+            .evaluateAll((labels) =>
+                labels.map((label) => label.firstElementChild?.textContent?.trim()),
+            ),
+    ).toEqual([...order, 'Preview Settings Panel'])
+    // Placement lives with the other panels and shares the preview's own field.
+    await expect(dialog.getByRole('combobox', { name: 'Preview', exact: true })).toHaveValue('auto')
+    await dialog.getByRole('combobox', { name: 'Preview', exact: true }).selectOption('right')
     await expect(
         dialog
             .locator('label')
@@ -1709,6 +1875,10 @@ test('preview options share persisted settings with the main options menu', asyn
         .getByRole('combobox', { name: 'Preview Settings Panel', exact: true })
         .selectOption('expanded')
     await page.keyboard.press('Escape')
+    await expect(page.locator('[data-workspace-dock="right"] .preview')).toBeVisible()
+    await expect(preview.getByRole('combobox', { name: 'Position', exact: true })).toHaveValue(
+        'right',
+    )
     await expect(speed).toHaveValue('8.5')
     await expect(scale).toHaveValue('0.75')
     await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
@@ -1752,4 +1922,629 @@ test('invalid persisted preview options normalize to valid settings', async ({ p
             ]
         }),
     ).toEqual([12, 0.25, 16 / 9, true, false])
+})
+
+test.describe('preview panel lifecycle', () => {
+    const skinRequests = (page: Page) => {
+        const requests: string[] = []
+        page.on('request', (request) => {
+            if (/\/resource\/(skin|particle)\.scp/.test(request.url())) requests.push(request.url())
+        })
+        return requests
+    }
+
+    test('a displaced preview stops rendering and resumes without decoding again', async ({
+        page,
+    }) => {
+        // Too short to stack Preview with Groups, so the left dock shows one.
+        await page.setViewportSize({ width: 1600, height: 340 })
+        await settle(page)
+        const requests = skinRequests(page)
+        const before = await page.evaluate(() => ({
+            uploads: window.previewTest.uploads,
+            frames: window.previewTest.frames,
+        }))
+        const dock = page.locator('[data-workspace-dock="left"]')
+        await dock.getByRole('tab', { name: 'Groups', exact: true }).click()
+        await expect(page.locator('.preview')).toHaveCount(0)
+        await expect(page.locator('.preview-controls')).toHaveCount(0)
+        // Groups needed the room, so the preview closed rather than waiting covered.
+        expect(await page.evaluate(() => window.editorTest.settings.showPreview)).toBe(false)
+        const covered = await page.evaluate(() => window.previewTest.frames)
+        await page.evaluate(() => (window.editorTest.view.cursorTime += 0.5))
+        await settle(page)
+        await page.waitForTimeout(100)
+        expect(await page.evaluate(() => window.previewTest.frames)).toBe(covered)
+
+        await dock.getByRole('tab', { name: 'Preview', exact: true }).click()
+        await expect(page.locator('.preview')).toBeVisible()
+        await expect
+            .poll(() => page.evaluate(() => window.previewTest.uploads))
+            .toBe(before.uploads + 2)
+        await expect
+            .poll(() => page.evaluate(() => window.previewTest.frames))
+            .toBeGreaterThan(covered)
+        expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+        expect(requests).toEqual([])
+    })
+
+    test('closing during the first load still decodes the skin only once', async ({ page }) => {
+        let release: () => void = () => undefined
+        const gate = new Promise<void>((resolve) => (release = resolve))
+        await page.route('**/resource/skin.scp*', async (route) => {
+            await gate
+            await route.fulfill({ body: resource('skins') })
+        })
+        await page.reload()
+        await page.evaluate(installEditorFixture)
+        const requests = skinRequests(page)
+        await page.evaluate(() => (window.editorTest.settings.showPreview = true))
+        await expect(page.locator('.preview').getByText('Loading skin...')).toBeVisible()
+        await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+        await expect(page.locator('.preview')).toHaveCount(0)
+        await page.evaluate(() => (window.editorTest.settings.showPreview = true))
+        release()
+        await expect(
+            page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+        ).toBeVisible()
+        await expect.poll(() => page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+        expect(requests.filter((url) => url.includes('/skin.scp'))).toHaveLength(1)
+    })
+
+    test('moving the preview from its settings keeps them open and focused without decoding', async ({
+        page,
+    }) => {
+        const requests = skinRequests(page)
+        const uploads = await page.evaluate(() => window.previewTest.uploads)
+        const placement = page
+            .locator('.preview-controls')
+            .getByRole('combobox', { name: 'Position', exact: true })
+        await placement.focus()
+        await placement.selectOption('top')
+        await expect(page.locator('[data-workspace-dock="top"] .preview')).toBeVisible()
+        await expect(placement).toHaveValue('top')
+        await expect(placement).toBeFocused()
+        await expect(placement).toBeInViewport()
+        await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(uploads + 2)
+        expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+        expect(requests).toEqual([])
+        expect(await page.evaluate(() => window.editorTest.settings.previewControls)).toBe('auto')
+
+        // Escape collapses the form and returns focus to its toggle.
+        await page.keyboard.press('Escape')
+        await expect(
+            page.getByRole('button', { name: 'Show Preview Settings', exact: true }),
+        ).toBeFocused()
+        await expect(page.locator('.preview-controls')).toBeHidden()
+    })
+
+    test('pointer use of settings and playback controls returns editor shortcuts', async ({
+        page,
+    }) => {
+        const controls = page.locator('.preview-controls')
+        const focusInDock = () =>
+            page.evaluate(() => !!document.activeElement?.closest('[data-workspace-dock]'))
+        await controls.getByRole('radio', { name: '21:9', exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+        await controls.getByLabel('Effects', { exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+        const slider = controls.getByRole('slider', { name: 'Render Scale', exact: true })
+        const box = (await slider.boundingBox())!
+        await page.mouse.click(box.x + box.width * 0.9, box.y + box.height / 2)
+        await expect(slider).not.toHaveValue('1')
+        expect(await focusInDock()).toBe(false)
+        await page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+        await page.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+        await page.getByRole('button', { name: 'Play Preview', exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+        await page.getByRole('button', { name: 'Pause Preview', exact: true }).click()
+        expect(await focusInDock()).toBe(false)
+    })
+
+    // A fine pointer's strip always fits below even the shortest top dock; a
+    // touch strip is taller and shows over the image there.
+    test.describe('on touch', () => {
+        test.use({ hasTouch: true })
+
+        test('settings stay reachable while a bar shown earlier covers a shorter image', async ({
+            page,
+        }) => {
+            await page.setViewportSize({ width: 400, height: 1180 })
+            await page.evaluate(() => {
+                const { settings } = window.editorTest
+                settings.previewPosition = 'top'
+                settings.topDockHeight = 420
+                settings.previewControls = 'collapsed'
+            })
+            await settle(page)
+            await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+            await page.evaluate(() => (window.editorTest.settings.topDockHeight = 160))
+            await settle(page)
+            // The bar stays up over the image, and the settings toggle stays clear of it.
+            await expect(
+                page.getByRole('button', { name: 'Hide Playback Controls', exact: true }),
+            ).toHaveCount(1)
+            const toggle = page.getByRole('button', { name: 'Show Preview Settings', exact: true })
+            await expect(toggle).toBeVisible()
+            await toggle.click()
+            await expect(page.locator('.preview-controls')).toBeVisible()
+            const geometry = await readPreviewChrome(page)
+            expect(geometry.headerReachable).toBe(true)
+            expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
+            expect(geometry.transportReachable.every(Boolean)).toBe(true)
+            expect(overlapArea(geometry.settings, geometry.bar!)).toBe(0)
+            const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+            await antialias.uncheck()
+            await expect(antialias).not.toBeChecked()
+        })
+    })
+
+    test('a top preview beside Groups opens settings under the dock in full view', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1280, height: 720 })
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.previewPosition = 'top'
+            settings.groupsPosition = 'top'
+            settings.showGroups = true
+            settings.previewControls = 'expanded'
+        })
+        await settle(page)
+        await expect(page.locator('[data-workspace-dock="top"] .preview')).toBeVisible()
+        await expect(
+            page.locator('[data-workspace-dock="top"]').getByText('All Groups', { exact: true }),
+        ).toBeVisible()
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.settings.top).toBeGreaterThanOrEqual(geometry.preview.bottom)
+        expect(geometry.settings.left).toBeGreaterThanOrEqual(0)
+        expect(geometry.settings.right).toBeLessThanOrEqual(geometry.viewport.width)
+        expect(geometry.settings.bottom).toBeLessThanOrEqual(geometry.viewport.height)
+        expect(overlapArea(geometry.settings, geometry.preview)).toBe(0)
+        expect(geometry.headerReachable).toBe(true)
+        expect(geometry.transportReachable.every(Boolean)).toBe(true)
+        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        await antialias.scrollIntoViewIfNeeded()
+        await antialias.uncheck()
+        await expect(antialias).not.toBeChecked()
+    })
+
+    test('rotating between docks remounts the preview cleanly without decoding again', async ({
+        page,
+    }) => {
+        await page.evaluate(() => (window.editorTest.settings.showGroups = true))
+        const requests = skinRequests(page)
+        for (const [width, height, side] of [
+            [430, 932, 'top'],
+            [844, 390, 'left'],
+            [1600, 1000, 'left'],
+            [820, 1180, 'top'],
+        ] as const) {
+            await page.setViewportSize({ width, height })
+            await expect(page.locator(`[data-workspace-dock="${side}"] .preview`)).toBeVisible()
+            await settle(page)
+        }
+        // Uncaught observer loop errors would fail this test in afterEach.
+        expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+        expect(requests).toEqual([])
+    })
+
+    test('hiding the time removes both clocks and the room kept for them', async ({ page }) => {
+        await page.setViewportSize({ width: 820, height: 1180 })
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.previewPosition = 'top'
+            settings.topDockHeight = 420
+            settings.previewControls = 'expanded'
+        })
+        await settle(page)
+        const barTime = page.locator('.transport-time')
+        await expect(barTime).toBeVisible()
+        const strip = page.locator('.preview-transport')
+        const shownWidth = (await strip.boundingBox())!.width
+        const frames = await page.evaluate(() => window.previewTest.frames)
+
+        const showTime = page.getByRole('checkbox', { name: 'Show Time', exact: true })
+        await expect(showTime).toBeChecked()
+        await showTime.uncheck()
+        await expect(barTime).toHaveCount(0)
+        await expect(page.locator('.transport-corner-time')).toHaveCount(0)
+        expect(await page.evaluate(() => window.editorTest.settings.previewShowTime)).toBe(false)
+        // The strip no longer keeps room for the time.
+        await expect.poll(async () => (await strip.boundingBox())!.width).toBeLessThan(shownWidth)
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
+        expect(geometry.transportReachable.every(Boolean)).toBe(true)
+        expect(geometry.headerReachable).toBe(true)
+        // Hiding the clock needs no new preview frame.
+        expect(await page.evaluate(() => window.previewTest.frames)).toBe(frames)
+
+        // A phone-width panel shows no clock either; with the time back, the strip
+        // still has room for it beside six fine-pointer steppers.
+        await page.setViewportSize({ width: 390, height: 844 })
+        await settle(page)
+        await expect(page.locator('.transport-corner-time')).toHaveCount(0)
+        await showTime.check()
+        await expect(barTime).toHaveText(/^\d{2}:\d{2}\.\d{3}$/)
+        await expect(page.locator('.transport-corner-time')).toHaveCount(0)
+        await expect(page.getByRole('button', { name: 'Back 100 ms', exact: true })).toBeVisible()
+    })
+
+    for (const { width, height } of [
+        { width: 1366, height: 768 },
+        { width: 1024, height: 768 },
+        { width: 1280, height: 500 },
+    ]) {
+        test(`settings never cover elevation editor controls at ${width}x${height}`, async ({
+            page,
+        }) => {
+            await page.setViewportSize({ width, height })
+            await page.evaluate(() => {
+                const { settings } = window.editorTest
+                settings.showGroups = true
+                settings.previewControls = 'expanded'
+            })
+            for (const split of ['disallow', 'allow'] as const) {
+                await page.evaluate((split) => {
+                    window.editorTest.settings.elevationEditorSideBySide = split
+                }, split)
+                if (!(await page.locator('.elevation-editor').count()))
+                    await page.keyboard.press('t')
+                await expect(page.locator('.elevation-editor')).toBeVisible()
+                await settle(page)
+                await expect(page.locator('.preview-controls')).toBeVisible()
+                for (const control of [
+                    page.getByRole('spinbutton', { name: 'Beat', exact: true }),
+                    page.getByRole('combobox', { name: 'Elevation Snapping', exact: true }),
+                    page.getByRole('button', { name: 'Close Elevation Editor', exact: true }),
+                ]) {
+                    expect(
+                        await control.evaluate((element) => {
+                            const r = element.getBoundingClientRect()
+                            return element.contains(
+                                document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2),
+                            )
+                        }),
+                    ).toBe(true)
+                }
+                const geometry = await readPreviewChrome(page)
+                const header = (await page.locator('.elevation-header').boundingBox())!
+                expect(
+                    overlapArea(geometry.settings, {
+                        left: header.x,
+                        top: header.y,
+                        right: header.x + header.width,
+                        bottom: header.y + header.height,
+                    }),
+                ).toBe(0)
+                expect(geometry.headerReachable).toBe(true)
+            }
+        })
+    }
+
+    test('the settings form follows its toggle in the tab order', async ({ page }) => {
+        const toggle = page.locator('.preview-settings-toggle')
+        await toggle.focus()
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+        await page.keyboard.press('Tab')
+        await expect(
+            page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }),
+        ).toBeFocused()
+        await page.keyboard.press('Shift+Tab')
+        await expect(toggle).toBeFocused()
+        // Leaving the end of the form continues after the toggle, not at the page end.
+        await page.locator('.preview-controls select').focus()
+        await page.keyboard.press('Tab')
+        expect(
+            await page.evaluate(() => {
+                const active = document.activeElement
+                return !!active && active !== document.body && !active.closest('.preview-controls')
+            }),
+        ).toBe(true)
+        // Keyboard activation keeps focus on the toggle, which closes the form too.
+        await toggle.press('Enter')
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+        await expect(toggle).toBeFocused()
+        await toggle.press('Enter')
+        await expect(page.locator('.preview-controls')).toBeVisible()
+        await expect(toggle).toBeFocused()
+    })
+
+    test('a form outside the panel avoids the toolbar and closes on an outside press', async ({
+        page,
+    }) => {
+        // Inside a roomy panel the form stays open while the editor is used.
+        const editor = (await page.locator('canvas.editor-chart').boundingBox())!
+        await page.mouse.click(editor.x + editor.width - 40, editor.y + 40)
+        await expect(page.locator('.preview-controls')).toBeVisible()
+
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.evaluate(() => {
+            window.editorTest.settings.previewPosition = 'top'
+            window.editorTest.settings.previewControls = 'expanded'
+        })
+        await settle(page)
+        const controls = page.locator('.preview-controls')
+        await expect(controls).toBeVisible()
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.settings.top).toBeGreaterThanOrEqual(geometry.preview.bottom)
+        const toolbar = await page.evaluate(() => {
+            const rects = [...document.querySelectorAll('[data-editor-toolbar] > *')].map(
+                (element) => element.getBoundingClientRect(),
+            )
+            return {
+                left: Math.min(...rects.map((rect) => rect.left)),
+                top: Math.min(...rects.map((rect) => rect.top)),
+                right: Math.max(...rects.map((rect) => rect.right)),
+                bottom: Math.max(...rects.map((rect) => rect.bottom)),
+            }
+        })
+        expect(overlapArea(geometry.settings, toolbar)).toBe(0)
+
+        // Presses inside the form keep it open; one outside dismisses it.
+        await controls.getByRole('radio', { name: '4:3', exact: true }).click()
+        await expect(controls).toBeVisible()
+        await page.mouse.click(4, geometry.settings.bottom + 8)
+        await expect(controls).toBeHidden()
+        await expect(
+            page.getByRole('button', { name: 'Show Preview Settings', exact: true }),
+        ).toBeVisible()
+    })
+
+    test('a short top preview keeps the full strip and time below the image', async ({ page }) => {
+        await page.setViewportSize({ width: 1366, height: 600 })
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.previewPosition = 'top'
+            settings.topDockHeight = 150
+        })
+        await settle(page)
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
+        await expect(page.locator('.preview-transport')).toBeVisible()
+        await expect(page.locator('.transport-time')).toBeVisible()
+        await expect(page.locator('.transport-corner-time')).toHaveCount(0)
+        await expect(page.getByRole('button', { name: 'Back 100 ms', exact: true })).toBeVisible()
+        const geometry = await page.evaluate(() => {
+            const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+            const strip = document.querySelector('.preview-transport')!.getBoundingClientRect()
+            const preview = document.querySelector('.preview')!.getBoundingClientRect()
+            return {
+                gap: strip.top - image.bottom,
+                center: strip.left + strip.width / 2 - (preview.left + preview.width / 2),
+                imageCenter: image.left + image.width / 2 - (preview.left + preview.width / 2),
+            }
+        })
+        expect(geometry.gap).toBeCloseTo(4, 1)
+        expect(geometry.center).toBeCloseTo(0, 0)
+        expect(geometry.imageCenter).toBeCloseTo(0, 0)
+    })
+
+    test('an automatically opened form closes instead of jumping out over the editor', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1920, height: 1080 })
+        await settle(page)
+        const controls = page.locator('.preview-controls')
+        await expect(controls).toBeVisible()
+        expect(await page.evaluate(() => window.editorTest.settings.previewControls)).toBe('auto')
+        // Opening Groups below shrinks the panel so the form no longer fits inside.
+        await page.keyboard.press('e')
+        await expect(
+            page.locator('[data-workspace-dock="left"]').getByText('All Groups', { exact: true }),
+        ).toBeVisible()
+        await expect(controls).toBeHidden()
+        expect(await page.evaluate(() => window.editorTest.settings.previewControls)).toBe('auto')
+
+        // Opened deliberately, it goes beside the dock at its full width.
+        await page.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
+        await expect(controls).toBeVisible()
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.settings.left).toBeGreaterThanOrEqual(geometry.preview.right)
+        expect(geometry.settings.right - geometry.settings.left).toBe(352)
+        const label = (await controls
+            .getByText('Highlight Selection', { exact: true })
+            .boundingBox())!
+        expect(label.height).toBeLessThan(24)
+    })
+
+    test('a short top dock scrolls its form under the dock rather than over the image', async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1280, height: 500 })
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.previewPosition = 'top'
+            settings.previewControls = 'expanded'
+        })
+        await settle(page)
+        const geometry = await readPreviewChrome(page)
+        expect(geometry.settings.top).toBeGreaterThanOrEqual(geometry.preview.bottom)
+        expect(geometry.settings.bottom).toBeLessThanOrEqual(500)
+        expect(geometry.headerReachable).toBe(true)
+        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        await antialias.scrollIntoViewIfNeeded()
+        await antialias.uncheck()
+        await expect(antialias).not.toBeChecked()
+    })
+
+    test('a reopened preview appears in place without a jumping toggle or empty first frame', async ({
+        page,
+    }) => {
+        await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+        await expect(page.locator('.preview')).toHaveCount(0)
+        const frames = await page.evaluate(async () => {
+            const samples: { image: number; gear?: string }[] = []
+            window.editorTest.settings.showPreview = true
+            for (let i = 0; i < 12; i++) {
+                await new Promise((resolve) => requestAnimationFrame(resolve))
+                const image = document.querySelector('.preview-viewport')
+                const gear = document.querySelector<HTMLElement>('.preview-settings-toggle')
+                const visible =
+                    gear && getComputedStyle(gear).visibility !== 'hidden' && gear.offsetParent
+                const box = gear?.getBoundingClientRect()
+                samples.push({
+                    image: image ? image.getBoundingClientRect().width : -1,
+                    gear: visible && box ? `${box.left},${box.top}` : undefined,
+                })
+            }
+            return samples
+        })
+        // Once mounted, the image is laid out from its first frame.
+        expect(frames.filter(({ image }) => image === 0)).toEqual([])
+        // The toggle is only ever shown at its final place.
+        expect(new Set(frames.flatMap(({ gear }) => (gear ? [gear] : []))).size).toBe(1)
+    })
+
+    for (const { width, height, topDockHeight } of [
+        { width: 400, height: 600, topDockHeight: 150 },
+        { width: 480, height: 1000, topDockHeight: 180 },
+        { width: 320, height: 700, topDockHeight: 140 },
+        // Width-limited, with letterbox above and below the image.
+        { width: 300, height: 1000, topDockHeight: 170 },
+    ]) {
+        test.describe(`on touch at ${width}x${height}`, () => {
+            test.use({ hasTouch: true })
+            test(`showing the strip on demand never moves the image at ${width}x${height}`, async ({
+                page,
+            }) => {
+                await page.setViewportSize({ width, height })
+                await page.evaluate((topDockHeight) => {
+                    const { settings } = window.editorTest
+                    settings.previewPosition = 'top'
+                    settings.topDockHeight = topDockHeight
+                    settings.previewControls = 'collapsed'
+                }, topDockHeight)
+                await settle(page)
+                const toggle = page.locator('.preview-transport-toggle')
+                await expect(toggle).toHaveCount(1)
+                const image = () =>
+                    page.evaluate(() => {
+                        const { x, y, width, height } = document
+                            .querySelector('.preview-viewport')!
+                            .getBoundingClientRect()
+                        return { x, y, width, height }
+                    })
+                const strip = page.locator('.preview-transport')
+                if (await strip.isVisible()) {
+                    await toggle.click({ position: { x: 12, y: 40 } })
+                    await expect(strip).toBeHidden()
+                }
+                await settle(page)
+                const hidden = await image()
+                await toggle.click({ position: { x: 12, y: 40 } })
+                await expect(strip).toBeVisible()
+                await settle(page)
+                expect(await image()).toEqual(hidden)
+                await toggle.click({ position: { x: 12, y: 40 } })
+                await expect(strip).toBeHidden()
+                await settle(page)
+                expect(await image()).toEqual(hidden)
+            })
+        })
+    }
+
+    test('editor visibility filters and focus never change the full-level preview', async ({
+        page,
+    }) => {
+        await page.evaluate(() => (window.editorTest.view.cursorTime = 4))
+        await settle(page)
+        const before = await page.evaluate(() => ({
+            frames: window.previewTest.frames,
+            vertices: window.previewTest.vertices,
+        }))
+        expect(before.vertices.length).toBeGreaterThan(0)
+        await page.evaluate(() => {
+            const { view } = window.editorTest
+            const hidden = (ids: number[]) => new Map(ids.map((id) => [id, 'hidden'])) as never
+            view.groupVisibility = hidden([1, 2])
+            view.stageVisibility = hidden([1, 2])
+            view.groupId = 2 as never
+            view.stageId = 2 as never
+        })
+        await settle(page)
+        await page.waitForTimeout(100)
+        expect(
+            await page.evaluate(() => ({
+                frames: window.previewTest.frames,
+                vertices: window.previewTest.vertices,
+            })),
+        ).toEqual(before)
+    })
+
+    test('reopening the preview leaves no listeners, observers or contexts behind', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const listeners = new Map<string, number>()
+            const name = (target: EventTarget) =>
+                target === window ? 'window' : target === document ? 'document' : 'visual'
+            for (const target of [window, document, window.visualViewport!] as EventTarget[]) {
+                const add = target.addEventListener.bind(target)
+                const remove = target.removeEventListener.bind(target)
+                const seen = new Set<unknown>()
+                target.addEventListener = (
+                    type: string,
+                    listener: EventListenerOrEventListenerObject | null,
+                    options?: boolean | AddEventListenerOptions,
+                ) => {
+                    const key = `${name(target)}:${type}`
+                    if (listener && !seen.has(listener)) {
+                        seen.add(listener)
+                        listeners.set(key, (listeners.get(key) ?? 0) + 1)
+                    }
+                    add(type, listener, options)
+                }
+                target.removeEventListener = (
+                    type: string,
+                    listener: EventListenerOrEventListenerObject | null,
+                    options?: boolean | EventListenerOptions,
+                ) => {
+                    const key = `${name(target)}:${type}`
+                    if (seen.delete(listener)) listeners.set(key, (listeners.get(key) ?? 0) - 1)
+                    remove(type, listener, options)
+                }
+            }
+            const observed = new Map<ResizeObserver, Set<Element>>()
+            const observe = ResizeObserver.prototype.observe
+            ResizeObserver.prototype.observe = function (target, options) {
+                observed.set(this, (observed.get(this) ?? new Set()).add(target))
+                observe.call(this, target, options)
+            }
+            const disconnect = ResizeObserver.prototype.disconnect
+            ResizeObserver.prototype.disconnect = function () {
+                observed.delete(this)
+                disconnect.call(this)
+            }
+            ;(window as unknown as { leakState: () => unknown }).leakState = () => ({
+                listeners: Object.fromEntries([...listeners].filter(([, count]) => count)),
+                observers: observed.size,
+                canvases: document.querySelectorAll('.preview canvas').length,
+                settings: document.querySelectorAll('.preview-controls').length,
+            })
+        })
+        const cycle = async () => {
+            await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+            await expect(page.locator('.preview')).toHaveCount(0)
+            await page.evaluate(() => (window.editorTest.settings.showPreview = true))
+            await expect(
+                page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+            ).toBeVisible()
+            await settle(page)
+        }
+        const state = () =>
+            page.evaluate(() => (window as unknown as { leakState: () => unknown }).leakState())
+        await cycle()
+        const first = await state()
+        for (let i = 0; i < 8; i++) await cycle()
+        expect(await state()).toEqual(first)
+        // The preview still renders after many contexts were created and released.
+        const frames = await page.evaluate(() => window.previewTest.frames)
+        await page.evaluate(() => (window.editorTest.view.cursorTime += 0.25))
+        await expect
+            .poll(() => page.evaluate(() => window.previewTest.frames))
+            .toBeGreaterThan(frames)
+        expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
+    })
 })

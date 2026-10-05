@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, useId, useTemplateRef, watch } from 'vue'
 import PlayIcon from '../editor/commands/play/PlayIcon.vue'
 import { togglePreviewPlayback } from '../editor/player'
 import { view } from '../editor/view'
+import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
 import { isPlaying } from '../player'
 import { i18n } from '../i18n'
+import { settings } from '../settings'
 import { formatTime } from '../utils/format'
 import { interpolateRaw } from '../utils/interpolate'
+import type { PreviewControlsLayout } from './layout'
 import { useTransportInput } from './useTransportInput'
+import { isCoarsePointer, settingsButtonSize } from './usePreviewViewport'
 
 const props = defineProps<{
-    viewportLeft: number
-    viewportTop: number
-    viewportBottom: number
-    persistent: boolean
+    layout: PreviewControlsLayout
 }>()
 const emit = defineEmits<{
-    resize: [height: number, width: number, right: number]
     timeResize: [width: number, height: number]
 }>()
 const visible = defineModel<boolean>({ required: true })
 const panelId = useId()
-const panel = useTemplateRef<HTMLDivElement>('panel')
 const toggle = useTemplateRef<HTMLButtonElement>('toggle')
 const cornerTime = useTemplateRef<HTMLSpanElement>('cornerTime')
-const isCornerTimeVisible = ref(false)
+
+// The strip has its own place below the image; otherwise it shows
+// over the image's lower edge on demand.
+const persistent = computed(() => props.layout.placement !== 'overlay')
+const timeInStrip = computed(() => settings.previewShowTime && props.layout.timeInStrip)
+const timeInCorner = computed(() => settings.previewShowTime && !props.layout.timeInStrip)
+
 const formattedTime = computed(() => formatTime(Math.round(view.cursorTime * 1000) / 1000))
-// Only the displayed clock subscribes to playback time. The corner clock stays
-// visible on narrow previews even when their playback controls are hidden.
-const cornerPosition = computed(() => (isCornerTimeVisible.value ? formattedTime.value : ''))
-const barPosition = computed(() =>
-    visible.value && !isCornerTimeVisible.value ? formattedTime.value : '',
-)
+
 const {
     activeStep,
     onWheel,
@@ -50,7 +50,7 @@ const blurPointerButton = (event: MouseEvent) => {
 }
 
 const toggleVisibility = (event: MouseEvent) => {
-    if (props.persistent) return
+    if (persistent.value) return
     cancel()
     visible.value = !visible.value
     blurPointerButton(event)
@@ -58,7 +58,7 @@ const toggleVisibility = (event: MouseEvent) => {
 
 const hide = (event: MouseEvent | KeyboardEvent) => {
     cancel()
-    if (props.persistent) {
+    if (persistent.value) {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         return
     }
@@ -74,94 +74,96 @@ const play = (event: MouseEvent) => {
     blurPointerButton(event)
 }
 
-watch(
-    panel,
-    (element, _previous, onCleanup) => {
-        if (!element) {
-            emit('resize', 0, 0, 0)
-            return
-        }
-        const root = element.parentElement
-        if (!root) return
-        let height = -1
-        let width = -1
-        let right = -1
-        const update = () => {
-            const panelBounds = element.getBoundingClientRect()
-            const rootBounds = root.getBoundingClientRect()
-            const nextHeight = panelBounds.height
-            const nextWidth = rootBounds.width
-            const nextRight = panelBounds.right - rootBounds.left
-            if (nextHeight === height && nextWidth === width && nextRight === right) return
-            height = nextHeight
-            width = nextWidth
-            right = nextRight
-            emit('resize', height, width, right)
-        }
-        const observer = new ResizeObserver(update)
-        observer.observe(element)
-        // The bar can reach its maximum width while its container keeps growing.
-        observer.observe(root)
-        update()
-        onCleanup(() => {
-            observer.disconnect()
-        })
-    },
-    { flush: 'post', immediate: true },
+const stepSizes = [1, 10, 100] as const
+const cycleStepSize = (event: MouseEvent) => {
+    const index = stepSizes.indexOf(settings.previewStepSize)
+    settings.previewStepSize = stepSizes[(index + 1) % stepSizes.length] ?? 10
+    blurPointerButton(event)
+}
+const stepSizeLabel = computed(() =>
+    interpolateRaw(i18n.value.preview.transport.stepSize, `${settings.previewStepSize}`),
 )
+
+const stepLabel = (step: number) =>
+    interpolateRaw(
+        step < 0 ? i18n.value.preview.transport.back : i18n.value.preview.transport.forward,
+        `${Math.abs(step)}`,
+    )
+const stepTitle = (step: number) =>
+    `${stepLabel(step)}. ${interpolateRaw(
+        step < 0
+            ? i18n.value.preview.transport.holdBackward
+            : i18n.value.preview.transport.holdForward,
+        `${Math.abs(step) / 10}`,
+    )}`
+
+const steps = [-100, -10, -1, 1, 10, 100]
 
 watch(cornerTime, (element, _previous, onCleanup) => {
     if (!element) {
-        isCornerTimeVisible.value = false
         emit('timeResize', 0, 0)
         return
     }
     const update = () => {
         const { width, height } = element.getBoundingClientRect()
-        isCornerTimeVisible.value = width > 0 && height > 0
         emit('timeResize', width, height)
     }
     const observer = new ResizeObserver(update)
-    // An empty clock has zero content size both before and after a narrow
-    // layout reveals it. Observe its padding box to detect that transition.
     observer.observe(element, { box: 'border-box' })
     update()
     onCleanup(() => {
         observer.disconnect()
     })
 })
+
+const stripStyle = computed(() => ({
+    left: `${props.layout.strip.left}px`,
+    top: `${props.layout.strip.top}px`,
+    width: `${props.layout.strip.width}px`,
+    height: `${props.layout.strip.height}px`,
+}))
 </script>
 
 <template>
     <div
         class="preview-transport-root pointer-events-auto absolute inset-0 z-10"
-        :style="{ '--preview-bottom': `${viewportBottom}px` }"
+        :class="{ 'is-coarse': isCoarsePointer }"
         @wheel="onWheel"
     >
         <button
             v-if="!persistent"
             ref="toggle"
             type="button"
-            class="preview-transport-toggle pointer-events-auto absolute inset-0 h-full w-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg"
+            class="preview-transport-toggle pointer-events-auto absolute inset-0 h-full w-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
             :aria-label="visible ? i18n.preview.transport.hide : i18n.preview.transport.show"
+            :title="visible ? i18n.preview.transport.hide : i18n.preview.transport.show"
             :aria-expanded="visible"
             :aria-controls="panelId"
             @click.stop="toggleVisibility"
             @keydown.stop
         />
+        <!-- Without room in the strip, the time sits in the image's top-left
+        corner, centered on the line of the settings toggle in the other corner. -->
         <span
+            v-if="timeInCorner"
             ref="cornerTime"
-            class="transport-corner-time pointer-events-none absolute z-10 rounded-full bg-modal px-1 py-0.5 font-mono text-[10px] tabular-nums leading-4 text-fg shadow-md"
-            :style="{ left: `${viewportLeft + 4}px`, top: `${viewportTop + 4}px` }"
+            class="transport-corner-time pointer-events-none absolute z-10 -translate-y-1/2 rounded-full bg-modal px-1.5 py-0.5 text-xs tabular-nums text-fg shadow-md"
+            :style="{
+                left: `${layout.canvas.left + 4}px`,
+                top: `${layout.canvas.top + 4 + settingsButtonSize / 2}px`,
+            }"
             :aria-label="i18n.preview.transport.time"
         >
-            {{ cornerPosition }}
+            {{ formattedTime }}
         </span>
         <div
             :id="panelId"
-            ref="panel"
-            class="preview-transport absolute z-20 grid items-center gap-1 rounded-xl bg-modal px-1.5 py-1 text-fg shadow-xl"
-            :class="visible ? 'pointer-events-auto' : 'pointer-events-none invisible'"
+            class="preview-transport absolute z-20 flex items-center gap-1 rounded-full bg-modal p-1 text-fg shadow-xl ring-1 ring-fg/10"
+            :class="[
+                `is-${layout.mode}`,
+                visible ? 'pointer-events-auto' : 'pointer-events-none invisible',
+            ]"
+            :style="stripStyle"
             :inert="!visible"
             :aria-hidden="!visible"
             role="group"
@@ -174,40 +176,31 @@ watch(cornerTime, (element, _previous, onCleanup) => {
         >
             <button
                 type="button"
-                class="transport-button"
+                class="transport-button transport-play"
                 :aria-label="isPlaying ? i18n.preview.transport.pause : i18n.preview.transport.play"
                 :title="isPlaying ? i18n.preview.transport.pause : i18n.preview.transport.play"
                 @click="play"
             >
                 <PlayIcon :state="isPlaying" class="size-4 fill-current" aria-hidden="true" />
             </button>
+
             <span
-                class="transport-time px-1 text-center font-mono text-xs tabular-nums"
+                v-if="timeInStrip"
+                class="transport-time"
                 :aria-label="i18n.preview.transport.time"
             >
-                {{ barPosition }}
+                {{ formattedTime }}
             </span>
-            <div class="transport-steps grid min-w-0 grid-cols-6 gap-0.5">
+
+            <span v-if="layout.mode === 'steps'" class="transport-track transport-steps">
                 <button
-                    v-for="step in [-100, -10, -1, 1, 10, 100]"
+                    v-for="step in steps"
                     :key="step"
                     type="button"
-                    class="transport-button touch-none select-none flex-col"
+                    class="transport-button transport-step touch-none select-none tabular-nums"
                     :class="{ 'is-held': activeStep === step }"
-                    :aria-label="
-                        interpolateRaw(
-                            step < 0 ? i18n.preview.transport.back : i18n.preview.transport.forward,
-                            `${Math.abs(step)}`,
-                        )
-                    "
-                    :title="
-                        interpolateRaw(
-                            step < 0
-                                ? i18n.preview.transport.holdBackward
-                                : i18n.preview.transport.holdForward,
-                            `${Math.abs(step) / 10}`,
-                        )
-                    "
+                    :aria-label="stepLabel(step)"
+                    :title="stepTitle(step)"
                     @pointerdown="onPointerDown($event, step)"
                     @pointerup="onPointerUp"
                     @pointercancel="onPointerCancel"
@@ -217,68 +210,121 @@ watch(cornerTime, (element, _previous, onCleanup) => {
                     @blur="onStepBlur"
                     @click.prevent="onStepClick($event, step)"
                 >
-                    <span class="font-mono text-xs tabular-nums leading-4" aria-hidden="true">
-                        {{ step < 0 ? '−' : '+' }}{{ Math.abs(step) }}
-                    </span>
-                    <span class="text-[10px] leading-3 opacity-75" aria-hidden="true">ms</span>
+                    {{ step < 0 ? '−' : '+' }}{{ Math.abs(step) }}
                 </button>
-            </div>
+            </span>
+
+            <span v-else class="transport-track transport-compact">
+                <button
+                    v-for="step in [-settings.previewStepSize]"
+                    :key="step"
+                    type="button"
+                    class="transport-button transport-chevron touch-none select-none"
+                    :class="{ 'is-held': activeStep === step }"
+                    :aria-label="stepLabel(step)"
+                    :title="stepTitle(step)"
+                    @pointerdown="onPointerDown($event, step)"
+                    @pointerup="onPointerUp"
+                    @pointercancel="onPointerCancel"
+                    @lostpointercapture="onPointerCancel"
+                    @keydown="onStepKeydown($event, step)"
+                    @keyup="onStepKeyup"
+                    @blur="onStepBlur"
+                    @click.prevent="onStepClick($event, step)"
+                >
+                    <ChevronIcon direction="left" />
+                </button>
+                <button
+                    type="button"
+                    class="transport-button transport-size tabular-nums"
+                    :aria-label="stepSizeLabel"
+                    :title="stepSizeLabel"
+                    @click="cycleStepSize"
+                >
+                    {{ settings.previewStepSize }}<span class="ml-px">ms</span>
+                </button>
+                <button
+                    v-for="step in [settings.previewStepSize]"
+                    :key="step"
+                    type="button"
+                    class="transport-button transport-chevron touch-none select-none"
+                    :class="{ 'is-held': activeStep === step }"
+                    :aria-label="stepLabel(step)"
+                    :title="stepTitle(step)"
+                    @pointerdown="onPointerDown($event, step)"
+                    @pointerup="onPointerUp"
+                    @pointercancel="onPointerCancel"
+                    @lostpointercapture="onPointerCancel"
+                    @keydown="onStepKeydown($event, step)"
+                    @keyup="onStepKeyup"
+                    @blur="onStepBlur"
+                    @click.prevent="onStepClick($event, step)"
+                >
+                    <ChevronIcon direction="right" />
+                </button>
+            </span>
         </div>
     </div>
 </template>
 
 <style scoped>
-.preview-transport-root {
-    container-type: inline-size;
-}
-
-.preview-transport {
-    --transport-height: 2.75rem;
-    grid-template-columns: 2.25rem minmax(0, 1fr);
-    left: max(0.25rem, calc((100% - 40rem) / 2));
-    width: max(calc(100% - 0.5rem), 11.5rem);
-    max-width: min(40rem, calc(100vw - 0.5rem));
-    /* Stay beside the image's lower edge. Use letterbox space first, then
-       overlap only as much of the image as the available height requires. */
-    top: max(
-        0px,
-        min(calc(var(--preview-bottom) + 4px), calc(100% - var(--transport-height) - 4px))
-    );
-}
-
-.transport-time {
-    display: none;
-}
-
 .transport-button {
-    @apply flex h-9 min-w-0 items-center justify-center rounded-full bg-button px-px shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-button text-xs shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent;
 }
 
 .transport-button.is-held {
     @apply bg-accent text-on-accent;
 }
 
-@container (max-width: 18.9375rem) {
-    .preview-transport {
-        --transport-height: 5.125rem;
-    }
-
-    .transport-steps {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+/* The time follows Play; it is Meta text and keeps its width as it changes. */
+.transport-time {
+    @apply min-w-16 shrink-0 px-1 text-xs tabular-nums text-fg;
 }
 
-@container (min-width: 32rem) {
-    .preview-transport {
-        grid-template-columns: 2.25rem auto minmax(0, 1fr);
-    }
+/* Steppers share a recessed track, like a segmented control, filling the rest
+   of the strip up to a comfortable size. */
+.transport-track {
+    @apply flex min-w-0 flex-1 items-center gap-0.5 rounded-full bg-fg/10 p-0.5 shadow-track;
+}
 
-    .transport-time {
-        display: block;
-    }
+.transport-steps {
+    max-width: calc(6 * 4rem + 5 * 2px + 4px);
+}
 
-    .transport-corner-time {
-        display: none;
-    }
+.transport-compact {
+    max-width: calc(2 * 4rem + 3rem + 2 * 2px + 4px);
+    margin-left: auto;
+}
+
+.transport-step,
+.transport-chevron {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 2rem;
+    max-width: 4rem;
+}
+
+.transport-chevron {
+    min-width: 2.25rem;
+}
+
+.transport-size {
+    width: 3rem;
+}
+
+/* Touch: Play, the frequent control, is 44 px in a 52 px strip; the steppers,
+   used less often, are 40 px. */
+.is-coarse .transport-play {
+    @apply h-11 w-11;
+}
+
+.is-coarse .transport-track .transport-button {
+    @apply h-10;
+}
+
+.is-coarse .transport-step,
+.is-coarse .transport-chevron {
+    width: auto;
+    min-width: 2.5rem;
 }
 </style>

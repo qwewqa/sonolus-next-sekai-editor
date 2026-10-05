@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { i18n } from '../i18n'
 import { interpolateRaw } from '../utils/interpolate'
+import ChevronIcon from './workspace/ChevronIcon.vue'
 import { groupOffscreenNotes, type OffscreenNotePosition } from './offscreenNotes'
 
 const props = defineProps<{
@@ -33,17 +34,7 @@ const indicators = computed(() =>
                 interpolateRaw(i18n.offscreenNotes[indicator.side], String(indicator.count))
             "
         >
-            <svg
-                class="size-3 shrink-0"
-                :class="{ 'rotate-180': indicator.side === 'right' }"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-            >
-                <path d="m10 3-5 5 5 5" />
-            </svg>
+            <ChevronIcon :direction="indicator.side" />
             <span>{{ indicator.count }}</span>
         </div>
     </div>

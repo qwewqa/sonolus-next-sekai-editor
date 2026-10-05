@@ -176,9 +176,10 @@ test('empty-caret toolbar context uses the chart beat and keeps the current edit
     await page.setViewportSize({ width: 390, height: 844 })
     await expect.poll(() => page.evaluate(() => window.editorTest.view.w)).toBe(390)
     await page.keyboard.press('f')
-    const blank = await page.evaluate(() => window.editorTest.point(5, 1.25))
+    // A blank spot above the two rows of touch tools.
+    const blank = await page.evaluate(() => window.editorTest.point(5, 1.75))
     await page.touchscreen.tap(blank.x, blank.y)
-    await expect.poll(() => page.evaluate(() => window.editorTest.view.cursorTime)).toBe(0.625)
+    await expect.poll(() => page.evaluate(() => window.editorTest.view.cursorTime)).toBe(0.875)
     expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
     await openFromToolbar(page)
     await expect(page.getByRole('menuitem', { name: 'Delete', exact: true })).toHaveCount(0)
@@ -188,8 +189,8 @@ test('empty-caret toolbar context uses the chart beat and keeps the current edit
         ),
     ).toBe('select')
     await page.getByRole('menuitem', { name: 'Edit Elevations', exact: true }).tap()
-    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('2.25')
-    await page.getByRole('button', { name: 'Close elevation editor', exact: true }).tap()
+    await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('2.75')
+    await page.getByRole('button', { name: 'Close Elevation Editor', exact: true }).tap()
     expect(
         await page.evaluate(
             async () => (await import('/src/editor/tools/index.ts')).toolName.value,

@@ -49,7 +49,7 @@ test('context beat scaling fixes the first beat and is undoable', async ({ page 
     await menu.getByRole('menuitem', { name: 'Scale Beats', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
-    await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('2')
+    await dialog.getByRole('spinbutton', { name: 'Scale Factor', exact: true }).fill('2')
     await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     expect((await snapshot(page)).selected.map((note) => note.beat).sort((a, b) => a - b)).toEqual([
@@ -113,7 +113,7 @@ test('select with context menu is the default secondary button and others persis
 test('plain right click selects a note and deletion is undoable', async ({ page }) => {
     await page.keyboard.press('a')
     await click(page, -3, 3)
-    const menu = page.getByRole('menu', { name: 'Selection actions' })
+    const menu = page.getByRole('menu', { name: 'Selection Actions' })
     await expect(menu).toBeVisible()
     expect((await snapshot(page)).selected).toEqual([{ type: 'note', beat: 3, left: -4, size: 2 }])
     expect((await snapshot(page)).notes).toHaveLength(4)
@@ -248,7 +248,7 @@ test('the initial BPM only offers applicable clipboard actions', async ({ page }
     await expect(menu).toBeVisible()
     await expect(menu.getByRole('menuitem', { name: 'Copy', exact: true })).toBeVisible()
     await expect(
-        menu.getByRole('menuitem', { name: /Edit Properties|Flip|Delete|Cut|Combine into Slide/ }),
+        menu.getByRole('menuitem', { name: /Flip|Delete|Cut|Combine into Slide/ }),
     ).toHaveCount(0)
     await page.keyboard.press('Escape')
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)

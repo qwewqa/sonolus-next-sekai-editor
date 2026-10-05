@@ -1,7 +1,29 @@
-import { computed, ref } from 'vue'
-import { screenSm } from '../../screen'
-import { settings } from '../../settings'
+import { computed } from 'vue'
+import { settings, type PropertiesSection } from '../../settings'
+import { isPanelVisible, showPanel } from '../workspace'
 
-export const currentSidebar = ref<Element | null>(null)
+/**
+ * Whether the Properties panel is on screen. Commands and tools edit in it
+ * only then; otherwise they open a properties dialog, so nothing switches tabs
+ * or uncovers a panel as a side effect.
+ */
+export const isSidebarVisible = computed(() => isPanelVisible('properties'))
 
-export const isSidebarVisible = computed(() => screenSm.value && settings.showSidebar)
+/**
+ * Shows a section of the visible Properties panel for a command that asks for
+ * it explicitly. Selection changes and tool switches must not call this: they
+ * leave the user's chosen section alone.
+ */
+export const revealPropertiesSection = (section: PropertiesSection) => {
+    settings.propertiesSection = section
+    if (settings.propertiesCollapsed.includes(section))
+        settings.propertiesCollapsed = settings.propertiesCollapsed.filter(
+            (value) => value !== section,
+        )
+}
+
+/** Opens the Properties panel at a section, for requests no dialog can serve. */
+export const showPropertiesSection = (section: PropertiesSection) => {
+    showPanel('properties')
+    revealPropertiesSection(section)
+}

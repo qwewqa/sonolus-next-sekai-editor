@@ -6,6 +6,7 @@ import { createEditedEntitiesState } from '../../../state/operations/edit'
 import type { EditableObject } from '../../../state/operations/editable'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
+import { revealAuthoringTarget } from '../../scope'
 import { editBpm } from '../../tools/bpm'
 import { editCameraEvent } from '../../tools/events/camera'
 import { editStageMaskEvent } from '../../tools/events/stage/mask'
@@ -18,6 +19,8 @@ import { view } from '../../view'
 export { isEditableEntity } from '../../../state/operations/editable'
 
 export const editSelectedEditableEntities = (object: EditableObject) => {
+    // Moving objects into a hidden group or stage reveals it, like authoring.
+    revealAuthoringTarget(object)
     if (selectedEntities.value.length === 1) {
         const editEntity = getEditEntity()
 

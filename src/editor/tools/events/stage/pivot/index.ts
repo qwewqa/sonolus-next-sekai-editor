@@ -18,7 +18,8 @@ import { createTransaction, type Transaction } from '../../../../../state/transa
 import { interpolate } from '../../../../../utils/interpolate'
 import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
-import { isSidebarVisible } from '../../../../sidebars'
+import { revealAuthoringTarget } from '../../../../scope'
+import { isSidebarVisible, revealPropertiesSection } from '../../../../sidebars'
 import { showToolModal } from '../../../../toolModals'
 import {
     focusEntityAtBeat,
@@ -117,6 +118,8 @@ export const stagePivotEvent: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
+                        // An explicit edit gesture on the selection shows its properties.
+                        revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
                             eventEase: (
@@ -388,6 +391,8 @@ const update = (message: () => string, action: (transaction: Transaction) => Ent
 }
 
 const add = (object: StagePivotEventObject) => {
+    // Authoring reveals its target so the new object never vanishes.
+    revealAuthoringTarget(object)
     update(
         interpolate(
             () => i18n.value.tools.events.added,

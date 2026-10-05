@@ -300,7 +300,7 @@ test('elevation beat arrows step by the current division through empty beats and
     const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
     await beat.fill('5')
     await beat.press('Tab')
-    await page.getByRole('button', { name: 'Next beat', exact: true }).click()
+    await page.getByRole('button', { name: 'Next Beat', exact: true }).click()
     await expect(beat).toHaveValue('5.25')
     expect(
         await page.evaluate(async () => {
@@ -308,16 +308,16 @@ test('elevation beat arrows step by the current division through empty beats and
             return elevationLayout.value.rows.length
         }),
     ).toBe(0)
-    await page.getByRole('button', { name: 'Previous beat', exact: true }).click()
+    await page.getByRole('button', { name: 'Previous Beat', exact: true }).click()
     await expect(beat).toHaveValue('5')
     await page.evaluate(() => {
         window.editorTest.view.division = 3
     })
-    await page.getByRole('button', { name: 'Next beat', exact: true }).click()
+    await page.getByRole('button', { name: 'Next Beat', exact: true }).click()
     expect(Number(await beat.inputValue())).toBeCloseTo(5 + 1 / 3)
     await beat.fill('1')
     await beat.press('Tab')
-    await expect(page.getByRole('button', { name: 'Previous beat', exact: true })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Previous Beat', exact: true })).toBeDisabled()
     expect(await beat.evaluate((input) => getComputedStyle(input).appearance)).toBe('textfield')
 })
 

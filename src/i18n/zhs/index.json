@@ -599,6 +599,7 @@
     "title": "选择操作",
     "paste": "粘贴",
     "selectSlideNotes": "选择长按音符节点",
+    "editProperties": "编辑属性",
     "delete": "删除"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "位置",
         "auto": "自动",
         "top": "顶部",
-        "left": "左边"
+        "left": "左边",
+        "right": "右边",
+        "disabled": "禁用"
       },
       "noteSpeed": "音符速度",
       "renderScale": "渲染比例",
       "showEffects": "特效",
+      "showTime": "显示时间",
       "highlightSelection": "高亮所选对象",
       "antialias": "抗锯齿",
       "aspectRatio": "宽高比",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "工具栏",
+      "add": "添加工具",
       "modal": {
         "title": "选择工具"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "快速滚动区域",
       "scrollInertia": "滚动惯性",
       "longPressContextMenu": "长按打开右键菜单"
+    },
+    "panels": {
+      "title": "面板"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "所有群组",
-      "one": "{0} 群组"
+      "one": "{0} 群组",
+      "shown": "显示 {0}/{1} 个群组"
     },
     "stage": {
       "all": "所有舞台",
-      "one": "{0} 舞台"
+      "one": "{0} 舞台",
+      "shown": "显示 {0}/{1} 个舞台"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "关闭",
     "form": {
       "confirm": "确认",
+      "mixed": "混合",
       "anchor": {
         "label": "对齐基准",
         "default": "默认",
@@ -1229,11 +1241,87 @@
       "back": "后退 {0} 毫秒",
       "forward": "前进 {0} 毫秒",
       "holdBackward": "按住以 {0} 倍速后退",
-      "holdForward": "按住以 {0} 倍速前进"
+      "holdForward": "按住以 {0} 倍速前进",
+      "stepSize": "步长：{0} 毫秒"
     }
   },
   "offscreenNotes": {
     "left": "屏幕左侧外的音符：{0}",
     "right": "屏幕右侧外的音符：{0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "预览",
+      "groups": "群组",
+      "stages": "舞台",
+      "properties": "属性"
+    },
+    "docks": {
+      "left": "左侧面板",
+      "right": "右侧面板",
+      "top": "顶部面板"
+    },
+    "show": "显示{0}",
+    "hide": "隐藏{0}",
+    "collapse": {
+      "left": "隐藏左侧面板",
+      "right": "隐藏右侧面板",
+      "top": "隐藏顶部面板"
+    },
+    "expand": {
+      "left": "显示左侧面板",
+      "right": "显示右侧面板",
+      "top": "显示顶部面板"
+    },
+    "resize": {
+      "left": "调整左侧面板大小",
+      "right": "调整右侧面板大小",
+      "top": "调整顶部面板大小"
+    },
+    "resizeTiles": "调整{0}和{1}的大小",
+    "dock": {
+      "auto": "自动停靠",
+      "left": "停靠在左边",
+      "right": "停靠在右边",
+      "top": "停靠在顶部"
+    },
+    "closePanel": "关闭{0}",
+    "manager": {
+      "show": "显示 {0}",
+      "hide": "隐藏 {0}",
+      "actions": "{0} 的更多操作",
+      "target": "新对象将添加到 {0}",
+      "rename": "重命名",
+      "solo": "仅显示此项",
+      "soloHint": "按住 Alt 点击可仅显示此项",
+      "select": "选择对象",
+      "selected": "已选择 {0} 个对象",
+      "moveSelection": "将所选移到此处",
+      "objects": "{0} 个对象",
+      "drag": "拖动以重新排序 {0}"
+    },
+    "groups": {
+      "renamed": "已将群组 {0} 重命名为 {1}",
+      "all": "所有群组",
+      "showAll": "显示所有群组",
+      "hideAll": "隐藏所有群组",
+      "add": "添加群组"
+    },
+    "stages": {
+      "renamed": "已将舞台 {0} 重命名为 {1}",
+      "all": "所有舞台",
+      "showAll": "显示所有舞台",
+      "hideAll": "隐藏所有舞台",
+      "add": "添加舞台",
+      "disabled": "此关卡未启用动态舞台。",
+      "enable": "启用动态舞台"
+    },
+    "properties": {
+      "sections": "属性分区",
+      "selection": "选择",
+      "tool": "工具",
+      "view": "视图",
+      "noTool": "当前工具没有设置。"
+    }
   }
 }

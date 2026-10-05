@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
+import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
 import { i18n } from '../i18n'
 import { isPlaying } from '../player'
 import { settings } from '../settings'
@@ -14,28 +15,34 @@ const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const background = useTemplateRef<HTMLDivElement>('background')
 const selectionCanvas = useTemplateRef<HTMLCanvasElement>('selection')
 const resources = usePreviewResources()
-const { status, errorDetail, loadVersion, loadSkin } = resources
+const { status, errorDetail, loadVersion, reload } = resources
 const viewport = usePreviewViewport(container)
 const {
-    canvasHeight,
-    canvasLeft,
-    displayedCanvasTop,
     canvasStyle,
+    controlsLayout,
     controlsStyle,
+    controlsButtonStyle,
+    settingsLayout,
+    focusPlacementOnMount,
     areControlsExpanded,
     areTransportControlsVisible,
-    canDockTransport,
     onControlsResize,
-    onTransportResize,
     onTimeResize,
-    onDockChange,
 } = viewport
 usePreviewRendering(canvas, background, resources, viewport, selectionCanvas)
+
+const isErrorDetailOpen = ref(false)
 </script>
 
 <template>
     <div ref="container" class="preview relative h-full w-full">
-        <div class="preview-viewport absolute overflow-hidden bg-black" :style="canvasStyle">
+        <!-- Until the skin is ready there is no strip to make room for, so the
+        status fills the whole panel rather than leaving an empty band. -->
+        <div
+            class="preview-viewport absolute overflow-hidden bg-black"
+            :class="{ 'inset-0': status !== 'ready' }"
+            :style="status === 'ready' ? canvasStyle : undefined"
+        >
             <div
                 ref="background"
                 class="preview-background pointer-events-none absolute inset-0 origin-top-left"
@@ -71,15 +78,21 @@ usePreviewRendering(canvas, background, resources, viewport, selectionCanvas)
                         <details
                             v-if="errorDetail"
                             class="max-h-32 max-w-full overflow-auto break-words"
+                            @toggle="isErrorDetailOpen = ($event.target as HTMLDetailsElement).open"
                         >
-                            <summary class="cursor-pointer">
+                            <!-- The shared chevron in place of the native marker. -->
+                            <summary
+                                class="flex cursor-pointer list-none items-center justify-center gap-2 rounded-full px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden"
+                            >
+                                <ChevronIcon :direction="isErrorDetailOpen ? 'down' : 'right'" />
                                 {{ i18n.preview.errorDetails }}
                             </summary>
                             <p>{{ errorDetail }}</p>
                         </details>
                         <button
-                            class="min-h-11 rounded-full bg-button px-4 py-2 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent"
-                            @click="loadSkin"
+                            type="button"
+                            class="h-8 rounded-full bg-button px-4 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
+                            @click="reload"
                         >
                             {{ i18n.preview.reload }}
                         </button>
@@ -91,21 +104,24 @@ usePreviewRendering(canvas, background, resources, viewport, selectionCanvas)
         <PreviewTransport
             v-if="status === 'ready'"
             v-model="areTransportControlsVisible"
-            :viewport-left="canvasLeft"
-            :viewport-top="displayedCanvasTop"
-            :viewport-bottom="displayedCanvasTop + canvasHeight"
-            :persistent="canDockTransport"
-            @resize="onTransportResize"
+            :layout="controlsLayout"
             @time-resize="onTimeResize"
         />
 
         <PreviewSettings
             v-if="status === 'ready' && !isPlaying"
-            v-show="!areTransportControlsVisible || canDockTransport"
             v-model:expanded="areControlsExpanded"
-            :style="controlsStyle"
+            :button-hidden="!!settingsLayout?.isButtonBlocked"
+            :button-style="controlsButtonStyle"
+            :panel-style="controlsStyle"
+            :placed="!!settingsLayout"
+            :focus-placement="focusPlacementOnMount"
+            :floating="
+                !!settingsLayout &&
+                settingsLayout.placement !== 'below' &&
+                settingsLayout.placement !== 'over'
+            "
             @resize="onControlsResize"
-            @position-change="onDockChange"
         />
     </div>
 </template>

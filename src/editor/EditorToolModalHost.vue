@@ -57,7 +57,7 @@ onUnmounted(() => {
         role="dialog"
         :aria-label="label"
         tabindex="-1"
-        class="editor-tool-modal absolute inset-x-0 bottom-2 z-30 mx-auto flex max-h-[70%] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden rounded-xl border border-white/10 bg-modal text-fg shadow-xl outline-none"
+        class="editor-tool-modal absolute inset-x-0 bottom-2 z-30 mx-auto flex max-h-[70%] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden rounded-xl bg-modal text-fg shadow-xl outline-none ring-1 ring-fg/10"
         @keydown.stop="onKeydown"
         @pointerdown.stop
         @mousedown.stop
@@ -72,20 +72,3 @@ onUnmounted(() => {
         />
     </div>
 </template>
-
-<style scoped>
-.editor-tool-modal :deep(.bg-header) {
-    flex: none;
-    padding: 0.5rem 0.75rem;
-    font-size: 1rem;
-}
-.editor-tool-modal :deep(.overflow-y-auto) {
-    min-height: 0;
-    padding: 0.75rem;
-}
-.editor-tool-modal :deep(.scaling-panel) {
-    display: flex;
-    min-height: 0;
-    flex-direction: column;
-}
-</style>

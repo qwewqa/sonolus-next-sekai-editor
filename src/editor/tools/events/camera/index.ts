@@ -17,7 +17,7 @@ import { createTransaction, type Transaction } from '../../../../state/transacti
 import { interpolate } from '../../../../utils/interpolate'
 import { constrainLaneObject } from '../../../laneLimits'
 import { notify } from '../../../notification'
-import { isSidebarVisible } from '../../../sidebars'
+import { isSidebarVisible, revealPropertiesSection } from '../../../sidebars'
 import { showToolModal } from '../../../toolModals'
 import {
     focusEntityAtBeat,
@@ -126,6 +126,8 @@ export const cameraEvent: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
+                        // An explicit edit gesture on the selection shows its properties.
+                        revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
                             eventEase: (

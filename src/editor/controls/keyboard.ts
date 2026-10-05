@@ -2,11 +2,11 @@ import { onMounted, onUnmounted } from 'vue'
 import { modals } from '../../modals'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
-import { currentSidebar } from '../sidebars'
+import { isInWorkspaceDock } from '../workspace'
 
 const onKeydown = (event: KeyboardEvent) => {
     if (modals.length) return
-    if (currentSidebar.value?.contains(document.activeElement)) return
+    if (isInWorkspaceDock(document.activeElement)) return
 
     for (const [name, key] of Object.entries(settings.keyboardShortcuts) as [
         CommandName,

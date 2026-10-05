@@ -3,7 +3,7 @@ import { i18n } from '../../../i18n'
 import { settings } from '../../../settings'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { isSidebarVisible } from '../../sidebars'
+import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { switchToolTo, toolName } from '../../tools'
 import { defaultSlidePropertiesPresetIndex } from '../../tools/slide'
@@ -19,6 +19,7 @@ export const slide: Command = {
     async execute() {
         if (toolName.value === 'slide') {
             if (isSidebarVisible.value) {
+                revealPropertiesSection('tool')
                 defaultSlidePropertiesPresetIndex.value =
                     (defaultSlidePropertiesPresetIndex.value + 1) %
                     settings.defaultSlidePropertiesPresets.length
@@ -51,6 +52,8 @@ export const createSlide = (index: number): Command => ({
         if (toolName.value === 'slide' && defaultSlidePropertiesPresetIndex.value === index) {
             if (!isSidebarVisible.value) {
                 await showToolModal(DefaultSlidePropertiesModal, {})
+            } else {
+                revealPropertiesSection('tool')
             }
         } else {
             defaultSlidePropertiesPresetIndex.value = index

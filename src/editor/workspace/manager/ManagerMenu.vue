@@ -1,0 +1,272 @@
+<script setup lang="ts">
+import {
+    computed,
+    nextTick,
+    onMounted,
+    onUnmounted,
+    ref,
+    useTemplateRef,
+    type Component,
+} from 'vue'
+import { vScrollEdges } from '../../../directives/scrollEdges'
+import { workspaceDockAttribute } from '..'
+
+export type ManagerMenuItem = {
+    key: string
+    label: string
+    /** Choice items omit it: their slot holds the check mark instead. */
+    icon?: Component
+    disabled?: boolean
+    /** Makes the item one choice of a radio group, checked or not. */
+    checked?: boolean
+    /** Destructive items are set apart and tinted. */
+    destructive?: boolean
+    /** Starts a new section of related items. */
+    separated?: boolean
+}
+
+const props = defineProps<{
+    anchor: HTMLElement
+    label: string
+    items: ManagerMenuItem[]
+    /**
+     * Opened by a touch: the first item takes focus without the keyboard
+     * highlight, which script focus would otherwise show after a touch.
+     */
+    touch?: boolean
+    /**
+     * Opens beside the anchor toward this side, aligned to its top, rather
+     * than below or above it: for anchors in a vertical rail at a screen edge.
+     */
+    beside?: 'left' | 'right'
+}>()
+
+const emit = defineEmits<{
+    select: [key: string, keyboard: boolean]
+    close: [restoreFocus: boolean]
+}>()
+
+const menu = useTemplateRef<HTMLDivElement>('menu')
+const scroller = useTemplateRef<HTMLDivElement>('scroller')
+
+// A modal dialog renders in the top layer, so a menu opened from inside one
+// must render inside it too to appear above it.
+const container = computed(() => props.anchor.closest('dialog') ?? 'body')
+
+const margin = 8
+const gap = 4
+const placement = ref<{ left: number; top: number; maxHeight?: number }>()
+let anchorAt: { left: number; top: number } | undefined
+
+const place = () => {
+    const element = menu.value
+    if (!element) return
+    const anchor = props.anchor.getBoundingClientRect()
+    anchorAt = { left: anchor.left, top: anchor.top }
+    const width = element.offsetWidth
+    // The items scroll inside; measure their full height, not the clipped box.
+    const height = scroller.value?.scrollHeight ?? element.scrollHeight
+    const viewportWidth = document.documentElement.clientWidth
+    const viewportHeight = window.innerHeight
+
+    const besideLeft =
+        props.beside === 'right'
+            ? anchor.right + gap
+            : props.beside === 'left'
+              ? anchor.left - gap - width
+              : undefined
+    if (
+        besideLeft !== undefined &&
+        besideLeft >= margin &&
+        besideLeft + width <= viewportWidth - margin
+    ) {
+        const room = viewportHeight - margin * 2
+        placement.value = {
+            left: besideLeft,
+            top: Math.max(margin, Math.min(anchor.top, viewportHeight - margin - height)),
+            maxHeight: height > room ? room : undefined,
+        }
+        return
+    }
+
+    const below = viewportHeight - anchor.bottom - gap - margin
+    const above = anchor.top - gap - margin
+
+    let top: number
+    let maxHeight: number | undefined
+    if (height <= below) {
+        top = anchor.bottom + gap
+    } else if (height <= above) {
+        top = anchor.top - gap - height
+    } else if (Math.max(below, above) >= Math.min(height, 160)) {
+        // Neither side fits the whole menu: use the roomier side and scroll.
+        maxHeight = Math.max(below, above)
+        top = below >= above ? anchor.bottom + gap : margin
+    } else {
+        // Very short screens: cover the anchor rather than squeeze the menu.
+        maxHeight = Math.max(0, viewportHeight - margin * 2)
+        top = Math.max(margin, Math.min(anchor.bottom + gap, viewportHeight - margin - height))
+    }
+
+    placement.value = {
+        left: Math.max(margin, Math.min(anchor.right - width, viewportWidth - margin - width)),
+        top,
+        maxHeight,
+    }
+}
+
+const buttons = () =>
+    [
+        ...(menu.value?.querySelectorAll<HTMLButtonElement>(
+            '[role="menuitem"], [role="menuitemradio"]',
+        ) ?? []),
+    ].filter((button) => !button.disabled)
+
+let active = true
+
+onMounted(async () => {
+    await nextTick()
+    place()
+    // Hidden elements cannot take focus, so wait for the placed menu to show.
+    await nextTick()
+    if (!active) return
+    buttons()[0]?.focus({ preventScroll: true, ...(props.touch && { focusVisible: false }) })
+
+    window.addEventListener('pointerdown', onOutside, true)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onDismiss)
+    window.addEventListener('blur', onDismiss)
+})
+
+onUnmounted(() => {
+    active = false
+    window.removeEventListener('pointerdown', onOutside, true)
+    window.removeEventListener('scroll', onScroll, true)
+    window.removeEventListener('resize', onDismiss)
+    window.removeEventListener('blur', onDismiss)
+})
+
+const onDismiss = () => {
+    emit('close', false)
+}
+
+const onOutside = (event: PointerEvent) => {
+    const target = event.target
+    if (!(target instanceof Node)) return
+    // The anchor toggles the menu itself on click.
+    if (menu.value?.contains(target) || props.anchor.contains(target)) return
+    emit('close', false)
+}
+
+const onScroll = (event: Event) => {
+    if (event.target instanceof Node && menu.value?.contains(event.target)) return
+    // Close once the anchor moves away; a late scroll event from bringing the
+    // anchor into view before opening leaves it in place.
+    const anchor = props.anchor.getBoundingClientRect()
+    if (
+        anchorAt &&
+        Math.abs(anchor.left - anchorAt.left) < 1 &&
+        Math.abs(anchor.top - anchorAt.top) < 1
+    )
+        return
+    emit('close', false)
+}
+
+const onKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+        // Also keeps a surrounding dialog open.
+        event.preventDefault()
+        emit('close', true)
+    } else if (event.key === 'Tab') {
+        // Focus returns to the anchor first, so Tab continues from there.
+        emit('close', true)
+    } else if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault()
+        const list = buttons()
+        if (!list.length) return
+        const index = list.findIndex((button) => button === document.activeElement)
+        const next =
+            event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? list.length - 1
+                  : index === -1
+                    ? event.key === 'ArrowDown'
+                        ? 0
+                        : list.length - 1
+                    : (index + (event.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length
+        list[next]?.focus()
+    }
+}
+
+const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
+    if (item.disabled) return
+    emit('select', item.key, event.detail === 0)
+}
+</script>
+
+<template>
+    <Teleport :to="container">
+        <div
+            ref="menu"
+            :[workspaceDockAttribute]="'menu'"
+            role="menu"
+            :aria-label="label"
+            class="manager-menu fixed z-50 flex w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-modal text-sm text-fg shadow-xl ring-1 ring-fg/10"
+            :class="{ invisible: !placement }"
+            :style="{
+                left: `${placement?.left ?? 0}px`,
+                top: `${placement?.top ?? 0}px`,
+                maxHeight: placement?.maxHeight === undefined ? '' : `${placement.maxHeight}px`,
+            }"
+            @keydown.stop="onKeydown"
+            @contextmenu.prevent
+        >
+            <!-- The fade marks more items; the menu's own chrome stays crisp. -->
+            <div
+                ref="scroller"
+                v-scroll-edges
+                role="none"
+                class="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-1"
+            >
+                <template v-for="item in items" :key="item.key">
+                    <div
+                        v-if="item.separated || item.destructive"
+                        role="separator"
+                        class="mx-2 my-1 shrink-0 border-t border-fg/15"
+                    />
+                    <button
+                        type="button"
+                        :role="item.checked === undefined ? 'menuitem' : 'menuitemradio'"
+                        :aria-checked="item.checked"
+                        tabindex="-1"
+                        class="manager-menu-item flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg enabled:focus-visible:bg-button enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:bg-button [@media(pointer:coarse)]:min-h-11"
+                        :class="{ 'text-danger': item.destructive }"
+                        :disabled="item.disabled"
+                        @click="onSelect($event, item)"
+                    >
+                        <component
+                            :is="item.icon"
+                            v-if="item.icon"
+                            class="size-4 shrink-0 fill-current"
+                            aria-hidden="true"
+                        />
+                        <svg
+                            v-else-if="item.checked"
+                            class="size-4 shrink-0 fill-current"
+                            viewBox="0 0 448 512"
+                            aria-hidden="true"
+                        >
+                            <!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc. -->
+                            <path
+                                d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"
+                            />
+                        </svg>
+                        <span v-else class="size-4 shrink-0" aria-hidden="true" />
+                        <span class="flex-1">{{ item.label }}</span>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </Teleport>
+</template>

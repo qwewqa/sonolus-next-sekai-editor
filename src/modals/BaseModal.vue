@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { inject, watch } from 'vue'
+import { vScrollEdges } from '../directives/scrollEdges'
+import CloseIcon from '../editor/workspace/CloseIcon.vue'
+import { i18n } from '../i18n'
 import { modalTitleKey } from './title'
 
 const props = defineProps<{
     title: string
 }>()
 
+// Only the editor's tool-modal host provides a title; its panels use the
+// Heading size, while top-level dialogs keep the larger Title size.
 const modalTitle = inject(modalTitleKey, undefined)
 if (modalTitle)
     watch(
@@ -20,19 +25,23 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="flex items-center justify-between bg-header p-4 text-lg font-bold">
-        <span>{{ title }}</span>
-        <button class="size-8 rounded-full p-1" @click="$emit('close')">
-            <svg class="size-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                <!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc. -->
-                <path
-                    d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"
-                />
-            </svg>
+    <div
+        class="flex h-12 shrink-0 items-center justify-between gap-2 bg-header pl-4 pr-1.5 font-bold [@media(pointer:coarse)]:h-[52px]"
+        :class="modalTitle ? 'text-base' : 'text-lg'"
+    >
+        <span class="min-w-0 truncate" :title>{{ title }}</span>
+        <button
+            type="button"
+            class="flex size-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:size-11"
+            :aria-label="i18n.modals.close"
+            :title="i18n.modals.close"
+            @click="$emit('close')"
+        >
+            <CloseIcon class="size-4 [@media(pointer:coarse)]:size-5" />
         </button>
     </div>
 
-    <div class="flex flex-col gap-4 overflow-y-auto p-4">
+    <div v-scroll-edges class="flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
         <slot />
     </div>
 </template>

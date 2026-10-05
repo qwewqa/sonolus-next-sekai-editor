@@ -91,7 +91,7 @@ test('production imports, scales through the touch menu, applies with Enter and 
         .filter({ hasText: 'Open Context Menu' })
         .tap()
     await page.getByRole('menuitem', { name: 'Scale Width', exact: true }).tap()
-    const factor = page.getByRole('spinbutton', { name: 'Scale factor' })
+    const factor = page.getByRole('spinbutton', { name: 'Scale Factor' })
     await factor.fill('2')
     await factor.press('Enter')
     await expect(page.locator('.scaling-panel')).toHaveCount(0)
@@ -206,7 +206,7 @@ test('lane limit commands clamp note placement in the production editor', async 
 
 test('preview decodes textures and renders after opening and resizing', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 1000 })
-    await page.getByRole('button', { name: 'Preview', exact: true }).click()
+    await page.getByRole('tab', { name: 'Preview', exact: true }).click()
     await expect.poll(() => page.evaluate(() => window.productionSmoke.uploads)).toBe(2)
     const frames = await page.evaluate(() => window.productionSmoke.preview)
     await page.setViewportSize({ width: 390, height: 844 })
@@ -241,4 +241,22 @@ test('internal copy and paste survive denied browser clipboard permissions', asy
         entities: { archetype: string }[]
     }
     expect(level.entities.filter((entity) => /Note$/.test(entity.archetype))).toHaveLength(2)
+})
+
+test('vertical rail labels stay centered while panels open and close', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 1000 })
+    const offsets = () =>
+        page.evaluate(() =>
+            [...document.querySelectorAll('[data-workspace-dock="left"] [role="tab"]')].map(
+                (tab) => {
+                    const label = tab.querySelector('span')!.getBoundingClientRect()
+                    const box = tab.getBoundingClientRect()
+                    return Math.abs(label.x + label.width / 2 - (box.x + box.width / 2))
+                },
+            ),
+        )
+    for (const name of ['Groups', 'Stages', 'Groups', 'Preview', 'Preview']) {
+        await page.getByRole('tab', { name, exact: true }).click()
+        for (const offset of await offsets()) expect(offset).toBeLessThan(1)
+    }
 })

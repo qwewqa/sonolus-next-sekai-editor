@@ -1,9 +1,10 @@
 import { computed } from 'vue'
+import { panelPositions } from '../editor/workspace/layout'
 import { i18n } from '../i18n'
-import { previewControls, previewPositions } from './options'
+import { previewControls } from './options'
 
-export const previewPositionOptions = computed(() =>
-    previewPositions.map(
+export const panelPositionOptions = computed(() =>
+    panelPositions.map(
         (position) => [i18n.value.settings.preview.position[position], position] as const,
     ),
 )

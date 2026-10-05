@@ -17,3 +17,61 @@ html[data-app-inactive] *::before,
 html[data-app-inactive] *::after {
     animation-play-state: paused !important;
 }
+
+/*
+ * Scroll edge fades (see `vScrollEdges`): an end that hides more content fades
+ * out over --scroll-fade. They add no size, and scrolled-to focus targets keep
+ * clear of the faded band.
+ */
+@layer components {
+    .scroll-edges {
+        --scroll-fade: 1.5rem;
+        --scroll-direction: to bottom;
+        scroll-padding-block: var(--scroll-fade);
+    }
+
+    .scroll-edges[data-scroll-axis='x'] {
+        --scroll-direction: to right;
+        scroll-padding-block: 0;
+        scroll-padding-inline: var(--scroll-fade);
+    }
+
+    .scroll-edges[data-scroll-after] {
+        -webkit-mask-image: linear-gradient(
+            var(--scroll-direction),
+            black calc(100% - var(--scroll-fade)),
+            transparent
+        );
+        mask-image: linear-gradient(
+            var(--scroll-direction),
+            black calc(100% - var(--scroll-fade)),
+            transparent
+        );
+    }
+
+    .scroll-edges:not([data-scroll-end-only])[data-scroll-before] {
+        -webkit-mask-image: linear-gradient(
+            var(--scroll-direction),
+            transparent,
+            black var(--scroll-fade)
+        );
+        mask-image: linear-gradient(var(--scroll-direction), transparent, black var(--scroll-fade));
+    }
+
+    .scroll-edges:not([data-scroll-end-only])[data-scroll-before][data-scroll-after] {
+        -webkit-mask-image: linear-gradient(
+            var(--scroll-direction),
+            transparent,
+            black var(--scroll-fade),
+            black calc(100% - var(--scroll-fade)),
+            transparent
+        );
+        mask-image: linear-gradient(
+            var(--scroll-direction),
+            transparent,
+            black var(--scroll-fade),
+            black calc(100% - var(--scroll-fade)),
+            transparent
+        );
+    }
+}

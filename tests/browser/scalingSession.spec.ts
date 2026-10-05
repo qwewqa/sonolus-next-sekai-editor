@@ -127,7 +127,7 @@ const open = async (page: Page, axis: 'beat' | 'elevation' = 'beat') => {
     await settle(page)
 }
 const factor = (page: Page) =>
-    panel(page).getByRole('spinbutton', { name: 'Scale factor', exact: true })
+    panel(page).getByRole('spinbutton', { name: 'Scale Factor', exact: true })
 const touch = (page: Page, type: string, point: { x: number; y: number }, elevation = false) =>
     page.evaluate(
         ({ type, point, elevation }) => {
@@ -259,7 +259,7 @@ test('live factor leaves chart history untouched until Apply, with one undo', as
     await page.evaluate(() => {
         window.editorTest.settings.showPreview = true
         window.editorTest.settings.previewPosition = 'left'
-        window.editorTest.settings.previewWidth = 300
+        window.editorTest.settings.leftDockWidth = 300
     })
     await expect(page.locator('.preview canvas').first()).toBeVisible()
     await expect.poll(() => page.evaluate(() => window.scalingVertices.length)).toBeGreaterThan(0)
@@ -270,7 +270,7 @@ test('live factor leaves chart history untouched until Apply, with one undo', as
     await settle(page)
     await expect(factor(page)).toHaveValue('1')
     await expect(factor(page)).toHaveAttribute('step', '0.1')
-    await expect(panel(page).getByText('Earliest beat', { exact: true })).toHaveCount(0)
+    await expect(panel(page).getByText('Earliest Beat', { exact: true })).toHaveCount(0)
     await expect(page.getByTitle('Select', { exact: true })).toHaveCount(0)
     const original = await page.evaluate(() => ({
         chart: document.querySelector<HTMLCanvasElement>('canvas.editor-chart')!.toDataURL(),
@@ -398,7 +398,7 @@ test('elevation scaling stays live in its pane and drags from the lowest selecte
     await page.keyboard.press('t')
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await open(page, 'elevation')
-    await expect(panel(page).getByText('Lowest elevation', { exact: true })).toHaveCount(0)
+    await expect(panel(page).getByText('Lowest Elevation', { exact: true })).toHaveCount(0)
     await expect(page.locator('.elevation-editor .scaling-panel')).toHaveCount(1)
     await expect(
         page.locator('.elevation-editor').getByTitle('Select', { exact: true }),

@@ -5,6 +5,8 @@ import type { ConnectorLayer, ConnectorType } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
 import { orderEntities, type EntityVisibility } from '../../src/editor/canvas/ordering'
 import { createFrameScheduler, prepareSurface } from '../../src/editor/canvas/surface'
+import { createScopeLookup, type ScopeInputs } from '../../src/editor/scopeRules'
+import { openFrame } from '../../src/frame'
 import type { Entity, EntityType } from '../../src/state/entities'
 import type { ConnectorEntity } from '../../src/state/entities/slides/connector'
 import type { NoteEntity } from '../../src/state/entities/slides/note'
@@ -30,17 +32,24 @@ const entityTypes: EntityType[] = [
     'note',
 ]
 
-const visibility = (overrides: Partial<EntityVisibility> = {}): EntityVisibility => ({
-    groupId: undefined,
-    stageId: undefined,
-    visibilities: Object.fromEntries(entityTypes.map((type) => [type, true])) as Record<
-        EntityType,
-        boolean
-    >,
-    showOtherGroups: true,
-    showOtherStages: true,
-    showOtherObjects: true,
-    ...overrides,
+const allTypesVisible = Object.fromEntries(entityTypes.map((type) => [type, true])) as Record<
+    EntityType,
+    boolean
+>
+
+type VisibilityOptions = ScopeInputs & {
+    visibilities?: Record<EntityType, boolean>
+    showOtherObjects?: boolean
+}
+
+const visibility = ({
+    visibilities = allTypesVisible,
+    showOtherObjects = true,
+    ...scope
+}: VisibilityOptions = {}): EntityVisibility => ({
+    scope: createScopeLookup(scope),
+    visibilities,
+    showOtherObjects,
 })
 
 // Ordering only reads identity, membership, beat and connector layer fields.
@@ -125,9 +134,13 @@ test('group, stage and type filters remain independent and never bypass filterin
     const bpm = { type: 'bpm', beat: 0 } as Entity
     const timeScale = { type: 'timeScale', beat: 1, groupId: otherGroup } as Entity
     const entities = [matching, wrongGroup, wrongStage, wrongBoth, bpm, timeScale]
-    const base = visibility({ groupId: group, stageId: stage })
-    const ids = (options: EntityVisibility) =>
-        new Set(orderEntities(entities, new Set(entities), options).map(({ entity }) => entity))
+    const base: VisibilityOptions = { groupId: group, stageId: stage }
+    const ids = (options: VisibilityOptions) =>
+        new Set(
+            orderEntities(entities, new Set(entities), visibility(options)).map(
+                ({ entity }) => entity,
+            ),
+        )
 
     assert.deepEqual(ids({ ...base, showOtherGroups: false }), new Set([matching, wrongStage, bpm]))
     assert.deepEqual(
@@ -141,16 +154,17 @@ test('group, stage and type filters remain independent and never bypass filterin
     assert.deepEqual(
         ids({
             ...base,
-            visibilities: { ...base.visibilities, note: false },
+            visibilities: { ...allTypesVisible, note: false },
             showOtherObjects: false,
         }),
         new Set([bpm, timeScale]),
     )
 
-    const faded = orderEntities(entities, new Set(), {
-        ...base,
-        visibilities: { ...base.visibilities, note: false },
-    })
+    const faded = orderEntities(
+        entities,
+        new Set(),
+        visibility({ ...base, visibilities: { ...allTypesVisible, note: false } }),
+    )
     assert.equal(
         faded.find(({ entity }) => entity === wrongBoth)?.opacity,
         0.25,
@@ -320,6 +334,42 @@ test('invalidation during drawing survives into the following animation frame', 
         assert.equal(pending.size, 1)
         tick()
         assert.deepEqual(draws, ['first', 'second'])
+    })
+})
+
+test('draws invalidated by a clock frame render in that frame, not every other frame', () => {
+    withAnimationFrames(({ pending, tick }) => {
+        const scheduler = createFrameScheduler()
+        const draws: number[] = []
+        // Each clock tick invalidates the canvas while its frame is open, as
+        // playback and smooth scrolling do during Vue's flush.
+        for (let frame = 1; frame <= 4; frame++) {
+            const close = openFrame(frame * 16)
+            scheduler.schedule((timestamp) => draws.push(timestamp))
+            assert.equal(pending.size, 0)
+            close()
+        }
+        assert.deepEqual(draws, [16, 32, 48, 64])
+
+        // Cancelling inside the open frame discards the draw.
+        const close = openFrame(80)
+        scheduler.schedule((timestamp) => draws.push(timestamp))
+        scheduler.cancel()
+        close()
+        assert.deepEqual(draws, [16, 32, 48, 64])
+
+        // Outside a clock frame, and from inside a joined draw, requests wait
+        // for the next animation frame.
+        scheduler.schedule((timestamp) => draws.push(timestamp))
+        assert.equal(pending.size, 1)
+        tick(96)
+        assert.deepEqual(draws, [16, 32, 48, 64, 96])
+        const reopen = openFrame(112)
+        scheduler.schedule(() => scheduler.schedule((timestamp) => draws.push(timestamp)))
+        reopen()
+        assert.equal(pending.size, 1)
+        tick(128)
+        assert.deepEqual(draws, [16, 32, 48, 64, 96, 128])
     })
 })
 

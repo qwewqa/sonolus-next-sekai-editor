@@ -161,7 +161,25 @@ for (const [tool, shortcut] of [
     test(`${tool}: narrow notes resize from the expanded hitbox beyond the visible body`, async ({
         page,
     }) => {
-        await page.setViewportSize({ width: 844, height: 600 })
+        // Keep an 844px editor beside the workspace's panel rails, whose width
+        // depends on the pointer: the pixel margins below are calibrated for it.
+        await page.setViewportSize({ width: 880, height: 600 })
+        const docks = () =>
+            page.evaluate(() =>
+                [
+                    ...document.querySelectorAll(
+                        '[data-workspace-dock="left"], [data-workspace-dock="right"]',
+                    ),
+                ].reduce((sum, dock) => sum + dock.getBoundingClientRect().width, 0),
+            )
+        await expect
+            .poll(
+                async () => (await page.evaluate(() => window.editorTest.view.w)) + (await docks()),
+            )
+            .toBe(880)
+        const rails = 880 - (await page.evaluate(() => window.editorTest.view.w))
+        await page.setViewportSize({ width: 844 + rails, height: 600 })
+        await expect.poll(() => page.evaluate(() => window.editorTest.view.w)).toBe(844)
         for (const size of [0, 0.5, 1, 1.5]) {
             for (const side of ['left', 'right'] as const) {
                 await seed(page, size, 16)

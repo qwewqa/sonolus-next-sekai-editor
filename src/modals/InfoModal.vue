@@ -18,7 +18,7 @@ defineEmits<{
 
         <div class="flex justify-end">
             <button
-                class="w-32 rounded-full bg-accent px-4 py-1 shadow-md transition-colors hover:shadow-accent active:bg-button active:text-accent"
+                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
                 @click="$emit('close')"
             >
                 {{ i18n.modals.info.ok }}

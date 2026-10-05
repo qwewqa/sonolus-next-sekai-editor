@@ -346,7 +346,7 @@ test('width scaling clamps the dragged edge, preserves cancellation and permits 
         void commands.scaleWidth.execute()
     })
     await drag(page, await point(page, 1.95), await point(page, 9))
-    expect(await page.getByRole('spinbutton', { name: 'Scale factor' }).inputValue()).toBe('3')
+    expect(await page.getByRole('spinbutton', { name: 'Scale Factor' }).inputValue()).toBe('3')
     await page.keyboard.press('Enter')
     const result = await notes(page)
     expect(result[0]!.left).toBe(0)

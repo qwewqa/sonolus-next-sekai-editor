@@ -10,7 +10,7 @@ export const bpm: Command = {
         is: TextIcon,
         props: {
             title: 'BPM',
-            class: 'text-[#f0f]',
+            chip: 'bg-[#f0f]',
         },
     },
 

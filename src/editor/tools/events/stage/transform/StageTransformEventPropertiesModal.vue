@@ -34,9 +34,9 @@ const beat = createModel('beat')
         <MultiRotationField v-model="rotation" />
         <MultiXTranslationField v-model="xTranslation" />
         <MultiYTranslationField v-model="yTranslation" />
-        <MultiElevationField v-model="elevation" />
         <MultiAnchorField v-model="anchor" />
         <MultiEventEaseField v-model="eventEase" />
         <MultiBeatField v-model="beat" />
+        <MultiElevationField v-model="elevation" />
     </PropertiesModal>
 </template>

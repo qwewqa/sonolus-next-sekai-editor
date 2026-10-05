@@ -8,6 +8,8 @@ import { getStageProps } from '../../preview/engine/stage'
 import { settings } from '../../settings'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
+import { scopeLookup } from '../scope'
+import { entityScopeVisibility } from '../scopeRules'
 import { view } from '../view'
 import { getNotesAtBeat } from './candidates'
 import { layoutElevationNotes, type ElevationNote } from './layout'
@@ -57,6 +59,7 @@ export const elevationNotes = computed(() => {
         elevation: (note.elevation ?? 0) + (props[note.stageIndex]?.elevation ?? 0),
     })
     const notes: ElevationNote[] = []
+    const scope = scopeLookup.value
     const candidates = getNotesAtBeat(gridNotes.value, elevationBeat.value).sort(
         (a, b) => (bySource.get(a)?.ordinal ?? 0) - (bySource.get(b)?.ordinal ?? 0),
     )
@@ -64,12 +67,9 @@ export const elevationNotes = computed(() => {
         const indexed = bySource.get(note)
         if (!indexed) continue
         const { order, compiled } = indexed
-        if (
-            !view.visibilities.note ||
-            (view.groupId !== undefined && note.groupId !== view.groupId) ||
-            (view.stageId !== undefined && note.stageId !== view.stageId)
-        )
-            continue
+        // The elevation editor only shows editable notes: dimmed groups and
+        // stages are omitted rather than drawn faintly.
+        if (!view.visibilities.note || entityScopeVisibility(note, scope) !== 'full') continue
         let position = basic(compiled)
         if (compiled.isAttached && compiled.attachHead && compiled.attachTail) {
             const head = basic(compiled.attachHead)

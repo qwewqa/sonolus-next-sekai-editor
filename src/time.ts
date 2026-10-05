@@ -1,5 +1,6 @@
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { isAppActive } from './activity'
+import { openFrame } from './frame'
 
 export const time = ref({
     now: performance.now() / 1000,
@@ -8,17 +9,20 @@ export const time = ref({
 
 let frame = 0
 
-const update = () => {
+const update = (timestamp: number) => {
     frame = 0
     if (!isAppActive.value) return
     const now = performance.now() / 1000
 
+    // Draws invalidated by this tick render in this frame, after Vue's flush.
+    const close = openFrame(timestamp)
     time.value = {
         now,
         delta: now - time.value.now,
     }
 
     frame = requestAnimationFrame(update)
+    void nextTick().finally(close)
 }
 
 const stop = watch(

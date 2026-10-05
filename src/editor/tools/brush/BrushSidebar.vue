@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { i18n } from '../../../i18n'
-import BaseSidebar from '../../sidebars/BaseSidebar.vue'
+import ToolSettings from '../../workspace/properties/ToolSettings.vue'
 import BrushPropertiesFields from './BrushPropertiesFields.vue'
 </script>
 
 <template>
-    <BaseSidebar :title="i18n.tools.brush.sidebar.title">
+    <ToolSettings :title="i18n.tools.brush.sidebar.title">
         <BrushPropertiesFields />
-    </BaseSidebar>
+    </ToolSettings>
 </template>

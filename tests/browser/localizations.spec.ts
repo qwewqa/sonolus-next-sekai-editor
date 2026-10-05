@@ -35,7 +35,7 @@ for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
             )
             await page.keyboard.press('t')
             const header = page.locator('.elevation-header')
-            await expect(header.locator('strong')).toHaveText(messages.elevation.header)
+            await expect(header.locator('.elevation-title')).toHaveText(messages.elevation.header)
             const beat = page.getByRole('spinbutton', {
                 name: messages.elevation.beat,
                 exact: true,

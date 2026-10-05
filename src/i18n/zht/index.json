@@ -599,6 +599,7 @@
     "title": "選取物件操作",
     "paste": "貼上",
     "selectSlideNotes": "選取滑條音符",
+    "editProperties": "編輯屬性",
     "delete": "刪除"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "位置",
         "auto": "自動",
         "top": "頂部",
-        "left": "左邊"
+        "left": "左邊",
+        "right": "右邊",
+        "disabled": "停用"
       },
       "noteSpeed": "音符速度",
       "renderScale": "渲染比例",
       "showEffects": "特效",
+      "showTime": "顯示時間",
       "highlightSelection": "醒目顯示選取物件",
       "antialias": "反鋸齒",
       "aspectRatio": "長寬比",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "工具列",
+      "add": "新增工具",
       "modal": {
         "title": "選擇工具"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "快速捲動區",
       "scrollInertia": "滾動慣性",
       "longPressContextMenu": "長按開啟右鍵選單"
+    },
+    "panels": {
+      "title": "面板"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "所有圖層",
-      "one": "{0} 圖層"
+      "one": "{0} 圖層",
+      "shown": "顯示 {0}/{1} 個圖層"
     },
     "stage": {
       "all": "所有舞台",
-      "one": "{0} 舞台"
+      "one": "{0} 舞台",
+      "shown": "顯示 {0}/{1} 個舞台"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "關閉",
     "form": {
       "confirm": "確認",
+      "mixed": "混合",
       "anchor": {
         "label": "對齊基準",
         "default": "預設",
@@ -1229,11 +1241,87 @@
       "back": "後退 {0} 毫秒",
       "forward": "前進 {0} 毫秒",
       "holdBackward": "按住以 {0} 倍速後退",
-      "holdForward": "按住以 {0} 倍速前進"
+      "holdForward": "按住以 {0} 倍速前進",
+      "stepSize": "步長：{0} 毫秒"
     }
   },
   "offscreenNotes": {
     "left": "螢幕左側外的音符：{0}",
     "right": "螢幕右側外的音符：{0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "預覽",
+      "groups": "圖層",
+      "stages": "舞台",
+      "properties": "屬性"
+    },
+    "docks": {
+      "left": "左側面板",
+      "right": "右側面板",
+      "top": "頂部面板"
+    },
+    "show": "顯示{0}",
+    "hide": "隱藏{0}",
+    "collapse": {
+      "left": "隱藏左側面板",
+      "right": "隱藏右側面板",
+      "top": "隱藏頂部面板"
+    },
+    "expand": {
+      "left": "顯示左側面板",
+      "right": "顯示右側面板",
+      "top": "顯示頂部面板"
+    },
+    "resize": {
+      "left": "調整左側面板大小",
+      "right": "調整右側面板大小",
+      "top": "調整頂部面板大小"
+    },
+    "resizeTiles": "調整{0}和{1}的大小",
+    "dock": {
+      "auto": "自動停靠",
+      "left": "停靠在左邊",
+      "right": "停靠在右邊",
+      "top": "停靠在頂部"
+    },
+    "closePanel": "關閉{0}",
+    "manager": {
+      "show": "顯示 {0}",
+      "hide": "隱藏 {0}",
+      "actions": "{0} 的更多操作",
+      "target": "新物件將加入 {0}",
+      "rename": "重新命名",
+      "solo": "僅顯示此項",
+      "soloHint": "按住 Alt 點選可僅顯示此項",
+      "select": "選取物件",
+      "selected": "已選取 {0} 個物件",
+      "moveSelection": "將所選移至此處",
+      "objects": "{0} 個物件",
+      "drag": "拖曳以重新排序 {0}"
+    },
+    "groups": {
+      "renamed": "已將圖層 {0} 重新命名為 {1}",
+      "all": "所有圖層",
+      "showAll": "顯示所有圖層",
+      "hideAll": "隱藏所有圖層",
+      "add": "新增圖層"
+    },
+    "stages": {
+      "renamed": "已將舞台 {0} 重新命名為 {1}",
+      "all": "所有舞台",
+      "showAll": "顯示所有舞台",
+      "hideAll": "隱藏所有舞台",
+      "add": "新增舞台",
+      "disabled": "此關卡未啟用動態舞台。",
+      "enable": "啟用動態舞台"
+    },
+    "properties": {
+      "sections": "屬性分區",
+      "selection": "選取",
+      "tool": "工具",
+      "view": "檢視",
+      "noTool": "目前的工具沒有設定。"
+    }
   }
 }

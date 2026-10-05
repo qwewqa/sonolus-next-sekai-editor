@@ -13,6 +13,7 @@ import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
 import { notify } from '../../notification'
+import { revealAuthoredEntities } from '../../scope'
 import {
     focusEntityAtBeat,
     focusViewAtBeat,
@@ -240,6 +241,8 @@ export const applyGeneratedSlideNotes = (notes: NoteEntity[]) => {
         }
     }
 
+    // Authoring reveals its target so generated notes never vanish.
+    revealAuthoredEntities(entities)
     pushState(
         interpolate(() => i18n.value.tools.generateSlideNotes.generated, `${entities.length}`),
         transaction.commit(entities),

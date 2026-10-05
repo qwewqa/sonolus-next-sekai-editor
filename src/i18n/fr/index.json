@@ -599,6 +599,7 @@
     "title": "Actions sur la sélection",
     "paste": "Coller",
     "selectSlideNotes": "Sélectionner les notes du slide",
+    "editProperties": "Modifier les propriétés",
     "delete": "Supprimer"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "Position",
         "auto": "Auto",
         "top": "Haut",
-        "left": "Gauche"
+        "left": "Gauche",
+        "right": "Droite",
+        "disabled": "Désactivé"
       },
       "noteSpeed": "Vitesse des notes",
       "renderScale": "Échelle de rendu",
       "showEffects": "Effets",
+      "showTime": "Afficher le temps",
       "highlightSelection": "Mettre la sélection en évidence",
       "antialias": "Anticrénelage",
       "aspectRatio": "Rapport d’aspect",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "Barre d’outils",
+      "add": "Ajouter un outil",
       "modal": {
         "title": "Sélectionner l'outil"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "Zone de défilement rapide",
       "scrollInertia": "Inertie de défilement",
       "longPressContextMenu": "Appui long pour le menu contextuel"
+    },
+    "panels": {
+      "title": "Panneaux"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "tous les groupes",
-      "one": "groupe {0}"
+      "one": "groupe {0}",
+      "shown": "{0}/{1} groupes affichés"
     },
     "stage": {
       "all": "toutes les scènes",
-      "one": "scène {0}"
+      "one": "scène {0}",
+      "shown": "{0}/{1} scènes affichées"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "Fermer",
     "form": {
       "confirm": "Confirmer",
+      "mixed": "Mixte",
       "anchor": {
         "label": "Ancrage",
         "default": "Par défaut",
@@ -1229,11 +1241,87 @@
       "back": "Reculer de {0} ms",
       "forward": "Avancer de {0} ms",
       "holdBackward": "Maintenir pour reculer à {0}×",
-      "holdForward": "Maintenir pour avancer à {0}×"
+      "holdForward": "Maintenir pour avancer à {0}×",
+      "stepSize": "Pas : {0} ms"
     }
   },
   "offscreenNotes": {
     "left": "Notes hors écran à gauche : {0}",
     "right": "Notes hors écran à droite : {0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "Aperçu",
+      "groups": "Groupes",
+      "stages": "Scènes",
+      "properties": "Propriétés"
+    },
+    "docks": {
+      "left": "Panneaux de gauche",
+      "right": "Panneaux de droite",
+      "top": "Panneaux du haut"
+    },
+    "show": "Afficher {0}",
+    "hide": "Masquer {0}",
+    "collapse": {
+      "left": "Masquer les panneaux de gauche",
+      "right": "Masquer les panneaux de droite",
+      "top": "Masquer les panneaux du haut"
+    },
+    "expand": {
+      "left": "Afficher les panneaux de gauche",
+      "right": "Afficher les panneaux de droite",
+      "top": "Afficher les panneaux du haut"
+    },
+    "resize": {
+      "left": "Redimensionner les panneaux de gauche",
+      "right": "Redimensionner les panneaux de droite",
+      "top": "Redimensionner les panneaux du haut"
+    },
+    "resizeTiles": "Redimensionner {0} et {1}",
+    "dock": {
+      "auto": "Ancrer automatiquement",
+      "left": "Ancrer à gauche",
+      "right": "Ancrer à droite",
+      "top": "Ancrer en haut"
+    },
+    "closePanel": "Fermer {0}",
+    "manager": {
+      "show": "Afficher {0}",
+      "hide": "Masquer {0}",
+      "actions": "Plus d’actions pour {0}",
+      "target": "Les nouveaux objets sont ajoutés à {0}",
+      "rename": "Renommer",
+      "solo": "Afficher uniquement celui-ci",
+      "soloHint": "Alt+clic pour n’afficher que celui-ci",
+      "select": "Sélectionner les objets",
+      "selected": "{0} objets sélectionnés",
+      "moveSelection": "Déplacer la sélection ici",
+      "objects": "{0} objets",
+      "drag": "Faire glisser pour réordonner {0}"
+    },
+    "groups": {
+      "renamed": "Groupe {0} renommé en {1}",
+      "all": "Tous les groupes",
+      "showAll": "Afficher tous les groupes",
+      "hideAll": "Masquer tous les groupes",
+      "add": "Ajouter un groupe"
+    },
+    "stages": {
+      "renamed": "Scène {0} renommée en {1}",
+      "all": "Toutes les scènes",
+      "showAll": "Afficher toutes les scènes",
+      "hideAll": "Masquer toutes les scènes",
+      "add": "Ajouter une scène",
+      "disabled": "Les scènes dynamiques sont désactivées pour ce niveau.",
+      "enable": "Activer les scènes dynamiques"
+    },
+    "properties": {
+      "sections": "Sections des propriétés",
+      "selection": "Sélection",
+      "tool": "Outil",
+      "view": "Vue",
+      "noTool": "L’outil actuel n’a pas de réglages."
+    }
   }
 }

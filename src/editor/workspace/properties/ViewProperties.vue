@@ -8,11 +8,9 @@ import SelectField from '../../../modals/form/SelectField.vue'
 import ToggleField from '../../../modals/form/ToggleField.vue'
 import { entries } from '../../../utils/object'
 import { commands } from '../../commands'
-import { switchToGroup } from '../../commands/groups'
-import { switchToStage } from '../../commands/stages'
+import { groupScope, stageScope } from '../../scope'
 import { toolName, tools } from '../../tools'
 import { view } from '../../view'
-import BaseSidebar from '../BaseSidebar.vue'
 import SizeField from '../../../modals/form/SizeField.vue'
 
 const tool = computed({
@@ -28,12 +26,17 @@ const toolOptions = computed(() =>
 
 const groupId = computed({
     get: () => view.groupId,
-    set: switchToGroup,
+    // Focusing an entry also reveals it if it was hidden.
+    set: (id) => {
+        groupScope.focus(id)
+    },
 })
 
 const stageId = computed({
     get: () => view.stageId,
-    set: switchToStage,
+    set: (id) => {
+        stageScope.focus(id)
+    },
 })
 
 const divisions = [1, 2, 3, 4, 6, 8, 12, 16]
@@ -74,21 +77,23 @@ const snapping = computed({
 </script>
 
 <template>
-    <BaseSidebar :title="i18n.sidebars.view.title">
-        <SelectField v-model="tool" :label="i18n.sidebars.view.tool" :options="toolOptions" />
-        <OptionalGroupField v-model="groupId" />
-        <OptionalStageField v-if="isDynamicStages" v-model="stageId" />
-        <SizeField v-model="view.noteSize" />
-        <SelectField
-            v-model="division"
-            :label="i18n.sidebars.view.division"
-            :options="divisionOptions"
-        />
-        <ToggleField
-            v-model="snapping"
-            :label="i18n.sidebars.view.snapping.label"
-            :disabled="i18n.sidebars.view.snapping.absolute"
-            :enabled="i18n.sidebars.view.snapping.relative"
-        />
-    </BaseSidebar>
+    <SelectField v-model="tool" :label="i18n.sidebars.view.tool" :options="toolOptions" />
+    <OptionalGroupField v-model="groupId" :empty-label="i18n.workspace.groups.all" />
+    <OptionalStageField
+        v-if="isDynamicStages"
+        v-model="stageId"
+        :empty-label="i18n.workspace.stages.all"
+    />
+    <SizeField v-model="view.noteSize" />
+    <SelectField
+        v-model="division"
+        :label="i18n.sidebars.view.division"
+        :options="divisionOptions"
+    />
+    <ToggleField
+        v-model="snapping"
+        :label="i18n.sidebars.view.snapping.label"
+        :disabled="i18n.sidebars.view.snapping.absolute"
+        :enabled="i18n.sidebars.view.snapping.relative"
+    />
 </template>

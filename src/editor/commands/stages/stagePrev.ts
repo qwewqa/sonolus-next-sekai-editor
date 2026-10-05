@@ -1,8 +1,8 @@
-import { switchToStage } from '.'
 import type { Command } from '..'
 import { checkDynamicStages } from '../../../history/dynamicStages.ts'
 import { stages } from '../../../history/stages'
 import { i18n } from '../../../i18n'
+import { stageScope } from '../../scope'
 import { view } from '../../view'
 import StagePrevIcon from './StagePrevIcon.vue'
 
@@ -12,6 +12,7 @@ export const stagePrev: Command = {
         is: StagePrevIcon,
     },
 
+    // Focusing an entry also reveals it if it was explicitly hidden.
     async execute() {
         if (!(await checkDynamicStages())) return
 
@@ -19,11 +20,11 @@ export const stagePrev: Command = {
         const index = view.stageId ? ids.indexOf(view.stageId) : -1
 
         if (index < 0) {
-            switchToStage(ids.at(-1))
+            stageScope.focus(ids.at(-1))
         } else if (index === 0) {
-            switchToStage(undefined)
+            stageScope.focus(undefined)
         } else {
-            switchToStage(ids[index - 1])
+            stageScope.focus(ids[index - 1])
         }
     },
 }

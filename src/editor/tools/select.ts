@@ -65,6 +65,7 @@ import {
 import { interpolate } from '../../utils/interpolate'
 import { constrainLaneObject } from '../laneLimits'
 import { notify } from '../notification'
+import { isEntityInScope } from '../scope'
 import {
     focusEntityAtBeat,
     focusViewAtBeat,
@@ -183,19 +184,17 @@ export const select: Tool = {
         if (focus) {
             focusEntityAtBeat(focus.beat)
 
-            notify(
-                interpolate(
-                    () => i18n.value.tools.select.moving,
-                    `${selectedEntities.value.length}`,
-                ),
-            )
+            // Selected objects in hidden or dimmed groups/stages stay put.
+            const moving = selectedEntities.value.filter(isEntityInScope)
+
+            notify(interpolate(() => i18n.value.tools.select.moving, `${moving.length}`))
 
             active = {
                 type: 'move',
                 lane,
                 focus,
-                entities: selectedEntities.value,
-                onlyType: getOnlyEntityType(selectedEntities.value),
+                entities: moving,
+                onlyType: getOnlyEntityType(moving),
             }
         } else {
             const [entity] = entities

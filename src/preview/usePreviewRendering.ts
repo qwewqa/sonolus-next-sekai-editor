@@ -1,6 +1,8 @@
 import { computed, onBeforeUnmount, shallowRef, watch, watchEffect, type Ref } from 'vue'
 import { isAppActive } from '../activity'
 import { view } from '../editor/view'
+import { dockSizeDrafts, panelWeightsDraft } from '../editor/workspace'
+import { cancelFrame, requestFrame } from '../frame'
 import { state } from '../history'
 import { isPlaying } from '../player'
 import { settings } from '../settings'
@@ -25,7 +27,12 @@ type PreviewViewport = {
 export const usePreviewRendering = (
     canvas: Readonly<Ref<HTMLCanvasElement | null>>,
     background: Readonly<Ref<HTMLDivElement | null>>,
-    { skin, particle, status, errorDetail }: ReturnType<typeof usePreviewResources>,
+    {
+        skin,
+        particle,
+        setGraphicsError,
+        clearGraphicsError,
+    }: ReturnType<typeof usePreviewResources>,
     { canvasWidth, canvasHeight, pixelRatio }: PreviewViewport,
     selectionCanvas?: Readonly<Ref<HTMLCanvasElement | null>>,
 ) => {
@@ -60,12 +67,10 @@ export const usePreviewRendering = (
 
         try {
             renderer.value = createPreviewRenderer(canvas.value, settings.previewAntialias)
-            errorDetail.value = ''
-            status.value = 'ready'
+            clearGraphicsError()
         } catch (error) {
             console.error('Failed to create preview renderer:', error)
-            errorDetail.value = error instanceof Error ? error.message : String(error)
-            status.value = 'error'
+            setGraphicsError(error)
         }
     }
 
@@ -119,8 +124,7 @@ export const usePreviewRendering = (
                 uploadedRenderer = nextRenderer
             } catch (error) {
                 console.error('Failed to upload preview textures:', error)
-                errorDetail.value = error instanceof Error ? error.message : String(error)
-                status.value = 'error'
+                setGraphicsError(error)
                 renderer.value = undefined
                 nextRenderer.dispose()
             }
@@ -131,6 +135,16 @@ export const usePreviewRendering = (
     let renderFrame: (() => void) | undefined
     let renderedBackground: HTMLDivElement | undefined
     let renderedBackgroundTransform = ''
+    let scheduledSize: { width: number; height: number } | undefined
+    // While a dock or tile is being dragged, keep the drawing buffers and let CSS
+    // scale them: reallocating them on every pointer move was the costliest part
+    // of a drag. The image keeps its aspect ratio, and releasing the handle
+    // renders at full resolution again. Only the start and end of a drag redraw;
+    // drafts for docks that leave the preview's size alone draw nothing.
+    const isResizing = computed(
+        () => panelWeightsDraft.value !== undefined || Object.keys(dockSizeDrafts.value).length > 0,
+    )
+    let sizedOverlay: HTMLCanvasElement | undefined
 
     const getRenderSize = (requestedScale: number) => {
         if (!renderer.value) return
@@ -151,7 +165,7 @@ export const usePreviewRendering = (
     watchEffect(
         () => {
             if (!isAppActive.value) {
-                cancelAnimationFrame(rafId)
+                cancelFrame(rafId)
                 rafId = 0
                 renderFrame = undefined
                 return
@@ -163,8 +177,11 @@ export const usePreviewRendering = (
                 return
             }
 
-            const renderSize = getRenderSize(pixelRatio.value * settings.previewRenderScale)
-            if (!renderSize) return
+            const fullSize = getRenderSize(pixelRatio.value * settings.previewRenderScale)
+            if (!fullSize) return
+            const resizing = isResizing.value
+            const renderSize = resizing ? (scheduledSize ?? fullSize) : fullSize
+            scheduledSize = renderSize
 
             const getChart = chartRequest.value
             const backgroundElement = background.value
@@ -201,11 +218,23 @@ export const usePreviewRendering = (
                 const ctx = overlay?.getContext('2d')
                 if (overlay && ctx) {
                     const ratio = pixelRatio.value
-                    if (overlay.width !== Math.round(canvasWidth.value * ratio))
-                        overlay.width = Math.round(canvasWidth.value * ratio)
-                    if (overlay.height !== Math.round(canvasHeight.value * ratio))
-                        overlay.height = Math.round(canvasHeight.value * ratio)
-                    ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+                    if (!resizing || overlay !== sizedOverlay) {
+                        sizedOverlay = overlay
+                        if (overlay.width !== Math.round(canvasWidth.value * ratio))
+                            overlay.width = Math.round(canvasWidth.value * ratio)
+                        if (overlay.height !== Math.round(canvasHeight.value * ratio))
+                            overlay.height = Math.round(canvasHeight.value * ratio)
+                    }
+                    // Map CSS pixels onto the actual backing store, which keeps its
+                    // size during a resize drag.
+                    ctx.setTransform(
+                        overlay.width / canvasWidth.value,
+                        0,
+                        0,
+                        overlay.height / canvasHeight.value,
+                        0,
+                        0,
+                    )
                     ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value)
                 }
                 const outline = createSelectionOutline()
@@ -260,7 +289,7 @@ export const usePreviewRendering = (
                 }
             }
             if (rafId) return
-            rafId = requestAnimationFrame(() => {
+            rafId = requestFrame(() => {
                 rafId = 0
                 if (isAppActive.value) renderFrame?.()
             })
@@ -269,7 +298,7 @@ export const usePreviewRendering = (
     )
 
     onBeforeUnmount(() => {
-        cancelAnimationFrame(rafId)
+        cancelFrame(rafId)
         renderer.value?.dispose()
     })
 }

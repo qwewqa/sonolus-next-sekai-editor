@@ -11,6 +11,7 @@ import { settings } from '../settings'
 import { createState, type State } from '../state'
 import { cleanupWaveform } from '../waveform'
 import { resetAutoSave } from './autoSave/index.ts'
+import { notifyResetState } from './resetHooks'
 
 const createDefaultChart = (): Chart => {
     const groups: Groups = new Map()
@@ -128,6 +129,8 @@ export const resetState = (
     cleanupWaveform()
 
     switchToolTo('select')
+
+    notifyResetState()
 }
 
 export const setLevelDataHandle = (handle: FileSystemFileHandle | undefined) => {

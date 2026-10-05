@@ -7,6 +7,7 @@ import { beatToTime } from '../../state/integrals/bpms'
 import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD } from '../entities/events/path'
+import type { ScopeLookup } from '../scopeRules'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
@@ -228,12 +229,12 @@ const drawStageInfinities = (
     context: EditorDrawContext,
     ranges: Iterable<[StageId, Range<StageEventJointEntity>]>,
     isEventVisible: boolean,
-    stageId: StageId | undefined,
-    showOtherStages: boolean,
+    scope: ScopeLookup,
 ) => {
     for (const [id, range] of ranges) {
-        const isVisible = isEventVisible && (stageId === undefined || range.min.stageId === stageId)
-        if (!isVisible && !showOtherStages) continue
+        const visibility = scope.stage(range.min.stageId)
+        if (visibility === 'hidden') continue
+        const isVisible = isEventVisible && visibility === 'full'
 
         const stage = context.state.stages.get(id)
         const isMask = range.min.type === 'stageMaskEventJoint'
@@ -255,11 +256,16 @@ const infinityTypes = [
     'stageTransformEventConnection',
 ] as const
 
+/**
+ * Draws the lines extending event ranges to the chart start and end. Stage
+ * ranges follow their stage's scope like the event connections they extend;
+ * hidden event types are drawn faintly unless other objects are hidden.
+ */
 export const drawEventInfinities = (
     context: EditorDrawContext,
     visibilities: Record<EntityType, boolean>,
-    stageId: StageId | undefined,
-    showOtherStages: boolean,
+    scope: ScopeLookup,
+    showOtherObjects: boolean,
 ) => {
     const { ctx, state } = context
     const { stageEventRanges } = state.store
@@ -270,6 +276,7 @@ export const drawEventInfinities = (
     const sortedTypes = [...infinityTypes].sort((a, b) => +visibilities[a] - +visibilities[b])
     for (const type of sortedTypes) {
         const isVisible = visibilities[type]
+        if (!isVisible && !showOtherObjects) continue
         switch (type) {
             case 'cameraEventConnection': {
                 const range = state.store.globalEventRanges.cameraEventJoint
@@ -277,21 +284,14 @@ export const drawEventInfinities = (
                 break
             }
             case 'stageMaskEventConnection':
-                drawStageInfinities(
-                    context,
-                    stageEventRanges.stageMaskEventJoint,
-                    isVisible,
-                    stageId,
-                    showOtherStages,
-                )
+                drawStageInfinities(context, stageEventRanges.stageMaskEventJoint, isVisible, scope)
                 break
             case 'stagePivotEventConnection':
                 drawStageInfinities(
                     context,
                     stageEventRanges.stagePivotEventJoint,
                     isVisible,
-                    stageId,
-                    showOtherStages,
+                    scope,
                 )
                 break
             case 'stageStyleEventConnection':
@@ -299,8 +299,7 @@ export const drawEventInfinities = (
                     context,
                     stageEventRanges.stageStyleEventJoint,
                     isVisible,
-                    stageId,
-                    showOtherStages,
+                    scope,
                 )
                 break
             case 'stageTransformEventConnection':
@@ -308,8 +307,7 @@ export const drawEventInfinities = (
                     context,
                     stageEventRanges.stageTransformEventJoint,
                     isVisible,
-                    stageId,
-                    showOtherStages,
+                    scope,
                 )
                 break
         }

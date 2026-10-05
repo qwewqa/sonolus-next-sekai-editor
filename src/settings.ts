@@ -4,6 +4,7 @@ import { shallowRef, watch } from 'vue'
 import { noteStyles, noteStyleSchema } from './chart/noteStyle'
 import { isCommandName, type CommandName } from './editor/commands'
 import { migrateToolbar } from './editor/toolbar/migrate'
+import { isPanelId, panelIds, type PanelId } from './editor/workspace/layout'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './preview/options'
@@ -91,14 +92,69 @@ const defaultNoteSlidePropertiesSchema = Type.Intersect([
 
 export type DefaultNoteSlideProperties = Type.Static<typeof defaultNoteSlidePropertiesSchema>
 
+const panelPosition = Type.Union([
+    Type.Literal('auto'),
+    Type.Literal('left'),
+    Type.Literal('right'),
+    Type.Literal('top'),
+    Type.Literal('disabled'),
+])
+
+export const propertiesSections = ['selection', 'tool', 'view'] as const
+export type PropertiesSection = (typeof propertiesSections)[number]
+
 const settingsProperties = {
-    showSidebar: Type.Boolean({ default: true }),
-
-    sidebarWidth: Type.Number(),
-
-    previewPosition: Type.Union([Type.Literal('auto'), Type.Literal('top'), Type.Literal('left')]),
+    previewPosition: panelPosition,
+    groupsPosition: panelPosition,
+    stagesPosition: panelPosition,
+    propertiesPosition: panelPosition,
 
     showPreview: Type.Boolean({ default: true }),
+    // Properties retains the open state saved by the former sidebar.
+    showSidebar: Type.Boolean({ default: true }),
+    showGroups: Type.Boolean(),
+    showStages: Type.Boolean(),
+
+    panelRecency: Type.Codec(
+        Type.Array(Type.String(), {
+            default: ['preview', 'properties', 'groups', 'stages'] satisfies PanelId[],
+        }),
+    )
+        .Decode((values) => [...new Set([...values.filter(isPanelId), ...panelIds])])
+        .Encode((values) => values),
+
+    leftDockWidth: Type.Number({ minimum: 0 }),
+    rightDockWidth: Type.Number({ minimum: 0 }),
+    topDockHeight: Type.Number({ minimum: 0 }),
+
+    // Collapsed docks keep their panels' open states for one-click restoring.
+    leftDockCollapsed: Type.Boolean(),
+    rightDockCollapsed: Type.Boolean(),
+    topDockCollapsed: Type.Boolean(),
+
+    panelWeights: Type.Codec(Type.Record(Type.String(), Type.Number()))
+        .Decode(
+            (value) =>
+                Object.fromEntries(
+                    Object.entries(value).filter(
+                        ([key, weight]) => isPanelId(key) && Number.isFinite(weight) && weight > 0,
+                    ),
+                ) as Partial<Record<PanelId, number>>,
+        )
+        .Encode((value) => value),
+
+    propertiesSection: Type.Union([
+        Type.Literal('selection'),
+        Type.Literal('tool'),
+        Type.Literal('view'),
+    ]),
+    propertiesCollapsed: Type.Codec(Type.Array(Type.String()))
+        .Decode((values) =>
+            [...new Set(values)].filter((value): value is PropertiesSection =>
+                propertiesSections.includes(value as PropertiesSection),
+            ),
+        )
+        .Encode((values) => values),
 
     previewControls: Type.Union([
         Type.Literal('auto'),
@@ -113,6 +169,11 @@ const settingsProperties = {
         previewRenderScale.max,
     ),
     previewShowEffects: Type.Boolean({ default: true }),
+    previewShowTime: Type.Boolean({ default: true }),
+    // Step size of the compact preview stepper, in ms.
+    previewStepSize: Type.Union([Type.Literal(1), Type.Literal(10), Type.Literal(100)], {
+        default: 10,
+    }),
     previewHighlightSelection: Type.Boolean({ default: true }),
     previewAntialias: Type.Boolean({ default: true }),
     previewAspectRatio: Type.Union([
@@ -120,10 +181,6 @@ const settingsProperties = {
         Type.Literal(previewAspectRatios[1][1]),
         Type.Literal(previewAspectRatios[2][1]),
     ]),
-
-    previewWidth: Type.Number(),
-
-    previewHeight: Type.Number(),
 
     width: number(16, 16, 100),
 
@@ -451,7 +508,26 @@ const migratePreset = (value: unknown) => {
     return preset
 }
 
+// Dock sizes replaced the panel-specific sizes of the former preview and sidebar.
+const legacyKeys: Partial<Record<string, string>> = {
+    leftDockWidth: 'previewWidth',
+    rightDockWidth: 'sidebarWidth',
+    topDockHeight: 'previewHeight',
+}
+
+const loadSetting = (key: string, defaultValue: unknown) => {
+    const legacyKey = legacyKeys[key]
+    const legacy = legacyKey === undefined ? undefined : storageGet(legacyKey, undefined)
+    if (legacyKey !== undefined && legacy !== undefined) {
+        if (storageGet(key, undefined) === undefined) storageSet(key, legacy)
+        storageRemove(legacyKey)
+    }
+    return storageGet(key, defaultValue)
+}
+
 const migrateSetting = (key: string, value: unknown) => {
+    // An unreleased layout briefly saved a single preview side.
+    if (key === 'previewPosition' && value === 'side') return 'left'
     if (key === 'toolbar' && Array.isArray(value) && value.every(Array.isArray))
         return migrateToolbar(value)
     return (key === 'defaultNotePropertiesPresets' || key === 'defaultSlidePropertiesPresets') &&
@@ -469,7 +545,7 @@ export const settings = Object.defineProperties(
         Object.entries(settingsProperties).map(([key, schema]) => {
             const defaultValue = Value.Create(schema)
             const prop = shallowRef(
-                normalize(schema, migrateSetting(key, storageGet(key, defaultValue))),
+                normalize(schema, migrateSetting(key, loadSetting(key, defaultValue))),
             )
             watch(
                 prop,

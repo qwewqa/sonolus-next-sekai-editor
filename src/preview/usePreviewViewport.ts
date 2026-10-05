@@ -1,210 +1,349 @@
-import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
-import { screenSm, screenWidth } from '../screen'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch, type Ref } from 'vue'
+import { isElevationEditorOpen, isElevationSideBySide } from '../editor/elevation/state'
+import { getPanelSide, workspaceLayout } from '../editor/workspace'
 import { settings } from '../settings'
+import {
+    layoutPreviewControls,
+    placePreviewSettings,
+    previewGap,
+    previewSettingsWidth,
+    type Rect,
+    type SettingsLayout,
+} from './layout'
+
+export type ControlsMetrics = {
+    width: number
+    naturalHeight: number
+    headerHeight: number
+}
+
+/** Coarse pointers get larger touch targets for the settings toggle and header. */
+export const isCoarsePointer = matchMedia('(pointer: coarse)').matches
+// Settings toggle size; matches its size-9 class on every pointer (touch
+// extends only its hit area).
+export const settingsButtonSize = 36
+
+// Editor controls the expanded settings must never cover when they extend
+// beyond the panel: the elevation editor's beat, snapping and close controls,
+// and the editor toolbar. Each selector's matches count as one combined area.
+const editorObstacleSelectors = ['.elevation-header', '[data-editor-toolbar] > *']
+
+const measureObstacles = () =>
+    editorObstacleSelectors.flatMap((selector) => {
+        const rects = [...document.querySelectorAll(selector)]
+            .map((element) => element.getBoundingClientRect())
+            .filter((rect) => rect.width > 0 && rect.height > 0)
+        if (!rects.length) return []
+        return [
+            {
+                left: Math.min(...rects.map((rect) => rect.left)),
+                top: Math.min(...rects.map((rect) => rect.top)),
+                right: Math.max(...rects.map((rect) => rect.right)),
+                bottom: Math.max(...rects.map((rect) => rect.bottom)),
+            },
+        ]
+    })
+
+// A placement change from the settings form can remount the preview in another
+// dock. The new form opens there so the user sees where it went, and keyboard
+// users continue in its Placement field.
+let settingsHandoff: { focusPlacement: boolean } | undefined
+export const handOffPreviewSettings = (focusPlacement: boolean) => {
+    settingsHandoff = { focusPlacement }
+    // When the preview stays in the same dock, nothing remounts to take it.
+    setTimeout(() => {
+        settingsHandoff = undefined
+    })
+}
 
 export const usePreviewViewport = (container: Readonly<Ref<HTMLElement | null>>) => {
-    const isTransportVisible = ref(false)
-    const transportHeight = ref(0)
-    const transportWidth = ref(0)
-    const transportRight = ref(0)
-    const timestampWidth = ref(0)
-    const timestampHeight = ref(0)
-    const controlsWidth = ref(0)
-    const controlsHeight = ref(0)
-    const controlsHeaderHeight = ref(0)
+    const containerWidth = ref(0)
+    const containerHeight = ref(0)
+    const containerRect = shallowRef<Rect>({ left: 0, top: 0, right: 0, bottom: 0 })
+    const viewportSize = shallowRef({ width: 0, height: 0 })
+    const pixelRatio = ref(devicePixelRatio || 1)
 
-    const onTransportResize = (height: number, width: number, right: number) => {
-        transportHeight.value = height
-        transportWidth.value = width
-        transportRight.value = right
-    }
+    const clockSize = shallowRef({ width: 0, height: 0 })
+    const controls = shallowRef<ControlsMetrics>()
+    const obstacles = shallowRef<Rect[]>([])
 
     const onTimeResize = (width: number, height: number) => {
-        timestampWidth.value = width
-        timestampHeight.value = height
+        clockSize.value = { width, height }
+    }
+    // The form's height at each width it has been laid out at. Placement compares
+    // places with different widths; remembering both keeps that choice stable.
+    const naturalHeights = new Map<number, number>()
+    const onControlsResize = (metrics: ControlsMetrics) => {
+        naturalHeights.set(Math.round(metrics.width), metrics.naturalHeight)
+        controls.value = metrics
     }
 
-    const onControlsResize = (width: number, height: number, headerHeight: number) => {
-        controlsWidth.value = width
-        controlsHeight.value = height
-        controlsHeaderHeight.value = headerHeight
-    }
+    const side = computed(() => getPanelSide('preview') ?? 'top')
 
-    const prefersCompactControls = matchMedia('(pointer: coarse)').matches
+    // Whether the strip is shown while it has no place of its own. This is
+    // session state only: once space allows, the strip returns regardless.
+    const isTransportShown = ref(false)
+
+    // The strip has a constant height, so the whole arrangement follows from the
+    // panel's size alone; nothing is measured.
+    const controlsLayout = computed(() =>
+        layoutPreviewControls({
+            width: containerWidth.value,
+            height: containerHeight.value,
+            aspectRatio: settings.previewAspectRatio,
+            coarse: isCoarsePointer,
+            showTime: settings.previewShowTime,
+            anchor: side.value === 'top' ? 'center' : 'start',
+        }),
+    )
+    const canvas = computed(() => controlsLayout.value.canvas)
+    const canDockTransport = computed(() => controlsLayout.value.placement !== 'overlay')
+    watch(canDockTransport, (docked) => {
+        // Losing docking space later must not hide controls already in view.
+        if (docked) isTransportShown.value = true
+    })
+    const areTransportControlsVisible = computed({
+        get: () => canDockTransport.value || isTransportShown.value,
+        set: (value: boolean) => {
+            isTransportShown.value = value
+        },
+    })
+
+    const canvasWidth = computed(() => canvas.value.width)
+    const canvasHeight = computed(() => canvas.value.height)
+    const canvasLeft = computed(() => canvas.value.left)
+    const canvasTop = computed(() => canvas.value.top)
+
+    const canvasStyle = computed(() => ({
+        left: `${canvas.value.left}px`,
+        top: `${canvas.value.top}px`,
+        width: `${canvas.value.width}px`,
+        height: `${canvas.value.height}px`,
+    }))
+
+    const settingsWidth = computed(() =>
+        previewSettingsWidth(side.value, containerRect.value, viewportSize.value.width),
+    )
+    const nextSettingsLayout = computed(() => {
+        const metrics = controls.value
+        if (!metrics || !containerWidth.value || !containerHeight.value) return
+        const tile = containerRect.value
+        const image = canvas.value
+        // The settings avoid the strip wherever it shows.
+        const strip = controlsLayout.value.strip
+        const transportRect: Rect | undefined = areTransportControlsVisible.value
+            ? {
+                  left: tile.left + strip.left,
+                  right: tile.left + strip.left + strip.width,
+                  top: tile.top + strip.top,
+                  bottom: tile.top + strip.top + strip.height,
+              }
+            : undefined
+        const clock = clockSize.value
+        // The clock chip is centered on the settings toggle's line.
+        const clockTop = tile.top + image.top + previewGap + (settingsButtonSize - clock.height) / 2
+        const clockRect =
+            clock.width && clock.height
+                ? {
+                      left: tile.left + image.left + previewGap,
+                      top: clockTop,
+                      right: tile.left + image.left + previewGap + clock.width,
+                      bottom: clockTop + clock.height,
+                  }
+                : undefined
+        return placePreviewSettings({
+            side: side.value,
+            tile,
+            image: {
+                left: tile.left + image.left,
+                top: tile.top + image.top,
+                right: tile.left + image.left + image.width,
+                bottom: tile.top + image.top + image.height,
+            },
+            obstacles: obstacles.value,
+            viewport: viewportSize.value,
+            transport: transportRect,
+            clock: clockRect,
+            panelWidth: settingsWidth.value,
+            naturalHeight: (width) =>
+                naturalHeights.get(Math.round(width)) ?? metrics.naturalHeight,
+            // The header and about two rows of fields.
+            minHeight: metrics.headerHeight + 88,
+            buttonSize: settingsButtonSize,
+        })
+    })
+    // Settings live outside the panel, so their size is observed at a shallower
+    // depth than the panel's own observers. Apply placement in the next frame
+    // rather than resizing them from inside a ResizeObserver delivery.
+    const settingsLayout = shallowRef<SettingsLayout>()
+    let settingsFrame = 0
+    watch(
+        nextSettingsLayout,
+        () => {
+            if (settingsFrame) return
+            settingsFrame = requestAnimationFrame(() => {
+                settingsFrame = 0
+                settingsLayout.value = nextSettingsLayout.value
+            })
+        },
+        { immediate: true },
+    )
+
+    // Auto expansion is resolved once per mount from the measured panel, so
+    // resizing a dock never opens or closes the form under the pointer.
+    const autoExpanded = ref<boolean>()
+    const handoff = settingsHandoff
+    settingsHandoff = undefined
+    if (handoff) autoExpanded.value = true
+    // Only the first form after a handoff takes focus, not one shown after playback.
+    const focusPlacementOnMount = ref(!!handoff?.focusPlacement)
+    const isInPanel = (layout: SettingsLayout) =>
+        layout.placement === 'below' || layout.placement === 'over'
+    watch(settingsLayout, (layout, previous) => {
+        if (!layout) return
+        focusPlacementOnMount.value = false
+        if (autoExpanded.value === undefined) {
+            autoExpanded.value = !isCoarsePointer && layout.fitsInPanel
+            return
+        }
+        // A form opened automatically inside the panel closes rather than jumping
+        // out over the editor when the panel shrinks, e.g. as a sibling opens.
+        if (
+            settings.previewControls === 'auto' &&
+            autoExpanded.value &&
+            previous &&
+            isInPanel(previous) &&
+            !isInPanel(layout)
+        ) {
+            autoExpanded.value = false
+        }
+    })
     const areControlsExpanded = computed({
         get: () =>
             settings.previewControls === 'expanded' ||
-            (settings.previewControls === 'auto' && screenSm.value && !prefersCompactControls),
+            (settings.previewControls === 'auto' && !!autoExpanded.value),
         set: (expanded: boolean) => {
             settings.previewControls = expanded ? 'expanded' : 'collapsed'
         },
     })
-    const canvasWidth = ref(0)
-    const canvasHeight = ref(0)
-    const canvasLeft = ref(0)
-    const canvasTop = ref(0)
-    const pixelRatio = ref(devicePixelRatio || 1)
 
-    let containerWidth = 0
-    let containerHeight = 0
-
-    const canDockTransport = computed(
-        () =>
-            transportHeight.value > 0 &&
-            // Do not latch visibility using the previous width's unwrapped bar height.
-            Math.abs(transportWidth.value - (canvasWidth.value + canvasLeft.value * 2)) < 0.1 &&
-            canvasTop.value * 2 >= transportHeight.value + 8,
-    )
-    watch(canDockTransport, (docked) => {
-        if (docked) isTransportVisible.value = true
+    // Editor controls may have moved since the last measurement.
+    watch(areControlsExpanded, (expanded) => {
+        if (expanded) measureFrame()
     })
-    const areTransportControlsVisible = computed({
-        get: () => canDockTransport.value || isTransportVisible.value,
-        set: (value: boolean) => {
-            isTransportVisible.value = value
-        },
-    })
-
-    // Make room below the image by spending spare space above it before overlapping
-    // the playfield. Showing controls only repositions the existing canvas.
-    const displayedCanvasTop = computed(() =>
-        areTransportControlsVisible.value
-            ? Math.max(
-                  0,
-                  Math.min(canvasTop.value, canvasTop.value * 2 - transportHeight.value - 8),
-              )
-            : canvasTop.value,
-    )
-
-    const canvasStyle = computed(() => ({
-        left: `${canvasLeft.value}px`,
-        top: `${displayedCanvasTop.value}px`,
-        width: `${canvasWidth.value}px`,
-        height: `${canvasHeight.value}px`,
-    }))
 
     const controlsStyle = computed(() => {
-        let top = 4
-        let clockLimit = Infinity
-        const imageBottom = displayedCanvasTop.value + canvasHeight.value
-        const naturalHeight = Math.min(
-            controlsHeight.value,
-            canDockTransport.value
-                ? Math.max(controlsHeaderHeight.value, imageBottom - top)
-                : Infinity,
-        )
-        const left = canvasWidth.value + canvasLeft.value * 2 - controlsWidth.value - 4
-        const timeLeft = canvasLeft.value + 4
-        const timeTop = displayedCanvasTop.value + 4
-        if (
-            timestampWidth.value &&
-            timestampHeight.value &&
-            left < timeLeft + timestampWidth.value &&
-            left + controlsWidth.value > timeLeft &&
-            top < timeTop + timestampHeight.value &&
-            top + naturalHeight > timeTop
-        ) {
-            if (timeTop - top >= controlsHeaderHeight.value + 28) {
-                // A clock further down the image only needs the body to scroll.
-                clockLimit = timeTop - top - 4
-            } else {
-                // Reserve one line when the header itself would cover the clock.
-                top = timeTop + timestampHeight.value + 4
-            }
-        }
-        const beside = transportRight.value + 4
-        const remainingWidth = screenWidth.value - beside - 4
-        if (
-            (settings.previewPosition === 'left' ||
-                (settings.previewPosition === 'auto' && screenSm.value)) &&
-            canDockTransport.value &&
-            controlsHeaderHeight.value > 0 &&
-            imageBottom - top < controlsHeaderHeight.value + (areControlsExpanded.value ? 24 : 0) &&
-            remainingWidth >= controlsHeaderHeight.value * (areControlsExpanded.value ? 2.5 : 1)
-        ) {
-            // An exceptionally short, narrow left preview cannot stack the clock,
-            // header and bar. Open settings beside the bar if the screen has room.
-            return {
-                top: '4px',
-                left: `${beside}px`,
-                right: 'auto',
-                maxWidth: `${remainingWidth}px`,
-                maxHeight: 'calc(var(--viewport-height) - 8px)',
-            }
-        }
-        // Undocked settings may extend below a short preview. Fit their measured
-        // content when the screen has room, including rows wrapped by wider fonts.
-        const maxHeight = canDockTransport.value
-            ? `${Math.max(controlsHeaderHeight.value, imageBottom - top)}px`
-            : `min(calc(var(--viewport-height) - ${top + 4}px), max(11rem, ${controlsHeight.value}px, calc(100% - ${top + 4}px)))`
+        const layout = settingsLayout.value
+        if (!layout) return { left: '0px', top: '0px', visibility: 'hidden' as const }
         return {
-            top: `${top}px`,
-            // Keep a gap above the docked bar and let the settings body scroll. When
-            // undocked it may extend beyond a short preview, but never the screen.
-            maxHeight: clockLimit < Infinity ? `min(${clockLimit}px, ${maxHeight})` : maxHeight,
+            left: `${layout.left}px`,
+            top: `${layout.top}px`,
+            width: `${layout.width}px`,
+            maxHeight: `${layout.maxHeight}px`,
+        }
+    })
+    const controlsButtonStyle = computed(() => {
+        const layout = settingsLayout.value
+        const tile = containerRect.value
+        // Hidden until placed, so it never appears first in the panel's corner.
+        if (!layout) return { visibility: 'hidden' as const }
+        return {
+            left: `${layout.button.left - tile.left}px`,
+            top: `${layout.button.top - tile.top}px`,
         }
     })
 
-    const updateCanvasSize = () => {
-        if (!containerWidth || !containerHeight) return
-
-        // Preserve the exact logical ratio; backing pixels are rounded separately.
-        // Independent CSS width/height rounding would subtly stretch the engine field.
-        canvasWidth.value = Math.min(containerWidth, containerHeight * settings.previewAspectRatio)
-        canvasHeight.value = canvasWidth.value / settings.previewAspectRatio
-        canvasLeft.value = (containerWidth - canvasWidth.value) / 2
-        canvasTop.value = (containerHeight - canvasHeight.value) / 2
+    const measureFrame = () => {
+        const element = container.value
+        const root = document.documentElement
+        const visual = window.visualViewport
+        viewportSize.value = {
+            width: root.clientWidth,
+            // An on-screen keyboard shrinks only the visual viewport.
+            height: visual
+                ? Math.min(root.clientHeight, visual.offsetTop + visual.height)
+                : root.clientHeight,
+        }
+        const nextObstacles = measureObstacles()
+        if (JSON.stringify(nextObstacles) !== JSON.stringify(obstacles.value)) {
+            obstacles.value = nextObstacles
+        }
+        if (!element) return
+        const { left, top, right, bottom } = element.getBoundingClientRect()
+        const previous = containerRect.value
+        if (
+            previous.left !== left ||
+            previous.top !== top ||
+            previous.right !== right ||
+            previous.bottom !== bottom
+        ) {
+            containerRect.value = { left, top, right, bottom }
+        }
     }
-
-    watch(() => settings.previewAspectRatio, updateCanvasSize)
 
     const resizeObserver = new ResizeObserver(([entry]) => {
         if (!entry) return
-
-        containerWidth = entry.contentRect.width
-        containerHeight = entry.contentRect.height
-        updateCanvasSize()
+        containerWidth.value = entry.contentRect.width
+        containerHeight.value = entry.contentRect.height
+        measureFrame()
     })
+    // Moving between docks or resizing a neighbor can move the panel without
+    // resizing it. Measure after the workspace has rendered the new layout.
+    watch(workspaceLayout, measureFrame, { flush: 'post' })
+    watch([isElevationEditorOpen, isElevationSideBySide], measureFrame, { flush: 'post' })
 
     let pixelRatioQuery: MediaQueryList | undefined
     const onPixelRatioChange = () => {
         pixelRatio.value = devicePixelRatio || 1
-        updateCanvasSize()
         pixelRatioQuery?.removeEventListener('change', onPixelRatioChange)
         pixelRatioQuery = matchMedia(`(resolution: ${pixelRatio.value}dppx)`)
         pixelRatioQuery.addEventListener('change', onPixelRatioChange)
     }
+    const onWindowResize = () => {
+        onPixelRatioChange()
+        measureFrame()
+    }
 
     onMounted(() => {
-        if (container.value) resizeObserver.observe(container.value)
+        // Lay out from the first frame; some engines deliver the first
+        // ResizeObserver notification only after a frame has been painted.
+        if (container.value) {
+            const { width, height } = container.value.getBoundingClientRect()
+            containerWidth.value = width
+            containerHeight.value = height
+            resizeObserver.observe(container.value)
+        }
         onPixelRatioChange()
-        window.addEventListener('resize', onPixelRatioChange)
+        measureFrame()
+        window.addEventListener('resize', onWindowResize)
+        window.visualViewport?.addEventListener('resize', measureFrame)
+        window.visualViewport?.addEventListener('scroll', measureFrame)
     })
     onUnmounted(() => {
         resizeObserver.disconnect()
-        window.removeEventListener('resize', onPixelRatioChange)
+        cancelAnimationFrame(settingsFrame)
+        window.removeEventListener('resize', onWindowResize)
+        window.visualViewport?.removeEventListener('resize', measureFrame)
+        window.visualViewport?.removeEventListener('scroll', measureFrame)
         pixelRatioQuery?.removeEventListener('change', onPixelRatioChange)
     })
 
-    const onDockChange = () => {
-        // Keep settings reachable when the new position cannot dock the transport.
-        isTransportVisible.value = false
-    }
-
     return {
+        focusPlacementOnMount,
         canvasWidth,
         canvasHeight,
         canvasLeft,
-        displayedCanvasTop,
+        canvasTop,
         pixelRatio,
         canvasStyle,
+        controlsLayout,
+        settingsLayout,
         controlsStyle,
+        controlsButtonStyle,
         areControlsExpanded,
         areTransportControlsVisible,
         canDockTransport,
         onControlsResize,
-        onTransportResize,
         onTimeResize,
-        onDockChange,
     }
 }

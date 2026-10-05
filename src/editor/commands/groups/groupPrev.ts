@@ -1,7 +1,7 @@
-import { switchToGroup } from '.'
 import type { Command } from '..'
 import { groups } from '../../../history/groups'
 import { i18n } from '../../../i18n'
+import { groupScope } from '../../scope'
 import { view } from '../../view'
 import GroupPrevIcon from './GroupPrevIcon.vue'
 
@@ -11,16 +11,17 @@ export const groupPrev: Command = {
         is: GroupPrevIcon,
     },
 
+    // Focusing an entry also reveals it if it was explicitly hidden.
     execute() {
         const ids = [...groups.value.keys()]
         const index = view.groupId ? ids.indexOf(view.groupId) : -1
 
         if (index < 0) {
-            switchToGroup(ids.at(-1))
+            groupScope.focus(ids.at(-1))
         } else if (index === 0) {
-            switchToGroup(undefined)
+            groupScope.focus(undefined)
         } else {
-            switchToGroup(ids[index - 1])
+            groupScope.focus(ids[index - 1])
         }
     },
 }

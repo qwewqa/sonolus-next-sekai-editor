@@ -599,6 +599,7 @@
     "title": "選択対象の操作",
     "paste": "貼り付け",
     "selectSlideNotes": "スライドのノーツを選択",
+    "editProperties": "プロパティを編集",
     "delete": "削除"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "プレビュー位置",
         "auto": "自動",
         "top": "上",
-        "left": "左"
+        "left": "左",
+        "right": "右",
+        "disabled": "無効"
       },
       "noteSpeed": "ノーツ速度",
       "renderScale": "描画解像度",
       "showEffects": "エフェクト",
+      "showTime": "時間を表示",
       "highlightSelection": "選択対象を強調表示",
       "antialias": "アンチエイリアス",
       "aspectRatio": "アスペクト比",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "ツールバー",
+      "add": "ツールを追加",
       "modal": {
         "title": "ツールを選択してください"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "クイックスクロールゾーンの大きさ(画面右何%)",
       "scrollInertia": "スクロールの慣性",
       "longPressContextMenu": "長押しでコンテキストメニュー"
+    },
+    "panels": {
+      "title": "パネル"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "すべてのグループ",
-      "one": "{0}グループ"
+      "one": "{0}グループ",
+      "shown": "{0}/{1} グループ表示中"
     },
     "stage": {
       "all": "すべてのステージ",
-      "one": "{0}ステージ"
+      "one": "{0}ステージ",
+      "shown": "{0}/{1} ステージ表示中"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "閉じる",
     "form": {
       "confirm": "確認",
+      "mixed": "混在",
       "anchor": {
         "label": "基準位置",
         "default": "デフォルト",
@@ -1229,11 +1241,87 @@
       "back": "{0}ミリ秒戻る",
       "forward": "{0}ミリ秒進む",
       "holdBackward": "長押しで{0}倍速で巻き戻し",
-      "holdForward": "長押しで{0}倍速で早送り"
+      "holdForward": "長押しで{0}倍速で早送り",
+      "stepSize": "ステップ幅: {0}ミリ秒"
     }
   },
   "offscreenNotes": {
     "left": "画面左側の範囲外にあるノーツ：{0}",
     "right": "画面右側の範囲外にあるノーツ：{0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "プレビュー",
+      "groups": "グループ",
+      "stages": "ステージ",
+      "properties": "プロパティ"
+    },
+    "docks": {
+      "left": "左のパネル",
+      "right": "右のパネル",
+      "top": "上のパネル"
+    },
+    "show": "{0}を表示",
+    "hide": "{0}を隠す",
+    "collapse": {
+      "left": "左のパネルを隠す",
+      "right": "右のパネルを隠す",
+      "top": "上のパネルを隠す"
+    },
+    "expand": {
+      "left": "左のパネルを表示",
+      "right": "右のパネルを表示",
+      "top": "上のパネルを表示"
+    },
+    "resize": {
+      "left": "左のパネルのサイズを変更",
+      "right": "右のパネルのサイズを変更",
+      "top": "上のパネルのサイズを変更"
+    },
+    "resizeTiles": "{0}と{1}のサイズを変更",
+    "dock": {
+      "auto": "自動で配置",
+      "left": "左に配置",
+      "right": "右に配置",
+      "top": "上に配置"
+    },
+    "closePanel": "{0}を閉じる",
+    "manager": {
+      "show": "{0}を表示",
+      "hide": "{0}を非表示",
+      "actions": "{0}のその他の操作",
+      "target": "新しいオブジェクトは{0}に追加されます",
+      "rename": "名前を変更",
+      "solo": "これだけを表示",
+      "soloHint": "Alt+クリックでこれだけを表示",
+      "select": "オブジェクトを選択",
+      "selected": "{0}個のオブジェクトを選択しました",
+      "moveSelection": "選択をここに移動",
+      "objects": "{0}個のオブジェクト",
+      "drag": "ドラッグして{0}を並べ替え"
+    },
+    "groups": {
+      "renamed": "グループ{0}の名前を{1}に変更しました",
+      "all": "すべてのグループ",
+      "showAll": "すべてのグループを表示",
+      "hideAll": "すべてのグループを非表示",
+      "add": "グループを追加"
+    },
+    "stages": {
+      "renamed": "ステージ{0}の名前を{1}に変更しました",
+      "all": "すべてのステージ",
+      "showAll": "すべてのステージを表示",
+      "hideAll": "すべてのステージを非表示",
+      "add": "ステージを追加",
+      "disabled": "このレベルでは動的ステージがオフです。",
+      "enable": "動的ステージを有効にする"
+    },
+    "properties": {
+      "sections": "プロパティのセクション",
+      "selection": "選択",
+      "tool": "ツール",
+      "view": "表示",
+      "noTool": "現在のツールには設定がありません。"
+    }
   }
 }

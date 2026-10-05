@@ -10,7 +10,7 @@ export const timeScale: Command = {
         is: TextIcon,
         props: {
             title: 'TS',
-            class: 'text-[#ff0]',
+            chip: 'bg-[#ff0]',
         },
     },
 

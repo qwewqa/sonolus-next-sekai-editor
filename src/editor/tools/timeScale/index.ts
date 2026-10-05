@@ -19,7 +19,8 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
-import { isSidebarVisible } from '../../sidebars'
+import { revealAuthoringTarget } from '../../scope'
+import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import {
     focusEntityAtBeat,
@@ -29,7 +30,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
-import { hitEntitiesAtPoint } from '../utils'
+import { hitEntitiesAtPoint, isVisible } from '../utils'
 import TimeScalePropertiesModal from './TimeScalePropertiesModal.vue'
 
 let active:
@@ -101,6 +102,8 @@ export const timeScale: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
+                        // An explicit edit gesture on the selection shows its properties.
+                        revealPropertiesSection('selection')
                         editMoveOrReplace(
                             entity,
                             constrainLaneObject({
@@ -155,7 +158,9 @@ export const timeScale: Tool = {
                 hideNotes: false,
             })
 
-            const overlap = find(view.groupId, object.beat)
+            // Reveal first: the placement may replace a time scale in its target group.
+            revealAuthoringTarget(object)
+            const overlap = find(object.groupId, object.beat)
             if (overlap) {
                 edit(overlap, object)
             } else {
@@ -294,7 +299,9 @@ export const timeScale: Tool = {
                         hideNotes: false,
                     })
 
-                    const overlap = find(view.groupId, object.beat)
+                    // Reveal first: the placement may replace a time scale in its target group.
+                    revealAuthoringTarget(object)
+                    const overlap = find(object.groupId, object.beat)
                     if (overlap) {
                         edit(overlap, object)
                     } else {
@@ -340,9 +347,21 @@ export const editTimeScale = (entity: TimeScaleEntity, object: Partial<TimeScale
     editMoveOrReplace(entity, object)
 }
 
-const find = (groupId: GroupId | undefined, beat: number) =>
+// Data-level lookup. A time scale created at an occupied beat of its own group
+// replaces the existing one, so a group never holds two time scales at one
+// beat; placement reveals the target group first, so the replaced time scale
+// is always visible. The nearest-object fallback only offers fully visible
+// time scales.
+const find = (
+    groupId: GroupId | undefined,
+    beat: number,
+    filter: (entity: TimeScaleEntity) => boolean = () => true,
+) =>
     getInStoreGrid(store.value.grid, 'timeScale', beat)?.find(
-        (entity) => entity.beat === beat && (groupId === undefined || entity.groupId === groupId),
+        (entity) =>
+            entity.beat === beat &&
+            (groupId === undefined || entity.groupId === groupId) &&
+            filter(entity),
     )
 
 const tryFind = (x: number, y: number): [TimeScaleEntity] | [undefined, number, number] => {
@@ -352,7 +371,7 @@ const tryFind = (x: number, y: number): [TimeScaleEntity] | [undefined, number, 
     if (hit) return [hit]
 
     const beat = yToValidBeat(y)
-    const nearest = find(view.groupId, beat)
+    const nearest = find(view.groupId, beat, isVisible)
     if (nearest) return [nearest]
 
     return [undefined, beat, xToValidLane(x)]
@@ -399,6 +418,8 @@ const update = (message: () => string, action: (transaction: Transaction) => Ent
 }
 
 const add = (object: TimeScaleObject) => {
+    // Authoring reveals its target so the new object never vanishes.
+    revealAuthoringTarget(object)
     update(
         () => i18n.value.tools.timeScale.added,
         (transaction) => {

@@ -55,6 +55,8 @@ import { interpolate } from '../../../utils/interpolate'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
+import { revealAuthoringTarget } from '../../scope'
+import { entityScopeIds } from '../../scopeRules'
 import { alignLane, view, xToLane, yToBeatOffset } from '../../view'
 import { getOnlyEntityType } from '../entityType'
 import PasteSidebar from './PasteSidebar.vue'
@@ -205,6 +207,7 @@ export const paste: Tool = {
             await checkDynamicStages()
         }
 
+        revealPasteTargets(active.entities)
         const transaction = createTransaction(state.value)
 
         const lane = xToLane(x)
@@ -248,6 +251,19 @@ export const paste: Tool = {
     },
 }
 
+// Authoring reveals its target: pasted objects land in the focused group/stage
+// or keep their own, and must neither vanish nor replace hidden objects (a
+// pasted time scale replaces one at the same beat of its group).
+const revealPasteTargets = (entities: Entity[]) => {
+    for (const entity of entities) {
+        const { groupId, stageId } = entityScopeIds(entity)
+        revealAuthoringTarget({
+            groupId: groupId === undefined ? undefined : (view.groupId ?? groupId),
+            stageId: stageId === undefined ? undefined : (view.stageId ?? stageId),
+        })
+    }
+}
+
 export type PastePositionOptions = {
     notesOnly?: boolean
     mapNote?: (entity: NoteEntity, beat: number) => Partial<NoteObject>
@@ -280,6 +296,7 @@ export const pasteAtPosition = async (
         await checkDynamicStages()
     }
 
+    revealPasteTargets(entities)
     const transaction = createTransaction(state.value)
 
     const onlyType = getOnlyEntityType(entities)

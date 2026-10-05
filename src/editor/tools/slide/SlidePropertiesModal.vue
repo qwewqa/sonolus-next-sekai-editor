@@ -59,7 +59,6 @@ const connectorPresentation = createModel('connectorPresentation')
 <template>
     <PropertiesModal :title="i18n.tools.slide.modal.title">
         <MultiNoteTypeField v-model="noteType" />
-        <MultiElevationField v-if="noteFields.elevation !== false" v-model="elevation" />
         <MultiNoteStyleField v-if="noteFields.noteStyle !== false" v-model="noteStyle" />
         <MultiGroupField v-model="groupId" />
         <MultiStageField v-if="isDynamicStages" v-model="stageId" />
@@ -114,5 +113,6 @@ const connectorPresentation = createModel('connectorPresentation')
             v-if="noteFields.connectorPresentation !== false"
             v-model="connectorPresentation"
         />
+        <MultiElevationField v-if="noteFields.elevation !== false" v-model="elevation" />
     </PropertiesModal>
 </template>

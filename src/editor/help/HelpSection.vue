@@ -8,7 +8,7 @@ defineProps<{
     <section>
         <h2 class="font-bold">{{ title }}</h2>
 
-        <ul class="mt-2 list-inside list-disc">
+        <ul class="mt-2 list-outside list-disc pl-5">
             <slot />
         </ul>
     </section>

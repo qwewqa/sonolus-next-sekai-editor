@@ -6,6 +6,7 @@ import { timeToBeat } from '../state/integrals/bpms'
 import { align } from '../utils/math'
 import type { Modifiers } from './controls/gestures/pointer'
 import { editorNavigation } from './navigation'
+import { scopeLookup } from './scope'
 import { pasteAtPosition } from './tools/paste'
 import { view, xToLane, yToTime } from './view'
 
@@ -18,7 +19,9 @@ export const pasteAtContextPosition = async (
     const source = state.value
     const lane = xToLane(x)
     const beat = timeToBeat(bpms.value, Math.max(0, yToTime(y)))
-    const { division, snapping, groupId, stageId } = view
+    const { division, snapping } = view
+    // A focus or visibility change while the clipboard is read invalidates the paste.
+    const scope = scopeLookup.value
     try {
         await updateClipboard()
     } catch {
@@ -26,13 +29,7 @@ export const pasteAtContextPosition = async (
     }
 
     const data = clipboardEntry.value?.data
-    if (
-        !hasSameChartData(source, state.value) ||
-        view.groupId !== groupId ||
-        view.stageId !== stageId ||
-        !data
-    )
-        return false
+    if (!hasSameChartData(source, state.value) || scopeLookup.value !== scope || !data) return false
 
     const beatOffset =
         snapping === 'absolute'

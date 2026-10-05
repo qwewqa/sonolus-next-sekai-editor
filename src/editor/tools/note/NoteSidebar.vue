@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { i18n } from '../../../i18n'
-import BaseSidebar from '../../sidebars/BaseSidebar.vue'
+import ToolSettings from '../../workspace/properties/ToolSettings.vue'
 import DefaultNotePropertiesFields from './DefaultNotePropertiesFields.vue'
 </script>
 
 <template>
-    <BaseSidebar :title="i18n.tools.note.sidebar.title">
+    <ToolSettings :title="i18n.tools.note.sidebar.title">
         <DefaultNotePropertiesFields />
-    </BaseSidebar>
+    </ToolSettings>
 </template>

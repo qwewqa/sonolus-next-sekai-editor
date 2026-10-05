@@ -115,7 +115,7 @@ const onGenerate = () => {
 
 <template>
     <BaseModal :title="i18n.utilities.previewEditor.title">
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-3">
             <FileField
                 :label="i18n.utilities.previewEditor.bgm"
                 :value="buffer && formatTime(buffer.duration)"
@@ -151,9 +151,9 @@ const onGenerate = () => {
             />
         </div>
 
-        <div v-if="buffer" class="mt-4 flex justify-end">
+        <div v-if="buffer" class="flex justify-end">
             <button
-                class="w-32 rounded-full bg-accent px-4 py-1 shadow-md transition-colors hover:shadow-accent active:bg-button active:text-accent"
+                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
                 @click="onGenerate"
             >
                 {{ i18n.utilities.previewEditor.generate }}

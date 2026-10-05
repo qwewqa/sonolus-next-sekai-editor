@@ -22,7 +22,9 @@ test.beforeEach(async ({ page }) => {
     await page.evaluate(() => {
         window.editorTest.settings.showPreview = true
     })
-    await expect(page.locator('.preview').getByText('Note Speed', { exact: true })).toBeVisible()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
 })
 
 test('selected notes highlight at the hit beat without seeking or adding history', async ({
@@ -40,7 +42,9 @@ test('selected notes highlight at the hit beat without seeking or adding history
     await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
     expect(await page.evaluate(() => window.editorTest.view.cursorTime)).toBe(3)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
-    const highlighting = page.locator('.preview').getByLabel('Highlight Selection', { exact: true })
+    const highlighting = page
+        .locator('.preview-controls')
+        .getByLabel('Highlight Selection', { exact: true })
     await highlighting.uncheck()
     await expect.poll(() => outlinePixels(page)).toBe(0)
     expect(
@@ -133,7 +137,9 @@ test('selected invisible anchors show a preview line that respects the highlight
         history.replaceState({ ...history.state.value, selectedEntities: [anchor] })
     })
     await expect.poll(() => outlinePixels(page)).toBeGreaterThan(0)
-    const highlighting = page.locator('.preview').getByLabel('Highlight Selection', { exact: true })
+    const highlighting = page
+        .locator('.preview-controls')
+        .getByLabel('Highlight Selection', { exact: true })
     await highlighting.uncheck()
     await expect.poll(() => outlinePixels(page)).toBe(0)
     await highlighting.check()

@@ -599,6 +599,7 @@
     "title": "선택 항목 작업",
     "paste": "붙여넣기",
     "selectSlideNotes": "슬라이드 노트 선택",
+    "editProperties": "속성 편집",
     "delete": "삭제"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "위치",
         "auto": "자동",
         "top": "상단",
-        "left": "좌측"
+        "left": "좌측",
+        "right": "우측",
+        "disabled": "사용 안 함"
       },
       "noteSpeed": "노트 속도",
       "renderScale": "렌더링 배율",
       "showEffects": "효과",
+      "showTime": "시간 표시",
       "highlightSelection": "선택 항목 강조",
       "antialias": "안티앨리어싱",
       "aspectRatio": "화면 비율",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "도구 모음",
+      "add": "도구 추가",
       "modal": {
         "title": "선택 도구"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "빠른 스크롤 영역",
       "scrollInertia": "스크롤 관성",
       "longPressContextMenu": "길게 눌러 컨텍스트 메뉴 열기"
+    },
+    "panels": {
+      "title": "패널"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "모든 그룹",
-      "one": "{0}번 그룹"
+      "one": "{0}번 그룹",
+      "shown": "{0}/{1} 그룹 표시 중"
     },
     "stage": {
       "all": "모든 스테이지",
-      "one": "{0}번 스테이지"
+      "one": "{0}번 스테이지",
+      "shown": "{0}/{1} 스테이지 표시 중"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "닫기",
     "form": {
       "confirm": "확인",
+      "mixed": "혼합",
       "anchor": {
         "label": "앵커",
         "default": "기본",
@@ -1229,11 +1241,87 @@
       "back": "{0}밀리초 뒤로",
       "forward": "{0}밀리초 앞으로",
       "holdBackward": "길게 눌러 {0}배속으로 되감기",
-      "holdForward": "길게 눌러 {0}배속으로 빨리감기"
+      "holdForward": "길게 눌러 {0}배속으로 빨리감기",
+      "stepSize": "이동 단위: {0}밀리초"
     }
   },
   "offscreenNotes": {
     "left": "화면 왼쪽 밖의 노트: {0}",
     "right": "화면 오른쪽 밖의 노트: {0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "미리보기",
+      "groups": "그룹",
+      "stages": "스테이지",
+      "properties": "속성"
+    },
+    "docks": {
+      "left": "좌측 패널",
+      "right": "우측 패널",
+      "top": "상단 패널"
+    },
+    "show": "{0} 표시",
+    "hide": "{0} 숨기기",
+    "collapse": {
+      "left": "좌측 패널 숨기기",
+      "right": "우측 패널 숨기기",
+      "top": "상단 패널 숨기기"
+    },
+    "expand": {
+      "left": "좌측 패널 표시",
+      "right": "우측 패널 표시",
+      "top": "상단 패널 표시"
+    },
+    "resize": {
+      "left": "좌측 패널 크기 조절",
+      "right": "우측 패널 크기 조절",
+      "top": "상단 패널 크기 조절"
+    },
+    "resizeTiles": "{0} 및 {1} 크기 조절",
+    "dock": {
+      "auto": "자동으로 배치",
+      "left": "좌측에 배치",
+      "right": "우측에 배치",
+      "top": "상단에 배치"
+    },
+    "closePanel": "{0} 닫기",
+    "manager": {
+      "show": "{0} 표시",
+      "hide": "{0} 숨기기",
+      "actions": "{0} 추가 작업",
+      "target": "새 객체는 {0}에 추가됩니다",
+      "rename": "이름 변경",
+      "solo": "이것만 표시",
+      "soloHint": "Alt+클릭하여 이것만 표시",
+      "select": "객체 선택",
+      "selected": "객체 {0}개 선택됨",
+      "moveSelection": "선택 항목을 여기로 이동",
+      "objects": "객체 {0}개",
+      "drag": "드래그하여 {0} 순서 변경"
+    },
+    "groups": {
+      "renamed": "{0} 그룹 이름을 {1}(으)로 변경함",
+      "all": "모든 그룹",
+      "showAll": "모든 그룹 표시",
+      "hideAll": "모든 그룹 숨기기",
+      "add": "그룹 추가"
+    },
+    "stages": {
+      "renamed": "{0} 스테이지 이름을 {1}(으)로 변경함",
+      "all": "모든 스테이지",
+      "showAll": "모든 스테이지 표시",
+      "hideAll": "모든 스테이지 숨기기",
+      "add": "스테이지 추가",
+      "disabled": "이 레벨에서는 동적 스테이지가 꺼져 있습니다.",
+      "enable": "동적 스테이지 활성화"
+    },
+    "properties": {
+      "sections": "속성 섹션",
+      "selection": "선택",
+      "tool": "도구",
+      "view": "보기",
+      "noTool": "현재 도구에는 설정이 없습니다."
+    }
   }
 }

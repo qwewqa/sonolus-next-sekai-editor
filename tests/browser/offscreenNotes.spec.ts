@@ -87,7 +87,7 @@ test('offscreen counts follow live width previews and revert on Cancel', async (
         settings.keyboardShortcuts = { ...settings.keyboardShortcuts, scaleWidth: 'F10' }
     })
     await page.keyboard.press('F10')
-    await page.getByRole('spinbutton', { name: 'Scale factor' }).fill('0.1')
+    await page.getByRole('spinbutton', { name: 'Scale Factor' }).fill('0.1')
     const editor = page.locator('.editor-chart').locator('..')
     await expect(editor.locator('[data-side="left"]')).toHaveAttribute('data-count', '14')
     await expect(editor.locator('[data-side="right"]')).toHaveCount(0)

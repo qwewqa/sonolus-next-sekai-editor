@@ -9,19 +9,24 @@ import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { formatShortcut } from '../utils/format'
+import { vScrollEdges } from '../directives/scrollEdges'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import DeleteIcon from './commands/reset/ResetIcon.vue'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
 import { pasteAtContextPosition } from './contextMenuPaste'
+import { canEditSelectionProperties, editSelectionProperties } from './editSelectionProperties'
 import { openElevationEditor } from './elevation/state'
+import PropertiesIcon from './commands/properties/PropertiesIcon.vue'
+import { isCoarsePointer } from './workspace'
 import { editorNavigation } from './navigation'
+import { isEntityInScope, scopeLookup } from './scope'
 import { toolName } from './tools'
 import { canRemove, remove } from './tools/eraser'
 import { hitAllEntitiesAtPoint, modifyEntities } from './tools/utils'
 import { view, yToValidBeat } from './view'
 
-type ActionName = CommandName | 'delete' | 'selectSlideNotes' | 'editElevations'
+type ActionName = CommandName | 'delete' | 'selectSlideNotes' | 'editElevations' | 'editProperties'
 type Action = {
     name: ActionName
     title: string
@@ -35,23 +40,29 @@ const canDelete = computed(() =>
     selectedEntities.value.some((entity) => isEditableEntity(entity) && canRemove(entity)),
 )
 let returnFocus: HTMLElement | null = null
+// A menu opened by pointer focuses itself, so no item starts out highlighted;
+// one opened from the keyboard focuses its first item.
+let pointerInput = false
+const onInput = (event: Event) => {
+    pointerInput = event.type === 'pointerdown'
+}
 
 const actions = computed(() => {
     const selection = selectedEntities.value
     const groups: ActionName[][] = []
     const editable = selection.some(isEditableEntity)
     const point = contextMenu.value
+    // Elevations belong to notes: offer the editor for notes or empty space.
     const canEditElevations =
-        point &&
-        (selection.some((entity) => entity.type === 'note') ||
-            !hitAllEntitiesAtPoint(point.x, point.y).length)
+        point && (selection.some((entity) => entity.type === 'note') || !selection.length)
     if (
         selection.some(
             (entity) =>
                 entity.type === 'note' &&
                 state.value.store.slides.note
                     .get(entity.slideId)
-                    ?.some((note) => !selection.includes(note)),
+                    // Selection never extends into hidden or dimmed groups/stages.
+                    ?.some((note) => !selection.includes(note) && isEntityInScope(note)),
         )
     )
         groups.push(['selectSlideNotes'])
@@ -79,10 +90,20 @@ const actions = computed(() => {
         if (getSplitHoldNotes(state.value, selection).length) transforms.push('splitHold')
     }
     if (transforms.length) groups.push(transforms)
-    if (canEditElevations) groups.push(['editElevations'])
+    const editors: ActionName[] = []
+    if (canEditSelectionProperties.value) editors.push('editProperties')
+    if (canEditElevations) editors.push('editElevations')
+    if (editors.length) groups.push(editors)
     if (canDelete.value) groups.push(['delete'])
     return groups.map((names) =>
         names.map((name): Action => {
+            if (name === 'editProperties')
+                return {
+                    name,
+                    title: i18n.value.contextMenu.editProperties,
+                    icon: { is: PropertiesIcon },
+                    shortcut: undefined,
+                }
             if (name === 'editElevations')
                 return {
                     name,
@@ -108,8 +129,11 @@ const actions = computed(() => {
                 name,
                 title: name === 'paste' ? i18n.value.contextMenu.paste : commands[name].title(),
                 icon: commands[name].icon,
+                // Keyboard hints are noise on touch screens.
                 shortcut:
-                    name === 'paste' ? undefined : formatShortcut(settings.keyboardShortcuts[name]),
+                    name === 'paste' || isCoarsePointer.value
+                        ? undefined
+                        : formatShortcut(settings.keyboardShortcuts[name]),
             }
         }),
     )
@@ -134,7 +158,8 @@ const execute = (name: ActionName) => {
                     yToValidBeat(point.y),
             )
         }
-    } else if (name === 'delete') remove(selectedEntities.value)
+    } else if (name === 'editProperties') editSelectionProperties()
+    else if (name === 'delete') remove(selectedEntities.value)
     else if (name === 'selectSlideNotes')
         replaceState({
             ...state.value,
@@ -151,12 +176,15 @@ watch(contextMenu, async (point) => {
     position.value = { left: point.x, top: point.y }
     await nextTick()
     if (contextMenu.value !== point || !menu.value) return
+    // 8px from the screen edges, as every other menu and dialog keeps.
     const rect = menu.value.getBoundingClientRect()
     position.value = {
-        left: Math.max(4, Math.min(point.x, innerWidth - rect.width - 4)),
-        top: Math.max(4, Math.min(point.y, innerHeight - rect.height - 4)),
+        left: Math.max(8, Math.min(point.x, innerWidth - rect.width - 8)),
+        top: Math.max(8, Math.min(point.y, innerHeight - rect.height - 8)),
     }
-    menu.value.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    ;(pointerInput ? menu.value : menu.value.querySelector<HTMLButtonElement>('button'))?.focus({
+        preventScroll: true,
+    })
 })
 watch(
     [
@@ -172,8 +200,8 @@ watch(
         () => settings.width,
         () => settings.pps,
         () => view.division,
-        () => view.groupId,
-        () => view.stageId,
+        // Focus, visibility overrides and their settings.
+        scopeLookup,
         () => view.visibilities,
         () => view.snapping,
         () => view.laneDivision,
@@ -200,7 +228,12 @@ const onKeydown = (event: KeyboardEvent) => {
                 ? 0
                 : event.key === 'End'
                   ? buttons.length - 1
-                  : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
+                  : index === -1
+                    ? event.key === 'ArrowDown'
+                        ? 0
+                        : buttons.length - 1
+                    : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) %
+                      buttons.length
         buttons[next]?.focus()
     } else {
         const action = actions.value
@@ -230,12 +263,16 @@ const onScroll = (event: Event) => {
 }
 onMounted(() => {
     window.addEventListener('pointerdown', outside, true)
+    window.addEventListener('pointerdown', onInput, true)
+    window.addEventListener('keydown', onInput, true)
     window.addEventListener('blur', close)
     window.addEventListener('resize', close)
     window.addEventListener('scroll', onScroll, true)
 })
 onUnmounted(() => {
     window.removeEventListener('pointerdown', outside, true)
+    window.removeEventListener('pointerdown', onInput, true)
+    window.removeEventListener('keydown', onInput, true)
     window.removeEventListener('blur', close)
     window.removeEventListener('resize', close)
     window.removeEventListener('scroll', onScroll, true)
@@ -247,7 +284,7 @@ onUnmounted(() => {
     <Teleport to="body">
         <div
             v-if="contextMenu"
-            class="fixed inset-0 z-40 bg-black/20 sm:hidden"
+            class="fixed inset-0 z-40 bg-black/30 sm:hidden"
             aria-hidden="true"
             @pointerdown.prevent.stop="dismiss()"
         />
@@ -255,38 +292,49 @@ onUnmounted(() => {
             v-if="contextMenu"
             ref="menu"
             role="menu"
+            tabindex="-1"
             :aria-label="i18n.contextMenu.title"
-            class="context-menu fixed z-50 flex max-h-[calc(var(--viewport-height)-0.5rem)] w-max min-w-[min(12rem,calc(100vw-0.5rem))] max-w-[calc(100vw-0.5rem)] flex-col overflow-y-auto rounded-lg bg-modal p-1 text-sm text-fg shadow-xl"
+            class="context-menu fixed z-50 flex max-h-[calc(var(--viewport-height)-1rem)] w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-modal text-sm text-fg shadow-xl outline-none ring-1 ring-fg/10"
             :style="{ left: `${position.left}px`, top: `${position.top}px` }"
             @keydown.stop="onKeydown"
             @contextmenu.prevent
         >
+            <!-- The fade marks more items; the menu's own chrome stays crisp. -->
             <div
-                v-for="(group, index) in actions"
-                :key="index"
+                v-scroll-edges
                 role="none"
-                :class="{ 'mt-1 border-t border-fg/20 pt-1': index > 0 }"
+                class="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-1"
             >
-                <button
-                    v-for="{ name, title, icon, shortcut } in group"
-                    :key="name"
-                    type="button"
-                    role="menuitem"
-                    tabindex="-1"
-                    class="flex min-h-11 w-full items-center gap-3 rounded px-3 py-2 text-left hover:bg-button focus:bg-button focus:outline-none active:bg-accent active:text-on-accent sm:min-h-0"
-                    @click="execute(name)"
-                >
-                    <component
-                        :is="icon.is"
-                        v-bind="icon.props"
-                        class="size-4 shrink-0 fill-current"
-                        aria-hidden="true"
+                <template v-for="(group, index) in actions" :key="index">
+                    <div
+                        v-if="index > 0"
+                        role="separator"
+                        class="mx-2 my-1 border-t border-fg/15"
                     />
-                    <span class="flex-1">{{ title }}</span>
-                    <span v-if="shortcut" class="text-xs opacity-60" aria-hidden="true">{{
-                        shortcut
-                    }}</span>
-                </button>
+                    <div role="none">
+                        <button
+                            v-for="{ name, title, icon, shortcut } in group"
+                            :key="name"
+                            type="button"
+                            role="menuitem"
+                            tabindex="-1"
+                            class="flex min-h-9 w-full items-center gap-3 rounded px-3 py-2 text-left transition-colors hover:bg-button focus-visible:bg-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:min-h-11"
+                            :class="{ 'text-danger': name === 'delete' }"
+                            @click="execute(name)"
+                        >
+                            <component
+                                :is="icon.is"
+                                v-bind="icon.props"
+                                class="size-4 shrink-0 fill-current"
+                                aria-hidden="true"
+                            />
+                            <span class="flex-1">{{ title }}</span>
+                            <span v-if="shortcut" class="text-xs text-fg/80" aria-hidden="true">{{
+                                shortcut
+                            }}</span>
+                        </button>
+                    </div>
+                </template>
             </div>
         </div>
     </Teleport>

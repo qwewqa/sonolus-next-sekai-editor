@@ -4,6 +4,7 @@ import { getNoteInteractionWidth } from '../../state/entities/slides/note'
 import { clamp } from '../../utils/math'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
+import { isEntityInScope } from '../scope'
 import { snappedOffset } from '../snapping'
 import { view, xToLane, yToTime, type Selection } from '../view'
 
@@ -136,8 +137,9 @@ export const modifyEntities = (entities: Entity[], modifiers: Modifiers) => {
         const notes = store.value.slides.note.get(entity.slideId)
         if (!notes) continue
 
+        // Slides can span groups and stages; never extend into hidden ones.
         for (const note of notes) {
-            allEntities.add(note)
+            if (isEntityInScope(note)) allEntities.add(note)
         }
     }
 
@@ -161,25 +163,16 @@ export const toSelection = (startLane: number, startTime: number, x: number, y: 
     }
 }
 
+/**
+ * Whether an entity can be hovered, hit-tested, selected and edited: its type
+ * is shown and its group and stage scopes are fully visible. Dimmed entities
+ * are drawn but never interactive; connectors and event connections are never
+ * hit directly.
+ */
 export const isVisible = (entity: Entity) => {
     if (!view.visibilities[entity.type]) return false
 
     switch (entity.type) {
-        case 'bpm':
-        case 'cameraEventJoint':
-            return true
-        case 'timeScale':
-            return view.groupId === undefined || entity.groupId === view.groupId
-        case 'stageMaskEventJoint':
-        case 'stagePivotEventJoint':
-        case 'stageStyleEventJoint':
-        case 'stageTransformEventJoint':
-            return view.stageId === undefined || entity.stageId === view.stageId
-        case 'note':
-            return (
-                (view.groupId === undefined || entity.groupId === view.groupId) &&
-                (view.stageId === undefined || entity.stageId === view.stageId)
-            )
         case 'cameraEventConnection':
         case 'stageMaskEventConnection':
         case 'stagePivotEventConnection':
@@ -187,5 +180,14 @@ export const isVisible = (entity: Entity) => {
         case 'stageTransformEventConnection':
         case 'connector':
             return false
+        case 'bpm':
+        case 'timeScale':
+        case 'cameraEventJoint':
+        case 'stageMaskEventJoint':
+        case 'stagePivotEventJoint':
+        case 'stageStyleEventJoint':
+        case 'stageTransformEventJoint':
+        case 'note':
+            return isEntityInScope(entity)
     }
 }

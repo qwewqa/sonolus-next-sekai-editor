@@ -229,7 +229,7 @@ test('elevation mode replaces the chart and closes back to the previous tool', a
     const box = await page.locator('.elevation-canvas').boundingBox()
     expect(axis.top).toBeGreaterThanOrEqual(0)
     expect(axis.bottom).toBeLessThanOrEqual(box!.height)
-    await page.getByRole('button', { name: 'Close elevation editor', exact: true }).click()
+    await page.getByRole('button', { name: 'Close Elevation Editor', exact: true }).click()
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await expect(page.locator('.bg-preview > span.flex-grow')).toHaveText(/^Note(?: |$)/)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
@@ -300,7 +300,7 @@ test('context actions open the clicked note beat or empty-space beat after desel
     await expect(page.locator('.elevation-canvas')).toBeVisible()
     await install(page)
     await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue('7')
-    await page.getByRole('button', { name: 'Close elevation editor', exact: true }).click()
+    await page.getByRole('button', { name: 'Close Elevation Editor', exact: true }).click()
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     const empty = await page.evaluate(() => window.editorTest.point(-5, 7))
     await page.mouse.click(empty.x, empty.y, { button: 'right' })
@@ -360,7 +360,7 @@ for (const split of [false, true]) {
 test('body drags edit lane and snapped elevation live with one undo step', async ({ page }) => {
     await open(page)
     await expect(
-        page.getByRole('combobox', { name: 'Elevation snapping', exact: true }),
+        page.getByRole('combobox', { name: 'Elevation Snapping', exact: true }),
     ).toHaveValue('8')
     const initial = await notes(page)
     await mouseDrag(page, await point(page), await displacement(page, 2, 0.18))
@@ -405,7 +405,7 @@ test('edge drags resize while preserving beat and elevation; snapping is adjusta
     ])
     await page.keyboard.press('z')
     expect(await notes(page)).toEqual(initial)
-    await page.getByRole('combobox', { name: 'Elevation snapping', exact: true }).selectOption('4')
+    await page.getByRole('combobox', { name: 'Elevation Snapping', exact: true }).selectOption('4')
     await mouseDrag(page, await point(page), await displacement(page, 0, 0.3))
     await page.mouse.up()
     expect((await notes(page))[0]?.elevation).toBe(2.25)
@@ -726,7 +726,7 @@ for (const sideBySide of ['disallow', 'allow'] as const) {
         const target = await point(page)
         await page.mouse.click(target.x, target.y)
         const propertyBeat = page
-            .locator('.relative.z-10.bg-modal')
+            .locator('#workspace-panel-properties')
             .getByRole('spinbutton', { name: 'Beat', exact: true })
         await expect(propertyBeat).toHaveValue('7')
         await propertyBeat.fill('8')
@@ -743,6 +743,31 @@ for (const sideBySide of ['disallow', 'allow'] as const) {
         await page.keyboard.press('z')
         await expect.poll(async () => (await rows(page)).map((row) => row.beat)).toEqual([6])
         expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+    })
+}
+
+for (const sideBySide of ['disallow', 'allow'] as const) {
+    test(`tapping a selected note without a visible Properties panel opens the docked tool dialog (${sideBySide})`, async ({
+        page,
+    }) => {
+        await page.evaluate((sideBySide) => {
+            window.editorTest.settings.showSidebar = false
+            window.editorTest.settings.elevationEditorSideBySide = sideBySide
+        }, sideBySide)
+        await open(page)
+        await page.keyboard.press('a')
+        const target = await point(page)
+        await page.mouse.click(target.x, target.y)
+        await expect
+            .poll(() =>
+                page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+            )
+            .toBe(1)
+        await page.mouse.click(target.x, target.y)
+        // The same docked dialog the main editor opens, in the pane tapped.
+        await expect(page.locator('.editor-tool-modal')).toHaveCount(1)
+        await expect(page.locator('.elevation-editor .editor-tool-modal')).toHaveCount(1)
+        await expect(page.locator('dialog[open]')).toHaveCount(0)
     })
 }
 
@@ -900,7 +925,7 @@ test('side-by-side Auto adapts to available width and the explicit options overr
         window.editorTest.settings.elevationEditorSideBySide = 'auto'
         window.editorTest.settings.showPreview = true
         window.editorTest.settings.previewPosition = 'left'
-        window.editorTest.settings.previewWidth = 280
+        window.editorTest.settings.leftDockWidth = 280
     })
     await open(page)
     await expect(page.locator('.elevation-header select')).toHaveCount(1)
@@ -1113,7 +1138,7 @@ test('the split divider supports dragging, keyboard resizing, persistence, and r
     })
     await open(page)
     const initial = await notes(page)
-    const divider = page.getByRole('separator', { name: 'Resize elevation editor', exact: true })
+    const divider = page.getByRole('separator', { name: 'Resize Elevation Editor', exact: true })
     await expect(divider).toBeVisible()
     const before = await page.locator('.elevation-canvas').boundingBox()
     const separator = await divider.boundingBox()
@@ -1173,7 +1198,7 @@ test('the split divider keeps both panes usable when dragged to either extreme i
     })
     await open(page)
     const initial = await notes(page)
-    const divider = page.getByRole('separator', { name: 'Resize elevation editor', exact: true })
+    const divider = page.getByRole('separator', { name: 'Resize Elevation Editor', exact: true })
     for (const x of [5, 695]) {
         const separator = await divider.boundingBox()
         if (!separator) throw new Error('Missing split divider')
@@ -1211,7 +1236,9 @@ test('selection highlighting updates without rebuilding elevation notes or their
         window.editorTest.settings.showPreview = true
         window.editorTest.settings.elevationEditorSideBySide = 'allow'
     })
-    await expect(page.locator('.preview').getByText('Note Speed', { exact: true })).toBeVisible()
+    await expect(
+        page.locator('.preview-controls').getByText('Note Speed', { exact: true }),
+    ).toBeVisible()
     await open(page)
     const initial = await notes(page)
     const identity = await page.evaluate(async () => {
@@ -1311,7 +1338,7 @@ test('context elevation scaling preserves the lowest note and keeps the pane ope
     await expect(menu.getByRole('menuitem', { name: 'Scale Beats', exact: true })).toHaveCount(0)
     await menu.getByRole('menuitem', { name: 'Scale Elevations', exact: true }).click()
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('spinbutton', { name: 'Scale factor', exact: true }).fill('0.5')
+    await dialog.getByRole('spinbutton', { name: 'Scale Factor', exact: true }).fill('0.5')
     await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await expect(page.locator('.elevation-editor')).toBeVisible()
@@ -1334,6 +1361,12 @@ for (const width of [1600, 375, 320]) {
         })
         await open(page)
         const editor = page.locator('.elevation-editor')
+        // Opening or closing a panel resizes the editor and can slide a toolbar
+        // group under a resting pointer; park it over the canvas instead.
+        const park = async () => {
+            const box = (await editor.boundingBox())!
+            await page.mouse.move(box.x + box.width / 2, box.y + box.height / 3)
+        }
         for (const [name, collection] of [
             ['Manage Groups', 'groups'],
             ['Manage Stages', 'stages'],
@@ -1342,10 +1375,12 @@ for (const width of [1600, 375, 320]) {
                 (key) => window.editorTest.history.state.value[key].size,
                 collection,
             )
+            // The manager command opens its workspace panel beside the elevation editor.
             await editor.getByRole('button', { name, exact: true }).first().click()
-            const dialog = page.getByRole('dialog')
-            await expect(dialog).toBeVisible()
-            await dialog.getByRole('button', { name: 'Add', exact: true }).click()
+            const panel = page.locator(`#workspace-panel-${collection}`)
+            await expect(panel).toBeVisible()
+            await park()
+            await panel.locator('.manager-add').click()
             await expect
                 .poll(() =>
                     page.evaluate(
@@ -1354,11 +1389,29 @@ for (const width of [1600, 375, 320]) {
                     ),
                 )
                 .toBe(before + 1)
-            await dialog.locator('.bg-header button').click()
             await expect(editor).toBeVisible()
-            await expect(page.getByRole('spinbutton', { name: 'Beat', exact: true })).toHaveValue(
-                '7',
-            )
+            const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+            await expect(beat).toHaveValue('7')
+            // The open panel must not cover the elevation beat control.
+            expect(
+                await beat.evaluate((element) => {
+                    const bounds = element.getBoundingClientRect()
+                    return element.contains(
+                        document.elementFromPoint(
+                            bounds.x + bounds.width / 2,
+                            bounds.y + bounds.height / 2,
+                        ),
+                    )
+                }),
+            ).toBe(true)
+            await park()
+            await page.evaluate((key) => {
+                const { settings } = window.editorTest
+                if (key === 'groups') settings.showGroups = false
+                else settings.showStages = false
+            }, collection)
+            await expect(panel).toHaveCount(0)
+            await park()
         }
         for (const name of ['Open', 'Play', '1/1']) {
             const button = editor.getByRole('button', { name, exact: true }).first()

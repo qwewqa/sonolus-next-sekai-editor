@@ -1,3 +1,4 @@
+import { cancelFrame, requestFrame } from '../../frame'
 import type { CanvasBounds } from './types'
 
 // Changing the backing dimensions clears all Canvas state and allocates a new
@@ -38,7 +39,8 @@ export const prepareSurface = (
 }
 
 // Coalesce all invalidations into the next frame. In particular, do not cancel
-// and reschedule on playback updates, which could starve a pending draw.
+// and reschedule on playback updates, which could starve a pending draw. Clock
+// updates draw within their own frame (see `requestFrame`).
 export const createFrameScheduler = () => {
     let id = 0
     let draw: ((timestamp: number) => void) | undefined
@@ -46,7 +48,7 @@ export const createFrameScheduler = () => {
         schedule(next: (timestamp: number) => void) {
             draw = next
             if (id) return
-            id = requestAnimationFrame((timestamp) => {
+            id = requestFrame((timestamp) => {
                 id = 0
                 const current = draw
                 draw = undefined
@@ -54,7 +56,7 @@ export const createFrameScheduler = () => {
             })
         },
         cancel() {
-            cancelAnimationFrame(id)
+            cancelFrame(id)
             id = 0
             draw = undefined
         },

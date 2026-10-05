@@ -145,19 +145,19 @@ test('release assets, preview, chart editing and FFT audio work in the productio
 
     await test.step('use preview transport at a mobile viewport size', async () => {
         await page.setViewportSize({ width: 390, height: 844 })
-        const show = page.getByRole('button', { name: 'Show playback controls', exact: true })
+        const show = page.getByRole('button', { name: 'Show Playback Controls', exact: true })
         if (await show.isVisible()) await show.click()
-        const position = page.locator('[aria-label="Preview time"]:visible')
+        const position = page.locator('[aria-label="Preview Time"]:visible')
         await expect(position).toHaveCount(1)
         await expect(position).toHaveText('00:00.000')
         await page.getByRole('button', { name: 'Forward 1 ms', exact: true }).click()
         await expect(position).toHaveText('00:00.001')
         await page.getByRole('button', { name: 'Back 100 ms', exact: true }).click()
         await expect(position).toHaveText('00:00.000')
-        await page.getByRole('button', { name: 'Hide playback controls', exact: true }).click({
+        await page.getByRole('button', { name: 'Hide Playback Controls', exact: true }).click({
             position: { x: 12, y: 12 },
         })
-        await expect(page.getByRole('button', { name: 'Show preview settings' })).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Show Preview Settings' })).toBeVisible()
         await page.setViewportSize({ width: 1600, height: 1000 })
     })
 

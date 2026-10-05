@@ -31,7 +31,7 @@ const onAddGroup = async () => {
 <template>
     <SettingsSection :title="i18n.settings.toolbar.title">
         <div class="flex flex-wrap items-end justify-center gap-1">
-            <div v-for="(names, i) in settings.toolbar" :key="i" class="flex flex-col">
+            <div v-for="(names, i) in settings.toolbar" :key="i" class="flex flex-col items-center">
                 <SettingsToolbarAddButton @click="onAddToGroup(i)" />
                 <LevelEditorToolbarTool
                     v-for="(name, j) in names"

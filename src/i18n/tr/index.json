@@ -599,6 +599,7 @@
     "title": "Seçim işlemleri",
     "paste": "Yapıştır",
     "selectSlideNotes": "Kaydırma Notalarını Seç",
+    "editProperties": "Özellikleri düzenle",
     "delete": "Sil"
   },
   "settings": {
@@ -668,11 +669,14 @@
         "title": "Konum",
         "auto": "Otomatik",
         "top": "Üst",
-        "left": "Sol"
+        "left": "Sol",
+        "right": "Sağ",
+        "disabled": "Devre Dışı"
       },
       "noteSpeed": "Nota Hızı",
       "renderScale": "Çizim Ölçeği",
       "showEffects": "Efektler",
+      "showTime": "Zamanı göster",
       "highlightSelection": "Seçimi Vurgula",
       "antialias": "Kenar Yumuşatma",
       "aspectRatio": "En Boy Oranı",
@@ -686,6 +690,7 @@
     },
     "toolbar": {
       "title": "Araç çubuğu",
+      "add": "Araç ekle",
       "modal": {
         "title": "Araç Seç"
       }
@@ -695,6 +700,9 @@
       "quickScrollZone": "Hızlı Kaydırma Alanı",
       "scrollInertia": "Kaydırma Ataleti",
       "longPressContextMenu": "Bağlam menüsü için uzun bas"
+    },
+    "panels": {
+      "title": "Paneller"
     }
   },
   "sidebars": {
@@ -717,11 +725,13 @@
   "statusBar": {
     "group": {
       "all": "tüm gruplar",
-      "one": "{0} grubu"
+      "one": "{0} grubu",
+      "shown": "{0}/{1} grup gösteriliyor"
     },
     "stage": {
       "all": "tüm sahneler",
-      "one": "{0} sahnesi"
+      "one": "{0} sahnesi",
+      "shown": "{0}/{1} sahne gösteriliyor"
     }
   },
   "tools": {
@@ -893,8 +903,10 @@
     }
   },
   "modals": {
+    "close": "Kapat",
     "form": {
       "confirm": "Onayla",
+      "mixed": "Karışık",
       "anchor": {
         "label": "Sabit Nokta",
         "default": "Varsayılan",
@@ -1229,11 +1241,87 @@
       "back": "{0} ms geri",
       "forward": "{0} ms ileri",
       "holdBackward": "{0}× hızla geri gitmek için basılı tutun",
-      "holdForward": "{0}× hızla ileri gitmek için basılı tutun"
+      "holdForward": "{0}× hızla ileri gitmek için basılı tutun",
+      "stepSize": "Adım boyutu: {0} ms"
     }
   },
   "offscreenNotes": {
     "left": "Ekranın solunda kalan notalar: {0}",
     "right": "Ekranın sağında kalan notalar: {0}"
+  },
+  "workspace": {
+    "panels": {
+      "preview": "Önizleme",
+      "groups": "Gruplar",
+      "stages": "Sahneler",
+      "properties": "Özellikler"
+    },
+    "docks": {
+      "left": "Sol paneller",
+      "right": "Sağ paneller",
+      "top": "Üst paneller"
+    },
+    "show": "{0} panelini göster",
+    "hide": "{0} panelini gizle",
+    "collapse": {
+      "left": "Sol panelleri gizle",
+      "right": "Sağ panelleri gizle",
+      "top": "Üst panelleri gizle"
+    },
+    "expand": {
+      "left": "Sol panelleri göster",
+      "right": "Sağ panelleri göster",
+      "top": "Üst panelleri göster"
+    },
+    "resize": {
+      "left": "Sol panelleri yeniden boyutlandır",
+      "right": "Sağ panelleri yeniden boyutlandır",
+      "top": "Üst panelleri yeniden boyutlandır"
+    },
+    "resizeTiles": "{0} ve {1} panellerini yeniden boyutlandır",
+    "dock": {
+      "auto": "Otomatik Yerleştir",
+      "left": "Sola Yerleştir",
+      "right": "Sağa Yerleştir",
+      "top": "Üste Yerleştir"
+    },
+    "closePanel": "{0} panelini kapat",
+    "manager": {
+      "show": "{0} öğesini göster",
+      "hide": "{0} öğesini gizle",
+      "actions": "{0} için diğer işlemler",
+      "target": "Yeni nesneler {0} öğesine eklenir",
+      "rename": "Yeniden adlandır",
+      "solo": "Yalnızca bunu göster",
+      "soloHint": "Yalnızca bunu göstermek için Alt+tıklayın",
+      "select": "Nesneleri seç",
+      "selected": "{0} nesne seçildi",
+      "moveSelection": "Seçimi buraya taşı",
+      "objects": "{0} nesne",
+      "drag": "{0} öğesini yeniden sıralamak için sürükleyin"
+    },
+    "groups": {
+      "renamed": "{0} grubu {1} olarak yeniden adlandırıldı",
+      "all": "Tüm gruplar",
+      "showAll": "Tüm grupları göster",
+      "hideAll": "Tüm grupları gizle",
+      "add": "Grup ekle"
+    },
+    "stages": {
+      "renamed": "{0} sahnesi {1} olarak yeniden adlandırıldı",
+      "all": "Tüm sahneler",
+      "showAll": "Tüm sahneleri göster",
+      "hideAll": "Tüm sahneleri gizle",
+      "add": "Sahne ekle",
+      "disabled": "Bu seviyede dinamik sahneler kapalı.",
+      "enable": "Dinamik sahneleri etkinleştir"
+    },
+    "properties": {
+      "sections": "Özellik bölümleri",
+      "selection": "Seçim",
+      "tool": "Araç",
+      "view": "Görünüm",
+      "noTool": "Geçerli aracın ayarı yok."
+    }
   }
 }

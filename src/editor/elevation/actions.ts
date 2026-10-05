@@ -10,6 +10,7 @@ import { interpolate } from '../../utils/interpolate'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { constrainLaneObject } from '../laneLimits'
 import { notify } from '../notification'
+import { revealAuthoringTarget } from '../scope'
 import { getNotePropertiesFromSelection } from '../tools/note'
 import { getPasteNoteEntities, pasteAtPosition, toMovedNoteObject } from '../tools/paste'
 import { getSelectedSlideId, getSlidePropertiesFromSelection } from '../tools/slide'
@@ -50,6 +51,8 @@ export const createElevationNote = (
     size?: number,
 ) => {
     const note = previewElevationNote(lane, elevation, beat, asSlide, size)
+    // Authoring reveals its target so the new note never vanishes.
+    revealAuthoringTarget(note)
     const transaction = createTransaction(state.value)
     const entities = addNote(transaction, note.slideId, note)
     const message = interpolate(

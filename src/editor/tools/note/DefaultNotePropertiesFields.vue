@@ -52,7 +52,6 @@ const copyProperties = createModel('copyProperties')
         :count="settings.defaultNotePropertiesPresets.length"
     />
     <OptionalNoteTypeField v-model="noteType" />
-    <OptionalElevationField v-model="elevation" />
     <OptionalNoteStyleField v-model="noteStyle" />
     <OptionalIsAttachedField v-model="isAttached" />
     <OptionalIsCriticalField v-model="isCritical" />
@@ -69,5 +68,6 @@ const copyProperties = createModel('copyProperties')
     <OptionalConnectorLayerField v-model="connectorLayer" />
     <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
     <OptionalConnectorPresentationField v-model="connectorPresentation" />
+    <OptionalElevationField v-model="elevation" />
     <CopyPropertiesField v-model="copyProperties" />
 </template>

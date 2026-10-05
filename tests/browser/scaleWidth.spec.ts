@@ -15,7 +15,7 @@ declare global {
 }
 
 const panel = (page: Page) => page.locator('.scaling-panel')
-const factor = (page: Page) => panel(page).getByRole('spinbutton', { name: 'Scale factor' })
+const factor = (page: Page) => panel(page).getByRole('spinbutton', { name: 'Scale Factor' })
 const settle = (page: Page) =>
     page.evaluate(async () => {
         await window.editorTest.nextTick()
@@ -171,7 +171,8 @@ test('left and right edges anchor the opposite selection boundary', async ({ pag
     ])
     await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
     await open(page)
-    await drag(page, -4, -7)
+    // Grab just inside the edge: the exact boundary pixel can round outside the note.
+    await drag(page, -3.95, -6.95)
     await expectWidths(page, [
         [-7, 3],
         [-1, 3],
@@ -544,7 +545,8 @@ test('the separate transform group remains reachable on a short portrait phone',
         .filter({ hasText: 'Scale Width' })
         .locator('..')
     const bounds = await menu.boundingBox()
-    const preview = await page.getByRole('button', { name: 'Preview', exact: true }).boundingBox()
+    // The menu stays below the top panel dock, which holds the Preview tab.
+    const preview = await page.locator('[data-workspace-dock="top"]').boundingBox()
     expect(bounds).not.toBeNull()
     expect(preview).not.toBeNull()
     expect(bounds!.y).toBeGreaterThanOrEqual(preview!.y + preview!.height)

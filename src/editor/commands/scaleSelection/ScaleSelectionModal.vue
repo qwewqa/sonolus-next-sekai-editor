@@ -2,6 +2,7 @@
 import { computed, ref, useTemplateRef, onMounted, onUnmounted, watch } from 'vue'
 import { i18n } from '../../../i18n'
 import BaseModal from '../../../modals/BaseModal.vue'
+import BaseField from '../../../modals/form/BaseField.vue'
 import { modals } from '../../../modals'
 import { getScaleLabels } from './labels'
 import {
@@ -75,13 +76,12 @@ onUnmounted(() => {
     <div class="scaling-panel flex min-h-0 flex-col" :data-axis="session?.axis">
         <BaseModal :title @close="cancel">
             <form novalidate @submit.prevent="apply">
-                <div class="flex flex-col gap-2">
-                    <label class="flex items-center justify-between gap-3">
-                        <span>{{ i18n.commands.scaleSelection.factor }}</span>
+                <div class="flex flex-col gap-3">
+                    <BaseField :label="i18n.commands.scaleSelection.factor">
                         <input
                             ref="input"
                             v-model="factor"
-                            class="w-28 rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent active:bg-accent active:text-button"
+                            class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus:ring-2 focus:ring-fg active:bg-accent active:text-on-accent"
                             type="number"
                             min="0"
                             step="0.1"
@@ -89,22 +89,22 @@ onUnmounted(() => {
                             :aria-invalid="!session?.valid"
                             @input="update"
                         />
-                    </label>
-                    <p v-if="session && !session.valid" role="alert" class="text-sm">
+                    </BaseField>
+                    <p v-if="session && !session.valid" role="alert" class="text-sm text-danger">
                         {{ i18n.commands.scaleSelection.invalidFactor }}
                     </p>
                 </div>
-                <div class="mt-3 flex justify-end gap-2">
+                <div class="mt-4 flex justify-end gap-2">
                     <button
                         type="button"
-                        class="rounded-full bg-button px-4 py-1 shadow-md hover:shadow-accent"
+                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-button px-4 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
                         @click="cancel"
                     >
                         {{ i18n.modals.confirm.cancel }}
                     </button>
                     <button
                         type="submit"
-                        class="rounded-full bg-accent px-4 py-1 shadow-md hover:shadow-accent disabled:opacity-50"
+                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:h-11"
                         :disabled="!session?.valid"
                     >
                         {{ i18n.commands.scaleSelection.apply }}

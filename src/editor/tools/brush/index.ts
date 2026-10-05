@@ -36,6 +36,7 @@ import { editSelectedTimeScale } from '../../../state/operations/timeScale'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
+import { revealAuthoringTarget } from '../../scope'
 import {
     focusEntityAtBeat,
     focusViewAtBeat,
@@ -251,6 +252,8 @@ export const applyBrushToEntities = (entities: Entity[]) => {
         return
     }
 
+    // Brushing objects into a hidden group or stage reveals it, like authoring.
+    revealAuthoringTarget(brushProperties.value)
     const transaction = createTransaction(state.value)
 
     const selectedEntities = entities.flatMap(

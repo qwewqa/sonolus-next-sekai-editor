@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
+import ToggleSwitch from './ToggleSwitch.vue'
 
 defineProps<{
     label: string
@@ -13,15 +14,18 @@ const modelValue = defineModel<boolean>({ required: true })
 
 <template>
     <BaseField :label>
-        <input
-            class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent active:bg-accent active:text-button"
-            type="button"
-            :value="
-                modelValue
-                    ? (enabled ?? i18n.modals.form.toggle.enabled)
-                    : (disabled ?? i18n.modals.form.toggle.disabled)
-            "
-            @click="modelValue = !modelValue"
-        />
+        <div class="form-field-toggle group">
+            <input
+                class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                type="button"
+                :value="
+                    modelValue
+                        ? (enabled ?? i18n.modals.form.toggle.enabled)
+                        : (disabled ?? i18n.modals.form.toggle.disabled)
+                "
+                @click="modelValue = !modelValue"
+            />
+            <ToggleSwitch :value="modelValue" />
+        </div>
     </BaseField>
 </template>

@@ -88,7 +88,7 @@ test('numeric input previews every valid value and commits one undo step on blur
     await expect(lane).toHaveValue('-4')
 })
 
-test('Escape, invalid values, selection changes and unmount discard property drafts', async ({
+test('Escape, invalid values and selection changes discard drafts; hiding the panel commits', async ({
     page,
 }) => {
     const size = page.getByRole('spinbutton', { name: 'Size', exact: true }).first()
@@ -126,10 +126,16 @@ test('Escape, invalid values, selection changes and unmount discard property dra
         canUndo: false,
     })
 
+    // Hiding the panel while typing commits the value as one step, as a blur
+    // would, rather than silently dropping it (iOS taps keep focus in place).
     await size.fill('7')
     await page.evaluate(() => (window.editorTest.settings.showSidebar = false))
     await expect.poll(async () => (await read(page)).hasEdit).toBe(false)
-    expect(await read(page)).toMatchObject({ hasEdit: false, canUndo: false })
+    expect(await read(page)).toMatchObject({
+        committed: [{ beat: 5, size: 7 }],
+        hasEdit: false,
+        canUndo: true,
+    })
 })
 
 test('moving the initial BPM onto an existing BPM previews the same replacement as commit', async ({

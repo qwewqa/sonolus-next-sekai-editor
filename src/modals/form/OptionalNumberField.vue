@@ -31,7 +31,8 @@ const onFocus = (event: FocusEvent) => {
         <input
             ref="input"
             v-model.lazy="modelValue"
-            class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent active:bg-accent active:text-button"
+            class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors placeholder:text-fg/80 hover:shadow-accent focus:outline-none focus:ring-2 focus:ring-fg active:bg-accent active:text-on-accent"
+            placeholder="—"
             type="number"
             :min
             :max

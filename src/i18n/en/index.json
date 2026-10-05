@@ -111,9 +111,9 @@
             "scaled": "Scaled elevations of {0} objects"
         },
         "scaleSelection": {
-            "factor": "Scale factor",
-            "pivotBeat": "Earliest beat",
-            "pivotElevation": "Lowest elevation",
+            "factor": "Scale Factor",
+            "pivotBeat": "Earliest Beat",
+            "pivotElevation": "Lowest Elevation",
             "apply": "Apply",
             "invalidFactor": "Enter a positive scale factor that keeps the result within the editor’s supported range"
         },
@@ -174,23 +174,23 @@
             "title": "Manage Groups",
             "modal": {
                 "title": "Manage Groups",
-                "switch": "Switch to group",
+                "switch": "Switch to Group",
                 "switched": {
                     "all": "Switched to all groups",
                     "one": "Switched to {0} group"
                 },
-                "moveUp": "Move group up",
-                "moveDown": "Move group down",
+                "moveUp": "Move Group Up",
+                "moveDown": "Move Group Down",
                 "moved": "Moved {0} group",
                 "properties": {
-                    "title": "Edit group properties",
+                    "title": "Edit Group Properties",
                     "modal": {
                         "title": "Group Properties",
                         "forceNoteSpeed": "Force Note Speed",
                         "edited": "Edited {0} group properties"
                     }
                 },
-                "delete": "Delete group",
+                "delete": "Delete Group",
                 "deleted": "Deleted {0} group",
                 "add": "Add",
                 "added": "Added {0} group"
@@ -200,22 +200,22 @@
             "title": "Manage Stages",
             "modal": {
                 "title": "Manage Stages",
-                "switch": "Switch to stage",
+                "switch": "Switch to Stage",
                 "switched": {
                     "all": "Switched to all stages",
                     "one": "Switched to {0} stage"
                 },
-                "moveUp": "Move stage up",
-                "moveDown": "Move stage down",
+                "moveUp": "Move Stage Up",
+                "moveDown": "Move Stage Down",
                 "moved": "Moved {0} stage",
                 "properties": {
-                    "title": "Edit stage properties",
+                    "title": "Edit Stage Properties",
                     "modal": {
                         "title": "Stage Properties",
                         "edited": "Edited {0} stage properties"
                     }
                 },
-                "delete": "Delete stage",
+                "delete": "Delete Stage",
                 "deleted": "Deleted {0} stage",
                 "add": "Add",
                 "added": "Added {0} stage"
@@ -577,28 +577,29 @@
         "edit": "Edit Elevations",
         "header": "Elevation Editor",
         "beat": "Beat",
-        "previousBeat": "Previous beat",
-        "nextBeat": "Next beat",
+        "previousBeat": "Previous Beat",
+        "nextBeat": "Next Beat",
         "snap": "Snap",
-        "snapping": "Elevation snapping",
-        "sideBySide": "Side by side",
+        "snapping": "Elevation Snapping",
+        "sideBySide": "Side by Side",
         "auto": "Auto",
         "allow": "Allow",
-        "disallow": "Don't allow",
+        "disallow": "Don't Allow",
         "off": "Off",
-        "canvas": "Note elevations",
+        "canvas": "Note Elevations",
         "axis": "Elevation",
-        "offset": "Display offset",
-        "inherited": "Inherited elevation",
+        "offset": "Display Offset",
+        "inherited": "Inherited Elevation",
         "empty": "No notes at this beat",
         "history": "Changed note elevation",
-        "close": "Close elevation editor",
-        "resize": "Resize elevation editor"
+        "close": "Close Elevation Editor",
+        "resize": "Resize Elevation Editor"
     },
     "contextMenu": {
-        "title": "Selection actions",
+        "title": "Selection Actions",
         "paste": "Paste",
         "selectSlideNotes": "Select Slide Notes",
+        "editProperties": "Edit Properties",
         "delete": "Delete"
     },
     "settings": {
@@ -668,11 +669,14 @@
                 "title": "Position",
                 "auto": "Auto",
                 "top": "Top",
-                "left": "Left"
+                "left": "Left",
+                "right": "Right",
+                "disabled": "Disabled"
             },
             "noteSpeed": "Note Speed",
             "renderScale": "Render Scale",
             "showEffects": "Effects",
+            "showTime": "Show Time",
             "highlightSelection": "Highlight Selection",
             "antialias": "Antialias",
             "aspectRatio": "Aspect Ratio",
@@ -686,6 +690,7 @@
         },
         "toolbar": {
             "title": "Toolbar",
+            "add": "Add Tool",
             "modal": {
                 "title": "Select Tool"
             }
@@ -695,6 +700,9 @@
             "quickScrollZone": "Quick Scroll Zone",
             "scrollInertia": "Scroll Inertia",
             "longPressContextMenu": "Long Press for Context Menu"
+        },
+        "panels": {
+            "title": "Panels"
         }
     },
     "sidebars": {
@@ -716,12 +724,14 @@
     },
     "statusBar": {
         "group": {
-            "all": "all groups",
-            "one": "{0} group"
+            "all": "All Groups",
+            "one": "{0} Group",
+            "shown": "{0}/{1} Groups Shown"
         },
         "stage": {
-            "all": "all stages",
-            "one": "{0} stage"
+            "all": "All Stages",
+            "one": "{0} Stage",
+            "shown": "{0}/{1} Stages Shown"
         }
     },
     "tools": {
@@ -893,8 +903,10 @@
         }
     },
     "modals": {
+        "close": "Close",
         "form": {
             "confirm": "Confirm",
+            "mixed": "Mixed",
             "anchor": {
                 "label": "Anchor",
                 "default": "Default",
@@ -1210,30 +1222,106 @@
         }
     },
     "preview": {
-        "settings": "Preview settings",
-        "minimizeSettings": "Minimize preview settings",
-        "showSettings": "Show preview settings",
+        "settings": "Preview Settings",
+        "minimizeSettings": "Minimize Preview Settings",
+        "showSettings": "Show Preview Settings",
         "loadingSkin": "Loading skin...",
         "skinUnavailable": "The preview skin could not be loaded.",
         "graphicsUnavailable": "Preview graphics could not be started.",
         "graphicsHelp": "Check that graphics acceleration and WebGL are enabled in your browser, then restart the browser if needed.",
-        "errorDetails": "Error details",
+        "errorDetails": "Error Details",
         "reload": "Reload",
         "transport": {
-            "hide": "Hide playback controls",
-            "show": "Show playback controls",
-            "time": "Preview time",
-            "controls": "Preview playback controls",
-            "pause": "Pause preview",
-            "play": "Play preview",
+            "hide": "Hide Playback Controls",
+            "show": "Show Playback Controls",
+            "time": "Preview Time",
+            "controls": "Preview Playback Controls",
+            "pause": "Pause Preview",
+            "play": "Play Preview",
             "back": "Back {0} ms",
             "forward": "Forward {0} ms",
-            "holdBackward": "Hold for {0}× backward",
-            "holdForward": "Hold for {0}× forward"
+            "holdBackward": "Hold for {0}× Backward",
+            "holdForward": "Hold for {0}× Forward",
+            "stepSize": "Step Size: {0} ms"
         }
     },
     "offscreenNotes": {
-        "left": "Notes off-screen to the left: {0}",
-        "right": "Notes off-screen to the right: {0}"
+        "left": "Notes Off-Screen to the Left: {0}",
+        "right": "Notes Off-Screen to the Right: {0}"
+    },
+    "workspace": {
+        "panels": {
+            "preview": "Preview",
+            "groups": "Groups",
+            "stages": "Stages",
+            "properties": "Properties"
+        },
+        "docks": {
+            "left": "Left Panels",
+            "right": "Right Panels",
+            "top": "Top Panels"
+        },
+        "show": "Show {0}",
+        "hide": "Hide {0}",
+        "collapse": {
+            "left": "Hide Left Panels",
+            "right": "Hide Right Panels",
+            "top": "Hide Top Panels"
+        },
+        "expand": {
+            "left": "Show Left Panels",
+            "right": "Show Right Panels",
+            "top": "Show Top Panels"
+        },
+        "resize": {
+            "left": "Resize Left Panels",
+            "right": "Resize Right Panels",
+            "top": "Resize Top Panels"
+        },
+        "resizeTiles": "Resize {0} and {1}",
+        "dock": {
+            "auto": "Dock Automatically",
+            "left": "Dock Left",
+            "right": "Dock Right",
+            "top": "Dock Top"
+        },
+        "closePanel": "Close {0}",
+        "manager": {
+            "show": "Show {0}",
+            "hide": "Hide {0}",
+            "actions": "More Actions for {0}",
+            "target": "New objects are added to {0}",
+            "rename": "Rename",
+            "solo": "Show Only This",
+            "soloHint": "Alt+click to show only this",
+            "select": "Select Objects",
+            "selected": "Selected {0} objects",
+            "moveSelection": "Move Selection Here",
+            "objects": "{0} Objects",
+            "drag": "Drag to Reorder {0}"
+        },
+        "groups": {
+            "renamed": "Renamed {0} group to {1}",
+            "all": "All Groups",
+            "showAll": "Show All Groups",
+            "hideAll": "Hide All Groups",
+            "add": "Add Group"
+        },
+        "stages": {
+            "renamed": "Renamed {0} stage to {1}",
+            "all": "All Stages",
+            "showAll": "Show All Stages",
+            "hideAll": "Hide All Stages",
+            "add": "Add Stage",
+            "disabled": "Dynamic stages are off for this level.",
+            "enable": "Enable Dynamic Stages"
+        },
+        "properties": {
+            "sections": "Properties Sections",
+            "selection": "Selection",
+            "tool": "Tool",
+            "view": "View",
+            "noTool": "The current tool has no settings."
+        }
     }
 }

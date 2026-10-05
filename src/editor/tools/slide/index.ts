@@ -18,7 +18,8 @@ import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
-import { isSidebarVisible } from '../../sidebars'
+import { revealAuthoringTarget } from '../../scope'
+import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { quickEdit } from '../../utils/quickEdit'
 import {
@@ -30,7 +31,14 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
-import { hitEntitiesAtPoint, isNoteResizeStart, modifyEntities, offset, resize } from '../utils'
+import {
+    hitEntitiesAtPoint,
+    isNoteResizeStart,
+    isVisible,
+    modifyEntities,
+    offset,
+    resize,
+} from '../utils'
 import SlidePropertiesModal from './SlidePropertiesModal.vue'
 import SlideSidebar from './SlideSidebar.vue'
 
@@ -124,6 +132,8 @@ export const slide: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (isSidebarVisible.value) {
+                        // An explicit edit gesture on the selection shows its properties.
+                        revealPropertiesSection('selection')
                         quickEdit(defaultSlideProperties.value)
                     } else {
                         void showToolModal(SlidePropertiesModal, {})
@@ -420,8 +430,9 @@ const tryFind = (
     y: number,
     minimumNoteWidth = 1.5,
 ): [NoteEntity] | [undefined, number, number] => {
+    // Only notes whose type, group and stage are fully visible are editable.
     const [hit] = hitEntitiesAtPoint('note', x, y, minimumNoteWidth)
-        .filter((entity) => view.groupId === undefined || entity.groupId === view.groupId)
+        .filter(isVisible)
         .sort((a, b) => +selectedEntities.value.includes(b) - +selectedEntities.value.includes(a))
 
     return hit ? [hit] : [undefined, yToValidBeat(y), xToValidLane(x)]
@@ -456,6 +467,8 @@ const update = (message: () => string, action: (transaction: Transaction) => Ent
 }
 
 const add = (slideId: SlideId, object: NoteObject) => {
+    // Authoring reveals its target so the new object never vanishes.
+    revealAuthoringTarget(object)
     update(
         () => i18n.value.tools.slide.added,
         (transaction) => addNote(transaction, slideId, object),

@@ -5,6 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
+import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
 import type { StageMaskEventJointEntity } from '../../src/state/entities/events/joints/stage/mask'
@@ -222,7 +223,7 @@ test('mask infinities preserve stage lifetime flags and hidden-stage behavior', 
         min: mask(2),
         max: mask(4),
     })
-    drawEventInfinities(context, visibilities, undefined, false)
+    drawEventInfinities(context, visibilities, fullScope, false)
     assert.deepEqual(
         canvas.strokes.map(({ path }) => path),
         [
@@ -238,9 +239,19 @@ test('mask infinities preserve stage lifetime flags and hidden-stage behavior', 
     )
 
     canvas.strokes = []
-    drawEventInfinities(context, visibilities, 2 as StageId, false)
+    drawEventInfinities(
+        context,
+        visibilities,
+        createScopeLookup({ stageId: 2 as StageId, showOtherStages: false }),
+        false,
+    )
     assert.equal(canvas.strokes.length, 0)
-    drawEventInfinities(context, visibilities, 2 as StageId, true)
+    drawEventInfinities(
+        context,
+        visibilities,
+        createScopeLookup({ stageId: 2 as StageId, showOtherStages: true }),
+        false,
+    )
     assert.equal(canvas.strokes.length, 2)
     assert.equal(canvas.strokes[0]?.alpha, 0.125)
 
@@ -251,7 +262,7 @@ test('mask infinities preserve stage lifetime flags and hidden-stage behavior', 
         generateSimLines: 'global',
     })
     canvas.strokes = []
-    drawEventInfinities(context, visibilities, stageId, false)
+    drawEventInfinities(context, visibilities, createScopeLookup({ stageId }), false)
     assert.deepEqual(canvas.strokes[0]?.path, [
         ['M', -4, -20],
         ['L', -4, -100],
@@ -287,7 +298,7 @@ test('event visibility orders faint infinity layers before visible layers', () =
     drawEventInfinities(
         context,
         { ...visibilities, stagePivotEventConnection: false },
-        undefined,
+        fullScope,
         true,
     )
     assert.deepEqual(
