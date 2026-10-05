@@ -26,7 +26,8 @@ const emit = defineEmits<{
 
 const model = shallowReactive({
     ...props.bgm,
-    offset: props.bgm.offset * 1000,
+    // Drops float noise: 0.0041 s shows as 4.1 ms, not 4.1000000000000005.
+    offset: Number((props.bgm.offset * 1000).toPrecision(15)),
 })
 
 let request: AbortController | undefined

@@ -556,3 +556,24 @@ test('closing completed BGM drafts releases only URLs that were never committed'
     expect(result.whileUndone).toBeUndefined()
     expect(result.width).toBe(128)
 })
+
+test('a loaded BGM offset shows in milliseconds without floating point noise', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    const dialogs = page.getByRole('dialog')
+    for (const [seconds, shown] of [
+        [0.0041, '4.1'],
+        [0.0153, '15.3'],
+        [-4.095, '-4095'],
+    ] as const) {
+        await page.evaluate((offset) => {
+            const { history, fixtures } = window.editorTest
+            history.resetState(false, fixtures.interaction, offset, 'offset.json')
+        }, seconds)
+        await page.keyboard.press('m')
+        await expect(dialogs.getByRole('spinbutton', { name: 'Offset (ms)' })).toHaveValue(shown)
+        await dialogs.locator('button').first().click()
+        await expect(dialogs).toHaveCount(0)
+    }
+})
