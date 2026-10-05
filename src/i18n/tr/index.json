@@ -248,7 +248,11 @@
       "title": "Aç",
       "loading": "Dosya yükleniyor...",
       "importing": "Seviye içe aktarılıyor...",
-      "opened": "Seviye açıldı"
+      "opened": "Seviye açıldı",
+      "importedChcy": "Chart Cyanvas seviyesi içe aktarıldı",
+      "importedUsc": "USC çizelgesi içe aktarıldı",
+      "importedSus": "SUS çizelgesi içe aktarıldı",
+      "unsupported": "Desteklenmeyen dosya. Seviye verisi, Chart Cyanvas seviyesi ya da USC veya SUS çizelgesi açın."
     },
     "paste": {
       "title": "Yapıştır",

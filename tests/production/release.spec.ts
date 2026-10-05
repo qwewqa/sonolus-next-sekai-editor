@@ -171,7 +171,7 @@ test('release assets, preview, chart editing and FFT audio work in the productio
             mimeType: 'application/json',
             buffer: chart,
         })
-        await expect(page.locator('.notification')).toHaveText('Opened level')
+        await expect(page.locator('.notification')).toHaveText('Imported USC chart')
         await expect(page.getByRole('dialog')).toHaveCount(0)
 
         await page.keyboard.press(',')

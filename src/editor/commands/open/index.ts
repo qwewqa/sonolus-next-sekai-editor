@@ -4,6 +4,7 @@ import { parseLevelDataChart } from '../../../chart/parse/levelData'
 import { parseSusChart } from '../../../chart/parse/sus'
 import { parseUscChart } from '../../../chart/parse/usc'
 import { validateChart } from '../../../chart/validate'
+import { chcyToUsc, isChcyLevelData } from '../../../chcy/convert'
 import { checkState, resetState } from '../../../history'
 import { i18n } from '../../../i18n'
 import { parseLevelData } from '../../../levelData/parse'
@@ -48,6 +49,15 @@ export const open: Command = {
 
                 const [type, data] = tryImport(buffer)
                 switch (type) {
+                    case 'chcy': {
+                        const { offset, objects } = chcyToUsc(parseLevelData(data))
+
+                        const chart = parseUscChart(objects)
+                        validateChart(chart)
+
+                        resetState(false, chart, offset, getFilename(file))
+                        break
+                    }
                     case 'levelData': {
                         const levelData = parseLevelData(data)
 
@@ -77,36 +87,56 @@ export const open: Command = {
                     }
                 }
 
-                notify(() => i18n.value.commands.open.opened)
+                notify(() => i18n.value.commands.open[openedMessages[type]])
             },
         })
     },
 }
 
-const tryImport = (buffer: ArrayBuffer) => {
-    const levelData = tryImportLevelData(buffer)
-    if (levelData) return ['levelData', levelData] as const
+const openedMessages = {
+    levelData: 'opened',
+    chcy: 'importedChcy',
+    usc: 'importedUsc',
+    sus: 'importedSus',
+} as const
 
-    const usc = tryImportUsc(buffer)
-    if (usc) return ['usc', usc] as const
+/**
+ * Detects the format from the content: level data (gzipped, as Sonolus serves
+ * it, or plain JSON), which is Chart Cyanvas level data when it has the
+ * format's `TimeScaleGroup` entities; a USC chart; or a SUS chart.
+ */
+const tryImport = (buffer: ArrayBuffer) => {
+    const json = tryParseJson(buffer)
+    if (isLevelDataLike(json)) {
+        return isChcyLevelData(json) ? (['chcy', json] as const) : (['levelData', json] as const)
+    }
+    if (json !== undefined) return ['usc', json] as const
 
     const sus = tryImportSus(buffer)
     if (sus) return ['sus', sus] as const
 
-    throw new Error('Unsupported file format')
+    throw new UnsupportedFileError()
 }
 
-const tryImportLevelData = (buffer: ArrayBuffer): unknown => {
-    try {
-        return JSON.parse(new TextDecoder().decode(ungzip(buffer)))
-    } catch {
-        return
+class UnsupportedFileError extends Error {
+    constructor() {
+        super(i18n.value.commands.open.unsupported)
+    }
+
+    // The loading dialog shows errors as text; this one is already a sentence.
+    override toString() {
+        return this.message
     }
 }
 
-const tryImportUsc = (buffer: ArrayBuffer): unknown => {
+const isLevelDataLike = (data: unknown) =>
+    typeof data === 'object' && data !== null && 'entities' in data
+
+const tryParseJson = (buffer: ArrayBuffer): unknown => {
+    const bytes = new Uint8Array(buffer)
+    const isGzip = bytes[0] === 0x1f && bytes[1] === 0x8b
     try {
-        return JSON.parse(new TextDecoder().decode(buffer))
+        return JSON.parse(new TextDecoder().decode(isGzip ? ungzip(bytes) : bytes))
     } catch {
         return
     }

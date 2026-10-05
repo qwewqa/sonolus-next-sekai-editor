@@ -248,7 +248,11 @@
       "title": "打开",
       "loading": "正在加载文件...",
       "importing": "正在导入关卡...",
-      "opened": "已打开关卡"
+      "opened": "已打开关卡",
+      "importedChcy": "已导入 Chart Cyanvas 关卡",
+      "importedUsc": "已导入 USC 谱面",
+      "importedSus": "已导入 SUS 谱面",
+      "unsupported": "不支持的文件。请打开关卡数据、Chart Cyanvas 关卡，或 USC、SUS 谱面。"
     },
     "paste": {
       "title": "粘贴",

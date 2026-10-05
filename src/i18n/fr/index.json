@@ -248,7 +248,11 @@
       "title": "Ouvrir",
       "loading": "Chargement du fichier...",
       "importing": "Importation du niveau...",
-      "opened": "Niveau ouvert"
+      "opened": "Niveau ouvert",
+      "importedChcy": "Niveau Chart Cyanvas importé",
+      "importedUsc": "Partition USC importée",
+      "importedSus": "Partition SUS importée",
+      "unsupported": "Fichier non pris en charge. Ouvrez des données de niveau, un niveau Chart Cyanvas, ou une partition USC ou SUS."
     },
     "paste": {
       "title": "Coller",

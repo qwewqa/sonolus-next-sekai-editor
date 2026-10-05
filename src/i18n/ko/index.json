@@ -248,7 +248,11 @@
       "title": "열기",
       "loading": "파일 불러오는 중...",
       "importing": "레벨 가져오는 중...",
-      "opened": "레벨 열림"
+      "opened": "레벨 열림",
+      "importedChcy": "Chart Cyanvas 레벨 가져옴",
+      "importedUsc": "USC 채보 가져옴",
+      "importedSus": "SUS 채보 가져옴",
+      "unsupported": "지원하지 않는 파일입니다. 레벨 데이터, Chart Cyanvas 레벨, USC 또는 SUS 채보를 여세요."
     },
     "paste": {
       "title": "붙여넣기",

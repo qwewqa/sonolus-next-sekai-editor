@@ -71,7 +71,7 @@ export const parseUscChart = (objects: UscObject[]) => {
                         left: object.lane - object.size,
                         size: object.size * 2,
                         isCritical: object.critical,
-                        flickDirection: flickDirections[object.direction ?? 'none'],
+                        flickDirection: toFlickDirection(object.direction),
                         isFake: false,
                         sfx: 'default',
                         isConnectorSeparator: false,
@@ -106,7 +106,7 @@ export const parseUscChart = (objects: UscObject[]) => {
                         isCritical: connection.critical ?? object.critical,
                         flickDirection:
                             connection.type === 'end'
-                                ? flickDirections[connection.direction ?? 'none']
+                                ? toFlickDirection(connection.direction)
                                 : 'none',
                         isFake: false,
                         sfx: 'default',
@@ -199,8 +199,14 @@ const flickDirections = {
     up: 'up',
     left: 'upLeft',
     right: 'upRight',
-    none: 'none',
+    none: 'up',
 } as const
+
+// Any direction makes a flick, as the engine's USC converter reads it: an
+// explicit 'none' (written by Chart Cyanvas for non-directional trace flicks)
+// flicks up, and only a missing direction leaves the note unflicked.
+const toFlickDirection = (direction: keyof typeof flickDirections | undefined) =>
+    direction ? flickDirections[direction] : 'none'
 
 const connectorEases = {
     out: 'out',

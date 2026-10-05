@@ -73,7 +73,7 @@ test.beforeEach(async ({ page, browserName }, testInfo) => {
     await (
         await opening
     ).setFiles({ name: 'compatibility.usc', mimeType: 'application/json', buffer: chart })
-    await expect(page.locator('.notification')).toHaveText('Opened level')
+    await expect(page.locator('.notification')).toHaveText('Imported USC chart')
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await page.keyboard.press('f')
     const bounds = await page.locator('canvas.editor-chart').boundingBox()
@@ -156,7 +156,7 @@ test('note rendering works when roundRect is unavailable', async ({ page }) => {
     await (
         await opening
     ).setFiles({ name: 'fallback.usc', mimeType: 'application/json', buffer: chart })
-    await expect(page.locator('.notification')).toHaveText('Opened level')
+    await expect(page.locator('.notification')).toHaveText('Imported USC chart')
     await expect
         .poll(() =>
             page.locator('canvas.editor-chart').evaluate((canvas: HTMLCanvasElement) => {

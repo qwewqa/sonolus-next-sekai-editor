@@ -248,7 +248,11 @@
             "title": "Open",
             "loading": "Loading file...",
             "importing": "Importing level...",
-            "opened": "Opened level"
+            "opened": "Opened level",
+            "importedChcy": "Imported Chart Cyanvas level",
+            "importedUsc": "Imported USC chart",
+            "importedSus": "Imported SUS chart",
+            "unsupported": "Unsupported file. Open level data, a Chart Cyanvas level, or a USC or SUS chart."
         },
         "paste": {
             "title": "Paste",

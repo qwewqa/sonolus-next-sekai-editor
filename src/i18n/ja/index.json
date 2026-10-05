@@ -248,7 +248,11 @@
       "title": "ファイルを開く",
       "loading": "ファイルを読み込み中...",
       "importing": "譜面をインポート中...",
-      "opened": "譜面を開きました"
+      "opened": "譜面を開きました",
+      "importedChcy": "Chart Cyanvas の譜面をインポートしました",
+      "importedUsc": "USC 譜面をインポートしました",
+      "importedSus": "SUS 譜面をインポートしました",
+      "unsupported": "対応していないファイルです。レベルデータ、Chart Cyanvas の譜面、USC または SUS 譜面を開いてください。"
     },
     "paste": {
       "title": "ペースト",
