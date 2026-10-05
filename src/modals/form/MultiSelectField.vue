@@ -23,7 +23,17 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
 
 <template>
     <BaseField :label>
-        <div class="form-field-select group" :class="{ 'opacity-40': disabled }">
+        <div
+            class="form-field-select group"
+            :class="{ 'opacity-40': disabled, 'form-field-select-leading': $slots.leading }"
+        >
+            <span
+                v-if="$slots.leading"
+                class="form-field-select-lead group-active:text-on-accent"
+                aria-hidden="true"
+            >
+                <slot name="leading" />
+            </span>
             <select
                 v-model.lazy="modelValue"
                 :disabled

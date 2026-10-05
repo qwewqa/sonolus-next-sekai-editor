@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="E extends Ease">
 import { computed } from 'vue'
 import {
+    composeEase,
     easeEditParts,
     easeModes,
     setEaseEditFamily,
@@ -12,6 +13,7 @@ import {
     type EaseMode,
 } from '../../ease'
 import { i18n } from '../../i18n'
+import EaseIcon from './EaseIcon.vue'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
 
@@ -48,11 +50,20 @@ const modeOptions = computed(() =>
 
 // Linear has no mode.
 const isLinear = computed(() => family.value === 'linear')
+
+// Only a complete ease has a curve to show.
+const curve = computed(() =>
+    family.value && (mode.value || isLinear.value)
+        ? composeEase(family.value, mode.value ?? 'in')
+        : undefined,
+)
 </script>
 
 <template>
     <template v-if="optional">
-        <OptionalSelectField v-model="family" :label :options="familyOptions" />
+        <OptionalSelectField v-model="family" :label :options="familyOptions">
+            <template #leading><EaseIcon v-if="curve" :ease="curve" /></template>
+        </OptionalSelectField>
         <OptionalSelectField
             v-model="mode"
             :label="modeLabel"
@@ -61,7 +72,9 @@ const isLinear = computed(() => family.value === 'linear')
         />
     </template>
     <template v-else>
-        <MultiSelectField v-model="family" :label :options="familyOptions" />
+        <MultiSelectField v-model="family" :label :options="familyOptions">
+            <template #leading><EaseIcon v-if="curve" :ease="curve" /></template>
+        </MultiSelectField>
         <MultiSelectField
             v-model="mode"
             :label="modeLabel"

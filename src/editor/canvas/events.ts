@@ -1,9 +1,12 @@
 import type { StageId } from '../../chart/stages'
+import { easeGlyphPoints } from '../../easeGlyph'
 import type { Entity, EntityType } from '../../state/entities'
 import type { EventConnectionEntity } from '../../state/entities/events/connections'
 import type { EventJointEntity } from '../../state/entities/events/joints'
 import type { StageEventJointEntity } from '../../state/entities/events/joints/stage'
+import type { TimeScaleEntity } from '../../state/entities/timeScale'
 import { beatToTime } from '../../state/integrals/bpms'
+import type { StoreGrid } from '../../state/store/grid'
 import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD } from '../entities/events/path'
@@ -64,6 +67,75 @@ const marker = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
     ctx.arc(x, y, 0.1, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
+}
+
+const nextTimeScales = new WeakMap<
+    StoreGrid['timeScale'],
+    Map<TimeScaleEntity, TimeScaleEntity | undefined>
+>()
+
+/** The next time scale of the same group, which its ease transitions to. */
+const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) => {
+    const grid = state.store.grid.timeScale
+    let next = nextTimeScales.get(grid)
+    if (!next) {
+        const groups = new Map<TimeScaleEntity['groupId'], TimeScaleEntity[]>()
+        for (const entities of grid.values()) {
+            for (const timeScale of entities) {
+                const group = groups.get(timeScale.groupId)
+                if (group) group.push(timeScale)
+                else groups.set(timeScale.groupId, [timeScale])
+            }
+        }
+        next = new Map()
+        for (const group of groups.values()) {
+            group.sort((a, b) => a.beat - b.beat)
+            for (const [index, timeScale] of group.entries()) next.set(timeScale, group[index + 1])
+        }
+        nextTimeScales.set(grid, next)
+    }
+    return next.get(entity)
+}
+
+// Lanes, in proportion to the 0.5-lane label font.
+const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.09, stroke: 0.05 }
+
+/**
+ * Draws a time scale's ease toward the next change, mirrored when the value
+ * decreases and faded when nothing changes. Returns the width it takes.
+ */
+const drawEaseGlyph = (
+    context: EditorDrawContext,
+    entity: TimeScaleEntity,
+    x: number,
+    y: number,
+    direction: 1 | -1,
+    color: string,
+) => {
+    if (entity.timeScaleEase === 'inStep') return 0
+
+    const { ctx, scale } = context
+    const next = nextTimeScale(context, entity)
+    const { width, height, gap, stroke } = EASE_GLYPH
+    const left = direction > 0 ? x : x - width
+    const top = y - height / 2
+    ctx.save()
+    if (!next || next.timeScale === entity.timeScale) ctx.globalAlpha *= 0.5
+    ctx.strokeStyle = color
+    ctx.lineWidth = Math.max(stroke, 1 / scale)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+    for (const [index, [px, py]] of easeGlyphPoints(
+        entity.timeScaleEase,
+        !!next && next.timeScale < entity.timeScale,
+    ).entries()) {
+        if (index) ctx.lineTo(left + px * width, top + py * height)
+        else ctx.moveTo(left + px * width, top + py * height)
+    }
+    ctx.stroke()
+    ctx.restore()
+    return width + gap
 }
 
 const drawConnection = (context: EditorDrawContext, entity: EventConnectionEntity) => {
@@ -136,10 +208,13 @@ export const drawEvent = (
             ctx.strokeStyle = '#fff'
             ctx.fillStyle = '#ff0'
             marker(ctx, x, y)
+            const direction = x > 0 ? 1 : -1
+            const labelX = x + 0.2 * direction
+            const glyphWidth = drawEaseGlyph(context, entity, labelX, y, direction, '#ff0')
             drawText(
                 context,
-                formatTimeScale(entity.timeScale, entity.skip, entity.timeScaleEase),
-                x + (x > 0 ? 0.2 : -0.2),
+                formatTimeScale(entity.timeScale, entity.skip),
+                labelX + glyphWidth * direction,
                 y,
                 '#ff0',
                 0.5,

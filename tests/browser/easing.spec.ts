@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import type { Ease } from '../../src/ease'
+import { easeGlyphPathD } from '../../src/easeGlyph'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
@@ -120,6 +121,24 @@ test.describe('ease fields', () => {
         expect(await heads(page)).toEqual(['outInSine', 'linear', 'outInQuad'])
         await family.selectOption({ label: 'Circ' })
         expect(await heads(page)).toEqual(['outInCirc', 'outInCirc', 'outInCirc'])
+    })
+
+    test('the easing selector shows the curve of a complete ease', async ({ page }) => {
+        const icon = panel(page)
+            .locator('label')
+            .filter({ has: page.getByText('Connector Ease', { exact: true }) })
+            .locator('.form-field-select-lead path')
+        await showSlides(page, ['outSine'])
+        await expect(icon).toHaveAttribute('d', easeGlyphPathD('outSine', false, 2, 2, 12, 12))
+
+        await field(page, 'Connector Ease Mode').selectOption({ label: 'In-Out' })
+        await expect(icon).toHaveAttribute('d', easeGlyphPathD('inOutSine', false, 2, 2, 12, 12))
+        await field(page, 'Connector Ease').selectOption({ label: 'Linear' })
+        await expect(icon).toHaveAttribute('d', 'M 2 14 L 14 2')
+
+        // A mixed half leaves no curve to show.
+        await showSlides(page, ['outSine', 'inQuad'])
+        await expect(icon).toHaveCount(0)
     })
 
     test('time scales do not offer overshooting eases', async ({ page }) => {

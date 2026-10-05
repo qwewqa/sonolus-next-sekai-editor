@@ -49,6 +49,20 @@ defineProps<{
     align-items: center;
 }
 
+/* A leading icon, such as an ease's curve, sits before the value. */
+.form-field-select-leading > select {
+    padding-left: 2.5rem;
+}
+
+.form-field-select-lead {
+    pointer-events: none;
+    position: absolute;
+    inset-block: 0;
+    left: 1rem;
+    display: flex;
+    align-items: center;
+}
+
 /* On/off fields carry a small switch in the same place, so they read as
    toggles rather than text fields. */
 .form-field-toggle {
@@ -154,6 +168,14 @@ defineProps<{
 
     .form-field-toggle-icon {
         right: 0.625rem;
+    }
+
+    .form-field-select-leading > select {
+        padding-left: 2rem;
+    }
+
+    .form-field-select-lead {
+        left: 0.75rem;
     }
 }
 

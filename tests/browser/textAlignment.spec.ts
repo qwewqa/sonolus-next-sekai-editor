@@ -28,7 +28,7 @@ const cases: TextCase[] = [
         name: 'time-scale label at a fractional zoom',
         fontFamily: systemFont,
         scale: 23.7,
-        labels: [{ text: '1x+0.5^', align: 'start', size: 0.5 }],
+        labels: [{ text: '1x+0.5', align: 'start', size: 0.5 }],
     },
     {
         name: 'centered stage name with kerning',

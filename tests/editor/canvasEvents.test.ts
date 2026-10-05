@@ -3,6 +3,7 @@ import test from 'node:test'
 import type { Chart } from '../../src/chart'
 import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
+import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { getPathD } from '../../src/editor/entities/events/path'
@@ -10,6 +11,7 @@ import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
 import type { StageMaskEventJointEntity } from '../../src/state/entities/events/joints/stage/mask'
+import type { TimeScaleEntity } from '../../src/state/entities/timeScale'
 import { calculateBpms } from '../../src/state/integrals/bpms'
 
 class RecordingCanvas {
@@ -335,7 +337,9 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
         ['M', -7, -10],
         ['L', 6, -10],
     ])
-    assert.deepEqual(canvas.labels, [{ text: '2x+1^', x: -7.2, y: -9.875, align: 'end', alpha: 1 }])
+    assert.deepEqual(canvas.labels, [
+        { text: '2x+1', x: -7.2 - 0.39, y: -9.875, align: 'end', alpha: 1 },
+    ])
     assert.deepEqual(canvas.dash, [])
 
     canvas.labels = []
@@ -343,6 +347,84 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.equal(canvas.labels.length, 0)
     drawEvent(context, mask(2), true)
     assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -9.9, align: 'center', alpha: 1 }])
+})
+
+test('time-scale eases show their curve toward the next change in the group', () => {
+    const { context, canvas } = makeContext()
+    const timeScale = (
+        beat: number,
+        value: number,
+        timeScaleEase: TimeScaleEntity['timeScaleEase'],
+        group = groupId,
+    ): TimeScaleObject => ({
+        groupId: group,
+        beat,
+        editorLane: 7,
+        timeScale: value,
+        skip: 0,
+        timeScaleEase,
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    })
+    context.state = createState(
+        {
+            ...context.state,
+            bpms: [{ beat: 0, bpm: 120 }],
+            groups: new Map(),
+            stages: new Map(),
+            cameraEvents: [],
+            stageMaskEvents: [],
+            stagePivotEvents: [],
+            stageStyleEvents: [],
+            stageTransformEvents: [],
+            slides: [],
+            timeScales: [
+                timeScale(1, 1, 'linear'),
+                timeScale(2, 3, 'outStep'),
+                timeScale(3, 9, 'linear', 2 as GroupId),
+                timeScale(4, 0.5, 'inQuad'),
+                timeScale(5, 0.5, 'inStep'),
+            ],
+        },
+        0,
+    )
+    const entities = [...context.state.store.grid.timeScale.values()]
+        .flatMap((set) => [...set])
+        .sort((a, b) => a.beat - b.beat)
+    const glyph = (index: number) => {
+        canvas.strokes = []
+        canvas.labels = []
+        drawEvent(context, entities[index]!, false)
+        return { glyph: canvas.strokes[2], label: canvas.labels[0] }
+    }
+
+    // Rising to the next change in the same group, past the other group's change.
+    const rising = glyph(0)
+    assert.equal(rising.glyph?.alpha, 1)
+    assert.equal(rising.glyph?.width, 0.1)
+    assert.deepEqual(rising.glyph?.path, [
+        ['M', 7.2, -5 + 0.17],
+        ['L', 7.5, -5 - 0.17],
+    ])
+    assert.equal(rising.label?.text, '1x')
+    assert.ok(Math.abs(rising.label!.x - 7.59) < 1e-9)
+
+    // Falling mirrors the curve.
+    const falling = glyph(1)
+    assert.deepEqual(falling.glyph?.path, [
+        ['M', 7.5, -10 + 0.17],
+        ['L', 7.2, -10 + 0.17],
+        ['L', 7.2, -10 - 0.17],
+    ])
+
+    // Without a later change in its group, or toward the same value, the ease fades.
+    assert.equal(glyph(2).glyph?.alpha, 0.5)
+    assert.equal(glyph(3).glyph?.alpha, 0.5)
+
+    // A held step is the plain change and has no curve.
+    const step = glyph(4)
+    assert.equal(step.glyph, undefined)
+    assert.ok(Math.abs(step.label!.x - 7.2) < 1e-9)
 })
 
 test('event paths draw steps as held values and sample other curves', () => {
