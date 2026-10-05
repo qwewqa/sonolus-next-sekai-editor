@@ -607,7 +607,7 @@ test('pickers group options by folder and the status bar names shared names by f
     )
 })
 
-test('the folder holding the target darkens its whole line and names it', async ({ page }) => {
+test('the folder holding the target names it and marks the line through it', async ({ page }) => {
     await seedGroups(page, [
         ['Default'],
         ['Lead', 'Verse'],
@@ -617,19 +617,18 @@ test('the folder holding the target darkens its whole line and names it', async 
     ])
     const groupChip = page.locator('.status-chip').filter({ hasText: 'Group' })
     const verse = folderRow(page, 'Verse')
-    const head = (name: string) =>
+    const marked = (name: string) =>
         panel(page)
-            .locator('.manager-folder-head')
-            .filter({ has: page.locator('.manager-label', { hasText: new RegExp(`^${name}$`) }) })
-    const onPath = panel(page).locator('.manager-on-path .manager-label')
+            .locator('.manager-members > li')
+            .filter({
+                has: page.locator('.manager-label', { hasText: new RegExp('^' + name + '$') }),
+            })
+            .evaluate((element) => getComputedStyle(element, '::after').content)
 
-    // Fill, the target, sits in Verse: Verse's line darkens past every member.
+    // Fill, the target, sits in Verse.
     await page.evaluate(() => {
         window.editorTest.view.groupId = 1002 as never
     })
-    await expect(head('Verse')).toHaveClass(/manager-folder-head-path/)
-    await expect(head('Chorus')).not.toHaveClass(/manager-folder-head-path/)
-    await expect(onPath).toHaveText(['Lead', 'Fill', 'Echo'])
     await expect(verse.locator('.manager-name')).toHaveAttribute(
         'aria-description',
         'New objects are added to Verse › Fill',
@@ -640,11 +639,13 @@ test('the folder holding the target darkens its whole line and names it', async 
     )
     // The status bar always leads with the folder.
     await expect(groupChip).toHaveText('Verse › Fill Group')
+    // A short stretch of line marks the target's pill, and only there.
+    expect(await marked('Fill')).not.toBe('none')
+    expect(await marked('Lead')).toBe('none')
 
-    // Collapsed, the folder takes the target's pill instead of a line.
+    // Collapsed, the folder takes the target's pill.
     await nameButton(verse, 'Verse').click()
     await expect(verse).toHaveClass(/manager-row-current/)
-    await expect(head('Verse')).not.toHaveClass(/manager-folder-head-path/)
     await expect(verse.locator('.manager-name')).toHaveAttribute(
         'aria-description',
         'New objects are added to Verse › Fill',
@@ -654,8 +655,7 @@ test('the folder holding the target darkens its whole line and names it', async 
     await page.evaluate(() => {
         window.editorTest.view.groupId = 1 as never
     })
-    await expect(panel(page).locator('.manager-folder-head-path')).toHaveCount(0)
-    await expect(onPath).toHaveCount(0)
+    await expect(panel(page).locator('.manager-name[aria-description]')).toHaveCount(0)
     await expect(groupChip).toHaveText('Default Group')
 })
 
@@ -854,3 +854,57 @@ test('Up and Down step between names, Home and End reach the ends', async ({ pag
     await page.keyboard.press('Alt+ArrowDown')
     expect(await tree(page)).toBe('[Verse: Default Lead Fill] Outro')
 })
+
+/** How far each folder's guide line and target stretch sit from its chevron's center. */
+const guideOffsets = (page: Page) =>
+    panel(page).evaluate((panel) =>
+        [...panel.querySelectorAll<HTMLElement>('.manager-members')].flatMap((members) => {
+            const folder = members.closest('.manager-folder')!
+            const chevron = folder.querySelector('.manager-chevron svg')!.getBoundingClientRect()
+            const center = chevron.left + chevron.width / 2
+            return [...members.children].flatMap((item) => {
+                const box = item.getBoundingClientRect()
+                return (['::before', '::after'] as const)
+                    .map((pseudo) => getComputedStyle(item, pseudo))
+                    .filter((style) => style.content !== 'none' && style.display !== 'none')
+                    .map(
+                        (style) =>
+                            box.left +
+                            parseFloat(style.left) +
+                            parseFloat(style.width) / 2 -
+                            center,
+                    )
+            })
+        }),
+    )
+
+for (const { name, viewport, touch } of [
+    { name: 'desktop', viewport: { width: 1600, height: 1000 }, touch: false },
+    { name: 'laptop', viewport: { width: 1366, height: 768 }, touch: false },
+    { name: 'tablet', viewport: { width: 820, height: 1180 }, touch: true },
+    { name: 'landscape tablet', viewport: { width: 1180, height: 820 }, touch: true },
+    { name: 'phone', viewport: { width: 390, height: 844 }, touch: true },
+]) {
+    test.describe(`guide alignment (${name})`, () => {
+        test.use({ viewport, isMobile: touch, hasTouch: touch })
+
+        test('the guide line and its target stretch run under the folder chevron', async ({
+            page,
+        }) => {
+            await seedGroups(page, [
+                ['Default'],
+                ['Lead', 'Verse'],
+                ['Fill', 'Verse'],
+                ['Echo', 'Verse'],
+            ])
+            await page.evaluate(() => {
+                window.editorTest.view.groupId = 1002 as never
+            })
+            await expect(folderRow(page, 'Verse')).toBeVisible()
+            const offsets = await guideOffsets(page)
+            // Three stretches of line and the one inside the target's pill.
+            expect(offsets).toHaveLength(4)
+            for (const offset of offsets) expect(Math.abs(offset)).toBeLessThanOrEqual(0.5)
+        })
+    })
+}
