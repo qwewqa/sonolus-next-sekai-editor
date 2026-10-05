@@ -143,7 +143,7 @@ test.describe('mixed values', () => {
     })
 
     test('numbers show their range and toggles list their values', async ({ page }) => {
-        await expect(control(page, 'Lane')).toHaveAttribute('placeholder', '−4 … 4')
+        await expect(control(page, 'Lane')).toHaveAttribute('placeholder', '-4 … 4')
         const critical = selection(page)
             .locator('.form-field')
             .filter({ has: page.getByText('Critical', { exact: true }) })

@@ -31,9 +31,10 @@ export const isUnknownValue = (value: unknown, options: readonly (readonly [stri
 /** No selected object holds a value, as for a BPM change without a meter. */
 export const isUnset = (field: FieldUsage | undefined) => field?.usage?.values.size === 0
 
-export const formatNumber = (value: number) => `${+value.toFixed(4)}`.replace('-', '−')
+// Typed like the number inputs show them, with a plain minus.
+export const formatNumber = (value: number) => `${+value.toFixed(4)}`
 
-/** The range a mixed number field spans, as "−4 … 6". */
+/** The range a mixed number field spans, as "-4 … 6". */
 export const mixedRange = (field: FieldUsage | undefined) => {
     if (!field?.usage || field.usage.values.size < 2) return
     const range = valueRange(field.usage, (value) =>

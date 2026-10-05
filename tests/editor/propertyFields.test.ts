@@ -139,8 +139,8 @@ test('mixed fields name their values, ranges and counts', () => {
         covered: 6,
         total: 6,
     }
-    assert.equal(mixedRange({ usage }), '−4 … 6')
-    assert.equal(mixedRange({ usage, map: (value) => (value as number) + 1 }), '−3 … 7')
+    assert.equal(mixedRange({ usage }), '-4 … 6')
+    assert.equal(mixedRange({ usage, map: (value) => (value as number) + 1 }), '-3 … 7')
     assert.equal(formatNumber(0.1 + 0.2), '0.3')
     assert.equal(
         mixedRange({ usage: { values: new Map([[1, 4]]), covered: 4, total: 4 } }),
