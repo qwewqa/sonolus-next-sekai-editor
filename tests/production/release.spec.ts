@@ -17,6 +17,20 @@ const frames = (page: Page) =>
         overlay: window.productionSmoke.overlay,
     }))
 
+// A form opened automatically closes when a resize moves it out of the panel,
+// a few frames after the resize, so let the layout settle before reading it.
+const showPreviewSettings = async (page: Page) => {
+    const toggle = page.getByRole('button', { name: /^(Show )?Preview Settings$/ })
+    const radio = page.getByRole('radio', { name: '16:9', exact: true })
+    await expect(async () => {
+        await page.waitForTimeout(250)
+        if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+        await expect(radio).toBeVisible({ timeout: 1000 })
+        await page.waitForTimeout(250)
+        await expect(radio).toBeVisible({ timeout: 0 })
+    }).toPass()
+}
+
 test('release assets, preview, chart editing and FFT audio work in the production bundle', async ({
     page,
 }, testInfo) => {
@@ -91,7 +105,9 @@ test('release assets, preview, chart editing and FFT audio work in the productio
     await test.step('load actual release packages and deployed metadata', async () => {
         await expect(page.locator('canvas.editor-chart')).toBeVisible()
         await expect(page.locator('.preview-controls')).toBeVisible()
-        await expect(page.locator('.preview input[type="number"]').first()).toHaveValue('10')
+        await expect(page.locator('.preview-controls input[type="number"]').first()).toHaveValue(
+            '10',
+        )
         await expect
             .poll(() => page.evaluate(() => window.productionSmoke.uploads))
             .toBe(hasParticles ? 2 : 1)
@@ -121,6 +137,7 @@ test('release assets, preview, chart editing and FFT audio work in the productio
             { width: 1069, height: 733 },
         ]) {
             await page.setViewportSize(size)
+            await showPreviewSettings(page)
             for (const [label, ratio] of [
                 ['16:9', 16 / 9],
                 ['21:9', 21 / 9],
@@ -145,8 +162,10 @@ test('release assets, preview, chart editing and FFT audio work in the productio
 
     await test.step('use preview transport at a mobile viewport size', async () => {
         await page.setViewportSize({ width: 390, height: 844 })
+        // Short previews reveal the playback strip on tap; taller ones keep it below.
         const show = page.getByRole('button', { name: 'Show Playback Controls', exact: true })
-        if (await show.isVisible()) await show.click()
+        const overlay = await show.isVisible()
+        if (overlay) await show.click()
         const position = page.locator('[aria-label="Preview Time"]:visible')
         await expect(position).toHaveCount(1)
         await expect(position).toHaveText('00:00.000')
@@ -154,9 +173,11 @@ test('release assets, preview, chart editing and FFT audio work in the productio
         await expect(position).toHaveText('00:00.001')
         await page.getByRole('button', { name: 'Back 100 ms', exact: true }).click()
         await expect(position).toHaveText('00:00.000')
-        await page.getByRole('button', { name: 'Hide Playback Controls', exact: true }).click({
-            position: { x: 12, y: 12 },
-        })
+        if (overlay) {
+            await page.getByRole('button', { name: 'Hide Playback Controls', exact: true }).click({
+                position: { x: 12, y: 12 },
+            })
+        }
         await expect(page.getByRole('button', { name: 'Show Preview Settings' })).toBeVisible()
         await page.setViewportSize({ width: 1600, height: 1000 })
     })
@@ -251,9 +272,11 @@ test('release assets, preview, chart editing and FFT audio work in the productio
         const playing = await frames(page)
         await expect.poll(async () => (await frames(page)).preview).toBeGreaterThan(playing.preview)
         await page.keyboard.press('Space')
-        await expect(page.locator('.preview-controls')).toBeVisible()
+        await expect(page.locator('.preview-controls')).toHaveCount(1)
         await page.mouse.move(1, 1)
         // Activity labels have a deliberate 500 ms expiry; allow their final draw.
+        await page.waitForTimeout(750)
+        await showPreviewSettings(page)
         await page.waitForTimeout(750)
         const paused = await frames(page)
         await page.waitForTimeout(300)
