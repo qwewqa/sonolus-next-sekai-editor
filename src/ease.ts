@@ -14,9 +14,13 @@ export const easeFamilies = [
 
 export type EaseFamily = (typeof easeFamilies)[number]
 
-export const timeScaleEaseFamilies = easeFamilies.filter(
-    (family) => family !== 'back' && family !== 'elastic',
-)
+// Step first, as the usual time scale change.
+export const timeScaleEaseFamilies = [
+    'step',
+    ...easeFamilies.filter(
+        (family) => family !== 'back' && family !== 'elastic' && family !== 'step',
+    ),
+] as const satisfies readonly EaseFamily[]
 
 export const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
 

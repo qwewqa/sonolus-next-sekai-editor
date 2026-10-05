@@ -141,7 +141,7 @@ test.describe('ease fields', () => {
         await expect(icon).toHaveCount(0)
     })
 
-    test('time scales do not offer overshooting eases', async ({ page }) => {
+    test('time scales offer step first and no overshooting eases', async ({ page }) => {
         await page.evaluate(async () => {
             const { fixtures, show, history, store, nextTick } = window.editorTest
             show(fixtures.events)
@@ -155,8 +155,9 @@ test.describe('ease fields', () => {
         })
         const family = field(page, 'Time Scale Ease')
         await expect(family).toBeVisible()
-        const labels = await family.locator('option').allTextContents()
-        expect(labels.slice(1).map((label) => label.trim())).toEqual([
+        const labels = await family.locator('option:not([hidden])').allTextContents()
+        expect(labels.map((label) => label.trim())).toEqual([
+            'Step',
             'Linear',
             'Sine',
             'Quad',
@@ -165,7 +166,6 @@ test.describe('ease fields', () => {
             'Quint',
             'Expo',
             'Circ',
-            'Step',
         ])
     })
 
