@@ -70,7 +70,7 @@ watchEffect(
     <div class="form-field">
         <component :is="labelId === undefined ? 'label' : 'div'" ref="row" class="form-field-row">
             <span class="form-field-label"
-                ><span :id="labelId" class="form-field-text">{{ label }}</span
+                ><slot name="icon" /><span :id="labelId" class="form-field-text">{{ label }}</span
                 ><span
                     v-if="coverage"
                     class="form-field-coverage"
@@ -189,6 +189,17 @@ watchEffect(
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+/* A command's icon before its name, as in the keyboard shortcut list. */
+.form-field-icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 1rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
 }
 
 /* How many selected objects use the field, when not all of them. */

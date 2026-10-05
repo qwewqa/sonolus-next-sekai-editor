@@ -23,6 +23,14 @@ const setKey = (name: CommandName, key: string | undefined) => {
             :label="command.title()"
             :model-value="getKey(name)"
             @update:model-value="setKey(name, $event)"
-        />
+        >
+            <template #icon>
+                <component
+                    :is="command.icon.is"
+                    class="h-4 w-auto min-w-4 fill-current"
+                    v-bind="command.icon.props"
+                />
+            </template>
+        </KeyField>
     </SettingsSection>
 </template>

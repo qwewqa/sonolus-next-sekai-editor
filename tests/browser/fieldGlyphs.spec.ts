@@ -137,3 +137,25 @@ test.describe('time scale transition', () => {
         await expect(segments(page).locator('svg')).toHaveCount(0)
     })
 })
+
+test('keyboard shortcuts show each command icon before its name', async ({ page }) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    const section = page
+        .locator('dialog[open] section')
+        .filter({ has: page.getByRole('heading', { name: 'Keyboard Shortcuts', exact: true }) })
+    const rows = section.locator('.form-field')
+    await expect(rows.first()).toBeVisible()
+    const count = await rows.count()
+    expect(count).toBeGreaterThan(50)
+    await expect(section.locator('.form-field-icon[aria-hidden="true"] > *')).toHaveCount(count)
+    // The icon adds nothing to the field's name.
+    const timeScale = rows.filter({
+        has: page.locator('.form-field-text').getByText('Time Scale', { exact: true }),
+    })
+    await expect(timeScale.locator('.form-field-icon')).toContainText('TS')
+    await expect(timeScale.getByRole('button')).not.toHaveAccessibleName(/TS/)
+})
