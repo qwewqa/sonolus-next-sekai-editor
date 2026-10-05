@@ -236,11 +236,20 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
             props.leftBorderStyle.progress = p
             props.rightBorderStyle.end = styleB.rightBorderStyle
             props.rightBorderStyle.progress = p
-            props.noteAlpha = lerp(styleA.noteAlpha, styleB.noteAlpha, p)
-            props.laneAlpha = lerp(styleA.laneAlpha, styleB.laneAlpha, p)
-            props.judgeLineAlpha = lerp(styleA.judgeLineAlpha, styleB.judgeLineAlpha, p)
+            // Overshooting eases keep alphas within their range.
+            props.noteAlpha = clamp(lerp(styleA.noteAlpha, styleB.noteAlpha, p), 0, 1)
+            props.laneAlpha = clamp(lerp(styleA.laneAlpha, styleB.laneAlpha, p), 0, 1)
+            props.judgeLineAlpha = clamp(
+                lerp(styleA.judgeLineAlpha, styleB.judgeLineAlpha, p),
+                0,
+                1,
+            )
             props.fullWidth = lerp(styleA.fullWidth, styleB.fullWidth, p)
-            props.divisionLineAlpha = lerp(styleA.divisionLineAlpha, styleB.divisionLineAlpha, p)
+            props.divisionLineAlpha = clamp(
+                lerp(styleA.divisionLineAlpha, styleB.divisionLineAlpha, p),
+                0,
+                1,
+            )
         }
     } else if (styleB) {
         props.judgeLineColor = {

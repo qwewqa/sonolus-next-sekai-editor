@@ -958,14 +958,26 @@
       "connectorActiveIsCritical": {
         "label": "Kritik Kaydırma"
       },
-      "connectorEase": {
-        "label": "Bağlayıcı Yumuşatma",
+      "ease": {
         "linear": "Doğrusal",
+        "sine": "Sinüs",
+        "quad": "Karesel",
+        "cubic": "Kübik",
+        "quart": "Dördüncü Derece",
+        "quint": "Beşinci Derece",
+        "expo": "Üstel",
+        "circ": "Dairesel",
+        "back": "Geri",
+        "elastic": "Elastik",
+        "step": "Basamak",
         "in": "Giriş",
         "out": "Çıkış",
         "inOut": "Giriş-Çıkış",
-        "outIn": "Çıkış-Giriş",
-        "none": "Hiçbiri"
+        "outIn": "Çıkış-Giriş"
+      },
+      "connectorEase": {
+        "label": "Bağlayıcı Yumuşatma",
+        "mode": "Bağlayıcı Yumuşatma Modu"
       },
       "connectorIsFake": {
         "label": "Sahte Bağlayıcı"
@@ -1026,12 +1038,7 @@
       },
       "eventEase": {
         "label": "Olay Yumuşatması",
-        "linear": "Doğrusal",
-        "in": "Giriş",
-        "out": "Çıkış",
-        "inOut": "Giriş-Çıkış",
-        "outIn": "Çıkış-Giriş",
-        "none": "Hiçbiri"
+        "mode": "Olay Yumuşatma Modu"
       },
       "file": {
         "select": "Dosya Seç..."
@@ -1176,12 +1183,7 @@
       },
       "timeScaleEase": {
         "label": "Zaman Ölçeği Yumuşatması",
-        "none": "Hiçbiri",
-        "linear": "Doğrusal",
-        "inQuad": "İkinci Derece Giriş",
-        "outQuad": "İkinci Derece Çıkış",
-        "inOutQuad": "İkinci Derece Giriş-Çıkış",
-        "outInQuad": "İkinci Derece Çıkış-Giriş"
+        "mode": "Zaman Ölçeği Yumuşatma Modu"
       },
       "timeScaleTransition": {
         "label": "Zaman Ölçeği Geçişi",

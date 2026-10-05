@@ -36,12 +36,3 @@ export const serializeEventsToLevelDataEntities = <T extends EventJointEntity>(
         entities: entities.values(),
     }
 }
-
-export const eventEases = {
-    linear: 1,
-    in: 2,
-    out: 3,
-    inOut: 4,
-    outIn: 5,
-    none: 0,
-}

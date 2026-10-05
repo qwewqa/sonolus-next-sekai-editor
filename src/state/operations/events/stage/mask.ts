@@ -1,4 +1,5 @@
 import type { StageMaskEventObject } from '../../../../chart/events/stage/mask'
+import { applyEaseEdit, type WithEaseEdits } from '../../../../ease'
 import type { StageMaskEventJointEntity } from '../../../entities/events/joints/stage/mask'
 import {
     addStageMaskEventJoint,
@@ -9,7 +10,7 @@ import type { Transaction } from '../../../transaction'
 export const editSelectedStageMaskEvent = (
     transaction: Transaction,
     entity: StageMaskEventJointEntity,
-    object: Partial<StageMaskEventObject>,
+    object: Partial<WithEaseEdits<StageMaskEventObject>>,
 ) => {
     removeStageMaskEventJoint(transaction, entity)
     return addStageMaskEventJoint(transaction, {
@@ -18,6 +19,6 @@ export const editSelectedStageMaskEvent = (
         maskLeft: object.maskLeft ?? entity.maskLeft,
         maskSize: object.maskSize ?? entity.maskSize,
         isMaskNotes: object.isMaskNotes ?? entity.isMaskNotes,
-        eventEase: object.eventEase ?? entity.eventEase,
+        eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
     })
 }

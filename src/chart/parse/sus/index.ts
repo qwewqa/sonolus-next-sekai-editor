@@ -33,7 +33,7 @@ export const parseSusChart = (sus: Sus) => {
     const criticalMods = new Set<string>()
     const tickRemoveMods = new Set<string>()
     const slideStartEndRemoveMods = new Set<string>()
-    const easeMods = new Map<string, 'in' | 'out'>()
+    const easeMods = new Map<string, 'inQuad' | 'outQuad'>()
 
     const preventSingles = new Set<string>()
     const dedupeSingles = new Set<string>()
@@ -67,11 +67,11 @@ export const parseSusChart = (sus: Sus) => {
                 flickMods.set(key, 'right')
                 break
             case 2:
-                easeMods.set(key, 'in')
+                easeMods.set(key, 'inQuad')
                 break
             case 5:
             case 6:
-                easeMods.set(key, 'out')
+                easeMods.set(key, 'outQuad')
                 break
         }
     }
@@ -108,7 +108,7 @@ export const parseSusChart = (sus: Sus) => {
             editorLane: -6,
             timeScale: timeScaleChange.timeScale,
             skip: 0,
-            timeScaleEase: 'none',
+            timeScaleEase: 'inStep',
             timeScaleTransition: 'timeScale',
             hideNotes: false,
         })

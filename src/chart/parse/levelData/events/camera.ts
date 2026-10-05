@@ -2,8 +2,9 @@ import { EngineArchetypeDataName } from '@sonolus/core'
 import Type from 'typebox'
 import { getEventRefs, parseEvents } from '.'
 import { getOptionalValue, getValue, type ParseCtx } from '..'
+import { easeFromValue } from '../../../../ease'
 import { beatSchema } from '../schemas'
-import { eventEases, eventEaseSchema } from './schemas'
+import { eventEaseSchema } from './schemas'
 
 export const parseCameraEventsToChart = (
     { chart, entities }: ParseCtx,
@@ -33,7 +34,7 @@ export const parseCameraEventsToChart = (
                 ],
             cameraRotation: getOptionalValue(entity, 'rotate', rotateSchema) ?? 0,
             cameraStageTilt: getOptionalValue(entity, 'stageTilt', stageTiltSchema) ?? 1,
-            eventEase: eventEases[getValue(entity, 'ease', eventEaseSchema)],
+            eventEase: easeFromValue(getValue(entity, 'ease', eventEaseSchema)),
         }
     })
 }

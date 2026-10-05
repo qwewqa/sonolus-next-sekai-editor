@@ -6,7 +6,7 @@ import {
     type CameraInfo,
     type PreviewViewport,
 } from './layout'
-import { rotateVec, vec, type Quad } from './math'
+import { easeOvershoot, rotateVec, vec, type Quad } from './math'
 
 // Compiled camera arrays are immutable. Scanning the whole chart for overscan
 // belongs to chart changes, not each playback frame or seek.
@@ -15,7 +15,15 @@ const rotationLimit = (cameras: readonly CameraChange[]) => {
     let limit = rotationLimits.get(cameras)
     if (limit === undefined) {
         limit = 0
-        for (const camera of cameras) limit = Math.max(limit, Math.abs(camera.rotate))
+        for (const [index, camera] of cameras.entries()) {
+            const next = cameras[index + 1]
+            // Overshooting eases rotate past their endpoints.
+            const overshoot = next
+                ? easeOvershoot(camera.ease) * Math.abs(next.rotate - camera.rotate)
+                : 0
+            limit = Math.max(limit, Math.abs(camera.rotate) + overshoot)
+            if (next) limit = Math.max(limit, Math.abs(next.rotate) + overshoot)
+        }
         rotationLimits.set(cameras, limit)
     }
     return Math.min(limit, Math.PI / 2)

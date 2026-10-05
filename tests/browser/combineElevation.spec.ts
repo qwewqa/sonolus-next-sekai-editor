@@ -59,7 +59,7 @@ test('combine preserves attached lane, width and elevation across BPM changes an
                     xTranslation: 0,
                     yTranslation: 0,
                     anchor: 'default',
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
                 {
                     stageId: tailStage!,
@@ -69,7 +69,7 @@ test('combine preserves attached lane, width and elevation across BPM changes an
                     xTranslation: 0,
                     yTranslation: 0,
                     anchor: 'default',
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
             ],
             stagePivotEvents: [
@@ -81,7 +81,7 @@ test('combine preserves attached lane, width and elevation across BPM changes an
                     divisionParity: 'even',
                     yOffset: 0,
                     yOffsetBeat: 0,
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
                 {
                     stageId: tailStage!,
@@ -91,7 +91,7 @@ test('combine preserves attached lane, width and elevation across BPM changes an
                     divisionParity: 'even',
                     yOffset: 0,
                     yOffsetBeat: 0,
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
             ],
             slides: [
@@ -230,7 +230,7 @@ test('combine sorts equal-beat notes by total stage and note elevation while tim
                     xTranslation: 0,
                     yTranslation: 0,
                     anchor: 'default',
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
             ],
             slides: [

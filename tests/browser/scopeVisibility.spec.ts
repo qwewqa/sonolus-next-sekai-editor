@@ -258,7 +258,7 @@ test('placing a time scale into a hidden group reveals it before replacing', asy
                     editorLane: 4,
                     timeScale: 3,
                     skip: 0,
-                    timeScaleEase: 'none',
+                    timeScaleEase: 'inStep',
                     timeScaleTransition: 'timeScale',
                     hideNotes: false,
                 },

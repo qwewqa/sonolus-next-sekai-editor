@@ -1,6 +1,6 @@
 import type { State } from '..'
 import type { Entity } from '../entities'
-import { isEditableEntity, type EditableEntity, type EditableObject } from './editable'
+import { isEditableEntity, type EditableEntity, type EditableProperties } from './editable'
 import { isWithinGridBudget } from './scaleValues'
 
 export const getMakeVerticalChanges = (selected: Entity[], source?: State) => {
@@ -11,7 +11,7 @@ export const getMakeVerticalChanges = (selected: Entity[], source?: State) => {
     for (const note of notes) beat = Math.min(beat, note.beat)
     if (!Number.isFinite(beat) || !Number.isSafeInteger(Math.floor(beat))) return
     if (entities.every((entity) => entity.beat === beat)) return
-    const changes = new Map<EditableEntity, EditableObject>()
+    const changes = new Map<EditableEntity, EditableProperties>()
     for (const entity of entities) {
         if (!Number.isFinite(entity.beat)) return
         const elevation = entity.beat - beat

@@ -1,6 +1,7 @@
+import type { TimeScaleEase } from '../ease'
 import type { GroupId } from './groups'
 
-export type TimeScaleEase = 'none' | 'linear' | 'inQuad' | 'outQuad' | 'inOutQuad' | 'outInQuad'
+export type { TimeScaleEase }
 
 export type TimeScaleTransition = 'timeScale' | 'scroll'
 

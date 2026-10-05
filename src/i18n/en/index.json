@@ -958,14 +958,26 @@
             "connectorActiveIsCritical": {
                 "label": "Slide Critical"
             },
-            "connectorEase": {
-                "label": "Connector Ease",
+            "ease": {
                 "linear": "Linear",
+                "sine": "Sine",
+                "quad": "Quad",
+                "cubic": "Cubic",
+                "quart": "Quart",
+                "quint": "Quint",
+                "expo": "Expo",
+                "circ": "Circ",
+                "back": "Back",
+                "elastic": "Elastic",
+                "step": "Step",
                 "in": "In",
                 "out": "Out",
                 "inOut": "In-Out",
-                "outIn": "Out-In",
-                "none": "None"
+                "outIn": "Out-In"
+            },
+            "connectorEase": {
+                "label": "Connector Ease",
+                "mode": "Connector Ease Mode"
             },
             "connectorIsFake": {
                 "label": "Connector Fake"
@@ -1026,12 +1038,7 @@
             },
             "eventEase": {
                 "label": "Event Ease",
-                "linear": "Linear",
-                "in": "In",
-                "out": "Out",
-                "inOut": "In-Out",
-                "outIn": "Out-In",
-                "none": "None"
+                "mode": "Event Ease Mode"
             },
             "file": {
                 "select": "Select File..."
@@ -1176,12 +1183,7 @@
             },
             "timeScaleEase": {
                 "label": "Time Scale Ease",
-                "none": "None",
-                "linear": "Linear",
-                "inQuad": "In Quad",
-                "outQuad": "Out Quad",
-                "inOutQuad": "In Out Quad",
-                "outInQuad": "Out In Quad"
+                "mode": "Time Scale Ease Mode"
             },
             "timeScaleTransition": {
                 "label": "Time Scale Transition",

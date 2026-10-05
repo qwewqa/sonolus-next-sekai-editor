@@ -11,13 +11,13 @@ import MultiTimeScaleTransitionField from '../../../modals/form/MultiTimeScaleTr
 import PropertiesModal from '../../../modals/form/PropertiesModal.vue'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
 
-const { entities, createModel } = useSelectedEntitiesProperties(
+const { entities, createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'timeScale',
 )
 
 const timeScale = createModel('timeScale')
 const skip = createModel('skip')
-const timeScaleEase = createModel('timeScaleEase')
+const timeScaleEase = createEaseModel('timeScaleEase')
 const timeScaleTransition = createModel('timeScaleTransition')
 const hideNotes = createModel('hideNotes')
 const groupId = createModel('groupId')

@@ -12,7 +12,7 @@ import MultiYTranslationField from '../../../../../modals/form/MultiYTranslation
 import MultiAnchorField from '../../../../../modals/form/MultiAnchorField.vue'
 import MultiElevationField from '../../../../../modals/form/MultiElevationField.vue'
 
-const { createModel } = useSelectedEntitiesProperties(
+const { createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'stageTransformEventJoint',
 )
 
@@ -22,7 +22,7 @@ const xTranslation = createModel('xTranslation')
 const yTranslation = createModel('yTranslation')
 const elevation = createModel('elevation')
 const anchor = createModel('anchor')
-const eventEase = createModel('eventEase')
+const eventEase = createEaseModel('eventEase')
 const beat = createModel('beat')
 </script>
 

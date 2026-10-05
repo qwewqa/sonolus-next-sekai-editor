@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import type { EventEase } from '../../chart/events'
+import { easeFamilies, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
-import MultiSelectField from './MultiSelectField.vue'
+import EaseField from './EaseField.vue'
 
-const modelValue = defineModel<EventEase | undefined>({ required: true })
+const modelValue = defineModel<EaseEdit | undefined>({ required: true })
 </script>
 
 <template>
-    <MultiSelectField
+    <EaseField
         v-model="modelValue"
         :label="i18n.modals.form.eventEase.label"
-        :options="[
-            [i18n.modals.form.eventEase.linear, 'linear'],
-            [i18n.modals.form.eventEase.in, 'in'],
-            [i18n.modals.form.eventEase.out, 'out'],
-            [i18n.modals.form.eventEase.inOut, 'inOut'],
-            [i18n.modals.form.eventEase.outIn, 'outIn'],
-            [i18n.modals.form.eventEase.none, 'none'],
-        ]"
+        :mode-label="i18n.modals.form.eventEase.mode"
+        :families="easeFamilies"
     />
 </template>

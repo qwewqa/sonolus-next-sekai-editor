@@ -1,6 +1,6 @@
 import type { State } from '..'
 import type { Entity } from '../entities'
-import { isEditableEntity, type EditableEntity, type EditableObject } from './editable'
+import { isEditableEntity, type EditableEntity, type EditableProperties } from './editable'
 
 export type ScaleAxis = 'beat' | 'elevation' | 'width'
 
@@ -17,7 +17,7 @@ export const getScaleEntities = (selected: Entity[], axis: ScaleAxis, source?: S
 
 const widthKeys = (
     entity: EditableEntity,
-): [keyof EditableObject, (keyof EditableObject)?] | undefined => {
+): [keyof EditableProperties, (keyof EditableProperties)?] | undefined => {
     switch (entity.type) {
         case 'note':
             return ['left', 'size']
@@ -41,13 +41,13 @@ export const getScaleValue = (entity: EditableEntity, axis: ScaleAxis): number =
     if (axis === 'beat') return entity.beat
     if (axis === 'elevation') return 'elevation' in entity ? entity.elevation : NaN
     const keys = widthKeys(entity)
-    return keys ? Number((entity as EditableObject)[keys[0]]) : NaN
+    return keys ? Number((entity as EditableProperties)[keys[0]]) : NaN
 }
 
 export const getScaleBounds = (entity: EditableEntity, axis: ScaleAxis) => {
     const min = getScaleValue(entity, axis)
     const sizeKey = axis === 'width' ? widthKeys(entity)?.[1] : undefined
-    const size = sizeKey ? Number((entity as EditableObject)[sizeKey]) : 0
+    const size = sizeKey ? Number((entity as EditableProperties)[sizeKey]) : 0
     return { min, max: min + size }
 }
 
@@ -56,14 +56,14 @@ export const getScaleProperties = (
     axis: ScaleAxis,
     value: number,
     factor = 1,
-): EditableObject => {
+): EditableProperties => {
     if (axis !== 'width') return { [axis]: value }
     const keys = widthKeys(entity)
     if (!keys) return {}
     const sizeKey = keys[1]
     return {
         [keys[0]]: value,
-        ...(sizeKey ? { [sizeKey]: Number((entity as EditableObject)[sizeKey]) * factor } : {}),
+        ...(sizeKey ? { [sizeKey]: Number((entity as EditableProperties)[sizeKey]) * factor } : {}),
     }
 }
 
@@ -177,7 +177,7 @@ export const getScaledSelectionValues = (
 const validWidthValues = (values: Map<EditableEntity, number>, factor: number) => {
     for (const [entity, left] of values) {
         const sizeKey = widthKeys(entity)?.[1]
-        const originalSize = sizeKey ? Number((entity as EditableObject)[sizeKey]) : 0
+        const originalSize = sizeKey ? Number((entity as EditableProperties)[sizeKey]) : 0
         const size = originalSize * factor
         if (
             !Number.isFinite(size) ||

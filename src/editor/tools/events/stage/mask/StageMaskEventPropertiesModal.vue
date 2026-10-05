@@ -10,7 +10,7 @@ import PropertiesModal from '../../../../../modals/form/PropertiesModal.vue'
 import { interpolateRaw } from '../../../../../utils/interpolate'
 import { useSelectedEntitiesProperties } from '../../../../utils/properties'
 
-const { createModel } = useSelectedEntitiesProperties(
+const { createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'stageMaskEventJoint',
 )
 
@@ -18,7 +18,7 @@ const stageId = createModel('stageId')
 const maskLeft = createModel('maskLeft')
 const maskSize = createModel('maskSize')
 const isMaskNotes = createModel('isMaskNotes')
-const eventEase = createModel('eventEase')
+const eventEase = createEaseModel('eventEase')
 const beat = createModel('beat')
 </script>
 

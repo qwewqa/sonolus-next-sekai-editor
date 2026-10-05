@@ -958,14 +958,26 @@
       "connectorActiveIsCritical": {
         "label": "크리티컬 슬라이드"
       },
-      "connectorEase": {
-        "label": "커넥터 이징",
+      "ease": {
         "linear": "선형",
+        "sine": "사인",
+        "quad": "2차",
+        "cubic": "3차",
+        "quart": "4차",
+        "quint": "5차",
+        "expo": "지수",
+        "circ": "원형",
+        "back": "백",
+        "elastic": "탄성",
+        "step": "계단",
         "in": "가속",
         "out": "감속",
         "inOut": "가속-감속",
-        "outIn": "감속-가속",
-        "none": "없음"
+        "outIn": "감속-가속"
+      },
+      "connectorEase": {
+        "label": "커넥터 이징",
+        "mode": "커넥터 이징 모드"
       },
       "connectorIsFake": {
         "label": "페이크 커넥터"
@@ -1026,12 +1038,7 @@
       },
       "eventEase": {
         "label": "이벤트 이징",
-        "linear": "선형",
-        "in": "가속",
-        "out": "감속",
-        "inOut": "가속-감속",
-        "outIn": "감속-가속",
-        "none": "없음"
+        "mode": "이벤트 이징 모드"
       },
       "file": {
         "select": "파일 선택..."
@@ -1176,12 +1183,7 @@
       },
       "timeScaleEase": {
         "label": "시간 배율 이징",
-        "none": "없음",
-        "linear": "선형",
-        "inQuad": "2차 가속",
-        "outQuad": "2차 감속",
-        "inOutQuad": "2차 가속-감속",
-        "outInQuad": "2차 감속-가속"
+        "mode": "시간 배율 이징 모드"
       },
       "timeScaleTransition": {
         "label": "시간 배율 전환",

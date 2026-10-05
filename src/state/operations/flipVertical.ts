@@ -1,6 +1,6 @@
 import type { State } from '..'
 import type { NoteObject } from '../../chart/note'
-import type { Ease } from '../../ease'
+import { complementEase } from '../../ease'
 import type { Entity } from '../entities'
 import type { NoteEntity } from '../entities/slides/note'
 import { addBpm, removeBpm } from '../mutations/bpm'
@@ -24,8 +24,6 @@ import { getInStoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
 import { connectorProperties } from './connectorProperties'
 import { isEditableEntity, type EditableEntity } from './editable'
-
-const reverseEase = (ease: Ease): Ease => (ease === 'in' ? 'out' : ease === 'out' ? 'in' : ease)
 
 const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) => {
     const properties = new Map<NoteEntity, Partial<NoteObject>>()
@@ -54,7 +52,7 @@ const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) =>
             if (previous)
                 properties.set(note, {
                     ...properties.get(note),
-                    connectorEase: reverseEase(previous.connectorEase),
+                    connectorEase: complementEase(previous.connectorEase),
                 })
         }
     }

@@ -5,6 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
+import { getPathD } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
@@ -160,7 +161,7 @@ const mask = (beat: number): StageMaskEventJointEntity => ({
     maskLeft: -4,
     maskSize: 8,
     isMaskNotes: true,
-    eventEase: 'inOut',
+    eventEase: 'inOutQuad',
 })
 
 const visibilities = {
@@ -342,4 +343,16 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.equal(canvas.labels.length, 0)
     drawEvent(context, mask(2), true)
     assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -9.9, align: 'center', alpha: 1 }])
+})
+
+test('event paths draw steps as held values and sample other curves', () => {
+    assert.equal(getPathD(0, 2, 0, -4, 'inStep'), 'M 0 0 V -4')
+    assert.equal(getPathD(0, 2, 0, -4, 'outStep'), 'M 2 0 V -4')
+    assert.equal(getPathD(0, 2, 0, -4, 'inOutStep'), 'M 0 0 V -2 M 2 -2 V -4')
+    assert.equal(getPathD(0, 2, 0, -4, 'outInStep'), 'M 1 0 V -4')
+    const sampled = getPathD(0, 2, 0, -4, 'inBack').split(' ')
+    assert.equal(sampled[0], 'M')
+    const xs = sampled.filter((_, index) => index % 3 === 1).map(Number)
+    assert.ok(Math.min(...xs) < -0.15)
+    assert.ok(Math.abs(xs.at(-1)! - 2) < 1e-12)
 })

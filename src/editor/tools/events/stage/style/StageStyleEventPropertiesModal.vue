@@ -17,7 +17,7 @@ import PropertiesModal from '../../../../../modals/form/PropertiesModal.vue'
 import { interpolateRaw } from '../../../../../utils/interpolate'
 import { useSelectedEntitiesProperties } from '../../../../utils/properties'
 
-const { createModel } = useSelectedEntitiesProperties(
+const { createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'stageStyleEventJoint',
 )
 
@@ -31,7 +31,7 @@ const noteAlpha = createModel('noteAlpha')
 const laneAlpha = createModel('laneAlpha')
 const judgmentLineAlpha = createModel('judgmentLineAlpha')
 const divisionLineAlpha = createModel('divisionLineAlpha')
-const eventEase = createModel('eventEase')
+const eventEase = createEaseModel('eventEase')
 const beat = createModel('beat')
 const editorLane = createModel('editorLane')
 </script>

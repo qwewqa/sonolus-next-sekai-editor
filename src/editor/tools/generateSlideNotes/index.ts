@@ -1,4 +1,5 @@
 import type { Tool } from '..'
+import { applyEaseEdit, type Ease } from '../../../ease'
 import { pushState, replaceState, state } from '../../../history'
 import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
@@ -209,7 +210,10 @@ export const applyGeneratedSlideNotes = (notes: NoteEntity[]) => {
                         defaultSlideProperties.value.connectorType ??
                         nearest?.connectorType ??
                         'active',
-                    connectorEase: defaultSlideProperties.value.connectorEase ?? 'linear',
+                    connectorEase: applyEaseEdit<Ease>(
+                        defaultSlideProperties.value.connectorEase,
+                        'linear',
+                    ),
                     connectorIsFake:
                         defaultSlideProperties.value.connectorIsFake ??
                         defaultSlideProperties.value.isFake ??

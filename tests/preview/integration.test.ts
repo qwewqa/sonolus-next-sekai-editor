@@ -120,7 +120,14 @@ const renderSprite = (
 const renderNotes = (source: Chart, now = 0.75) => renderSprite(source, now)
 
 test('chart compilation preserves all time scale eases and transition styles', () => {
-    const eases: TimeScaleEase[] = ['none', 'linear', 'inQuad', 'outQuad', 'inOutQuad', 'outInQuad']
+    const eases: TimeScaleEase[] = [
+        'inStep',
+        'linear',
+        'inQuad',
+        'outQuad',
+        'inOutQuad',
+        'outInQuad',
+    ]
     const compiled = preview(
         chart({
             groups: new Map([[groupId, { name: 'Forced', forceNoteSpeed: 7 }]]),
@@ -144,7 +151,7 @@ test('chart compilation preserves all time scale eases and transition styles', (
             time: index,
             timescale: index + 1,
             skipSeconds: 0.25,
-            ease: index,
+            ease: index || 38,
             transitionStyle: index % 2,
             hideNotes: index % 2 === 1,
         })),
@@ -162,7 +169,7 @@ test('chart compilation carries note masks and stage elevation through editor st
                     maskLeft: -3,
                     maskSize: 4,
                     isMaskNotes: true,
-                    eventEase: 'out',
+                    eventEase: 'outQuad',
                 },
             ],
             stageTransformEvents: [
@@ -174,7 +181,7 @@ test('chart compilation carries note masks and stage elevation through editor st
                     yTranslation: -3,
                     elevation: 1.5,
                     anchor: 'center',
-                    eventEase: 'inOut',
+                    eventEase: 'inOutQuad',
                 },
             ],
         }),
@@ -240,7 +247,7 @@ test('simultaneous lines require positive width at both ends even without masks'
 test('rendering clips an overlapping note and hides a note outside the enabled mask', () => {
     const source = chart({
         stageMaskEvents: [
-            { stageId, beat: 0, maskLeft: -1, maskSize: 2, isMaskNotes: true, eventEase: 'none' },
+            { stageId, beat: 0, maskLeft: -1, maskSize: 2, isMaskNotes: true, eventEase: 'inStep' },
         ],
         slides: [[note({ left: -2, size: 4 })]],
     })
@@ -267,7 +274,7 @@ test('rendered elevation changes note geometry and has no effect with a flat sta
                 yTranslation: 0,
                 elevation: 1,
                 anchor: 'default',
-                eventEase: 'none',
+                eventEase: 'inStep',
             },
         ],
     })
@@ -288,7 +295,7 @@ test('rendered elevation changes note geometry and has no effect with a flat sta
             cameraZoomVerticalAlign: 'default',
             cameraRotation: 0,
             cameraStageTilt: 0,
-            eventEase: 'none',
+            eventEase: 'inStep',
         },
     ]
     assert.deepEqual(renderNotes(source), renderNotes({ ...source, stageTransformEvents: [] }))
@@ -314,7 +321,7 @@ test('rendering uses scroll transition distance across the next time scale chang
                 editorLane: 0,
                 timeScale: 3,
                 skip: 0,
-                timeScaleEase: 'none',
+                timeScaleEase: 'inStep',
                 timeScaleTransition: 'timeScale',
                 hideNotes: false,
             },
@@ -324,7 +331,7 @@ test('rendering uses scroll transition distance across the next time scale chang
     const constant = renderNotes(
         {
             ...source,
-            timeScales: [{ ...source.timeScales[0]!, timeScale: 2, timeScaleEase: 'none' }],
+            timeScales: [{ ...source.timeScales[0]!, timeScale: 2, timeScaleEase: 'inStep' }],
         },
         1,
     )
@@ -367,7 +374,7 @@ for (const fixture of [
                     yTranslation: 0,
                     elevation: 1,
                     anchor: 'default',
-                    eventEase: 'none',
+                    eventEase: 'inStep',
                 },
             ],
         })
@@ -468,7 +475,7 @@ test('per-note elevation adds to the stage before rotation, translation, and cla
             yTranslation: -0.25,
             elevation: 1,
             anchor: 'default',
-            eventEase: 'none',
+            eventEase: 'inStep',
         } as const
         const source = chart({
             stageTransformEvents: [stageEvent],
@@ -492,7 +499,7 @@ test('standalone notes and attached ticks follow per-note elevation', () => {
                 yTranslation: 0,
                 elevation: 1,
                 anchor: 'default',
-                eventEase: 'none',
+                eventEase: 'inStep',
             },
         ],
     })
@@ -508,7 +515,7 @@ test('standalone notes and attached ticks follow per-note elevation', () => {
         cameraZoomVerticalAlign: 'default',
         cameraRotation: 0,
         cameraStageTilt: 0,
-        eventEase: 'none',
+        eventEase: 'inStep',
     } as const
     raised.cameraEvents = [flat]
     assert.deepEqual(renderNotes(raised), renderNotes(chart({ cameraEvents: [flat] })))

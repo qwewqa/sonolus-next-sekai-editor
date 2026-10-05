@@ -1,3 +1,4 @@
+import type { Ease } from '../ease'
 import type { GroupId } from './groups'
 import type { NoteStyle } from './noteStyle'
 import type { StageId } from './stages'
@@ -22,7 +23,7 @@ export type NoteSfx =
 
 export type ConnectorType = 'active' | 'guide' | 'damage'
 
-export type ConnectorEase = 'linear' | 'in' | 'out' | 'inOut' | 'outIn' | 'none'
+export type ConnectorEase = Ease
 
 export type ConnectorLayer = 'top' | 'bottom' | 'under' | 'over'
 

@@ -1,4 +1,5 @@
 import type { ConnectorLayer, ConnectorType } from '../../chart/note'
+import { isStepEase } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
 import { clamp, lerp } from '../../utils/math'
@@ -89,7 +90,7 @@ export const getElevationRibbon = (
 ): ElevationRibbon | undefined => {
     const { head, tail, connector } = connection
     if (
-        connector.attachHead.connectorEase === 'none' ||
+        isStepEase(connector.attachHead.connectorEase) ||
         head.y === tail.y ||
         (head.w <= 0 && tail.w <= 0)
     )

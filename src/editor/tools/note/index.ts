@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Tool } from '..'
 import type { NoteObject } from '../../../chart/note'
+import { applyEaseEdit, type Ease, type WithEaseEdits } from '../../../ease'
 import { pushState, replaceState, state } from '../../../history'
 import { defaultGroupId } from '../../../history/groups.ts'
 import { selectedEntities } from '../../../history/selectedEntities'
@@ -353,7 +354,7 @@ export const note: Tool = {
     },
 }
 
-export const editNote = (entity: NoteEntity, object: Partial<NoteObject>) => {
+export const editNote = (entity: NoteEntity, object: Partial<WithEaseEdits<NoteObject>>) => {
     edit(entity, object)
 }
 
@@ -388,7 +389,7 @@ export const getNotePropertiesFromSelection = () => {
         sfx: defaultNoteProperties.value.sfx ?? note?.sfx ?? 'default',
         isConnectorSeparator: defaultNoteProperties.value.isConnectorSeparator ?? false,
         connectorType: defaultNoteProperties.value.connectorType ?? 'active',
-        connectorEase: defaultNoteProperties.value.connectorEase ?? 'linear',
+        connectorEase: applyEaseEdit<Ease>(defaultNoteProperties.value.connectorEase, 'linear'),
         connectorIsFake:
             defaultNoteProperties.value.connectorIsFake ??
             defaultNoteProperties.value.isFake ??
@@ -445,7 +446,7 @@ const add = (object: NoteObject) => {
     )
 }
 
-const edit = (entity: NoteEntity, object: Partial<NoteObject>) => {
+const edit = (entity: NoteEntity, object: Partial<WithEaseEdits<NoteObject>>) => {
     update(
         () => i18n.value.tools.note.edited,
         (transaction) => editSelectedNote(transaction, entity, object),

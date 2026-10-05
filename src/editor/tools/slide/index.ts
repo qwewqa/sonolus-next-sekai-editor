@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Tool } from '..'
 import type { NoteObject } from '../../../chart/note'
+import { applyEaseEdit, type Ease } from '../../../ease'
 import { pushState, replaceState, state } from '../../../history'
 import { defaultGroupId } from '../../../history/groups.ts'
 import { selectedEntities } from '../../../history/selectedEntities'
@@ -397,7 +398,7 @@ export const getSlidePropertiesFromSelection = (beat: number) => {
         isConnectorSeparator: defaultSlideProperties.value.isConnectorSeparator ?? false,
         connectorType:
             defaultSlideProperties.value.connectorType ?? nearest?.connectorType ?? 'active',
-        connectorEase: defaultSlideProperties.value.connectorEase ?? 'linear',
+        connectorEase: applyEaseEdit<Ease>(defaultSlideProperties.value.connectorEase, 'linear'),
         connectorIsFake:
             defaultSlideProperties.value.connectorIsFake ??
             defaultSlideProperties.value.isFake ??

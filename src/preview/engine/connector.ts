@@ -22,12 +22,18 @@ import {
 } from './layout'
 import type { VisualMask } from './mask'
 import {
+    EaseType,
     applyAffine,
     clamp,
     ease,
     easeOutCubic,
+    easeOvershoot,
+    isNoneEase,
     lerp,
+    pinnedEase,
+    safeUnlerp,
     safeUnlerpClamped,
+    unlerp,
     vec,
     type EaseTypeValue,
     type Quad,
@@ -183,7 +189,7 @@ export const drawConnector = (
 
     let tailLane = tail.lane
     let tailSize = tail.size
-    if (easeType === 0) {
+    if (isNoneEase(easeType)) {
         tailLane = head.lane
         tailSize = head.size
     }
@@ -300,8 +306,8 @@ export const drawConnector = (
     const endFrac = safeFraction(head.visualProgress, tail.visualProgress, endVisualProgress, 1)
     const startEaseFrac = lerp(head.easeFrac, tail.easeFrac, startFrac)
     const endEaseFrac = lerp(head.easeFrac, tail.easeFrac, endFrac)
-    const easedHeadEaseFrac = ease(easeType, head.easeFrac)
-    const easedTailEaseFrac = ease(easeType, tail.easeFrac)
+    const easedHeadEaseFrac = pinnedEase(easeType, head.easeFrac)
+    const easedTailEaseFrac = pinnedEase(easeType, tail.easeFrac)
 
     const alphaOption = getConnectorAlphaOption(kind)
     if (head.size <= 0 && tailSize <= 0) return
@@ -328,13 +334,14 @@ export const drawConnector = (
         return { left, right, elevation }
     }
 
-    const sampleAt = (s: number): ConnectorSample => {
-        const easeFrac = lerp(startEaseFrac, endEaseFrac, s)
+    const sampleAt = (
+        s: number,
+        eased = ease(easeType, lerp(startEaseFrac, endEaseFrac, s)),
+    ): ConnectorSample => {
         const frac = lerp(startFrac, endFrac, s)
-        const interpFrac =
-            easeType === 0
-                ? 0
-                : safeFraction(easedHeadEaseFrac, easedTailEaseFrac, ease(easeType, easeFrac), frac)
+        const interpFrac = isNoneEase(easeType)
+            ? 0
+            : safeUnlerp(easedHeadEaseFrac, easedTailEaseFrac, eased, frac)
         const visualProgress = lerp(startVisualProgress, endVisualProgress, s)
         const travel = approach(context.layout, visualProgress)
         const lane = lerp(head.lane, tailLane, interpFrac)
@@ -371,7 +378,8 @@ export const drawConnector = (
     const tailMask = tail.mask
     const emit = (a: ConnectorSample, b: ConnectorSample) => {
         if (!headMask?.enabled || !tailMask?.enabled) {
-            emitQuad(a, b)
+            // Overshooting sizes may vanish for part of the connector.
+            if (a.size > 0 || b.size > 0) emitQuad(a, b)
             return
         }
 
@@ -451,7 +459,7 @@ export const drawConnector = (
                 ) <=
                     4 * context.layout.screenPixelSize)
 
-        if (!flat && depth < MAX_FLATTEN_DEPTH) {
+        if ((!flat || depth < minFlattenDepth) && depth < MAX_FLATTEN_DEPTH) {
             const mid = sampleAt((a.s + b.s) / 2)
             flatten(a, mid, depth + 1)
             flatten(mid, b, depth + 1)
@@ -460,7 +468,17 @@ export const drawConnector = (
         }
     }
 
-    flatten(sampleAt(0), sampleAt(1), 0)
+    // Oscillations can hide between the flatness probes of a long piece.
+    const minFlattenDepth = easeOvershoot(easeType) ? MIN_OSCILLATING_DEPTH : 0
+    // An in-out step jumps at its midpoint; each side is drawn flat.
+    const jump =
+        easeType === EaseType.inOutStep ? unlerp(startEaseFrac, endEaseFrac, 0.5) : Number.NaN
+    if (jump > 0 && jump < 1) {
+        flatten(sampleAt(0), sampleAt(jump, 0), 0)
+        flatten(sampleAt(jump, 1), sampleAt(1), 0)
+    } else {
+        flatten(sampleAt(0), sampleAt(1), 0)
+    }
 }
 
 type ConnectorSample = {
@@ -478,6 +496,7 @@ type ConnectorSample = {
 const FLATTEN_EPS = 0.001
 const FLATTEN_ALPHA_EPS = 1 / 192
 const MAX_FLATTEN_DEPTH = 8
+const MIN_OSCILLATING_DEPTH = 4
 
 const chordError = (a: Vec, b: Vec, p: Vec, t: number) =>
     Math.hypot(p.x - lerp(a.x, b.x, t), p.y - lerp(a.y, b.y, t))

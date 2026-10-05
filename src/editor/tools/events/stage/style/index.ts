@@ -1,12 +1,12 @@
 import { ref } from 'vue'
 import type { Tool } from '../../..'
-import type { EventEase } from '../../../../../chart/events'
 import type {
     BorderStyle,
     JudgmentLineColor,
     JudgmentLineStyle,
     StageStyleEventObject,
 } from '../../../../../chart/events/stage/style'
+import { applyEaseEdit, cycleEase, type EaseEdit, type WithEaseEdits } from '../../../../../ease'
 import { pushState, replaceState, state } from '../../../../../history'
 import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages'
@@ -48,7 +48,7 @@ type DefaultStageStyleEventProperties = {
     laneAlpha?: number
     judgmentLineAlpha?: number
     divisionLineAlpha?: number
-    eventEase?: EventEase
+    eventEase?: EaseEdit
     copyProperties: boolean
 }
 
@@ -132,16 +132,7 @@ export const stageStyleEvent: Tool = {
                         revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
-                            eventEase: (
-                                {
-                                    linear: 'in',
-                                    in: 'out',
-                                    out: 'inOut',
-                                    inOut: 'outIn',
-                                    outIn: 'none',
-                                    none: 'linear',
-                                } as const
-                            )[entity.eventEase],
+                            eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
                         void showToolModal(StageStyleEventPropertiesModal, {})
@@ -330,7 +321,7 @@ export const stageStyleEvent: Tool = {
 
 export const editStageStyleEvent = (
     entity: StageStyleEventJointEntity,
-    object: Partial<StageStyleEventObject>,
+    object: Partial<WithEaseEdits<StageStyleEventObject>>,
 ) => {
     edit(entity, object)
 }
@@ -387,10 +378,10 @@ const getPropertiesFromSelection = () => {
             defaultStageStyleEventProperties.value.divisionLineAlpha ??
             stageStyleEventJoint?.divisionLineAlpha ??
             1,
-        eventEase:
-            defaultStageStyleEventProperties.value.eventEase ??
-            stageStyleEventJoint?.eventEase ??
-            'linear',
+        eventEase: applyEaseEdit(
+            defaultStageStyleEventProperties.value.eventEase,
+            stageStyleEventJoint?.eventEase ?? 'linear',
+        ),
     }
 }
 
@@ -435,7 +426,10 @@ const add = (object: StageStyleEventObject) => {
     )
 }
 
-const edit = (entity: StageStyleEventJointEntity, object: Partial<StageStyleEventObject>) => {
+const edit = (
+    entity: StageStyleEventJointEntity,
+    object: Partial<WithEaseEdits<StageStyleEventObject>>,
+) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,

@@ -27,7 +27,7 @@ import MultiStageField from '../../../modals/form/MultiStageField.vue'
 import PropertiesModal from '../../../modals/form/PropertiesModal.vue'
 import { useSelectedEntitiesProperties } from '../../utils/properties'
 
-const { noteFields, createModel } = useSelectedEntitiesProperties(
+const { noteFields, createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'note',
 )
 
@@ -47,7 +47,7 @@ const isFake = createModel('isFake')
 const sfx = createModel('sfx')
 const isConnectorSeparator = createModel('isConnectorSeparator')
 const connectorType = createModel('connectorType')
-const connectorEase = createModel('connectorEase')
+const connectorEase = createEaseModel('connectorEase')
 const connectorIsFake = createModel('connectorIsFake')
 const connectorActiveIsCritical = createModel('connectorActiveIsCritical')
 const connectorGuideAlpha = createModel('connectorGuideAlpha')

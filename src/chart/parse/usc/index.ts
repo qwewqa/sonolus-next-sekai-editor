@@ -52,7 +52,7 @@ export const parseUscChart = (objects: UscObject[]) => {
                         editorLane: -6,
                         timeScale: change.timeScale,
                         skip: 0,
-                        timeScaleEase: 'none',
+                        timeScaleEase: 'inStep',
                         timeScaleTransition: 'timeScale',
                         hideNotes: false,
                     })
@@ -209,11 +209,11 @@ const toFlickDirection = (direction: keyof typeof flickDirections | undefined) =
     direction ? flickDirections[direction] : 'none'
 
 const connectorEases = {
-    out: 'out',
+    out: 'outQuad',
     linear: 'linear',
-    in: 'in',
-    inout: 'inOut',
-    outin: 'outIn',
+    in: 'inQuad',
+    inout: 'inOutQuad',
+    outin: 'outInQuad',
 } as const
 
 const connectorGuideAlphaStarts = {

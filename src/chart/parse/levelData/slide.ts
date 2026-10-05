@@ -1,6 +1,7 @@
 import { EngineArchetypeDataName, type LevelDataEntity } from '@sonolus/core'
 import Type from 'typebox'
 import { getOptionalRef, getOptionalValue, getValue, type ParseCtx } from '.'
+import { easeFromValue, easeLevelDataValues } from '../../../ease'
 import type { GroupId } from '../../groups'
 import type { NoteObject } from '../../note'
 import {
@@ -324,23 +325,7 @@ const segmentKinds = {
     },
 } as const
 
-const connectorEaseSchema = Type.Union([
-    Type.Literal(0),
-    Type.Literal(1),
-    Type.Literal(2),
-    Type.Literal(3),
-    Type.Literal(4),
-    Type.Literal(5),
-])
-
-const connectorEases = {
-    0: 'none',
-    1: 'linear',
-    2: 'in',
-    3: 'out',
-    4: 'inOut',
-    5: 'outIn',
-} as const
+const connectorEaseSchema = Type.Union(easeLevelDataValues.map((value) => Type.Literal(value)))
 
 const segmentAlphaSchema = Type.Number({ minimum: 0, maximum: 2 })
 
@@ -415,7 +400,7 @@ const toNoteObject = (
                 getValue(entity, 'segmentKind', segmentKindSchema),
             ) as keyof typeof segmentKinds
         ],
-        connectorEase: connectorEases[getValue(entity, 'connectorEase', connectorEaseSchema)],
+        connectorEase: easeFromValue(getValue(entity, 'connectorEase', connectorEaseSchema)),
         connectorGuideAlpha: getValue(entity, 'segmentAlpha', segmentAlphaSchema),
         connectorLayer:
             connectorLayers[getOptionalValue(entity, 'segmentLayer', segmentLayerSchema) ?? 0],

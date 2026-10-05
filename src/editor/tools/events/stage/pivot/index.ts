@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Tool } from '../../..'
-import type { EventEase } from '../../../../../chart/events'
 import type { DivisionParity, StagePivotEventObject } from '../../../../../chart/events/stage/pivot'
+import { applyEaseEdit, cycleEase, type EaseEdit, type WithEaseEdits } from '../../../../../ease'
 import { pushState, replaceState, state } from '../../../../../history'
 import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages.ts'
@@ -38,7 +38,7 @@ type DefaultStagePivotEventProperties = {
     divisionParity?: DivisionParity
     yOffset?: number
     yOffsetBeat?: number
-    eventEase?: EventEase
+    eventEase?: EaseEdit
     copyProperties: boolean
 }
 
@@ -122,16 +122,7 @@ export const stagePivotEvent: Tool = {
                         revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
-                            eventEase: (
-                                {
-                                    linear: 'in',
-                                    in: 'out',
-                                    out: 'inOut',
-                                    inOut: 'outIn',
-                                    outIn: 'none',
-                                    none: 'linear',
-                                } as const
-                            )[entity.eventEase],
+                            eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
                         void showToolModal(StagePivotEventPropertiesModal, {})
@@ -320,7 +311,7 @@ export const stagePivotEvent: Tool = {
 
 export const editStagePivotEvent = (
     entity: StagePivotEventJointEntity,
-    object: Partial<StagePivotEventObject>,
+    object: Partial<WithEaseEdits<StagePivotEventObject>>,
 ) => {
     edit(entity, object)
 }
@@ -355,10 +346,10 @@ const getPropertiesFromSelection = () => {
             defaultStagePivotEventProperties.value.yOffsetBeat ??
             stagePivotEventJoint?.yOffsetBeat ??
             0,
-        eventEase:
-            defaultStagePivotEventProperties.value.eventEase ??
-            stagePivotEventJoint?.eventEase ??
-            'linear',
+        eventEase: applyEaseEdit(
+            defaultStagePivotEventProperties.value.eventEase,
+            stagePivotEventJoint?.eventEase ?? 'linear',
+        ),
     }
 }
 
@@ -403,7 +394,10 @@ const add = (object: StagePivotEventObject) => {
     )
 }
 
-const edit = (entity: StagePivotEventJointEntity, object: Partial<StagePivotEventObject>) => {
+const edit = (
+    entity: StagePivotEventJointEntity,
+    object: Partial<WithEaseEdits<StagePivotEventObject>>,
+) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,

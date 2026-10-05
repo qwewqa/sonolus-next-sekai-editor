@@ -132,13 +132,17 @@ test.describe('roomy panel', () => {
                 ...fixtures.events,
                 slides: [
                     [
-                        note(2, { connectorEase: 'in' }),
+                        note(2, { connectorEase: 'inQuad' }),
                         // Attached ticks and tails carry connector values the
                         // slide never uses, as imported charts often do.
-                        note(3, { isAttached: true, connectorEase: 'out', flickDirection: 'up' }),
-                        note(4, { connectorEase: 'out', connectorLayer: 'bottom' }),
+                        note(3, {
+                            isAttached: true,
+                            connectorEase: 'outQuad',
+                            flickDirection: 'up',
+                        }),
+                        note(4, { connectorEase: 'outQuad', connectorLayer: 'bottom' }),
                     ],
-                    [note(6, { connectorEase: 'out' }), note(7)],
+                    [note(6, { connectorEase: 'outQuad' }), note(7)],
                 ],
             })
             await nextTick()
@@ -158,13 +162,15 @@ test.describe('roomy panel', () => {
             }, beats)
 
         await select([2, 3, 4])
-        await expect(shown('Connector Ease')).toHaveText('In')
+        await expect(shown('Connector Ease')).toHaveText('Quad')
+        await expect(shown('Connector Ease Mode')).toHaveText('In')
         await expect(shown('Connector Layer')).toHaveText('Top')
         await expect(shown('Flick Direction')).toHaveText('None')
 
         // Values that genuinely differ are still mixed.
         await select([2, 6])
-        await expect(shown('Connector Ease')).toHaveText('Mixed')
+        await expect(shown('Connector Ease')).toHaveText('Quad')
+        await expect(shown('Connector Ease Mode')).toHaveText('Mixed')
     })
 
     test('a typed value commits when the presentation switches', async ({ page }) => {

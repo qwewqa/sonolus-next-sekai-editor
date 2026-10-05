@@ -1,6 +1,7 @@
 import { EngineArchetypeDataName, EngineArchetypeName, type LevelDataEntity } from '@sonolus/core'
 import { getStoreEntities } from '.'
 import type { GroupId } from '../../../chart/groups'
+import { easeValues } from '../../../ease'
 import type { TimeScaleEntity } from '../../../state/entities/timeScale'
 import type { Store } from '../../../state/store'
 
@@ -56,7 +57,7 @@ export const serializeTimeScalesToLevelDataEntities = (
                             },
                             {
                                 name: '#TIMESCALE_EASE',
-                                value: timeScaleEases[timeScale.timeScaleEase],
+                                value: easeValues[timeScale.timeScaleEase],
                             },
                             {
                                 name: 'transitionStyle',
@@ -87,15 +88,6 @@ export const serializeTimeScalesToLevelDataEntities = (
     }
 
     return entities
-}
-
-const timeScaleEases = {
-    none: 0,
-    linear: 1,
-    inQuad: 2,
-    outQuad: 3,
-    inOutQuad: 4,
-    outInQuad: 5,
 }
 
 const transitionStyles = {

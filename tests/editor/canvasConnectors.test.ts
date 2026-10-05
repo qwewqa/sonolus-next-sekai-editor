@@ -114,7 +114,7 @@ const fixture = () => {
 
 test('Canvas eased connectors preserve partial-segment quadratic geometry', () => {
     const { context, fills, strokes, renderer } = fixture()
-    const first = note(0, 0, 2, { connectorEase: 'in' })
+    const first = note(0, 0, 2, { connectorEase: 'inQuad' })
     const last = note(4, 4, 4)
     const entity = toConnectorEntity(note(1, 0, 0), note(3, 0, 0), first, last, first, last)
 
@@ -137,7 +137,7 @@ test('Canvas eased connectors preserve partial-segment quadratic geometry', () =
 })
 
 test('compound easing joins at the attachment midpoint and clips each half', () => {
-    for (const connectorEase of ['inOut', 'outIn'] as const) {
+    for (const connectorEase of ['inOutQuad', 'outInQuad'] as const) {
         const { context, fills, strokes, renderer } = fixture()
         const first = note(0, 0, 2, { connectorEase })
         const last = note(8, 8, 4)
@@ -297,7 +297,7 @@ test('connector path cache survives panning, but updates for zoom and BPM edits'
 
 test('fake connector crosses use non-scaling strokes and restore caller drawing state', () => {
     const { context, ctx, strokes, renderer } = fixture()
-    const first = note(0, 0, 2, { connectorEase: 'none', connectorIsFake: true })
+    const first = note(0, 0, 2, { connectorEase: 'inStep', connectorIsFake: true })
     const last = note(4, 4, 4)
     renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false, 0.25)
     assert.deepEqual(strokes.at(-1), {
@@ -342,4 +342,54 @@ test('a guide with the editor default color draws green', () => {
     const last = note(4, 0, 2)
     renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false)
     assert.equal(fills[0]?.style, '#73d69d')
+})
+
+test('step connectors hold their interior lane and in-out steps split at the attachment midpoint', () => {
+    const rects = (connectorEase: NoteEntity['connectorEase'], start = 0, end = 4) => {
+        const { context, fills, renderer } = fixture()
+        const first = note(0, 0, 2, { connectorEase })
+        const last = note(4, 4, 4)
+        const entity = toConnectorEntity(
+            note(start, 0, 0),
+            note(end, 0, 0),
+            first,
+            last,
+            first,
+            last,
+        )
+        renderer.draw(context, entity, false)
+        return fills[0]!.path.commands
+    }
+    assert.deepEqual(rects('inStep'), [['R', 0, -4, 2, 4]])
+    assert.deepEqual(rects('outStep'), [['R', 4, -4, 4, 4]])
+    assert.deepEqual(rects('outInStep'), [['R', 2, -4, 3, 4]])
+    assert.deepEqual(rects('inOutStep'), [
+        ['R', 0, -2, 2, 2],
+        ['R', 4, -4, 4, 2],
+    ])
+    assert.deepEqual(rects('inOutStep', 0, 1), [['R', 0, -1, 2, 1]])
+    assert.deepEqual(rects('inOutStep', 3, 4), [['R', 4, -4, 4, 1]])
+})
+
+test('other curves are sampled polylines that keep overshoot and collapse negative sizes', () => {
+    const { context, fills, strokes, renderer } = fixture()
+    const first = note(0, 0, 2, { connectorEase: 'outElastic' })
+    const last = note(4, 4, 0.1)
+    renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false)
+    const commands = fills[0]!.path.commands
+    assert.deepEqual(commands[0], ['M', 0, -0])
+    assert.deepEqual(commands.at(-1), ['Z'])
+    assert.ok(commands.slice(1, -1).every(([command]) => command === 'L'))
+    assert.ok(commands.length > 40)
+    const lefts = commands.slice(0, -1).map(([, x]) => x!)
+    assert.ok(Math.max(...lefts) > 4.5)
+    // The right edge never crosses the left edge.
+    const half = (commands.length - 1) / 2
+    for (let index = 0; index < half; index++) {
+        const [, leftX, leftY] = commands[index]!
+        const [, rightX, rightY] = commands[commands.length - 2 - index]!
+        assert.equal(leftY, rightY)
+        assert.ok(rightX! >= leftX! - 1e-12)
+    }
+    assert.equal(strokes[0]!.path.commands.filter(([command]) => command === 'M').length, 2)
 })

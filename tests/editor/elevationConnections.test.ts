@@ -163,7 +163,13 @@ test('ribbons join full endpoint widths and taper without clipping to note bodie
 })
 
 test('all interpolating eases produce the same ribbon at a single beat', () => {
-    for (const connectorEase of ['linear', 'in', 'out', 'inOut', 'outIn'] as const) {
+    for (const connectorEase of [
+        'linear',
+        'inQuad',
+        'outQuad',
+        'inOutQuad',
+        'outInQuad',
+    ] as const) {
         const head = note({ connectorEase }),
             tail = note()
         const [connection] = getElevationConnections(
@@ -182,7 +188,7 @@ test('all interpolating eases produce the same ribbon at a single beat', () => {
 
 test('same-elevation, none-ease and zero-width connectors do not invent visible geometry', () => {
     for (const kind of ['level', 'none', 'zero'] as const) {
-        const head = note({ connectorEase: kind === 'none' ? 'none' : 'linear' }),
+        const head = note({ connectorEase: kind === 'none' ? 'inStep' : 'linear' }),
             tail = note()
         const a = row(head),
             b = row(tail, 150, kind === 'level' ? 200 : 100)

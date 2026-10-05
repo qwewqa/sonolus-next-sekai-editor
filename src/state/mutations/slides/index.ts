@@ -129,10 +129,12 @@ export const rebuildSlide = (store: Store, slideId: SlideId, selectedEntities: E
             head.beat === tail.beat ? 0.5 : unlerp(head.beat, tail.beat, rawInfo.note.beat),
         )
 
+        // Overshooting eases may shrink a note past zero width; keep its center.
+        const size = lerp(head.size, tail.size, x)
         const note = toNoteEntity(rawInfo.note.slideId, {
             ...rawInfo.note,
-            left: lerp(head.left, tail.left, x),
-            size: lerp(head.size, tail.size, x),
+            left: lerp(head.left, tail.left, x) + Math.min(size, 0) / 2,
+            size: Math.max(size, 0),
         })
 
         const index = selectedEntities.indexOf(rawInfo.note)

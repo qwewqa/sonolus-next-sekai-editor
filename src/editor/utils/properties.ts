@@ -1,4 +1,5 @@
 import { computed, onScopeDispose, provide, shallowRef, watch, type Ref } from 'vue'
+import { mergeEases, type Ease } from '../../ease'
 import { state as historyState } from '../../history'
 import { selectedEntities } from '../../history/selectedEntities'
 import { numberEditKey } from '../../modals/form/numberEdit'
@@ -145,10 +146,39 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                     editSelectedEditableEntities({ [key]: value })
                 },
             }),
+        createEaseModel: <K extends 'connectorEase' | 'eventEase' | 'timeScaleEase'>(key: K) =>
+            computed({
+                get: () =>
+                    mergeEases(
+                        entities.value.flatMap((entity) =>
+                            key in entity && appliesTo(entity, key)
+                                ? [entity[key as never] as EditableEase<K>]
+                                : [],
+                        ),
+                    ),
+                set: (value) => {
+                    if (value === undefined) return
+
+                    reset()
+                    editSelectedEditableEntities({ [key]: value })
+                },
+            }),
     }
 }
 
+type EditableEase<K extends keyof EditableObject> = Extract<
+    Exclude<EditableObject[K], undefined>,
+    Ease
+>
+
 type DistributedKeyOf<T> = T extends T ? keyof T : never
+
+const appliesTo = (entity: Entity, key: string) => {
+    if (entity.type !== 'note') return true
+
+    const fields = getNoteFields(entity)
+    return !(key in fields) || fields[key as keyof NoteFields]
+}
 
 const aggregate = <T extends object>(
     aggregate: Partial<T>,

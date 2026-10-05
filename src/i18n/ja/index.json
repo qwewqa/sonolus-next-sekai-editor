@@ -958,14 +958,26 @@
       "connectorActiveIsCritical": {
         "label": "スライドクリティカル"
       },
-      "connectorEase": {
-        "label": "接続の加減速",
+      "ease": {
         "linear": "直線",
+        "sine": "サイン",
+        "quad": "2次",
+        "cubic": "3次",
+        "quart": "4次",
+        "quint": "5次",
+        "expo": "指数",
+        "circ": "円",
+        "back": "バック",
+        "elastic": "エラスティック",
+        "step": "ステップ",
         "in": "加速",
         "out": "減速",
-        "inOut": "加速-減速",
-        "outIn": "減速-加速",
-        "none": "なし"
+        "inOut": "加速→減速",
+        "outIn": "減速→加速"
+      },
+      "connectorEase": {
+        "label": "接続の加減速",
+        "mode": "接続の加減速モード"
       },
       "connectorIsFake": {
         "label": "フェイク接続"
@@ -1026,12 +1038,7 @@
       },
       "eventEase": {
         "label": "イベントの加減速",
-        "linear": "線形",
-        "in": "加速",
-        "out": "減速",
-        "inOut": "加速→減速",
-        "outIn": "減速→加速",
-        "none": "なし"
+        "mode": "イベントの加減速モード"
       },
       "file": {
         "select": "ファイルを選択してください..."
@@ -1176,12 +1183,7 @@
       },
       "timeScaleEase": {
         "label": "ハイスピード変化",
-        "none": "なし",
-        "linear": "直線",
-        "inQuad": "2次加速",
-        "outQuad": "2次減速",
-        "inOutQuad": "2次加速→減速",
-        "outInQuad": "2次減速→加速"
+        "mode": "ハイスピード変化モード"
       },
       "timeScaleTransition": {
         "label": "ハイスピードの遷移方式",

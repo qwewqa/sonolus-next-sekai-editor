@@ -3,9 +3,10 @@ import Type from 'typebox'
 import { parseStageEvents } from '.'
 import { getEventRefs } from '..'
 import { getValue, type ParseCtx } from '../..'
+import { easeFromValue } from '../../../../../ease'
 import type { StageId } from '../../../../stages'
 import { beatSchema } from '../../schemas'
-import { eventEases, eventEaseSchema } from '../schemas'
+import { eventEaseSchema } from '../schemas'
 
 export const parseStagePivotEventsToChart = (
     { chart, entities }: ParseCtx,
@@ -25,7 +26,7 @@ export const parseStagePivotEventsToChart = (
         divisionParity: divisionParities[getValue(entity, 'divisionParity', divisionParitySchema)],
         yOffset: getValue(entity, 'yOffset', yOffsetSchema),
         yOffsetBeat: getValue(entity, 'yBeatOffset', yBeatOffsetSchema),
-        eventEase: eventEases[getValue(entity, 'ease', eventEaseSchema)],
+        eventEase: easeFromValue(getValue(entity, 'ease', eventEaseSchema)),
     }))
 }
 

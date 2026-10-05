@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Tool } from '../../..'
-import type { EventEase } from '../../../../../chart/events'
 import type { StageMaskEventObject } from '../../../../../chart/events/stage/mask'
+import { applyEaseEdit, cycleEase, type EaseEdit, type WithEaseEdits } from '../../../../../ease'
 import { pushState, replaceState, state } from '../../../../../history'
 import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages.ts'
@@ -37,7 +37,7 @@ import StageMaskEventSidebar from './StageMaskEventSidebar.vue'
 type DefaultStageMaskEventProperties = {
     maskSize?: number
     isMaskNotes?: boolean
-    eventEase?: EventEase
+    eventEase?: EaseEdit
     copyProperties: boolean
 }
 
@@ -127,16 +127,7 @@ export const stageMaskEvent: Tool = {
                         revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
-                            eventEase: (
-                                {
-                                    linear: 'in',
-                                    in: 'out',
-                                    out: 'inOut',
-                                    inOut: 'outIn',
-                                    outIn: 'none',
-                                    none: 'linear',
-                                } as const
-                            )[entity.eventEase],
+                            eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
                         void showToolModal(StageMaskEventPropertiesModal, {})
@@ -410,7 +401,7 @@ export const stageMaskEvent: Tool = {
 
 export const editStageMaskEvent = (
     entity: StageMaskEventJointEntity,
-    object: Partial<StageMaskEventObject>,
+    object: Partial<WithEaseEdits<StageMaskEventObject>>,
 ) => {
     edit(entity, object)
 }
@@ -437,10 +428,10 @@ const getPropertiesFromSelection = () => {
             defaultStageMaskEventProperties.value.isMaskNotes ??
             stageMaskEventJoint?.isMaskNotes ??
             false,
-        eventEase:
-            defaultStageMaskEventProperties.value.eventEase ??
-            stageMaskEventJoint?.eventEase ??
-            'linear',
+        eventEase: applyEaseEdit(
+            defaultStageMaskEventProperties.value.eventEase,
+            stageMaskEventJoint?.eventEase ?? 'linear',
+        ),
     }
 }
 
@@ -485,7 +476,10 @@ const add = (object: StageMaskEventObject) => {
     )
 }
 
-const edit = (entity: StageMaskEventJointEntity, object: Partial<StageMaskEventObject>) => {
+const edit = (
+    entity: StageMaskEventJointEntity,
+    object: Partial<WithEaseEdits<StageMaskEventObject>>,
+) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,

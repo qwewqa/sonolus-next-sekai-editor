@@ -70,7 +70,7 @@ test('materializes disrupted attachments while preserving complete attachment in
             ...chart,
             slides: [
                 [
-                    { ...base, beat: 0, left: -4, size: 2, elevation: 2, connectorEase: 'in' },
+                    { ...base, beat: 0, left: -4, size: 2, elevation: 2, connectorEase: 'inQuad' },
                     { ...base, beat: 1, elevation: 9, isAttached: true },
                     { ...base, beat: 2, elevation: 9, isAttached: true },
                     { ...base, beat: 4, left: 4, size: 4, elevation: 4 },

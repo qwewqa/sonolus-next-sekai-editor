@@ -1,4 +1,5 @@
 import type { CameraEventObject } from '../../../chart/events/camera'
+import { applyEaseEdit, type WithEaseEdits } from '../../../ease'
 import type { CameraEventJointEntity } from '../../entities/events/joints/camera'
 import { addCameraEventJoint, removeCameraEventJoint } from '../../mutations/events/camera'
 import type { Transaction } from '../../transaction'
@@ -6,7 +7,7 @@ import type { Transaction } from '../../transaction'
 export const editSelectedCameraEvent = (
     transaction: Transaction,
     entity: CameraEventJointEntity,
-    object: Partial<CameraEventObject>,
+    object: Partial<WithEaseEdits<CameraEventObject>>,
 ) => {
     removeCameraEventJoint(transaction, entity)
     return addCameraEventJoint(transaction, {
@@ -19,6 +20,6 @@ export const editSelectedCameraEvent = (
         cameraZoomVerticalAlign: object.cameraZoomVerticalAlign ?? entity.cameraZoomVerticalAlign,
         cameraRotation: object.cameraRotation ?? entity.cameraRotation,
         cameraStageTilt: object.cameraStageTilt ?? entity.cameraStageTilt,
-        eventEase: object.eventEase ?? entity.eventEase,
+        eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
     })
 }

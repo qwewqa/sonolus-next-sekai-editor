@@ -24,7 +24,7 @@ import { interpolateVisualMasks, maskedNoteExtents, noVisualMask, type VisualMas
 import {
     addVec,
     applyAffine,
-    ease,
+    connectorInterpFrac,
     lerp,
     normalizeVecOrZero,
     orthogonalVec,
@@ -533,15 +533,13 @@ export const computeSlideInputBounds = (
     const headFrac = headEaseFrac(head)
     const tailFrac = tailEaseFrac(tail)
     const inputFrac = safeUnlerpClamped(head.targetTime, tail.targetTime, context.time)
-    const interpFrac =
-        easeType === 0
-            ? 0
-            : safeUnlerpClamped(
-                  ease(easeType, headFrac),
-                  ease(easeType, tailFrac),
-                  ease(easeType, lerp(headFrac, tailFrac, inputFrac)),
-                  inputFrac,
-              )
+    const interpFrac = connectorInterpFrac(
+        easeType,
+        headFrac,
+        tailFrac,
+        lerp(headFrac, tailFrac, inputFrac),
+        inputFrac,
+    )
     const headGeometry = inputGeometry(context, head)
     const tailGeometry = inputGeometry(context, tail)
     return geometryHitbox(
@@ -556,7 +554,7 @@ export const computeSlideInputBounds = (
                 interpFrac,
             ),
         },
-        lerp(head.size, tail.size, interpFrac),
+        Math.max(lerp(head.size, tail.size, interpFrac), 0),
         leniency,
     ).bounds
 }

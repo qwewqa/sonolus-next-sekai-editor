@@ -18,7 +18,7 @@ import {
 import { addTimeScale, removeTimeScale } from '../mutations/timeScale'
 import { getInStoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
-import type { EditableEntity, EditableObject } from './editable'
+import type { EditableEntity, EditableProperties } from './editable'
 import { editSelectedNote } from './note'
 
 type TimingEntity = Exclude<EditableEntity, { type: 'note' }>
@@ -70,10 +70,10 @@ const add = (transaction: Transaction, entity: TimingEntity) => {
 export const transformSelection = (
     source: State,
     selected: Entity[],
-    changes: Map<EditableEntity, EditableObject>,
+    changes: Map<EditableEntity, EditableProperties>,
 ): State => {
     const destinations = new Map<string, number>()
-    const destinationOf = (entity: TimingEntity, object: EditableObject) =>
+    const destinationOf = (entity: TimingEntity, object: EditableProperties) =>
         `${entity.type}:${'groupId' in entity ? entity.groupId : ''}:${'stageId' in entity ? entity.stageId : ''}:${object.beat ?? entity.beat}`
     for (const [entity, object] of changes) {
         if (entity.type === 'note') continue

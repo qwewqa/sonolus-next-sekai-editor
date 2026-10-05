@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Tool } from '../..'
-import type { EventEase } from '../../../../chart/events'
 import type { CameraEventObject, CameraZoomVerticalAlign } from '../../../../chart/events/camera'
+import { applyEaseEdit, cycleEase, type EaseEdit, type WithEaseEdits } from '../../../../ease'
 import { pushState, replaceState, state } from '../../../../history'
 import { selectedEntities } from '../../../../history/selectedEntities'
 import { i18n } from '../../../../i18n'
@@ -40,7 +40,7 @@ type DefaultCameraEventProperties = {
     cameraZoomVerticalAlign?: CameraZoomVerticalAlign
     cameraRotation?: number
     cameraStageTilt?: number
-    eventEase?: EventEase
+    eventEase?: EaseEdit
     copyProperties: boolean
 }
 
@@ -130,16 +130,7 @@ export const cameraEvent: Tool = {
                         revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
-                            eventEase: (
-                                {
-                                    linear: 'in',
-                                    in: 'out',
-                                    out: 'inOut',
-                                    inOut: 'outIn',
-                                    outIn: 'none',
-                                    none: 'linear',
-                                } as const
-                            )[entity.eventEase],
+                            eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
                         void showToolModal(CameraEventPropertiesModal, {})
@@ -416,7 +407,7 @@ export const cameraEvent: Tool = {
 
 export const editCameraEvent = (
     entity: CameraEventJointEntity,
-    object: Partial<CameraEventObject>,
+    object: Partial<WithEaseEdits<CameraEventObject>>,
 ) => {
     edit(entity, object)
 }
@@ -460,8 +451,10 @@ const getPropertiesFromSelection = () => {
             defaultCameraEventProperties.value.cameraStageTilt ??
             cameraEventJoint?.cameraStageTilt ??
             1,
-        eventEase:
-            defaultCameraEventProperties.value.eventEase ?? cameraEventJoint?.eventEase ?? 'linear',
+        eventEase: applyEaseEdit(
+            defaultCameraEventProperties.value.eventEase,
+            cameraEventJoint?.eventEase ?? 'linear',
+        ),
     }
 }
 
@@ -501,7 +494,10 @@ const add = (object: CameraEventObject) => {
     )
 }
 
-const edit = (entity: CameraEventJointEntity, object: Partial<CameraEventObject>) => {
+const edit = (
+    entity: CameraEventJointEntity,
+    object: Partial<WithEaseEdits<CameraEventObject>>,
+) => {
     update(
         interpolate(
             () => i18n.value.tools.events.edited,

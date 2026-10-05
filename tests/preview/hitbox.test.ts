@@ -303,7 +303,7 @@ test('fake notes, anchors and inactive connectors have no hitbox, but hidden not
                     editorLane: 0,
                     timeScale: 1,
                     skip: 0,
-                    timeScaleEase: 'none' as const,
+                    timeScaleEase: 'inStep' as const,
                     timeScaleTransition: 'timeScale' as const,
                     hideNotes: true,
                 },
@@ -493,7 +493,7 @@ test('a connector between notes at the same time interpolates halfway; ease none
         expectedBounds(-1, 1, 1, 5),
     )
 
-    const held = preview(chart([[note(0, { left: -3, connectorEase: 'none' }), note(2)]]))
+    const held = preview(chart([[note(0, { left: -3, connectorEase: 'inStep' }), note(2)]]))
     const [first, last] = held.chains[0]!.notes as [PreviewNote, PreviewNote]
     closeQuad(
         computeSlideInputBounds(
@@ -515,7 +515,7 @@ const pivot = (beat: number, pivotLane: number, stage = stageId): StagePivotEven
     divisionParity: 'even',
     yOffset: 0,
     yOffsetBeat: 0,
-    eventEase: 'none',
+    eventEase: 'inStep',
 })
 const mask = (
     beat: number,
@@ -528,7 +528,7 @@ const mask = (
     maskLeft,
     maskSize,
     isMaskNotes: true,
-    eventEase: 'none',
+    eventEase: 'inStep',
 })
 const transform = (
     beat: number,
@@ -542,7 +542,7 @@ const transform = (
     yTranslation: 0,
     elevation: 0,
     anchor: 'default',
-    eventEase: 'none',
+    eventEase: 'inStep',
     ...overrides,
 })
 const style = (
@@ -561,7 +561,7 @@ const style = (
     laneAlpha: 1,
     judgmentLineAlpha: 1,
     divisionLineAlpha: 1,
-    eventEase: 'none',
+    eventEase: 'inStep',
     ...overrides,
 })
 const camera = (beat: number, overrides: Partial<CameraEventObject> = {}): CameraEventObject => ({
@@ -574,7 +574,7 @@ const camera = (beat: number, overrides: Partial<CameraEventObject> = {}): Camer
     cameraZoomVerticalAlign: 'default',
     cameraRotation: 0,
     cameraStageTilt: 1,
-    eventEase: 'none',
+    eventEase: 'inStep',
     ...overrides,
 })
 
@@ -653,7 +653,7 @@ test('attached notes interpolate their endpoints across stages, including untran
         chart(
             [
                 [
-                    note(0, { connectorEase: 'in' }),
+                    note(0, { connectorEase: 'inQuad' }),
                     note(1, { isAttached: true, stageId: otherStageId }),
                     note(2, { stageId: otherStageId, left: 0 }),
                 ],

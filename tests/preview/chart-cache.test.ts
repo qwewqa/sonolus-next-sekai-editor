@@ -75,7 +75,7 @@ const chart = (): Chart => ({
             editorLane: 0,
             timeScale: 1.5,
             skip: 0,
-            timeScaleEase: 'none',
+            timeScaleEase: 'inStep',
             timeScaleTransition: 'timeScale',
             hideNotes: false,
         },

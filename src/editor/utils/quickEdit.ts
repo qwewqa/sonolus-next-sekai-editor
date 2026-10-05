@@ -8,6 +8,7 @@ import type {
     NoteType,
 } from '../../chart/note'
 import { noteStyles, type NoteStyle } from '../../chart/noteStyle'
+import { cycleEase } from '../../ease'
 import { selectedEntities } from '../../history/selectedEntities'
 import type { DefaultNoteSlideProperties } from '../../settings'
 import { entries } from '../../utils/object'
@@ -118,14 +119,7 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
             break
         case 'connectorEase':
             editSelectedEditableEntities({
-                connectorEase: rotate(value as ConnectorEase, [
-                    'linear',
-                    'in',
-                    'out',
-                    'inOut',
-                    'outIn',
-                    'none',
-                ]),
+                connectorEase: cycleEase(value as ConnectorEase),
             })
             break
         case 'connectorIsFake':

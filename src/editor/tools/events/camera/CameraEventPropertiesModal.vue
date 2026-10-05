@@ -14,7 +14,7 @@ import PropertiesModal from '../../../../modals/form/PropertiesModal.vue'
 import { interpolateRaw } from '../../../../utils/interpolate'
 import { useSelectedEntitiesProperties } from '../../../utils/properties'
 
-const { createModel } = useSelectedEntitiesProperties(
+const { createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'cameraEventJoint',
 )
 
@@ -26,7 +26,7 @@ const cameraZoomTargetY = createModel('cameraZoomTargetY')
 const cameraZoomVerticalAlign = createModel('cameraZoomVerticalAlign')
 const cameraRotation = createModel('cameraRotation')
 const cameraStageTilt = createModel('cameraStageTilt')
-const eventEase = createModel('eventEase')
+const eventEase = createEaseModel('eventEase')
 const beat = createModel('beat')
 </script>
 

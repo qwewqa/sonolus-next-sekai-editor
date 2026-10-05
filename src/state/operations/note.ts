@@ -1,4 +1,5 @@
 import type { NoteObject } from '../../chart/note'
+import { applyEaseEdit, type WithEaseEdits } from '../../ease'
 import type { NoteEntity } from '../entities/slides/note'
 import { replaceNote } from '../mutations/slides/note'
 import type { Transaction } from '../transaction'
@@ -6,7 +7,7 @@ import type { Transaction } from '../transaction'
 export const editSelectedNote = (
     transaction: Transaction,
     entity: NoteEntity,
-    object: Partial<NoteObject>,
+    object: Partial<WithEaseEdits<NoteObject>>,
 ) => {
     return replaceNote(transaction, entity, {
         groupId: object.groupId ?? entity.groupId,
@@ -25,7 +26,7 @@ export const editSelectedNote = (
         sfx: object.sfx ?? entity.sfx,
         isConnectorSeparator: object.isConnectorSeparator ?? entity.isConnectorSeparator,
         connectorType: object.connectorType ?? entity.connectorType,
-        connectorEase: object.connectorEase ?? entity.connectorEase,
+        connectorEase: applyEaseEdit(object.connectorEase, entity.connectorEase),
         connectorIsFake: object.connectorIsFake ?? object.isFake ?? entity.connectorIsFake,
         connectorActiveIsCritical:
             object.connectorActiveIsCritical ??

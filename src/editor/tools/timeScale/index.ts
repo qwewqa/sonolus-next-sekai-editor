@@ -1,6 +1,7 @@
 import type { Tool } from '..'
 import type { GroupId } from '../../../chart/groups'
 import type { TimeScaleObject } from '../../../chart/timeScale'
+import type { WithEaseEdits } from '../../../ease'
 import { pushState, replaceState, state } from '../../../history'
 import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
@@ -64,7 +65,7 @@ export const timeScale: Tool = {
                             editorLane: lane,
                             timeScale: 1,
                             skip: 0,
-                            timeScaleEase: 'none',
+                            timeScaleEase: 'inStep',
                             timeScaleTransition: 'timeScale',
                             hideNotes: false,
                         }),
@@ -113,18 +114,18 @@ export const timeScale: Tool = {
                                 timeScale: entity.timeScale,
                                 skip: entity.skip,
                                 timeScaleTransition: entity.timeScaleTransition,
-                                ...(entity.timeScaleEase === 'none' && !entity.hideNotes
+                                ...(entity.timeScaleEase === 'inStep' && !entity.hideNotes
                                     ? {
                                           timeScaleEase: 'linear',
                                           hideNotes: false,
                                       }
-                                    : entity.timeScaleEase !== 'none' && !entity.hideNotes
+                                    : entity.timeScaleEase !== 'inStep' && !entity.hideNotes
                                       ? {
-                                            timeScaleEase: 'none',
+                                            timeScaleEase: 'inStep',
                                             hideNotes: true,
                                         }
                                       : {
-                                            timeScaleEase: 'none',
+                                            timeScaleEase: 'inStep',
                                             hideNotes: false,
                                         }),
                             }),
@@ -153,7 +154,7 @@ export const timeScale: Tool = {
                 editorLane: lane,
                 timeScale: 1,
                 skip: 0,
-                timeScaleEase: 'none',
+                timeScaleEase: 'inStep',
                 timeScaleTransition: 'timeScale',
                 hideNotes: false,
             })
@@ -231,7 +232,7 @@ export const timeScale: Tool = {
                                     editorLane: lane,
                                     timeScale: 1,
                                     skip: 0,
-                                    timeScaleEase: 'none',
+                                    timeScaleEase: 'inStep',
                                     timeScaleTransition: 'timeScale',
                                     hideNotes: false,
                                 }),
@@ -294,7 +295,7 @@ export const timeScale: Tool = {
                         editorLane: lane,
                         timeScale: 1,
                         skip: 0,
-                        timeScaleEase: 'none',
+                        timeScaleEase: 'inStep',
                         timeScaleTransition: 'timeScale',
                         hideNotes: false,
                     })
@@ -343,7 +344,10 @@ export const timeScale: Tool = {
     },
 }
 
-export const editTimeScale = (entity: TimeScaleEntity, object: Partial<TimeScaleObject>) => {
+export const editTimeScale = (
+    entity: TimeScaleEntity,
+    object: Partial<WithEaseEdits<TimeScaleObject>>,
+) => {
     editMoveOrReplace(entity, object)
 }
 
@@ -385,7 +389,10 @@ const previewMove = (entity: TimeScaleEntity, object: TimeScaleObject) => {
     }, [entity, object.beat, object.editorLane])
 }
 
-const editMoveOrReplace = (entity: TimeScaleEntity, object: Partial<TimeScaleObject>) => {
+const editMoveOrReplace = (
+    entity: TimeScaleEntity,
+    object: Partial<WithEaseEdits<TimeScaleObject>>,
+) => {
     const beat = object.beat ?? entity.beat
     const message =
         entity.beat === beat

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Tool } from '../../..'
-import type { EventEase } from '../../../../../chart/events'
 import type { Anchor, StageTransformEventObject } from '../../../../../chart/events/stage/transform'
+import { applyEaseEdit, cycleEase, type EaseEdit, type WithEaseEdits } from '../../../../../ease'
 import { pushState, replaceState, state } from '../../../../../history'
 import { selectedEntities } from '../../../../../history/selectedEntities'
 import { defaultStageId } from '../../../../../history/stages'
@@ -38,7 +38,7 @@ type DefaultStageTransformEventProperties = {
     yTranslation?: number
     elevation?: number
     anchor?: Anchor
-    eventEase?: EventEase
+    eventEase?: EaseEdit
     copyProperties: boolean
 }
 
@@ -122,16 +122,7 @@ export const stageTransformEvent: Tool = {
                         revealPropertiesSection('selection')
                         edit(entity, {
                             ...entity,
-                            eventEase: (
-                                {
-                                    linear: 'in',
-                                    in: 'out',
-                                    out: 'inOut',
-                                    inOut: 'outIn',
-                                    outIn: 'none',
-                                    none: 'linear',
-                                } as const
-                            )[entity.eventEase],
+                            eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
                         void showToolModal(StageTransformEventPropertiesModal, {})
@@ -320,7 +311,7 @@ export const stageTransformEvent: Tool = {
 
 export const editStageTransformEvent = (
     entity: StageTransformEventJointEntity,
-    object: Partial<StageTransformEventObject>,
+    object: Partial<WithEaseEdits<StageTransformEventObject>>,
 ) => {
     edit(entity, object)
 }
@@ -357,10 +348,10 @@ const getPropertiesFromSelection = () => {
             defaultStageTransformEventProperties.value.anchor ??
             stageTransformEventJoint?.anchor ??
             'default',
-        eventEase:
-            defaultStageTransformEventProperties.value.eventEase ??
-            stageTransformEventJoint?.eventEase ??
-            'linear',
+        eventEase: applyEaseEdit(
+            defaultStageTransformEventProperties.value.eventEase,
+            stageTransformEventJoint?.eventEase ?? 'linear',
+        ),
     }
 }
 
@@ -407,7 +398,7 @@ const add = (object: StageTransformEventObject) => {
 
 const edit = (
     entity: StageTransformEventJointEntity,
-    object: Partial<StageTransformEventObject>,
+    object: Partial<WithEaseEdits<StageTransformEventObject>>,
 ) => {
     update(
         interpolate(

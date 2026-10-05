@@ -1,22 +1,17 @@
 <script setup lang="ts">
 import type { TimeScaleEase } from '../../chart/timeScale'
+import { timeScaleEaseFamilies, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
-import MultiSelectField from './MultiSelectField.vue'
+import EaseField from './EaseField.vue'
 
-const modelValue = defineModel<TimeScaleEase | undefined>({ required: true })
+const modelValue = defineModel<EaseEdit<TimeScaleEase> | undefined>({ required: true })
 </script>
 
 <template>
-    <MultiSelectField
+    <EaseField
         v-model="modelValue"
         :label="i18n.modals.form.timeScaleEase.label"
-        :options="[
-            [i18n.modals.form.timeScaleEase.none, 'none'],
-            [i18n.modals.form.timeScaleEase.linear, 'linear'],
-            [i18n.modals.form.timeScaleEase.inQuad, 'inQuad'],
-            [i18n.modals.form.timeScaleEase.outQuad, 'outQuad'],
-            [i18n.modals.form.timeScaleEase.inOutQuad, 'inOutQuad'],
-            [i18n.modals.form.timeScaleEase.outInQuad, 'outInQuad'],
-        ]"
+        :mode-label="i18n.modals.form.timeScaleEase.mode"
+        :families="timeScaleEaseFamilies"
     />
 </template>

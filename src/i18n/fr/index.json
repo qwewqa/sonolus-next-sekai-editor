@@ -958,14 +958,26 @@
       "connectorActiveIsCritical": {
         "label": "Slide Critique"
       },
-      "connectorEase": {
-        "label": "Interpolation du connecteur",
+      "ease": {
         "linear": "Linéaire",
+        "sine": "Sinusoïdale",
+        "quad": "Quadratique",
+        "cubic": "Cubique",
+        "quart": "Quartique",
+        "quint": "Quintique",
+        "expo": "Exponentielle",
+        "circ": "Circulaire",
+        "back": "Recul",
+        "elastic": "Élastique",
+        "step": "Palier",
         "in": "Accélération",
         "out": "Décélération",
         "inOut": "Accélération puis décélération",
-        "outIn": "Décélération puis accélération",
-        "none": "Aucune"
+        "outIn": "Décélération puis accélération"
+      },
+      "connectorEase": {
+        "label": "Interpolation du connecteur",
+        "mode": "Mode d’interpolation du connecteur"
       },
       "connectorIsFake": {
         "label": "Connecteur factice"
@@ -1026,12 +1038,7 @@
       },
       "eventEase": {
         "label": "Interpolation de l’événement",
-        "linear": "Linéaire",
-        "in": "Accélération",
-        "out": "Décélération",
-        "inOut": "Accélération puis décélération",
-        "outIn": "Décélération puis accélération",
-        "none": "Aucune"
+        "mode": "Mode d’interpolation de l’événement"
       },
       "file": {
         "select": "Sélectionner le Fichier..."
@@ -1176,12 +1183,7 @@
       },
       "timeScaleEase": {
         "label": "Interpolation de l’échelle de temps",
-        "none": "Aucune",
-        "linear": "Linéaire",
-        "inQuad": "Accélération quadratique",
-        "outQuad": "Décélération quadratique",
-        "inOutQuad": "Accélération puis décélération quadratiques",
-        "outInQuad": "Décélération puis accélération quadratiques"
+        "mode": "Mode d’interpolation de l’échelle de temps"
       },
       "timeScaleTransition": {
         "label": "Transition de l’échelle de temps",

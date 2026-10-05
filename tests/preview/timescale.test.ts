@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { easeFromValue, easeFunction, timeScaleEaseLevelDataValues } from '../../src/ease'
 import {
     createTimescaleGroup,
     hideNotesAt,
@@ -304,4 +305,57 @@ test('eased integrals recover finite results after overflowing speed arithmetic'
     )
     close(noteDistance(constant, 0, duration), 2)
     close(noteDistance(constant, duration, 0), -2)
+})
+
+test('eased speeds integrate exactly and additively for every time scale ease', () => {
+    const values = timeScaleEaseLevelDataValues as TimescaleEase[]
+    for (const ease of values) {
+        const easeFn = easeFunction(easeFromValue(ease))
+        for (const [v0, v1] of [
+            [1, 5],
+            [5, 1],
+            [-2, 3],
+        ] as const) {
+            const group = createTimescaleGroup(
+                [change(1, v0, { ease }), change(5, v1), change(9, 2)],
+                0,
+            )
+            const speed = (t: number) =>
+                // Time before the first change is unscaled.
+                t < 1 ? 1 : t > 5 ? v1 : v0 + (v1 - v0) * easeFn((t - 1) / 4)
+            // Midpoint rule, split where steps jump.
+            const numeric = (left: number, right: number) => {
+                const points = [left, ...[1, 3, 5].filter((t) => left < t && t < right), right]
+                let sum = 0
+                for (const [index, a] of points.slice(0, -1).entries()) {
+                    const b = points[index + 1]!
+                    const steps = 20000
+                    for (let i = 0; i < steps; i++)
+                        sum += (speed(a + ((b - a) * (i + 0.5)) / steps) * (b - a)) / steps
+                }
+                return sum
+            }
+            for (const [left, right] of [
+                [1, 5],
+                [1, 2.2],
+                [2.2, 4.1],
+                [3, 5],
+                [0.5, 6],
+            ] as const) {
+                const distance = noteDistance(group, left, right)
+                assert.ok(
+                    Math.abs(distance - numeric(left, right)) < 1e-5,
+                    `${ease} ${v0}->${v1} [${left}, ${right}]: ${distance} vs ${numeric(left, right)}`,
+                )
+            }
+            close(
+                noteDistance(group, 1.3, 4.6),
+                noteDistance(group, 1.3, 2.9) + noteDistance(group, 2.9, 4.6),
+            )
+            close(
+                scaledTimeAt(group, 4.6) - scaledTimeAt(group, 1.3),
+                noteDistance(group, 1.3, 4.6),
+            )
+        }
+    }
 })

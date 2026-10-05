@@ -170,7 +170,7 @@ export const installEditorFixture = async () => {
     }
 
     const connectors = blank()
-    const eases = ['none', 'linear', 'in', 'out', 'inOut', 'outIn'] as const
+    const eases = ['inStep', 'linear', 'inQuad', 'outQuad', 'inOutQuad', 'outInQuad'] as const
     for (const [i, connectorEase] of eases.entries()) {
         const left = -10 + i * 3.4
         const props: Partial<NoteObject> = {
@@ -217,7 +217,7 @@ export const installEditorFixture = async () => {
 
     const events = blank()
     events.bpms.push({ beat: 12, bpm: 180 })
-    for (const [i, eventEase] of (['linear', 'in', 'outIn', 'none'] as const).entries()) {
+    for (const [i, eventEase] of (['linear', 'inQuad', 'outInQuad', 'inStep'] as const).entries()) {
         const beat = 2 + i * 5
         const stageId = 1 as StageId
         events.cameraEvents.push({
@@ -281,7 +281,7 @@ export const installEditorFixture = async () => {
             editorLane: 8 - i,
             timeScale: [1, 0, -1, 2][i]!,
             skip: i % 2 ? 2 : 0,
-            timeScaleEase: (['linear', 'inQuad', 'outInQuad', 'none'] as const)[i]!,
+            timeScaleEase: (['linear', 'inQuad', 'outInQuad', 'inStep'] as const)[i]!,
             timeScaleTransition: i % 2 ? 'scroll' : 'timeScale',
             hideNotes: i === 2,
         })

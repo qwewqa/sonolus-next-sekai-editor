@@ -12,7 +12,7 @@ import PropertiesModal from '../../../../../modals/form/PropertiesModal.vue'
 import { interpolateRaw } from '../../../../../utils/interpolate'
 import { useSelectedEntitiesProperties } from '../../../../utils/properties'
 
-const { createModel } = useSelectedEntitiesProperties(
+const { createModel, createEaseModel } = useSelectedEntitiesProperties(
     (entity) => entity.type === 'stagePivotEventJoint',
 )
 
@@ -22,7 +22,7 @@ const divisionSize = createModel('divisionSize')
 const divisionParity = createModel('divisionParity')
 const yOffset = createModel('yOffset')
 const yOffsetBeat = createModel('yOffsetBeat')
-const eventEase = createModel('eventEase')
+const eventEase = createEaseModel('eventEase')
 const beat = createModel('beat')
 </script>
 

@@ -33,7 +33,7 @@ test('elevation scaling preserves same-beat slide order, connectors, and untouch
                     beat: 4,
                     left,
                     elevation: index + 1,
-                    connectorEase: 'in',
+                    connectorEase: 'inQuad',
                 })),
                 [{ ...base, beat: 8, elevation: 9 }],
             ],
@@ -74,9 +74,9 @@ test('elevation scaling preserves same-beat slide order, connectors, and untouch
     })
     expect(result).toEqual({
         notes: [
-            [-3, 4, 1, 'in'],
-            [0, 4, 2, 'in'],
-            [3, 4, 5, 'in'],
+            [-3, 4, 1, 'inQuad'],
+            [0, 4, 2, 'inQuad'],
+            [3, 4, 5, 'inQuad'],
         ],
         connectors: [
             [-3, 0],

@@ -1,4 +1,12 @@
-import { clamp, ease, lerp, type EaseTypeValue } from './math'
+import {
+    complementEase as complementChartEase,
+    easeFromValue,
+    easeIntegral,
+    easeValues,
+    timeScaleEaseLevelDataValues,
+    type TimeScaleEase,
+} from '../../ease'
+import { clamp, ease, isNoneEase, lerp, type EaseTypeValue } from './math'
 
 export const MIN_START_TIME = -2
 
@@ -111,8 +119,23 @@ const composeTransfers = (a: Transfer, b: Transfer): Transfer => ({
     backward: add(b.backward, divide(a.backward, b.ratio)),
 })
 
-const complementEase = (value: TimescaleEase): TimescaleEase =>
-    value === 2 ? 3 : value === 3 ? 2 : value
+const complementEase = (value: TimescaleEase) =>
+    easeValues[complementChartEase(easeFromValue(value))] as TimescaleEase
+
+const integrals = new Map(
+    timeScaleEaseLevelDataValues.map((value) => {
+        const type = easeFromValue(value) as TimeScaleEase
+        const whole = easeIntegral(type, 1)
+        // Before and after the curve, the speed stays at its endpoints.
+        return [value, (u: number) => (u <= 0 ? 0 : u >= 1 ? whole + u - 1 : easeIntegral(type, u))]
+    }),
+)
+
+const integralOf = (value: TimescaleEase) => {
+    const integral = integrals.get(value)
+    if (!integral) throw new Error(`Unexpected time scale ease: ${value}`)
+    return integral
+}
 
 const timeFraction = (left: number, right: number, t: number) => {
     const width = right - left
@@ -129,7 +152,7 @@ const interpolateSpeed = (left: number, right: number, fraction: number) => {
 }
 
 const speedAt = (change: TimescaleChange, next: TimescaleChange | undefined, t: number) => {
-    if (!next || change.ease === 0 || t <= change.time) return change.timescale
+    if (!next || isNoneEase(change.ease) || t <= change.time) return change.timescale
     if (t >= next.time) return next.timescale
 
     // Evaluate a falling curve from its lower speed, as the engine does.
@@ -155,24 +178,21 @@ const integrate = (
     if (left === right || change.time === next?.time) return 0
     if (left > right) return multiply(-1, integrate(change, next, right, left))
     const width = add(right, -left)
-    if (!next || change.ease === 0) return multiply(width, change.timescale)
+    if (!next || isNoneEase(change.ease)) return multiply(width, change.timescale)
 
-    const sum = change.time + next.time
-    const midpoint = Number.isFinite(sum) ? sum / 2 : change.time / 2 + next.time / 2
-    if ((change.ease === 4 || change.ease === 5) && left < midpoint && midpoint < right) {
-        return add(
-            integrate(change, next, left, midpoint),
-            integrate(change, next, midpoint, right),
-        )
-    }
-
-    // Simpson's rule integrates each supported quadratic easing piece exactly.
-    const middle = typeof width === 'number' ? left + width / 2 : left / 2 + right / 2
-    const speeds = add(
-        add(speedAt(change, next, left), multiply(4, speedAt(change, next, middle))),
-        speedAt(change, next, right),
-    )
-    return divide(multiply(width, speeds), 6)
+    // Integrate a falling curve from its lower speed, as the engine does.
+    const rising = next.timescale >= change.timescale
+    const low = rising ? change.timescale : next.timescale
+    const high = rising ? next.timescale : change.timescale
+    const integral = integralOf(rising ? change.ease : complementEase(change.ease))
+    const [first, last] = rising
+        ? [timeFraction(change.time, next.time, left), timeFraction(change.time, next.time, right)]
+        : [
+              timeFraction(-next.time, -change.time, -right),
+              timeFraction(-next.time, -change.time, -left),
+          ]
+    const area = multiply(add(next.time, -change.time), integral(last) - integral(first))
+    return add(multiply(width, low), multiply(add(high, -low), area))
 }
 
 const scrollSpeed = (speed: number) => (speed < 0 ? Math.min(speed, -1e-4) : Math.max(speed, 1e-4))

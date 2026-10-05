@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import type { ConnectorEase } from '../../chart/note'
+import { easeFamilies, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
-import MultiSelectField from './MultiSelectField.vue'
+import EaseField from './EaseField.vue'
 
-const modelValue = defineModel<ConnectorEase | undefined>({ required: true })
+const modelValue = defineModel<EaseEdit | undefined>({ required: true })
 </script>
 
 <template>
-    <MultiSelectField
+    <EaseField
         v-model="modelValue"
         :label="i18n.modals.form.connectorEase.label"
-        :options="[
-            [i18n.modals.form.connectorEase.linear, 'linear'],
-            [i18n.modals.form.connectorEase.in, 'in'],
-            [i18n.modals.form.connectorEase.out, 'out'],
-            [i18n.modals.form.connectorEase.inOut, 'inOut'],
-            [i18n.modals.form.connectorEase.outIn, 'outIn'],
-            [i18n.modals.form.connectorEase.none, 'none'],
-        ]"
+        :mode-label="i18n.modals.form.connectorEase.mode"
+        :families="easeFamilies"
     />
 </template>

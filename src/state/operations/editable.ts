@@ -6,6 +6,7 @@ import type { StageStyleEventObject } from '../../chart/events/stage/style'
 import type { StageTransformEventObject } from '../../chart/events/stage/transform'
 import type { NoteObject } from '../../chart/note'
 import type { TimeScaleObject } from '../../chart/timeScale'
+import type { WithEaseEdits } from '../../ease'
 import type { Entity } from '../entities'
 import type { BpmEntity } from '../entities/bpm'
 import type { CameraEventJointEntity } from '../entities/events/joints/camera'
@@ -16,7 +17,7 @@ import type { StageTransformEventJointEntity } from '../entities/events/joints/s
 import type { NoteEntity } from '../entities/slides/note'
 import type { TimeScaleEntity } from '../entities/timeScale'
 
-export type EditableObject = Partial<
+export type EditableProperties = Partial<
     BpmObject &
         TimeScaleObject &
         CameraEventObject &
@@ -26,6 +27,8 @@ export type EditableObject = Partial<
         StageTransformEventObject &
         NoteObject
 >
+
+export type EditableObject = WithEaseEdits<EditableProperties>
 
 export type EditableEntity =
     | BpmEntity

@@ -146,7 +146,7 @@ test('vertical shortcut reverses full slides with their colors and easing but ke
                         beat: 1,
                         left: -4,
                         connectorStyle: 'blue',
-                        connectorEase: 'in',
+                        connectorEase: 'inQuad',
                         flickDirection: 'upLeft',
                     },
                     {
@@ -165,7 +165,7 @@ test('vertical shortcut reverses full slides with their colors and easing but ke
                         isConnectorSeparator: true,
                         connectorType: 'guide',
                         connectorStyle: 'purple',
-                        connectorEase: 'out',
+                        connectorEase: 'outQuad',
                         connectorGuideAlpha: 0.2,
                     },
                     {
@@ -173,7 +173,7 @@ test('vertical shortcut reverses full slides with their colors and easing but ke
                         beat: 6,
                         left: 2,
                         connectorStyle: 'black',
-                        connectorEase: 'inOut',
+                        connectorEase: 'inOutQuad',
                         connectorGuideAlpha: 0.8,
                     },
                 ],
@@ -213,13 +213,13 @@ test('vertical shortcut reverses full slides with their colors and easing but ke
     expect(flipped.notes[0]).toMatchObject({
         connectorStyle: 'purple',
         connectorType: 'guide',
-        connectorEase: 'in',
+        connectorEase: 'inQuad',
         connectorGuideAlpha: 0.8,
     })
     expect(flipped.notes[1]).toMatchObject({
         connectorStyle: 'blue',
         connectorType: 'active',
-        connectorEase: 'out',
+        connectorEase: 'outQuad',
         connectorGuideAlpha: 0.2,
     })
     expect(flipped.connectors).toEqual([
@@ -343,7 +343,7 @@ test('combining preserves attached note positions and connector colors from thei
                         ...base,
                         beat: 1,
                         left: -5,
-                        connectorEase: 'in',
+                        connectorEase: 'inQuad',
                         connectorType: 'guide',
                         connectorStyle: 'purple',
                     },

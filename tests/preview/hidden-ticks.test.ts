@@ -123,7 +123,7 @@ const randomCharts = function* () {
                             'damage',
                             'damage',
                         ] as const),
-                        connectorEase: pick(['linear', 'in', 'out', 'none'] as const),
+                        connectorEase: pick(['linear', 'inQuad', 'outQuad', 'inStep'] as const),
                         connectorIsFake: random() < 0.15,
                         connectorActiveIsCritical: random() < 0.3,
                         elevation: random() < 0.2 ? 1 : 0,
@@ -139,7 +139,13 @@ const randomCharts = function* () {
 test('level data serialization is byte-identical to the output before the shared hidden tick schedule', () => {
     const hashes = [...randomCharts()].map((source) =>
         createHash('sha256')
-            .update(JSON.stringify(serialize(source)))
+            // Recorded when steps in were written as NONE (0).
+            .update(
+                JSON.stringify(serialize(source)).replaceAll(
+                    '{"name":"connectorEase","value":38}',
+                    '{"name":"connectorEase","value":0}',
+                ),
+            )
             .digest('hex'),
     )
     // Recorded from the serializer before the schedule moved into a shared module.

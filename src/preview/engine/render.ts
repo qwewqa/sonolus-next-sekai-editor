@@ -46,7 +46,9 @@ import {
 } from './layout'
 import { interpolateVisualMasks, maskedNoteExtents, noVisualMask, type VisualMask } from './mask'
 import {
+    connectorInterpFrac,
     ease,
+    isNoneEase,
     lerp,
     remapClamped,
     transformQuadAffine,
@@ -545,7 +547,7 @@ export const renderPreviewFrame = (
                 tailNoteAlpha,
                 now,
             )
-            if (connector.ease === 0) {
+            if (isNoneEase(connector.ease)) {
                 headEndpoint = {
                     lane: visualLane(head),
                     size: head.size,
@@ -563,12 +565,13 @@ export const renderPreviewFrame = (
                     tailEaseFrac(tail),
                     now,
                 )
-                const easedHead = ease(connector.ease, headEaseFrac(head))
-                const easedTail = ease(connector.ease, tailEaseFrac(tail))
-                const headInterpFrac =
-                    Math.abs(easedHead - easedTail) < 1e-6
-                        ? unlerpClamped(head.targetTime, tail.targetTime, now)
-                        : unlerpClamped(easedHead, easedTail, ease(connector.ease, currentEaseFrac))
+                const headInterpFrac = connectorInterpFrac(
+                    connector.ease,
+                    headEaseFrac(head),
+                    tailEaseFrac(tail),
+                    currentEaseFrac,
+                    unlerpClamped(head.targetTime, tail.targetTime, now),
+                )
                 headEndpoint = {
                     lane: lerp(visualLane(head), visualLane(tail), headInterpFrac),
                     size: lerp(head.size, tail.size, headInterpFrac),

@@ -16,7 +16,7 @@ export const formatTimeScale = (value: number, skip: number, timeScaleEase: Time
         text += `${skip}`
     }
 
-    if (timeScaleEase !== 'none') {
+    if (timeScaleEase !== 'inStep') {
         text += '^'
     }
 

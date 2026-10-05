@@ -1,1 +1,3 @@
-export type EventEase = 'linear' | 'in' | 'out' | 'inOut' | 'outIn' | 'none'
+import type { Ease } from '../../ease'
+
+export type EventEase = Ease

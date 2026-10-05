@@ -1,10 +1,9 @@
-import type { EventEase } from '../../chart/events'
 import type { BorderStyle, JudgmentLineColor } from '../../chart/events/stage/style'
 import type { GroupId } from '../../chart/groups'
 import type { FlickDirection as ChartFlickDirection, ConnectorLayer } from '../../chart/note'
 import { guideColor } from '../../chart/noteStyle'
 import type { StageId } from '../../chart/stages'
-import type { TimeScaleEase } from '../../chart/timeScale'
+import { easeValues, type Ease } from '../../ease'
 import type { State } from '../../state'
 import type { EntityOfType, EntityType } from '../../state/entities'
 import type { NoteEntity } from '../../state/entities/slides/note'
@@ -13,7 +12,7 @@ import { findIntegral } from '../../state/integrals'
 import { beatToTime } from '../../state/integrals/bpms'
 import type { StoreSlides } from '../../state/store/slides'
 import { FlickDirection, type CameraChange, type FlickDirectionValue } from './layout'
-import { EaseType, ease, lerp, unlerpClamped, type EaseTypeValue } from './math'
+import { ease, lerp, unlerpClamped, type EaseTypeValue } from './math'
 import {
     ConnectorKind,
     NoteKind,
@@ -43,23 +42,7 @@ const flickDirections: Record<ChartFlickDirection, FlickDirectionValue> = {
     downRight: FlickDirection.downRight,
 }
 
-const eventEases: Record<EventEase, EaseTypeValue> = {
-    none: EaseType.none,
-    linear: EaseType.linear,
-    in: EaseType.inQuad,
-    out: EaseType.outQuad,
-    inOut: EaseType.inOutQuad,
-    outIn: EaseType.outInQuad,
-}
-
-const timeScaleEases: Record<TimeScaleEase, EaseTypeValue> = {
-    none: EaseType.none,
-    linear: EaseType.linear,
-    inQuad: EaseType.inQuad,
-    outQuad: EaseType.outQuad,
-    inOutQuad: EaseType.inOutQuad,
-    outInQuad: EaseType.outInQuad,
-}
+const easeType = (value: Ease) => easeValues[value] as EaseTypeValue
 
 const guideKinds: Record<ReturnType<typeof guideColor>, ConnectorKindValue> = {
     neutral: ConnectorKind.guideNeutral,
@@ -174,7 +157,7 @@ export const createPreviewChartBuilder = () => {
                         time: toTime(timeScale.beat),
                         timescale: timeScale.timeScale,
                         skipSeconds: timeScale.skip * secondsPerBeat(timeScale.beat),
-                        ease: timeScaleEases[timeScale.timeScaleEase],
+                        ease: easeType(timeScale.timeScaleEase),
                         transitionStyle: timeScale.timeScaleTransition === 'scroll' ? 1 : 0,
                         hideNotes: timeScale.hideNotes,
                     })
@@ -229,7 +212,7 @@ export const createPreviewChartBuilder = () => {
                                 lane: event.maskLeft + event.maskSize / 2,
                                 size: event.maskSize / 2,
                                 maskNotes: event.isMaskNotes,
-                                ease: eventEases[event.eventEase],
+                                ease: easeType(event.eventEase),
                             }))
 
                         const stagePivots = pivots
@@ -243,7 +226,7 @@ export const createPreviewChartBuilder = () => {
                                 yOffset:
                                     event.yOffset +
                                     (event.yOffsetBeat * secondsPerBeat(event.beat)) / preempt,
-                                ease: eventEases[event.eventEase],
+                                ease: easeType(event.eventEase),
                             }))
 
                         const stageStyles = styles
@@ -260,7 +243,7 @@ export const createPreviewChartBuilder = () => {
                                 laneAlpha: event.laneAlpha,
                                 judgeLineAlpha: event.judgmentLineAlpha,
                                 divisionLineAlpha: event.divisionLineAlpha,
-                                ease: eventEases[event.eventEase],
+                                ease: easeType(event.eventEase),
                             }))
 
                         const stageTransforms = transforms
@@ -273,7 +256,7 @@ export const createPreviewChartBuilder = () => {
                                 yLaneTranslate: event.yTranslation,
                                 elevation: event.elevation,
                                 centerWeight: event.anchor === 'center' ? 1 : 0,
-                                ease: eventEases[event.eventEase],
+                                ease: easeType(event.eventEase),
                             }))
 
                         if (stageTransforms.length) hasStageTransforms = true
@@ -311,7 +294,7 @@ export const createPreviewChartBuilder = () => {
                               zoomVerticalAlign: joint.cameraZoomVerticalAlign === 'center' ? 1 : 0,
                               rotate: (joint.cameraRotation * Math.PI) / 180,
                               stageTilt: Math.min(Math.max(joint.cameraStageTilt, 0), 1),
-                              ease: eventEases[joint.eventEase],
+                              ease: easeType(joint.eventEase),
                           }))
                     : [],
         )
@@ -379,7 +362,7 @@ export const createPreviewChartBuilder = () => {
                         groupIndex,
                         stageIndex: stageIndexes.get(note.stageId) ?? -1,
                         isAttached: !isFirst && !isLast && note.isAttached,
-                        connectorEase: eventEases[note.connectorEase],
+                        connectorEase: easeType(note.connectorEase),
                         targetScaledTime: 0,
                     }
                     previewNotes.set(note, previewNote)

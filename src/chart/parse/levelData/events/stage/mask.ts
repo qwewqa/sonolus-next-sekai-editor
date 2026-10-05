@@ -3,9 +3,10 @@ import Type from 'typebox'
 import { parseStageEvents } from '.'
 import { getEventRefs } from '..'
 import { getOptionalValue, getValue, type ParseCtx } from '../..'
+import { easeFromValue } from '../../../../../ease'
 import type { StageId } from '../../../../stages'
 import { beatSchema } from '../../schemas'
-import { eventEases, eventEaseSchema } from '../schemas'
+import { eventEaseSchema } from '../schemas'
 
 export const parseStageMaskEventsToChart = (
     { chart, entities }: ParseCtx,
@@ -27,7 +28,7 @@ export const parseStageMaskEventsToChart = (
             maskLeft: lane - size,
             maskSize: size * 2,
             isMaskNotes: !!getOptionalValue(entity, 'maskNotes', maskNotesSchema),
-            eventEase: eventEases[getValue(entity, 'ease', eventEaseSchema)],
+            eventEase: easeFromValue(getValue(entity, 'ease', eventEaseSchema)),
         }
     })
 }

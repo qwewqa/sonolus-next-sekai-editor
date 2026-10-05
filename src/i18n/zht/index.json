@@ -958,14 +958,26 @@
       "connectorActiveIsCritical": {
         "label": "金色滑條"
       },
-      "connectorEase": {
-        "label": "連接線緩動",
+      "ease": {
         "linear": "線性",
+        "sine": "正弦",
+        "quad": "二次",
+        "cubic": "三次",
+        "quart": "四次",
+        "quint": "五次",
+        "expo": "指數",
+        "circ": "圓形",
+        "back": "回退",
+        "elastic": "彈性",
+        "step": "階躍",
         "in": "緩入",
         "out": "緩出",
         "inOut": "緩入再緩出",
-        "outIn": "緩出再緩入",
-        "none": "無"
+        "outIn": "緩出再緩入"
+      },
+      "connectorEase": {
+        "label": "連接線緩動",
+        "mode": "連接線緩動模式"
       },
       "connectorIsFake": {
         "label": "假連接線"
@@ -1026,12 +1038,7 @@
       },
       "eventEase": {
         "label": "事件緩動",
-        "linear": "線性",
-        "in": "緩入",
-        "out": "緩出",
-        "inOut": "緩入再緩出",
-        "outIn": "緩出再緩入",
-        "none": "無"
+        "mode": "事件緩動模式"
       },
       "file": {
         "select": "選擇檔案..."
@@ -1176,12 +1183,7 @@
       },
       "timeScaleEase": {
         "label": "時間倍率緩動",
-        "none": "無",
-        "linear": "線性",
-        "inQuad": "二次緩入",
-        "outQuad": "二次緩出",
-        "inOutQuad": "二次緩入再緩出",
-        "outInQuad": "二次緩出再緩入"
+        "mode": "時間倍率緩動模式"
       },
       "timeScaleTransition": {
         "label": "時間倍率過渡",

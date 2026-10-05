@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import type { Tool } from '..'
-import type { EventEase } from '../../../chart/events'
 import type { CameraZoomVerticalAlign } from '../../../chart/events/camera.ts'
 import type { DivisionParity } from '../../../chart/events/stage/pivot'
 import type {
@@ -11,7 +10,6 @@ import type {
 import type { Anchor } from '../../../chart/events/stage/transform.ts'
 import type { GroupId } from '../../../chart/groups'
 import type {
-    ConnectorEase,
     ConnectorLayer,
     ConnectorPresentation,
     ConnectorType,
@@ -22,6 +20,7 @@ import type {
 import type { NoteStyle } from '../../../chart/noteStyle'
 import type { StageId } from '../../../chart/stages'
 import type { TimeScaleEase, TimeScaleTransition } from '../../../chart/timeScale'
+import type { EaseEdit } from '../../../ease'
 import { pushState, replaceState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
@@ -68,7 +67,7 @@ export type BrushProperties = {
     sfx?: NoteSfx
     isConnectorSeparator?: boolean
     connectorType?: ConnectorType
-    connectorEase?: ConnectorEase
+    connectorEase?: EaseEdit
     connectorIsFake?: boolean
     connectorActiveIsCritical?: boolean
     connectorGuideAlpha?: number
@@ -77,7 +76,7 @@ export type BrushProperties = {
     connectorPresentation?: ConnectorPresentation
     timeScale?: number
     skip?: number
-    timeScaleEase?: TimeScaleEase
+    timeScaleEase?: EaseEdit<TimeScaleEase>
     timeScaleTransition?: TimeScaleTransition
     hideNotes?: boolean
     cameraSize?: number
@@ -106,7 +105,7 @@ export type BrushProperties = {
     yTranslation?: number
     elevation?: number
     anchor?: Anchor
-    eventEase?: EventEase
+    eventEase?: EaseEdit
 }
 
 export const brushProperties = ref<BrushProperties>({})

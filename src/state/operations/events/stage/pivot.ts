@@ -1,4 +1,5 @@
 import type { StagePivotEventObject } from '../../../../chart/events/stage/pivot'
+import { applyEaseEdit, type WithEaseEdits } from '../../../../ease'
 import type { StagePivotEventJointEntity } from '../../../entities/events/joints/stage/pivot'
 import {
     addStagePivotEventJoint,
@@ -9,7 +10,7 @@ import type { Transaction } from '../../../transaction'
 export const editSelectedStagePivotEvent = (
     transaction: Transaction,
     entity: StagePivotEventJointEntity,
-    object: Partial<StagePivotEventObject>,
+    object: Partial<WithEaseEdits<StagePivotEventObject>>,
 ) => {
     removeStagePivotEventJoint(transaction, entity)
     return addStagePivotEventJoint(transaction, {
@@ -20,6 +21,6 @@ export const editSelectedStagePivotEvent = (
         divisionParity: object.divisionParity ?? entity.divisionParity,
         yOffset: object.yOffset ?? entity.yOffset,
         yOffsetBeat: object.yOffsetBeat ?? entity.yOffsetBeat,
-        eventEase: object.eventEase ?? entity.eventEase,
+        eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
     })
 }

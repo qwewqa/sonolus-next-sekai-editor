@@ -1,4 +1,5 @@
 import type { StageStyleEventObject } from '../../../../chart/events/stage/style'
+import { applyEaseEdit, type WithEaseEdits } from '../../../../ease'
 import type { StageStyleEventJointEntity } from '../../../entities/events/joints/stage/style'
 import {
     addStageStyleEventJoint,
@@ -9,7 +10,7 @@ import type { Transaction } from '../../../transaction'
 export const editSelectedStageStyleEvent = (
     transaction: Transaction,
     entity: StageStyleEventJointEntity,
-    object: Partial<StageStyleEventObject>,
+    object: Partial<WithEaseEdits<StageStyleEventObject>>,
 ) => {
     removeStageStyleEventJoint(transaction, entity)
     return addStageStyleEventJoint(transaction, {
@@ -25,6 +26,6 @@ export const editSelectedStageStyleEvent = (
         laneAlpha: object.laneAlpha ?? entity.laneAlpha,
         judgmentLineAlpha: object.judgmentLineAlpha ?? entity.judgmentLineAlpha,
         divisionLineAlpha: object.divisionLineAlpha ?? entity.divisionLineAlpha,
-        eventEase: object.eventEase ?? entity.eventEase,
+        eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
     })
 }

@@ -1,8 +1,8 @@
 import { EngineArchetypeDataName, type LevelDataEntity } from '@sonolus/core'
 import { serializeStageEventsToLevelDataEntities } from '.'
-import { eventEases } from '..'
 import { getStoreEntities } from '../..'
 import type { StageId } from '../../../../../chart/stages'
+import { easeValues } from '../../../../../ease'
 import type { Store } from '../../../../../state/store'
 
 export const serializeStageTransformEventsToLevelDataEntities = (
@@ -46,7 +46,7 @@ export const serializeStageTransformEventsToLevelDataEntities = (
                 },
                 {
                     name: 'ease',
-                    value: eventEases[joint.eventEase],
+                    value: easeValues[joint.eventEase],
                 },
             ],
         }),

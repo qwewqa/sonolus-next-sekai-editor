@@ -3,6 +3,7 @@ import type { GroupId } from '../../../chart/groups'
 import type { NoteObject } from '../../../chart/note'
 import { connectorKindValue, noteStyleValue } from '../../../chart/noteStyle'
 import type { StageId, Stages } from '../../../chart/stages'
+import { easeValues } from '../../../ease'
 import { beatToTicks, scheduleHiddenTicks } from '../../../state/entities/slides/hiddenTicks'
 import type { NoteEntity } from '../../../state/entities/slides/note'
 import {
@@ -103,7 +104,7 @@ export const serializeSlidesToLevelDataEntities = (
                     },
                     {
                         name: 'connectorEase',
-                        value: connectorEases[note.connectorEase],
+                        value: easeValues[note.connectorEase],
                     },
                     {
                         name: 'segmentKind',
@@ -361,15 +362,6 @@ const sfxs: Record<NoteObject['sfx'], number> = {
     normalTick: 5,
     criticalTick: 9,
     damage: 10,
-}
-
-const connectorEases: Record<NoteObject['connectorEase'], number> = {
-    linear: 1,
-    in: 2,
-    out: 3,
-    inOut: 4,
-    outIn: 5,
-    none: 0,
 }
 
 const segmentLayers: Record<NoteObject['connectorLayer'], number> = {
