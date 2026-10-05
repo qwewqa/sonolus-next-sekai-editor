@@ -794,7 +794,7 @@ test.describe('preview transport', () => {
 
         // With a strip of its own and room beside its steppers, the strip holds
         // the time and nothing covers the image, also during playback.
-        await page.setViewportSize({ width: 900, height: 1000 })
+        await page.setViewportSize({ width: 600, height: 1000 })
         await page.evaluate(() => (window.editorTest.settings.topDockHeight = 500))
         await page.clock.runFor(32)
         await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
@@ -885,9 +885,22 @@ test.describe('preview transport', () => {
         await page.clock.fastForward(10000)
         await expect(panel).toBeVisible()
 
-        // A short wide panel shrinks the image a little and keeps the full strip
-        // below it, centered across the panel: never squeezed beside the image.
+        // Too short for the image and strip, Auto moves the strip over the image,
+        // which keeps its full size; the strip stays in view.
         await page.evaluate(() => (window.editorTest.settings.topDockHeight = 230))
+        await page.clock.runFor(32)
+        await expect(page.locator('.preview-transport-toggle')).toHaveCount(1)
+        await expect(panel).toBeVisible()
+        const overlay = await page.evaluate(() => {
+            const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+            const preview = document.querySelector('.preview')!.getBoundingClientRect()
+            return { width: image.width, height: image.height, panel: preview.height }
+        })
+        expect(overlay.height).toBeCloseTo(overlay.panel, 1)
+
+        // Below shrinks the image instead and keeps the full strip under it,
+        // centered across the panel: never squeezed beside the image.
+        await page.evaluate(() => (window.editorTest.settings.previewTransportPosition = 'below'))
         await page.clock.runFor(32)
         await expect(panel).toBeVisible()
         await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
@@ -945,13 +958,14 @@ test('paused compact timestamp follows the image through letterboxing and resize
     expect(side.y).toBeCloseTo(12, 1)
     expect(side.covered).toBe(false)
 
-    // A short top panel letterboxes the image horizontally; its full-width
-    // strip then has room for the time, so no chip covers the image.
+    // Below in a short top panel letterboxes the image horizontally; its
+    // full-width strip then has room for the time, so no chip covers the image.
     await page.setViewportSize({ width: 390, height: 844 })
     await page.evaluate(() => {
         const { settings } = window.editorTest
         settings.previewPosition = 'top'
         settings.topDockHeight = 200
+        settings.previewTransportPosition = 'below'
     })
     await settle(page)
     await expect(page.locator('.transport-corner-time')).toHaveCount(0)
@@ -1419,7 +1433,7 @@ test.describe('preview aspect ratios', () => {
     test.use({ deviceScaleFactor: 1.25 })
 
     // Side panels keep the image at their top; top panels center it. Either way
-    // the bar docks below the image when that shrinks it by at most a fifth.
+    // the bar docks below the image only while the image keeps its full size.
     const expectViewport = async (page: Page, ratio: number, anchor: 'start' | 'center') => {
         const dimensions = await page.evaluate(() => {
             const container = document.querySelector<HTMLElement>('.preview')!
@@ -1448,9 +1462,9 @@ test.describe('preview aspect ratios', () => {
         const reserve = dimensions.barHeight + 8
         const full = Math.min(container.width, container.height * ratio)
         const dockedWidth = Math.min(container.width, (container.height - reserve) * ratio)
-        // Below the image when that keeps 70% of its size; otherwise full size,
-        // with the strip shown over it on demand. It is never beside the image.
-        const below = dockedWidth >= full * 0.7
+        // Below the image while it keeps its full size, allowing half a pixel for
+        // rounded dock sizes; otherwise the strip shows over it on demand.
+        const below = (dockedWidth - full) / ratio >= -0.5
         expect(dimensions.docked).toBe(below)
         const expectedWidth = below ? dockedWidth : full
         // CSSOM serializes declarations with less precision than the JS layout.
@@ -1467,8 +1481,9 @@ test.describe('preview aspect ratios', () => {
                     (container.x + container.width / 2),
             ),
         ).toBeLessThan(0.03)
+        // Over the image, Auto keeps it where Below had it: at the top.
         const expectedTop = !below
-            ? (container.height - expectedWidth / ratio) / 2
+            ? 0
             : anchor === 'start'
               ? 0
               : (container.height - expectedWidth / ratio - reserve) / 2
@@ -1808,6 +1823,7 @@ test('preview options share persisted settings with the main options menu', asyn
         'Aspect Ratio',
         'Render Scale',
         'Antialias',
+        'Playback Controls',
     ]
     expect(
         (await preview.locator('.preview-setting-label').allTextContents()).map((text) =>
@@ -1823,6 +1839,9 @@ test('preview options share persisted settings with the main options menu', asyn
     await preview.getByRole('radio', { name: '4:3', exact: true }).check()
     await preview.getByLabel('Effects', { exact: true }).uncheck()
     await preview.getByLabel('Antialias', { exact: true }).uncheck()
+    await preview
+        .getByRole('combobox', { name: 'Playback Controls', exact: true })
+        .selectOption('overlay')
     await page.keyboard.press(',')
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByLabel('Note Speed', { exact: true })).toHaveValue('9.25')
@@ -1840,6 +1859,9 @@ test('preview options share persisted settings with the main options menu', asyn
                 labels.map((label) => label.firstElementChild?.textContent?.trim()),
             ),
     ).toEqual([...order, 'Preview Settings Panel'])
+    const transport = dialog.getByRole('combobox', { name: 'Playback Controls', exact: true })
+    await expect(transport).toHaveValue('overlay')
+    await transport.selectOption('below')
     // Placement lives with the other panels and shares the preview's own field.
     await expect(dialog.getByRole('combobox', { name: 'Preview', exact: true })).toHaveValue('auto')
     await dialog.getByRole('combobox', { name: 'Preview', exact: true }).selectOption('right')
@@ -1885,6 +1907,9 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
     await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
     await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
+    await expect(
+        preview.getByRole('combobox', { name: 'Playback Controls', exact: true }),
+    ).toHaveValue('below')
     await page.reload()
     await page.evaluate(installEditorFixture)
     await page.evaluate(() => {
@@ -1895,6 +1920,9 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
     await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
     await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
+    await expect(
+        preview.getByRole('combobox', { name: 'Playback Controls', exact: true }),
+    ).toHaveValue('below')
 })
 
 test('invalid persisted preview options normalize to valid settings', async ({ page }) => {
@@ -1905,6 +1933,7 @@ test('invalid persisted preview options normalize to valid settings', async ({ p
             previewAspectRatio: 0,
             previewShowEffects: 'bad',
             previewAntialias: null,
+            previewTransportPosition: 'beside',
         }
         for (const [key, value] of Object.entries(values))
             localStorage.setItem(`sonolus-next-sekai-editor.${key}`, JSON.stringify(value))
@@ -1920,9 +1949,10 @@ test('invalid persisted preview options normalize to valid settings', async ({ p
                 s.previewAspectRatio,
                 s.previewShowEffects,
                 s.previewAntialias,
+                s.previewTransportPosition,
             ]
         }),
-    ).toEqual([12, 0.25, 16 / 9, true, false])
+    ).toEqual([12, 0.25, 16 / 9, true, false, 'auto'])
 })
 
 test.describe('preview panel lifecycle', () => {
@@ -2137,7 +2167,7 @@ test.describe('preview panel lifecycle', () => {
         await page.evaluate(() => {
             const { settings } = window.editorTest
             settings.previewPosition = 'top'
-            settings.topDockHeight = 420
+            settings.topDockHeight = 520
             settings.previewControls = 'expanded'
         })
         await settle(page)
@@ -2236,7 +2266,7 @@ test.describe('preview panel lifecycle', () => {
         await page.keyboard.press('Shift+Tab')
         await expect(toggle).toBeFocused()
         // Leaving the end of the form continues after the toggle, not at the page end.
-        await page.locator('.preview-controls select').focus()
+        await page.locator('.preview-controls select').last().focus()
         await page.keyboard.press('Tab')
         expect(
             await page.evaluate(() => {
@@ -2294,12 +2324,13 @@ test.describe('preview panel lifecycle', () => {
         ).toBeVisible()
     })
 
-    test('a short top preview keeps the full strip and time below the image', async ({ page }) => {
+    test('Below keeps the full strip and time under a short top preview', async ({ page }) => {
         await page.setViewportSize({ width: 1366, height: 600 })
         await page.evaluate(() => {
             const { settings } = window.editorTest
             settings.previewPosition = 'top'
             settings.topDockHeight = 150
+            settings.previewTransportPosition = 'below'
         })
         await settle(page)
         await expect(page.locator('.preview-transport-toggle')).toHaveCount(0)
@@ -2320,6 +2351,76 @@ test.describe('preview panel lifecycle', () => {
         expect(geometry.gap).toBeCloseTo(4, 1)
         expect(geometry.center).toBeCloseTo(0, 0)
         expect(geometry.imageCenter).toBeCloseTo(0, 0)
+    })
+
+    test('Auto moves the strip over the image the moment both no longer fit', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.previewPosition = 'top'
+            settings.previewControls = 'collapsed'
+            settings.topDockHeight = 300
+        })
+        await settle(page)
+        const read = () =>
+            page.evaluate(() => {
+                const preview = document.querySelector('.preview')!.getBoundingClientRect()
+                const image = document.querySelector('.preview-viewport')!.getBoundingClientRect()
+                const strip = document.querySelector('.preview-transport')!.getBoundingClientRect()
+                return {
+                    overlay: !!document.querySelector('.preview-transport-toggle'),
+                    image: {
+                        top: image.top - preview.top,
+                        width: image.width,
+                        height: image.height,
+                    },
+                    stripTop: strip.top - preview.top,
+                    stripBottom: strip.bottom - preview.top,
+                }
+            })
+        const strip = page.getByRole('group', { name: 'Preview Playback Controls', exact: true })
+        const roomy = await read()
+        expect(roomy.overlay).toBe(false)
+        // A 390 px image is 219.375 px tall; with the 52 px strip below it needs
+        // 271.375 px, less a half-pixel allowance for rounded dock sizes.
+        const fitted = { width: 390, height: 219.375 }
+        for (const [height, overlay] of [
+            [272, false],
+            [270, true],
+            [240, true],
+            [272, false],
+        ] as const) {
+            await page.evaluate(
+                (height) => (window.editorTest.settings.topDockHeight = height),
+                height,
+            )
+            await settle(page)
+            const layout = await read()
+            expect(layout.overlay).toBe(overlay)
+            // The image never shrinks or moves; only the strip changes place.
+            expect(layout.image).toEqual({ top: layout.image.top, ...fitted })
+            expect(layout.image.top).toBeLessThan(0.5)
+            await expect(strip).toBeVisible()
+            expect(layout.stripBottom).toBeLessThanOrEqual(height)
+            if (!overlay)
+                expect(layout.stripTop - layout.image.top).toBeCloseTo(fitted.height + 4, 1)
+        }
+
+        // Overlay keeps a visible strip in view, inside the image even in a tall panel.
+        await page.evaluate(() => {
+            window.editorTest.settings.topDockHeight = 400
+            window.editorTest.settings.previewTransportPosition = 'overlay'
+        })
+        await settle(page)
+        const overlay = await read()
+        expect(overlay.overlay).toBe(true)
+        await expect(strip).toBeVisible()
+        expect(overlay.image.width).toBe(390)
+        expect(overlay.stripBottom).toBeCloseTo(overlay.image.top + overlay.image.height - 4, 1)
+        // Below brings back the strip below the image at its full size.
+        await page.evaluate(() => (window.editorTest.settings.previewTransportPosition = 'below'))
+        await settle(page)
+        expect((await read()).overlay).toBe(false)
     })
 
     test('an automatically opened form closes instead of jumping out over the editor', async ({

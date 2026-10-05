@@ -684,6 +684,12 @@
       "highlightSelection": "Mettre la sélection en évidence",
       "showHitboxes": "Afficher les hitboxes",
       "antialias": "Anticrénelage",
+      "transport": {
+        "title": "Commandes de lecture",
+        "auto": "Auto",
+        "below": "En dessous",
+        "overlay": "Superposées"
+      },
       "aspectRatio": "Rapport d’aspect",
       "showPreview": "Afficher l’aperçu",
       "controls": {

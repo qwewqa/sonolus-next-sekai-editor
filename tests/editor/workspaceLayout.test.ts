@@ -294,6 +294,20 @@ test('an unsized top dock fits the width Preview has, alone or in a row of tiles
     assert.equal(tablet(['groups', 'properties', 'preview', 'stages'])?.size, 300)
 })
 
+test('a stacked Preview fits its image, plus the playback strip unless it overlays', () => {
+    const tile = (previewOverlay: boolean) =>
+        computeWorkspaceLayout(
+            input({
+                positions: { ...positions('auto'), preview: 'left', groups: 'left' },
+                open: { preview: true, groups: true, stages: false, properties: true },
+                previewAspectRatio: 4 / 3,
+                previewOverlay,
+            }),
+        ).docks.left?.tiles.find(({ id }) => id === 'preview')?.size
+    assert.ok(Math.abs((tile(false) ?? 0) - (336 / (4 / 3) + 52)) < 1e-6)
+    assert.ok(Math.abs((tile(true) ?? 0) - 336 / (4 / 3)) < 1e-6)
+})
+
 const visibleOf = (layout: ReturnType<typeof computeWorkspaceLayout>) =>
     Object.values(layout.docks).flatMap((dock) => dock.visible)
 

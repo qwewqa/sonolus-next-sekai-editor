@@ -8,7 +8,7 @@ import { workspaceDockAttribute } from '../editor/workspace'
 import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './options'
-import { panelPositionOptions } from './settingsOptions'
+import { panelPositionOptions, previewTransportOptions } from './settingsOptions'
 import { handOffPreviewSettings, isCoarsePointer, type ControlsMetrics } from './usePreviewViewport'
 
 const props = defineProps<{
@@ -402,6 +402,33 @@ const onPlacementChange = () => {
                             }}
                         </span>
                         <ToggleSwitch :value="settings.previewAntialias" />
+                    </span>
+                </label>
+
+                <label class="preview-setting">
+                    <span :id="`${id}-transport`" class="preview-setting-label">{{
+                        i18n.settings.preview.transport.title
+                    }}</span>
+                    <span class="preview-setting-control group relative">
+                        <select
+                            v-model="settings.previewTransportPosition"
+                            :aria-labelledby="`${id}-transport`"
+                            class="preview-field cursor-pointer appearance-none pr-9 hover:shadow-accent focus-visible:ring-2 active:bg-accent active:text-on-accent"
+                        >
+                            <option
+                                v-for="[label, value] in previewTransportOptions"
+                                :key="value"
+                                :value
+                            >
+                                {{ label }}
+                            </option>
+                        </select>
+                        <span
+                            class="pointer-events-none absolute inset-y-0 right-4 flex items-center group-active:text-on-accent"
+                            aria-hidden="true"
+                        >
+                            <ChevronIcon direction="down" />
+                        </span>
                     </span>
                 </label>
 

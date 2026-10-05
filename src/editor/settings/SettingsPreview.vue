@@ -4,7 +4,7 @@ import NumberField from '../../modals/form/NumberField.vue'
 import SelectField from '../../modals/form/SelectField.vue'
 import ToggleField from '../../modals/form/ToggleField.vue'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from '../../preview/options'
-import { previewControlOptions } from '../../preview/settingsOptions'
+import { previewControlOptions, previewTransportOptions } from '../../preview/settingsOptions'
 import { settings } from '../../settings'
 import SettingsSection from './SettingsSection.vue'
 
@@ -46,6 +46,11 @@ import SettingsSection from './SettingsSection.vue'
             :step="previewRenderScale.step"
         />
         <ToggleField v-model="settings.previewAntialias" :label="i18n.settings.preview.antialias" />
+        <SelectField
+            v-model="settings.previewTransportPosition"
+            :label="i18n.settings.preview.transport.title"
+            :options="previewTransportOptions"
+        />
         <SelectField
             v-model="settings.previewControls"
             :label="i18n.settings.preview.controls.title"

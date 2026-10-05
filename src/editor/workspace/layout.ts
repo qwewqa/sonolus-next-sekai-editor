@@ -34,7 +34,9 @@ const defaultWeights: Record<PanelId, number> = {
 }
 // Room reserved for the preview's single-row playback strip beneath its
 // letterboxed canvas; touch screens use taller buttons.
-const previewChrome = (input: WorkspaceLayoutInput) => (input.coarse ? 60 : 52)
+const previewStrip = (input: WorkspaceLayoutInput) => (input.coarse ? 60 : 52)
+const previewChrome = (input: WorkspaceLayoutInput) =>
+    input.previewOverlay ? 0 : previewStrip(input)
 
 const minSideBody = 220
 const minTopBody = 176
@@ -56,6 +58,8 @@ export type WorkspaceLayoutInput = {
     railSize?: number
     /** Touch screens get larger rails and preview controls. */
     coarse?: boolean
+    /** Whether the playback strip always shows over the image, needing no room. */
+    previewOverlay?: boolean
 }
 
 export type DockTile = {
@@ -388,10 +392,9 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
                 const natural = Math.round(
                     (tile?.size ?? centerWidth) / input.previewAspectRatio + previewChrome(input),
                 )
-                // Tall enough, where possible, that docking the playback bar
-                // still leaves at least 80% of the image.
+                // Never so short that the image is a sliver.
                 const fitted = clamp(
-                    Math.max(Math.min(fallback, natural), previewChrome(input) * 5),
+                    Math.max(Math.min(fallback, natural), previewStrip(input) * 5),
                     min,
                     max,
                 )

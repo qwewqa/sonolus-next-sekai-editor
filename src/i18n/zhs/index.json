@@ -684,6 +684,12 @@
       "highlightSelection": "高亮所选对象",
       "showHitboxes": "显示判定范围",
       "antialias": "抗锯齿",
+      "transport": {
+        "title": "播放控件",
+        "auto": "自动",
+        "below": "下方",
+        "overlay": "叠加"
+      },
       "aspectRatio": "宽高比",
       "showPreview": "显示预览",
       "controls": {

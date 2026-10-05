@@ -8,7 +8,12 @@ import { migrateToolbar } from './editor/toolbar/migrate'
 import { isPanelId, panelIds, type PanelId } from './editor/workspace/layout'
 import { defaultLocale } from './i18n/locale'
 import { localizations } from './i18n/localizations'
-import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './preview/options'
+import {
+    previewAspectRatios,
+    previewNoteSpeed,
+    previewRenderScale,
+    previewTransportPositions,
+} from './preview/options'
 import { storageGet, storageRemove, storageSet } from './storage'
 import { clamp } from './utils/math'
 
@@ -156,6 +161,12 @@ const settingsProperties = {
         Type.Literal('auto'),
         Type.Literal('expanded'),
         Type.Literal('collapsed'),
+    ]),
+
+    previewTransportPosition: Type.Union([
+        Type.Literal(previewTransportPositions[0]),
+        Type.Literal(previewTransportPositions[1]),
+        Type.Literal(previewTransportPositions[2]),
     ]),
 
     previewNoteSpeed: number(previewNoteSpeed.default, previewNoteSpeed.min, previewNoteSpeed.max),

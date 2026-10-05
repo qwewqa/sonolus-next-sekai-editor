@@ -72,27 +72,26 @@ test('six steppers come first, and the time joins them only with room to spare',
 })
 
 test('wide strips stop growing once their steppers reach full size', () => {
-    const layout = controls({ width: 820, height: 420, anchor: 'center' })
+    const layout = controls({ width: 820, height: 420, anchor: 'center', position: 'below' })
     const metrics = previewStripMetrics(false)
     assert.equal(layout.placement, 'below')
     assert.equal(layout.mode, 'steps')
     assert.equal(layout.strip.width, metrics.stepsMax + metrics.gap + metrics.time)
     assert.equal(layout.strip.left, (820 - layout.strip.width) / 2)
-    // The image shrinks by at most 30% to make room.
     assert.equal(layout.canvas.height, 420 - 52)
     assert.equal(layout.canvas.top, 0)
 })
 
 test('a short, wide panel docks the full strip below the image, never beside it', () => {
     const metrics = previewStripMetrics(false)
-    const layout = controls({ width: 1600, height: 200, anchor: 'center' })
+    const layout = controls({ width: 1600, height: 200, anchor: 'center', position: 'below' })
     assert.equal(layout.placement, 'below')
     assert.deepEqual([layout.mode, layout.timeInStrip], ['steps', true])
     assert.equal(layout.strip.width, metrics.stepsMax + metrics.gap + metrics.time)
     assert.equal(layout.strip.top, layout.canvas.top + layout.canvas.height + 4)
     assert.equal(layout.canvas.left, (1600 - layout.canvas.width) / 2)
 
-    // Shorter still, the strip shows on demand, still at full size.
+    // Auto shows it on demand instead, still at full size.
     const short = controls({ width: 800, height: 146, coarse: true, anchor: 'center' })
     assert.equal(short.placement, 'overlay')
     assert.equal(short.mode, 'steps')
@@ -109,6 +108,80 @@ test('without room below, the strip shows over the image on demand, in place', (
     // its lower edge.
     assert.equal(layout.canvas.top, (140 - layout.canvas.height) / 2)
     assert.equal(layout.strip.top, 140 - 44 - 4)
+})
+
+test('Auto docks the strip below only while the image keeps its full fitted size', () => {
+    // 304 px wide: a 171 px image plus a 44 px strip and two 4 px gaps.
+    const threshold = 171 + 52
+    for (const anchor of ['start', 'center'] as const) {
+        const at = controls({ height: threshold, anchor })
+        assert.equal(at.placement, 'below')
+        assert.deepEqual(at.canvas, { left: 0, top: 0, width: 304, height: 171 })
+        // One pixel short, the strip moves over the image, which keeps its size and place.
+        const short = controls({ height: threshold - 1, anchor })
+        assert.equal(short.placement, 'overlay')
+        assert.deepEqual(short.canvas, at.canvas)
+        // The strip starts where it was and slides up into the image's lower edge.
+        assert.equal(short.strip.top, threshold - 1 - 48)
+        assert.equal(controls({ height: 171, anchor }).strip.top, 171 - 48)
+    }
+    // Height-limited panels lose image size to any strip below, so it overlays.
+    assert.equal(controls({ width: 1600, height: 380, anchor: 'center' }).placement, 'overlay')
+    assert.equal(controls({ height: threshold, coarse: true }).placement, 'overlay')
+    assert.equal(controls({ height: threshold + 8, coarse: true }).placement, 'below')
+    // Dock sizes rounded to whole pixels still count as fitting.
+    assert.equal(controls({ height: threshold - 0.4 }).placement, 'below')
+})
+
+test('Auto never shrinks the image before moving the strip over it', () => {
+    for (const coarse of [false, true])
+        for (const anchor of ['start', 'center'] as const)
+            for (const width of [260, 304, 390]) {
+                let previous: ReturnType<typeof controls> | undefined
+                for (let height = 600; height >= 60; height -= 0.25) {
+                    const layout = controls({ width, height, coarse, anchor })
+                    const full = Math.min(width, height * ratio)
+                    // Wherever the strip is, the image is at its full fitted size.
+                    assert.ok(Math.abs(layout.canvas.width - full) < 0.5 * ratio + 1e-9)
+                    if (previous) {
+                        // Shrinking the panel never grows or moves the image by a jump;
+                        // only the half-pixel rounding allowance returns at the switch.
+                        assert.ok(layout.canvas.width <= previous.canvas.width + 0.5 * ratio)
+                        assert.ok(Math.abs(layout.canvas.top - previous.canvas.top) <= 0.25)
+                        assert.ok(Math.abs(layout.strip.top - previous.strip.top) <= 0.25 + 1e-9)
+                    }
+                    previous = layout
+                }
+            }
+})
+
+test('Below keeps the strip under the image at any height', () => {
+    const layout = controls({ height: 120, position: 'below' })
+    assert.equal(layout.placement, 'below')
+    assert.equal(layout.canvas.height, 120 - 52)
+    assert.equal(layout.strip.top, 120 - 48)
+    const centered = controls({ width: 1600, height: 380, anchor: 'center', position: 'below' })
+    assert.equal(centered.placement, 'below')
+    assert.deepEqual(
+        [centered.canvas.top, centered.canvas.height, centered.strip.top],
+        [0, 328, 332],
+    )
+    // Too short for any image, the strip still shows.
+    const tiny = controls({ height: 40, position: 'below', anchor: 'center' })
+    assert.deepEqual([tiny.placement, tiny.canvas.height, tiny.strip.top], ['below', 0, 4])
+})
+
+test('Overlay keeps the strip over the image even in a tall panel', () => {
+    for (const anchor of ['start', 'center'] as const) {
+        const layout = controls({ position: 'overlay', anchor })
+        assert.equal(layout.placement, 'overlay')
+        assert.equal(layout.timeInStrip, false)
+        assert.equal(layout.canvas.height, 171)
+        // A side dock keeps the image at its top; a top dock centers it.
+        assert.equal(layout.canvas.top, anchor === 'start' ? 0 : (1000 - 171) / 2)
+        // The strip sits inside the image's lower edge.
+        assert.equal(layout.strip.top, layout.canvas.top + 171 - 4 - 44)
+    }
 })
 
 const rect = (left: number, top: number, width: number, height: number): Rect => ({

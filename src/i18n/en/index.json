@@ -684,6 +684,12 @@
             "highlightSelection": "Highlight Selection",
             "showHitboxes": "Show Hitboxes",
             "antialias": "Antialias",
+            "transport": {
+                "title": "Playback Controls",
+                "auto": "Auto",
+                "below": "Below",
+                "overlay": "Overlay"
+            },
             "aspectRatio": "Aspect Ratio",
             "showPreview": "Show Preview",
             "controls": {

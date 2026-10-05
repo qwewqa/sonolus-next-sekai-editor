@@ -94,6 +94,7 @@ export const usePreviewViewport = (container: Readonly<Ref<HTMLElement | null>>)
             coarse: isCoarsePointer,
             showTime: settings.previewShowTime,
             anchor: side.value === 'top' ? 'center' : 'start',
+            position: settings.previewTransportPosition,
         }),
     )
     const canvas = computed(() => controlsLayout.value.canvas)

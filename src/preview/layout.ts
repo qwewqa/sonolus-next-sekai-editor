@@ -3,6 +3,8 @@
 // placement uses viewport coordinates because the expanded settings may
 // extend beyond the panel.
 
+import type { PreviewTransportPosition } from './options'
+
 export type PreviewSide = 'left' | 'right' | 'top'
 
 export type Rect = { left: number; top: number; right: number; bottom: number }
@@ -10,12 +12,8 @@ export type Rect = { left: number; top: number; right: number; bottom: number }
 /** Gap between the image, the playback strip, settings and panel edges. */
 export const previewGap = 4
 
-/**
- * Docking the playback strip below the image may shrink the image, but only by
- * a modest amount; otherwise the strip shows on tap over the image. Controls
- * always in view are worth more than the last quarter of a short image.
- */
-const minDockedScale = 0.7
+/** Image height Auto may give up to the strip below; absorbs dock rounding. */
+const autoBelowTolerance = 0.5
 
 export type PreviewCanvas = {
     left: number
@@ -80,13 +78,14 @@ export type PreviewControlsInput = {
     showTime: boolean
     /** Side docks are often much taller than the image; keep it at the top. */
     anchor: 'start' | 'center'
+    position?: PreviewTransportPosition
 }
 
 /**
  * Places the image and its playback strip: below the image, across the panel's
- * width, when that keeps at least 70% of the image's size, and otherwise over
- * its lower edge, shown on demand. The strip is never narrowed to fit beside
- * the image.
+ * width, or over its lower edge, shown on demand. Auto docks it below only
+ * while that leaves the image at its full fitted size. The strip is never
+ * narrowed to fit beside the image.
  *
  * The strip holds six steppers whenever the panel is wide enough for them; the
  * compact back / step size / forward stepper is only for panels too narrow for
@@ -100,6 +99,7 @@ export const layoutPreviewControls = ({
     coarse,
     showTime,
     anchor,
+    position = 'auto',
 }: PreviewControlsInput): PreviewControlsLayout => {
     const metrics = previewStripMetrics(coarse)
     const g = previewGap
@@ -135,9 +135,12 @@ export const layoutPreviewControls = ({
     const reserve = stripHeight + g * 2
     const docked = Math.min(width, Math.max(0, (height - reserve) * aspectRatio))
     const room = width - g * 2
-    if (docked > 0 && docked >= full * minDockedScale) {
+    const below =
+        position === 'below' ||
+        (position === 'auto' && (docked - full) / aspectRatio >= -autoBelowTolerance)
+    if (below) {
         const canvasHeight = docked / aspectRatio
-        const top = anchor === 'start' ? 0 : (height - canvasHeight - reserve) / 2
+        const top = anchor === 'start' ? 0 : Math.max(0, (height - canvasHeight - reserve) / 2)
         const c = content(room)
         const stripWidth = widthFor(room, c)
         return {
@@ -158,14 +161,22 @@ export const layoutPreviewControls = ({
     // showing or hiding it never moves or resizes the image. The time stays in
     // the corner chip here, since the strip is often hidden.
     const canvasHeight = full / aspectRatio
-    const top = (height - canvasHeight) / 2
+    // Auto keeps the image where Below had it, so crossing over moves only the strip.
+    const top = anchor === 'start' || position === 'auto' ? 0 : (height - canvasHeight) / 2
+    const bottom = top + canvasHeight
     const overlay = room >= metrics.steps ? ('steps' as const) : ('compact' as const)
     const stripWidth = overlay === 'steps' ? Math.min(room, metrics.stepsMax) : room
     return {
         canvas: { left: (width - full) / 2, top, width: full, height: canvasHeight },
         strip: {
             left: (width - stripWidth) / 2,
-            top: Math.max(0, Math.min(top + canvasHeight + g, height - stripHeight - g)),
+            // Auto slides it from below the image up into its lower edge.
+            top: Math.max(
+                0,
+                position === 'auto'
+                    ? Math.min(bottom + g, height - stripHeight - g)
+                    : bottom - stripHeight - g,
+            ),
             width: stripWidth,
             height: stripHeight,
         },

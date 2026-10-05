@@ -8,3 +8,5 @@ export const previewAspectRatios: [[string, number], [string, number], [string, 
     ['4:3', 4 / 3],
 ]
 export const previewControls = ['auto', 'expanded', 'collapsed'] as const
+export const previewTransportPositions = ['auto', 'below', 'overlay'] as const
+export type PreviewTransportPosition = (typeof previewTransportPositions)[number]

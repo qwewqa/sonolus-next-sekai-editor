@@ -131,6 +131,7 @@ const layoutOf = (state: WorkspaceToggleState) =>
         previewAspectRatio: settings.previewAspectRatio,
         railSize: isCoarsePointer.value ? coarseRailSize : railSize,
         coarse: isCoarsePointer.value,
+        previewOverlay: settings.previewTransportPosition === 'overlay',
     })
 
 export const workspaceLayout = computed(() => layoutOf(toggleState.value))
