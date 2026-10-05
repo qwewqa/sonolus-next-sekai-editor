@@ -53,9 +53,18 @@ test.describe('roomy panel', () => {
         await expect(group).toHaveAccessibleName('Time Scale Transition')
         await expect(group.getByRole('radio', { name: 'Scroll' })).toBeChecked()
 
-        // Arrow keys move within the group, one edit per press.
+        // Arrow keys move within the group, one edit per press, without editor shortcuts.
+        const view = () =>
+            page.evaluate(() => {
+                const { view, settings } = window.editorTest
+                return { time: view.time, lane: view.lane, showGroups: settings.showGroups }
+            })
+        const before = await view()
         await group.getByRole('radio', { name: 'Scroll' }).focus()
         await page.keyboard.press('ArrowLeft')
+        await page.keyboard.press('Space')
+        await page.keyboard.press('e')
+        expect(await view()).toEqual(before)
         expect(await transitions(page)).toEqual([
             'timeScale',
             'timeScale',
@@ -120,10 +129,15 @@ test('a narrow dock uses a select and hands focus over when it widens', async ({
     await select.selectOption({ label: 'Time Scale' })
     expect(await transitions(page)).toEqual(['timeScale', 'timeScale', 'timeScale', 'timeScale'])
 
+    const selectHeight = await select.evaluate((element) => (element as HTMLElement).offsetHeight)
     await select.focus()
     await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 560))
     await expect(transition(page)).toBeVisible()
     await expect(transition(page).getByRole('radio', { name: 'Time Scale' })).toBeFocused()
+    // Both forms keep the row height.
+    expect(
+        await transition(page).evaluate((element) => (element as HTMLElement).offsetHeight),
+    ).toBe(selectHeight)
 })
 
 test.describe('phone panel', () => {
