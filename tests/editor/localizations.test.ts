@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
+import { pluralForm } from '../../src/i18n/plural'
 
 type Localization = { [key: string]: string | Localization }
 const directory = new URL('../../src/i18n/', import.meta.url)
@@ -21,6 +22,16 @@ const read = (locale: string) =>
     )
 const english = read('en')
 const placeholders = (text: string) => (text.match(/\{\d+\}/g) ?? []).sort()
+// Singular and plural forms, as "{0} object|{0} objects", each hold every placeholder.
+const forms = (text: string) => text.split('|')
+
+test('English messages have at most a singular and a plural form', () => {
+    for (const [key, text] of Object.entries(english)) {
+        assert.ok(forms(text).length <= 2, key)
+        for (const form of forms(text))
+            assert.deepEqual(placeholders(form), placeholders(forms(text)[0]!), key)
+    }
+})
 
 for (const locale of readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && entry.name !== 'en')
@@ -34,7 +45,26 @@ for (const locale of readdirSync(directory, { withFileTypes: true })
                 !/\uFFFD|\?{2,}|\p{L}\?\p{L}/u.test(text),
                 `${locale}.${key}: damaged Unicode`,
             )
-            assert.deepEqual(placeholders(text), placeholders(english[key]!), `${locale}.${key}`)
+            assert.ok(forms(text).length <= 2, `${locale}.${key}: too many forms`)
+            for (const form of forms(text))
+                assert.deepEqual(
+                    placeholders(form),
+                    placeholders(forms(english[key]!)[0]!),
+                    `${locale}.${key}`,
+                )
         }
     })
 }
+
+test('plural forms follow each locale’s rules', () => {
+    const message = '{0} object|{0} objects'
+    assert.equal(pluralForm('en', message, '1'), '{0} object')
+    assert.equal(pluralForm('en', message, '0'), '{0} objects')
+    assert.equal(pluralForm('en', message, '2'), '{0} objects')
+    // French counts zero as singular.
+    assert.equal(pluralForm('fr', message, '0'), '{0} object')
+    assert.equal(pluralForm('fr', message, '2'), '{0} objects')
+    // Chinese has one form; locale codes map to language tags.
+    assert.equal(pluralForm('zhs', message, '1'), '{0} objects')
+    assert.equal(pluralForm('en', 'Saved', '1'), 'Saved')
+})

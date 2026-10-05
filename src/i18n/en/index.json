@@ -36,12 +36,12 @@
         "copy": {
             "title": "Copy",
             "noSelected": "No object selected to copy",
-            "copied": "Copied {0} objects"
+            "copied": "Copied {0} object|Copied {0} objects"
         },
         "cut": {
             "title": "Cut",
             "noSelected": "No object selected to cut",
-            "cut": "Cut {0} objects"
+            "cut": "Cut {0} object|Cut {0} objects"
         },
         "deselect": {
             "title": "Deselect",
@@ -89,26 +89,26 @@
         "flip": {
             "title": "Flip Horizontally",
             "noSelected": "No object selected to flip",
-            "flipped": "Flipped {0} objects"
+            "flipped": "Flipped {0} object|Flipped {0} objects"
         },
         "flipVertical": {
             "title": "Flip Vertically",
-            "flipped": "Flipped {0} objects vertically"
+            "flipped": "Flipped {0} object vertically|Flipped {0} objects vertically"
         },
         "scaleBeat": {
             "title": "Scale Beats",
             "noSelected": "Select at least two objects at different beats to scale",
-            "scaled": "Scaled beats of {0} objects"
+            "scaled": "Scaled beats of {0} object|Scaled beats of {0} objects"
         },
         "scaleWidth": {
             "title": "Scale Width",
             "noSelected": "Select objects with a horizontal span to scale",
-            "scaled": "Scaled width of {0} objects"
+            "scaled": "Scaled width of {0} object|Scaled width of {0} objects"
         },
         "scaleElevation": {
             "title": "Scale Elevations",
             "noSelected": "Select at least two notes or stage transforms with different elevations to scale",
-            "scaled": "Scaled elevations of {0} objects"
+            "scaled": "Scaled elevations of {0} object|Scaled elevations of {0} objects"
         },
         "scaleSelection": {
             "factor": "Scale Factor",
@@ -122,12 +122,12 @@
             "noSelected": "Select at least one note to make vertical",
             "unchanged": "Selected notes are already vertical",
             "invalid": "Selection cannot be made vertical within the editor’s supported range",
-            "made": "Made {0} notes vertical"
+            "made": "Made {0} note vertical|Made {0} notes vertical"
         },
         "splitHold": {
             "title": "Split Slide",
             "noConnections": "Select a slide note with a connection to the next note",
-            "split": "Split {0} slide connections"
+            "split": "Split {0} slide connection|Split {0} slide connections"
         },
         "combineNotes": {
             "title": "Combine into Slide",
@@ -728,7 +728,7 @@
         "default": {
             "title": "Object Properties",
             "none": "No object selected",
-            "edited": "Edited {0} objects"
+            "edited": "Edited {0} object|Edited {0} objects"
         },
         "view": {
             "title": "View",
@@ -761,13 +761,13 @@
         },
         "bpm": {
             "title": "BPM",
-            "adding": "Adding {0} BPM objects",
-            "added": "Added {0} BPM objects",
-            "edited": "Edited {0} BPM objects",
-            "moving": "Moving {0} BPM objects",
-            "moved": "Moved {0} BPM objects",
-            "replaced": "Replaced {0} BPM objects",
-            "selected": "Selected {0} BPM objects",
+            "adding": "Adding {0} BPM object|Adding {0} BPM objects",
+            "added": "Added {0} BPM object|Added {0} BPM objects",
+            "edited": "Edited {0} BPM object|Edited {0} BPM objects",
+            "moving": "Moving {0} BPM object|Moving {0} BPM objects",
+            "moved": "Moved {0} BPM object|Moved {0} BPM objects",
+            "replaced": "Replaced {0} BPM object|Replaced {0} BPM objects",
+            "selected": "Selected {0} BPM object|Selected {0} BPM objects",
             "modal": {
                 "title": "BPM Properties"
             }
@@ -775,14 +775,14 @@
         "brush": {
             "title": "Brush",
             "deselected": "Deselected all objects",
-            "brushing": "Brushing {0} objects",
-            "brushed": "Brushed {0} objects",
+            "brushing": "Brushing {0} object|Brushing {0} objects",
+            "brushed": "Brushed {0} object|Brushed {0} objects",
             "sidebar": {
                 "title": "Brush Properties"
             },
             "add": "Add Property",
             "pick": "Pick from Selection",
-            "picked": "Picked {0} properties from the selection",
+            "picked": "Picked {0} property from the selection|Picked {0} properties from the selection",
             "clear": "Clear",
             "empty": "The brush changes nothing yet. Add a property or pick them from the selection.",
             "remove": "Remove {0}",
@@ -802,24 +802,24 @@
         "eraser": {
             "title": "Eraser",
             "deselected": "Deselected all objects",
-            "erasing": "Erasing {0} objects",
-            "erased": "Erased {0} objects"
+            "erasing": "Erasing {0} object|Erasing {0} objects",
+            "erased": "Erased {0} object|Erased {0} objects"
         },
         "generateSlideNotes": {
             "title": "Generate Slide Notes",
             "deselected": "Deselected all objects",
-            "selecting": "Selecting {0} objects",
-            "generated": "Generated {0} objects"
+            "selecting": "Selecting {0} object|Selecting {0} objects",
+            "generated": "Generated {0} object|Generated {0} objects"
         },
         "note": {
             "title": "Note #{0}",
-            "adding": "Adding {0} Note objects",
-            "added": "Added {0} Note objects",
-            "editing": "Editing {0} Note objects",
-            "edited": "Edited {0} Note objects",
-            "moving": "Moving {0} Note objects",
-            "moved": "Moved {0} Note objects",
-            "selected": "Selected {0} Note objects",
+            "adding": "Adding {0} Note object|Adding {0} Note objects",
+            "added": "Added {0} Note object|Added {0} Note objects",
+            "editing": "Editing {0} Note object|Editing {0} Note objects",
+            "edited": "Edited {0} Note object|Edited {0} Note objects",
+            "moving": "Moving {0} Note object|Moving {0} Note objects",
+            "moved": "Moved {0} Note object|Moved {0} Note objects",
+            "selected": "Selected {0} Note object|Selected {0} Note objects",
             "modal": {
                 "title": "Note Properties"
             },
@@ -833,7 +833,7 @@
         },
         "paste": {
             "title": "Paste",
-            "pasted": "Pasted {0} objects",
+            "pasted": "Pasted {0} object|Pasted {0} objects",
             "sidebar": {
                 "title": "Clipboard History"
             }
@@ -841,20 +841,20 @@
         "select": {
             "title": "Select",
             "deselected": "Deselected all objects",
-            "selecting": "Selecting {0} objects",
-            "selected": "Selected {0} objects",
-            "moving": "Moving {0} objects",
-            "moved": "Moved {0} objects"
+            "selecting": "Selecting {0} object|Selecting {0} objects",
+            "selected": "Selected {0} object|Selected {0} objects",
+            "moving": "Moving {0} object|Moving {0} objects",
+            "moved": "Moved {0} object|Moved {0} objects"
         },
         "slide": {
             "title": "Slide #{0}",
-            "adding": "Adding {0} Note objects",
-            "added": "Added {0} Note objects",
-            "editing": "Editing {0} Note objects",
-            "edited": "Edited {0} Note objects",
-            "moving": "Moving {0} Note objects",
-            "moved": "Moved {0} Note objects",
-            "selected": "Selected {0} Note objects",
+            "adding": "Adding {0} Note object|Adding {0} Note objects",
+            "added": "Added {0} Note object|Added {0} Note objects",
+            "editing": "Editing {0} Note object|Editing {0} Note objects",
+            "edited": "Edited {0} Note object|Edited {0} Note objects",
+            "moving": "Moving {0} Note object|Moving {0} Note objects",
+            "moved": "Moved {0} Note object|Moved {0} Note objects",
+            "selected": "Selected {0} Note object|Selected {0} Note objects",
             "modal": {
                 "title": "Note Properties"
             },
@@ -864,25 +864,25 @@
         },
         "timeScale": {
             "title": "Time Scale",
-            "adding": "Adding {0} Time Scale objects",
-            "added": "Added {0} Time Scale objects",
-            "edited": "Edited {0} Time Scale objects",
-            "moving": "Moving {0} Time Scale objects",
-            "moved": "Moved {0} Time Scale objects",
-            "replaced": "Replaced {0} Time Scale objects",
-            "selected": "Selected {0} Time Scale objects",
+            "adding": "Adding {0} Time Scale object|Adding {0} Time Scale objects",
+            "added": "Added {0} Time Scale object|Added {0} Time Scale objects",
+            "edited": "Edited {0} Time Scale object|Edited {0} Time Scale objects",
+            "moving": "Moving {0} Time Scale object|Moving {0} Time Scale objects",
+            "moved": "Moved {0} Time Scale object|Moved {0} Time Scale objects",
+            "replaced": "Replaced {0} Time Scale object|Replaced {0} Time Scale objects",
+            "selected": "Selected {0} Time Scale object|Selected {0} Time Scale objects",
             "modal": {
                 "title": "Time Scale Properties"
             }
         },
         "events": {
-            "adding": "Adding {0} {1} objects",
-            "added": "Added {0} {1} objects",
-            "editing": "Editing {0} {1} objects",
-            "edited": "Edited {0} {1} objects",
-            "moving": "Moving {0} {1} objects",
-            "moved": "Moved {0} {1} objects",
-            "selected": "Selected {0} {1} objects",
+            "adding": "Adding {0} {1} object|Adding {0} {1} objects",
+            "added": "Added {0} {1} object|Added {0} {1} objects",
+            "editing": "Editing {0} {1} object|Editing {0} {1} objects",
+            "edited": "Edited {0} {1} object|Edited {0} {1} objects",
+            "moving": "Moving {0} {1} object|Moving {0} {1} objects",
+            "moved": "Moved {0} {1} object|Moved {0} {1} objects",
+            "selected": "Selected {0} {1} object|Selected {0} {1} objects",
             "modal": {
                 "title": "{0} Properties"
             },
@@ -1379,9 +1379,9 @@
             "solo": "Show Only This",
             "soloHint": "Alt+click to show only this",
             "select": "Select Objects",
-            "selected": "Selected {0} objects",
+            "selected": "Selected {0} object|Selected {0} objects",
             "moveSelection": "Move Selection Here",
-            "objects": "{0} Objects",
+            "objects": "{0} Object|{0} Objects",
             "drag": "Drag to Reorder {0}",
             "selectMultiple": "Select Multiple",
             "selecting": "{0} Selected",

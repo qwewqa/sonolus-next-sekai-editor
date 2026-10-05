@@ -36,12 +36,12 @@
     "copy": {
       "title": "Copier",
       "noSelected": "Aucun objet sélectionné à copier",
-      "copied": "{0} objets copiés"
+      "copied": "{0} objet copié|{0} objets copiés"
     },
     "cut": {
       "title": "Couper",
       "noSelected": "Aucun objet sélectionné à couper",
-      "cut": "{0} objets coupés"
+      "cut": "{0} objet coupé|{0} objets coupés"
     },
     "deselect": {
       "title": "Désélectionner",
@@ -89,26 +89,26 @@
     "flip": {
       "title": "Retourner",
       "noSelected": "Aucun objet sélectionné à retourner",
-      "flipped": "{0} objets retournés"
+      "flipped": "{0} objet retourné|{0} objets retournés"
     },
     "flipVertical": {
       "title": "Retourner verticalement",
-      "flipped": "{0} objets retournés verticalement"
+      "flipped": "{0} objet retourné verticalement|{0} objets retournés verticalement"
     },
     "scaleBeat": {
       "title": "Mettre les temps à l’échelle",
       "noSelected": "Sélectionnez au moins deux objets à des temps différents",
-      "scaled": "Temps de {0} objets mis à l’échelle"
+      "scaled": "Temps de {0} objet mis à l’échelle|Temps de {0} objets mis à l’échelle"
     },
     "scaleWidth": {
       "title": "Redimensionner la largeur",
       "noSelected": "Sélectionnez des objets avec une étendue horizontale à redimensionner",
-      "scaled": "Largeur de {0} objets redimensionnée"
+      "scaled": "Largeur de {0} objet redimensionnée|Largeur de {0} objets redimensionnée"
     },
     "scaleElevation": {
       "title": "Mettre les élévations à l’échelle",
       "noSelected": "Sélectionnez au moins deux notes ou transformations de scène à des élévations différentes",
-      "scaled": "Élévations de {0} objets mises à l’échelle"
+      "scaled": "Élévation de {0} objet mise à l’échelle|Élévations de {0} objets mises à l’échelle"
     },
     "scaleSelection": {
       "factor": "Facteur d’échelle",
@@ -122,12 +122,12 @@
       "noSelected": "Sélectionnez au moins une note à disposer verticalement",
       "unchanged": "Les notes sélectionnées sont déjà disposées verticalement",
       "invalid": "La sélection ne peut pas être disposée verticalement dans les limites prises en charge par l’éditeur",
-      "made": "{0} notes disposées verticalement"
+      "made": "{0} note disposée verticalement|{0} notes disposées verticalement"
     },
     "splitHold": {
       "title": "Scinder le slide",
       "noConnections": "Sélectionnez une note suivie d’une connexion à scinder",
-      "split": "{0} connexions scindées"
+      "split": "{0} connexion scindée|{0} connexions scindées"
     },
     "combineNotes": {
       "title": "Combiner en slide",
@@ -728,7 +728,7 @@
     "default": {
       "title": "Propriétés d'Objet",
       "none": "Aucun objet sélectionné",
-      "edited": "{0} objets modifiés"
+      "edited": "{0} objet modifié|{0} objets modifiés"
     },
     "view": {
       "title": "Vue",
@@ -761,13 +761,13 @@
     },
     "bpm": {
       "title": "BPM",
-      "adding": "Ajout de {0} objets BPM",
-      "added": "{0} objets BPM ajoutés",
-      "edited": "{0} objets BPM modifiés",
-      "moving": "Déplacement de {0} objets BPM",
-      "moved": "{0} objets BPM déplacés",
-      "replaced": "{0} objets BPM remplacés",
-      "selected": "{0} objets BPM sélectionnés",
+      "adding": "Ajout de {0} objet BPM|Ajout de {0} objets BPM",
+      "added": "{0} objet BPM ajouté|{0} objets BPM ajoutés",
+      "edited": "{0} objet BPM modifié|{0} objets BPM modifiés",
+      "moving": "Déplacement de {0} objet BPM|Déplacement de {0} objets BPM",
+      "moved": "{0} objet BPM déplacé|{0} objets BPM déplacés",
+      "replaced": "{0} objet BPM remplacé|{0} objets BPM remplacés",
+      "selected": "{0} objet BPM sélectionné|{0} objets BPM sélectionnés",
       "modal": {
         "title": "Propriétés du BPM"
       }
@@ -775,14 +775,14 @@
     "brush": {
       "title": "Pinceau",
       "deselected": "Tout désélectionné",
-      "brushing": "Peinture de {0} objets",
-      "brushed": "{0} objets peints",
+      "brushing": "Peinture de {0} objet|Peinture de {0} objets",
+      "brushed": "{0} objet peint|{0} objets peints",
       "sidebar": {
         "title": "Propriétés du Pinceau"
       },
       "add": "Ajouter une propriété",
       "pick": "Reprendre la sélection",
-      "picked": "{0} propriétés reprises de la sélection",
+      "picked": "{0} propriété reprise de la sélection|{0} propriétés reprises de la sélection",
       "clear": "Effacer",
       "empty": "Le pinceau ne change encore rien. Ajoutez une propriété ou reprenez celles de la sélection.",
       "remove": "Retirer {0}",
@@ -802,24 +802,24 @@
     "eraser": {
       "title": "Gomme",
       "deselected": "Tout désélectionné",
-      "erasing": "Effacement de {0} objets",
-      "erased": "{0} objets effacés"
+      "erasing": "Effacement de {0} objet|Effacement de {0} objets",
+      "erased": "{0} objet effacé|{0} objets effacés"
     },
     "generateSlideNotes": {
       "title": "Générer les notes de slide",
       "deselected": "Tout désélectionné",
-      "selecting": "Sélection de {0} objets",
-      "generated": "{0} objets générés"
+      "selecting": "Sélection de {0} objet|Sélection de {0} objets",
+      "generated": "{0} objet généré|{0} objets générés"
     },
     "note": {
       "title": "Note n° {0}",
-      "adding": "Ajout de {0} objets Note",
-      "added": "{0} objets Note ajoutés",
-      "editing": "Modification de {0} objets Note",
-      "edited": "{0} objets Note modifiés",
-      "moving": "Déplacement de {0} objets Note",
-      "moved": "{0} objets Note déplacés",
-      "selected": "{0} objets Note sélectionnés",
+      "adding": "Ajout de {0} objet Note|Ajout de {0} objets Note",
+      "added": "{0} objet Note ajouté|{0} objets Note ajoutés",
+      "editing": "Modification de {0} objet Note|Modification de {0} objets Note",
+      "edited": "{0} objet Note modifié|{0} objets Note modifiés",
+      "moving": "Déplacement de {0} objet Note|Déplacement de {0} objets Note",
+      "moved": "{0} objet Note déplacé|{0} objets Note déplacés",
+      "selected": "{0} objet Note sélectionné|{0} objets Note sélectionnés",
       "modal": {
         "title": "Propriétés de Note"
       },
@@ -833,7 +833,7 @@
     },
     "paste": {
       "title": "Coller",
-      "pasted": "{0} objets collés",
+      "pasted": "{0} objet collé|{0} objets collés",
       "sidebar": {
         "title": "Historique du presse-papiers"
       }
@@ -841,20 +841,20 @@
     "select": {
       "title": "Sélectionner",
       "deselected": "Tout désélectionné",
-      "selecting": "Sélection de {0} objets",
-      "selected": "{0} objets sélectionnés",
-      "moving": "Déplacement de {0} objets",
-      "moved": "{0} objets déplacés"
+      "selecting": "Sélection de {0} objet|Sélection de {0} objets",
+      "selected": "{0} objet sélectionné|{0} objets sélectionnés",
+      "moving": "Déplacement de {0} objet|Déplacement de {0} objets",
+      "moved": "{0} objet déplacé|{0} objets déplacés"
     },
     "slide": {
       "title": "Slide n° {0}",
-      "adding": "Ajout de {0} objets Note",
-      "added": "{0} objets Note ajoutés",
-      "editing": "Modification de {0} objets Note",
-      "edited": "{0} objets Note modifiés",
-      "moving": "Déplacement de {0} objets Note",
-      "moved": "{0} objets Note déplacés",
-      "selected": "Sélection de {0} objets Note",
+      "adding": "Ajout de {0} objet Note|Ajout de {0} objets Note",
+      "added": "{0} objet Note ajouté|{0} objets Note ajoutés",
+      "editing": "Modification de {0} objet Note|Modification de {0} objets Note",
+      "edited": "{0} objet Note modifié|{0} objets Note modifiés",
+      "moving": "Déplacement de {0} objet Note|Déplacement de {0} objets Note",
+      "moved": "{0} objet Note déplacé|{0} objets Note déplacés",
+      "selected": "{0} objet Note sélectionné|{0} objets Note sélectionnés",
       "modal": {
         "title": "Propriétés de Note"
       },
@@ -864,25 +864,25 @@
     },
     "timeScale": {
       "title": "Échelle de temps",
-      "adding": "Ajout de {0} objets Échelle de Temps",
-      "added": "{0} objets Échelle de Temps ajoutés",
-      "edited": "{0} objets Échelle de Temps modifiés",
-      "moving": "Déplacement de {0} objets Échelle de Temps",
-      "moved": "{0} objets Échelle de Temps déplacés",
-      "replaced": "{0} objets Échelle de Temps remplacés",
-      "selected": "{0} objets Échelle de Temps sélectionnés",
+      "adding": "Ajout de {0} objet Échelle de Temps|Ajout de {0} objets Échelle de Temps",
+      "added": "{0} objet Échelle de Temps ajouté|{0} objets Échelle de Temps ajoutés",
+      "edited": "{0} objet Échelle de Temps modifié|{0} objets Échelle de Temps modifiés",
+      "moving": "Déplacement de {0} objet Échelle de Temps|Déplacement de {0} objets Échelle de Temps",
+      "moved": "{0} objet Échelle de Temps déplacé|{0} objets Échelle de Temps déplacés",
+      "replaced": "{0} objet Échelle de Temps remplacé|{0} objets Échelle de Temps remplacés",
+      "selected": "{0} objet Échelle de Temps sélectionné|{0} objets Échelle de Temps sélectionnés",
       "modal": {
         "title": "Propriétés de l'Échelle de Temps"
       }
     },
     "events": {
-      "adding": "Ajout de {0} objets {1}",
-      "added": "{0} objets {1} ajoutés",
-      "editing": "Modification de {0} objets {1}",
-      "edited": "{0} objets {1} modifiés",
-      "moving": "Déplacement de {0} objets {1}",
-      "moved": "{0} objets {1} déplacés",
-      "selected": "{0} objets {1} sélectionnés",
+      "adding": "Ajout de {0} objet {1}|Ajout de {0} objets {1}",
+      "added": "{0} objet {1} ajouté|{0} objets {1} ajoutés",
+      "editing": "Modification de {0} objet {1}|Modification de {0} objets {1}",
+      "edited": "{0} objet {1} modifié|{0} objets {1} modifiés",
+      "moving": "Déplacement de {0} objet {1}|Déplacement de {0} objets {1}",
+      "moved": "{0} objet {1} déplacé|{0} objets {1} déplacés",
+      "selected": "{0} objet {1} sélectionné|{0} objets {1} sélectionnés",
       "modal": {
         "title": "Propriétés de {0}"
       },
@@ -1379,12 +1379,12 @@
       "solo": "Afficher uniquement celui-ci",
       "soloHint": "Alt+clic pour n’afficher que celui-ci",
       "select": "Sélectionner les objets",
-      "selected": "{0} objets sélectionnés",
+      "selected": "{0} objet sélectionné|{0} objets sélectionnés",
       "moveSelection": "Déplacer la sélection ici",
-      "objects": "{0} objets",
+      "objects": "{0} objet|{0} objets",
       "drag": "Faire glisser pour réordonner {0}",
       "selectMultiple": "Sélection multiple",
-      "selecting": "{0} sélectionné(s)",
+      "selecting": "{0} sélectionné|{0} sélectionnés",
       "stopSelecting": "Terminer la sélection",
       "selectItem": "Sélectionner {0}",
       "selectAll": "Tout sélectionner",
