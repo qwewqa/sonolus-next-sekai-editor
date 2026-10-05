@@ -347,6 +347,14 @@ export const select: Tool = {
             case 'move': {
                 const lane = xToLane(x)
                 const beatOffset = yToBeatOffset(y, active.focus.beat)
+                // Dropping everything where it started adds no undo step.
+                if (isUnmoved(active, lane, beatOffset)) {
+                    view.entities = {
+                        hovered: [],
+                        creating: [],
+                    }
+                    break
+                }
                 const moved = moveEntities(state.value, active, lane, beatOffset)
                 const selectedEntities = moved.selectedEntities
                 const focus = creates[active.focus.type]?.(
@@ -434,6 +442,25 @@ const moveEntities = (
     }
     return transaction.commit(selectedEntities)
 }
+
+const isUnmoved = (active: MoveActive, lane: number, beatOffset: number) =>
+    active.entities.every((entity) => {
+        const moved = creates[entity.type]?.(
+            active.onlyType,
+            entity as never,
+            active.lane,
+            lane,
+            entity.beat + beatOffset,
+            active.focus,
+        )
+        return (
+            !moved ||
+            Object.entries(moved).every(
+                ([key, value]) =>
+                    typeof value === 'object' || entity[key as keyof Entity] === value,
+            )
+        )
+    })
 
 const toMovedBpmObject = (entity: BpmEntity, beat: number): BpmObject => ({
     ...entity,

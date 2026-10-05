@@ -215,6 +215,34 @@ test('generate slide notes fills a slide at the division; a lone note adds no un
     expect(await undoCount(page)).toBe(1)
 })
 
+test('dragging notes back to where they started adds no undo step', async ({ page }) => {
+    await command(page, 'select')
+    const there = async (from: [number, number], via: [number, number]) => {
+        const start = await point(page, ...from)
+        const away = await point(page, ...via)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(away.x, away.y, { steps: 6 })
+        await settle(page)
+        expect((await snapshot(page)).creating).not.toEqual([])
+        await page.mouse.move(start.x, start.y, { steps: 6 })
+        await page.mouse.up()
+        await settle(page)
+    }
+    // The body, then the right edge, of the note at lane 3 (3..5), beat 7.
+    await there([4, 7], [6, 8])
+    await there([4.9, 7], [7, 7])
+    expect((await snapshot(page)).notes).toContainEqual({ type: 'note', beat: 7, left: 3, size: 2 })
+    expect((await snapshot(page)).creating).toEqual([])
+    expect(await selectedBeats(page)).toEqual([7])
+    expect(await undoCount(page)).toBe(0)
+
+    // A real move still commits once.
+    await drag(page, [4, 7], [4, 8])
+    expect(await beats(page)).toEqual([3, 5, 8, 9])
+    expect(await undoCount(page)).toBe(1)
+})
+
 test('flip mirrors the selection and supports undo', async ({ page }) => {
     await command(page, 'select')
     await click(page, 4, 7)
