@@ -2,6 +2,7 @@
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import { computed } from 'vue'
 import BaseField from './BaseField.vue'
+import { resyncSelect } from './resync'
 import { isUnknownValue } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
@@ -23,6 +24,7 @@ const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
                 :disabled
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 required
+                @change="resyncSelect($event, () => modelValue)"
             >
                 <!-- A value no option names; shown, never listed or committed. -->
                 <option v-if="unknown" :value="modelValue" disabled hidden>

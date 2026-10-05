@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
+import { resyncSelect } from './resync'
 import { i18n } from '../../i18n'
 import { useEmptyLabel } from './emptyLabel'
 import { isUnknownValue } from './fieldUsage'
@@ -49,6 +50,7 @@ const unknown = computed(() =>
                 v-model.lazy="modelValue"
                 :disabled
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
+                @change="resyncSelect($event, () => modelValue)"
             >
                 <option :value="undefined">
                     {{ emptyLabel ?? injectedEmptyLabel?.() ?? i18n.modals.form.notSet }}

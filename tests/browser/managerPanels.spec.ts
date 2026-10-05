@@ -1172,6 +1172,8 @@ test('the properties dialog keeps a name rather than storing a blank one', async
     await name.fill('   ')
     await name.press('Enter')
     expect((await groupState(page)).names).toEqual(['Default', 'Other group'])
+    // The field shows the name it kept, not the refused entry.
+    await expect(name).toHaveValue('Other group')
     expect(await canUndo(page)).toBe(false)
     await name.fill('  Renamed  ')
     await name.press('Enter')

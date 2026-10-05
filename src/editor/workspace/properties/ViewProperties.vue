@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed } from 'vue'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
 import OptionalGroupField from '../../../modals/form/OptionalGroupField.vue'
@@ -13,28 +13,13 @@ import { toolName, tools } from '../../tools'
 import { view } from '../../view'
 import SizeField from '../../../modals/form/SizeField.vue'
 
-// Shows the pick while its command runs, then the actual value, so a
-// cancelled dialog or declined prompt leaves no stale pick in the select.
-const commandModel = <T,>(current: () => T, run: (value: T) => void | Promise<void>) => {
-    const shown = ref(current()) as Ref<T>
-    watch(current, (value) => {
-        shown.value = value
-    })
-    return computed({
-        get: () => shown.value,
-        set: (value: T) => {
-            shown.value = value
-            void Promise.resolve(run(value)).finally(() => {
-                shown.value = current()
-            })
-        },
-    })
-}
-
-const tool = commandModel(
-    () => toolName.value,
-    (tool) => commands[tool].execute(),
-)
+// A cancelled dialog or declined prompt leaves the value; the select shows it again.
+const tool = computed({
+    get: () => toolName.value,
+    set: (tool) => {
+        void commands[tool].execute()
+    },
+})
 
 const toolOptions = computed(() =>
     entries(tools).map(([name, tool]) => [tool.title(), name] as const),
@@ -59,9 +44,9 @@ const stageId = computed({
 
 const divisions = [1, 2, 3, 4, 6, 8, 12, 16]
 
-const division = commandModel(
-    () => view.division,
-    (division) => {
+const division = computed({
+    get: () => view.division,
+    set: (division) => {
         switch (division) {
             case 1:
             case 2:
@@ -71,12 +56,14 @@ const division = commandModel(
             case 8:
             case 12:
             case 16:
-                return commands[`division${division}`].execute()
+                void commands[`division${division}`].execute()
+                break
             default:
-                return commands.divisionCustom.execute()
+                void commands.divisionCustom.execute()
+                break
         }
     },
-)
+})
 
 const divisionOptions = computed(() =>
     [...divisions, divisions.includes(view.division) ? undefined : view.division].map(

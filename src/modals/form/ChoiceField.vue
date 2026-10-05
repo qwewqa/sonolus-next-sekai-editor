@@ -16,6 +16,7 @@ import { useEmptyLabel } from './emptyLabel'
 import { isUnknownValue, mixedOptions, useFieldUsage } from './fieldUsage'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
+import { resyncRadios } from './resync'
 import { segmentsFit } from './segmented'
 import SelectField from './SelectField.vue'
 
@@ -141,6 +142,7 @@ watch(
                     :value="undefined"
                     :disabled
                     :aria-label="notSet"
+                    @change="resyncRadios($event, () => modelValue)"
                 />
                 <span :class="segment" aria-hidden="true">—</span>
             </label>
@@ -157,6 +159,7 @@ watch(
                     :name="id"
                     :value
                     :disabled
+                    @change="resyncRadios($event, () => modelValue)"
                 />
                 <span :class="segment"
                     ><span class="truncate">{{ name }}</span></span

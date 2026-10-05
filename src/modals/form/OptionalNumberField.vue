@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type Ref } from 'vue'
 import BaseField from './BaseField.vue'
+import { resyncInput } from './resync'
 import { i18n } from '../../i18n'
 import { useEmptyLabel } from './emptyLabel'
 
@@ -42,6 +43,7 @@ const onFocus = (event: FocusEvent) => {
             :max
             :step
             @focus="onFocus"
+            @change="resyncInput($event, () => `${modelValue ?? ''}`)"
         />
     </BaseField>
 </template>

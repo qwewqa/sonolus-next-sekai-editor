@@ -131,3 +131,22 @@ test('brush, creation presets and View never show a blank field', async ({ page 
         await expectNoBlank(page, `tool ${shortcut}`)
     }
 })
+
+test('a rejected number entry returns to the actual value', async ({ page }) => {
+    await page.evaluate(() => (window.editorTest.settings.propertiesSection = 'view'))
+    const size = panel(page)
+        .locator('#properties-section-view label')
+        .filter({ has: page.getByText('Size', { exact: true }) })
+        .locator('input')
+    await expect(size).toHaveValue('2')
+    await size.fill('')
+    await size.press('Enter')
+    await expect(size).toHaveValue('2')
+    await size.fill('-1')
+    await size.press('Tab')
+    await expect(size).toHaveValue('2')
+    expect(await page.evaluate(() => window.editorTest.view.noteSize)).toBe(2)
+    await size.fill('3')
+    await size.press('Enter')
+    expect(await page.evaluate(() => window.editorTest.view.noteSize)).toBe(3)
+})
