@@ -711,10 +711,10 @@
     "default": {
       "none": "未選擇對象",
       "edited": "已編輯 {0} 個對象",
-            "editedNotes": "已編輯 {0} 個音符",
-            "set": "已設定 {0} 個對象的{1}",
-            "setNotes": "已設定 {0} 個音符的{1}",
-            "noChange": "沒有變更"
+      "editedNotes": "已編輯 {0} 個音符",
+      "set": "已設定 {0} 個對象的{1}",
+      "setNotes": "已設定 {0} 個音符的{1}",
+      "noChange": "沒有變更"
     },
     "view": {
       "title": "檢視",
@@ -984,7 +984,8 @@
         "center": "置中"
       },
       "connectorActiveIsCritical": {
-        "label": "金色滑條"
+        "label": "金色滑條",
+        "qualified": "金色滑條"
       },
       "ease": {
         "linear": "線性",
@@ -1004,14 +1005,17 @@
         "outIn": "緩出再緩入"
       },
       "connectorEase": {
-        "label": "連接線緩動",
-        "mode": "連接線緩動模式"
+        "label": "緩動",
+        "qualified": "連接線緩動",
+        "mode": "緩動模式",
+        "qualifiedMode": "連接線緩動模式"
       },
       "connectorIsFake": {
-        "label": "假連接線"
+        "label": "假滑條"
       },
       "connectorGuideAlpha": {
-        "label": "引導線不透明度"
+        "label": "引導線不透明度",
+        "qualified": "引導線不透明度"
       },
       "colors": {
         "neutral": "預設",
@@ -1024,22 +1028,26 @@
         "black": "黑"
       },
       "connectorIsPassThrough": {
-        "label": "連接線穿透"
+        "label": "穿透",
+        "qualified": "連接線穿透"
       },
       "connectorLayer": {
-        "label": "連接線層級",
+        "label": "層級",
+        "qualified": "連接線層級",
         "top": "上層",
         "bottom": "下層",
         "under": "最底層",
         "over": "最頂層"
       },
       "connectorPresentation": {
-        "label": "連接線呈現方式",
+        "label": "呈現方式",
+        "qualified": "連接線呈現方式",
         "default": "預設",
         "fullscreen": "全螢幕"
       },
       "connectorType": {
-        "label": "連接線類型",
+        "label": "類型",
+        "qualified": "連接線類型",
         "active": "滑條",
         "guide": "引導線",
         "damage": "傷害"
@@ -1098,7 +1106,8 @@
         "label": "依附"
       },
       "isConnectorSeparator": {
-        "label": "連接線分隔點"
+        "label": "分隔點",
+        "qualified": "連接線分隔點"
       },
       "isCritical": {
         "label": "金色音符"
@@ -1244,7 +1253,8 @@
         "default": "預設"
       },
       "connectorStyle": {
-        "label": "連接線顏色"
+        "label": "顏色",
+        "qualified": "連接線顏色"
       },
       "meter": {
         "label": "每小節拍數"

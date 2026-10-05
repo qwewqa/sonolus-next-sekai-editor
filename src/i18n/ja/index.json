@@ -711,10 +711,10 @@
     "default": {
       "none": "選択されたオブジェクトがありません",
       "edited": "{0}個のオブジェクトを編集しました",
-            "editedNotes": "{0}個のノーツを編集しました",
-            "set": "{0}個のオブジェクトの{1}を設定しました",
-            "setNotes": "{0}個のノーツの{1}を設定しました",
-            "noChange": "変更はありません"
+      "editedNotes": "{0}個のノーツを編集しました",
+      "set": "{0}個のオブジェクトの{1}を設定しました",
+      "setNotes": "{0}個のノーツの{1}を設定しました",
+      "noChange": "変更はありません"
     },
     "view": {
       "title": "表示",
@@ -984,7 +984,8 @@
         "center": "中央"
       },
       "connectorActiveIsCritical": {
-        "label": "スライドクリティカル"
+        "label": "スライドクリティカル",
+        "qualified": "スライドクリティカル"
       },
       "ease": {
         "linear": "直線",
@@ -1004,14 +1005,17 @@
         "outIn": "減速→加速"
       },
       "connectorEase": {
-        "label": "接続の加減速",
-        "mode": "接続の加減速モード"
+        "label": "加減速",
+        "qualified": "接続の加減速",
+        "mode": "加減速モード",
+        "qualifiedMode": "接続の加減速モード"
       },
       "connectorIsFake": {
-        "label": "フェイク接続"
+        "label": "スライドフェイク"
       },
       "connectorGuideAlpha": {
-        "label": "ガイドの不透明度"
+        "label": "ガイドの不透明度",
+        "qualified": "ガイドの不透明度"
       },
       "colors": {
         "neutral": "灰",
@@ -1024,22 +1028,26 @@
         "black": "黒"
       },
       "connectorIsPassThrough": {
-        "label": "接続の通り抜け"
+        "label": "通り抜け",
+        "qualified": "接続の通り抜け"
       },
       "connectorLayer": {
-        "label": "接続レイヤー",
+        "label": "レイヤー",
+        "qualified": "接続レイヤー",
         "top": "前",
         "bottom": "奥",
         "under": "最背面",
         "over": "最前面"
       },
       "connectorPresentation": {
-        "label": "接続の表示方式",
+        "label": "表示方式",
+        "qualified": "接続の表示方式",
         "default": "デフォルト",
         "fullscreen": "全画面"
       },
       "connectorType": {
-        "label": "接続タイプ",
+        "label": "タイプ",
+        "qualified": "接続タイプ",
         "active": "スライド",
         "guide": "ガイド",
         "damage": "ダメージ"
@@ -1098,7 +1106,8 @@
         "label": "位置追従"
       },
       "isConnectorSeparator": {
-        "label": "スライド設定分割"
+        "label": "スライド設定分割",
+        "qualified": "スライド設定分割"
       },
       "isCritical": {
         "label": "クリティカル"
@@ -1244,7 +1253,8 @@
         "default": "デフォルト"
       },
       "connectorStyle": {
-        "label": "接続の色"
+        "label": "色",
+        "qualified": "接続の色"
       },
       "meter": {
         "label": "拍子"

@@ -711,10 +711,10 @@
     "default": {
       "none": "선택된 객체 없음",
       "edited": "{0}개 객체 편집됨",
-            "editedNotes": "{0}개 노트 편집됨",
-            "set": "{0}개 객체의 {1} 설정됨",
-            "setNotes": "{0}개 노트의 {1} 설정됨",
-            "noChange": "변경 사항 없음"
+      "editedNotes": "{0}개 노트 편집됨",
+      "set": "{0}개 객체의 {1} 설정됨",
+      "setNotes": "{0}개 노트의 {1} 설정됨",
+      "noChange": "변경 사항 없음"
     },
     "view": {
       "title": "보기",
@@ -984,7 +984,8 @@
         "center": "중심"
       },
       "connectorActiveIsCritical": {
-        "label": "크리티컬 슬라이드"
+        "label": "크리티컬 슬라이드",
+        "qualified": "크리티컬 슬라이드"
       },
       "ease": {
         "linear": "선형",
@@ -1004,14 +1005,17 @@
         "outIn": "감속-가속"
       },
       "connectorEase": {
-        "label": "커넥터 이징",
-        "mode": "커넥터 이징 모드"
+        "label": "이징",
+        "qualified": "커넥터 이징",
+        "mode": "이징 모드",
+        "qualifiedMode": "커넥터 이징 모드"
       },
       "connectorIsFake": {
-        "label": "페이크 커넥터"
+        "label": "페이크 슬라이드"
       },
       "connectorGuideAlpha": {
-        "label": "가이드 불투명도"
+        "label": "가이드 불투명도",
+        "qualified": "가이드 불투명도"
       },
       "colors": {
         "neutral": "하양",
@@ -1024,22 +1028,26 @@
         "black": "검정"
       },
       "connectorIsPassThrough": {
-        "label": "커넥터 판정선 관통"
+        "label": "판정선 관통",
+        "qualified": "커넥터 판정선 관통"
       },
       "connectorLayer": {
-        "label": "커넥터 레이어",
+        "label": "레이어",
+        "qualified": "커넥터 레이어",
         "top": "위",
         "bottom": "아래",
         "under": "최하단",
         "over": "최상단"
       },
       "connectorPresentation": {
-        "label": "커넥터 표시 방식",
+        "label": "표시 방식",
+        "qualified": "커넥터 표시 방식",
         "default": "기본",
         "fullscreen": "전체 화면"
       },
       "connectorType": {
-        "label": "커넥터 유형",
+        "label": "유형",
+        "qualified": "커넥터 유형",
         "active": "슬라이드",
         "guide": "가이드",
         "damage": "대미지"
@@ -1098,7 +1106,8 @@
         "label": "위치 종속"
       },
       "isConnectorSeparator": {
-        "label": "분리 지점"
+        "label": "분리 지점",
+        "qualified": "분리 지점"
       },
       "isCritical": {
         "label": "크리티컬"
@@ -1244,7 +1253,8 @@
         "default": "기본"
       },
       "connectorStyle": {
-        "label": "커넥터 색상"
+        "label": "색상",
+        "qualified": "커넥터 색상"
       },
       "meter": {
         "label": "박자"

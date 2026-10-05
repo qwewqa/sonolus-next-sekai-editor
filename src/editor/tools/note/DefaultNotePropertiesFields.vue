@@ -70,6 +70,9 @@ const copyProperties = createModel('copyProperties')
         <OptionalIsFakeField v-model="isFake" />
         <OptionalSfxField v-model="sfx" />
     </EmptyLabelProvider>
+    <h3 class="border-t border-fg/15 pt-3 text-xs font-bold text-fg/80">
+        {{ i18n.workspace.properties.connector }}
+    </h3>
     <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
         <OptionalConnectorTypeField v-model="connectorType" />
@@ -86,6 +89,9 @@ const copyProperties = createModel('copyProperties')
         <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
         <OptionalConnectorPresentationField v-model="connectorPresentation" />
     </EmptyLabelProvider>
+    <h3 class="border-t border-fg/15 pt-3 text-xs font-bold text-fg/80">
+        {{ i18n.tools.brush.kinds.general }}
+    </h3>
     <EmptyLabelProvider :label="copyLabel">
         <OptionalElevationField v-model="elevation" />
     </EmptyLabelProvider>

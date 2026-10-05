@@ -126,7 +126,7 @@ test('color controls commit, undo, and persist in creation presets', async ({ pa
     })
     await page.getByRole('combobox', { name: 'Note Color', exact: true }).selectOption('blue')
     await page
-        .getByRole('combobox', { name: 'Connector Color', exact: true })
+        .getByRole('combobox', { name: 'Color', exact: true })
         .selectOption('purple')
     const colors = () =>
         page.evaluate(() => {
@@ -172,7 +172,7 @@ test('guides share the connector color control across type changes and undo', as
             selectedEntities: [...history.state.value.store.slides.note.values()][0]!.slice(0, 1),
         })
     })
-    const color = page.getByRole('combobox', { name: 'Connector Color', exact: true })
+    const color = page.getByRole('combobox', { name: 'Color', exact: true })
     await expect(color).toHaveCount(1)
     await expect(color).toHaveValue('default')
     await expect(page.getByRole('combobox', { name: 'Guide Color', exact: true })).toHaveCount(0)
@@ -196,10 +196,10 @@ test('guides share the connector color control across type changes and undo', as
     await color.selectOption('blue')
     expect(await rendered()).toMatchObject({ style: 'blue', exportedKind: 104 })
     expect((await rendered()).previewKind).not.toBe(defaultKind)
-    await page.getByRole('combobox', { name: 'Connector Type', exact: true }).selectOption('active')
+    await page.getByRole('combobox', { name: 'Type', exact: true }).selectOption('active')
     await expect(color).toHaveValue('blue')
     expect((await rendered()).exportedKind).toBe(14)
-    await page.getByRole('combobox', { name: 'Connector Type', exact: true }).selectOption('guide')
+    await page.getByRole('combobox', { name: 'Type', exact: true }).selectOption('guide')
     await expect(color).toHaveValue('blue')
     expect((await rendered()).exportedKind).toBe(104)
     await page.evaluate(() => window.editorTest.history.undoState())

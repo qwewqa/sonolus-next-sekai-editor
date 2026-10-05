@@ -142,10 +142,10 @@ test.describe('mixed values', () => {
     })
 
     test('ease halves count easings and modes separately', async ({ page }) => {
-        await expect(control(page, 'Connector Ease').locator('option:checked')).toHaveText('Quad')
+        await expect(control(page, 'Ease').locator('option:checked')).toHaveText('Quad')
         const mode = selection(page)
             .locator('.form-field')
-            .filter({ has: page.getByText('Connector Ease Mode', { exact: true }) })
+            .filter({ has: page.getByText('Ease Mode', { exact: true }) })
         await expect(mode.locator('.form-field-mixed-value')).toHaveText(['In 1', 'Out 1'])
     })
 
@@ -217,11 +217,11 @@ test.describe('connector fields', () => {
             [{ beat: 0, connectorEase: 'outQuad', connectorLayer: 'bottom' }, { beat: 1 }],
         ])
         await expect(header(page)).toHaveAttribute('aria-expanded', 'true')
-        await expect(control(page, 'Connector Layer')).toHaveCount(1)
+        await expect(control(page, 'Layer')).toHaveCount(1)
 
         await header(page).click()
         await expect(header(page)).toHaveAttribute('aria-expanded', 'false')
-        await expect(control(page, 'Connector Layer')).toHaveCount(0)
+        await expect(control(page, 'Layer')).toHaveCount(0)
         await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
             'Slide · Default · Quad Out · Bottom',
         )
@@ -326,7 +326,7 @@ test.describe('unset values', () => {
     test('creation presets say whether an unset field copies or is automatic', async ({ page }) => {
         await page.keyboard.press('a')
         await expect(empty(page, 'Note Type')).toHaveText('Copy')
-        await expect(empty(page, 'Connector Type')).toHaveText('Auto')
+        await expect(empty(page, 'Type')).toHaveText('Auto')
         await tool(page)
             .locator('label')
             .filter({ has: page.getByText('Copy Properties', { exact: true }) })
@@ -346,7 +346,13 @@ test.describe('unset values', () => {
         await expect(noteType.locator('option', { hasText: 'Unchanged' })).toHaveCount(0)
         // Either half of an ease may stay Unchanged while the other is set.
         await add.selectOption('connectorEase')
-        await expect(empty(page, 'Connector Ease')).toHaveText('Unchanged')
+        await expect(
+            tool(page)
+                .locator('[data-brush-key="connectorEase"] select')
+                .first()
+                .locator('option')
+                .first(),
+        ).toHaveText('Unchanged')
     })
 })
 

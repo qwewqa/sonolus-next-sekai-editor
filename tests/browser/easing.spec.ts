@@ -74,8 +74,8 @@ test.describe('ease fields', () => {
 
     test('easing and mode change independently, and linear has no mode', async ({ page }) => {
         await showSlides(page, ['outSine'])
-        const family = field(page, 'Connector Ease')
-        const mode = field(page, 'Connector Ease Mode')
+        const family = field(page, 'Ease')
+        const mode = field(page, 'Ease Mode')
         await expect.poll(() => selected(family)).toBe('Sine')
         await expect.poll(() => selected(mode)).toBe('Out')
 
@@ -98,8 +98,8 @@ test.describe('ease fields', () => {
         page,
     }) => {
         await showSlides(page, ['outSine', 'inQuad', 'outInQuad'])
-        const family = field(page, 'Connector Ease')
-        const mode = field(page, 'Connector Ease Mode')
+        const family = field(page, 'Ease')
+        const mode = field(page, 'Ease Mode')
         await expect.poll(() => selected(family)).toBe('Mixed')
         await expect.poll(() => selected(mode)).toBe('Mixed')
 
@@ -115,8 +115,8 @@ test.describe('ease fields', () => {
 
     test('a shared mode survives a family change across linear connectors', async ({ page }) => {
         await showSlides(page, ['outSine', 'linear', 'outQuad'])
-        const family = field(page, 'Connector Ease')
-        const mode = field(page, 'Connector Ease Mode')
+        const family = field(page, 'Ease')
+        const mode = field(page, 'Ease Mode')
         await expect.poll(() => selected(family)).toBe('Mixed')
         await expect.poll(() => selected(mode)).toBe('Out')
         await mode.selectOption({ label: 'Out-In' })
@@ -128,14 +128,14 @@ test.describe('ease fields', () => {
     test('the easing selector shows the curve of a complete ease', async ({ page }) => {
         const icon = panel(page)
             .locator('label')
-            .filter({ has: page.getByText('Connector Ease', { exact: true }) })
+            .filter({ has: page.getByText('Ease', { exact: true }) })
             .locator('.form-field-select-lead path')
         await showSlides(page, ['outSine'])
         await expect(icon).toHaveAttribute('d', easeGlyphPathD('outSine', false, 2, 2, 12, 12))
 
-        await field(page, 'Connector Ease Mode').selectOption({ label: 'In-Out' })
+        await field(page, 'Ease Mode').selectOption({ label: 'In-Out' })
         await expect(icon).toHaveAttribute('d', easeGlyphPathD('inOutSine', false, 2, 2, 12, 12))
-        await field(page, 'Connector Ease').selectOption({ label: 'Linear' })
+        await field(page, 'Ease').selectOption({ label: 'Linear' })
         await expect(icon).toHaveAttribute('d', 'M 2 14 L 14 2')
 
         // A mixed half leaves no curve to show.

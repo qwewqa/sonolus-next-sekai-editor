@@ -984,7 +984,8 @@
                 "center": "Center"
             },
             "connectorActiveIsCritical": {
-                "label": "Slide Critical"
+                "label": "Slide Critical",
+                "qualified": "Slide Critical"
             },
             "ease": {
                 "linear": "Linear",
@@ -1004,14 +1005,17 @@
                 "outIn": "Out-In"
             },
             "connectorEase": {
-                "label": "Connector Ease",
-                "mode": "Connector Ease Mode"
+                "label": "Ease",
+                "qualified": "Connector Ease",
+                "mode": "Ease Mode",
+                "qualifiedMode": "Connector Ease Mode"
             },
             "connectorIsFake": {
-                "label": "Connector Fake"
+                "label": "Slide Fake"
             },
             "connectorGuideAlpha": {
-                "label": "Guide Alpha"
+                "label": "Guide Alpha",
+                "qualified": "Guide Alpha"
             },
             "colors": {
                 "neutral": "Neutral",
@@ -1024,22 +1028,26 @@
                 "black": "Black"
             },
             "connectorIsPassThrough": {
-                "label": "Connector Pass Through"
+                "label": "Pass Through",
+                "qualified": "Connector Pass Through"
             },
             "connectorLayer": {
-                "label": "Connector Layer",
+                "label": "Layer",
+                "qualified": "Connector Layer",
                 "top": "Top",
                 "bottom": "Bottom",
                 "under": "Under",
                 "over": "Over"
             },
             "connectorPresentation": {
-                "label": "Connector Presentation",
+                "label": "Presentation",
+                "qualified": "Connector Presentation",
                 "default": "Default",
                 "fullscreen": "Fullscreen"
             },
             "connectorType": {
-                "label": "Connector Type",
+                "label": "Type",
+                "qualified": "Connector Type",
                 "active": "Slide",
                 "guide": "Guide",
                 "damage": "Damage"
@@ -1098,7 +1106,8 @@
                 "label": "Attached"
             },
             "isConnectorSeparator": {
-                "label": "Connector Separator"
+                "label": "Separator",
+                "qualified": "Connector Separator"
             },
             "isCritical": {
                 "label": "Critical"
@@ -1244,7 +1253,8 @@
                 "default": "Default"
             },
             "connectorStyle": {
-                "label": "Connector Color"
+                "label": "Color",
+                "qualified": "Connector Color"
             },
             "meter": {
                 "label": "Meter"

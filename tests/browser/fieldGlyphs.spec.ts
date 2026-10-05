@@ -60,7 +60,7 @@ test('color and flick fields show the current value as the canvas draws it', asy
     await select(page, 'note', [0])
     await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('fill', '#dfaaff')
     await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('stroke', '#bd66ee')
-    await expect(lead(page, 'Connector Color').locator('circle')).toHaveAttribute('fill', '#d6737b')
+    await expect(lead(page, 'Color').locator('circle')).toHaveAttribute('fill', '#d6737b')
     await expect(lead(page, 'Flick Direction').locator('polygon')).toHaveCount(1)
     await expect(lead(page, 'Flick Direction')).toHaveAttribute('aria-hidden', 'true')
     // Options stay text.
@@ -68,7 +68,7 @@ test('color and flick fields show the current value as the canvas draws it', asy
 
     // Black connectors use the styled connector base; None has no arrow.
     await select(page, 'note', [2])
-    await expect(lead(page, 'Connector Color').locator('circle')).toHaveAttribute('fill', '#555555')
+    await expect(lead(page, 'Color').locator('circle')).toHaveAttribute('fill', '#555555')
     await expect(lead(page, 'Flick Direction')).toHaveCount(0)
 
     // Default resolves per object: a dashed ring.

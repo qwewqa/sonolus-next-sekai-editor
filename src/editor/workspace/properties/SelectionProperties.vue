@@ -124,7 +124,7 @@ const toggleConnector = (event: MouseEvent) => {
                     <ChevronIcon
                         :direction="settings.propertiesConnectorExpanded ? 'down' : 'right'"
                     />
-                    <span class="shrink-0 font-medium">{{
+                    <span :id="`${connectorId}-heading`" class="shrink-0 font-medium">{{
                         i18n.workspace.properties.connector
                     }}</span>
                     <span
@@ -136,6 +136,8 @@ const toggleConnector = (event: MouseEvent) => {
                 <div
                     v-if="settings.propertiesConnectorExpanded"
                     :id="connectorId"
+                    role="group"
+                    :aria-labelledby="`${connectorId}-heading`"
                     class="flex flex-col gap-3"
                 >
                     <FieldUsageProvider

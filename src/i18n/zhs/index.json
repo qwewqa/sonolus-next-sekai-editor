@@ -711,10 +711,10 @@
     "default": {
       "none": "未选择对象",
       "edited": "已编辑 {0} 个对象",
-            "editedNotes": "已编辑 {0} 个音符",
-            "set": "已设置 {0} 个对象的{1}",
-            "setNotes": "已设置 {0} 个音符的{1}",
-            "noChange": "没有更改"
+      "editedNotes": "已编辑 {0} 个音符",
+      "set": "已设置 {0} 个对象的{1}",
+      "setNotes": "已设置 {0} 个音符的{1}",
+      "noChange": "没有更改"
     },
     "view": {
       "title": "视图",
@@ -984,7 +984,8 @@
         "center": "中心"
       },
       "connectorActiveIsCritical": {
-        "label": "关键长按音符"
+        "label": "关键长按音符",
+        "qualified": "关键长按音符"
       },
       "ease": {
         "linear": "线性",
@@ -1004,14 +1005,17 @@
         "outIn": "缓出后缓入"
       },
       "connectorEase": {
-        "label": "连接缓动",
-        "mode": "连接缓动模式"
+        "label": "缓动",
+        "qualified": "连接缓动",
+        "mode": "缓动模式",
+        "qualifiedMode": "连接缓动模式"
       },
       "connectorIsFake": {
-        "label": "假连接"
+        "label": "假长按音符"
       },
       "connectorGuideAlpha": {
-        "label": "引导不透明度"
+        "label": "引导不透明度",
+        "qualified": "引导不透明度"
       },
       "colors": {
         "neutral": "白",
@@ -1024,22 +1028,26 @@
         "black": "黑"
       },
       "connectorIsPassThrough": {
-        "label": "穿透连接"
+        "label": "穿透",
+        "qualified": "穿透连接"
       },
       "connectorLayer": {
-        "label": "连接图层",
+        "label": "图层",
+        "qualified": "连接图层",
         "top": "上层",
         "bottom": "下层",
         "under": "最底层",
         "over": "最顶层"
       },
       "connectorPresentation": {
-        "label": "连接显示方式",
+        "label": "显示方式",
+        "qualified": "连接显示方式",
         "default": "默认",
         "fullscreen": "全屏"
       },
       "connectorType": {
-        "label": "连接类型",
+        "label": "类型",
+        "qualified": "连接类型",
         "active": "长按音符",
         "guide": "引导",
         "damage": "伤害"
@@ -1098,7 +1106,8 @@
         "label": "依附"
       },
       "isConnectorSeparator": {
-        "label": "分隔"
+        "label": "分隔",
+        "qualified": "分隔"
       },
       "isCritical": {
         "label": "关键"
@@ -1244,7 +1253,8 @@
         "default": "默认"
       },
       "connectorStyle": {
-        "label": "连接颜色"
+        "label": "颜色",
+        "qualified": "连接颜色"
       },
       "meter": {
         "label": "每小节拍数"

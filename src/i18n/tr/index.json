@@ -711,10 +711,10 @@
     "default": {
       "none": "Hiçbir nesne seçilmedi",
       "edited": "{0} nesne düzenlendi",
-            "editedNotes": "{0} nota düzenlendi",
-            "set": "{0} nesnede {1} ayarlandı",
-            "setNotes": "{0} notada {1} ayarlandı",
-            "noChange": "Değişiklik yok"
+      "editedNotes": "{0} nota düzenlendi",
+      "set": "{0} nesnede {1} ayarlandı",
+      "setNotes": "{0} notada {1} ayarlandı",
+      "noChange": "Değişiklik yok"
     },
     "view": {
       "title": "Görünüm",
@@ -984,7 +984,8 @@
         "center": "Merkez"
       },
       "connectorActiveIsCritical": {
-        "label": "Kritik Kaydırma"
+        "label": "Kritik Kaydırma",
+        "qualified": "Kritik Kaydırma"
       },
       "ease": {
         "linear": "Doğrusal",
@@ -1004,14 +1005,17 @@
         "outIn": "Çıkış-Giriş"
       },
       "connectorEase": {
-        "label": "Bağlayıcı Yumuşatma",
-        "mode": "Bağlayıcı Yumuşatma Modu"
+        "label": "Yumuşatma",
+        "qualified": "Bağlayıcı Yumuşatma",
+        "mode": "Yumuşatma Modu",
+        "qualifiedMode": "Bağlayıcı Yumuşatma Modu"
       },
       "connectorIsFake": {
-        "label": "Sahte Bağlayıcı"
+        "label": "Sahte Kaydırma"
       },
       "connectorGuideAlpha": {
-        "label": "Kılavuz Opaklığı"
+        "label": "Kılavuz Opaklığı",
+        "qualified": "Kılavuz Opaklığı"
       },
       "colors": {
         "neutral": "Nötr",
@@ -1024,22 +1028,26 @@
         "black": "Siyah"
       },
       "connectorIsPassThrough": {
-        "label": "Vuruş Çizgisinden Geçen Bağlayıcı"
+        "label": "Vuruş Çizgisinden Geçen",
+        "qualified": "Vuruş Çizgisinden Geçen Bağlayıcı"
       },
       "connectorLayer": {
-        "label": "Bağlayıcı Katmanı",
+        "label": "Katman",
+        "qualified": "Bağlayıcı Katmanı",
         "top": "Üst",
         "bottom": "Alt",
         "under": "En Alt",
         "over": "En Üst"
       },
       "connectorPresentation": {
-        "label": "Bağlayıcı Görünümü",
+        "label": "Görünüm",
+        "qualified": "Bağlayıcı Görünümü",
         "default": "Varsayılan",
         "fullscreen": "Tam Ekran"
       },
       "connectorType": {
-        "label": "Bağlayıcı Tipi",
+        "label": "Tip",
+        "qualified": "Bağlayıcı Tipi",
         "active": "Kaydırma",
         "guide": "Kılavuz",
         "damage": "Hasar"
@@ -1098,7 +1106,8 @@
         "label": "Ekli"
       },
       "isConnectorSeparator": {
-        "label": "Bağlayıcı Ayırıcı"
+        "label": "Ayırıcı",
+        "qualified": "Bağlayıcı Ayırıcı"
       },
       "isCritical": {
         "label": "Kritik"
@@ -1244,7 +1253,8 @@
         "default": "Varsayılan"
       },
       "connectorStyle": {
-        "label": "Bağlayıcı Rengi"
+        "label": "Renk",
+        "qualified": "Bağlayıcı Rengi"
       },
       "meter": {
         "label": "Ölçü"

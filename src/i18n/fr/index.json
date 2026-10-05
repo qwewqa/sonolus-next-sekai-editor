@@ -711,10 +711,10 @@
     "default": {
       "none": "Aucun objet sélectionné",
       "edited": "{0} objet modifié|{0} objets modifiés",
-            "editedNotes": "{0} note modifiée|{0} notes modifiées",
-            "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
-            "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
-            "noChange": "Aucun changement"
+      "editedNotes": "{0} note modifiée|{0} notes modifiées",
+      "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
+      "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
+      "noChange": "Aucun changement"
     },
     "view": {
       "title": "Vue",
@@ -984,7 +984,8 @@
         "center": "Centre"
       },
       "connectorActiveIsCritical": {
-        "label": "Slide Critique"
+        "label": "Slide Critique",
+        "qualified": "Slide Critique"
       },
       "ease": {
         "linear": "Linéaire",
@@ -1004,14 +1005,17 @@
         "outIn": "Décélération puis accélération"
       },
       "connectorEase": {
-        "label": "Interpolation du connecteur",
-        "mode": "Mode d’interpolation du connecteur"
+        "label": "Interpolation",
+        "qualified": "Interpolation du connecteur",
+        "mode": "Mode d’interpolation",
+        "qualifiedMode": "Mode d’interpolation du connecteur"
       },
       "connectorIsFake": {
-        "label": "Connecteur factice"
+        "label": "Slide factice"
       },
       "connectorGuideAlpha": {
-        "label": "Opacité du Guide"
+        "label": "Opacité du Guide",
+        "qualified": "Opacité du Guide"
       },
       "colors": {
         "neutral": "Neutre",
@@ -1024,22 +1028,26 @@
         "black": "Noir"
       },
       "connectorIsPassThrough": {
-        "label": "Traverser la ligne de jugement"
+        "label": "Traverser la ligne de jugement",
+        "qualified": "Traverser la ligne de jugement"
       },
       "connectorLayer": {
-        "label": "Couche du connecteur",
+        "label": "Couche",
+        "qualified": "Couche du connecteur",
         "top": "Supérieure",
         "bottom": "Inférieure",
         "under": "Tout derrière",
         "over": "Tout devant"
       },
       "connectorPresentation": {
-        "label": "Présentation du connecteur",
+        "label": "Présentation",
+        "qualified": "Présentation du connecteur",
         "default": "Par défaut",
         "fullscreen": "Plein écran"
       },
       "connectorType": {
-        "label": "Type de Connecteur",
+        "label": "Type",
+        "qualified": "Type de Connecteur",
         "active": "Slide",
         "guide": "Guide",
         "damage": "Dégâts"
@@ -1098,7 +1106,8 @@
         "label": "Attaché"
       },
       "isConnectorSeparator": {
-        "label": "Séparateur de Connecteur"
+        "label": "Séparateur",
+        "qualified": "Séparateur de Connecteur"
       },
       "isCritical": {
         "label": "Critique"
@@ -1244,7 +1253,8 @@
         "default": "Par défaut"
       },
       "connectorStyle": {
-        "label": "Couleur du connecteur"
+        "label": "Couleur",
+        "qualified": "Couleur du connecteur"
       },
       "meter": {
         "label": "Temps par mesure"

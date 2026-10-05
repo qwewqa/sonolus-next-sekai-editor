@@ -87,6 +87,11 @@ const copyProperties = createModel('copyProperties')
         <OptionalConnectorLayerField v-model="connectorLayer" />
         <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
         <OptionalConnectorPresentationField v-model="connectorPresentation" />
+    </EmptyLabelProvider>
+    <h3 class="border-t border-fg/15 pt-3 text-xs font-bold text-fg/80">
+        {{ i18n.tools.brush.kinds.general }}
+    </h3>
+    <EmptyLabelProvider :label="copyLabel">
         <OptionalElevationField v-model="elevation" />
     </EmptyLabelProvider>
     <CopyPropertiesField v-model="copyProperties" />
