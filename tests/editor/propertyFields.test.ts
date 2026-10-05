@@ -7,6 +7,12 @@ import {
     propertyFields,
     type SelectionContext,
 } from '../../src/editor/workspace/properties/fields'
+import {
+    formatNumber,
+    mixedOptions,
+    mixedRange,
+    mixedValues,
+} from '../../src/modals/form/fieldUsage'
 
 type Row = { kind: string; a?: number; b?: string; hidden?: number }
 
@@ -116,4 +122,80 @@ test('the brush offers only properties it can apply', () => {
         assert.ok(!keys.includes(key), key)
     assert.equal(keys.length, 52)
     assert.equal(propertyField.get('connectorEase')?.ease, true)
+})
+
+test('mixed fields name their values, ranges and counts', () => {
+    const usage = {
+        values: new Map<unknown, number>([
+            [-4, 2],
+            [0.1 + 0.2, 1],
+            [6, 3],
+        ]),
+        covered: 6,
+        total: 6,
+    }
+    assert.equal(mixedRange({ usage }), '−4 … 6')
+    assert.equal(mixedRange({ usage, map: (value) => (value as number) + 1 }), '−3 … 7')
+    assert.equal(formatNumber(0.1 + 0.2), '0.3')
+    assert.equal(
+        mixedRange({ usage: { values: new Map([[1, 4]]), covered: 4, total: 4 } }),
+        undefined,
+    )
+
+    const toggles = {
+        values: new Map<unknown, number>([
+            [false, 1],
+            [true, 3],
+        ]),
+        covered: 4,
+        total: 4,
+    }
+    const narrowed: unknown[][] = []
+    const values = mixedValues(
+        {
+            usage: toggles,
+            narrow: (predicate) => narrowed.push([false, true].filter(predicate)),
+        },
+        (value) => `${value}`,
+    )
+    assert.deepEqual(
+        values.map(({ label, count }) => [label, count]),
+        [
+            ['true', 3],
+            ['false', 1],
+        ],
+    )
+    values[0]?.narrow?.()
+    assert.deepEqual(narrowed, [[true]])
+    // Values a field cannot name are not listed.
+    assert.deepEqual(
+        mixedValues({ usage: toggles }, () => undefined),
+        [],
+    )
+
+    const eases = {
+        values: new Map<unknown, number>([
+            ['inQuad', 2],
+            ['outQuad', 1],
+        ]),
+        covered: 3,
+        total: 3,
+    }
+    assert.deepEqual(
+        mixedOptions(
+            {
+                usage: eases,
+                matches: (value, option) => (value as string).startsWith(option as string),
+            },
+            [
+                ['In', 'in'],
+                ['Out', 'out'],
+                ['In-Out', 'inOut'],
+            ],
+        ).map(({ label, count }) => [label, count]),
+        [
+            ['In', 2],
+            ['Out', 1],
+        ],
+    )
 })

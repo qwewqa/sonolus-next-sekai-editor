@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { inject, nextTick, onBeforeUnmount, ref, useTemplateRef, watch, type Ref } from 'vue'
+import {
+    computed,
+    inject,
+    nextTick,
+    onBeforeUnmount,
+    ref,
+    useTemplateRef,
+    watch,
+    type Ref,
+} from 'vue'
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
+import { mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
 
 defineProps<{
@@ -14,6 +24,9 @@ defineProps<{
 const input: Ref<HTMLInputElement | null> = useTemplateRef('input')
 
 const modelValue = defineModel<number | undefined>({ required: true })
+const field = useFieldUsage()
+// A mixed number shows the range in use rather than just "Mixed".
+const range = computed(() => mixedRange(field?.value))
 const edit = inject(numberEditKey, undefined)
 const owner = Symbol('number field')
 const text = ref(`${modelValue.value ?? ''}`)
@@ -77,11 +90,16 @@ const onFocus = (event: FocusEvent) => {
 </script>
 
 <template>
-    <BaseField :label>
+    <BaseField :label :mixed="[]">
         <input
             ref="input"
             :value="text"
-            :placeholder="modelValue === undefined ? i18n.modals.form.mixed : undefined"
+            :placeholder="modelValue === undefined ? (range ?? i18n.modals.form.mixed) : undefined"
+            :title="
+                modelValue === undefined && range
+                    ? `${i18n.modals.form.mixed}: ${range}`
+                    : undefined
+            "
             class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors placeholder:text-fg/80 hover:shadow-accent focus:outline-none focus:ring-2 focus:ring-fg active:bg-accent active:text-on-accent"
             type="number"
             :min

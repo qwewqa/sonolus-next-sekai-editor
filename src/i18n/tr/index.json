@@ -1230,7 +1230,9 @@
       },
       "meter": {
         "label": "Ölçü"
-      }
+      },
+      "coverage": "Seçili {1} nesnenin {0} tanesine uygulanır",
+      "selectOnly": "Yalnızca {1} seç ({0})"
     },
     "confirm": {
       "delete": "Sil",

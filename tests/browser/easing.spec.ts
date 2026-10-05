@@ -102,12 +102,13 @@ test.describe('ease fields', () => {
         await expect.poll(() => selected(family)).toBe('Mixed')
         await expect.poll(() => selected(mode)).toBe('Mixed')
 
-        await family.selectOption({ label: 'Elastic' })
+        // Mixed options carry counts, so they are chosen by value.
+        await family.selectOption('elastic')
         expect(await heads(page)).toEqual(['outElastic', 'inElastic', 'outInElastic'])
         await expect.poll(() => selected(family)).toBe('Elastic')
         await expect.poll(() => selected(mode)).toBe('Mixed')
 
-        await mode.selectOption({ label: 'Out' })
+        await mode.selectOption('out')
         expect(await heads(page)).toEqual(['outElastic', 'outElastic', 'outElastic'])
     })
 
@@ -119,7 +120,7 @@ test.describe('ease fields', () => {
         await expect.poll(() => selected(mode)).toBe('Out')
         await mode.selectOption({ label: 'Out-In' })
         expect(await heads(page)).toEqual(['outInSine', 'linear', 'outInQuad'])
-        await family.selectOption({ label: 'Circ' })
+        await family.selectOption('circ')
         expect(await heads(page)).toEqual(['outInCirc', 'outInCirc', 'outInCirc'])
     })
 
@@ -156,7 +157,8 @@ test.describe('ease fields', () => {
         const family = field(page, 'Time Scale Ease')
         await expect(family).toBeVisible()
         const labels = await family.locator('option:not([hidden])').allTextContents()
-        expect(labels.map((label) => label.trim())).toEqual([
+        // Options in use while mixed end in their counts.
+        expect(labels.map((label) => label.trim().replace(/ · \d+$/, ''))).toEqual([
             'Step',
             'Linear',
             'Sine',

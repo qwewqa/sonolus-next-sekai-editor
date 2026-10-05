@@ -1230,7 +1230,9 @@
       },
       "meter": {
         "label": "每小節拍數"
-      }
+      },
+      "coverage": "適用於所選 {1} 個物件中的 {0} 個",
+      "selectOnly": "僅選取{1} ({0})"
     },
     "confirm": {
       "delete": "刪除",

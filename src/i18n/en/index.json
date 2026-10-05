@@ -1230,7 +1230,9 @@
             },
             "meter": {
                 "label": "Meter"
-            }
+            },
+            "coverage": "Applies to {0} of {1} selected objects",
+            "selectOnly": "Select only {1} ({0})"
         },
         "confirm": {
             "delete": "Delete",

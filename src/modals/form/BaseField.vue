@@ -1,21 +1,110 @@
 <script setup lang="ts">
-defineProps<{
+import { computed, useId, useTemplateRef, watchEffect } from 'vue'
+import { i18n } from '../../i18n'
+import { interpolateRaw } from '../../utils/interpolate'
+import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
+
+const props = defineProps<{
     label: string
     /** Makes the row a plain group whose control is named by this label id. */
     labelId?: string
+    /** Values in use while mixed; toggles leave it unset and get theirs from the usage. */
+    mixed?: MixedValue[]
 }>()
+
+const field = useFieldUsage()
+const row = useTemplateRef<HTMLElement>('row')
+const descriptionId = useId()
+
+const coverage = computed(() => {
+    const usage = field?.value?.usage
+    return usage && usage.covered < usage.total ? usage : undefined
+})
+
+const values = computed(
+    () =>
+        props.mixed ??
+        mixedValues(field?.value, (value) =>
+            typeof value === 'boolean'
+                ? value
+                    ? i18n.value.modals.form.toggle.enabled
+                    : i18n.value.modals.form.toggle.disabled
+                : typeof value === 'number'
+                  ? formatNumber(value)
+                  : undefined,
+        ),
+)
+
+const description = computed(() =>
+    [
+        coverage.value &&
+            interpolateRaw(
+                i18n.value.modals.form.coverage,
+                `${coverage.value.covered}`,
+                `${coverage.value.total}`,
+            ),
+        values.value.length &&
+            `${i18n.value.modals.form.mixed}: ${values.value
+                .map(({ label, count }) => `${label} ${count}`)
+                .join(', ')}`,
+    ]
+        .filter(Boolean)
+        .join('. '),
+)
+
+// The control is slotted, so it is linked to the description here.
+watchEffect(
+    () => {
+        const control = row.value?.querySelector('[role="radiogroup"], input, select, button')
+        if (!control) return
+        if (description.value) control.setAttribute('aria-describedby', descriptionId)
+        else control.removeAttribute('aria-describedby')
+    },
+    { flush: 'post' },
+)
 </script>
 
 <template>
     <!-- Lays out by the width the field actually receives (dialog, tool modal or
     dock panel), not by the viewport: the wrapper is the query container. -->
     <div class="form-field">
-        <component :is="labelId === undefined ? 'label' : 'div'" class="form-field-row">
+        <component :is="labelId === undefined ? 'label' : 'div'" ref="row" class="form-field-row">
             <span class="form-field-label"
-                ><span :id="labelId" class="form-field-text">{{ label }}</span></span
+                ><span :id="labelId" class="form-field-text">{{ label }}</span
+                ><span
+                    v-if="coverage"
+                    class="form-field-coverage"
+                    aria-hidden="true"
+                    :title="
+                        interpolateRaw(
+                            i18n.modals.form.coverage,
+                            `${coverage.covered}`,
+                            `${coverage.total}`,
+                        )
+                    "
+                    >{{ coverage.covered }}/{{ coverage.total }}</span
+                ></span
             >
             <slot />
         </component>
+        <!-- Which values a mixed field holds; each selects only its objects. -->
+        <div v-if="values.length" class="form-field-mixed">
+            <button
+                v-for="(value, index) in values"
+                :key="index"
+                type="button"
+                class="form-field-mixed-value"
+                :title="interpolateRaw(i18n.modals.form.selectOnly, `${value.count}`, value.label)"
+                :aria-label="
+                    interpolateRaw(i18n.modals.form.selectOnly, `${value.count}`, value.label)
+                "
+                :disabled="!value.narrow"
+                @click="value.narrow?.()"
+            >
+                {{ value.label }} <span class="tabular-nums">{{ value.count }}</span>
+            </button>
+        </div>
+        <span v-if="description" :id="descriptionId" class="sr-only">{{ description }}</span>
     </div>
 </template>
 
@@ -102,6 +191,54 @@ defineProps<{
     gap: 0.25rem;
 }
 
+/* How many selected objects use the field, when not all of them. */
+.form-field-coverage {
+    flex: none;
+    margin-left: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-variant-numeric: tabular-nums;
+    color: rgb(68 68 102 / 0.8);
+}
+
+.form-field-mixed {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.25rem;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: rgb(68 68 102 / 0.8);
+}
+
+.form-field-mixed-value {
+    border-radius: 9999px;
+    padding: 0.125rem 0.375rem;
+    transition-property: color, background-color;
+    transition-duration: 150ms;
+}
+
+/* The first value lines up with the text in the control's pill. */
+.form-field-mixed-value:first-child {
+    margin-left: 0.625rem;
+}
+
+.form-field-mixed-value:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #444466;
+}
+
+@media (hover: hover) {
+    .form-field-mixed-value:enabled:hover {
+        background-color: #d7d7e3;
+    }
+}
+
+.form-field-mixed-value:enabled:active {
+    background-color: #77efdc;
+    color: #30334d;
+}
+
 /* Long labels wrap to at most two lines rather than pushing the field down. */
 .form-field-text {
     display: -webkit-box;
@@ -131,6 +268,10 @@ defineProps<{
         min-height: 2rem;
     }
 
+    .form-field-mixed {
+        padding-left: calc(min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) + 0.75rem);
+    }
+
     .form-field-row > :not(.form-field-label) {
         flex: 1 1 0%;
         min-width: 0;
@@ -148,6 +289,14 @@ defineProps<{
 
     .form-field-label {
         width: auto;
+    }
+
+    .form-field-mixed {
+        padding-left: calc(100% - max(6.25rem, 50%));
+    }
+
+    .form-field-mixed-value:first-child {
+        margin-left: 0.375rem;
     }
 
     .form-field-row
@@ -182,6 +331,10 @@ defineProps<{
 @container (min-width: 32rem) {
     .form-field-label {
         width: 60%;
+    }
+
+    .form-field-mixed {
+        padding-left: calc(60% + 0.75rem);
     }
 }
 </style>

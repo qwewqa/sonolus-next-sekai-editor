@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { i18n } from '../../i18n'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
+import { mixedOptions, useFieldUsage } from './fieldUsage'
 
 const props = defineProps<{
     label: string
@@ -19,10 +20,28 @@ const modelValue = defineModel<T | undefined>({ required: true })
 
 type Section = { label?: string; options: [string, T][] }
 const allSections = computed((): Section[] => props.sections ?? [{ options: props.options ?? [] }])
+
+// While mixed, options in use carry their object counts.
+const field = useFieldUsage()
+const mixed = computed(() =>
+    modelValue.value === undefined && !props.disabled
+        ? mixedOptions(
+              field?.value,
+              allSections.value.flatMap((section) => section.options),
+          )
+        : [],
+)
+const counts = computed(
+    () => new Map(mixed.value.map(({ label, count }) => [label, count] as const)),
+)
+const optionText = (name: string) => {
+    const count = counts.value.get(name)
+    return count ? `${name} · ${count}` : name
+}
 </script>
 
 <template>
-    <BaseField :label>
+    <BaseField :label :mixed>
         <div
             class="form-field-select group"
             :class="{ 'opacity-40': disabled, 'form-field-select-leading': $slots.leading }"
@@ -56,7 +75,7 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
                             class="text-fg"
                             :value
                         >
-                            {{ name }}
+                            {{ optionText(name) }}
                         </option>
                     </optgroup>
                     <template v-else>
@@ -66,7 +85,7 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
                             class="text-fg"
                             :value
                         >
-                            {{ name }}
+                            {{ optionText(name) }}
                         </option>
                     </template>
                 </template>

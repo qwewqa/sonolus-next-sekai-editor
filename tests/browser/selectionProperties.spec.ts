@@ -105,3 +105,72 @@ test.describe('partial fields', () => {
         ])
     })
 })
+
+test.describe('mixed values', () => {
+    test.beforeEach(async ({ page }) => {
+        await showSlides(page, [
+            [
+                { beat: 0, left: -4, connectorEase: 'inQuad' },
+                { beat: 1, left: 0, isAttached: true },
+                { beat: 2, left: 1, isCritical: true },
+            ],
+            [
+                { beat: 3, left: 2, connectorEase: 'outQuad', noteStyle: 'red' },
+                { beat: 4, left: 4 },
+            ],
+        ])
+    })
+
+    test('selects count the objects behind each option and narrow to them', async ({ page }) => {
+        const color = control(page, 'Note Color')
+        await expect(color.locator('option:checked')).toHaveText('Mixed')
+        await expect(color.locator('option', { hasText: 'Red' })).toHaveText('Red · 1')
+        await expect(color.locator('option', { hasText: 'Default' })).toHaveText('Default · 4')
+        await expect(color.locator('option', { hasText: 'Blue' })).toHaveText('Blue')
+
+        await selection(page).getByRole('button', { name: 'Select only Red (1)' }).click()
+        expect(await selectedCount(page)).toBe(1)
+        await expect(color.locator('option:checked')).toHaveText('Red')
+    })
+
+    test('ease halves count easings and modes separately', async ({ page }) => {
+        await expect(control(page, 'Connector Ease').locator('option:checked')).toHaveText('Quad')
+        const mode = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Connector Ease Mode', { exact: true }) })
+        await expect(mode.locator('.form-field-mixed-value')).toHaveText(['In 1', 'Out 1'])
+    })
+
+    test('numbers show their range and toggles list their values', async ({ page }) => {
+        await expect(control(page, 'Lane')).toHaveAttribute('placeholder', '−4 … 4')
+        const critical = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Critical', { exact: true }) })
+        await expect(critical.locator('.form-field-mixed-value')).toHaveText([
+            'Disabled 4',
+            'Enabled 1',
+        ])
+        await expect(control(page, 'Critical')).toHaveAccessibleDescription(
+            'Mixed: Disabled 4, Enabled 1',
+        )
+        await critical.getByRole('button', { name: 'Select only Enabled (1)' }).click()
+        expect(await selectedCount(page)).toBe(1)
+    })
+
+    test('fields used by part of the selection say how many objects they cover', async ({
+        page,
+    }) => {
+        const attached = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Attached', { exact: true }) })
+        await expect(attached.locator('.form-field-coverage')).toHaveText('1/5')
+        await expect(control(page, 'Attached')).toHaveAccessibleDescription(
+            'Applies to 1 of 5 selected objects',
+        )
+        // Note Type applies to every note.
+        const type = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Note Type', { exact: true }) })
+        await expect(type.locator('.form-field-coverage')).toHaveCount(0)
+    })
+})

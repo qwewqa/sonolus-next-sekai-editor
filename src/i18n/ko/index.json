@@ -1230,7 +1230,9 @@
       },
       "meter": {
         "label": "박자"
-      }
+      },
+      "coverage": "선택한 객체 {1}개 중 {0}개에 적용",
+      "selectOnly": "{1}만 선택 ({0})"
     },
     "confirm": {
       "delete": "삭제",
