@@ -228,3 +228,64 @@ for (const kind of Object.keys(edits) as Kind[]) {
             })
     })
 }
+
+test.describe('moving and pasting a pair keeps both', () => {
+    test.beforeEach(async ({ page }) => showPairs(page))
+
+    for (const kind of ['timeScale', 'bpm', 'cameraEventJoint'] as const) {
+        test(`${kind}: a select-tool drag`, async ({ page }) => {
+            await select(page, kind, kind === 'bpm' ? [120, 180] : [1, 2])
+            const { from, to } = await page.evaluate((kind) => {
+                const entity = window.editorTest.history.state.value.selectedEntities[0]!
+                const lane = (entity as unknown as { hitbox: { lane: number } }).hitbox.lane
+                void kind
+                return {
+                    from: window.editorTest.point(lane, 4),
+                    to: window.editorTest.point(lane, 5),
+                }
+            }, kind)
+            await page.evaluate(async () => {
+                const { toolName } = await window.editorTest.appImport<
+                    typeof import('../../src/editor/tools/state')
+                >('/src/editor/tools/state.ts')
+                toolName.value = 'select'
+            })
+            await page.mouse.move(from.x, from.y)
+            await page.mouse.down()
+            await page.mouse.move(from.x, (from.y + to.y) / 2, { steps: 4 })
+            await page.mouse.move(to.x, to.y, { steps: 4 })
+            await page.mouse.up()
+            const after = await exported(page)
+            // Both leave beat 4 together, before the neighbour at 6 and in their order.
+            expect(after[kind]).toEqual(original[kind])
+            const moved = await page.evaluate(
+                (kind) =>
+                    [...window.editorTest.store.getAllEntities()].filter(
+                        (entity) => entity.type === kind && entity.beat > 4 && entity.beat < 6,
+                    ).length,
+                kind,
+            )
+            expect(moved).toBe(2)
+            if (kind === 'bpm') expect(after.bpmIntegrals).toEqual(original.bpmIntegrals)
+        })
+
+        test(`${kind}: copy and paste`, async ({ page }) => {
+            await select(page, kind, kind === 'bpm' ? [120, 180] : [1, 2])
+            await page.evaluate(async () => {
+                const { appImport } = window.editorTest
+                const { copy } = await appImport<typeof import('../../src/editor/commands/copy')>(
+                    '/src/editor/commands/copy/index.ts',
+                )
+                const { pasteAtPosition } = await appImport<
+                    typeof import('../../src/editor/tools/paste')
+                >('/src/editor/tools/paste/index.ts')
+                copy.execute()
+                await pasteAtPosition(0, 4, { ctrl: false, shift: false })
+            })
+            const after = await exported(page)
+            const pair = kind === 'bpm' ? [120, 180] : [1, 2]
+            expect(after[kind]).toEqual([...original[kind], ...pair])
+            if (kind === 'bpm') expect(after.bpmIntegrals).toEqual([...original.bpm, ...pair])
+        })
+    }
+})

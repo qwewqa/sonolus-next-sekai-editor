@@ -231,6 +231,7 @@ export const paste: Tool = {
                 lane,
                 beat,
                 modifiers.shift,
+                selectedEntities,
             )
             if (!result) continue
 
@@ -329,6 +330,7 @@ export const pasteAtPosition = async (
             lane,
             beat,
             modifiers.shift,
+            selectedEntities,
         )
         if (!result) continue
 
@@ -621,26 +623,31 @@ type Paste<T extends Entity> = (
     lane: number,
     beat: number,
     flip: boolean,
+    /** Objects already placed by this paste; they never replace each other. */
+    batch: readonly Entity[],
 ) => Entity[] | undefined
 
 const pastes: {
     [T in Entity as T['type']]: Paste<T> | undefined
 } = {
-    bpm: (transaction, onlyType, entity, startLane, lane, beat) => {
+    bpm: (transaction, onlyType, entity, startLane, lane, beat, flip, batch) => {
         const object = toMovedBpmObject(entity, beat)
 
         const overlap = getInStoreGrid(transaction.store.grid, 'bpm', object.beat)?.find(
-            (entity) => entity.beat === object.beat,
+            (entity) => entity.beat === object.beat && !batch.includes(entity),
         )
         if (overlap) removeBpm(transaction, overlap)
 
         return addBpm(transaction, object)
     },
-    timeScale: (transaction, onlyType, entity, startLane, lane, beat, flip) => {
+    timeScale: (transaction, onlyType, entity, startLane, lane, beat, flip, batch) => {
         const object = toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat, flip)
 
         const overlap = getInStoreGrid(transaction.store.grid, 'timeScale', object.beat)?.find(
-            (entity) => entity.beat === object.beat && entity.groupId === object.groupId,
+            (entity) =>
+                entity.beat === object.beat &&
+                entity.groupId === object.groupId &&
+                !batch.includes(entity),
         )
         if (overlap) removeTimeScale(transaction, overlap)
 

@@ -436,8 +436,11 @@ const moveEntities = (
     options?: TransactionOptions,
 ) => {
     const transaction = createTransaction(source, options)
+    // Same-beat objects move in their stored order, so they keep it.
+    const rank = (entity: Entity) =>
+        getInStoreGrid(source.store.grid, entity.type, entity.beat)?.indexOf(entity) ?? 0
     const entities = [...active.entities].sort(
-        beatOffset > 0 ? (a, b) => b.beat - a.beat : (a, b) => a.beat - b.beat,
+        (a, b) => (beatOffset > 0 ? b.beat - a.beat : a.beat - b.beat) || rank(a) - rank(b),
     )
     const selectedEntities: Entity[] = []
     for (const entity of entities) {
@@ -452,6 +455,7 @@ const moveEntities = (
             lane,
             beat,
             active.focus,
+            selectedEntities,
         )
         if (result) selectedEntities.push(...result)
     }
@@ -743,30 +747,35 @@ type Move<T extends Entity> = (
     lane: number,
     beat: number,
     focus: Entity,
+    /** Objects already placed by this move; they never replace each other. */
+    batch: readonly Entity[],
 ) => Entity[] | undefined
 
 const moves: {
     [T in Entity as T['type']]: Move<T> | undefined
 } = {
-    bpm: (transaction, onlyType, entity, startLane, lane, beat) => {
+    bpm: (transaction, onlyType, entity, startLane, lane, beat, focus, batch) => {
         const object = toMovedBpmObject(entity, beat)
 
         if (entity.beat) removeBpm(transaction, entity)
 
         const overlap = getInStoreGrid(transaction.store.grid, 'bpm', object.beat)?.find(
-            (entity) => entity.beat === object.beat,
+            (entity) => entity.beat === object.beat && !batch.includes(entity),
         )
         if (overlap) removeBpm(transaction, overlap)
 
         return addBpm(transaction, object)
     },
-    timeScale: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
+    timeScale: (transaction, onlyType, entity, startLane, lane, beat, focus, batch) => {
         const object = toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat, focus)
 
         removeTimeScale(transaction, entity)
 
         const overlap = getInStoreGrid(transaction.store.grid, 'timeScale', object.beat)?.find(
-            (entity) => entity.beat === object.beat && entity.groupId === object.groupId,
+            (entity) =>
+                entity.beat === object.beat &&
+                entity.groupId === object.groupId &&
+                !batch.includes(entity),
         )
         if (overlap) removeTimeScale(transaction, overlap)
 
