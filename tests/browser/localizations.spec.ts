@@ -151,3 +151,83 @@ for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
         })
     }
 }
+
+// Field labels may wrap to two lines but are never cut off.
+for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
+    const messages = JSON.parse(
+        readFileSync(new URL(`../../src/i18n/${locale}/index.json`, import.meta.url), 'utf8'),
+    ) as typeof english
+    for (const { device, viewport } of [
+        { device: 'desktop', viewport: { width: 1600, height: 1000 } },
+        { device: 'phone', viewport: { width: 375, height: 812 } },
+    ]) {
+        test(`${locale} field labels fit on ${device}`, async ({ page }) => {
+            await page.setViewportSize(viewport)
+            await page.addInitScript(installCanvasCounters)
+            await page.goto('/')
+            await expect(page.locator('canvas.editor-chart')).toBeVisible()
+            await page.evaluate(installEditorFixture)
+            const clipped = () =>
+                page
+                    .locator('.form-field-text')
+                    .evaluateAll((labels) =>
+                        labels
+                            .filter((label) => label.scrollHeight > label.clientHeight + 1)
+                            .map((label) => label.textContent),
+                    )
+            const select = (types: string[]) =>
+                page.evaluate(async (types) => {
+                    const { history, store, nextTick } = window.editorTest
+                    history.replaceState({
+                        ...history.state.value,
+                        selectedEntities: [...store.getAllEntities()].filter((entity) =>
+                            types.includes(entity.type),
+                        ),
+                    })
+                    await nextTick()
+                }, types)
+            await page.evaluate((locale) => {
+                const { settings, show, fixtures } = window.editorTest
+                settings.locale = locale
+                settings.showSidebar = true
+                settings.propertiesConnectorExpanded = true
+                show(fixtures.events, 3)
+            }, locale)
+            const selection = page.locator('#properties-section-selection')
+            // Every kind at once shows the full, longest labels; one kind the short ones.
+            for (const types of [
+                [
+                    'note',
+                    'bpm',
+                    'timeScale',
+                    'cameraEventJoint',
+                    'stageMaskEventJoint',
+                    'stagePivotEventJoint',
+                    'stageStyleEventJoint',
+                    'stageTransformEventJoint',
+                ],
+                ['cameraEventJoint'],
+            ]) {
+                await select(types)
+                await expect(selection.locator('.form-field-text').first()).toBeAttached()
+                expect(await clipped()).toEqual([])
+            }
+            await page.keyboard.press(',')
+            const dialog = page.getByRole('dialog')
+            await expect(dialog).toBeVisible()
+            // Long shortcut names still clamp beside their icons on phones, so they are left out.
+            const shortcuts = messages.settings.keyboardShortcuts.title
+            expect(
+                await dialog
+                    .locator('section')
+                    .filter({ hasNot: page.getByRole('heading', { name: shortcuts, exact: true }) })
+                    .locator('.form-field-text')
+                    .evaluateAll((labels) =>
+                        labels
+                            .filter((label) => label.scrollHeight > label.clientHeight + 1)
+                            .map((label) => label.textContent),
+                    ),
+            ).toEqual([])
+        })
+    }
+}
