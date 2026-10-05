@@ -1257,7 +1257,8 @@
         "unchanged": "不更改",
         "default": "默认",
         "copy": "复制"
-      }
+      },
+      "unknown": "未知 ({0})"
     },
     "confirm": {
       "delete": "删除",

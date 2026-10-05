@@ -1,14 +1,18 @@
 <script setup lang="ts" generic="const T">
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
+import { computed } from 'vue'
 import BaseField from './BaseField.vue'
+import { isUnknownValue } from './fieldUsage'
+import { unknownLabel } from './unknownLabel'
 
-defineProps<{
+const props = defineProps<{
     label: string
     options: (readonly [string, NoInfer<T>])[]
     disabled?: boolean
 }>()
 
 const modelValue = defineModel<T>({ required: true })
+const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
 </script>
 
 <template>
@@ -20,6 +24,10 @@ const modelValue = defineModel<T>({ required: true })
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 required
             >
+                <!-- A value no option names; shown, never listed or committed. -->
+                <option v-if="unknown" :value="modelValue" disabled hidden>
+                    {{ unknownLabel(modelValue) }}
+                </option>
                 <option v-for="([name, value], index) in options" :key="index" :value>
                     {{ name }}
                 </option>

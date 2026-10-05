@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { i18n } from '../../i18n'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
-import { mixedOptions, useFieldUsage } from './fieldUsage'
+import { isUnknownValue, isUnset, mixedOptions, useFieldUsage } from './fieldUsage'
+import { unknownLabel } from './unknownLabel'
 
 const props = defineProps<{
     label: string
@@ -23,6 +24,12 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
 
 // While mixed, options in use carry their object counts.
 const field = useFieldUsage()
+const unknown = computed(() =>
+    isUnknownValue(
+        modelValue.value,
+        allSections.value.flatMap((section) => section.options),
+    ),
+)
 const mixed = computed(() =>
     modelValue.value === undefined && !props.disabled
         ? mixedOptions(
@@ -61,7 +68,14 @@ const optionText = (name: string) => {
             >
                 <!-- The value while objects disagree; never listed or committed. -->
                 <option v-if="modelValue === undefined" :value="undefined" disabled hidden>
-                    {{ emptyLabel ?? i18n.modals.form.mixed }}
+                    {{
+                        emptyLabel ??
+                        (isUnset(field) ? i18n.modals.form.notSet : i18n.modals.form.mixed)
+                    }}
+                </option>
+                <!-- A value no option names; shown, never listed or committed. -->
+                <option v-if="unknown" :value="modelValue" disabled hidden>
+                    {{ unknownLabel(modelValue) }}
                 </option>
                 <template v-for="(section, index) in allSections" :key="index">
                     <optgroup

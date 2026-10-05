@@ -24,6 +24,13 @@ export const useFieldUsage = () => inject(fieldUsageKey, undefined)
 const matcher = ({ map, matches }: FieldUsage) =>
     matches ?? ((value: unknown, option: unknown) => (map ? map(value) : value) === option)
 
+/** A value no option names, such as one from a newer or damaged chart. */
+export const isUnknownValue = (value: unknown, options: readonly (readonly [string, unknown])[]) =>
+    value !== undefined && !options.some(([, option]) => option === value)
+
+/** No selected object holds a value, as for a BPM change without a meter. */
+export const isUnset = (field: FieldUsage | undefined) => field?.usage?.values.size === 0
+
 export const formatNumber = (value: number) => `${+value.toFixed(4)}`.replace('-', '−')
 
 /** The range a mixed number field spans, as "−4 … 6". */

@@ -1257,7 +1257,8 @@
                 "unchanged": "Unchanged",
                 "default": "Default",
                 "copy": "Copy"
-            }
+            },
+            "unknown": "Unknown ({0})"
         },
         "confirm": {
             "delete": "Delete",

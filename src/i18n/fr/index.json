@@ -1257,7 +1257,8 @@
         "unchanged": "Inchangé",
         "default": "Par défaut",
         "copy": "Copier"
-      }
+      },
+      "unknown": "Inconnu ({0})"
     },
     "confirm": {
       "delete": "Supprimer",

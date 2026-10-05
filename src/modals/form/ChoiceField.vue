@@ -13,7 +13,7 @@ import {
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
 import { useEmptyLabel } from './emptyLabel'
-import { mixedOptions, useFieldUsage } from './fieldUsage'
+import { isUnknownValue, mixedOptions, useFieldUsage } from './fieldUsage'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
 import { segmentsFit } from './segmented'
@@ -38,6 +38,8 @@ const isMixed = computed(() => props.variant === 'multi' && modelValue.value ===
 // Mixed segments list the values in use below, as selects do.
 const usage = useFieldUsage()
 const mixed = computed(() => (isMixed.value ? mixedOptions(usage?.value, props.options) : []))
+// A value no segment names shows in the select, as unknown.
+const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
 const selectOptions = computed(() =>
     props.options.map(([name, value]): [string, T] => [name, value]),
 )
@@ -120,7 +122,7 @@ watch(
 </script>
 
 <template>
-    <BaseField v-if="segmented" ref="field" :label :label-id="`${id}-label`" :mixed>
+    <BaseField v-if="segmented && !unknown" ref="field" :label :label-id="`${id}-label`" :mixed>
         <div
             class="form-field-segmented flex min-w-0 rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)]"
             :class="{ 'pointer-events-none opacity-40': disabled, 'text-fg/80': isMixed }"

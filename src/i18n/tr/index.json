@@ -1257,7 +1257,8 @@
         "unchanged": "Değiştirilmez",
         "default": "Varsayılan",
         "copy": "Kopyala"
-      }
+      },
+      "unknown": "Bilinmiyor ({0})"
     },
     "confirm": {
       "delete": "Sil",

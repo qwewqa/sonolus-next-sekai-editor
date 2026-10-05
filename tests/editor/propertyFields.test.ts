@@ -11,6 +11,8 @@ import {
 import { summarizeSelection } from '../../src/editor/workspace/properties/summary'
 import {
     formatNumber,
+    isUnknownValue,
+    isUnset,
     mixedOptions,
     mixedRange,
     mixedValues,
@@ -245,4 +247,17 @@ test('picking a brush keeps agreeing values and the agreeing half of eases', () 
         connectorEase: 'mode:in',
         cameraSize: 4,
     })
+})
+
+test('unknown and unset values are told apart from mixed ones', () => {
+    const options = [
+        ['A', 'a'],
+        ['B', 'b'],
+    ] as const
+    assert.equal(isUnknownValue('a', options), false)
+    assert.equal(isUnknownValue(undefined, options), false)
+    assert.equal(isUnknownValue('z', options), true)
+    assert.equal(isUnset({ usage: { values: new Map(), covered: 2, total: 2 } }), true)
+    assert.equal(isUnset({ usage: { values: new Map([[1, 2]]), covered: 2, total: 2 } }), false)
+    assert.equal(isUnset(undefined), false)
 })

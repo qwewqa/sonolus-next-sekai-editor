@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
-import { mixedRange, useFieldUsage } from './fieldUsage'
+import { isUnset, mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
 
 defineProps<{
@@ -94,7 +94,11 @@ const onFocus = (event: FocusEvent) => {
         <input
             ref="input"
             :value="text"
-            :placeholder="modelValue === undefined ? (range ?? i18n.modals.form.mixed) : undefined"
+            :placeholder="
+                modelValue === undefined
+                    ? (range ?? (isUnset(field) ? i18n.modals.form.notSet : i18n.modals.form.mixed))
+                    : undefined
+            "
             :title="
                 modelValue === undefined && range
                     ? `${i18n.modals.form.mixed}: ${range}`

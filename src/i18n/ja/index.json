@@ -1257,7 +1257,8 @@
         "unchanged": "変更しない",
         "default": "デフォルト",
         "copy": "コピー"
-      }
+      },
+      "unknown": "不明 ({0})"
     },
     "confirm": {
       "delete": "削除",
