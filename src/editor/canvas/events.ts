@@ -131,7 +131,7 @@ const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) =>
 const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.06, stroke: 0.05 }
 
 // A plain jump: Step In, the last change, or one to the same value.
-const INSTANT_ALPHA = 0.4
+const INSTANT_ALPHA = 0.7
 
 /**
  * Draws a time scale's ease toward the next change, mirrored when the value
