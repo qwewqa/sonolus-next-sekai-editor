@@ -28,7 +28,13 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../view'
-import { hitEntitiesAtPoint, offset, resize } from '../../utils'
+import {
+    hitEntitiesAtPoint,
+    isRangeResizeStart,
+    offset,
+    placementCursors,
+    resize,
+} from '../../utils'
 import CameraEventPropertiesModal from './CameraEventPropertiesModal.vue'
 import CameraEventSidebar from './CameraEventSidebar.vue'
 
@@ -167,9 +173,12 @@ export const cameraEvent: Tool = {
         }
     },
 
+    cursor: (x, y) => placementCursors[resolveDrag(x, y).type],
+
     dragStart(x, y) {
-        const [entity, beat, lane] = tryFind(x, y)
-        if (entity) {
+        const target = resolveDrag(x, y)
+        if (target.type !== 'add') {
+            const { entity, lane } = target
             replaceState({
                 ...state.value,
                 selectedEntities: [entity],
@@ -180,11 +189,7 @@ export const cameraEvent: Tool = {
             }
             focusEntityAtBeat(entity.beat)
 
-            const lane = xToLane(x)
-            if (
-                lane > entity.cameraLeft + 0.5 &&
-                lane < entity.cameraLeft + entity.cameraSize - 0.5
-            ) {
+            if (target.type === 'move') {
                 notify(
                     interpolate(
                         () => i18n.value.tools.events.moving,
@@ -216,7 +221,7 @@ export const cameraEvent: Tool = {
                 }
             }
         } else {
-            focusEntityAtBeat(beat)
+            focusEntityAtBeat(target.beat)
 
             notify(
                 interpolate(
@@ -228,7 +233,7 @@ export const cameraEvent: Tool = {
 
             active = {
                 type: 'add',
-                lane,
+                lane: target.lane,
             }
         }
 
@@ -456,6 +461,20 @@ const getPropertiesFromSelection = () => {
             cameraEventJoint?.eventEase ?? 'linear',
         ),
     }
+}
+
+const resolveDrag = (x: number, y: number) => {
+    const [entity, beat, lane] = tryFind(x, y)
+    if (!entity) return { type: 'add', beat, lane } as const
+
+    const pointerLane = xToLane(x)
+    return {
+        type: isRangeResizeStart(entity.cameraLeft, entity.cameraSize, pointerLane)
+            ? 'edit'
+            : 'move',
+        entity,
+        lane: pointerLane,
+    } as const
 }
 
 const tryFind = (x: number, y: number): [CameraEventJointEntity] | [undefined, number, number] => {

@@ -19,7 +19,7 @@ import { clamp } from '../../utils/math'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
 import type { EditorDrawContext } from '../canvas/types'
-import { activateEditorNavigation, controlsForNavigation } from '../controls'
+import { activateEditorNavigation, controlsForNavigation, useCanvasCursor } from '../controls'
 import { cancelMouseControls } from '../controls/mouse'
 import { cancelTouchControls } from '../controls/touch'
 import type { Modifiers } from '../controls/gestures/pointer'
@@ -79,7 +79,8 @@ const headerIconButton =
 const headerField =
     'elevation-field h-8 w-20 appearance-none rounded-full bg-button px-3 text-base text-fg tabular-nums shadow-md transition-colors hover:shadow-accent focus:outline-none focus:ring-accent active:bg-accent active:text-on-accent'
 let navigation: EditorNavigation | undefined
-const controlListeners = controlsForNavigation(() => navigation)
+const { cursor, cursorListeners } = useCanvasCursor(() => navigation)
+const controlListeners = { ...controlsForNavigation(() => navigation), ...cursorListeners }
 const activate = () => {
     if (navigation) activateEditorNavigation(navigation)
 }
@@ -345,9 +346,31 @@ const applyToVisibleSelection = (row: ElevationRow, modifiers: Modifiers) => {
         (entity): entity is NoteEntity => entity.type === 'note' && visible.has(entity),
     )
 }
+const resolveDrag = (x: number, y: number) => {
+    const row = hit(x, y)
+    if (toolName.value === 'paste') return { type: 'paste' } as const
+    if (!row && (toolName.value === 'note' || toolName.value === 'slide'))
+        return { type: 'add' } as const
+    if (!row || ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value))
+        return { type: 'marquee', row } as const
+    if (row.attached) return { type: 'select', row } as const
+    return {
+        type: isNoteResizeStart({ left: row.lane - row.size / 2, size: row.size }, xToLane(x))
+            ? 'resize'
+            : 'move',
+        row,
+    } as const
+}
+const cursors = {
+    paste: 'copy',
+    add: 'crosshair',
+    select: 'pointer',
+    resize: 'ew-resize',
+    move: 'grab',
+} as const
 const controls: Pick<
     Tool,
-    'hover' | 'tap' | 'dragStart' | 'dragUpdate' | 'dragEnd' | 'dragCancel'
+    'hover' | 'tap' | 'cursor' | 'dragStart' | 'dragUpdate' | 'dragEnd' | 'dragCancel'
 > = {
     hover(x, y, modifiers) {
         hovered.value = hit(x, y, 0.5)?.note
@@ -420,10 +443,19 @@ const controls: Pick<
         }
         selectAt(row, modifiers)
     },
+    cursor(x, y) {
+        const target = resolveDrag(x, y)
+        if (target.type !== 'marquee') return cursors[target.type]
+        // A tap applies eraser, brush and generate to the row.
+        if (target.row) return 'pointer'
+        return ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value)
+            ? 'crosshair'
+            : 'default'
+    },
     dragStart(x, y, modifiers) {
-        const row = hit(x, y)
-        if (toolName.value === 'paste') return true
-        if (!row && (toolName.value === 'note' || toolName.value === 'slide')) {
+        const target = resolveDrag(x, y)
+        if (target.type === 'paste') return true
+        if (target.type === 'add') {
             const position = positionAtPoint(x, y)
             adding = {
                 lane: alignLane(position.lane),
@@ -432,7 +464,7 @@ const controls: Pick<
             }
             return true
         }
-        if (!row || ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value)) {
+        if (target.type === 'marquee') {
             marquee = {
                 x: x - elevationBounds.x,
                 y: y - elevationBounds.y,
@@ -440,15 +472,13 @@ const controls: Pick<
             }
             return true
         }
+        const { row } = target
         if (!state.value.selectedEntities.includes(row.note)) selectAt(row, modifiers)
-        if (row.attached) return false
+        if (target.type === 'select') return false
         const eligible = new Set(
             elevationNotes.value.filter((item) => !item.attached).map((item) => item.note),
         )
-        const resizing = isNoteResizeStart(
-            { left: row.lane - row.size / 2, size: row.size },
-            xToLane(x),
-        )
+        const resizing = target.type === 'resize'
         drag = {
             source: state.value,
             row,
@@ -930,7 +960,11 @@ onUnmounted(() => {
         @pointerdown="container?.focus()"
         @keydown="onKeydown"
     >
-        <div class="editor absolute size-full touch-none" v-on="controlListeners">
+        <div
+            class="editor absolute size-full touch-none"
+            :style="{ cursor }"
+            v-on="controlListeners"
+        >
             <canvas
                 ref="canvas"
                 class="elevation-canvas pointer-events-none absolute size-full"

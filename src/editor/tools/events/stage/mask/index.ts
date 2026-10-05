@@ -30,7 +30,13 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../../view'
-import { hitEntitiesAtPoint, offset, resize } from '../../../utils'
+import {
+    hitEntitiesAtPoint,
+    isRangeResizeStart,
+    offset,
+    placementCursors,
+    resize,
+} from '../../../utils'
 import StageMaskEventPropertiesModal from './StageMaskEventPropertiesModal.vue'
 import StageMaskEventSidebar from './StageMaskEventSidebar.vue'
 
@@ -164,9 +170,12 @@ export const stageMaskEvent: Tool = {
         }
     },
 
+    cursor: (x, y) => placementCursors[resolveDrag(x, y).type],
+
     dragStart(x, y) {
-        const [entity, beat, lane] = tryFind(x, y)
-        if (entity) {
+        const target = resolveDrag(x, y)
+        if (target.type !== 'add') {
+            const { entity, lane } = target
             replaceState({
                 ...state.value,
                 selectedEntities: [entity],
@@ -177,8 +186,7 @@ export const stageMaskEvent: Tool = {
             }
             focusEntityAtBeat(entity.beat)
 
-            const lane = xToLane(x)
-            if (lane > entity.maskLeft + 0.5 && lane < entity.maskLeft + entity.maskSize - 0.5) {
+            if (target.type === 'move') {
                 notify(
                     interpolate(
                         () => i18n.value.tools.events.moving,
@@ -210,7 +218,7 @@ export const stageMaskEvent: Tool = {
                 }
             }
         } else {
-            focusEntityAtBeat(beat)
+            focusEntityAtBeat(target.beat)
 
             notify(
                 interpolate(
@@ -222,7 +230,7 @@ export const stageMaskEvent: Tool = {
 
             active = {
                 type: 'add',
-                lane,
+                lane: target.lane,
             }
         }
 
@@ -433,6 +441,18 @@ const getPropertiesFromSelection = () => {
             stageMaskEventJoint?.eventEase ?? 'linear',
         ),
     }
+}
+
+const resolveDrag = (x: number, y: number) => {
+    const [entity, beat, lane] = tryFind(x, y)
+    if (!entity) return { type: 'add', beat, lane } as const
+
+    const pointerLane = xToLane(x)
+    return {
+        type: isRangeResizeStart(entity.maskLeft, entity.maskSize, pointerLane) ? 'edit' : 'move',
+        entity,
+        lane: pointerLane,
+    } as const
 }
 
 const tryFind = (

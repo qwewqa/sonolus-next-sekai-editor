@@ -38,6 +38,7 @@ import {
     isVisible,
     modifyEntities,
     offset,
+    placementCursors,
     resize,
 } from '../utils'
 import SlidePropertiesModal from './SlidePropertiesModal.vue'
@@ -166,9 +167,21 @@ export const slide: Tool = {
         }
     },
 
+    cursor: (x, y) => placementCursors[resolveDrag(x, y).type],
+
     dragStart(x, y) {
-        const [entity, beat, lane] = tryFind(x, y)
-        if (entity) {
+        const target = resolveDrag(x, y)
+        if (target.type === 'add') {
+            focusEntityAtBeat(target.beat)
+
+            notify(interpolate(() => i18n.value.tools.slide.adding, '1'))
+
+            active = {
+                type: 'add',
+                lane: target.lane,
+            }
+        } else {
+            const { entity, lane } = target
             replaceState({
                 ...state.value,
                 selectedEntities: [entity],
@@ -179,8 +192,7 @@ export const slide: Tool = {
             }
             focusEntityAtBeat(entity.beat)
 
-            const lane = xToLane(x)
-            if (!isNoteResizeStart(entity, lane)) {
+            if (target.type === 'move') {
                 notify(interpolate(() => i18n.value.tools.slide.moving, '1'))
 
                 active = {
@@ -196,15 +208,6 @@ export const slide: Tool = {
                     entity,
                     lane: entity.left + (lane >= entity.left + entity.size / 2 ? 0 : entity.size),
                 }
-            }
-        } else {
-            focusEntityAtBeat(beat)
-
-            notify(interpolate(() => i18n.value.tools.slide.adding, '1'))
-
-            active = {
-                type: 'add',
-                lane,
             }
         }
 
@@ -448,6 +451,18 @@ export const getSelectedSlideId = () => {
     if (!selectedEntities.value.every(({ slideId }) => slideId === entity.slideId)) return
 
     return entity.slideId
+}
+
+const resolveDrag = (x: number, y: number) => {
+    const [entity, beat, lane] = tryFind(x, y)
+    if (!entity) return { type: 'add', beat, lane } as const
+
+    const pointerLane = xToLane(x)
+    return {
+        type: isNoteResizeStart(entity, pointerLane) ? 'edit' : 'move',
+        entity,
+        lane: pointerLane,
+    } as const
 }
 
 const update = (message: () => string, action: (transaction: Transaction) => Entity[]) => {

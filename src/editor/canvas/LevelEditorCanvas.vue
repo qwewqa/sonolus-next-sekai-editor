@@ -6,7 +6,7 @@ import { defaultGroupId } from '../../history/groups'
 import { settings } from '../../settings'
 import type { Entity } from '../../state/entities'
 import { beatToTime, timeToBeat } from '../../state/integrals/bpms'
-import { activateEditorNavigation, controlsForNavigation } from '../controls'
+import { activateEditorNavigation, controlsForNavigation, useCanvasCursor } from '../controls'
 import { computedVisibleEntities, isEntityInBeatRange } from '../entities/visibility'
 import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../entities/visible'
 import { isScenePreview, sceneState } from '../sceneState'
@@ -25,7 +25,8 @@ import type { EditorDrawContext } from './types'
 import { createWaveformRenderer } from './waveform'
 
 const container = useTemplateRef('container')
-const controlListeners = controlsForNavigation(() => undefined)
+const { cursor, cursorListeners } = useCanvasCursor(() => undefined)
+const controlListeners = { ...controlsForNavigation(() => undefined), ...cursorListeners }
 const chartCanvas = useTemplateRef<HTMLCanvasElement>('chart')
 const overlayCanvas = useTemplateRef<HTMLCanvasElement>('overlay')
 const pixelRatio = ref(devicePixelRatio || 1)
@@ -295,6 +296,7 @@ onUnmounted(() => {
     <div
         ref="container"
         class="editor absolute size-full touch-none"
+        :style="{ cursor }"
         @pointerenter="activateEditorNavigation()"
         @focusin="activateEditorNavigation()"
         v-on="controlListeners"

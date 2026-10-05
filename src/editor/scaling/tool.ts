@@ -8,6 +8,7 @@ import {
     cancelScalingDrag,
     endScalingDrag,
     getScalingBaselineEntity,
+    hasScalingRange,
     scalingSession,
     updateScalingDrag,
 } from '../commands/scaleSelection/session'
@@ -24,6 +25,8 @@ let widthDrag: { start: number; anchor: number } | undefined
 const matchesAxis = () =>
     scalingSession.value?.axis === 'width' ||
     scalingSession.value?.axis === (editorNavigation.value ? 'elevation' : 'beat')
+
+const canDrag = () => matchesAxis() && hasScalingRange()
 
 const pointerLane = (x: number, y: number) =>
     editorNavigation.value?.positionAtPoint(x, y).lane ?? xToLane(x)
@@ -85,10 +88,14 @@ export const scalingTool: Tool = {
             creating: [],
         }
     },
+    cursor(x, y) {
+        if (!canDrag() || !selectedEntitiesAtPoint(x, y, 1.5).length) return 'default'
+        return scalingSession.value?.axis === 'width' ? 'ew-resize' : 'ns-resize'
+    },
     dragStart(x, y) {
         dragBpms = undefined
         widthDrag = undefined
-        if (!matchesAxis()) return false
+        if (!canDrag()) return false
         const value = pointerValue(x, y)
         const started = selectedEntitiesAtPoint(x, y, 1.5).some((entity) => {
             if (scalingSession.value?.axis !== 'width') return beginScalingDrag(entity, value)

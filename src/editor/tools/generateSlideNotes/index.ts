@@ -35,6 +35,13 @@ let active:
       }
     | undefined
 
+const tapTarget = (x: number, y: number) => {
+    const entities = hitEntitiesAtPoint('note', x, y)
+    return entities.some((entity) => selectedEntities.value.includes(entity))
+        ? 'selection'
+        : entities
+}
+
 export const generateSlideNotes: Tool = {
     title: () => i18n.value.tools.generateSlideNotes.title,
 
@@ -48,9 +55,9 @@ export const generateSlideNotes: Tool = {
     },
 
     tap(x, y) {
-        const entities = hitEntitiesAtPoint('note', x, y)
+        const entities = tapTarget(x, y)
 
-        if (entities.some((entity) => selectedEntities.value.includes(entity))) {
+        if (entities === 'selection') {
             applyGeneratedSlideNotes(
                 selectedEntities.value.filter((entity) => entity.type === 'note'),
             )
@@ -77,6 +84,8 @@ export const generateSlideNotes: Tool = {
             }
         }
     },
+
+    cursor: (x, y) => (tapTarget(x, y).length ? 'pointer' : 'crosshair'),
 
     dragStart(x, y) {
         active = {

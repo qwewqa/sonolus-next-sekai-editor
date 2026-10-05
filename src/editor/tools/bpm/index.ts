@@ -117,6 +117,8 @@ export const bpm: Tool = {
         }
     },
 
+    cursor: (x, y) => (tryFind(x, y)[0] ? 'ns-resize' : 'crosshair'),
+
     dragStart(x, y) {
         const [entity, beat] = tryFind(x, y)
         if (entity) {

@@ -9,6 +9,7 @@ import { getControlBounds } from '../navigation'
 import { cancelPreviewFollow, stopPlayer } from '../player'
 import { switchToolTo, tool, toolName, type ToolName } from '../tools'
 import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
+import { lockCursor, unlockCursor } from './cursor'
 import { gesture } from './gestures/gesture'
 import { drag } from './gestures/recognizers/drag'
 import { tap } from './gestures/recognizers/tap'
@@ -36,6 +37,7 @@ export const cancelMouseControls = (restoreTool = true) => {
     contextClick = undefined
     closeContextMenu()
     mouseGesture.cancel()
+    unlockCursor()
     const previous = secondarySwitchBack
     secondarySwitchBack = undefined
     if (restoreTool && previous) switchToolTo(previous)
@@ -83,6 +85,9 @@ const mousedown = (event: MouseEvent) => {
     )
         contextClick = { x: p.x, y: p.y }
 
+    // The press point is where dragStart decides; keep its cursor until release.
+    if (!mouseGesture.pointerCount) lockCursor(tool.value.cursor?.(p.x, p.y) ?? 'default')
+
     mouseGesture.start([p])
 
     event.preventDefault()
@@ -124,6 +129,7 @@ const mouseup = (event: MouseEvent) => {
         switchToolTo(secondarySwitchBack)
         secondarySwitchBack = undefined
     }
+    if (!mouseGesture.pointerCount) unlockCursor()
 
     if (showMenu) openContextMenu(p.x, p.y)
     event.preventDefault()

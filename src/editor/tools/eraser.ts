@@ -34,6 +34,13 @@ let active:
       }
     | undefined
 
+const tapTarget = (x: number, y: number) => {
+    const entities = hitAllEntitiesAtPoint(x, y)
+    if (entities.some((entity) => selectedEntities.value.includes(entity))) return 'selection'
+
+    return entities.find(canRemove)
+}
+
 export const eraser: Tool = {
     title: () => i18n.value.tools.eraser.title,
 
@@ -49,33 +56,32 @@ export const eraser: Tool = {
     },
 
     tap(x, y) {
-        const entities = hitAllEntitiesAtPoint(x, y)
+        const target = tapTarget(x, y)
 
-        if (entities.some((entity) => selectedEntities.value.includes(entity))) {
+        if (target === 'selection') {
             focusEntityAtBeat(yToValidBeat(y))
             remove(selectedEntities.value)
+        } else if (target) {
+            focusEntityAtBeat(target.beat)
+            remove([target])
         } else {
-            const [entity] = entities.filter(canRemove)
-            if (entity) {
-                focusEntityAtBeat(entity.beat)
-                remove([entity])
-            } else {
-                const selectedLength = selectedEntities.value.length
+            const selectedLength = selectedEntities.value.length
 
-                replaceState({
-                    ...state.value,
-                    selectedEntities: [],
-                })
-                view.entities = {
-                    hovered: [],
-                    creating: [],
-                }
-
-                focusViewAtBeat(yToValidBeat(y))
-                if (selectedLength) notify(() => i18n.value.tools.eraser.deselected)
+            replaceState({
+                ...state.value,
+                selectedEntities: [],
+            })
+            view.entities = {
+                hovered: [],
+                creating: [],
             }
+
+            focusViewAtBeat(yToValidBeat(y))
+            if (selectedLength) notify(() => i18n.value.tools.eraser.deselected)
         }
     },
+
+    cursor: (x, y) => (tapTarget(x, y) ? 'pointer' : 'crosshair'),
 
     dragStart(x, y) {
         active = {

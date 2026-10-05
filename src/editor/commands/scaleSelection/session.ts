@@ -267,6 +267,14 @@ export const getScalingBaselineEntity = (entity: EditableEntity) => {
     return baselineByDraft.get(entity)
 }
 
+// beginScalingDrag rejects every entity without this.
+export const hasScalingRange = () => {
+    const session = scalingSession.value
+    if (!session) return false
+    const { min, max } = extrema(draftState(), session.axis)
+    return max > min
+}
+
 export const beginScalingDrag = (entity: EditableEntity, value: number, edge?: 'min' | 'max') => {
     const session = scalingSession.value
     const baseline = getScalingBaselineEntity(entity)

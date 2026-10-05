@@ -118,6 +118,13 @@ let active:
       }
     | undefined
 
+const tapTarget = (x: number, y: number) => {
+    const entities = hitAllEntitiesAtPoint(x, y)
+    return entities.some((entity) => selectedEntities.value.includes(entity))
+        ? 'selection'
+        : entities
+}
+
 export const brush: Tool = {
     title: () => i18n.value.tools.brush.title,
     sidebar: BrushSidebar,
@@ -132,9 +139,9 @@ export const brush: Tool = {
     },
 
     tap(x, y, modifiers) {
-        const entities = hitAllEntitiesAtPoint(x, y)
+        const entities = tapTarget(x, y)
 
-        if (entities.some((entity) => selectedEntities.value.includes(entity))) {
+        if (entities === 'selection') {
             apply(modifyEntities(selectedEntities.value, modifiers))
             focusEntityAtBeat(yToValidBeat(y))
         } else {
@@ -159,6 +166,8 @@ export const brush: Tool = {
             }
         }
     },
+
+    cursor: (x, y) => (tapTarget(x, y).length ? 'pointer' : 'crosshair'),
 
     dragStart(x, y) {
         active = {

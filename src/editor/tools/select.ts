@@ -81,7 +81,7 @@ import {
     getLaneAnchor,
     hitAllEntitiesAtPoint,
     hitAllEntitiesInSelection,
-    isNoteResizeStart,
+    isSelectResize,
     modifyEntities,
     offset,
     resize,
@@ -108,6 +108,40 @@ let active:
           entities: Entity[]
       }
     | undefined
+
+const resolveDrag = (
+    x: number,
+    y: number,
+): (MoveActive & { isSelected: boolean }) | { type: 'select'; lane: number } => {
+    const lane = xToLane(x)
+    const entities = hitAllEntitiesAtPoint(x, y)
+
+    const [focus] = entities.filter((entity) => selectedEntities.value.includes(entity))
+    if (focus) {
+        // Selected objects in hidden or dimmed groups/stages stay put.
+        const moving = selectedEntities.value.filter(isEntityInScope)
+        return {
+            type: 'move',
+            lane,
+            focus,
+            entities: moving,
+            onlyType: getOnlyEntityType(moving),
+            isSelected: true,
+        }
+    }
+
+    const [entity] = entities
+    if (!entity) return { type: 'select', lane }
+
+    return {
+        type: 'move',
+        lane,
+        focus: entity,
+        entities: [entity],
+        onlyType: entity.type,
+        isSelected: false,
+    }
+}
 
 export const select: Tool = {
     title: () => i18n.value.tools.select.title,
@@ -174,59 +208,43 @@ export const select: Tool = {
         }
     },
 
+    cursor(x, y) {
+        const target = resolveDrag(x, y)
+        if (target.type === 'select') return 'default'
+        if (isSelectResize(target.onlyType, target.focus, target.lane)) return 'ew-resize'
+        return target.onlyType === 'bpm' ? 'ns-resize' : 'grab'
+    },
+
     dragStart(x, y) {
-        const lane = xToLane(x)
-        const time = yToTime(y)
-
-        const entities = hitAllEntitiesAtPoint(x, y)
-
-        const [focus] = entities.filter((entity) => selectedEntities.value.includes(entity))
-        if (focus) {
-            focusEntityAtBeat(focus.beat)
-
-            // Selected objects in hidden or dimmed groups/stages stay put.
-            const moving = selectedEntities.value.filter(isEntityInScope)
-
-            notify(interpolate(() => i18n.value.tools.select.moving, `${moving.length}`))
-
+        const target = resolveDrag(x, y)
+        if (target.type === 'select') {
             active = {
-                type: 'move',
-                lane,
-                focus,
-                entities: moving,
-                onlyType: getOnlyEntityType(moving),
+                type: 'select',
+                lane: target.lane,
+                time: yToTime(y),
+                count: -1,
+                entities: selectedEntities.value,
             }
+        } else if (target.isSelected) {
+            focusEntityAtBeat(target.focus.beat)
+
+            notify(interpolate(() => i18n.value.tools.select.moving, `${target.entities.length}`))
+
+            active = target
         } else {
-            const [entity] = entities
-            if (entity) {
-                replaceState({
-                    ...state.value,
-                    selectedEntities: [entity],
-                })
-                view.entities = {
-                    hovered: [],
-                    creating: [],
-                }
-                focusEntityAtBeat(entity.beat)
-
-                notify(interpolate(() => i18n.value.tools.select.moving, '1'))
-
-                active = {
-                    type: 'move',
-                    lane,
-                    focus: entity,
-                    entities: [entity],
-                    onlyType: entity.type,
-                }
-            } else {
-                active = {
-                    type: 'select',
-                    lane,
-                    time,
-                    count: -1,
-                    entities: selectedEntities.value,
-                }
+            replaceState({
+                ...state.value,
+                selectedEntities: [target.focus],
+            })
+            view.entities = {
+                hovered: [],
+                creating: [],
             }
+            focusEntityAtBeat(target.focus.beat)
+
+            notify(interpolate(() => i18n.value.tools.select.moving, '1'))
+
+            active = target
         }
 
         return true
@@ -450,12 +468,7 @@ const toMovedCameraEventObject = (
     beat: number,
     focus: Entity,
 ): CameraEventObject => {
-    if (
-        focus.type === 'cameraEventJoint' &&
-        onlyType === 'cameraEventJoint' &&
-        (startLane <= focus.cameraLeft + 0.5 ||
-            startLane >= focus.cameraLeft + focus.cameraSize - 0.5)
-    ) {
+    if (focus.type === 'cameraEventJoint' && isSelectResize(onlyType, focus, startLane)) {
         const [cameraLeft, cameraSize] = resize(
             entity.cameraLeft +
                 (startLane >= focus.cameraLeft + focus.cameraSize / 2 ? 0 : entity.cameraSize),
@@ -497,11 +510,7 @@ const toMovedStageMaskEventObject = (
     beat: number,
     focus: Entity,
 ): StageMaskEventObject => {
-    if (
-        focus.type === 'stageMaskEventJoint' &&
-        onlyType === 'stageMaskEventJoint' &&
-        (startLane <= focus.maskLeft + 0.5 || startLane >= focus.maskLeft + focus.maskSize - 0.5)
-    ) {
+    if (focus.type === 'stageMaskEventJoint' && isSelectResize(onlyType, focus, startLane)) {
         const [maskLeft, maskSize] = resize(
             entity.maskLeft +
                 (startLane >= focus.maskLeft + focus.maskSize / 2 ? 0 : entity.maskSize),
@@ -595,7 +604,7 @@ const toMovedNoteObject = (
     beat: number,
     focus: Entity,
 ): NoteObject => {
-    if (focus.type === 'note' && onlyType === 'note' && isNoteResizeStart(focus, startLane)) {
+    if (focus.type === 'note' && isSelectResize(onlyType, focus, startLane)) {
         const isLeft = startLane >= focus.left + focus.size / 2
 
         const [left, size] = resize(

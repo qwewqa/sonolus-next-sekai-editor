@@ -1,6 +1,7 @@
 import { computed, shallowRef, type Component } from 'vue'
 import { isToolModalOpen } from '../../modals'
 import { scalingSession } from '../commands/scaleSelection/session'
+import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
 import { scalingTool } from '../scaling/tool'
@@ -31,6 +32,9 @@ export type Tool = {
     hover?: (x: number, y: number, modifiers: Modifiers) => void | Promise<void>
 
     tap?: (x: number, y: number, modifiers: Modifiers) => void | Promise<void>
+
+    // Pure; must share dragStart's resolver so it shows what a press here does.
+    cursor?: (x: number, y: number) => CanvasCursor
 
     dragStart?: (x: number, y: number, modifiers: Modifiers) => boolean
     dragUpdate?: (x: number, y: number, modifiers: Modifiers) => void

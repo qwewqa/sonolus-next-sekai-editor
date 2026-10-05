@@ -118,6 +118,11 @@ export const paste: Tool = {
         await pasteAtPosition(xToLane(x), yToBeatOffset(y, data.beat), modifiers)
     },
 
+    cursor() {
+        const data = clipboardEntry.value?.data
+        return data && cachedTransform(data.chart).length ? 'copy' : 'default'
+    },
+
     dragStart(x, y, modifiers) {
         const data = clipboardEntry.value?.data
         if (!data) return false

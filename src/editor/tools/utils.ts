@@ -1,12 +1,20 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
-import { getNoteInteractionWidth } from '../../state/entities/slides/note'
 import { clamp } from '../../utils/math'
+import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
 import { isEntityInScope } from '../scope'
 import { snappedOffset } from '../snapping'
 import { view, xToLane, yToTime, type Selection } from '../view'
+
+export { isNoteResizeStart, isRangeResizeStart, isSelectResize } from './edges'
+
+export const placementCursors: Record<'add' | 'edit' | 'move', CanvasCursor> = {
+    add: 'crosshair',
+    edit: 'ew-resize',
+    move: 'grab',
+}
 
 export const offset = (startLane: number, lane: number, anchor = startLane) =>
     snappedOffset(startLane, lane, anchor, view.laneDivision, view.laneSnapping)
@@ -36,12 +44,6 @@ export const getLaneAnchor = (entity: Entity) => {
         case 'stageTransformEventConnection':
             return undefined
     }
-}
-
-export const isNoteResizeStart = (note: { left: number; size: number }, lane: number) => {
-    const center = note.left + note.size / 2
-    const moveHalfWidth = getNoteInteractionWidth(note.size) / 2 - 0.5
-    return lane <= center - moveHalfWidth || lane >= center + moveHalfWidth
 }
 
 export const resize = (

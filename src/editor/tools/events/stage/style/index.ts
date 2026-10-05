@@ -169,6 +169,8 @@ export const stageStyleEvent: Tool = {
         }
     },
 
+    cursor: (x, y) => (tryFind(x, y)[0] ? 'grab' : 'crosshair'),
+
     dragStart(x, y) {
         const [entity, beat] = tryFind(x, y)
         if (entity) {

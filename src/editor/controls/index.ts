@@ -1,4 +1,4 @@
-import { onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { isAppActive } from '../../activity'
 import { replaceState, state } from '../../history'
 import { hasSameChartData } from '../../state/data'
@@ -9,6 +9,8 @@ import { scopeLookup } from '../scope'
 import { entityScopeVisibility, isScopeReduced } from '../scopeRules'
 import { tool } from '../tools'
 import { view } from '../view'
+import { dragCursor, lockedCursor } from './cursor'
+import { isDragging } from './gestures/recognizers/drag'
 import { cancelMouseControls, hasMouseControls, mouseControlListeners } from './mouse'
 import { cancelTouchControls, hasTouchControls, touchControlListeners } from './touch'
 
@@ -107,3 +109,30 @@ export const controlsForNavigation = (getNavigation: () => EditorNavigation | un
             },
         ]),
     )
+
+// Mouse only: touch and pen keep the inherited cursor.
+export const useCanvasCursor = (getNavigation: () => EditorNavigation | undefined) => {
+    const isMouse = ref(false)
+    const cursor = computed(() => {
+        if (!isMouse.value) return ''
+        const locked = lockedCursor.value
+        if (locked) return isDragging.value ? dragCursor(locked) : locked
+        if (editorNavigation.value !== getNavigation()) return ''
+        const { x, y } = view.pointer
+        return tool.value.cursor?.(x, y) ?? 'default'
+    })
+    const track = (event: PointerEvent) => {
+        isMouse.value = event.pointerType === 'mouse'
+    }
+    return {
+        cursor,
+        cursorListeners: {
+            pointerover: track,
+            pointermove: track,
+            pointerdown: track,
+            pointerleave: () => {
+                isMouse.value = false
+            },
+        },
+    }
+}
