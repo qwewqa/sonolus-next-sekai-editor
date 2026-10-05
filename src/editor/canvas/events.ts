@@ -97,10 +97,13 @@ const timeScaleMarker = (
 
 const nextTimeScales = new WeakMap<
     StoreGrid['timeScale'],
-    Map<TimeScaleEntity, TimeScaleEntity | undefined>
+    Map<TimeScaleEntity, TimeScaleEntity | null>
 >()
 
-/** The next time scale of the same group, which its ease transitions to. */
+/**
+ * The next time scale of the same group, which its ease transitions to: null
+ * for the last one, undefined for one outside the chart such as a preview.
+ */
 const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) => {
     const grid = state.store.grid.timeScale
     let next = nextTimeScales.get(grid)
@@ -116,7 +119,8 @@ const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) =>
         next = new Map()
         for (const group of groups.values()) {
             group.sort((a, b) => a.beat - b.beat)
-            for (const [index, timeScale] of group.entries()) next.set(timeScale, group[index + 1])
+            for (const [index, timeScale] of group.entries())
+                next.set(timeScale, group[index + 1] ?? null)
         }
         nextTimeScales.set(grid, next)
     }
@@ -146,7 +150,7 @@ const drawEaseGlyph = (
     const left = direction > 0 ? x : x - width
     const top = y - height / 2
     ctx.save()
-    if (!next || next.timeScale === entity.timeScale) ctx.globalAlpha *= 0.5
+    if (next === null || next?.timeScale === entity.timeScale) ctx.globalAlpha *= 0.5
     ctx.strokeStyle = color
     ctx.lineWidth = Math.max(stroke, 1 / scale)
     ctx.lineCap = 'round'

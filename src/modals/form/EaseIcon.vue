@@ -13,7 +13,7 @@ const d = computed(() => easeGlyphPathD(props.ease, false, 2, 2, 12, 12))
 
 <template>
     <svg
-        class="size-4 shrink-0"
+        class="size-3.5 shrink-0"
         viewBox="0 0 16 16"
         fill="none"
         stroke="currentColor"

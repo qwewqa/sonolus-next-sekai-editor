@@ -51,14 +51,14 @@ defineProps<{
 
 /* A leading icon, such as an ease's curve, sits before the value. */
 .form-field-select-leading > select {
-    padding-left: 2.5rem;
+    padding-left: 1.875rem;
 }
 
 .form-field-select-lead {
     pointer-events: none;
     position: absolute;
     inset-block: 0;
-    left: 1rem;
+    left: 0.625rem;
     display: flex;
     align-items: center;
 }
@@ -170,12 +170,9 @@ defineProps<{
         right: 0.625rem;
     }
 
-    .form-field-select-leading > select {
-        padding-left: 2rem;
-    }
-
+    /* Too narrow for the leading icon; the value keeps the room. */
     .form-field-select-lead {
-        left: 0.75rem;
+        display: none;
     }
 }
 

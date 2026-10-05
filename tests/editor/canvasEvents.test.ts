@@ -496,6 +496,11 @@ test('time-scale eases show their curve toward the next change in the group', ()
     assert.equal(glyph(2).glyph?.alpha, 0.5)
     assert.equal(glyph(3).glyph?.alpha, 0.5)
 
+    // Previews outside the chart have no known next change.
+    canvas.strokes = []
+    drawEvent(context, { ...entities[3]!, beat: 10 }, false)
+    assert.equal(canvas.strokes[2]?.alpha, 1)
+
     // A held step is the plain change and has no curve.
     const step = glyph(4)
     assert.equal(step.glyph, undefined)
