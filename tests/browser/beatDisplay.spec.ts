@@ -195,12 +195,17 @@ test('right ruler defaults to measures, hides the first beat and offers all thre
             drawGrid(context, { min: 0, max: 4 }, { min: 0, max: 2 }, 4, 1, mode)
             results[mode] = [...text]
         }
+        text.length = 0
+        drawGrid(context, { min: 0, max: 4 }, { min: 0, max: 2 }, 4, 1, 'measure', true)
+        results.underBpm = [...text]
         return results
     })
     expect(labels).toEqual({
         beat: ['2', '3', '4', '5'],
         measure: ['1.2', '2.1', '2.2', '2.3'],
         both: ['1.2 (2)', '2.1 (3)', '2.2 (4)', '2.3 (5)'],
+        // The BPM label at beat 2 replaces its beat label.
+        underBpm: ['1.2', '2.2', '2.3'],
     })
 })
 

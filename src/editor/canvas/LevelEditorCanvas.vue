@@ -124,6 +124,7 @@ watchEffect(
         const entities = orderedEntities.value
         const hovered = inputs.recentlyActive ? undefined : hoveredSet.value
         const visibilities = view.visibilities
+        const isBpmVisible = visibilities.bpm
         // Captured here: the frame callback runs untracked.
         const scope = scopeLookup.value
         const showOtherObjects = settings.showOtherObjects
@@ -148,7 +149,15 @@ watchEffect(
             if (!ctx) return
             const context = { ...inputs, ctx }
             waveform.draw(context, currentWaveform, offset, currentTimes)
-            drawGrid(context, currentBeats, currentTimes, division, laneDivision, beatDisplay)
+            drawGrid(
+                context,
+                currentBeats,
+                currentTimes,
+                division,
+                laneDivision,
+                beatDisplay,
+                isBpmVisible,
+            )
             ctx.save()
             ctx.strokeStyle = '#fff'
             ctx.beginPath()

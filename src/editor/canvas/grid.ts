@@ -12,6 +12,7 @@ export const drawGrid = (
     division: number,
     laneDivision = 1,
     beatDisplay: BeatDisplay = 'measure',
+    isBpmVisible = false,
 ) => {
     const { ctx, bounds, scale, state, ups } = context
     ctx.save()
@@ -71,7 +72,10 @@ export const drawGrid = (
     }
 
     ctx.globalAlpha = 0.5
+    // A BPM label takes the place of the beat label it would overlap.
+    const bpmBeats = new Set(isBpmVisible ? state.bpms.map(({ x }) => x) : [])
     for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
+        if (bpmBeats.has(beat)) continue
         drawText(
             context,
             formatBeatPosition(state.bpms, beat, beatDisplay),
