@@ -159,3 +159,29 @@ test('keyboard shortcuts show each command icon before its name', async ({ page 
     await expect(timeScale.locator('.form-field-icon')).toContainText('TS')
     await expect(timeScale.getByRole('button')).not.toHaveAccessibleName(/TS/)
 })
+
+test('a shortcut icon gives way before its name would clamp, and returns with room', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await open(page)
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    const row = (name: string) =>
+        page.locator('dialog[open] .form-field').filter({
+            has: page.locator('.form-field-text').getByText(name, { exact: true }),
+        })
+    const long = row('Toggle Stage Transform Event Visibility')
+    await expect(long.locator('.form-field-icon')).toBeHidden()
+    await expect(row('Save').locator('.form-field-icon')).toBeVisible()
+    expect(
+        await long
+            .locator('.form-field-text')
+            .evaluate((text) => text.scrollHeight <= text.clientHeight + 1),
+    ).toBe(true)
+
+    await page.setViewportSize({ width: 1600, height: 1000 })
+    await expect(long.locator('.form-field-icon')).toBeVisible()
+})

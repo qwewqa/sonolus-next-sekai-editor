@@ -360,7 +360,7 @@
         "cycled": "Visibilité des objets modifiée"
       },
       "toggle": {
-        "title": "Afficher/masquer : {0}",
+        "title": "Visibilité : {0}",
         "toggled": "Visibilité de {0} modifiée",
         "types": {
           "note": "Note",

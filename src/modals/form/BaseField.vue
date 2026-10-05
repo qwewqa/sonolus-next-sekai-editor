@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, useId, useTemplateRef, watchEffect } from 'vue'
+import {
+    computed,
+    onBeforeUnmount,
+    onMounted,
+    useId,
+    useSlots,
+    useTemplateRef,
+    watch,
+    watchEffect,
+} from 'vue'
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
@@ -52,6 +61,41 @@ const description = computed(() =>
         .join('. '),
 )
 
+// A glyph before the label gives way before the label would clamp.
+const slots = useSlots()
+const labelRow = useTemplateRef<HTMLElement>('labelRow')
+let observer: ResizeObserver | undefined
+let width = 0
+let frame = 0
+
+const fitIcon = () => {
+    const element = labelRow.value
+    const text = element?.querySelector<HTMLElement>('.form-field-text')
+    if (!slots.icon || !element || !text) return
+    element.classList.remove('form-field-iconless')
+    if (text.scrollHeight > text.clientHeight + 1) element.classList.add('form-field-iconless')
+}
+
+onMounted(() => {
+    if (!slots.icon || !labelRow.value) return
+    fitIcon()
+    // Refits after the frame, so hiding the icon never re-enters the observer.
+    observer = new ResizeObserver(([entry]) => {
+        if (!entry || entry.contentRect.width === width) return
+        width = entry.contentRect.width
+        cancelAnimationFrame(frame)
+        frame = requestAnimationFrame(fitIcon)
+    })
+    observer.observe(labelRow.value)
+})
+
+watch(() => props.label, fitIcon, { flush: 'post' })
+
+onBeforeUnmount(() => {
+    observer?.disconnect()
+    cancelAnimationFrame(frame)
+})
+
 // The control is slotted, so it is linked to the description here.
 watchEffect(
     () => {
@@ -69,7 +113,7 @@ watchEffect(
     dock panel), not by the viewport: the wrapper is the query container. -->
     <div class="form-field">
         <component :is="labelId === undefined ? 'label' : 'div'" ref="row" class="form-field-row">
-            <span class="form-field-label"
+            <span ref="labelRow" class="form-field-label"
                 ><slot name="icon" /><span :id="labelId" class="form-field-text">{{ label }}</span
                 ><span
                     v-if="coverage"
@@ -200,6 +244,10 @@ watchEffect(
     min-width: 1rem;
     margin-right: 0.5rem;
     vertical-align: middle;
+}
+
+.form-field-iconless .form-field-icon {
+    display: none;
 }
 
 /* How many selected objects use the field, when not all of them. */

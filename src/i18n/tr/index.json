@@ -360,7 +360,7 @@
         "cycled": "Nesne görünürlükleri değiştirildi"
       },
       "toggle": {
-        "title": "{0} görünürlüğünü aç/kapat",
+        "title": "Görünürlük: {0}",
         "toggled": "{0} görünürlüğü değiştirildi",
         "types": {
           "note": "Nota",
