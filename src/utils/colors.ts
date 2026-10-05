@@ -17,6 +17,10 @@ export const guideColors = {
 
 export const damageColor = '#ff80ff'
 
+/** A styled active or damage connector's base; black stays clear of the grid and damage. */
+export const connectorStyleColor = (style: Exclude<NoteStyle, 'default'>) =>
+    style === 'black' ? '#555555' : guideColors[style]
+
 // Editor colors are independent of preview skin availability.
 export const noteStyleColors = {
     neutral: ['#cccccc', '#ffffff', '#999999'],

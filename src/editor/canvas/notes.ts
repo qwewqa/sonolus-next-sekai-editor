@@ -1,4 +1,4 @@
-import type { FlickDirection } from '../../chart/note'
+import { flickArrowPoints } from '../../flickArrow'
 import { createSlideInfoLookup } from '../../state/entities/slides/lookup'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slides/semantics'
@@ -68,57 +68,6 @@ const traceColors = { green: '#5fefc2', red: '#fe9ccb', yellow: '#fddd86' }
 const diamondColors = { green: '#abfbe3', red: '#ffd8f6', yellow: '#fff2c3' }
 
 type Point = readonly [number, number]
-
-const arrowPoints: Record<Exclude<FlickDirection, 'none'>, readonly Point[]> = {
-    up: [
-        [-1, 0],
-        [-1, -0.4],
-        [0, -1],
-        [1, -0.4],
-        [1, 0],
-        [0, -0.6],
-    ],
-    upLeft: [
-        [-1, 0],
-        [-1.2, -0.3],
-        [-0.6, -1.1],
-        [0.6, -0.8],
-        [0.8, -0.4],
-        [-0.4, -0.7],
-    ],
-    upRight: [
-        [1, 0],
-        [1.2, -0.3],
-        [0.6, -1.1],
-        [-0.6, -0.8],
-        [-0.8, -0.4],
-        [0.4, -0.7],
-    ],
-    down: [
-        [-1, -1.2],
-        [-1, -0.8],
-        [0, -0.2],
-        [1, -0.8],
-        [1, -1.2],
-        [0, -0.6],
-    ],
-    downLeft: [
-        [-1, -1.2],
-        [-1.2, -0.9],
-        [-0.6, -0.1],
-        [0.6, -0.4],
-        [0.8, -0.8],
-        [-0.4, -0.5],
-    ],
-    downRight: [
-        [1, -1.2],
-        [1.2, -0.9],
-        [0.6, -0.1],
-        [-0.6, -0.4],
-        [-0.8, -0.8],
-        [0.4, -0.5],
-    ],
-}
 
 const diamondPoints: readonly Point[] = [
     [-0.3, 0],
@@ -220,7 +169,7 @@ const drawArtwork = (
         ctx.fill()
     }
     if (type !== 'anchor' && type !== 'tick' && type !== 'damage' && flickDirection !== 'none') {
-        polygon(ctx, arrowPoints[flickDirection])
+        polygon(ctx, flickArrowPoints[flickDirection])
         ctx.fillStyle = palette?.[2] ?? (isCritical ? '#ffc633' : '#ec7cb4')
         ctx.fill()
         ctx.strokeStyle = '#fff'

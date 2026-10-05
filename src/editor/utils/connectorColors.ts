@@ -1,6 +1,6 @@
 import type { NoteObject } from '../../chart/note'
 import { guideColor } from '../../chart/noteStyle'
-import { activeColors, damageColor, guideColors } from '../../utils/colors'
+import { activeColors, connectorStyleColor, damageColor, guideColors } from '../../utils/colors'
 
 type ConnectorProperties = Partial<
     Pick<
@@ -30,9 +30,7 @@ export const connectorColors = (properties: ConnectorProperties) => {
     const style = properties.connectorStyle ?? 'default'
     const styled = style !== 'default'
     const base = styled
-        ? style === 'black'
-            ? '#555555'
-            : guideColors[style]
+        ? connectorStyleColor(style)
         : properties.connectorType === 'damage'
           ? damageColor
           : activeColors[critical ? 'critical' : 'normal']
