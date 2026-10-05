@@ -96,6 +96,31 @@ test('note size buttons use the lane division and keep the zero-size bound', asy
     expect(sizes).toEqual([2.25, 2, 0])
 })
 
+test('note size steps in thirds stay on the lane grid', async ({ page }) => {
+    const sizes = await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        const { view } = window.editorTest
+        view.laneDivision = 3
+        view.noteSize = 2
+        const sizes = []
+        for (let i = 0; i < 3; i++) {
+            void commands.increaseNoteSize.execute()
+            sizes.push(view.noteSize)
+        }
+        view.noteSize = 1
+        for (let i = 0; i < 3; i++) {
+            void commands.decreaseNoteSize.execute()
+            sizes.push(view.noteSize)
+        }
+        // Sizes off the grid keep their offset.
+        view.noteSize = 2.5
+        void commands.increaseNoteSize.execute()
+        sizes.push(view.noteSize)
+        return sizes
+    })
+    expect(sizes).toEqual([7 / 3, 8 / 3, 3, 2 / 3, 1 / 3, 0, 2.5 + 1 / 3])
+})
+
 for (const tool of ['note', 'slide', 'select'] as const) {
     test(`${tool} drags allow note widths down to one lane division`, async ({ page }) => {
         for (const division of [1, 4, 8]) {
