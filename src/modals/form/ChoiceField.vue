@@ -17,7 +17,7 @@ import { isUnknownValue, mixedOptions, useFieldUsage } from './fieldUsage'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
 import { resyncRadios } from './resync'
-import { segmentsFit } from './segmented'
+import { choiceLayout, selectGlyphFits, type ChoiceLayout } from './segmented'
 import SelectField from './SelectField.vue'
 
 const props = defineProps<{
@@ -30,6 +30,11 @@ const props = defineProps<{
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 const modelValue = defineModel<T | undefined>({ required: true })
+
+const slots = defineSlots<{
+    /** A value's mark, shown before its name only where it costs no text. */
+    glyph?: (props: { value: T }) => unknown
+}>()
 
 const id = useId()
 const emptyLabel = useEmptyLabel()
@@ -50,7 +55,9 @@ const segment =
 const input = 'peer absolute inset-0 size-full cursor-pointer opacity-0 focus-visible:outline-none'
 
 // Both names show side by side when they fit in full; otherwise a select.
-const segmented = ref(false)
+const layout = ref<ChoiceLayout>('select')
+const segmented = computed(() => layout.value !== 'select')
+const selectGlyph = ref(false)
 const field = useTemplateRef<ComponentPublicInstance>('field')
 // The field may render as a fragment that starts with a comment.
 const fieldRoot = () => {
@@ -72,7 +79,8 @@ const measure = () => {
     text.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
     const widths = props.options.map(([name]) => Math.ceil(text.measureText(name).width) + 1)
-    segmented.value = segmentsFit(element.clientWidth, widths, optional.value, rem)
+    layout.value = choiceLayout(element.clientWidth, widths, optional.value, rem, !!slots.glyph)
+    selectGlyph.value = !!slots.glyph && selectGlyphFits(element.clientWidth, widths, rem)
 }
 
 // Swapping controls inside the observer callback would warn of a resize loop.
@@ -162,6 +170,11 @@ watch(
                     @change="resyncRadios($event, () => modelValue)"
                 />
                 <span :class="segment"
+                    ><span
+                        v-if="layout === 'glyphs'"
+                        class="mr-1.5 flex shrink-0"
+                        aria-hidden="true"
+                        ><slot name="glyph" :value /></span
                     ><span class="truncate">{{ name }}</span></span
                 >
             </label>
@@ -174,7 +187,11 @@ watch(
         :label
         :options="selectOptions"
         :disabled
-    />
+    >
+        <template v-if="selectGlyph && modelValue !== undefined && !unknown" #leading>
+            <slot name="glyph" :value="modelValue" />
+        </template>
+    </OptionalSelectField>
     <MultiSelectField
         v-else-if="variant === 'multi'"
         ref="field"
@@ -182,6 +199,10 @@ watch(
         :label
         :options="selectOptions"
         :disabled
-    />
+    >
+        <template v-if="selectGlyph && modelValue !== undefined && !unknown" #leading>
+            <slot name="glyph" :value="modelValue" />
+        </template>
+    </MultiSelectField>
     <SelectField v-else ref="field" v-model="modelValue" :label :options :disabled />
 </template>

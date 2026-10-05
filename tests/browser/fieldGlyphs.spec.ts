@@ -106,3 +106,34 @@ test('tool presets show glyphs only for values that are set', async ({ page }) =
     await expect(lead(page, 'Note Color').locator('circle')).toHaveAttribute('fill', '#83e5ff')
     await expect(lead(page, 'Flick Direction')).toHaveCount(0)
 })
+
+test.describe('time scale transition', () => {
+    const transition = 'Time Scale Transition'
+    const segments = (page: Page) => field(page, transition).getByRole('radiogroup')
+
+    test('a wide dock shows the markers beside both names', async ({ page }) => {
+        await open(page, { rightDockWidth: 460 })
+        await select(page, 'timeScale', [1])
+        await expect(segments(page)).toBeVisible()
+        await expect(segments(page).locator('[aria-hidden="true"] svg')).toHaveCount(2)
+        await expect(segments(page).locator('circle')).toHaveCount(1)
+        await expect(segments(page).locator('polygon')).toHaveCount(1)
+        await expect(segments(page).getByRole('radio', { name: 'Scroll' })).toBeChecked()
+    })
+
+    test('the default dock keeps every name in full without the marker', async ({ page }) => {
+        await open(page)
+        await select(page, 'timeScale', [1])
+        await expect(field(page, transition).locator('select')).toBeVisible()
+        await expect(lead(page, transition)).toHaveCount(0)
+        expect(await selectPadding(page, transition)).toBe('16px')
+    })
+
+    test('a phone keeps the segments and drops the markers first', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await open(page)
+        await select(page, 'timeScale', [1])
+        await expect(segments(page)).toBeVisible()
+        await expect(segments(page).locator('svg')).toHaveCount(0)
+    })
+})

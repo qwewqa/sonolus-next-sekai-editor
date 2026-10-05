@@ -2,6 +2,7 @@
 import type { TimeScaleTransition } from '../../chart/timeScale.ts'
 import { i18n } from '../../i18n'
 import ChoiceField from './ChoiceField.vue'
+import TimeScaleTransitionIcon from './TimeScaleTransitionIcon.vue'
 
 const modelValue = defineModel<TimeScaleTransition | undefined>({ required: true })
 </script>
@@ -15,5 +16,7 @@ const modelValue = defineModel<TimeScaleTransition | undefined>({ required: true
             [i18n.modals.form.timeScaleTransition.scroll, 'scroll'],
         ]"
         variant="optional"
-    />
+    >
+        <template #glyph="{ value }"><TimeScaleTransitionIcon :transition="value" /></template>
+    </ChoiceField>
 </template>

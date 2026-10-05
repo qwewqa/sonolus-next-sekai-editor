@@ -21,3 +21,38 @@ export const segmentsFit = (
     optional: boolean,
     rem: number,
 ) => availableWidth > 0 && segmentedWidth(labelWidths, optional, rem) <= availableWidth
+
+/** Room, in rem, a glyph and its gap take before a segment's name. */
+export const segmentGlyphWidth = 1.25
+
+/** A select's insets, in rem, around its value with a leading glyph and the chevron. */
+export const selectGlyphInsets = 4.125
+
+export type ChoiceLayout = 'glyphs' | 'segments' | 'select'
+
+/** Glyphs drop before the segments do; the select comes last. */
+export const choiceLayout = (
+    availableWidth: number,
+    labelWidths: readonly number[],
+    optional: boolean,
+    rem: number,
+    glyphs: boolean,
+): ChoiceLayout =>
+    glyphs &&
+    segmentsFit(
+        availableWidth,
+        labelWidths.map((width) => width + segmentGlyphWidth * rem),
+        optional,
+        rem,
+    )
+        ? 'glyphs'
+        : segmentsFit(availableWidth, labelWidths, optional, rem)
+          ? 'segments'
+          : 'select'
+
+/** A select shows the value's glyph only when every name still fits beside it. */
+export const selectGlyphFits = (
+    availableWidth: number,
+    labelWidths: readonly number[],
+    rem: number,
+) => availableWidth > 0 && Math.max(0, ...labelWidths) <= availableWidth - selectGlyphInsets * rem
