@@ -730,7 +730,7 @@ export const renderPreviewFrame = (
             )
             const extents = maskedNoteExtents(
                 lerp(basicVisualLaneAt(attachHead, t), basicVisualLaneAt(attachTail, t), easedFrac),
-                lerp(attachHead.size, attachTail.size, easedFrac),
+                Math.max(0, lerp(attachHead.size, attachTail.size, easedFrac)),
                 mask,
             )
             return {

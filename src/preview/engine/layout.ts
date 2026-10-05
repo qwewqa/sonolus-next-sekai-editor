@@ -176,8 +176,9 @@ export const getCameraInfo = (
 
     return {
         lane: lerp(a.lane, b.lane, p),
-        size: lerp(a.size, b.size, p),
-        zoom: lerp(a.zoom, b.zoom, p),
+        // Overshooting eases keep the camera from collapsing or inverting.
+        size: Math.max(0.01, lerp(a.size, b.size, p)),
+        zoom: Math.max(0.01, lerp(a.zoom, b.zoom, p)),
         zoomTarget: vec(
             lerp(infoA.zoomTarget.x, infoB.zoomTarget.x, p),
             lerp(infoA.zoomTarget.y, infoB.zoomTarget.y, p),

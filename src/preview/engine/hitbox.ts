@@ -218,7 +218,7 @@ export const getHiddenTickHitboxes = (chain: PreviewNoteChain): HitboxNote[] => 
             targetScaledTime: 0,
         }
         // BaseNote.preprocess: attached notes take their size from the attachment.
-        note.size = lerp(attachHead.size, attachTail.size, attachEasedFrac(note))
+        note.size = Math.max(0, lerp(attachHead.size, attachTail.size, attachEasedFrac(note)))
 
         if (tick.connectorType === 'active') return toHitboxNote(note)
 

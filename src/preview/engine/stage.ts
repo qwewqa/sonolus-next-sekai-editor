@@ -162,7 +162,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         if (maskB) {
             const p = ease(maskA.ease, maskFrac)
             props.lane = lerp(maskA.lane, maskB.lane, p)
-            props.width = lerp(maskA.size, maskB.size, p)
+            props.width = Math.max(0, lerp(maskA.size, maskB.size, p))
         }
     } else if (maskB) {
         props.lane = maskB.lane
@@ -228,15 +228,16 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.divisionLineAlpha = styleA.divisionLineAlpha
         if (styleB) {
             const p = ease(styleA.ease, styleFrac)
+            // Overshooting eases keep blends and alphas within their range.
+            const blend = clamp(p, 0, 1)
             props.judgeLineColor.end = styleB.judgeLineColor
-            props.judgeLineColor.progress = p
+            props.judgeLineColor.progress = blend
             props.judgeLineStyle.end = styleB.judgeLineStyle
-            props.judgeLineStyle.progress = p
+            props.judgeLineStyle.progress = blend
             props.leftBorderStyle.end = styleB.leftBorderStyle
-            props.leftBorderStyle.progress = p
+            props.leftBorderStyle.progress = blend
             props.rightBorderStyle.end = styleB.rightBorderStyle
-            props.rightBorderStyle.progress = p
-            // Overshooting eases keep alphas within their range.
+            props.rightBorderStyle.progress = blend
             props.noteAlpha = clamp(lerp(styleA.noteAlpha, styleB.noteAlpha, p), 0, 1)
             props.laneAlpha = clamp(lerp(styleA.laneAlpha, styleB.laneAlpha, p), 0, 1)
             props.judgeLineAlpha = clamp(
@@ -244,7 +245,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
                 0,
                 1,
             )
-            props.fullWidth = lerp(styleA.fullWidth, styleB.fullWidth, p)
+            props.fullWidth = clamp(lerp(styleA.fullWidth, styleB.fullWidth, p), 0, 1)
             props.divisionLineAlpha = clamp(
                 lerp(styleA.divisionLineAlpha, styleB.divisionLineAlpha, p),
                 0,

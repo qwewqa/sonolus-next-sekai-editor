@@ -8,6 +8,7 @@ import {
     createViewport,
     defaultCameraInfo,
     elevationProjection,
+    getCameraInfo,
     identityStageScreenTransform,
     identityStageTransform,
     stageTransformIsIdentity,
@@ -299,4 +300,59 @@ test('custom and fallback stage borders interpolate width without fading or dupl
         }
         assert.equal(drawBorder(0, 2, 1).length, 0)
     }
+})
+
+test('overshooting eases keep camera, mask and style values within their ranges', () => {
+    const viewport = createViewport(1600, 900)
+    const camera = (time: number, size: number, zoom: number) => ({
+        time,
+        lane: 0,
+        size,
+        zoom,
+        zoomTargetLane: 0,
+        zoomTargetY: 0,
+        zoomVerticalAlign: 0 as const,
+        rotate: 0,
+        stageTilt: 1,
+        ease: EaseType.inElastic,
+    })
+    const info = getCameraInfo(viewport, [camera(0, 1, 1), camera(1, 12, 12)], 0.9)
+    assert.equal(info.size, 0.01)
+    assert.equal(info.zoom, 0.01)
+
+    const props = getStageProps(
+        stage({
+            masks: [
+                { time: 0, lane: 0, size: 1, maskNotes: false, ease: EaseType.inElastic },
+                { time: 1, lane: 0, size: 6, maskNotes: false, ease: EaseType.linear },
+            ],
+        }),
+        0.9,
+    )
+    assert.equal(props.width, 0)
+
+    const style = (time: number, alpha: number, judgeLineColor: number, fullWidth: number) => ({
+        time,
+        judgeLineColor,
+        judgeLineStyle: 0 as const,
+        leftBorderStyle: 0,
+        rightBorderStyle: 0,
+        noteAlpha: alpha,
+        laneAlpha: alpha,
+        judgeLineAlpha: alpha,
+        fullWidth,
+        divisionLineAlpha: alpha,
+        ease: EaseType.outBack,
+    })
+    const styled = getStageProps(stage({ styles: [style(0, 0, 0, 0), style(1, 1, 1, 1)] }), 0.6)
+    for (const value of [
+        styled.noteAlpha,
+        styled.laneAlpha,
+        styled.judgeLineAlpha,
+        styled.divisionLineAlpha,
+        styled.fullWidth,
+        styled.judgeLineColor.progress,
+        styled.leftBorderStyle.progress,
+    ])
+        assert.equal(value, 1)
 })
