@@ -196,9 +196,6 @@ test('turning Show Other Groups on or off overrides contradicting eyes', async (
     })
 })
 
-const shots =
-    'C:/Users/qwewqa/AppData/Local/Temp/claude/D--sonolus/de98ad3d-8b4d-496f-9bd1-a2af51de64d9/scratchpad/round2/tools-audit'
-
 for (const [device, options] of Object.entries({
     desktop: {},
     phone: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
@@ -229,8 +226,9 @@ for (const [device, options] of Object.entries({
             await expect(
                 panel.getByRole('button', { name: 'Hide Third', exact: true }),
             ).toBeVisible()
-            if (process.env.SCOPE_SHOTS)
-                await page.screenshot({ path: `${shots}/scope-all-${device}.png` })
+            // For review screenshots, e.g. SCOPE_SHOTS=/tmp/shots.
+            const shots = process.env.SCOPE_SHOTS
+            if (shots) await page.screenshot({ path: `${shots}/scope-all-${device}.png` })
         })
     })
 }

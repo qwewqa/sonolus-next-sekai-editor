@@ -147,8 +147,7 @@ watch(
     { immediate: true },
 )
 
-// Changing a show-other setting always shows; synchronous, so no scope snapshot
-// pairs the new setting with stale overrides.
+// Synchronous, so no scope snapshot pairs a new show-other setting with stale overrides.
 watch(
     () => settings.showOtherGroups,
     () => {
