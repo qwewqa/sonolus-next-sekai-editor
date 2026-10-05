@@ -21,9 +21,9 @@
       "modal": {
         "file": "Fichier",
         "offset": "Décalage (ms)",
-        "loading": "Chargement du fichier...",
-        "decoding": "Décodage audio...",
-        "generating": "Génération de forme d'onde..."
+        "loading": "Chargement du fichier…",
+        "decoding": "Décodage audio…",
+        "generating": "Génération de forme d'onde…"
       }
     },
     "brush": {
@@ -234,8 +234,8 @@
     },
     "open": {
       "title": "Ouvrir",
-      "loading": "Chargement du fichier...",
-      "importing": "Importation du niveau...",
+      "loading": "Chargement du fichier…",
+      "importing": "Importation du niveau…",
       "opened": "Niveau ouvert",
       "importedChcy": "Niveau Chart Cyanvas importé",
       "importedUsc": "Partition USC importée",
@@ -267,7 +267,7 @@
     },
     "save": {
       "title": "Sauvegarder",
-      "exporting": "Exportation du niveau...",
+      "exporting": "Exportation du niveau…",
       "saved": "Niveau sauvegardé"
     },
     "scrolls": {
@@ -880,9 +880,9 @@
       "cover": "Couverture",
       "size": "Taille",
       "generate": "Générer",
-      "loading": "Chargement du fichier...",
-      "decoding": "Décodage d'image...",
-      "generating": "Génération de la couverture..."
+      "loading": "Chargement du fichier…",
+      "decoding": "Décodage d'image…",
+      "generating": "Génération de la couverture…"
     },
     "previewEditor": {
       "title": "Éditeur de l'Aperçu",
@@ -892,9 +892,9 @@
       "fadeStart": "Durée du fondu d’entrée",
       "fadeEnd": "Durée du fondu de sortie",
       "generate": "Générer",
-      "loading": "Chargement du fichier...",
-      "decoding": "Décodage audio...",
-      "generating": "Génération de l'aperçu..."
+      "loading": "Chargement du fichier…",
+      "decoding": "Décodage audio…",
+      "generating": "Génération de l'aperçu…"
     }
   },
   "notification": {
@@ -1067,7 +1067,7 @@
         "qualifiedMode": "Mode d’interpolation de l’événement"
       },
       "file": {
-        "select": "Sélectionner le Fichier..."
+        "select": "Sélectionner le Fichier…"
       },
       "flickDirection": {
         "label": "Direction du Flick",
@@ -1263,14 +1263,14 @@
       "ok": "OK"
     },
     "loading": {
-      "loading": "Chargement..."
+      "loading": "Chargement…"
     }
   },
   "preview": {
     "settings": "Paramètres de l’aperçu",
     "minimizeSettings": "Réduire les paramètres de l’aperçu",
     "showSettings": "Afficher les paramètres de l’aperçu",
-    "loadingSkin": "Chargement du skin...",
+    "loadingSkin": "Chargement du skin…",
     "skinUnavailable": "Le skin de l’aperçu n’a pas pu être chargé.",
     "graphicsUnavailable": "Le rendu de l’aperçu n’a pas pu démarrer.",
     "graphicsHelp": "Vérifiez que l’accélération graphique et WebGL sont activés dans votre navigateur, puis redémarrez-le si nécessaire.",

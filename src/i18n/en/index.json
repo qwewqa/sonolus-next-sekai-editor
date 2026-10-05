@@ -21,9 +21,9 @@
             "modal": {
                 "file": "File",
                 "offset": "Offset (ms)",
-                "loading": "Loading file...",
-                "decoding": "Decoding audio...",
-                "generating": "Generating waveform..."
+                "loading": "Loading file…",
+                "decoding": "Decoding audio…",
+                "generating": "Generating waveform…"
             }
         },
         "brush": {
@@ -234,8 +234,8 @@
         },
         "open": {
             "title": "Open",
-            "loading": "Loading file...",
-            "importing": "Importing level...",
+            "loading": "Loading file…",
+            "importing": "Importing level…",
             "opened": "Opened level",
             "importedChcy": "Imported Chart Cyanvas level",
             "importedUsc": "Imported USC chart",
@@ -267,7 +267,7 @@
         },
         "save": {
             "title": "Save",
-            "exporting": "Exporting level...",
+            "exporting": "Exporting level…",
             "saved": "Saved level"
         },
         "scrolls": {
@@ -880,9 +880,9 @@
             "cover": "Cover",
             "size": "Size",
             "generate": "Generate",
-            "loading": "Loading file...",
-            "decoding": "Decoding image...",
-            "generating": "Generating cover..."
+            "loading": "Loading file…",
+            "decoding": "Decoding image…",
+            "generating": "Generating cover…"
         },
         "previewEditor": {
             "title": "Preview Editor",
@@ -892,9 +892,9 @@
             "fadeStart": "Fade Start",
             "fadeEnd": "Fade End",
             "generate": "Generate",
-            "loading": "Loading file...",
-            "decoding": "Decoding audio...",
-            "generating": "Generating preview..."
+            "loading": "Loading file…",
+            "decoding": "Decoding audio…",
+            "generating": "Generating preview…"
         }
     },
     "notification": {
@@ -909,7 +909,7 @@
         "initialize": "Initialize",
         "autoSave": {
             "title": "Auto Save",
-            "importing": "Importing level...",
+            "importing": "Importing level…",
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab."
         },
         "changes": {
@@ -1067,7 +1067,7 @@
                 "qualifiedMode": "Event Ease Mode"
             },
             "file": {
-                "select": "Select File..."
+                "select": "Select File…"
             },
             "flickDirection": {
                 "label": "Flick Direction",
@@ -1263,14 +1263,14 @@
             "ok": "OK"
         },
         "loading": {
-            "loading": "Loading..."
+            "loading": "Loading…"
         }
     },
     "preview": {
         "settings": "Preview Settings",
         "minimizeSettings": "Minimize Preview Settings",
         "showSettings": "Show Preview Settings",
-        "loadingSkin": "Loading skin...",
+        "loadingSkin": "Loading skin…",
         "skinUnavailable": "The preview skin could not be loaded.",
         "graphicsUnavailable": "Preview graphics could not be started.",
         "graphicsHelp": "Check that graphics acceleration and WebGL are enabled in your browser, then restart the browser if needed.",

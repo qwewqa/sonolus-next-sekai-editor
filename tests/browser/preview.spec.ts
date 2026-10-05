@@ -2010,7 +2010,7 @@ test.describe('preview panel lifecycle', () => {
         await page.evaluate(installEditorFixture)
         const requests = skinRequests(page)
         await page.evaluate(() => (window.editorTest.settings.showPreview = true))
-        await expect(page.locator('.preview').getByText('Loading skin...')).toBeVisible()
+        await expect(page.locator('.preview').getByText('Loading skin…')).toBeVisible()
         await page.evaluate(() => (window.editorTest.settings.showPreview = false))
         await expect(page.locator('.preview')).toHaveCount(0)
         await page.evaluate(() => (window.editorTest.settings.showPreview = true))

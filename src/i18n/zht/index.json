@@ -21,9 +21,9 @@
       "modal": {
         "file": "檔案",
         "offset": "偏移（毫秒）",
-        "loading": "正在載入檔案...",
-        "decoding": "解碼音訊...",
-        "generating": "生成波形..."
+        "loading": "正在載入檔案…",
+        "decoding": "解碼音訊…",
+        "generating": "生成波形…"
       }
     },
     "brush": {
@@ -234,8 +234,8 @@
     },
     "open": {
       "title": "開啟",
-      "loading": "正在載入檔案...",
-      "importing": "正在匯入關卡...",
+      "loading": "正在載入檔案…",
+      "importing": "正在匯入關卡…",
       "opened": "已開啟關卡",
       "importedChcy": "已匯入 Chart Cyanvas 關卡",
       "importedUsc": "已匯入 USC 譜面",
@@ -267,7 +267,7 @@
     },
     "save": {
       "title": "儲存",
-      "exporting": "正在匯出關卡...",
+      "exporting": "正在匯出關卡…",
       "saved": "已儲存關卡"
     },
     "scrolls": {
@@ -880,9 +880,9 @@
       "cover": "封面",
       "size": "尺寸",
       "generate": "產生",
-      "loading": "正在載入檔案...",
-      "decoding": "正在解碼圖像...",
-      "generating": "正在產生封面..."
+      "loading": "正在載入檔案…",
+      "decoding": "正在解碼圖像…",
+      "generating": "正在產生封面…"
     },
     "previewEditor": {
       "title": "預覽編輯器",
@@ -892,9 +892,9 @@
       "fadeStart": "淡入時長",
       "fadeEnd": "淡出時長",
       "generate": "產生",
-      "loading": "正在載入檔案...",
-      "decoding": "正在解碼音訊...",
-      "generating": "正在生成預覽..."
+      "loading": "正在載入檔案…",
+      "decoding": "正在解碼音訊…",
+      "generating": "正在生成預覽…"
     }
   },
   "notification": {
@@ -909,7 +909,7 @@
     "initialize": "初始化",
     "autoSave": {
       "title": "自動儲存",
-      "importing": "正在匯入關卡...",
+      "importing": "正在匯入關卡…",
       "failed": "自動儲存無法儲存您的最新變更。瀏覽器儲存空間可能已滿或無法使用。關閉此分頁前，請將譜面儲存為檔案。"
     },
     "changes": {
@@ -1067,7 +1067,7 @@
         "qualifiedMode": "事件緩動模式"
       },
       "file": {
-        "select": "選擇檔案..."
+        "select": "選擇檔案…"
       },
       "flickDirection": {
         "label": "滑動方向",
@@ -1263,14 +1263,14 @@
       "ok": "確定"
     },
     "loading": {
-      "loading": "載入中..."
+      "loading": "載入中…"
     }
   },
   "preview": {
     "settings": "預覽設定",
     "minimizeSettings": "收合預覽設定",
     "showSettings": "顯示預覽設定",
-    "loadingSkin": "正在載入外觀...",
+    "loadingSkin": "正在載入外觀…",
     "skinUnavailable": "無法載入預覽外觀。",
     "graphicsUnavailable": "無法啟動預覽圖形。",
     "graphicsHelp": "請確認瀏覽器已啟用圖形加速和 WebGL，必要時重新啟動瀏覽器。",

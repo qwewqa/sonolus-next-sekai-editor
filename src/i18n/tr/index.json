@@ -21,9 +21,9 @@
       "modal": {
         "file": "Dosya",
         "offset": "Zaman Kayması (ms)",
-        "loading": "Dosya yükleniyor...",
-        "decoding": "Ses çözümleniyor...",
-        "generating": "Dalga formu oluşturuluyor..."
+        "loading": "Dosya yükleniyor…",
+        "decoding": "Ses çözümleniyor…",
+        "generating": "Dalga formu oluşturuluyor…"
       }
     },
     "brush": {
@@ -234,8 +234,8 @@
     },
     "open": {
       "title": "Aç",
-      "loading": "Dosya yükleniyor...",
-      "importing": "Seviye içe aktarılıyor...",
+      "loading": "Dosya yükleniyor…",
+      "importing": "Seviye içe aktarılıyor…",
       "opened": "Seviye açıldı",
       "importedChcy": "Chart Cyanvas seviyesi içe aktarıldı",
       "importedUsc": "USC çizelgesi içe aktarıldı",
@@ -880,9 +880,9 @@
       "cover": "Kapak",
       "size": "Boyut",
       "generate": "Oluştur",
-      "loading": "Dosya yükleniyor...",
-      "decoding": "Görsel çözümleniyor...",
-      "generating": "Kapak oluşturuluyor..."
+      "loading": "Dosya yükleniyor…",
+      "decoding": "Görsel çözümleniyor…",
+      "generating": "Kapak oluşturuluyor…"
     },
     "previewEditor": {
       "title": "Önizleme Düzenleyicisi",
@@ -892,9 +892,9 @@
       "fadeStart": "Ses Geçişi Başlangıcı",
       "fadeEnd": "Ses Geçişi Bitişi",
       "generate": "Oluştur",
-      "loading": "Dosya yükleniyor...",
-      "decoding": "Ses çözümleniyor...",
-      "generating": "Önizleme oluşturuluyor..."
+      "loading": "Dosya yükleniyor…",
+      "decoding": "Ses çözümleniyor…",
+      "generating": "Önizleme oluşturuluyor…"
     }
   },
   "notification": {
@@ -1067,7 +1067,7 @@
         "qualifiedMode": "Olay Yumuşatma Modu"
       },
       "file": {
-        "select": "Dosya Seç..."
+        "select": "Dosya Seç…"
       },
       "flickDirection": {
         "label": "Fiske Yönü",
@@ -1263,14 +1263,14 @@
       "ok": "Tamam"
     },
     "loading": {
-      "loading": "Yükleniyor..."
+      "loading": "Yükleniyor…"
     }
   },
   "preview": {
     "settings": "Önizleme ayarları",
     "minimizeSettings": "Önizleme ayarlarını daralt",
     "showSettings": "Önizleme ayarlarını göster",
-    "loadingSkin": "Görünüm yükleniyor...",
+    "loadingSkin": "Görünüm yükleniyor…",
     "skinUnavailable": "Önizleme görünümü yüklenemedi.",
     "graphicsUnavailable": "Önizleme grafikleri başlatılamadı.",
     "graphicsHelp": "Tarayıcınızda grafik hızlandırmanın ve WebGL özelliğinin etkin olduğunu kontrol edin. Gerekirse tarayıcıyı yeniden başlatın.",
