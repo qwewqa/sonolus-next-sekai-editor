@@ -112,8 +112,6 @@
     },
     "scaleSelection": {
       "factor": "Facteur d’échelle",
-      "pivotBeat": "Premier temps",
-      "pivotElevation": "Élévation minimale",
       "apply": "Appliquer",
       "invalidFactor": "Saisissez un facteur d’échelle positif qui maintient le résultat dans les limites prises en charge par l’éditeur"
     },
@@ -174,11 +172,6 @@
       "title": "Gérer les groupes",
       "modal": {
         "title": "Gérer les groupes",
-        "switch": "Passer au groupe",
-        "switched": {
-          "all": "Tous les groupes activés",
-          "one": "Groupe {0} activé"
-        },
         "moveUp": "Monter le groupe",
         "moveDown": "Descendre le groupe",
         "moved": "Groupe {0} déplacé",
@@ -200,11 +193,6 @@
       "title": "Gérer les scènes",
       "modal": {
         "title": "Gérer les scènes",
-        "switch": "Passer à la scène",
-        "switched": {
-          "all": "Toutes les scènes activées",
-          "one": "Scène {0} activée"
-        },
         "moveUp": "Monter la scène",
         "moveDown": "Descendre la scène",
         "moved": "Scène {0} déplacée",
@@ -587,15 +575,11 @@
     "nextBeat": "Temps suivant",
     "snap": "Alignement",
     "snapping": "Alignement de l’élévation",
-    "sideBySide": "Côte à côte",
     "auto": "Auto",
     "allow": "Autoriser",
     "disallow": "Ne pas autoriser",
     "off": "Désactivé",
     "canvas": "Élévation des notes",
-    "axis": "Élévation",
-    "offset": "Décalage d’affichage",
-    "inherited": "Élévation héritée",
     "empty": "Aucune note à ce temps",
     "history": "Élévation des notes modifiée",
     "close": "Fermer l’éditeur d’élévation",
@@ -699,7 +683,6 @@
         "overlay": "Superposées"
       },
       "aspectRatio": "Rapport d’aspect",
-      "showPreview": "Afficher l’aperçu",
       "controls": {
         "title": "Panneau des paramètres de l’aperçu",
         "auto": "Auto",
@@ -726,7 +709,6 @@
   },
   "sidebars": {
     "default": {
-      "title": "Propriétés d'Objet",
       "none": "Aucun objet sélectionné",
       "edited": "{0} objet modifié|{0} objets modifiés"
     },
@@ -928,7 +910,6 @@
     "autoSave": {
       "title": "Sauvegarde Automatique",
       "importing": "Importation du niveau…",
-      "disabled": "La sauvegarde automatique est désactivée pour ce niveau en raison de sa taille. Veuillez sauvegarder manuellement.",
       "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet."
     },
     "changes": {

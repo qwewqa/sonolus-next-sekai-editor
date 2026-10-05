@@ -112,8 +112,6 @@
     },
     "scaleSelection": {
       "factor": "배율",
-      "pivotBeat": "가장 이른 박자",
-      "pivotElevation": "가장 낮은 높이",
       "apply": "적용",
       "invalidFactor": "결과가 편집기에서 지원하는 범위 내에 있도록 양의 배율을 입력하세요"
     },
@@ -174,11 +172,6 @@
       "title": "그룹 관리",
       "modal": {
         "title": "그룹 관리",
-        "switch": "그룹 전환",
-        "switched": {
-          "all": "모든 그룹으로 전환됨",
-          "one": "{0}번 그룹으로 전환됨"
-        },
         "moveUp": "그룹을 위로 이동",
         "moveDown": "그룹을 아래로 이동",
         "moved": "{0}번 그룹 이동됨",
@@ -200,11 +193,6 @@
       "title": "스테이지 관리",
       "modal": {
         "title": "스테이지 관리",
-        "switch": "스테이지 전환",
-        "switched": {
-          "all": "모든 스테이지 전환됨",
-          "one": "{0}번 스테이지로 전환됨"
-        },
         "moveUp": "스테이지를 위로 이동",
         "moveDown": "스테이지를 아래로 이동",
         "moved": "{0}번 스테이지 이동됨",
@@ -587,15 +575,11 @@
     "nextBeat": "다음 비트",
     "snap": "스냅",
     "snapping": "높이 스냅",
-    "sideBySide": "나란히 표시",
     "auto": "자동",
     "allow": "허용",
     "disallow": "허용 안 함",
     "off": "꺼짐",
     "canvas": "노트 높이",
-    "axis": "높이",
-    "offset": "표시 오프셋",
-    "inherited": "상속된 높이",
     "empty": "이 비트에 노트가 없음",
     "history": "노트 높이 변경됨",
     "close": "높이 편집기 닫기",
@@ -699,7 +683,6 @@
         "overlay": "겹쳐 표시"
       },
       "aspectRatio": "화면 비율",
-      "showPreview": "미리보기 표시",
       "controls": {
         "title": "미리보기 설정 패널",
         "auto": "자동",
@@ -726,7 +709,6 @@
   },
   "sidebars": {
     "default": {
-      "title": "객체 속성",
       "none": "선택된 객체 없음",
       "edited": "{0}개 객체 편집됨"
     },
@@ -928,7 +910,6 @@
     "autoSave": {
       "title": "자동 저장",
       "importing": "레벨 가져오는 중...",
-      "disabled": "채보 크기가 커서 자동 저장이 비활성화되었습니다. 직접 저장해 주세요.",
       "failed": "최근 변경 사항을 자동 저장하지 못했습니다. 브라우저 저장 공간이 가득 찼거나 사용할 수 없을 수 있습니다. 이 탭을 닫기 전에 채보를 파일로 저장해 주세요."
     },
     "changes": {

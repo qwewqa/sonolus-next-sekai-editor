@@ -112,8 +112,6 @@
     },
     "scaleSelection": {
       "factor": "缩放倍数",
-      "pivotBeat": "最早节拍",
-      "pivotElevation": "最低高度",
       "apply": "应用",
       "invalidFactor": "请输入正缩放倍数，使结果保持在编辑器支持的范围内"
     },
@@ -174,11 +172,6 @@
       "title": "管理群组",
       "modal": {
         "title": "管理群组",
-        "switch": "切换到群组",
-        "switched": {
-          "all": "已切换到所有群组",
-          "one": "已切换到 {0} 群组"
-        },
         "moveUp": "上移群组",
         "moveDown": "下移群组",
         "moved": "已移动 {0} 群组",
@@ -200,11 +193,6 @@
       "title": "管理舞台",
       "modal": {
         "title": "管理舞台",
-        "switch": "切换到舞台",
-        "switched": {
-          "all": "已切换到所有舞台",
-          "one": "已切换到 {0} 舞台"
-        },
         "moveUp": "上移舞台",
         "moveDown": "下移舞台",
         "moved": "已移动 {0} 舞台",
@@ -587,15 +575,11 @@
     "nextBeat": "下一节拍",
     "snap": "吸附",
     "snapping": "高度吸附",
-    "sideBySide": "并排显示",
     "auto": "自动",
     "allow": "允许",
     "disallow": "不允许",
     "off": "关",
     "canvas": "音符高度",
-    "axis": "高度",
-    "offset": "显示偏移",
-    "inherited": "继承的高度",
     "empty": "此节拍没有音符",
     "history": "已更改音符高度",
     "close": "关闭高度编辑器",
@@ -699,7 +683,6 @@
         "overlay": "叠加"
       },
       "aspectRatio": "宽高比",
-      "showPreview": "显示预览",
       "controls": {
         "title": "预览设置面板",
         "auto": "自动",
@@ -726,7 +709,6 @@
   },
   "sidebars": {
     "default": {
-      "title": "对象属性",
       "none": "未选择对象",
       "edited": "已编辑 {0} 个对象"
     },
@@ -928,7 +910,6 @@
     "autoSave": {
       "title": "自动保存",
       "importing": "正在导入关卡...",
-      "disabled": "由于谱面过大，此谱面已停用自动保存。请手动保存。",
       "failed": "自动保存未能保存最新更改。浏览器存储空间可能已满或不可用。关闭此标签页前，请将谱面保存为文件。"
     },
     "changes": {

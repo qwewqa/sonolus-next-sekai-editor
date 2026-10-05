@@ -112,8 +112,6 @@
     },
     "scaleSelection": {
       "factor": "縮放倍率",
-      "pivotBeat": "最早節拍",
-      "pivotElevation": "最低高度",
       "apply": "套用",
       "invalidFactor": "請輸入正縮放倍率，使結果保持在編輯器支援的範圍內"
     },
@@ -174,11 +172,6 @@
       "title": "管理圖層",
       "modal": {
         "title": "管理圖層",
-        "switch": "切換圖層",
-        "switched": {
-          "all": "已切換到所有圖層",
-          "one": "已切換到 {0} 圖層"
-        },
         "moveUp": "上移圖層",
         "moveDown": "下移圖層",
         "moved": "已移動 {0} 圖層",
@@ -200,11 +193,6 @@
       "title": "管理舞台",
       "modal": {
         "title": "管理舞台",
-        "switch": "切換舞台",
-        "switched": {
-          "all": "已切換到所有舞台",
-          "one": "已切換到 {0} 舞台"
-        },
         "moveUp": "上移舞台",
         "moveDown": "下移舞台",
         "moved": "已移動 {0} 舞台",
@@ -587,15 +575,11 @@
     "nextBeat": "下一拍",
     "snap": "吸附",
     "snapping": "高度吸附",
-    "sideBySide": "並排顯示",
     "auto": "自動",
     "allow": "允許",
     "disallow": "不允許",
     "off": "關閉",
     "canvas": "音符高度",
-    "axis": "高度",
-    "offset": "顯示偏移",
-    "inherited": "繼承高度",
     "empty": "此節拍沒有音符",
     "history": "已更改音符高度",
     "close": "關閉高度編輯器",
@@ -699,7 +683,6 @@
         "overlay": "疊加"
       },
       "aspectRatio": "長寬比",
-      "showPreview": "顯示預覽",
       "controls": {
         "title": "預覽設定面板",
         "auto": "自動",
@@ -726,7 +709,6 @@
   },
   "sidebars": {
     "default": {
-      "title": "物件屬性",
       "none": "未選擇對象",
       "edited": "已編輯 {0} 個對象"
     },
@@ -928,7 +910,6 @@
     "autoSave": {
       "title": "自動儲存",
       "importing": "正在匯入關卡...",
-      "disabled": "此關卡過大，已停用自動儲存。請手動儲存。",
       "failed": "自動儲存無法儲存您的最新變更。瀏覽器儲存空間可能已滿或無法使用。關閉此分頁前，請將譜面儲存為檔案。"
     },
     "changes": {

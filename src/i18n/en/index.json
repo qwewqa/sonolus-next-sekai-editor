@@ -112,8 +112,6 @@
         },
         "scaleSelection": {
             "factor": "Scale Factor",
-            "pivotBeat": "Earliest Beat",
-            "pivotElevation": "Lowest Elevation",
             "apply": "Apply",
             "invalidFactor": "Enter a positive scale factor that keeps the result within the editor’s supported range"
         },
@@ -174,11 +172,6 @@
             "title": "Manage Groups",
             "modal": {
                 "title": "Manage Groups",
-                "switch": "Switch to Group",
-                "switched": {
-                    "all": "Switched to all groups",
-                    "one": "Switched to {0} group"
-                },
                 "moveUp": "Move Group Up",
                 "moveDown": "Move Group Down",
                 "moved": "Moved {0} group",
@@ -200,11 +193,6 @@
             "title": "Manage Stages",
             "modal": {
                 "title": "Manage Stages",
-                "switch": "Switch to Stage",
-                "switched": {
-                    "all": "Switched to all stages",
-                    "one": "Switched to {0} stage"
-                },
                 "moveUp": "Move Stage Up",
                 "moveDown": "Move Stage Down",
                 "moved": "Moved {0} stage",
@@ -587,15 +575,11 @@
         "nextBeat": "Next Beat",
         "snap": "Snap",
         "snapping": "Elevation Snapping",
-        "sideBySide": "Side by Side",
         "auto": "Auto",
         "allow": "Allow",
         "disallow": "Don’t Allow",
         "off": "Off",
         "canvas": "Note Elevations",
-        "axis": "Elevation",
-        "offset": "Display Offset",
-        "inherited": "Inherited Elevation",
         "empty": "No notes at this beat",
         "history": "Changed note elevation",
         "close": "Close Elevation Editor",
@@ -699,7 +683,6 @@
                 "overlay": "Overlay"
             },
             "aspectRatio": "Aspect Ratio",
-            "showPreview": "Show Preview",
             "controls": {
                 "title": "Preview Settings Panel",
                 "auto": "Auto",
@@ -726,7 +709,6 @@
     },
     "sidebars": {
         "default": {
-            "title": "Object Properties",
             "none": "No object selected",
             "edited": "Edited {0} object|Edited {0} objects"
         },
@@ -928,7 +910,6 @@
         "autoSave": {
             "title": "Auto Save",
             "importing": "Importing level...",
-            "disabled": "Due to size of your level, auto save is disabled for this level. Please save manually.",
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab."
         },
         "changes": {

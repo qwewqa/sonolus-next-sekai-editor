@@ -112,8 +112,6 @@
     },
     "scaleSelection": {
       "factor": "Ölçek katsayısı",
-      "pivotBeat": "En erken vuruş",
-      "pivotElevation": "En düşük yükseklik",
       "apply": "Uygula",
       "invalidFactor": "Sonucu editörün desteklediği aralıkta tutan pozitif bir ölçek katsayısı girin"
     },
@@ -174,11 +172,6 @@
       "title": "Grupları yönet",
       "modal": {
         "title": "Grupları Yönet",
-        "switch": "Gruba geç",
-        "switched": {
-          "all": "Tüm gruplara geçildi",
-          "one": "{0} grubuna geçildi"
-        },
         "moveUp": "Grubu yukarı taşı",
         "moveDown": "Grubu aşağı taşı",
         "moved": "{0} grubu taşındı",
@@ -200,11 +193,6 @@
       "title": "Sahneleri yönet",
       "modal": {
         "title": "Sahneleri Yönet",
-        "switch": "Sahneye geç",
-        "switched": {
-          "all": "Tüm sahnelere geçildi",
-          "one": "{0} sahnesine geçildi"
-        },
         "moveUp": "Sahneyi yukarı taşı",
         "moveDown": "Sahneyi aşağı taşı",
         "moved": "{0} sahnesi taşındı",
@@ -587,15 +575,11 @@
     "nextBeat": "Sonraki vuruş",
     "snap": "Hizalama",
     "snapping": "Yükseklik hizalaması",
-    "sideBySide": "Yan yana",
     "auto": "Otomatik",
     "allow": "İzin ver",
     "disallow": "İzin verme",
     "off": "Kapalı",
     "canvas": "Nota yükseklikleri",
-    "axis": "Yükseklik",
-    "offset": "Görünüm kayması",
-    "inherited": "Devralınan yükseklik",
     "empty": "Bu vuruşta nota yok",
     "history": "Nota yüksekliği değiştirildi",
     "close": "Yükseklik editörünü kapat",
@@ -699,7 +683,6 @@
         "overlay": "Üzerinde"
       },
       "aspectRatio": "En Boy Oranı",
-      "showPreview": "Önizlemeyi Göster",
       "controls": {
         "title": "Önizleme Ayarları Paneli",
         "auto": "Otomatik",
@@ -726,7 +709,6 @@
   },
   "sidebars": {
     "default": {
-      "title": "Nesne Özellikleri",
       "none": "Hiçbir nesne seçilmedi",
       "edited": "{0} nesne düzenlendi"
     },
@@ -928,7 +910,6 @@
     "autoSave": {
       "title": "Otomatik Kaydet",
       "importing": "Seviye içe aktarılıyor…",
-      "disabled": "Seviyenizin boyutu nedeniyle bu seviyede otomatik kaydetme devre dışı. Lütfen elle kaydedin.",
       "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin."
     },
     "changes": {
