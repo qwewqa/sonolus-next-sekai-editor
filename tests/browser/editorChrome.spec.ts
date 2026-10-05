@@ -54,6 +54,46 @@ test.describe('dialogs', () => {
     })
 })
 
+test.describe('shortcuts', () => {
+    // Listens after the editor's window listener, so it sees the final state.
+    const logDefaults = (page: Page) =>
+        page.evaluate(() => {
+            const log: string[] = []
+            ;(window as unknown as { keyLog: string[] }).keyLog = log
+            addEventListener('keydown', (event) => {
+                if (['Control', 'Shift'].includes(event.key)) return
+                log.push(`${event.ctrlKey ? 'Control+' : ''}${event.key}:${event.defaultPrevented}`)
+            })
+        })
+    const keyLog = (page: Page) =>
+        page.evaluate(() => (window as unknown as { keyLog: string[] }).keyLog.splice(0))
+
+    test('plain shortcut keys suppress browser defaults such as Firefox quick find', async ({
+        page,
+    }) => {
+        await boot(page)
+        await page.mouse.click(400, 300)
+        await logDefaults(page)
+        for (const key of ['/', "'", 'Backspace', 'l', 'Control+s']) await page.keyboard.press(key)
+        // Unbound keys and browser combinations keep their defaults.
+        expect(await keyLog(page)).toEqual([
+            '/:true',
+            "':true",
+            'Backspace:true',
+            'l:false',
+            'Control+s:false',
+        ])
+
+        // A field outside docks and dialogs still receives its characters.
+        await page.evaluate(() => document.body.append(document.createElement('input')))
+        const field = page.locator('body > input')
+        await field.focus()
+        await page.keyboard.type("/'")
+        await expect(field).toHaveValue("/'")
+        expect(await keyLog(page)).toEqual(['/:false', "':false"])
+    })
+})
+
 test.describe('toolbar flyouts', () => {
     test('Escape closes an open flyout and returns focus to its tool', async ({ page }) => {
         await boot(page)
