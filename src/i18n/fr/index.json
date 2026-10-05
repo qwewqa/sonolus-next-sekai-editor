@@ -449,21 +449,21 @@
         "move": "Glissez des objets pour les déplacer.",
         "selectMultiple": "Glissez une zone vide pour sélectionner plusieurs objets.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés."
+        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
       },
       "eraserTool": {
         "title": "Outil Gomme",
         "erase": "Appuyez sur les objets pour les effacer.",
         "deselect": "Appuyez sur une zone vide pour désélectionner tous les objets.",
         "eraseMultiple": "Glissez pour effacer plusieurs objets.",
-        "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés."
+        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
       },
       "brushTool": {
         "title": "Outil Pinceau",
         "brush": "Appuyez sur des objets pour les peindre.",
         "deselect": "Appuyez sur une zone vide pour désélectionner tous les objets.",
         "brushMultiple": "Glissez pour peindre plusieurs objets.",
-        "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés."
+        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
       },
       "pasteTool": {
         "title": "Outil Coller",
@@ -472,23 +472,23 @@
       },
       "noteTool": {
         "title": "Outil Note",
-        "select": "Appuyez sur des objets Note pour sélectionner 1 objet.",
-        "edit": "Appuyez sur 1 objet Note pour le modifier.",
+        "select": "Appuyez sur des notes pour sélectionner 1 note.",
+        "edit": "Appuyez sur 1 note pour la modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
-        "move": "Glissez 1 objet Note pour le déplacer.",
+        "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés.",
+        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées.",
         "properties": "Passez à l'outil Note de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "slideTool": {
         "title": "Outil Slide",
-        "select": "Appuyez sur des objets Note pour sélectionner 1 objet.",
-        "edit": "Appuyez sur 1 objet Note pour le modifier.",
+        "select": "Appuyez sur des notes pour sélectionner 1 note.",
+        "edit": "Appuyez sur 1 note pour la modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
         "connect": "Appuyez sur une zone vide avec une note sélectionnée pour la connecter.",
-        "move": "Glissez 1 objet Note pour le déplacer.",
+        "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur tous les objets Note associés.",
+        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées.",
         "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "splitSlide": {
@@ -790,18 +790,18 @@
     "generateSlideNotes": {
       "title": "Générer les notes de slide",
       "deselected": "Tout désélectionné",
-      "selecting": "Sélection de {0} objet|Sélection de {0} objets",
-      "generated": "{0} objet généré|{0} objets générés"
+      "selecting": "Sélection de {0} note|Sélection de {0} notes",
+      "generated": "{0} note générée|{0} notes générées"
     },
     "note": {
       "title": "Note n° {0}",
-      "adding": "Ajout de {0} objet Note|Ajout de {0} objets Note",
-      "added": "{0} objet Note ajouté|{0} objets Note ajoutés",
-      "editing": "Modification de {0} objet Note|Modification de {0} objets Note",
-      "edited": "{0} objet Note modifié|{0} objets Note modifiés",
-      "moving": "Déplacement de {0} objet Note|Déplacement de {0} objets Note",
-      "moved": "{0} objet Note déplacé|{0} objets Note déplacés",
-      "selected": "{0} objet Note sélectionné|{0} objets Note sélectionnés",
+      "adding": "Ajout de {0} note|Ajout de {0} notes",
+      "added": "{0} note ajoutée|{0} notes ajoutées",
+      "editing": "Modification de {0} note|Modification de {0} notes",
+      "edited": "{0} note modifiée|{0} notes modifiées",
+      "moving": "Déplacement de {0} note|Déplacement de {0} notes",
+      "moved": "{0} note déplacée|{0} notes déplacées",
+      "selected": "{0} note sélectionnée|{0} notes sélectionnées",
       "modal": {
         "title": "Propriétés de Note"
       },
@@ -830,13 +830,13 @@
     },
     "slide": {
       "title": "Slide n° {0}",
-      "adding": "Ajout de {0} objet Note|Ajout de {0} objets Note",
-      "added": "{0} objet Note ajouté|{0} objets Note ajoutés",
-      "editing": "Modification de {0} objet Note|Modification de {0} objets Note",
-      "edited": "{0} objet Note modifié|{0} objets Note modifiés",
-      "moving": "Déplacement de {0} objet Note|Déplacement de {0} objets Note",
-      "moved": "{0} objet Note déplacé|{0} objets Note déplacés",
-      "selected": "{0} objet Note sélectionné|{0} objets Note sélectionnés",
+      "adding": "Ajout de {0} note|Ajout de {0} notes",
+      "added": "{0} note ajoutée|{0} notes ajoutées",
+      "editing": "Modification de {0} note|Modification de {0} notes",
+      "edited": "{0} note modifiée|{0} notes modifiées",
+      "moving": "Déplacement de {0} note|Déplacement de {0} notes",
+      "moved": "{0} note déplacée|{0} notes déplacées",
+      "selected": "{0} note sélectionnée|{0} notes sélectionnées",
       "modal": {
         "title": "Propriétés de Note"
       },

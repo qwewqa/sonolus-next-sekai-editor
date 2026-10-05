@@ -449,21 +449,21 @@
         "move": "Birden fazla nesneyi taşımak için nesneleri sürükleyin.",
         "selectMultiple": "Birden fazla nesneyi seçmek için boş alanı sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
       },
       "eraserTool": {
         "title": "Silgi Aracı",
         "erase": "Silmek için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "eraseMultiple": "Birden fazla nesneyi silmek için sürükleyin.",
-        "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
       },
       "brushTool": {
         "title": "Fırça Aracı",
         "brush": "Fırçalamak için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "brushMultiple": "Birden fazla nesneyi fırçalamak için sürükleyin.",
-        "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
       },
       "pasteTool": {
         "title": "Yapıştırma Aracı",
@@ -472,23 +472,23 @@
       },
       "noteTool": {
         "title": "Nota Aracı",
-        "select": "1 nesne seçmek için Nota nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Nota nesnesine dokunun.",
+        "select": "1 nota seçmek için notalara dokunun.",
+        "edit": "Düzenlemek için 1 notaya dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "1 Nota nesnesini taşımak için sürükleyin.",
+        "move": "1 notayı taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın.",
+        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Nota aracına geçin."
       },
       "slideTool": {
         "title": "Kaydırma Aracı",
-        "select": "1 nesne seçmek için Nota nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Nota nesnesine dokunun.",
+        "select": "1 nota seçmek için notalara dokunun.",
+        "edit": "Düzenlemek için 1 notaya dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "connect": "Bir Nota nesnesi seçiliyken bağlamak için boş alana dokunun.",
-        "move": "1 Nota nesnesini taşımak için sürükleyin.",
+        "connect": "Bir nota seçiliyken bağlamak için boş alana dokunun.",
+        "move": "1 notayı taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili Nota nesneleri üzerinde işlem yapmak için Shift tuşunu kullanın.",
+        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
       },
       "splitSlide": {
@@ -790,18 +790,18 @@
     "generateSlideNotes": {
       "title": "Kaydırma Notaları Oluştur",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı",
-      "selecting": "{0} nesne seçiliyor",
-      "generated": "{0} nesne oluşturuldu"
+      "selecting": "{0} nota seçiliyor",
+      "generated": "{0} nota oluşturuldu"
     },
     "note": {
       "title": "Nota #{0}",
-      "adding": "{0} Nota nesnesi ekleniyor",
-      "added": "{0} Nota nesnesi eklendi",
-      "editing": "{0} Nota nesnesi düzenleniyor",
-      "edited": "{0} Nota nesnesi düzenlendi",
-      "moving": "{0} Nota nesnesi taşınıyor",
-      "moved": "{0} Nota nesnesi taşındı",
-      "selected": "{0} Nota nesnesi seçildi",
+      "adding": "{0} nota ekleniyor",
+      "added": "{0} nota eklendi",
+      "editing": "{0} nota düzenleniyor",
+      "edited": "{0} nota düzenlendi",
+      "moving": "{0} nota taşınıyor",
+      "moved": "{0} nota taşındı",
+      "selected": "{0} nota seçildi",
       "modal": {
         "title": "Nota Özellikleri"
       },
@@ -830,13 +830,13 @@
     },
     "slide": {
       "title": "Kaydırma #{0}",
-      "adding": "{0} Nota nesnesi ekleniyor",
-      "added": "{0} Nota nesnesi eklendi",
-      "editing": "{0} Nota nesnesi düzenleniyor",
-      "edited": "{0} Nota nesnesi düzenlendi",
-      "moving": "{0} Nota nesnesi taşınıyor",
-      "moved": "{0} Nota nesnesi taşındı",
-      "selected": "{0} Nota nesnesi seçildi",
+      "adding": "{0} nota ekleniyor",
+      "added": "{0} nota eklendi",
+      "editing": "{0} nota düzenleniyor",
+      "edited": "{0} nota düzenlendi",
+      "moving": "{0} nota taşınıyor",
+      "moved": "{0} nota taşındı",
+      "selected": "{0} nota seçildi",
       "modal": {
         "title": "Nota Özellikleri"
       },

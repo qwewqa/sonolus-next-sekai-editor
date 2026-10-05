@@ -449,21 +449,21 @@
                 "move": "Drag objects to move multiple objects.",
                 "selectMultiple": "Drag empty space to select multiple objects.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related Note objects."
+                "shift": "Use Shift key to operate on all related notes."
             },
             "eraserTool": {
                 "title": "Eraser Tool",
                 "erase": "Tap objects to erase.",
                 "deselect": "Tap empty space to deselect all objects.",
                 "eraseMultiple": "Drag to erase multiple objects.",
-                "shift": "Use Shift key to operate on all related Note objects."
+                "shift": "Use Shift key to operate on all related notes."
             },
             "brushTool": {
                 "title": "Brush Tool",
                 "brush": "Tap objects to brush.",
                 "deselect": "Tap empty space to deselect all objects.",
                 "brushMultiple": "Drag to brush multiple objects.",
-                "shift": "Use Shift key to operate on all related Note objects."
+                "shift": "Use Shift key to operate on all related notes."
             },
             "pasteTool": {
                 "title": "Paste Tool",
@@ -472,23 +472,23 @@
             },
             "noteTool": {
                 "title": "Note Tool",
-                "select": "Tap Note objects to select 1 object.",
-                "edit": "Tap 1 Note object to edit.",
+                "select": "Tap notes to select 1 note.",
+                "edit": "Tap 1 note to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Note object to move.",
+                "move": "Drag 1 note to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related Note objects.",
+                "shift": "Use Shift key to operate on all related notes.",
                 "properties": "Switch to Note Tool again to change preset or default properties."
             },
             "slideTool": {
                 "title": "Slide Tool",
-                "select": "Tap Note objects to select 1 object.",
-                "edit": "Tap 1 Note object to edit.",
+                "select": "Tap notes to select 1 note.",
+                "edit": "Tap 1 note to edit.",
                 "add": "Tap empty space to add.",
-                "connect": "Tap empty space with 1 Note object selected to connect.",
-                "move": "Drag 1 Note object to move.",
+                "connect": "Tap empty space with 1 note selected to connect.",
+                "move": "Drag 1 note to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related Note objects.",
+                "shift": "Use Shift key to operate on all related notes.",
                 "properties": "Switch to Slide Tool again to change preset or default properties."
             },
             "splitSlide": {
@@ -498,8 +498,8 @@
             },
             "generateSlideNotesTool": {
                 "title": "Generate Slide Notes Tool",
-                "generate": "Tap or drag to select 1 Note object to generate notes for the entire slide.",
-                "generateMultiple": "Tap or drag to select 2 Note objects to generate notes between them.",
+                "generate": "Tap or drag to select 1 note to generate notes for the entire slide.",
+                "generateMultiple": "Tap or drag to select 2 notes to generate notes between them.",
                 "deselect": "Tap empty space to deselect all objects."
             },
             "bpmTool": {
@@ -790,18 +790,18 @@
         "generateSlideNotes": {
             "title": "Generate Slide Notes",
             "deselected": "Deselected all objects",
-            "selecting": "Selecting {0} object|Selecting {0} objects",
-            "generated": "Generated {0} object|Generated {0} objects"
+            "selecting": "Selecting {0} note|Selecting {0} notes",
+            "generated": "Generated {0} note|Generated {0} notes"
         },
         "note": {
             "title": "Note #{0}",
-            "adding": "Adding {0} Note object|Adding {0} Note objects",
-            "added": "Added {0} Note object|Added {0} Note objects",
-            "editing": "Editing {0} Note object|Editing {0} Note objects",
-            "edited": "Edited {0} Note object|Edited {0} Note objects",
-            "moving": "Moving {0} Note object|Moving {0} Note objects",
-            "moved": "Moved {0} Note object|Moved {0} Note objects",
-            "selected": "Selected {0} Note object|Selected {0} Note objects",
+            "adding": "Adding {0} note|Adding {0} notes",
+            "added": "Added {0} note|Added {0} notes",
+            "editing": "Editing {0} note|Editing {0} notes",
+            "edited": "Edited {0} note|Edited {0} notes",
+            "moving": "Moving {0} note|Moving {0} notes",
+            "moved": "Moved {0} note|Moved {0} notes",
+            "selected": "Selected {0} note|Selected {0} notes",
             "modal": {
                 "title": "Note Properties"
             },
@@ -830,13 +830,13 @@
         },
         "slide": {
             "title": "Slide #{0}",
-            "adding": "Adding {0} Note object|Adding {0} Note objects",
-            "added": "Added {0} Note object|Added {0} Note objects",
-            "editing": "Editing {0} Note object|Editing {0} Note objects",
-            "edited": "Edited {0} Note object|Edited {0} Note objects",
-            "moving": "Moving {0} Note object|Moving {0} Note objects",
-            "moved": "Moved {0} Note object|Moved {0} Note objects",
-            "selected": "Selected {0} Note object|Selected {0} Note objects",
+            "adding": "Adding {0} note|Adding {0} notes",
+            "added": "Added {0} note|Added {0} notes",
+            "editing": "Editing {0} note|Editing {0} notes",
+            "edited": "Edited {0} note|Edited {0} notes",
+            "moving": "Moving {0} note|Moving {0} notes",
+            "moved": "Moved {0} note|Moved {0} notes",
+            "selected": "Selected {0} note|Selected {0} notes",
             "modal": {
                 "title": "Note Properties"
             },

@@ -790,8 +790,8 @@
     "generateSlideNotes": {
       "title": "スライドノーツ生成",
       "deselected": "すべてのオブジェクトを選択解除しました",
-      "selecting": "{0}個のオブジェクトを選択します",
-      "generated": "{0}個のオブジェクトを生成しました"
+      "selecting": "{0}個のノーツを選択します",
+      "generated": "{0}個のノーツを生成しました"
     },
     "note": {
       "title": "ノーツ #{0}",
