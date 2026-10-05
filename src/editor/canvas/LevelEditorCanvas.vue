@@ -12,8 +12,12 @@ import { culledEntities, selectedEntitySet, visibleSelectedEntities } from '../e
 import { isScenePreview, sceneState } from '../sceneState'
 import { scopeLookup } from '../scope'
 import { bgmOffsetDelta } from '../tools/offset'
+import { tool, tools } from '../tools'
+import { isVisible } from '../tools/utils'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
+import { hitOffscreenIndicator, useOffscreenIndicators } from '../offscreenIndicators'
+import { groupOffscreenNotes } from '../offscreenNotes'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid } from './grid'
@@ -62,10 +66,10 @@ const orderedEntities = computed(() =>
     }),
 )
 const hoveredSet = computed(() => new Set(hoveredEntities.value))
-const offscreenNotes = computed(() => {
+const offscreenGroups = computed(() => {
     const bounds = viewBox.value
     const scale = view.w / bounds.w
-    return orderedEntities.value.flatMap(({ entity, highlighted, opacity }) =>
+    const notes = orderedEntities.value.flatMap(({ entity, highlighted, opacity }) =>
         entity.type === 'note'
             ? [
                   {
@@ -76,11 +80,24 @@ const offscreenNotes = computed(() => {
                           scale,
                       highlighted,
                       opacity,
+                      // Dimmed notes are counted but not selectable.
+                      target: isVisible(entity) ? entity : undefined,
                   },
               ]
             : [],
     )
+    return groupOffscreenNotes(notes, view.w, 0, view.h)
 })
+useOffscreenIndicators({
+    navigation: () => undefined,
+    bounds: () => view,
+    groups: () => offscreenGroups.value,
+})
+const hoveredOffscreenGroup = computed(() =>
+    cursor.value === 'pointer' && tool.value === tools.select
+        ? hitOffscreenIndicator(view.pointer.x, view.pointer.y)
+        : undefined,
+)
 const contextInputs = computed(() => ({
     width: view.w,
     height: view.h,
@@ -323,11 +340,6 @@ onUnmounted(() => {
             class="editor-overlay pointer-events-none absolute size-full"
             @contextrestored="restoreContext"
         />
-        <OffscreenNoteIndicators
-            :notes="offscreenNotes"
-            :width="view.w"
-            :top="0"
-            :bottom="view.h"
-        />
+        <OffscreenNoteIndicators :groups="offscreenGroups" :hovered="hoveredOffscreenGroup" />
     </div>
 </template>

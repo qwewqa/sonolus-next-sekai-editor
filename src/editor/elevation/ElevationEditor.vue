@@ -6,6 +6,12 @@ import { pushState, replaceState, state } from '../../history'
 import { defaultGroupId } from '../../history/groups'
 import { i18n } from '../../i18n'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
+import {
+    hitOffscreenIndicator,
+    selectOffscreenNotes,
+    useOffscreenIndicators,
+} from '../offscreenIndicators'
+import { groupOffscreenNotes } from '../offscreenNotes'
 import { modals } from '../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
@@ -185,16 +191,35 @@ const frame = createFrameScheduler()
 const notes = createNoteRenderer()
 const pixelRatio = ref(devicePixelRatio || 1)
 const hovered = ref<NoteEntity>()
-const offscreenNotes = computed(() => {
+const offscreenGroups = computed(() => {
     const selected = new Set(elevationState.value.selectedEntities)
-    return elevationLayout.value.rows.map((row) => ({
-        left: row.x - row.w / 2,
-        right: row.x + row.w / 2,
-        y: row.y,
-        highlighted: selected.has(row.note),
-        opacity: row.attached ? 0.6 : 1,
-    }))
+    return groupOffscreenNotes(
+        elevationLayout.value.rows.map((row) => ({
+            left: row.x - row.w / 2,
+            right: row.x + row.w / 2,
+            y: row.y,
+            highlighted: selected.has(row.note),
+            opacity: row.attached ? 0.6 : 1,
+            target: row.note,
+        })),
+        elevationBounds.w,
+        headerHeight.value + 4,
+        elevationBounds.h,
+    )
 })
+useOffscreenIndicators({
+    navigation: () => navigation,
+    bounds: () => elevationBounds,
+    groups: () => offscreenGroups.value,
+})
+// Only the select-like tools pick notes from the badges.
+const hitIndicator = (x: number, y: number) =>
+    toolName.value === 'select' || toolName.value === 'elevation'
+        ? hitOffscreenIndicator(x, y)
+        : undefined
+const hoveredOffscreenGroup = computed(() =>
+    cursor.value === 'pointer' ? hitIndicator(view.pointer.x, view.pointer.y) : undefined,
+)
 const creating = ref<ElevationNote[]>([])
 let adding: { lane: number; elevation: number; slide: boolean } | undefined
 let viewportAdjusted = false
@@ -347,6 +372,8 @@ const applyToVisibleSelection = (row: ElevationRow, modifiers: Modifiers) => {
     )
 }
 const resolveDrag = (x: number, y: number) => {
+    // Pressing an off-screen badge box-selects.
+    if (hitIndicator(x, y)) return { type: 'marquee', row: undefined, indicator: true } as const
     const row = hit(x, y)
     if (toolName.value === 'paste') return { type: 'paste' } as const
     if (!row && (toolName.value === 'note' || toolName.value === 'slide'))
@@ -373,6 +400,13 @@ const controls: Pick<
     'hover' | 'tap' | 'cursor' | 'dragStart' | 'dragUpdate' | 'dragEnd' | 'dragCancel'
 > = {
     hover(x, y, modifiers) {
+        const indicator = hitIndicator(x, y)
+        if (indicator) {
+            hovered.value = undefined
+            creating.value = []
+            view.entities = { hovered: modifyEntities(indicator.targets, modifiers), creating: [] }
+            return
+        }
         hovered.value = hit(x, y, 0.5)?.note
         const position = positionAtPoint(x, y)
         if (!hovered.value && (toolName.value === 'note' || toolName.value === 'slide'))
@@ -395,6 +429,11 @@ const controls: Pick<
         }
     },
     tap(x, y, modifiers) {
+        const indicator = hitIndicator(x, y)
+        if (indicator) {
+            selectOffscreenNotes(indicator.targets, modifiers)
+            return
+        }
         const row = hit(x, y)
         if (toolName.value === 'paste') {
             void pasteAtPoint(x, y, modifiers)
@@ -446,6 +485,7 @@ const controls: Pick<
     cursor(x, y) {
         const target = resolveDrag(x, y)
         if (target.type !== 'marquee') return cursors[target.type]
+        if ('indicator' in target) return 'pointer'
         // A tap applies eraser, brush and generate to the row.
         if (target.row) return 'pointer'
         return ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value)
@@ -973,12 +1013,7 @@ onUnmounted(() => {
                 class="elevation-canvas pointer-events-none absolute size-full"
                 :aria-label="i18n.elevation.canvas"
             />
-            <OffscreenNoteIndicators
-                :notes="offscreenNotes"
-                :width="elevationBounds.w"
-                :top="headerHeight + 4"
-                :bottom="elevationBounds.h"
-            />
+            <OffscreenNoteIndicators :groups="offscreenGroups" :hovered="hoveredOffscreenGroup" />
         </div>
         <!-- Beside the main editor, notifications show in its pane instead. -->
         <LevelEditorNotification

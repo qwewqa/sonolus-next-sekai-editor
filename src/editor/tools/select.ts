@@ -65,6 +65,7 @@ import {
 import { interpolate } from '../../utils/interpolate'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
+import { hitOffscreenIndicator, selectOffscreenNotes } from '../offscreenIndicators'
 import { isEntityInScope } from '../scope'
 import {
     focusEntityAtBeat,
@@ -112,8 +113,12 @@ let active:
 const resolveDrag = (
     x: number,
     y: number,
-): (MoveActive & { isSelected: boolean }) | { type: 'select'; lane: number } => {
+):
+    | (MoveActive & { isSelected: boolean })
+    | { type: 'select'; lane: number; indicator?: boolean } => {
     const lane = xToLane(x)
+    // Off-screen badges sit over the chart; pressing one box-selects.
+    if (hitOffscreenIndicator(x, y)) return { type: 'select', lane, indicator: true }
     const entities = hitAllEntitiesAtPoint(x, y)
 
     const [focus] = entities.filter((entity) => selectedEntities.value.includes(entity))
@@ -147,7 +152,11 @@ export const select: Tool = {
     title: () => i18n.value.tools.select.title,
 
     hover(x, y, modifiers) {
-        const entities = modifyEntities(hitAllEntitiesAtPoint(x, y, 0.5), modifiers)
+        const indicator = hitOffscreenIndicator(x, y)
+        const entities = modifyEntities(
+            indicator ? indicator.targets : hitAllEntitiesAtPoint(x, y, 0.5),
+            modifiers,
+        )
 
         view.entities = {
             hovered: entities,
@@ -156,6 +165,12 @@ export const select: Tool = {
     },
 
     tap(x, y, modifiers) {
+        const indicator = hitOffscreenIndicator(x, y)
+        if (indicator) {
+            selectOffscreenNotes(indicator.targets, modifiers)
+            return
+        }
+
         if (modifiers.ctrl) {
             const entities = modifyEntities(hitAllEntitiesAtPoint(x, y), modifiers)
 
@@ -210,7 +225,7 @@ export const select: Tool = {
 
     cursor(x, y) {
         const target = resolveDrag(x, y)
-        if (target.type === 'select') return 'default'
+        if (target.type === 'select') return target.indicator ? 'pointer' : 'default'
         if (isSelectResize(target.onlyType, target.focus, target.lane)) return 'ew-resize'
         return target.onlyType === 'bpm' ? 'ns-resize' : 'move'
     },

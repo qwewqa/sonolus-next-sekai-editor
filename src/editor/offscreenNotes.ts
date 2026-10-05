@@ -1,28 +1,31 @@
-export type OffscreenNotePosition = {
+export type OffscreenNotePosition<T = unknown> = {
     left: number
     right: number
     y: number
     highlighted: boolean
     opacity: number
+    // Set when the note can be selected from its badge.
+    target?: T
 }
 
-export const groupOffscreenNotes = (
-    notes: readonly OffscreenNotePosition[],
+export type OffscreenNoteGroup<T = unknown> = {
+    side: 'left' | 'right'
+    slot: number
+    y: number
+    spacing: number
+    count: number
+    highlighted: boolean
+    opacity: number
+    targets: T[]
+}
+
+export const groupOffscreenNotes = <T>(
+    notes: readonly OffscreenNotePosition<T>[],
     width: number,
     top: number,
     bottom: number,
 ) => {
-    const groups = new Map<
-        string,
-        {
-            side: 'left' | 'right'
-            slot: number
-            y: number
-            count: number
-            highlighted: boolean
-            opacity: number
-        }
-    >()
+    const groups = new Map<string, OffscreenNoteGroup<T>>()
     if (!(width > 0) || bottom - top < 24) return []
     const slots = Math.max(1, Math.floor((bottom - top) / 28))
     const spacing = (bottom - top) / slots
@@ -39,21 +42,56 @@ export const groupOffscreenNotes = (
         if (!side) continue
         const slot = Math.min(slots - 1, Math.floor((note.y - top) / spacing))
         const key = `${side}:${slot}`
-        const group = groups.get(key)
+        let group = groups.get(key)
         if (group) {
             group.count++
             group.highlighted ||= note.highlighted
             group.opacity = Math.max(group.opacity, note.opacity)
         } else {
-            groups.set(key, {
+            group = {
                 side,
                 slot,
                 y: top + (slot + 0.5) * spacing,
+                spacing,
                 count: 1,
                 highlighted: note.highlighted,
                 opacity: note.opacity,
-            })
+                targets: [],
+            }
+            groups.set(key, group)
         }
+        if (note.target !== undefined) group.targets.push(note.target)
     }
     return [...groups.values()]
+}
+
+// Badge width estimate (inset, chevron, digits) with slack; at least a touch target.
+export const offscreenBadgeHitWidth = (count: number) => Math.max(44, 40 + 7 * String(count).length)
+
+// Selectable badge whose hit area (slot band, out from the edge) holds a pane point.
+export const hitOffscreenGroup = <T>(
+    groups: readonly OffscreenNoteGroup<T>[],
+    x: number,
+    y: number,
+    width: number,
+) =>
+    groups.find((group) => {
+        if (!group.targets.length || Math.abs(y - group.y) > group.spacing / 2) return false
+        const reach = offscreenBadgeHitWidth(group.count)
+        return group.side === 'left' ? x >= 0 && x <= reach : x <= width && x >= width - reach
+    })
+
+// Ctrl removes the targets when all are selected and adds them otherwise.
+export const combineSelection = <T>(
+    selected: readonly T[],
+    targets: readonly T[],
+    ctrl: boolean,
+) => {
+    if (!ctrl) return [...targets]
+    const current = new Set(selected)
+    if (targets.every((target) => current.has(target))) {
+        const removed = new Set(targets)
+        return selected.filter((entity) => !removed.has(entity))
+    }
+    return [...new Set([...selected, ...targets])]
 }
