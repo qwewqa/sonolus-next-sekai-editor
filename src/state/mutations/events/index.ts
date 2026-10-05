@@ -3,7 +3,12 @@ import type { EntityOfType } from '../../entities'
 import type { EventConnectionEntityType } from '../../entities/events/connections'
 import type { EventJointEntityType } from '../../entities/events/joints'
 import type { Store } from '../../store'
-import { addToStoreGrid, getInStoreGrid, removeFromStoreGrid } from '../../store/grid'
+import {
+    addToStoreGrid,
+    getInStoreGrid,
+    removeFromStoreGrid,
+    replaceInStoreGrid,
+} from '../../store/grid'
 
 export const addEventJoint = <
     T,
@@ -126,4 +131,45 @@ export const removeEventJoint = <
             prev.min.beat,
             next.max.beat,
         )
+}
+
+/** Swaps a joint for one at the same beat on the same track, keeping its place in the chain. */
+export const replaceEventJoint = <
+    T extends EventJointEntityType,
+    U extends EventConnectionEntityType,
+>(
+    store: Store,
+    joint: EntityOfType<T>,
+    replacement: EntityOfType<T>,
+    connectionType: U,
+    toConnectionEntity: (min: EntityOfType<T>, max: EntityOfType<T>) => EntityOfType<U>,
+    getRange: () => Range<EntityOfType<T>> | undefined,
+    setRange: (range: Range<EntityOfType<T>> | undefined) => void,
+) => {
+    replaceInStoreGrid(store.grid, joint, replacement, joint.beat)
+
+    const entities = getInStoreGrid(store.grid, connectionType, joint.beat)
+    for (const connection of entities ?? []) {
+        if (connection.min !== joint && connection.max !== joint) continue
+
+        replaceInStoreGrid(
+            store.grid,
+            connection,
+            toConnectionEntity(
+                (connection.min === joint ? replacement : connection.min) as never,
+                (connection.max === joint ? replacement : connection.max) as never,
+            ),
+            connection.min.beat,
+            connection.max.beat,
+        )
+    }
+
+    const range = getRange()
+    if (range)
+        setRange({
+            min: range.min === joint ? replacement : range.min,
+            max: range.max === joint ? replacement : range.max,
+        })
+
+    return [replacement]
 }

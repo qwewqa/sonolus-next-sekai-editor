@@ -1,5 +1,5 @@
-import { addStageEventJoint, removeStageEventJoint } from '.'
-import type { AddMutation, RemoveMutation } from '../..'
+import { addStageEventJoint, removeStageEventJoint, replaceStageEventJoint } from '.'
+import type { AddMutation, RemoveMutation, ReplaceMutation } from '../..'
 import type { StagePivotEventObject } from '../../../../chart/events/stage/pivot'
 import { toStagePivotEventConnectionEntity } from '../../../entities/events/connections/stage/pivot'
 import {
@@ -29,3 +29,16 @@ export const removeStagePivotEventJoint: RemoveMutation<StagePivotEventJointEnti
         toStagePivotEventConnectionEntity,
     )
 }
+
+export const replaceStagePivotEventJoint: ReplaceMutation<
+    StagePivotEventJointEntity,
+    StagePivotEventObject
+> = ({ store }, entity, object) =>
+    replaceStageEventJoint(
+        store,
+        entity,
+        toStagePivotEventJointEntity(object),
+        'stagePivotEventJoint',
+        'stagePivotEventConnection',
+        toStagePivotEventConnectionEntity,
+    )

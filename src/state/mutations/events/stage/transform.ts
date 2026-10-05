@@ -1,5 +1,5 @@
-import { addStageEventJoint, removeStageEventJoint } from '.'
-import type { AddMutation, RemoveMutation } from '../..'
+import { addStageEventJoint, removeStageEventJoint, replaceStageEventJoint } from '.'
+import type { AddMutation, RemoveMutation, ReplaceMutation } from '../..'
 import type { StageTransformEventObject } from '../../../../chart/events/stage/transform'
 import { toStageTransformEventConnectionEntity } from '../../../entities/events/connections/stage/transform'
 import {
@@ -32,3 +32,16 @@ export const removeStageTransformEventJoint: RemoveMutation<StageTransformEventJ
         toStageTransformEventConnectionEntity,
     )
 }
+
+export const replaceStageTransformEventJoint: ReplaceMutation<
+    StageTransformEventJointEntity,
+    StageTransformEventObject
+> = ({ store }, entity, object) =>
+    replaceStageEventJoint(
+        store,
+        entity,
+        toStageTransformEventJointEntity(object),
+        'stageTransformEventJoint',
+        'stageTransformEventConnection',
+        toStageTransformEventConnectionEntity,
+    )

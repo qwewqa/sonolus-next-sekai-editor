@@ -1,6 +1,6 @@
 import type { BpmObject } from '../../chart/bpm'
 import type { BpmEntity } from '../entities/bpm'
-import { addBpm, removeBpm } from '../mutations/bpm'
+import { addBpm, removeBpm, replaceBpm } from '../mutations/bpm'
 import { getInStoreGrid } from '../store/grid'
 import type { Transaction } from '../transaction'
 
@@ -9,12 +9,16 @@ export const editSelectedBpm = (
     entity: BpmEntity,
     object: Partial<BpmObject>,
 ) => {
-    removeBpm(transaction, entity)
-    return addBpm(transaction, {
+    const edited = {
         beat: object.beat ?? entity.beat,
         bpm: object.bpm ?? entity.bpm,
         meter: object.meter ?? entity.meter,
-    })
+    }
+    // Same-beat changes keep their order.
+    if (edited.beat === entity.beat) return replaceBpm(transaction, entity, edited)
+
+    removeBpm(transaction, entity)
+    return addBpm(transaction, edited)
 }
 
 // A single move replaces its destination and preserves the initial BPM at zero.

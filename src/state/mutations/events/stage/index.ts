@@ -1,4 +1,4 @@
-import { addEventJoint, removeEventJoint } from '..'
+import { addEventJoint, removeEventJoint, replaceEventJoint } from '..'
 import type { StageId } from '../../../../chart/stages'
 import type { EntityOfType } from '../../../entities'
 import type { StageEventConnectionEntityType } from '../../../entities/events/connections/stage'
@@ -59,3 +59,30 @@ export const removeStageEventJoint = <
         },
     )
 }
+
+export const replaceStageEventJoint = <
+    T extends StageEventJointEntityType,
+    U extends StageEventConnectionEntityType,
+>(
+    store: Store,
+    joint: EntityOfType<T>,
+    replacement: EntityOfType<T>,
+    jointType: T,
+    connectionType: U,
+    toConnectionEntity: (min: EntityOfType<T>, max: EntityOfType<T>) => EntityOfType<U>,
+) =>
+    replaceEventJoint(
+        store,
+        joint,
+        replacement,
+        connectionType,
+        toConnectionEntity,
+        () => store.stageEventRanges[jointType].get(joint.stageId),
+        (range) => {
+            if (range) {
+                store.stageEventRanges[jointType].set(joint.stageId, range)
+            } else {
+                store.stageEventRanges[jointType].delete(joint.stageId)
+            }
+        },
+    )

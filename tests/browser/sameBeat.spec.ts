@@ -1,0 +1,230 @@
+import { expect, test, type Page } from '@playwright/test'
+import { installCanvasCounters, installEditorFixture } from './editorFixture'
+
+// Same-beat pairs are discontinuous jumps; their order is what the engine plays.
+
+test.beforeEach(async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+})
+
+type Kind = 'timeScale' | 'bpm' | 'cameraEventJoint' | 'stageMaskEventJoint'
+
+/** A pair of each kind at beat 4, with a neighbour before and after. */
+const showPairs = (page: Page) =>
+    page.evaluate(async () => {
+        const { show, fixtures, nextTick } = window.editorTest
+        const timeScale = (beat: number, value: number) => ({
+            groupId: fixtures.events.timeScales[0]!.groupId,
+            beat,
+            editorLane: 8,
+            timeScale: value,
+            skip: 0,
+            timeScaleEase: 'linear' as const,
+            timeScaleTransition: 'timeScale' as const,
+            hideNotes: false,
+        })
+        const camera = (beat: number, cameraZoom: number) => ({
+            ...fixtures.events.cameraEvents[0]!,
+            beat,
+            cameraZoom,
+            cameraRotation: 0,
+        })
+        const mask = (beat: number, maskSize: number) => ({
+            ...fixtures.events.stageMaskEvents[0]!,
+            beat,
+            maskSize,
+            isMaskNotes: false,
+        })
+        show(
+            {
+                ...fixtures.events,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 4, bpm: 120 },
+                    { beat: 4, bpm: 180 },
+                    { beat: 6, bpm: 200 },
+                ],
+                timeScales: [timeScale(2, 0.5), timeScale(4, 1), timeScale(4, 2), timeScale(6, 3)],
+                cameraEvents: [camera(2, 0.5), camera(4, 1), camera(4, 2), camera(6, 3)],
+                stageMaskEvents: [mask(2, 5), mask(4, 1), mask(4, 2), mask(6, 3)],
+                stagePivotEvents: [],
+                stageStyleEvents: [],
+                stageTransformEvents: [],
+                slides: [],
+            },
+            3,
+        )
+        await nextTick()
+    })
+
+/** Each kind's values in the order the exported level plays them. */
+const exported = (page: Page) =>
+    page.evaluate(async () => {
+        const { history, appImport } = window.editorTest
+        const { serializeToLevelData } = await appImport<
+            typeof import('../../src/levelData/serialize')
+        >('/src/levelData/serialize.ts')
+        const state = history.state.value
+        const { entities } = serializeToLevelData(
+            1000,
+            true,
+            0,
+            state.store,
+            state.groups,
+            state.stages,
+        )
+        const data = (entity: (typeof entities)[number], name: string) =>
+            entity.data.find((item) => item.name === name)
+        const ref = (entity: (typeof entities)[number]) => {
+            const next = data(entity, 'next')
+            return next && 'ref' in next ? next.ref : undefined
+        }
+        const chain = (archetype: string, key: string) => {
+            const list = entities.filter((entity) => entity.archetype === archetype)
+            const byName = new Map(list.map((entity) => [entity.name, entity]))
+            const next = new Set(list.map(ref))
+            const values: number[] = []
+            let cursor = list.find((entity) => !next.has(entity.name))
+            while (cursor) {
+                values.push((data(cursor, key) as { value: number }).value)
+                cursor = byName.get(ref(cursor))
+            }
+            return values
+        }
+        return {
+            timeScale: chain('#TIMESCALE_CHANGE', '#TIMESCALE'),
+            // BPM changes are listed loosely; the engine orders them by beat.
+            bpm: entities
+                .filter((entity) => entity.archetype === '#BPM_CHANGE')
+                .map((entity) => ({
+                    beat: (data(entity, '#BEAT') as { value: number }).value,
+                    bpm: (data(entity, '#BPM') as { value: number }).value,
+                }))
+                .sort((a, b) => a.beat - b.beat)
+                .map(({ bpm }) => bpm),
+            // The editor's own timing uses the integrals in the same order.
+            bpmIntegrals: state.bpms.map((integral) => Math.round(60 / integral.s)),
+            cameraEventJoint: chain('CameraChange', 'zoom'),
+            stageMaskEventJoint: chain('StageMaskChange', 'size'),
+        }
+    })
+
+const original = {
+    timeScale: [0.5, 1, 2, 3],
+    bpm: [120, 120, 180, 200],
+    bpmIntegrals: [120, 120, 180, 200],
+    cameraEventJoint: [0.5, 1, 2, 3],
+    // Masks export half their size.
+    stageMaskEventJoint: [2.5, 0.5, 1, 1.5],
+}
+
+const pick = (page: Page, kind: Kind, values: number[]) =>
+    page.evaluate(
+        ({ kind, values }) =>
+            [...window.editorTest.store.getAllEntities()].filter(
+                (entity) =>
+                    entity.type === kind &&
+                    entity.beat === 4 &&
+                    values.includes(
+                        ((entity as unknown as Record<string, number>).timeScale ??
+                            (entity as unknown as Record<string, number>).bpm ??
+                            (entity as unknown as Record<string, number>).cameraZoom ??
+                            (entity as unknown as Record<string, number>).maskSize)!,
+                    ),
+            ),
+        { kind, values },
+    )
+
+const select = (page: Page, kind: Kind, values: number[]) =>
+    page.evaluate(
+        async ({ kind, values }) => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter((entity) => {
+                    const record = entity as unknown as Record<string, number>
+                    const value =
+                        record.timeScale ?? record.bpm ?? record.cameraZoom ?? record.maskSize
+                    return entity.type === kind && entity.beat === 4 && values.includes(value!)
+                }),
+            })
+            await nextTick()
+        },
+        { kind, values },
+    )
+
+const edits: Record<Kind, Record<string, unknown>> = {
+    timeScale: { hideNotes: true },
+    bpm: { meter: 3 },
+    cameraEventJoint: { cameraRotation: 5 },
+    stageMaskEventJoint: { isMaskNotes: true },
+}
+
+const editSelection = (page: Page, object: Record<string, unknown>) =>
+    page.evaluate(async (object) => {
+        const { editSelectedEditableEntities } = await window.editorTest.appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        editSelectedEditableEntities(object)
+    }, object)
+
+test('fixtures export each same-beat pair in its stored order', async ({ page }) => {
+    await showPairs(page)
+    expect(await exported(page)).toEqual(original)
+})
+
+for (const kind of Object.keys(edits) as Kind[]) {
+    test.describe(kind, () => {
+        test.beforeEach(async ({ page }) => showPairs(page))
+
+        test('editing the first of a pair keeps the order', async ({ page }) => {
+            await select(page, kind, [kind === 'bpm' ? 120 : 1])
+            await editSelection(page, edits[kind])
+            expect(await exported(page)).toEqual(original)
+        })
+
+        test('editing the second of a pair keeps the order', async ({ page }) => {
+            await select(page, kind, [kind === 'bpm' ? 180 : 2])
+            await editSelection(page, edits[kind])
+            expect(await exported(page)).toEqual(original)
+        })
+
+        test('editing both together keeps the order', async ({ page }) => {
+            await select(page, kind, kind === 'bpm' ? [120, 180] : [1, 2])
+            await editSelection(page, edits[kind])
+            expect(await exported(page)).toEqual(original)
+        })
+
+        if (kind !== 'bpm')
+            test('brushing one keeps the order', async ({ page }) => {
+                const targets = await pick(page, kind, [1])
+                expect(targets).toHaveLength(1)
+                await page.evaluate(
+                    async ({ kind, object }) => {
+                        const { store, appImport } = window.editorTest
+                        const brush = await appImport<
+                            typeof import('../../src/editor/tools/brush')
+                        >('/src/editor/tools/brush/index.ts')
+                        brush.brushProperties.value = object
+                        brush.applyBrushToEntities(
+                            [...store.getAllEntities()].filter(
+                                (entity) =>
+                                    entity.type === kind &&
+                                    entity.beat === 4 &&
+                                    ((entity as unknown as Record<string, number>).timeScale ??
+                                        (entity as unknown as Record<string, number>).cameraZoom ??
+                                        (entity as unknown as Record<string, number>).maskSize) ===
+                                        1,
+                            ),
+                        )
+                    },
+                    { kind, object: edits[kind] },
+                )
+                expect(await exported(page)).toEqual(original)
+            })
+    })
+}

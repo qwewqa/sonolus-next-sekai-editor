@@ -1,7 +1,7 @@
-import type { AddMutation, RemoveMutation } from '.'
+import type { AddMutation, RemoveMutation, ReplaceMutation } from '.'
 import type { TimeScaleObject } from '../../chart/timeScale'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../entities/timeScale'
-import { addToStoreGrid, removeFromStoreGrid } from '../store/grid'
+import { addToStoreGrid, removeFromStoreGrid, replaceInStoreGrid } from '../store/grid'
 
 export const addTimeScale: AddMutation<TimeScaleObject> = ({ store, addToGroup }, object) => {
     const entity = toTimeScaleEntity(object)
@@ -13,4 +13,16 @@ export const addTimeScale: AddMutation<TimeScaleObject> = ({ store, addToGroup }
 
 export const removeTimeScale: RemoveMutation<TimeScaleEntity> = ({ store }, entity) => {
     removeFromStoreGrid(store.grid, entity, entity.beat)
+}
+
+export const replaceTimeScale: ReplaceMutation<TimeScaleEntity, TimeScaleObject> = (
+    { store, addToGroup },
+    entity,
+    object,
+) => {
+    const replacement = toTimeScaleEntity(object)
+    replaceInStoreGrid(store.grid, entity, replacement, entity.beat)
+    addToGroup(object.groupId)
+
+    return [replacement]
 }

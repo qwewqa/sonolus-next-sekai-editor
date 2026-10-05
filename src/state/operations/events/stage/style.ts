@@ -4,6 +4,7 @@ import type { StageStyleEventJointEntity } from '../../../entities/events/joints
 import {
     addStageStyleEventJoint,
     removeStageStyleEventJoint,
+    replaceStageStyleEventJoint,
 } from '../../../mutations/events/stage/style'
 import type { Transaction } from '../../../transaction'
 
@@ -12,8 +13,7 @@ export const editSelectedStageStyleEvent = (
     entity: StageStyleEventJointEntity,
     object: Partial<WithEaseEdits<StageStyleEventObject>>,
 ) => {
-    removeStageStyleEventJoint(transaction, entity)
-    return addStageStyleEventJoint(transaction, {
+    const edited = {
         stageId: object.stageId ?? entity.stageId,
         beat: object.beat ?? entity.beat,
         editorLane: object.editorLane ?? entity.editorLane,
@@ -27,5 +27,11 @@ export const editSelectedStageStyleEvent = (
         judgmentLineAlpha: object.judgmentLineAlpha ?? entity.judgmentLineAlpha,
         divisionLineAlpha: object.divisionLineAlpha ?? entity.divisionLineAlpha,
         eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
-    })
+    }
+    // Same-beat joints keep their order on their track.
+    if (edited.beat === entity.beat && edited.stageId === entity.stageId)
+        return replaceStageStyleEventJoint(transaction, entity, edited)
+
+    removeStageStyleEventJoint(transaction, entity)
+    return addStageStyleEventJoint(transaction, edited)
 }

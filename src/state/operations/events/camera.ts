@@ -1,7 +1,11 @@
 import type { CameraEventObject } from '../../../chart/events/camera'
 import { applyEaseEdit, type WithEaseEdits } from '../../../ease'
 import type { CameraEventJointEntity } from '../../entities/events/joints/camera'
-import { addCameraEventJoint, removeCameraEventJoint } from '../../mutations/events/camera'
+import {
+    addCameraEventJoint,
+    removeCameraEventJoint,
+    replaceCameraEventJoint,
+} from '../../mutations/events/camera'
 import type { Transaction } from '../../transaction'
 
 export const editSelectedCameraEvent = (
@@ -9,8 +13,7 @@ export const editSelectedCameraEvent = (
     entity: CameraEventJointEntity,
     object: Partial<WithEaseEdits<CameraEventObject>>,
 ) => {
-    removeCameraEventJoint(transaction, entity)
-    return addCameraEventJoint(transaction, {
+    const edited = {
         beat: object.beat ?? entity.beat,
         cameraLeft: object.cameraLeft ?? entity.cameraLeft,
         cameraSize: object.cameraSize ?? entity.cameraSize,
@@ -21,5 +24,11 @@ export const editSelectedCameraEvent = (
         cameraRotation: object.cameraRotation ?? entity.cameraRotation,
         cameraStageTilt: object.cameraStageTilt ?? entity.cameraStageTilt,
         eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
-    })
+    }
+    // Same-beat joints keep their order on their track.
+    if (edited.beat === entity.beat)
+        return replaceCameraEventJoint(transaction, entity, edited)
+
+    removeCameraEventJoint(transaction, entity)
+    return addCameraEventJoint(transaction, edited)
 }

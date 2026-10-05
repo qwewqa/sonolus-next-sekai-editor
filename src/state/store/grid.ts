@@ -46,3 +46,22 @@ export const removeFromStoreGrid = <T extends EntityType>(
         }
     }
 }
+
+/** Swaps an entity for another at the same beat, keeping its place among its neighbours. */
+export const replaceInStoreGrid = <T extends EntityType>(
+    grid: StoreGrid,
+    entity: EntityOfType<T>,
+    replacement: EntityOfType<T>,
+    fromBeat: number,
+    toBeat = fromBeat,
+) => {
+    for (let key = Math.floor(fromBeat); key <= Math.floor(toBeat); key++) {
+        const entities = grid[entity.type].get(key)
+        if (!entities?.has(entity)) continue
+
+        grid[entity.type].set(
+            key,
+            new Set([...entities].map((other) => (other === entity ? replacement : other))),
+        )
+    }
+}

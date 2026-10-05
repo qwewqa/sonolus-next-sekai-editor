@@ -1,7 +1,7 @@
 import type { TimeScaleObject } from '../../chart/timeScale'
 import { applyEaseEdit, type WithEaseEdits } from '../../ease'
 import type { TimeScaleEntity } from '../entities/timeScale'
-import { addTimeScale, removeTimeScale } from '../mutations/timeScale'
+import { addTimeScale, removeTimeScale, replaceTimeScale } from '../mutations/timeScale'
 import { getInStoreGrid } from '../store/grid'
 import type { Transaction } from '../transaction'
 
@@ -10,8 +10,7 @@ export const editSelectedTimeScale = (
     entity: TimeScaleEntity,
     object: Partial<WithEaseEdits<TimeScaleObject>>,
 ) => {
-    removeTimeScale(transaction, entity)
-    return addTimeScale(transaction, {
+    const edited = {
         groupId: object.groupId ?? entity.groupId,
         beat: object.beat ?? entity.beat,
         editorLane: object.editorLane ?? entity.editorLane,
@@ -20,7 +19,12 @@ export const editSelectedTimeScale = (
         timeScaleEase: applyEaseEdit(object.timeScaleEase, entity.timeScaleEase),
         timeScaleTransition: object.timeScaleTransition ?? entity.timeScaleTransition,
         hideNotes: object.hideNotes ?? entity.hideNotes,
-    })
+    }
+    // Same-beat time scales keep their order.
+    if (edited.beat === entity.beat) return replaceTimeScale(transaction, entity, edited)
+
+    removeTimeScale(transaction, entity)
+    return addTimeScale(transaction, edited)
 }
 
 export const editTimeScale = (

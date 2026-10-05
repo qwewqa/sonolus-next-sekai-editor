@@ -19,23 +19,3 @@ export const bisect = <K extends PropertyKey>(
 
     return lo
 }
-
-export const addToOrdered = <T extends Record<K, number>, K extends PropertyKey>(
-    array: T[],
-    key: K,
-    element: T,
-) => {
-    const index = bisect(array, key, element[key])
-    array.splice(index, 0, element)
-    return index
-}
-
-export const removeFromOrdered = <K extends PropertyKey>(
-    array: Record<K, number>[],
-    key: K,
-    value: number,
-) => {
-    const index = bisect(array, key, value)
-    array.splice(index, 1)
-    return index
-}

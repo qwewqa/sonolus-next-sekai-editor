@@ -1,5 +1,5 @@
-import { addEventJoint, removeEventJoint } from '.'
-import type { AddMutation, RemoveMutation } from '..'
+import { addEventJoint, removeEventJoint, replaceEventJoint } from '.'
+import type { AddMutation, RemoveMutation, ReplaceMutation } from '..'
 import type { CameraEventObject } from '../../../chart/events/camera'
 import { toCameraEventConnectionEntity } from '../../entities/events/connections/camera'
 import {
@@ -32,3 +32,17 @@ export const removeCameraEventJoint: RemoveMutation<CameraEventJointEntity> = (
         (range) => (store.globalEventRanges.cameraEventJoint = range),
     )
 }
+
+export const replaceCameraEventJoint: ReplaceMutation<
+    CameraEventJointEntity,
+    CameraEventObject
+> = ({ store }, entity, object) =>
+    replaceEventJoint(
+        store,
+        entity,
+        toCameraEventJointEntity(object),
+        'cameraEventConnection',
+        toCameraEventConnectionEntity,
+        () => store.globalEventRanges.cameraEventJoint,
+        (range) => (store.globalEventRanges.cameraEventJoint = range),
+    )

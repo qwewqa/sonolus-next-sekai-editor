@@ -4,6 +4,7 @@ import type { StagePivotEventJointEntity } from '../../../entities/events/joints
 import {
     addStagePivotEventJoint,
     removeStagePivotEventJoint,
+    replaceStagePivotEventJoint,
 } from '../../../mutations/events/stage/pivot'
 import type { Transaction } from '../../../transaction'
 
@@ -12,8 +13,7 @@ export const editSelectedStagePivotEvent = (
     entity: StagePivotEventJointEntity,
     object: Partial<WithEaseEdits<StagePivotEventObject>>,
 ) => {
-    removeStagePivotEventJoint(transaction, entity)
-    return addStagePivotEventJoint(transaction, {
+    const edited = {
         stageId: object.stageId ?? entity.stageId,
         beat: object.beat ?? entity.beat,
         pivotLane: object.pivotLane ?? entity.pivotLane,
@@ -22,5 +22,11 @@ export const editSelectedStagePivotEvent = (
         yOffset: object.yOffset ?? entity.yOffset,
         yOffsetBeat: object.yOffsetBeat ?? entity.yOffsetBeat,
         eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
-    })
+    }
+    // Same-beat joints keep their order on their track.
+    if (edited.beat === entity.beat && edited.stageId === entity.stageId)
+        return replaceStagePivotEventJoint(transaction, entity, edited)
+
+    removeStagePivotEventJoint(transaction, entity)
+    return addStagePivotEventJoint(transaction, edited)
 }
