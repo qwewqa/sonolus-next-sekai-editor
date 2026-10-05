@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     computed,
+    nextTick,
     onBeforeUnmount,
     onMounted,
     useId,
@@ -96,6 +97,18 @@ onBeforeUnmount(() => {
     cancelAnimationFrame(frame)
 })
 
+// Keys narrowing away the focused chip move on to the field's control.
+const narrow = async (value: MixedValue, event: MouseEvent) => {
+    const chip = event.currentTarget as HTMLElement
+    value.narrow?.()
+    if (event.detail > 0) return
+    await nextTick()
+    if (chip.isConnected) return
+    row.value
+        ?.querySelector<HTMLElement>('input:checked, select, input, button, [tabindex]')
+        ?.focus()
+}
+
 // The control is slotted, so it is linked to the description here.
 watchEffect(
     () => {
@@ -143,7 +156,7 @@ watchEffect(
                     interpolateRaw(i18n.modals.form.selectOnly, `${value.count}`, value.label)
                 "
                 :disabled="!value.narrow"
-                @click="value.narrow?.()"
+                @click="narrow(value, $event)"
             >
                 {{ value.label }} <span class="tabular-nums">{{ value.count }}</span>
             </button>

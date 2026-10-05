@@ -134,6 +134,13 @@ test.describe('mixed values', () => {
         await expect(color.locator('option:checked')).toHaveText('Red')
     })
 
+    test('narrowing by keyboard keeps focus in the field', async ({ page }) => {
+        await selection(page).getByRole('button', { name: 'Select only Red (1)' }).focus()
+        await page.keyboard.press('Enter')
+        expect(await selectedCount(page)).toBe(1)
+        await expect(control(page, 'Note Color')).toBeFocused()
+    })
+
     test('ease halves count easings and modes separately', async ({ page }) => {
         await expect(control(page, 'Connector Ease').locator('option:checked')).toHaveText('Quad')
         const mode = selection(page)
@@ -273,7 +280,14 @@ test.describe('brush', () => {
                 .locator('option[value="isCritical"]'),
         ).toHaveCount(0)
 
-        await row.getByRole('button', { name: 'Remove Critical' }).click()
+        // Removing by keyboard moves on to the next row, then to Add Property.
+        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('sfx')
+        await row.getByRole('button', { name: 'Remove Critical' }).focus()
+        await page.keyboard.press('Enter')
+        await expect(tool(page).locator('[data-brush-key="sfx"] select')).toBeFocused()
+        await tool(page).getByRole('button', { name: 'Remove SFX' }).focus()
+        await page.keyboard.press('Enter')
+        await expect(tool(page).getByRole('combobox', { name: 'Add Property' })).toBeFocused()
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
         await expect(tool(page).locator('.brush-empty')).toBeVisible()
     })

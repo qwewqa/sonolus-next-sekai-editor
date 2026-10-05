@@ -79,11 +79,21 @@ const add = async (event: Event) => {
         ?.focus()
 }
 
-const remove = (key: BrushKey) => {
+const remove = async (key: BrushKey, event: MouseEvent) => {
     const properties = { ...brushProperties.value }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete properties[key]
     brushProperties.value = properties
+    // Keyboard removal moves on to the next row, or to Add Property.
+    if (event.detail > 0) return
+    const rows = [...(root.value?.querySelectorAll<HTMLElement>('[data-brush-key]') ?? [])]
+    const index = rows.findIndex((row) => row.dataset.brushKey === key)
+    const next = rows[index + 1] ?? rows[index - 1]
+    await nextTick()
+    const target = next?.isConnected
+        ? next.querySelector<HTMLElement>('input, select')
+        : root.value?.querySelector<HTMLElement>('.brush-add select')
+    target?.focus()
 }
 
 const pick = () => {
@@ -180,7 +190,7 @@ const clear = () => {
                         interpolateRaw(i18n.tools.brush.remove, fieldLabel(field, i18n, true))
                     "
                     :title="interpolateRaw(i18n.tools.brush.remove, fieldLabel(field, i18n, true))"
-                    @click="remove(field.key)"
+                    @click="remove(field.key, $event)"
                 >
                     <CloseIcon class="size-3" />
                 </button>
