@@ -15,6 +15,8 @@ declare global {
             settings: (typeof import('../../src/settings'))['settings']
             view: (typeof import('../../src/editor/view'))['view']
             nextTick: (typeof import('vue'))['nextTick']
+            /** Imports an app module as the page loaded it, sharing its state. */
+            appImport: <T>(pathname: string) => Promise<T>
             fixtures: { interaction: Chart; notes: Chart; connectors: Chart; events: Chart }
             show: (chart: Chart, time?: number) => void
             addWaveform: () => Promise<void>
@@ -316,6 +318,7 @@ export const installEditorFixture = async () => {
         settings,
         view,
         nextTick,
+        appImport,
         fixtures: { interaction, notes, connectors, events },
         show,
         async addWaveform() {

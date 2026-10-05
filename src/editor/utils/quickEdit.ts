@@ -11,8 +11,17 @@ import { noteStyles, type NoteStyle } from '../../chart/noteStyle'
 import { cycleEase } from '../../ease'
 import { selectedEntities } from '../../history/selectedEntities'
 import type { DefaultNoteSlideProperties } from '../../settings'
+import type { Entity } from '../../state/entities'
+import type { EditableObject } from '../../state/operations/editable'
 import { entries } from '../../utils/object'
 import { editSelectedEditableEntities } from '../sidebars/default'
+
+// Note and slide presets edit only the selected notes.
+const isNote = (entity: Entity) => entity.type === 'note'
+
+const edit = (object: EditableObject) => {
+    editSelectedEditableEntities(object, isNote)
+}
 
 export const quickEdit = (properties: DefaultNoteSlideProperties) => {
     let count = 0
@@ -27,7 +36,7 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
     }
 
     if (count > 1) {
-        editSelectedEditableEntities(properties)
+        edit(properties)
         return
     }
 
@@ -46,20 +55,20 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
     }
 
     if (value === undefined) {
-        editSelectedEditableEntities(properties)
+        edit(properties)
         return
     }
 
     switch (key) {
         case 'elevation':
-            editSelectedEditableEntities({ elevation: properties.elevation })
+            edit({ elevation: properties.elevation })
             break
         case 'noteStyle':
         case 'connectorStyle':
-            editSelectedEditableEntities({ [key]: rotate(value as NoteStyle, [...noteStyles]) })
+            edit({ [key]: rotate(value as NoteStyle, [...noteStyles]) })
             break
         case 'noteType':
-            editSelectedEditableEntities({
+            edit({
                 noteType: rotate(value as NoteType, [
                     'default',
                     'trace',
@@ -71,13 +80,13 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
             })
             break
         case 'isAttached':
-            editSelectedEditableEntities({ isAttached: !value })
+            edit({ isAttached: !value })
             break
         case 'isCritical':
-            editSelectedEditableEntities({ isCritical: !value })
+            edit({ isCritical: !value })
             break
         case 'flickDirection':
-            editSelectedEditableEntities({
+            edit({
                 flickDirection: rotate(value as FlickDirection, [
                     'none',
                     'up',
@@ -90,10 +99,10 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
             })
             break
         case 'isFake':
-            editSelectedEditableEntities({ isFake: !value })
+            edit({ isFake: !value })
             break
         case 'sfx':
-            editSelectedEditableEntities({
+            edit({
                 sfx: rotate(value as NoteSfx, [
                     'default',
                     'none',
@@ -110,37 +119,37 @@ export const quickEdit = (properties: DefaultNoteSlideProperties) => {
             })
             break
         case 'isConnectorSeparator':
-            editSelectedEditableEntities({ isConnectorSeparator: !value })
+            edit({ isConnectorSeparator: !value })
             break
         case 'connectorType':
-            editSelectedEditableEntities({
+            edit({
                 connectorType: rotate(value as ConnectorType, ['active', 'guide', 'damage']),
             })
             break
         case 'connectorEase':
-            editSelectedEditableEntities({
+            edit({
                 connectorEase: cycleEase(value as ConnectorEase),
             })
             break
         case 'connectorIsFake':
-            editSelectedEditableEntities({ connectorIsFake: !value })
+            edit({ connectorIsFake: !value })
             break
         case 'connectorActiveIsCritical':
-            editSelectedEditableEntities({ connectorActiveIsCritical: !value })
+            edit({ connectorActiveIsCritical: !value })
             break
         case 'connectorGuideAlpha':
-            editSelectedEditableEntities({ connectorGuideAlpha: value as never })
+            edit({ connectorGuideAlpha: properties.connectorGuideAlpha })
             break
         case 'connectorLayer':
-            editSelectedEditableEntities({
+            edit({
                 connectorLayer: rotate(value as ConnectorLayer, ['top', 'bottom']),
             })
             break
         case 'connectorIsPassThrough':
-            editSelectedEditableEntities({ connectorIsPassThrough: !value })
+            edit({ connectorIsPassThrough: !value })
             break
         case 'connectorPresentation':
-            editSelectedEditableEntities({
+            edit({
                 connectorPresentation: rotate(value as ConnectorPresentation, [
                     'default',
                     'fullscreen',
