@@ -108,7 +108,7 @@ test('tool presets show glyphs only for values that are set', async ({ page }) =
 })
 
 test.describe('time scale transition', () => {
-    const transition = 'Time Scale Transition'
+    const transition = 'Transition'
     const segments = (page: Page) => field(page, transition).getByRole('radiogroup')
 
     test('a wide dock shows the markers beside both names', async ({ page }) => {

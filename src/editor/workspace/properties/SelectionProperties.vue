@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, useId, type WritableComputedRef } from 'vue'
+import { computed, provide, useId, type WritableComputedRef } from 'vue'
 import { easeFamily, easeMode, eases, type Ease } from '../../../ease'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
 import type { FieldUsage } from '../../../modals/form/fieldUsage'
+import { qualifiedLabelsKey } from '../../../modals/form/qualifiedLabels'
 import { settings } from '../../../settings'
 import { toDisplayedBeat } from '../../beatDisplay'
 import ChevronIcon from '../ChevronIcon.vue'
@@ -15,6 +16,7 @@ import {
     connectorSummaryKeys,
     propertyFields,
     propertySections,
+    qualifiesLabels,
     type PropertyField,
     type PropertyKey,
     type PropertySection,
@@ -35,18 +37,25 @@ const models = Object.fromEntries(
     ]),
 ) as Record<PropertyKey, WritableComputedRef<unknown>>
 
+const context = computed(() => ({
+    types: types.value,
+    noteFields: noteFields.value,
+    count: entities.value.length,
+    isDynamicStages: isDynamicStages.value,
+}))
+
+// Across kinds, fields name the kind their short label leaves out.
+provide(
+    qualifiedLabelsKey,
+    computed(() => qualifiesLabels(context.value)),
+)
+
 const visible = computed(() => {
-    const context = {
-        types: types.value,
-        noteFields: noteFields.value,
-        count: entities.value.length,
-        isDynamicStages: isDynamicStages.value,
-    }
     const sections = Object.fromEntries(
         propertySections.map((section) => [section, [] as PropertyField[]]),
     ) as Record<PropertySection, PropertyField[]>
     for (const field of propertyFields) {
-        if (field.show(context)) sections[field.section].push(field)
+        if (field.show(context.value)) sections[field.section].push(field)
     }
     return sections
 })

@@ -965,28 +965,36 @@
         "label": "BPM"
       },
       "cameraLeft": {
-        "label": "카메라 이동 레인"
+        "label": "이동 레인",
+        "qualified": "카메라 이동 레인"
       },
       "cameraRotation": {
-        "label": "카메라 회전"
+        "label": "회전",
+        "qualified": "카메라 회전"
       },
       "cameraSize": {
-        "label": "카메라 이동 크기"
+        "label": "이동 크기",
+        "qualified": "카메라 이동 크기"
       },
       "cameraStageTilt": {
-        "label": "카메라 스테이지 기울기"
+        "label": "스테이지 기울기",
+        "qualified": "카메라 스테이지 기울기"
       },
       "cameraZoom": {
-        "label": "카메라 줌"
+        "label": "줌",
+        "qualified": "카메라 줌"
       },
       "cameraZoomTargetLane": {
-        "label": "카메라 줌 대상 레인"
+        "label": "줌 대상 레인",
+        "qualified": "카메라 줌 대상 레인"
       },
       "cameraZoomTargetY": {
-        "label": "카메라 줌 대상 Y"
+        "label": "줌 대상 Y",
+        "qualified": "카메라 줌 대상 Y"
       },
       "cameraZoomVerticalAlign": {
-        "label": "카메라 줌 세로 정렬",
+        "label": "줌 세로 정렬",
+        "qualified": "카메라 줌 세로 정렬",
         "default": "기본",
         "center": "중심"
       },
@@ -1072,8 +1080,10 @@
         "label": "높이"
       },
       "eventEase": {
-        "label": "이벤트 이징",
-        "mode": "이벤트 이징 모드"
+        "label": "이징",
+        "qualified": "이벤트 이징",
+        "mode": "이징 모드",
+        "qualifiedMode": "이벤트 이징 모드"
       },
       "file": {
         "select": "파일 선택..."
@@ -1217,11 +1227,14 @@
         "label": "시간 배율"
       },
       "timeScaleEase": {
-        "label": "시간 배율 이징",
-        "mode": "시간 배율 이징 모드"
+        "label": "이징",
+        "qualified": "시간 배율 이징",
+        "mode": "이징 모드",
+        "qualifiedMode": "시간 배율 이징 모드"
       },
       "timeScaleTransition": {
-        "label": "시간 배율 전환",
+        "label": "전환",
+        "qualified": "시간 배율 전환",
         "timeScale": "시간 배율",
         "scroll": "스크롤"
       },

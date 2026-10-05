@@ -155,7 +155,7 @@ test.describe('ease fields', () => {
             })
             await nextTick()
         })
-        const family = field(page, 'Time Scale Ease')
+        const family = field(page, 'Ease')
         await expect(family).toBeVisible()
         const labels = await family.locator('option:not([hidden])').allTextContents()
         // Options in use while mixed end in their counts.

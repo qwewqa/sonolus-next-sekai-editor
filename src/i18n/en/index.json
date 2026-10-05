@@ -965,28 +965,36 @@
                 "label": "BPM"
             },
             "cameraLeft": {
-                "label": "Camera Shift Lane"
+                "label": "Shift Lane",
+                "qualified": "Camera Shift Lane"
             },
             "cameraRotation": {
-                "label": "Camera Rotation"
+                "label": "Rotation",
+                "qualified": "Camera Rotation"
             },
             "cameraSize": {
-                "label": "Camera Shift Size"
+                "label": "Shift Size",
+                "qualified": "Camera Shift Size"
             },
             "cameraStageTilt": {
-                "label": "Camera Stage Tilt"
+                "label": "Stage Tilt",
+                "qualified": "Camera Stage Tilt"
             },
             "cameraZoom": {
-                "label": "Camera Zoom"
+                "label": "Zoom",
+                "qualified": "Camera Zoom"
             },
             "cameraZoomTargetLane": {
-                "label": "Camera Zoom Target Lane"
+                "label": "Zoom Target Lane",
+                "qualified": "Camera Zoom Target Lane"
             },
             "cameraZoomTargetY": {
-                "label": "Camera Zoom Target Y"
+                "label": "Zoom Target Y",
+                "qualified": "Camera Zoom Target Y"
             },
             "cameraZoomVerticalAlign": {
-                "label": "Camera Zoom Vertical Align",
+                "label": "Zoom Vertical Align",
+                "qualified": "Camera Zoom Vertical Align",
                 "default": "Default",
                 "center": "Center"
             },
@@ -1072,8 +1080,10 @@
                 "label": "Elevation"
             },
             "eventEase": {
-                "label": "Event Ease",
-                "mode": "Event Ease Mode"
+                "label": "Ease",
+                "qualified": "Event Ease",
+                "mode": "Ease Mode",
+                "qualifiedMode": "Event Ease Mode"
             },
             "file": {
                 "select": "Select File..."
@@ -1217,11 +1227,14 @@
                 "label": "Time Scale"
             },
             "timeScaleEase": {
-                "label": "Time Scale Ease",
-                "mode": "Time Scale Ease Mode"
+                "label": "Ease",
+                "qualified": "Time Scale Ease",
+                "mode": "Ease Mode",
+                "qualifiedMode": "Time Scale Ease Mode"
             },
             "timeScaleTransition": {
-                "label": "Time Scale Transition",
+                "label": "Transition",
+                "qualified": "Time Scale Transition",
                 "timeScale": "Time Scale",
                 "scroll": "Scroll"
             },

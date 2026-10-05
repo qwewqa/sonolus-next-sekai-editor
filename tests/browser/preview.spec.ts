@@ -1377,7 +1377,7 @@ test.describe('preview background camera', () => {
         })
         await settle(page)
         const before = await background(page)
-        const rotation = page.getByLabel('Camera Rotation', { exact: true })
+        const rotation = page.getByLabel('Rotation', { exact: true })
         await rotation.fill('45')
         await settle(page)
         const draft = await background(page)

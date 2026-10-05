@@ -965,28 +965,36 @@
         "label": "BPM"
       },
       "cameraLeft": {
-        "label": "カメラの移動レーン"
+        "label": "移動レーン",
+        "qualified": "カメラの移動レーン"
       },
       "cameraRotation": {
-        "label": "カメラの回転"
+        "label": "回転",
+        "qualified": "カメラの回転"
       },
       "cameraSize": {
-        "label": "カメラの移動幅"
+        "label": "移動幅",
+        "qualified": "カメラの移動幅"
       },
       "cameraStageTilt": {
-        "label": "カメラのステージ傾斜"
+        "label": "ステージ傾斜",
+        "qualified": "カメラのステージ傾斜"
       },
       "cameraZoom": {
-        "label": "カメラのズーム"
+        "label": "ズーム",
+        "qualified": "カメラのズーム"
       },
       "cameraZoomTargetLane": {
-        "label": "ズームの中心レーン"
+        "label": "ズームの中心レーン",
+        "qualified": "ズームの中心レーン"
       },
       "cameraZoomTargetY": {
-        "label": "ズームの中心Y座標"
+        "label": "ズームの中心Y座標",
+        "qualified": "ズームの中心Y座標"
       },
       "cameraZoomVerticalAlign": {
         "label": "ズームの縦方向基準",
+        "qualified": "ズームの縦方向基準",
         "default": "デフォルト",
         "center": "中央"
       },
@@ -1072,8 +1080,10 @@
         "label": "高さ"
       },
       "eventEase": {
-        "label": "イベントの加減速",
-        "mode": "イベントの加減速モード"
+        "label": "加減速",
+        "qualified": "イベントの加減速",
+        "mode": "加減速モード",
+        "qualifiedMode": "イベントの加減速モード"
       },
       "file": {
         "select": "ファイルを選択してください..."
@@ -1218,10 +1228,13 @@
       },
       "timeScaleEase": {
         "label": "ハイスピード変化",
-        "mode": "ハイスピード変化モード"
+        "qualified": "ハイスピード変化",
+        "mode": "ハイスピード変化モード",
+        "qualifiedMode": "ハイスピード変化モード"
       },
       "timeScaleTransition": {
-        "label": "ハイスピードの遷移方式",
+        "label": "遷移方式",
+        "qualified": "ハイスピードの遷移方式",
         "timeScale": "ハイスピード",
         "scroll": "スクロール"
       },

@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { easeFamilies, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
+import { useQualifiedLabels } from './qualifiedLabels'
 import EaseField from './EaseField.vue'
 
 const modelValue = defineModel<EaseEdit | undefined>({ required: true })
+
+const qualified = useQualifiedLabels()
 </script>
 
 <template>
     <EaseField
         v-model="modelValue"
-        :label="i18n.modals.form.eventEase.label"
-        :mode-label="i18n.modals.form.eventEase.mode"
+        :label="qualified ? i18n.modals.form.eventEase.qualified : i18n.modals.form.eventEase.label"
+        :mode-label="
+            qualified ? i18n.modals.form.eventEase.qualifiedMode : i18n.modals.form.eventEase.mode
+        "
         :families="easeFamilies"
     />
 </template>

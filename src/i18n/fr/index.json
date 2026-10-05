@@ -965,28 +965,36 @@
         "label": "BPM"
       },
       "cameraLeft": {
-        "label": "Décalage horizontal de la caméra"
+        "label": "Décalage horizontal",
+        "qualified": "Décalage horizontal de la caméra"
       },
       "cameraRotation": {
-        "label": "Rotation de la caméra"
+        "label": "Rotation",
+        "qualified": "Rotation de la caméra"
       },
       "cameraSize": {
-        "label": "Largeur du décalage de la caméra"
+        "label": "Largeur du décalage",
+        "qualified": "Largeur du décalage de la caméra"
       },
       "cameraStageTilt": {
-        "label": "Inclinaison de la scène dans la caméra"
+        "label": "Inclinaison de la scène",
+        "qualified": "Inclinaison de la scène dans la caméra"
       },
       "cameraZoom": {
-        "label": "Zoom de la caméra"
+        "label": "Zoom",
+        "qualified": "Zoom de la caméra"
       },
       "cameraZoomTargetLane": {
-        "label": "Voie cible du zoom de la caméra"
+        "label": "Voie cible du zoom",
+        "qualified": "Voie cible du zoom de la caméra"
       },
       "cameraZoomTargetY": {
-        "label": "Position Y cible du zoom de la caméra"
+        "label": "Position Y cible du zoom",
+        "qualified": "Position Y cible du zoom de la caméra"
       },
       "cameraZoomVerticalAlign": {
-        "label": "Alignement vertical du zoom de la caméra",
+        "label": "Alignement vertical du zoom",
+        "qualified": "Alignement vertical du zoom de la caméra",
         "default": "Par défaut",
         "center": "Centre"
       },
@@ -1072,8 +1080,10 @@
         "label": "Élévation"
       },
       "eventEase": {
-        "label": "Interpolation de l’événement",
-        "mode": "Mode d’interpolation de l’événement"
+        "label": "Interpolation",
+        "qualified": "Interpolation de l’événement",
+        "mode": "Mode d’interpolation",
+        "qualifiedMode": "Mode d’interpolation de l’événement"
       },
       "file": {
         "select": "Sélectionner le Fichier..."
@@ -1118,7 +1128,7 @@
         "label": "Pleine largeur"
       },
       "isMaskNotes": {
-        "label": "Masquer les notes"
+        "label": "Masquage des notes"
       },
       "isUntilEnd": {
         "label": "Jusqu’à la fin"
@@ -1217,11 +1227,14 @@
         "label": "Échelle de Temps"
       },
       "timeScaleEase": {
-        "label": "Interpolation de l’échelle de temps",
-        "mode": "Mode d’interpolation de l’échelle de temps"
+        "label": "Interpolation",
+        "qualified": "Interpolation de l’échelle de temps",
+        "mode": "Mode d’interpolation",
+        "qualifiedMode": "Mode d’interpolation de l’échelle de temps"
       },
       "timeScaleTransition": {
-        "label": "Transition de l’échelle de temps",
+        "label": "Transition",
+        "qualified": "Transition de l’échelle de temps",
         "timeScale": "Échelle de temps",
         "scroll": "Défilement"
       },

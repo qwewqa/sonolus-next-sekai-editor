@@ -61,6 +61,8 @@ export type PropertyField = {
     section: PropertySection
     kind: PropertyKind
     label: (t: Localization) => string
+    /** The label naming the object kind, for selections of several kinds. */
+    qualifiedLabel?: (t: Localization) => string
     /** Shown in Selection for this selection. */
     show: (context: SelectionContext) => boolean
     /** Value labels for the collapsed connector summary and enum toggles. */
@@ -139,6 +141,7 @@ const fields: PropertyField[] = [
         section: 'position',
         kind: 'camera',
         label: (t) => t.modals.form.cameraLeft.label,
+        qualifiedLabel: (t) => t.modals.form.cameraLeft.qualified,
         show: type('cameraEventJoint'),
     },
     {
@@ -146,6 +149,7 @@ const fields: PropertyField[] = [
         section: 'position',
         kind: 'camera',
         label: (t) => t.modals.form.cameraSize.label,
+        qualifiedLabel: (t) => t.modals.form.cameraSize.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 12 },
     },
@@ -223,6 +227,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'timeScale',
         label: (t) => t.modals.form.timeScaleEase.label,
+        qualifiedLabel: (t) => t.modals.form.timeScaleEase.qualified,
         show: type('timeScale'),
         valueLabel: easeLabel,
         ease: true,
@@ -233,6 +238,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'timeScale',
         label: (t) => t.modals.form.timeScaleTransition.label,
+        qualifiedLabel: (t) => t.modals.form.timeScaleTransition.qualified,
         show: type('timeScale'),
         valueLabel: optionLabel((t) => t.modals.form.timeScaleTransition),
         brush: { initial: 'timeScale' },
@@ -250,6 +256,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraZoom.label,
+        qualifiedLabel: (t) => t.modals.form.cameraZoom.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 1 },
     },
@@ -258,6 +265,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraZoomTargetLane.label,
+        qualifiedLabel: (t) => t.modals.form.cameraZoomTargetLane.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 0 },
     },
@@ -266,6 +274,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraZoomTargetY.label,
+        qualifiedLabel: (t) => t.modals.form.cameraZoomTargetY.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 0 },
     },
@@ -274,6 +283,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraZoomVerticalAlign.label,
+        qualifiedLabel: (t) => t.modals.form.cameraZoomVerticalAlign.qualified,
         show: type('cameraEventJoint'),
         valueLabel: optionLabel((t) => t.modals.form.cameraZoomVerticalAlign),
         brush: { initial: 'default' },
@@ -283,6 +293,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraRotation.label,
+        qualifiedLabel: (t) => t.modals.form.cameraRotation.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 0 },
     },
@@ -291,6 +302,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'camera',
         label: (t) => t.modals.form.cameraStageTilt.label,
+        qualifiedLabel: (t) => t.modals.form.cameraStageTilt.qualified,
         show: type('cameraEventJoint'),
         brush: { initial: 1 },
     },
@@ -430,6 +442,7 @@ const fields: PropertyField[] = [
         section: 'values',
         kind: 'event',
         label: (t) => t.modals.form.eventEase.label,
+        qualifiedLabel: (t) => t.modals.form.eventEase.qualified,
         show: type(...eventJoints),
         valueLabel: easeLabel,
         ease: true,
@@ -619,6 +632,13 @@ const fields: PropertyField[] = [
 ]
 
 export const propertyFields: readonly PropertyField[] = fields
+
+/** Selections of several kinds name each field's kind where its label omits it. */
+export const qualifiesLabels = ({ types }: SelectionContext) =>
+    Object.values(types).filter(Boolean).length > 1
+
+export const fieldLabel = (field: PropertyField, t: Localization, qualified: boolean) =>
+    (qualified ? field.qualifiedLabel?.(t) : undefined) ?? field.label(t)
 
 export const propertyField = new Map(fields.map((field) => [field.key, field]))
 

@@ -965,28 +965,36 @@
         "label": "BPM"
       },
       "cameraLeft": {
-        "label": "攝影機偏移軌道"
+        "label": "偏移軌道",
+        "qualified": "攝影機偏移軌道"
       },
       "cameraRotation": {
-        "label": "攝影機旋轉"
+        "label": "旋轉",
+        "qualified": "攝影機旋轉"
       },
       "cameraSize": {
-        "label": "攝影機偏移寬度"
+        "label": "偏移寬度",
+        "qualified": "攝影機偏移寬度"
       },
       "cameraStageTilt": {
-        "label": "攝影機舞台傾斜"
+        "label": "舞台傾斜",
+        "qualified": "攝影機舞台傾斜"
       },
       "cameraZoom": {
-        "label": "攝影機縮放"
+        "label": "縮放",
+        "qualified": "攝影機縮放"
       },
       "cameraZoomTargetLane": {
-        "label": "攝影機縮放目標軌道"
+        "label": "縮放目標軌道",
+        "qualified": "攝影機縮放目標軌道"
       },
       "cameraZoomTargetY": {
-        "label": "攝影機縮放目標 Y"
+        "label": "縮放目標 Y",
+        "qualified": "攝影機縮放目標 Y"
       },
       "cameraZoomVerticalAlign": {
-        "label": "攝影機縮放垂直對齊",
+        "label": "縮放垂直對齊",
+        "qualified": "攝影機縮放垂直對齊",
         "default": "預設",
         "center": "置中"
       },
@@ -1072,8 +1080,10 @@
         "label": "高度"
       },
       "eventEase": {
-        "label": "事件緩動",
-        "mode": "事件緩動模式"
+        "label": "緩動",
+        "qualified": "事件緩動",
+        "mode": "緩動模式",
+        "qualifiedMode": "事件緩動模式"
       },
       "file": {
         "select": "選擇檔案..."
@@ -1217,11 +1227,14 @@
         "label": "時間倍率"
       },
       "timeScaleEase": {
-        "label": "時間倍率緩動",
-        "mode": "時間倍率緩動模式"
+        "label": "緩動",
+        "qualified": "時間倍率緩動",
+        "mode": "緩動模式",
+        "qualifiedMode": "時間倍率緩動模式"
       },
       "timeScaleTransition": {
-        "label": "時間倍率過渡",
+        "label": "過渡",
+        "qualified": "時間倍率過渡",
         "timeScale": "時間倍率",
         "scroll": "捲動"
       },

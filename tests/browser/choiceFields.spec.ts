@@ -2,8 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
-const transition = (page: Page) =>
-    panel(page).getByRole('radiogroup', { name: /^Time Scale Transition/ })
+const transition = (page: Page) => panel(page).getByRole('radiogroup', { name: /^Transition/ })
 
 const open = async (page: Page, values: Record<string, unknown> = {}) => {
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
@@ -39,18 +38,18 @@ test.describe('roomy panel', () => {
     test('two named options show side by side, with none checked when mixed', async ({ page }) => {
         await open(page, { rightDockWidth: 560 })
         const group = transition(page)
-        await expect(group).toHaveAccessibleName('Time Scale Transition Mixed')
+        await expect(group).toHaveAccessibleName('Transition Mixed')
         await expect(group.getByRole('radio', { name: 'Time Scale', exact: true })).toBeVisible()
         await expect(group.getByRole('radio', { name: 'Scroll', exact: true })).toBeVisible()
         await expect(group.getByRole('radio', { checked: true })).toHaveCount(0)
 
         // The field label names the group without choosing an option.
-        await panel(page).getByText('Time Scale Transition', { exact: true }).click()
+        await panel(page).getByText('Transition', { exact: true }).click()
         expect(new Set(await transitions(page))).toEqual(new Set(['timeScale', 'scroll']))
 
         await group.getByRole('radio', { name: 'Scroll', exact: true }).click()
         expect(await transitions(page)).toEqual(['scroll', 'scroll', 'scroll', 'scroll'])
-        await expect(group).toHaveAccessibleName('Time Scale Transition')
+        await expect(group).toHaveAccessibleName('Transition')
         await expect(group.getByRole('radio', { name: 'Scroll' })).toBeChecked()
 
         // Arrow keys move within the group, one edit per press, without editor shortcuts.
@@ -98,7 +97,7 @@ test.describe('roomy panel', () => {
         await tool
             .getByRole('combobox', { name: 'Add Property' })
             .selectOption('timeScaleTransition')
-        const group = tool.getByRole('radiogroup', { name: 'Time Scale Transition' })
+        const group = tool.getByRole('radiogroup', { name: /^Transition/ })
         // The brush names its unset value "Unchanged".
         const unchanged = group.getByRole('radio', { name: 'Unchanged', exact: true })
         await expect(group.getByRole('radio', { name: 'Time Scale', exact: true })).toBeChecked()
@@ -126,7 +125,7 @@ test.describe('roomy panel', () => {
 test('a narrow dock uses a select and hands focus over when it widens', async ({ page }) => {
     await open(page)
     await expect(transition(page)).toHaveCount(0)
-    const select = panel(page).getByRole('combobox', { name: 'Time Scale Transition' })
+    const select = panel(page).getByRole('combobox', { name: 'Transition', exact: true })
     // While mixed, options in use carry their object counts.
     await expect(select.locator('option')).toHaveText(['Mixed', 'Time Scale · 2', 'Scroll · 2'])
     await select.selectOption('timeScale')

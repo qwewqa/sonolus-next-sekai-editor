@@ -17,6 +17,7 @@ import AddIcon from '../../workspace/manager/icons/AddIcon.vue'
 import { optionalFieldComponents } from '../../workspace/properties/fieldComponents'
 import {
     brushFields,
+    fieldLabel,
     pickBrush,
     propertyKinds,
     stageKinds,
@@ -173,8 +174,10 @@ const clear = () => {
                 <button
                     type="button"
                     class="brush-remove -mr-2 flex size-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:bg-header-hover [@media(pointer:coarse)]:size-11"
-                    :aria-label="interpolateRaw(i18n.tools.brush.remove, field.label(i18n))"
-                    :title="interpolateRaw(i18n.tools.brush.remove, field.label(i18n))"
+                    :aria-label="
+                        interpolateRaw(i18n.tools.brush.remove, fieldLabel(field, i18n, true))
+                    "
+                    :title="interpolateRaw(i18n.tools.brush.remove, fieldLabel(field, i18n, true))"
                     @click="remove(field.key)"
                 >
                     <CloseIcon class="size-3" />

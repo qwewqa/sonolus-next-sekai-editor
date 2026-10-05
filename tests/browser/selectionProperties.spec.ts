@@ -336,7 +336,7 @@ test('two-value choices list the values in use while mixed', async ({ page }) =>
     })
     const field = selection(page)
         .locator('.form-field')
-        .filter({ has: page.getByRole('radiogroup', { name: 'Time Scale Transition' }) })
+        .filter({ has: page.getByRole('radiogroup', { name: /^Transition/ }) })
     await expect(field.locator('.form-field-mixed-value')).toHaveText(['Time Scale 2', 'Scroll 2'])
     await field.getByRole('button', { name: 'Select only Scroll (2)' }).click()
     expect(await selectedCount(page)).toBe(2)
@@ -352,4 +352,46 @@ test('View picks the current group, apart from the selection’s group', async (
     ).toHaveText('All Groups')
     await expect(view.getByRole('combobox', { name: 'Group', exact: true })).toHaveCount(0)
     await expect(control(page, 'Group')).toHaveCount(1)
+})
+
+test('labels name their kind only when the selection spans kinds', async ({ page }) => {
+    const select = (types: string[]) =>
+        page.evaluate(async (types) => {
+            const { fixtures, show, history, store, nextTick } = window.editorTest
+            if (![...store.getAllEntities()].some((entity) => entity.type === 'timeScale'))
+                show(fixtures.events)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter((entity) =>
+                    types.includes(entity.type),
+                ),
+            })
+            await nextTick()
+        }, types)
+    const labels = () => selection(page).locator('.form-field-text').allTextContents()
+
+    await select(['timeScale'])
+    expect(await labels()).toEqual(expect.arrayContaining(['Ease', 'Ease Mode', 'Transition']))
+    await select(['cameraEventJoint'])
+    expect(await labels()).toEqual(expect.arrayContaining(['Zoom', 'Rotation', 'Ease']))
+
+    await select(['timeScale', 'cameraEventJoint', 'stageTransformEventJoint'])
+    const mixed = await labels()
+    expect(mixed).toEqual(
+        expect.arrayContaining([
+            'Time Scale Ease',
+            'Time Scale Ease Mode',
+            'Time Scale Transition',
+            'Camera Zoom',
+            'Camera Rotation',
+            'Rotation',
+            'Event Ease',
+            'Event Ease Mode',
+        ]),
+    )
+    expect(new Set(mixed).size).toBe(mixed.length)
+    // Accessible names follow the visible labels.
+    await expect(
+        selection(page).getByRole('combobox', { name: 'Time Scale Ease', exact: true }),
+    ).toBeVisible()
 })

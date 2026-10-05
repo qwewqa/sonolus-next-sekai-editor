@@ -965,28 +965,36 @@
         "label": "BPM"
       },
       "cameraLeft": {
-        "label": "Kamera Şerit Kayması"
+        "label": "Şerit Kayması",
+        "qualified": "Kamera Şerit Kayması"
       },
       "cameraRotation": {
-        "label": "Kamera Dönüşü"
+        "label": "Dönüş",
+        "qualified": "Kamera Dönüşü"
       },
       "cameraSize": {
-        "label": "Kamera Boyut Kayması"
+        "label": "Boyut Kayması",
+        "qualified": "Kamera Boyut Kayması"
       },
       "cameraStageTilt": {
-        "label": "Kamera Sahne Eğimi"
+        "label": "Sahne Eğimi",
+        "qualified": "Kamera Sahne Eğimi"
       },
       "cameraZoom": {
-        "label": "Kamera Yakınlaştırması"
+        "label": "Yakınlaştırma",
+        "qualified": "Kamera Yakınlaştırması"
       },
       "cameraZoomTargetLane": {
-        "label": "Kamera Yakınlaştırma Hedef Şeridi"
+        "label": "Yakınlaştırma Hedef Şeridi",
+        "qualified": "Kamera Yakınlaştırma Hedef Şeridi"
       },
       "cameraZoomTargetY": {
-        "label": "Kamera Yakınlaştırma Hedefi Y"
+        "label": "Yakınlaştırma Hedefi Y",
+        "qualified": "Kamera Yakınlaştırma Hedefi Y"
       },
       "cameraZoomVerticalAlign": {
-        "label": "Kamera Yakınlaştırma Dikey Hizalaması",
+        "label": "Yakınlaştırma Dikey Hizalaması",
+        "qualified": "Kamera Yakınlaştırma Dikey Hizalaması",
         "default": "Varsayılan",
         "center": "Merkez"
       },
@@ -1072,8 +1080,10 @@
         "label": "Yükseklik"
       },
       "eventEase": {
-        "label": "Olay Yumuşatması",
-        "mode": "Olay Yumuşatma Modu"
+        "label": "Yumuşatma",
+        "qualified": "Olay Yumuşatması",
+        "mode": "Yumuşatma Modu",
+        "qualifiedMode": "Olay Yumuşatma Modu"
       },
       "file": {
         "select": "Dosya Seç..."
@@ -1217,11 +1227,14 @@
         "label": "Zaman Ölçeği"
       },
       "timeScaleEase": {
-        "label": "Zaman Ölçeği Yumuşatması",
-        "mode": "Zaman Ölçeği Yumuşatma Modu"
+        "label": "Yumuşatma",
+        "qualified": "Zaman Ölçeği Yumuşatması",
+        "mode": "Yumuşatma Modu",
+        "qualifiedMode": "Zaman Ölçeği Yumuşatma Modu"
       },
       "timeScaleTransition": {
-        "label": "Zaman Ölçeği Geçişi",
+        "label": "Geçiş",
+        "qualified": "Zaman Ölçeği Geçişi",
         "timeScale": "Zaman Ölçeği",
         "scroll": "Kaydırma"
       },

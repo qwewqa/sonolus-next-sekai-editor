@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { aggregateValues, countOptions, valueRange } from '../../src/editor/utils/aggregate'
 import {
     brushFields,
+    fieldLabel,
     pickBrush,
     propertyField,
     propertyFields,
+    propertyKinds,
+    qualifiesLabels,
+    type PropertyField,
     type SelectionContext,
 } from '../../src/editor/workspace/properties/fields'
 import { summarizeSelection } from '../../src/editor/workspace/properties/summary'
@@ -269,4 +274,84 @@ test('unset optional values are not values in use', () => {
     )
     assert.equal(model.meter, 3)
     assert.deepEqual(usage.get('meter'), { values: new Map([[3, 1]]), covered: 3, total: 3 })
+})
+
+const locales = ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht'] as const
+type Messages = typeof import('../../src/i18n/en/index.json')
+const messages = (locale: string) =>
+    JSON.parse(
+        readFileSync(new URL(`../../src/i18n/${locale}/index.json`, import.meta.url), 'utf8'),
+    ) as Messages
+
+const editableTypes = [
+    'note',
+    'bpm',
+    'timeScale',
+    'cameraEventJoint',
+    'stageMaskEventJoint',
+    'stagePivotEventJoint',
+    'stageStyleEventJoint',
+    'stageTransformEventJoint',
+] as const
+
+// Every name a field renders: its label, and an ease's mode.
+const renderedLabels = (field: PropertyField, t: Messages, qualified: boolean) => {
+    const label = fieldLabel(field, t, qualified)
+    if (!field.ease) return [label]
+    const form = t.modals.form[field.key as 'timeScaleEase'] as {
+        mode: string
+        qualifiedMode?: string
+    }
+    return [label, (qualified && form.qualifiedMode) || form.mode]
+}
+
+for (const locale of locales) {
+    test(`${locale} Selection labels stay unique for every mix of kinds`, () => {
+        const t = messages(locale)
+        for (let mask = 1; mask < 1 << editableTypes.length; mask++) {
+            const types = Object.fromEntries(
+                editableTypes.filter((_, index) => mask & (1 << index)).map((type) => [type, true]),
+            )
+            for (const isDynamicStages of [true, false]) {
+                for (const count of [1, 2]) {
+                    const selection = context({ types, isDynamicStages, count })
+                    const qualified = qualifiesLabels(selection)
+                    const labels = propertyFields
+                        .filter((field) => field.show(selection))
+                        .flatMap((field) => renderedLabels(field, t, qualified))
+                    const repeated = labels.filter(
+                        (label, index) => labels.indexOf(label) !== index,
+                    )
+                    assert.deepEqual(repeated, [], `${Object.keys(types).join('+')}`)
+                }
+            }
+        }
+    })
+
+    test(`${locale} brush labels stay unique within each kind and when removed`, () => {
+        const t = messages(locale)
+        for (const kind of propertyKinds) {
+            const labels = brushFields
+                .filter((field) => field.kind === kind)
+                .flatMap((field) => renderedLabels(field, t, false))
+            assert.equal(new Set(labels).size, labels.length, kind)
+        }
+        const removed = brushFields.map((field) => fieldLabel(field, t, true))
+        assert.equal(new Set(removed).size, removed.length)
+    })
+}
+
+test('labels name their kind only for selections of several kinds', () => {
+    assert.equal(qualifiesLabels(context({ types: { timeScale: true } })), false)
+    assert.equal(
+        qualifiesLabels(context({ types: { timeScale: true, cameraEventJoint: true } })),
+        true,
+    )
+    const t = messages('en')
+    const ease = propertyField.get('timeScaleEase')!
+    assert.equal(fieldLabel(ease, t, false), 'Ease')
+    assert.equal(fieldLabel(ease, t, true), 'Time Scale Ease')
+    // Fields without a short label read the same either way.
+    const lane = propertyField.get('left')!
+    assert.equal(fieldLabel(lane, t, true), fieldLabel(lane, t, false))
 })
