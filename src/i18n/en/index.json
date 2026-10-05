@@ -710,7 +710,11 @@
     "sidebars": {
         "default": {
             "none": "No object selected",
-            "edited": "Edited {0} object|Edited {0} objects"
+            "edited": "Edited {0} object|Edited {0} objects",
+            "editedNotes": "Edited {0} note|Edited {0} notes",
+            "set": "Set {1} on {0} object|Set {1} on {0} objects",
+            "setNotes": "Set {1} on {0} note|Set {1} on {0} notes",
+            "noChange": "No change"
         },
         "view": {
             "title": "View",

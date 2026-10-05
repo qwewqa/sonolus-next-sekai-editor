@@ -26,8 +26,7 @@ export const editSelectedCameraEvent = (
         eventEase: applyEaseEdit(object.eventEase, entity.eventEase),
     }
     // Same-beat joints keep their order on their track.
-    if (edited.beat === entity.beat)
-        return replaceCameraEventJoint(transaction, entity, edited)
+    if (edited.beat === entity.beat) return replaceCameraEventJoint(transaction, entity, edited)
 
     removeCameraEventJoint(transaction, entity)
     return addCameraEventJoint(transaction, edited)

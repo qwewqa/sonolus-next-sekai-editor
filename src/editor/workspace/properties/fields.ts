@@ -667,12 +667,6 @@ export const connectorSummaryKeys: readonly PropertyKey[] = [
     'connectorLayer',
 ]
 
-/** Keys whose edits also set another key, so they must reach its objects too. */
-export const coupledKeys: Partial<Record<PropertyKey, PropertyKey[]>> = {
-    isFake: ['connectorIsFake'],
-    isCritical: ['connectorActiveIsCritical'],
-}
-
 /** Whether the brush may offer a field in this chart mode. */
 export const isBrushAvailable = (field: PropertyField, isDynamicStages: boolean) =>
     isDynamicStages || (!stageKinds.has(field.kind) && !field.dynamicStages)

@@ -25,14 +25,7 @@ import { pushState, replaceState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
 import type { Entity } from '../../../state/entities'
-import { editSelectedCameraEvent } from '../../../state/operations/events/camera'
-import { editSelectedStageMaskEvent } from '../../../state/operations/events/stage/mask'
-import { editSelectedStagePivotEvent } from '../../../state/operations/events/stage/pivot'
-import { editSelectedStageStyleEvent } from '../../../state/operations/events/stage/style'
-import { editSelectedStageTransformEvent } from '../../../state/operations/events/stage/transform'
-import { editSelectedNote } from '../../../state/operations/note'
-import { editSelectedTimeScale } from '../../../state/operations/timeScale'
-import { createTransaction, type Transaction } from '../../../state/transaction'
+import { planEdit } from '../../../state/operations/properties/plan'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
@@ -220,33 +213,6 @@ export const brush: Tool = {
     },
 }
 
-type Apply<T> = (transaction: Transaction, entity: T, object: BrushProperties) => Entity[]
-
-const applies: {
-    [T in Entity as T['type']]: Apply<T> | undefined
-} = {
-    bpm: undefined,
-    timeScale: editSelectedTimeScale,
-
-    cameraEventJoint: editSelectedCameraEvent,
-    cameraEventConnection: undefined,
-
-    stageMaskEventJoint: editSelectedStageMaskEvent,
-    stageMaskEventConnection: undefined,
-
-    stagePivotEventJoint: editSelectedStagePivotEvent,
-    stagePivotEventConnection: undefined,
-
-    stageStyleEventJoint: editSelectedStageStyleEvent,
-    stageStyleEventConnection: undefined,
-
-    stageTransformEventJoint: editSelectedStageTransformEvent,
-    stageTransformEventConnection: undefined,
-
-    note: editSelectedNote,
-    connector: undefined,
-}
-
 export const applyBrushToEntities = (entities: Entity[]) => {
     if (!entities.length) {
         replaceState({
@@ -260,25 +226,27 @@ export const applyBrushToEntities = (entities: Entity[]) => {
         return
     }
 
-    // Brushing objects into a hidden group or stage reveals it, like authoring.
-    revealAuthoringTarget(brushProperties.value)
-    const transaction = createTransaction(state.value)
-
-    const selectedEntities = entities.flatMap(
-        (entity) =>
-            applies[entity.type]?.(transaction, entity as never, brushProperties.value) ?? [entity],
-    )
-
-    pushState(
-        interpolate(() => i18n.value.tools.brush.brushed, `${entities.length}`),
-        transaction.commit(selectedEntities),
-    )
+    // The brush writes every key it holds, as it always has, but never to BPM changes.
+    const { state: brushed, changed } = planEdit(state.value, entities, brushProperties.value, {
+        only: (entity) => entity.type !== 'bpm',
+        single: false,
+    })
     view.entities = {
         hovered: [],
         creating: [],
     }
+    if (!changed.length) {
+        // The brushed objects are selected even when nothing changes.
+        replaceState({ ...state.value, selectedEntities: entities })
+        notify(() => i18n.value.sidebars.default.noChange)
+        return
+    }
 
-    notify(interpolate(() => i18n.value.tools.brush.brushed, `${entities.length}`))
+    // Brushing objects into a hidden group or stage reveals it, like authoring.
+    revealAuthoringTarget(brushProperties.value)
+    const message = interpolate(() => i18n.value.tools.brush.brushed, `${changed.length}`)
+    pushState(message, brushed)
+    notify(message)
 }
 
 const apply = applyBrushToEntities

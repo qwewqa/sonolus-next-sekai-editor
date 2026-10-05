@@ -710,7 +710,11 @@
   "sidebars": {
     "default": {
       "none": "未選擇對象",
-      "edited": "已編輯 {0} 個對象"
+      "edited": "已編輯 {0} 個對象",
+            "editedNotes": "已編輯 {0} 個音符",
+            "set": "已設定 {0} 個對象的{1}",
+            "setNotes": "已設定 {0} 個音符的{1}",
+            "noChange": "沒有變更"
     },
     "view": {
       "title": "檢視",

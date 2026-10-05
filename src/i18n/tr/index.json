@@ -710,7 +710,11 @@
   "sidebars": {
     "default": {
       "none": "Hiçbir nesne seçilmedi",
-      "edited": "{0} nesne düzenlendi"
+      "edited": "{0} nesne düzenlendi",
+            "editedNotes": "{0} nota düzenlendi",
+            "set": "{0} nesnede {1} ayarlandı",
+            "setNotes": "{0} notada {1} ayarlandı",
+            "noChange": "Değişiklik yok"
     },
     "view": {
       "title": "Görünüm",

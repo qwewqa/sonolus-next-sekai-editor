@@ -359,10 +359,6 @@ export const note: Tool = {
     },
 }
 
-export const editNote = (entity: NoteEntity, object: Partial<WithEaseEdits<NoteObject>>) => {
-    edit(entity, object)
-}
-
 const getNoteFromSelection = () => {
     if (!defaultNoteProperties.value.copyProperties) return
 

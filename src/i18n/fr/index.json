@@ -710,7 +710,11 @@
   "sidebars": {
     "default": {
       "none": "Aucun objet sélectionné",
-      "edited": "{0} objet modifié|{0} objets modifiés"
+      "edited": "{0} objet modifié|{0} objets modifiés",
+            "editedNotes": "{0} note modifiée|{0} notes modifiées",
+            "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
+            "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
+            "noChange": "Aucun changement"
     },
     "view": {
       "title": "Vue",

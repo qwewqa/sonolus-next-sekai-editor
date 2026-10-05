@@ -410,13 +410,6 @@ export const cameraEvent: Tool = {
     },
 }
 
-export const editCameraEvent = (
-    entity: CameraEventJointEntity,
-    object: Partial<WithEaseEdits<CameraEventObject>>,
-) => {
-    edit(entity, object)
-}
-
 const getCameraEventJointFromSelection = () => {
     if (!defaultCameraEventProperties.value.copyProperties) return
 

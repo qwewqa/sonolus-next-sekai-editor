@@ -710,7 +710,11 @@
   "sidebars": {
     "default": {
       "none": "未选择对象",
-      "edited": "已编辑 {0} 个对象"
+      "edited": "已编辑 {0} 个对象",
+            "editedNotes": "已编辑 {0} 个音符",
+            "set": "已设置 {0} 个对象的{1}",
+            "setNotes": "已设置 {0} 个音符的{1}",
+            "noChange": "没有更改"
     },
     "view": {
       "title": "视图",

@@ -33,10 +33,11 @@ export const removeCameraEventJoint: RemoveMutation<CameraEventJointEntity> = (
     )
 }
 
-export const replaceCameraEventJoint: ReplaceMutation<
-    CameraEventJointEntity,
-    CameraEventObject
-> = ({ store }, entity, object) =>
+export const replaceCameraEventJoint: ReplaceMutation<CameraEventJointEntity, CameraEventObject> = (
+    { store },
+    entity,
+    object,
+) =>
     replaceEventJoint(
         store,
         entity,

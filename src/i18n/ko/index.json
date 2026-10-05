@@ -710,7 +710,11 @@
   "sidebars": {
     "default": {
       "none": "선택된 객체 없음",
-      "edited": "{0}개 객체 편집됨"
+      "edited": "{0}개 객체 편집됨",
+            "editedNotes": "{0}개 노트 편집됨",
+            "set": "{0}개 객체의 {1} 설정됨",
+            "setNotes": "{0}개 노트의 {1} 설정됨",
+            "noChange": "변경 사항 없음"
     },
     "view": {
       "title": "보기",

@@ -321,13 +321,6 @@ export const stageStyleEvent: Tool = {
     },
 }
 
-export const editStageStyleEvent = (
-    entity: StageStyleEventJointEntity,
-    object: Partial<WithEaseEdits<StageStyleEventObject>>,
-) => {
-    edit(entity, object)
-}
-
 const getStageStyleEventJointFromSelection = () => {
     if (!defaultStageStyleEventProperties.value.copyProperties) return
 

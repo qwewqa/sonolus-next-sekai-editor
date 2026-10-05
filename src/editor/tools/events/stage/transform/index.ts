@@ -311,13 +311,6 @@ export const stageTransformEvent: Tool = {
     },
 }
 
-export const editStageTransformEvent = (
-    entity: StageTransformEventJointEntity,
-    object: Partial<WithEaseEdits<StageTransformEventObject>>,
-) => {
-    edit(entity, object)
-}
-
 const getStageTransformEventJointFromSelection = () => {
     if (!defaultStageTransformEventProperties.value.copyProperties) return
 

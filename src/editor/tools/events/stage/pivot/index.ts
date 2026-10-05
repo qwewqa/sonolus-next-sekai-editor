@@ -311,13 +311,6 @@ export const stagePivotEvent: Tool = {
     },
 }
 
-export const editStagePivotEvent = (
-    entity: StagePivotEventJointEntity,
-    object: Partial<WithEaseEdits<StagePivotEventObject>>,
-) => {
-    edit(entity, object)
-}
-
 const getStagePivotEventJointFromSelection = () => {
     if (!defaultStagePivotEventProperties.value.copyProperties) return
 

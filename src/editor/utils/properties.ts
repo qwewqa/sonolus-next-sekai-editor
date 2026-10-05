@@ -2,15 +2,20 @@ import { computed, onScopeDispose, provide, shallowRef, watch, type Ref } from '
 import { mergeEases, type Ease } from '../../ease'
 import { state as historyState } from '../../history'
 import { selectedEntities } from '../../history/selectedEntities'
+import { store } from '../../history/store'
 import { numberEditKey } from '../../modals/form/numberEdit'
 import { clearPreviewEdit, previewEdit, setPreviewEdit, type PreviewEdit } from '../../preview/edit'
 import type { State } from '../../state'
 import type { Entity, EntityType } from '../../state/entities'
-import { createEditedEntitiesState } from '../../state/operations/edit'
 import type { EditableObject } from '../../state/operations/editable'
+import {
+    appliesToEditIn,
+    fieldAppliesIn,
+    noteFieldsApply,
+} from '../../state/operations/properties/applicability'
+import { planEdit } from '../../state/operations/properties/plan'
 import { entries } from '../../utils/object'
 import { editSelectedEditableEntities } from '../sidebars/default'
-import { coupledKeys } from '../workspace/properties/fields'
 import { aggregateValues } from './aggregate'
 import { getNoteFields, type NoteFields } from './noteFields'
 
@@ -72,11 +77,14 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
             const object = draft.value
             if (!object) return
             const current = source
-            setPreviewEdit(current, () =>
-                createEditedEntitiesState(current, current.selectedEntities, object, {
-                    autoAddGroup: false,
-                    only: appliesToEdit(object),
-                }),
+            // The preview is exactly what the commit will do.
+            setPreviewEdit(
+                current,
+                () =>
+                    planEdit(current, current.selectedEntities, object, {
+                        autoAddGroup: false,
+                        only: appliesToEditIn(current.store, object),
+                    }).state,
             )
             ownedPreview = previewEdit.value
         },
@@ -154,26 +162,12 @@ type EditableEase<K extends keyof EditableObject> = Extract<
 
 type DistributedKeyOf<T> = T extends T ? keyof T : never
 
-const noteFieldsApply = (fields: NoteFields) => (key: string) =>
-    !(key in fields) || fields[key as keyof NoteFields]
-
-const appliesTo = (entity: Entity) =>
-    entity.type === 'note' ? noteFieldsApply(getNoteFields(entity)) : () => true
-
 /** Whether an object uses a property; a tail's connector or an attached tick's lane is unused. */
-export const fieldApplies = (entity: Entity, key: string) => key in entity && appliesTo(entity)(key)
+export const fieldApplies = (entity: Entity, key: string) =>
+    fieldAppliesIn(store.value, entity, key)
 
 /** Selected objects an edit writes to: those using one of its properties. */
-export const appliesToEdit = (object: EditableObject) => {
-    const keys = Object.keys(object).flatMap((key) => [
-        key,
-        ...(coupledKeys[key as keyof EditableObject] ?? []),
-    ])
-    return (entity: Entity) => {
-        const applies = appliesTo(entity)
-        return keys.some((key) => key in entity && applies(key))
-    }
-}
+export const appliesToEdit = (object: EditableObject) => appliesToEditIn(store.value, object)
 
 export const aggregateEntities = (entities: readonly Entity[]) => {
     const types: Partial<Record<EntityType, boolean>> = {}

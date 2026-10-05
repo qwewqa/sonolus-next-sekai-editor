@@ -407,13 +407,6 @@ export const stageMaskEvent: Tool = {
     },
 }
 
-export const editStageMaskEvent = (
-    entity: StageMaskEventJointEntity,
-    object: Partial<WithEaseEdits<StageMaskEventObject>>,
-) => {
-    edit(entity, object)
-}
-
 const getStageMaskEventJointFromSelection = () => {
     if (!defaultStageMaskEventProperties.value.copyProperties) return
 
