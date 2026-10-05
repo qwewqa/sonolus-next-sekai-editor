@@ -80,10 +80,20 @@ export const drawGrid = (
             '#fff',
             0.4,
             'start',
+            context.figureMiddle,
         )
     }
     for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++) {
-        drawText(context, formatIntegerTime(time), -6.1, time * ups, '#fff', 0.4, 'end')
+        drawText(
+            context,
+            formatIntegerTime(time),
+            -6.1,
+            time * ups,
+            '#fff',
+            0.4,
+            'end',
+            context.figureMiddle,
+        )
     }
     ctx.restore()
 }

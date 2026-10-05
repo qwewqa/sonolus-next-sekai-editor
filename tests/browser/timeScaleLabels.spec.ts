@@ -19,7 +19,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
             const { drawEvent } = (await import(
                 paths.events
             )) as typeof import('../../src/editor/canvas/events')
-            const { measureTextMiddle } = (await import(
+            const { measureFigureMiddle, measureTextMiddle } = (await import(
                 paths.text
             )) as typeof import('../../src/editor/canvas/text')
             const { easeGlyphPathD } = (await import(
@@ -130,6 +130,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         recentlyActive: false,
                         fontFamily,
                         fontMiddle: measureTextMiddle(fontFamily, document.body),
+                        figureMiddle: measureFigureMiddle(fontFamily),
                     },
                     entity,
                     false,

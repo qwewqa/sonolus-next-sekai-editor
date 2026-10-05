@@ -224,7 +224,16 @@ export const drawEvent = (
             ctx.globalAlpha *= 0.5
             line(ctx, -6, y, 6, y)
             ctx.globalAlpha *= 2
-            drawText(context, formatBpm(entity.bpm), 6.1, y, '#f0f', 0.5, 'start')
+            drawText(
+                context,
+                formatBpm(entity.bpm),
+                6.1,
+                y,
+                '#f0f',
+                0.5,
+                'start',
+                context.figureMiddle,
+            )
             break
         }
         case 'timeScale': {
@@ -253,6 +262,7 @@ export const drawEvent = (
                 '#ff0',
                 0.5,
                 x > 0 ? 'start' : 'end',
+                context.figureMiddle,
             )
             if (
                 context.showGroupName &&

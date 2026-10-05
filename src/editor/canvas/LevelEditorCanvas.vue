@@ -20,7 +20,7 @@ import { drawGrid } from './grid'
 import { createNoteRenderer } from './notes'
 import { orderEntities } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
-import { measureTextMiddle } from './text'
+import { FIGURE_MIDDLE, measureFigureMiddle, measureTextMiddle } from './text'
 import type { EditorDrawContext } from './types'
 import { createWaveformRenderer } from './waveform'
 
@@ -32,6 +32,7 @@ const overlayCanvas = useTemplateRef<HTMLCanvasElement>('overlay')
 const pixelRatio = ref(devicePixelRatio || 1)
 const fontFamily = ref('sans-serif')
 const fontMiddle = ref(0.25)
+const figureMiddle = ref(FIGURE_MIDDLE)
 const redrawVersion = ref(0)
 const waveformVersion = ref(0)
 const chartFrame = createFrameScheduler()
@@ -94,6 +95,7 @@ const contextInputs = computed(() => ({
     recentlyActive: isViewRecentlyActive.value,
     fontFamily: fontFamily.value,
     fontMiddle: fontMiddle.value,
+    figureMiddle: figureMiddle.value,
     redrawVersion: redrawVersion.value,
 }))
 
@@ -263,6 +265,7 @@ const updateFont = () => {
     if (container.value) {
         fontFamily.value = getComputedStyle(container.value).fontFamily
         fontMiddle.value = measureTextMiddle(fontFamily.value, container.value)
+        figureMiddle.value = measureFigureMiddle(fontFamily.value)
     }
     redrawVersion.value++
 }

@@ -1,7 +1,14 @@
 import { expect, test } from '@playwright/test'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 
-type Label = { text: string; align: 'start' | 'center' | 'end'; size?: number; color?: string }
+type Label = {
+    text: string
+    align: 'start' | 'center' | 'end'
+    size?: number
+    color?: string
+    // Number labels centre their figures on the anchor instead of the x-height.
+    figures?: boolean
+}
 type TextCase = {
     name: string
     fontFamily: string
@@ -16,19 +23,19 @@ const cases: TextCase[] = [
         name: 'time numbers on the left of the grid',
         fontFamily: systemFont,
         scale: 37.375,
-        labels: [{ text: '01:23', align: 'end' }],
+        labels: [{ text: '01:23', align: 'end', figures: true }],
     },
     {
         name: 'BPM labels on the right of the grid',
         fontFamily: systemFont,
         scale: 51.625,
-        labels: [{ text: '120', align: 'start', size: 0.5 }],
+        labels: [{ text: '120', align: 'start', size: 0.5, figures: true }],
     },
     {
         name: 'time-scale label at a fractional zoom',
         fontFamily: systemFont,
         scale: 23.7,
-        labels: [{ text: '1x+0.5', align: 'start', size: 0.5 }],
+        labels: [{ text: '1x+0.5', align: 'start', size: 0.5, figures: true }],
     },
     {
         name: 'centered stage name with kerning',
@@ -82,7 +89,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
         const results = await page.evaluate(
             async ({ cases, pixelRatio }) => {
                 const modulePath = '/src/editor/canvas/text.ts'
-                const { drawText, measureTextMiddle } = (await import(
+                const { drawText, measureFigureMiddle, measureTextMiddle } = (await import(
                     modulePath
                 )) as typeof import('../../src/editor/canvas/text')
                 const width = 512
@@ -105,6 +112,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         pixelRatio,
                         fontFamily: item.fontFamily,
                         fontMiddle: measureTextMiddle(item.fontFamily, parent),
+                        figureMiddle: measureFigureMiddle(item.fontFamily),
                     } as EditorDrawContext
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
                     svg.setAttribute('width', String(canvas.width))
@@ -116,10 +124,22 @@ for (const pixelRatio of [1, 1.25, 2]) {
                     for (const label of item.labels) {
                         const size = label.size ?? 0.4
                         const color = label.color ?? '#fff'
-                        drawText(context, label.text, anchorX, anchorY, color, size, label.align)
+                        const middle = label.figures ? context.figureMiddle : context.fontMiddle
+                        drawText(
+                            context,
+                            label.text,
+                            anchorX,
+                            anchorY,
+                            color,
+                            size,
+                            label.align,
+                            middle,
+                        )
                         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
                         text.setAttribute('x', String(anchorX))
                         text.setAttribute('y', String(anchorY))
+                        // SVG middle lowered to the figure middle, as drawn on Canvas.
+                        text.setAttribute('dy', String((middle - context.fontMiddle) * size))
                         text.setAttribute('font-family', item.fontFamily)
                         text.setAttribute('font-size', String(size))
                         text.setAttribute('dominant-baseline', 'middle')
@@ -174,6 +194,8 @@ for (const pixelRatio of [1, 1.25, 2]) {
                     }
                     results.push({
                         name: item.name,
+                        figures: item.labels.some((label) => label.figures),
+                        anchorY: anchorY * item.scale * pixelRatio,
                         actual: measureInk(ctx),
                         reference: measureInk(referenceContext),
                     })
@@ -183,7 +205,13 @@ for (const pixelRatio of [1, 1.25, 2]) {
             },
             { cases, pixelRatio },
         )
-        for (const { name, actual, reference } of results) {
+        for (const { name, figures, anchorY, actual, reference } of results) {
+            if (figures) {
+                expect(
+                    Math.abs((actual.top + actual.bottom + 1) / 2 - anchorY),
+                    `${name}: figures centred on the line`,
+                ).toBeLessThanOrEqual(1)
+            }
             expect(actual.alpha, `${name}: visible text`).toBeGreaterThan(0)
             for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
                 expect(

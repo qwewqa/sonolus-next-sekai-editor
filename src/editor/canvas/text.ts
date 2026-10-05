@@ -19,6 +19,20 @@ export const measureTextMiddle = (fontFamily: string, parent: HTMLElement) => {
     return middle
 }
 
+// Half the height of typical sans-serif figures, in ems.
+export const FIGURE_MIDDLE = 0.35
+
+// Figures stand taller than the x-height, so number labels centre on their ink.
+export const measureFigureMiddle = (fontFamily: string) => {
+    const ctx = document.createElement('canvas').getContext('2d')
+    if (!ctx) return FIGURE_MIDDLE
+    ctx.font = `1000px ${fontFamily}`
+    const { actualBoundingBoxAscent, actualBoundingBoxDescent } = ctx.measureText('0123456789')
+    const middle = (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2000
+    return middle > 0 ? middle : FIGURE_MIDDLE
+}
+
+/** Draws a label centred `middle` ems above its baseline: SVG middle by default. */
 export const drawText = (
     { ctx, scale, fontFamily, fontMiddle }: EditorDrawContext,
     text: string,
@@ -27,6 +41,7 @@ export const drawText = (
     color: string,
     size = 0.4,
     align: CanvasTextAlign = 'center',
+    middle = fontMiddle,
 ) => {
     const normalized = normalizeSvgText(text)
     if (!normalized) return
@@ -41,6 +56,6 @@ export const drawText = (
     ctx.textBaseline = 'alphabetic'
     ctx.textAlign = align
     ctx.fillStyle = color
-    ctx.fillText(normalized, 0, fontSize * fontMiddle)
+    ctx.fillText(normalized, 0, fontSize * middle)
     ctx.restore()
 }

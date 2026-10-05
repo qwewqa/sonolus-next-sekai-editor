@@ -25,4 +25,5 @@ export type EditorDrawContext = {
     recentlyActive: boolean
     fontFamily: string
     fontMiddle: number
+    figureMiddle: number
 }

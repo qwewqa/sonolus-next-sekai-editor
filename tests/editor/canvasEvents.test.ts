@@ -156,6 +156,7 @@ const makeContext = () => {
         recentlyActive: false,
         fontFamily: 'sans-serif',
         fontMiddle: 0.25,
+        figureMiddle: 0.375,
     }
     return { canvas, context }
 }
@@ -345,7 +346,7 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.deepEqual(canvas.strokes[1]?.path, [['arc', -7, -10, 0.1]])
     assert.equal(canvas.strokes[1]?.color, '#ff0')
     assert.deepEqual(canvas.labels, [
-        { text: '2x+1', x: -7.2 - 0.39, y: -9.875, align: 'end', alpha: 1 },
+        { text: '2x+1', x: -7.2 - 0.39, y: -9.8125, align: 'end', alpha: 1 },
     ])
     assert.deepEqual(canvas.dash, [])
 
@@ -354,6 +355,37 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.equal(canvas.labels.length, 0)
     drawEvent(context, mask(2), true)
     assert.deepEqual(canvas.labels, [{ text: 'Stage A', x: 0, y: -9.9, align: 'center', alpha: 1 }])
+})
+
+test('number labels centre on their figures and names on the x-height', () => {
+    const { context, canvas } = makeContext()
+    context.showStageName = false
+    context.state.groups.set(2 as GroupId, { name: 'Group B' })
+    drawEvent(context, { type: 'bpm', beat: 2, bpm: 180, meter: 4 }, false)
+    drawEvent(
+        context,
+        {
+            type: 'timeScale',
+            groupId: 2 as GroupId,
+            beat: 2,
+            editorLane: 7,
+            timeScale: 1.5,
+            skip: 0,
+            timeScaleEase: 'linear',
+            timeScaleTransition: 'timeScale',
+            hideNotes: false,
+        },
+        true,
+    )
+    // Baselines sit size × middle below the line at y = -10.
+    assert.deepEqual(
+        canvas.labels.map(({ text, y }) => [text, y]),
+        [
+            ['180', -10 + 0.5 * 0.375],
+            ['1.5x', -10 + 0.5 * 0.375],
+            ['Group B', -10 + 0.4 * 0.25],
+        ],
+    )
 })
 
 test('time-scale markers show the transition and whether notes are shown', () => {

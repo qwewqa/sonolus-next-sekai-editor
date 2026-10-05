@@ -187,6 +187,7 @@ test('right ruler defaults to measures, hides the first beat and offers all thre
             recentlyActive: false,
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,
+            figureMiddle: 0.35,
         }
         const results: Record<string, string[]> = {}
         for (const mode of ['beat', 'measure', 'both'] as const) {
@@ -277,6 +278,7 @@ test('measure modes emphasize off-grid boundaries and keep phone labels visible'
             recentlyActive: false,
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,
+            figureMiddle: 0.35,
         }
         for (const display of ['beat', 'measure', 'both'] as const) {
             mode = display

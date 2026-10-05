@@ -813,6 +813,7 @@ watchEffect(() => {
             recentlyActive: true,
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,
+            figureMiddle: 0.35,
         }
         notes.beginFrame(timestamp)
         const padding = layout.laneScale * 1.6 + 8
