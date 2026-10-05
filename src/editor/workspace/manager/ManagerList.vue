@@ -999,14 +999,6 @@ const containsTarget = (item: FolderItem) =>
 /** A collapsed folder stands in for the target it hides. */
 const holdsTarget = (item: FolderItem) => !isFolderExpanded(item.id) && containsTarget(item)
 
-/** Members from the folder down to the target, whose guide line leads to it. */
-const isOnTargetPath = (item: FolderItem, id: T) => {
-    const target = focused.value
-    if (target === undefined) return false
-    const end = item.members.indexOf(target)
-    return end >= 0 && item.members.indexOf(id) <= end
-}
-
 /** Names the target a folder holds, for its tooltip and screen readers. */
 const targetDescription = (item: FolderItem) => {
     const id = focused.value
@@ -1161,7 +1153,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                 :data-row-folder="item.id"
                                 :data-entry-id="id"
                                 :class="{
-                                    'manager-on-path': isOnTargetPath(item, id),
+                                    'manager-on-path': containsTarget(item),
                                     'manager-dragged z-20': isDragged({ type: 'entry', id }),
                                     'manager-dragged-over':
                                         isDragged({ type: 'entry', id }) && isDroppingInto,
@@ -1299,9 +1291,9 @@ const folderEyeLabel = (item: FolderItem) =>
 }
 
 /*
- * From a folder down to the authoring target the line darkens: it drops from
- * under the folder's chevron into the target's pill, so the target reads as
- * inside the folder even while the folder's row sticks above it.
+ * The folder holding the authoring target darkens its whole guide line, from
+ * under its chevron past every member, so the target reads as inside the
+ * folder even while the folder's row sticks above it.
  */
 .manager-members > li.manager-on-path::before {
     @apply bg-fg;

@@ -607,7 +607,7 @@ test('pickers group options by folder and the status bar names shared names by f
     )
 })
 
-test('the folder holding the target leads a dark line to it and names it', async ({ page }) => {
+test('the folder holding the target darkens its whole line and names it', async ({ page }) => {
     await seedGroups(page, [
         ['Default'],
         ['Lead', 'Verse'],
@@ -623,13 +623,13 @@ test('the folder holding the target leads a dark line to it and names it', async
             .filter({ has: page.locator('.manager-label', { hasText: new RegExp(`^${name}$`) }) })
     const onPath = panel(page).locator('.manager-on-path .manager-label')
 
-    // Fill, the target, sits in Verse: the line runs from Verse through Lead to Fill.
+    // Fill, the target, sits in Verse: Verse's line darkens past every member.
     await page.evaluate(() => {
         window.editorTest.view.groupId = 1002 as never
     })
     await expect(head('Verse')).toHaveClass(/manager-folder-head-path/)
     await expect(head('Chorus')).not.toHaveClass(/manager-folder-head-path/)
-    await expect(onPath).toHaveText(['Lead', 'Fill'])
+    await expect(onPath).toHaveText(['Lead', 'Fill', 'Echo'])
     await expect(verse.locator('.manager-name')).toHaveAttribute(
         'aria-description',
         'New objects are added to Verse › Fill',
