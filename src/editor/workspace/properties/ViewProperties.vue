@@ -42,16 +42,18 @@ const toolOptions = computed(() =>
 
 const groupId = computed({
     get: () => view.groupId,
-    // Focusing an entry also reveals it if it was hidden.
+    // Focusing an entry also reveals it if it was hidden; All shows everything, as its command does.
     set: (id) => {
-        groupScope.focus(id)
+        if (id === undefined) groupScope.focusAll()
+        else groupScope.focus(id)
     },
 })
 
 const stageId = computed({
     get: () => view.stageId,
     set: (id) => {
-        stageScope.focus(id)
+        if (id === undefined) stageScope.focusAll()
+        else stageScope.focus(id)
     },
 })
 
