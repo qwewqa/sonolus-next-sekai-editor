@@ -3,6 +3,13 @@ import Type from 'typebox'
 import Value from 'typebox/value'
 import type { Chart } from '../..'
 import { settings } from '../../../settings'
+import {
+    groupFolderArchetype,
+    normalizeFolders,
+    stageFolderArchetype,
+    type FolderId,
+    type Folders,
+} from '../../folders'
 import { addToGroups, type GroupId, type GroupObject } from '../../groups'
 import { addDefaultStageToStages, addToStages, type StageId, type StageObject } from '../../stages'
 import { parseBpmsToChart } from './bpm'
@@ -11,6 +18,7 @@ import { parseStageMaskEventsToChart } from './events/stage/mask'
 import { parseStagePivotEventsToChart } from './events/stage/pivot'
 import { parseStageStyleEventsToChart } from './events/stage/style'
 import { parseStageTransformEventsToChart } from './events/stage/transform'
+import { parseFoldersToChart } from './folder'
 import { parseGroupsToChart } from './group'
 import { parseInitializationToChart } from './initialization'
 import { parseSlidesToChart } from './slide'
@@ -21,6 +29,10 @@ export type ParseCtx = {
     chart: Chart
     entities: LevelDataEntity[]
     defaultGuideColors: ReadonlySet<LevelDataEntity>
+
+    /** The folder an entity's `editorFolder` ref names, if it exists. */
+    getGroupFolderId: (entity: LevelDataEntity) => FolderId | undefined
+    getStageFolderId: (entity: LevelDataEntity) => FolderId | undefined
 
     getGroupId: (entity: LevelDataEntity) => GroupId
     addGroup: (
@@ -56,6 +68,15 @@ export const parseLevelDataChart = (
         slides: [],
     }
 
+    const groupFolders: Folders = new Map()
+    const stageFolders: Folders = new Map()
+    const groupFolderIds = parseFoldersToChart({ entities }, groupFolderArchetype, groupFolders)
+    const stageFolderIds = parseFoldersToChart({ entities }, stageFolderArchetype, stageFolders)
+    const folderIdOf = (ids: Map<string, FolderId>, entity: LevelDataEntity) => {
+        const ref = getOptionalRef(entity, 'editorFolder')
+        return ref === undefined ? undefined : ids.get(ref)
+    }
+
     const groupIds: Record<string, GroupId> = {}
     const stageIds: Record<string, StageId> = {}
     let defaultStageId: StageId
@@ -64,6 +85,9 @@ export const parseLevelDataChart = (
         chart,
         entities,
         defaultGuideColors: new Set(defaultGuideColors.flatMap((index) => entities[index] ?? [])),
+
+        getGroupFolderId: (entity) => folderIdOf(groupFolderIds, entity),
+        getStageFolderId: (entity) => folderIdOf(stageFolderIds, entity),
 
         getGroupId(entity) {
             const ref = getRef(entity, '#TIMESCALE_GROUP')
@@ -121,6 +145,18 @@ export const parseLevelDataChart = (
     if (!chart.stages.size) {
         ;[defaultStageId] = addDefaultStageToStages(chart.stages)
     }
+
+    // Folders gather their members wherever the file listed them.
+    ;({ entries: chart.groups, folders: chart.groupFolders } = normalizeFolders(
+        chart.groups,
+        groupFolders,
+    ))
+    // Stage folders exist only with dynamic stages.
+    if (chart.isDynamicStages)
+        ({ entries: chart.stages, folders: chart.stageFolders } = normalizeFolders(
+            chart.stages,
+            stageFolders,
+        ))
 
     parseCameraEventsToChart(ctx, firstCameraRef)
 

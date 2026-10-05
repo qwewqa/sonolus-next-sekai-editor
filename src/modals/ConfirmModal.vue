@@ -5,6 +5,10 @@ import BaseModal from './BaseModal.vue'
 defineProps<{
     title: () => string
     message: () => string
+    /** The confirm button's label, e.g. naming the action; "Confirm" by default. */
+    confirm?: () => string
+    /** Confirming deletes something: the button is red. */
+    destructive?: boolean
 }>()
 
 defineEmits<{
@@ -26,11 +30,12 @@ defineEmits<{
             </button>
             <button
                 type="button"
-                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
+                class="h-9 min-w-24 max-w-full truncate rounded-full px-4 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
+                :class="destructive ? 'bg-danger text-white' : 'bg-accent text-on-accent'"
                 data-autofocus
                 @click="$emit('close', true)"
             >
-                {{ i18n.modals.confirm.confirm }}
+                {{ confirm?.() ?? i18n.modals.confirm.confirm }}
             </button>
         </div>
     </BaseModal>

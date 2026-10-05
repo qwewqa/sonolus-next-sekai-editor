@@ -55,6 +55,7 @@ export const useAutoSave = () => {
                 current.store,
                 current.groups,
                 current.stages,
+                { groups: current.groupFolders, stages: current.stageFolders },
             )
             // setItem is atomic: a failed write leaves the previous recovery intact.
             storageSet(

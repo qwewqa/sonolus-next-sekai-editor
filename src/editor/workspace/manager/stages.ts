@@ -1,6 +1,6 @@
 import { addToStages, type StageId, type Stages } from '../../../chart/stages'
 import { pushState, state } from '../../../history'
-import { stages } from '../../../history/stages'
+import { stageFolders, stages } from '../../../history/stages'
 import { getAllEntities } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
@@ -16,7 +16,8 @@ import StagePropertiesModal from '../../commands/manageStages/manageStages/stage
 import { notify } from '../../notification'
 import { stageScope } from '../../scope'
 import { view } from '../../view'
-import { normalizeName, reorderEntries, swapEntries, type ManagerModel } from './model'
+import { createFolderOps } from './folders'
+import { normalizeName, type ManagerModel } from './model'
 import { survivingSelection } from './objects'
 
 const nameOf = (stageId: StageId) => stages.value.get(stageId)?.name ?? ''
@@ -36,38 +37,6 @@ export const addStage = () => {
     notify(interpolate(() => i18n.value.commands.manageStages.modal.added, name))
 
     return stageId
-}
-
-export const moveStage = (stageId: StageId, offset: -1 | 1) => {
-    const newStages = swapEntries(stages.value, stageId, offset)
-    if (!newStages) return
-
-    const name = nameOf(stageId)
-    pushState(
-        interpolate(() => i18n.value.commands.manageStages.modal.moved, name),
-        {
-            ...state.value,
-            stages: newStages,
-        },
-    )
-
-    notify(interpolate(() => i18n.value.commands.manageStages.modal.moved, name))
-}
-
-export const moveStageTo = (stageId: StageId, index: number) => {
-    const newStages = reorderEntries(stages.value, stageId, index)
-    if (!newStages) return
-
-    const name = nameOf(stageId)
-    pushState(
-        interpolate(() => i18n.value.commands.manageStages.modal.moved, name),
-        {
-            ...state.value,
-            stages: newStages,
-        },
-    )
-
-    notify(interpolate(() => i18n.value.commands.manageStages.modal.moved, name))
 }
 
 export const renameStage = (stageId: StageId, value: string) => {
@@ -93,11 +62,8 @@ export const openStageProperties = (stageId: StageId) => {
     })
 }
 
-/** Deletes a stage with its events and notes, keeping at least one stage. */
-export const deleteStage = (stageId: StageId) => {
-    if (!stages.value.has(stageId)) return
-    const name = nameOf(stageId)
-
+/** The state without these stages and their events and notes, keeping at least one stage. */
+const removeStages = (stageIds: ReadonlySet<StageId>) => {
     const transaction = createTransaction(state.value)
 
     const removes: {
@@ -110,35 +76,35 @@ export const deleteStage = (stageId: StageId) => {
         cameraEventConnection: undefined,
 
         stageMaskEventJoint(entity) {
-            if (entity.stageId !== stageId) return
+            if (!stageIds.has(entity.stageId)) return
 
             removeStageMaskEventJoint(transaction, entity)
         },
         stageMaskEventConnection: undefined,
 
         stagePivotEventJoint(entity) {
-            if (entity.stageId !== stageId) return
+            if (!stageIds.has(entity.stageId)) return
 
             removeStagePivotEventJoint(transaction, entity)
         },
         stagePivotEventConnection: undefined,
 
         stageStyleEventJoint(entity) {
-            if (entity.stageId !== stageId) return
+            if (!stageIds.has(entity.stageId)) return
 
             removeStageStyleEventJoint(transaction, entity)
         },
         stageStyleEventConnection: undefined,
 
         stageTransformEventJoint(entity) {
-            if (entity.stageId !== stageId) return
+            if (!stageIds.has(entity.stageId)) return
 
             removeStageTransformEventJoint(transaction, entity)
         },
         stageTransformEventConnection: undefined,
 
         note(entity) {
-            if (entity.stageId !== stageId) return
+            if (!stageIds.has(entity.stageId)) return
 
             removeNote(transaction, entity)
         },
@@ -150,21 +116,44 @@ export const deleteStage = (stageId: StageId) => {
     }
 
     // Keep the rest of the selection; only the deleted objects leave it.
-    const newState = transaction.commit(survivingSelection('stageId', stageId))
+    const newState = transaction.commit(survivingSelection('stageId', stageIds))
+
     newState.stages = new Map(newState.stages)
-    newState.stages.delete(stageId)
+    for (const stageId of stageIds) newState.stages.delete(stageId)
     if (!newState.stages.size) addToStages(newState.stages)
 
-    pushState(
+    return newState
+}
+
+export const stageFolderOps = createFolderOps({
+    entries: () => stages.value,
+    folders: () => stageFolders.value,
+    withData: (state, stages, stageFolders) => ({ ...state, stages, stageFolders }),
+    removeEntries: removeStages,
+    entriesOf: (state) => state.stages,
+    owner: 'stageId',
+    strings: () => ({
+        movedEntry: i18n.value.commands.manageStages.modal.moved,
+        deleteFolderTitle: i18n.value.workspace.stages.deleteFolderTitle,
+        deleteFolderMessage: i18n.value.workspace.stages.deleteFolderMessage,
+    }),
+})
+
+/** Deletes a stage with its events and notes, keeping at least one stage. */
+export const deleteStage = (stageId: StageId) => {
+    if (!stages.value.has(stageId)) return
+    const name = nameOf(stageId)
+
+    const ids = new Set([stageId])
+    stageFolderOps.commitRemoval(
+        ids,
+        removeStages(ids),
         interpolate(() => i18n.value.commands.manageStages.modal.deleted, name),
-        newState,
     )
     view.entities = {
         hovered: [],
         creating: [],
     }
-
-    notify(interpolate(() => i18n.value.commands.manageStages.modal.deleted, name))
 }
 
 export const stageManager: ManagerModel<StageId> = {
@@ -180,12 +169,15 @@ export const stageManager: ManagerModel<StageId> = {
         moveUp: i18n.value.commands.manageStages.modal.moveUp,
         moveDown: i18n.value.commands.manageStages.modal.moveDown,
         delete: i18n.value.commands.manageStages.modal.delete,
+        deleteFolder: i18n.value.workspace.stages.deleteFolder,
     }),
     add: addStage,
-    move: moveStage,
-    moveTo: moveStageTo,
+    move: (id, offset) => {
+        stageFolderOps.stepEntry(id, offset)
+    },
     rename: renameStage,
     remove: deleteStage,
     openProperties: openStageProperties,
     owner: 'stageId',
+    folders: stageFolderOps,
 }

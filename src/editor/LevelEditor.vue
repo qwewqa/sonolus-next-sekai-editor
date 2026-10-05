@@ -2,8 +2,9 @@
 import { computed, ref, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
 import { useAutoSave } from '../history/autoSave'
 import { isDynamicStages } from '../history/dynamicStages.ts'
-import { groups } from '../history/groups'
-import { stages } from '../history/stages'
+import { qualifiedName } from '../chart/folders'
+import { groupFolders, groups } from '../history/groups'
+import { stageFolders, stages } from '../history/stages'
 import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { interpolateRaw } from '../utils/interpolate'
@@ -173,12 +174,16 @@ const onStatusChip = (event: MouseEvent, command: Command) => {
     if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
 }
 
+// Folders tell apart entries that share a name, e.g. "Verse › Lead".
+const folderPath = (folder: string, name: string) =>
+    interpolateRaw(i18n.value.workspace.folders.path, folder, name)
+
 const group = computed(() =>
     view.groupId === undefined
         ? i18n.value.statusBar.group.all
         : interpolateRaw(
               i18n.value.statusBar.group.one,
-              groups.value.get(view.groupId)?.name ?? '',
+              qualifiedName(groups.value, groupFolders.value, view.groupId, folderPath),
           ),
 )
 
@@ -187,7 +192,7 @@ const stage = computed(() =>
         ? i18n.value.statusBar.stage.all
         : interpolateRaw(
               i18n.value.statusBar.stage.one,
-              stages.value.get(view.stageId)?.name ?? '',
+              qualifiedName(stages.value, stageFolders.value, view.stageId, folderPath),
           ),
 )
 

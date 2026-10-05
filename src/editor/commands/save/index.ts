@@ -5,9 +5,9 @@ import { levelDataHandle, setLevelDataHandle } from '../../../history'
 import { bgm } from '../../../history/bgm'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { filename } from '../../../history/filename'
-import { groups } from '../../../history/groups'
+import { groupFolders, groups } from '../../../history/groups'
 import { initialLife } from '../../../history/initialLife'
-import { stages } from '../../../history/stages'
+import { stageFolders, stages } from '../../../history/stages'
 import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { serializeToLevelData } from '../../../levelData/serialize'
@@ -41,6 +41,7 @@ export const save: Command = {
                     store.value,
                     groups.value,
                     stages.value,
+                    { groups: groupFolders.value, stages: stageFolders.value },
                 )
 
                 const file = gzip(JSON.stringify(levelData), {

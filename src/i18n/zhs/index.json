@@ -1216,6 +1216,7 @@
       }
     },
     "confirm": {
+      "delete": "删除",
       "confirm": "确认",
       "cancel": "取消"
     },
@@ -1291,6 +1292,26 @@
       "top": "停靠在顶部"
     },
     "closePanel": "关闭{0}",
+    "folders": {
+      "defaultName": "文件夹 {0}",
+      "new": "新建文件夹",
+      "newWith": "新建文件夹…",
+      "moveTo": "移至文件夹…",
+      "none": "无文件夹",
+      "expand": "展开 {0}",
+      "collapse": "折叠 {0}",
+      "moveUp": "上移文件夹",
+      "moveDown": "下移文件夹",
+      "ungroup": "解散文件夹",
+      "path": "{0} › {1}",
+      "added": "已添加 {0} 文件夹",
+      "renamed": "已将文件夹 {0} 重命名为 {1}",
+      "moved": "已移动 {0} 文件夹",
+      "movedInto": "已将 {0} 移至 {1} 文件夹",
+      "movedOut": "已将 {0} 移出 {1} 文件夹",
+      "ungrouped": "已解散 {0} 文件夹",
+      "deleted": "已删除 {0} 文件夹"
+    },
     "manager": {
       "show": "显示 {0}",
       "hide": "隐藏 {0}",
@@ -1306,6 +1327,9 @@
       "drag": "拖动以重新排序 {0}"
     },
     "groups": {
+      "deleteFolder": "删除文件夹及群组…",
+      "deleteFolderTitle": "删除文件夹及群组",
+      "deleteFolderMessage": "删除 {0} 文件夹及其中的 {1} 个群组和 {2} 个对象？",
       "renamed": "已将群组 {0} 重命名为 {1}",
       "all": "所有群组",
       "showAll": "显示所有群组",
@@ -1313,6 +1337,9 @@
       "add": "添加群组"
     },
     "stages": {
+      "deleteFolder": "删除文件夹及舞台…",
+      "deleteFolderTitle": "删除文件夹及舞台",
+      "deleteFolderMessage": "删除 {0} 文件夹及其中的 {1} 个舞台和 {2} 个对象？",
       "renamed": "已将舞台 {0} 重命名为 {1}",
       "all": "所有舞台",
       "showAll": "显示所有舞台",

@@ -2,7 +2,7 @@ import Type from 'typebox'
 import { getOptionalRef, getOptionalValue, getValue, type ParseCtx } from '.'
 import type { StageId } from '../../stages'
 
-export const parseStagesToChart = ({ entities, addStage }: ParseCtx) => {
+export const parseStagesToChart = ({ entities, addStage, getStageFolderId }: ParseCtx) => {
     const firstMaskRefs = new Map<StageId, string>()
     const firstPivotRefs = new Map<StageId, string>()
     const firstStyleRefs = new Map<StageId, string>()
@@ -10,6 +10,7 @@ export const parseStagesToChart = ({ entities, addStage }: ParseCtx) => {
 
     for (const entity of entities) {
         if (entity.archetype !== 'Stage') continue
+        const folderId = getStageFolderId(entity)
 
         const id = addStage(entity.name, getOptionalRef(entity, 'editorName'), {
             isFromStart: !!getValue(entity, 'fromStart', fromStartSchema),
@@ -18,6 +19,7 @@ export const parseStagesToChart = ({ entities, addStage }: ParseCtx) => {
                 generateSimLines[
                     getOptionalValue(entity, 'generateSimLines', generateSimLinesSchema) ?? 0
                 ],
+            ...(folderId === undefined ? {} : { folderId }),
         })
 
         const addRef = (refs: Map<StageId, string>, name: string) => {

@@ -1,6 +1,6 @@
 import { addToGroups, type GroupId } from '../../../chart/groups'
 import { pushState, state } from '../../../history'
-import { groups } from '../../../history/groups'
+import { groupFolders, groups } from '../../../history/groups'
 import { getAllEntities } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
@@ -13,7 +13,8 @@ import GroupPropertiesModal from '../../commands/manageGroups/manageGroups/group
 import { notify } from '../../notification'
 import { groupScope } from '../../scope'
 import { view } from '../../view'
-import { normalizeName, reorderEntries, swapEntries, type ManagerModel } from './model'
+import { createFolderOps } from './folders'
+import { normalizeName, type ManagerModel } from './model'
 import { survivingSelection } from './objects'
 
 const nameOf = (groupId: GroupId) => groups.value.get(groupId)?.name ?? ''
@@ -33,38 +34,6 @@ export const addGroup = () => {
     notify(interpolate(() => i18n.value.commands.manageGroups.modal.added, name))
 
     return groupId
-}
-
-export const moveGroup = (groupId: GroupId, offset: -1 | 1) => {
-    const newGroups = swapEntries(groups.value, groupId, offset)
-    if (!newGroups) return
-
-    const name = nameOf(groupId)
-    pushState(
-        interpolate(() => i18n.value.commands.manageGroups.modal.moved, name),
-        {
-            ...state.value,
-            groups: newGroups,
-        },
-    )
-
-    notify(interpolate(() => i18n.value.commands.manageGroups.modal.moved, name))
-}
-
-export const moveGroupTo = (groupId: GroupId, index: number) => {
-    const newGroups = reorderEntries(groups.value, groupId, index)
-    if (!newGroups) return
-
-    const name = nameOf(groupId)
-    pushState(
-        interpolate(() => i18n.value.commands.manageGroups.modal.moved, name),
-        {
-            ...state.value,
-            groups: newGroups,
-        },
-    )
-
-    notify(interpolate(() => i18n.value.commands.manageGroups.modal.moved, name))
 }
 
 export const renameGroup = (groupId: GroupId, value: string) => {
@@ -90,11 +59,8 @@ export const openGroupProperties = (groupId: GroupId) => {
     })
 }
 
-/** Deletes a group with its notes and time scales, keeping at least one group. */
-export const deleteGroup = (groupId: GroupId) => {
-    if (!groups.value.has(groupId)) return
-    const name = nameOf(groupId)
-
+/** The state without these groups and their notes and time scales, keeping at least one group. */
+const removeGroups = (groupIds: ReadonlySet<GroupId>) => {
     const transaction = createTransaction(state.value)
 
     const removes: {
@@ -102,7 +68,7 @@ export const deleteGroup = (groupId: GroupId) => {
     } = {
         bpm: undefined,
         timeScale(entity) {
-            if (entity.groupId !== groupId) return
+            if (!groupIds.has(entity.groupId)) return
 
             removeTimeScale(transaction, entity)
         },
@@ -123,7 +89,7 @@ export const deleteGroup = (groupId: GroupId) => {
         stageTransformEventConnection: undefined,
 
         note(entity) {
-            if (entity.groupId !== groupId) return
+            if (!groupIds.has(entity.groupId)) return
 
             removeNote(transaction, entity)
         },
@@ -135,22 +101,44 @@ export const deleteGroup = (groupId: GroupId) => {
     }
 
     // Keep the rest of the selection; only the deleted objects leave it.
-    const newState = transaction.commit(survivingSelection('groupId', groupId))
+    const newState = transaction.commit(survivingSelection('groupId', groupIds))
 
     newState.groups = new Map(newState.groups)
-    newState.groups.delete(groupId)
+    for (const groupId of groupIds) newState.groups.delete(groupId)
     if (!newState.groups.size) addToGroups(newState.groups)
 
-    pushState(
+    return newState
+}
+
+export const groupFolderOps = createFolderOps({
+    entries: () => groups.value,
+    folders: () => groupFolders.value,
+    withData: (state, groups, groupFolders) => ({ ...state, groups, groupFolders }),
+    removeEntries: removeGroups,
+    entriesOf: (state) => state.groups,
+    owner: 'groupId',
+    strings: () => ({
+        movedEntry: i18n.value.commands.manageGroups.modal.moved,
+        deleteFolderTitle: i18n.value.workspace.groups.deleteFolderTitle,
+        deleteFolderMessage: i18n.value.workspace.groups.deleteFolderMessage,
+    }),
+})
+
+/** Deletes a group with its notes and time scales, keeping at least one group. */
+export const deleteGroup = (groupId: GroupId) => {
+    if (!groups.value.has(groupId)) return
+    const name = nameOf(groupId)
+
+    const ids = new Set([groupId])
+    groupFolderOps.commitRemoval(
+        ids,
+        removeGroups(ids),
         interpolate(() => i18n.value.commands.manageGroups.modal.deleted, name),
-        newState,
     )
     view.entities = {
         hovered: [],
         creating: [],
     }
-
-    notify(interpolate(() => i18n.value.commands.manageGroups.modal.deleted, name))
 }
 
 export const groupManager: ManagerModel<GroupId> = {
@@ -166,12 +154,15 @@ export const groupManager: ManagerModel<GroupId> = {
         moveUp: i18n.value.commands.manageGroups.modal.moveUp,
         moveDown: i18n.value.commands.manageGroups.modal.moveDown,
         delete: i18n.value.commands.manageGroups.modal.delete,
+        deleteFolder: i18n.value.workspace.groups.deleteFolder,
     }),
     add: addGroup,
-    move: moveGroup,
-    moveTo: moveGroupTo,
+    move: (id, offset) => {
+        groupFolderOps.stepEntry(id, offset)
+    },
     rename: renameGroup,
     remove: deleteGroup,
     openProperties: openGroupProperties,
     owner: 'groupId',
+    folders: groupFolderOps,
 }

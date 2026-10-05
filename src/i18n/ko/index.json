@@ -1216,6 +1216,7 @@
       }
     },
     "confirm": {
+      "delete": "삭제",
       "confirm": "확인",
       "cancel": "취소"
     },
@@ -1291,6 +1292,26 @@
       "top": "상단에 배치"
     },
     "closePanel": "{0} 닫기",
+    "folders": {
+      "defaultName": "폴더 {0}",
+      "new": "새 폴더",
+      "newWith": "새 폴더…",
+      "moveTo": "폴더로 이동…",
+      "none": "폴더 없음",
+      "expand": "{0} 펼치기",
+      "collapse": "{0} 접기",
+      "moveUp": "폴더를 위로 이동",
+      "moveDown": "폴더를 아래로 이동",
+      "ungroup": "폴더 해제",
+      "path": "{0} › {1}",
+      "added": "{0} 폴더 추가됨",
+      "renamed": "{0} 폴더 이름을 {1}(으)로 변경함",
+      "moved": "{0} 폴더 이동됨",
+      "movedInto": "{0}을(를) {1} 폴더로 이동함",
+      "movedOut": "{0}을(를) {1} 폴더에서 꺼냄",
+      "ungrouped": "{0} 폴더 해제됨",
+      "deleted": "{0} 폴더 삭제됨"
+    },
     "manager": {
       "show": "{0} 표시",
       "hide": "{0} 숨기기",
@@ -1306,6 +1327,9 @@
       "drag": "드래그하여 {0} 순서 변경"
     },
     "groups": {
+      "deleteFolder": "폴더와 그룹 삭제…",
+      "deleteFolderTitle": "폴더와 그룹 삭제",
+      "deleteFolderMessage": "{0} 폴더와 그룹 {1}개, 오브젝트 {2}개를 삭제할까요?",
       "renamed": "{0} 그룹 이름을 {1}(으)로 변경함",
       "all": "모든 그룹",
       "showAll": "모든 그룹 표시",
@@ -1313,6 +1337,9 @@
       "add": "그룹 추가"
     },
     "stages": {
+      "deleteFolder": "폴더와 스테이지 삭제…",
+      "deleteFolderTitle": "폴더와 스테이지 삭제",
+      "deleteFolderMessage": "{0} 폴더와 스테이지 {1}개, 오브젝트 {2}개를 삭제할까요?",
       "renamed": "{0} 스테이지 이름을 {1}(으)로 변경함",
       "all": "모든 스테이지",
       "showAll": "모든 스테이지 표시",

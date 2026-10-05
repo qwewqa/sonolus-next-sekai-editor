@@ -52,6 +52,12 @@ const walkOwned = <K extends OwnerKey>(
 const ownerOf = (entity: Entity, key: OwnerKey): number | undefined =>
     key in entity ? (entity as unknown as Record<OwnerKey, number>)[key] : undefined
 
+/** One owner, or several, as for a folder's members. */
+export type Owners = number | ReadonlySet<number>
+
+const isOwnedBy = (owner: number | undefined, owners: Owners) =>
+    owner !== undefined && (typeof owners === 'number' ? owner === owners : owners.has(owner))
+
 const countOwned = (source: Store, key: OwnerKey) => {
     const counts = new Map<number, number>()
     walkOwned(source, key, (entity) => {
@@ -74,11 +80,11 @@ export const ownedCounts = (key: OwnerKey): ReadonlyMap<number, number> =>
  * Selects the owner's objects that are currently visible in the editor. The
  * selection is not an edit, so it replaces the state without history.
  */
-export const selectOwned = (key: OwnerKey, owner: number) => {
+export const selectOwned = (key: OwnerKey, owners: Owners) => {
     const scope = scopeLookup.value
     const entities: Entity[] = []
     walkOwned(store.value, key, (entity) => {
-        if (ownerOf(entity, key) !== owner) return
+        if (!isOwnedBy(ownerOf(entity, key), owners)) return
         if (entityScopeVisibility(entity, scope) === 'hidden') return
         entities.push(entity)
     })
@@ -111,9 +117,13 @@ export const moveSelectionTo = async (key: OwnerKey, owner: number) => {
  * The selection left after deleting an owner: everything except its objects
  * (and derived connections, which the deletion rebuilds).
  */
-export const survivingSelection = (key: OwnerKey, owner: number): Entity[] =>
+export const survivingSelection = (key: OwnerKey, owners: Owners): Entity[] =>
     selectedEntities.value.filter((entity) => {
         if (entity.type === 'connector') return false
-        if (ownerOf(entity, key) === owner) return false
-        return !(key === 'stageId' && 'min' in entity && ownerOf(entity.min, key) === owner)
+        if (isOwnedBy(ownerOf(entity, key), owners)) return false
+        return !(
+            key === 'stageId' &&
+            'min' in entity &&
+            isOwnedBy(ownerOf(entity.min, key), owners)
+        )
     })

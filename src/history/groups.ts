@@ -9,3 +9,5 @@ export const defaultGroupId = computed(() => {
 
     return id
 })
+
+export const groupFolders = computed(() => state.value.groupFolders)

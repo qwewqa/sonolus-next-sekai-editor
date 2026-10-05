@@ -90,6 +90,21 @@ const createScope = <T>(options: {
             options.setOverrides(withOverride(new Map(options.getOverrides()), id, shown))
         },
 
+        /** Shows or hides several entries as one change, e.g. a folder's members. */
+        setSomeShown(ids: readonly T[], shown: boolean) {
+            const overrides = new Map(options.getOverrides())
+            for (const id of ids) withOverride(overrides, id, shown)
+            options.setOverrides(overrides)
+        },
+
+        /** Shows exactly these entries and hides the rest, as one change. */
+        showOnly(ids: readonly T[]) {
+            const shown = new Set(ids)
+            const overrides = new Map<T, ScopeOverride>()
+            for (const id of options.ids()) withOverride(overrides, id, shown.has(id))
+            options.setOverrides(overrides)
+        },
+
         /** Shows a hidden entry; already visible entries are left unchanged. */
         reveal(id: T) {
             if (visibility(id) !== 'hidden') return

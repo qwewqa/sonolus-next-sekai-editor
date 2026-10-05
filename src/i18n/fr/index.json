@@ -1216,6 +1216,7 @@
       }
     },
     "confirm": {
+      "delete": "Supprimer",
       "confirm": "Confirmer",
       "cancel": "Annuler"
     },
@@ -1291,6 +1292,26 @@
       "top": "Ancrer en haut"
     },
     "closePanel": "Fermer {0}",
+    "folders": {
+      "defaultName": "Dossier {0}",
+      "new": "Nouveau dossier",
+      "newWith": "Nouveau dossier…",
+      "moveTo": "Déplacer vers un dossier…",
+      "none": "Aucun dossier",
+      "expand": "Développer {0}",
+      "collapse": "Réduire {0}",
+      "moveUp": "Monter le dossier",
+      "moveDown": "Descendre le dossier",
+      "ungroup": "Dissoudre le dossier",
+      "path": "{0} › {1}",
+      "added": "Dossier {0} ajouté",
+      "renamed": "Dossier {0} renommé en {1}",
+      "moved": "Dossier {0} déplacé",
+      "movedInto": "{0} déplacé dans le dossier {1}",
+      "movedOut": "{0} sorti du dossier {1}",
+      "ungrouped": "Dossier {0} dissous",
+      "deleted": "Dossier {0} supprimé"
+    },
     "manager": {
       "show": "Afficher {0}",
       "hide": "Masquer {0}",
@@ -1306,6 +1327,9 @@
       "drag": "Faire glisser pour réordonner {0}"
     },
     "groups": {
+      "deleteFolder": "Supprimer le dossier et ses groupes…",
+      "deleteFolderTitle": "Supprimer le dossier et ses groupes",
+      "deleteFolderMessage": "Supprimer le dossier {0}, ses groupes ({1}) et leurs objets ({2}) ?",
       "renamed": "Groupe {0} renommé en {1}",
       "all": "Tous les groupes",
       "showAll": "Afficher tous les groupes",
@@ -1313,6 +1337,9 @@
       "add": "Ajouter un groupe"
     },
     "stages": {
+      "deleteFolder": "Supprimer le dossier et ses scènes…",
+      "deleteFolderTitle": "Supprimer le dossier et ses scènes",
+      "deleteFolderMessage": "Supprimer le dossier {0}, ses scènes ({1}) et leurs objets ({2}) ?",
       "renamed": "Scène {0} renommée en {1}",
       "all": "Toutes les scènes",
       "showAll": "Afficher toutes les scènes",

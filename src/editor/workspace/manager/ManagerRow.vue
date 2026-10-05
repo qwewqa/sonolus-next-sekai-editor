@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
+import ChevronIcon from '../ChevronIcon.vue'
 import GripIcon from './icons/GripIcon.vue'
 import HiddenIcon from './icons/HiddenIcon.vue'
 import MoreIcon from './icons/MoreIcon.vue'
@@ -49,6 +50,16 @@ const props = defineProps<{
     partial?: boolean
     /** Shows the row without letting it act, e.g. while a feature is off. */
     disabled?: boolean
+    /** A folder row: the name toggles whether its members show. */
+    folder?: boolean
+    /** Whether a folder row's members show. */
+    expanded?: boolean
+    /** The id of the member list a folder row shows and hides. */
+    controls?: string
+    /** A folder member, indented under its folder. */
+    indented?: boolean
+    /** A folder row a dragged entry would drop into. */
+    dropTarget?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -60,6 +71,10 @@ const emit = defineEmits<{
     renameEnd: [value: string | undefined, keyboard: boolean]
     dragStart: [event: PointerEvent]
     reorder: [offset: -1 | 1]
+    /** Left/Right on a folder name: collapse or expand it. */
+    expand: [expanded: boolean]
+    /** Left on a member's name: go to its folder. */
+    parent: []
 }>()
 
 const blurAfterPointer = (event: MouseEvent) => {
@@ -184,6 +199,18 @@ const onKeydown = (event: KeyboardEvent) => {
     ) {
         event.preventDefault()
         emit('reorder', event.key === 'ArrowUp' ? -1 : 1)
+    } else if (
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
+        !event.altKey &&
+        (event.target as HTMLElement).classList.contains('manager-name')
+    ) {
+        if (props.folder) {
+            event.preventDefault()
+            emit('expand', event.key === 'ArrowRight')
+        } else if (props.indented && event.key === 'ArrowLeft') {
+            event.preventDefault()
+            emit('parent')
+        }
     }
 }
 
@@ -199,7 +226,8 @@ const onNamePointerdown = (event: PointerEvent) => {
  * new target; F2 and the menu rename any row.
  */
 const onNameDblclick = () => {
-    if (props.renameLabel && currentAtPress) emit('renameStart')
+    // Folders are never the target; their double click toggles twice, then renames.
+    if (props.renameLabel && (currentAtPress || props.folder)) emit('renameStart')
 }
 
 const input = useTemplateRef<HTMLInputElement>('input')
@@ -247,6 +275,9 @@ const onRenameBlur = (event: FocusEvent) => {
             'manager-row-current': current,
             'manager-row-dragging': dragging,
             'manager-row-heading': heading,
+            'manager-row-folder': folder,
+            'manager-row-indented': indented,
+            'manager-row-drop': dropTarget,
         }"
         @keydown="onKeydown"
         @contextmenu="onContextMenu"
@@ -283,6 +314,8 @@ const onRenameBlur = (event: FocusEvent) => {
             class="manager-name"
             :disabled
             :aria-current="current ? 'true' : undefined"
+            :aria-expanded="folder ? (expanded ? 'true' : 'false') : undefined"
+            :aria-controls="expanded ? controls : undefined"
             :title="nameTitle"
             @click="onSelect"
             @dblclick="onNameDblclick"
@@ -291,11 +324,18 @@ const onRenameBlur = (event: FocusEvent) => {
             @pointerup="cancelLongPress"
             @pointercancel="cancelLongPress"
         >
+            <span v-if="folder" class="manager-chevron" aria-hidden="true">
+                <ChevronIcon :direction="expanded ? 'down' : 'right'" />
+            </span>
             <!-- Sized to the label, unclipped, so the band marker can sit under it. -->
             <span class="manager-label-box relative flex min-w-0">
                 <span
                     class="manager-label truncate"
-                    :class="{ 'font-bold': heading, 'text-fg/80': muted && !heading }"
+                    :class="{
+                        'font-bold': heading,
+                        'font-semibold': folder,
+                        'text-fg/80': muted && !heading,
+                    }"
                     >{{ name }}</span
                 >
             </span>
@@ -443,6 +483,30 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply h-9 min-w-0 flex-1 rounded-full bg-button px-2 shadow-md outline-none ring-2 ring-fg;
 }
 
+/* The folder chevron leads the name, inside its target. */
+.manager-chevron {
+    @apply mr-1.5 flex w-3 shrink-0 justify-center text-fg/70;
+}
+
+.manager-name:active .manager-chevron {
+    @apply text-on-accent;
+}
+
+/*
+ * Members indent their names under the folder's name, past its chevron; the
+ * eye, count and menu columns stay aligned with every other row. The folder's
+ * guide line runs in this indent (see ManagerList).
+ */
+.manager-row-indented .manager-name,
+.manager-row-indented .manager-rename {
+    @apply ml-5;
+}
+
+/* The folder a dragged entry would join. */
+.manager-row-drop {
+    @apply bg-accent/35 ring-2 ring-inset ring-accent;
+}
+
 /* One trailing column for counts, which inline actions overlay in place. */
 .manager-slot {
     @apply relative flex h-9 w-10 shrink-0 items-center justify-end;
@@ -532,6 +596,11 @@ const onRenameBlur = (event: FocusEvent) => {
     .manager-name,
     .manager-rename {
         @apply px-2.5;
+    }
+
+    .manager-row-indented .manager-name,
+    .manager-row-indented .manager-rename {
+        @apply ml-[1.125rem];
     }
 
     /* Touch drags by a visible handle so the list keeps scrolling. */

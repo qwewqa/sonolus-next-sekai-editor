@@ -1,3 +1,5 @@
+import type { FolderId } from './folders'
+
 export type Stages = Map<StageId, StageObject>
 
 declare const idBrand: unique symbol
@@ -11,6 +13,8 @@ export type StageObject = {
     isFromStart: boolean
     isUntilEnd: boolean
     generateSimLines: GenerateSimLines
+    /** The folder holding the stage; see `./folders`. */
+    folderId?: FolderId
 }
 
 let i = 1

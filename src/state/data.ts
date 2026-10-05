@@ -6,4 +6,6 @@ export const hasSameChartData = (left: State, right: State) =>
     left.bpms === right.bpms &&
     left.groups === right.groups &&
     left.stages === right.stages &&
+    left.groupFolders === right.groupFolders &&
+    left.stageFolders === right.stageFolders &&
     left.isDynamicStages === right.isDynamicStages

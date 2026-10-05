@@ -1216,6 +1216,7 @@
       }
     },
     "confirm": {
+      "delete": "刪除",
       "confirm": "確認",
       "cancel": "取消"
     },
@@ -1291,6 +1292,26 @@
       "top": "停靠在頂部"
     },
     "closePanel": "關閉{0}",
+    "folders": {
+      "defaultName": "資料夾 {0}",
+      "new": "新增資料夾",
+      "newWith": "新增資料夾…",
+      "moveTo": "移至資料夾…",
+      "none": "無資料夾",
+      "expand": "展開 {0}",
+      "collapse": "收合 {0}",
+      "moveUp": "上移資料夾",
+      "moveDown": "下移資料夾",
+      "ungroup": "解散資料夾",
+      "path": "{0} › {1}",
+      "added": "已新增 {0} 資料夾",
+      "renamed": "已將資料夾 {0} 重新命名為 {1}",
+      "moved": "已移動 {0} 資料夾",
+      "movedInto": "已將 {0} 移至 {1} 資料夾",
+      "movedOut": "已將 {0} 移出 {1} 資料夾",
+      "ungrouped": "已解散 {0} 資料夾",
+      "deleted": "已刪除 {0} 資料夾"
+    },
     "manager": {
       "show": "顯示 {0}",
       "hide": "隱藏 {0}",
@@ -1306,6 +1327,9 @@
       "drag": "拖曳以重新排序 {0}"
     },
     "groups": {
+      "deleteFolder": "刪除資料夾及圖層…",
+      "deleteFolderTitle": "刪除資料夾及圖層",
+      "deleteFolderMessage": "刪除 {0} 資料夾及其中的 {1} 個圖層和 {2} 個物件？",
       "renamed": "已將圖層 {0} 重新命名為 {1}",
       "all": "所有圖層",
       "showAll": "顯示所有圖層",
@@ -1313,6 +1337,9 @@
       "add": "新增圖層"
     },
     "stages": {
+      "deleteFolder": "刪除資料夾及舞台…",
+      "deleteFolderTitle": "刪除資料夾及舞台",
+      "deleteFolderMessage": "刪除 {0} 資料夾及其中的 {1} 個舞台和 {2} 個物件？",
       "renamed": "已將舞台 {0} 重新命名為 {1}",
       "all": "所有舞台",
       "showAll": "顯示所有舞台",

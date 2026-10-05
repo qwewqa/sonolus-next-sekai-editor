@@ -9,3 +9,5 @@ export const defaultStageId = computed(() => {
 
     return id
 })
+
+export const stageFolders = computed(() => state.value.stageFolders)

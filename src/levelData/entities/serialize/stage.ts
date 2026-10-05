@@ -1,7 +1,13 @@
 import { type LevelDataEntity } from '@sonolus/core'
+import type { FolderId } from '../../../chart/folders'
 import type { StageId, Stages } from '../../../chart/stages'
+import { serializeFolderRef } from './folder'
 
-export const serializeStagesToLevelDataEntities = (isDynamicStages: boolean, stages: Stages) => {
+export const serializeStagesToLevelDataEntities = (
+    isDynamicStages: boolean,
+    stages: Stages,
+    folderEntities?: ReadonlyMap<FolderId, LevelDataEntity>,
+) => {
     if (!isDynamicStages) return
 
     return new Map(
@@ -26,6 +32,7 @@ export const serializeStagesToLevelDataEntities = (isDynamicStages: boolean, sta
                         name: 'generateSimLines',
                         value: generateSimLines[stage.generateSimLines],
                     },
+                    ...serializeFolderRef(folderEntities, stage.folderId),
                 ],
             },
         ]),

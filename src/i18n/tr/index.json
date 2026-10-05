@@ -1216,6 +1216,7 @@
       }
     },
     "confirm": {
+      "delete": "Sil",
       "confirm": "Onayla",
       "cancel": "İptal Et"
     },
@@ -1291,6 +1292,26 @@
       "top": "Üste Yerleştir"
     },
     "closePanel": "{0} panelini kapat",
+    "folders": {
+      "defaultName": "Klasör {0}",
+      "new": "Yeni klasör",
+      "newWith": "Yeni klasör…",
+      "moveTo": "Klasöre taşı…",
+      "none": "Klasör yok",
+      "expand": "{0} öğesini genişlet",
+      "collapse": "{0} öğesini daralt",
+      "moveUp": "Klasörü yukarı taşı",
+      "moveDown": "Klasörü aşağı taşı",
+      "ungroup": "Klasörü dağıt",
+      "path": "{0} › {1}",
+      "added": "{0} klasör eklendi",
+      "renamed": "{0} klasörü {1} olarak yeniden adlandırıldı",
+      "moved": "{0} klasör taşındı",
+      "movedInto": "{0}, {1} klasörüne taşındı",
+      "movedOut": "{0}, {1} klasöründen çıkarıldı",
+      "ungrouped": "{0} klasör dağıtıldı",
+      "deleted": "{0} klasör silindi"
+    },
     "manager": {
       "show": "{0} öğesini göster",
       "hide": "{0} öğesini gizle",
@@ -1306,6 +1327,9 @@
       "drag": "{0} öğesini yeniden sıralamak için sürükleyin"
     },
     "groups": {
+      "deleteFolder": "Klasörü ve grupları sil…",
+      "deleteFolderTitle": "Klasörü ve grupları sil",
+      "deleteFolderMessage": "{0} klasörü, içindeki gruplar ({1}) ve nesneleri ({2}) silinsin mi?",
       "renamed": "{0} grubu {1} olarak yeniden adlandırıldı",
       "all": "Tüm gruplar",
       "showAll": "Tüm grupları göster",
@@ -1313,6 +1337,9 @@
       "add": "Grup ekle"
     },
     "stages": {
+      "deleteFolder": "Klasörü ve sahneleri sil…",
+      "deleteFolderTitle": "Klasörü ve sahneleri sil",
+      "deleteFolderMessage": "{0} klasörü, içindeki sahneler ({1}) ve nesneleri ({2}) silinsin mi?",
       "renamed": "{0} sahnesi {1} olarak yeniden adlandırıldı",
       "all": "Tüm sahneler",
       "showAll": "Tüm sahneleri göster",

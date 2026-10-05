@@ -4,6 +4,7 @@ import type { StageMaskEventObject } from './events/stage/mask'
 import type { StagePivotEventObject } from './events/stage/pivot'
 import type { StageStyleEventObject } from './events/stage/style'
 import type { StageTransformEventObject } from './events/stage/transform'
+import type { Folders } from './folders'
 import type { Groups } from './groups'
 import type { NoteObject } from './note'
 import type { Stages } from './stages'
@@ -15,6 +16,9 @@ export type Chart = {
     bpms: BpmObject[]
     groups: Groups
     stages: Stages
+    /** Editor-only folders; formats without them leave these out. */
+    groupFolders?: Folders
+    stageFolders?: Folders
     cameraEvents: CameraEventObject[]
     stageMaskEvents: StageMaskEventObject[]
     stagePivotEvents: StagePivotEventObject[]

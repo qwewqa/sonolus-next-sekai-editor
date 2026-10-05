@@ -1,4 +1,5 @@
 import { i18n } from '../i18n'
+import type { FolderId } from './folders'
 
 export type Groups = Map<GroupId, GroupObject>
 
@@ -9,6 +10,8 @@ export type GroupId = number & { [idBrand]: never }
 export type GroupObject = {
     name: string
     forceNoteSpeed?: number
+    /** The folder holding the group; see `./folders`. */
+    folderId?: FolderId
 }
 
 let i = 1

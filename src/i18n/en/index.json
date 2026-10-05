@@ -1216,6 +1216,7 @@
             }
         },
         "confirm": {
+            "delete": "Delete",
             "confirm": "Confirm",
             "cancel": "Cancel"
         },
@@ -1291,6 +1292,26 @@
             "top": "Dock Top"
         },
         "closePanel": "Close {0}",
+        "folders": {
+            "defaultName": "Folder {0}",
+            "new": "New Folder",
+            "newWith": "New Folder…",
+            "moveTo": "Move to Folder…",
+            "none": "No Folder",
+            "expand": "Expand {0}",
+            "collapse": "Collapse {0}",
+            "moveUp": "Move Folder Up",
+            "moveDown": "Move Folder Down",
+            "ungroup": "Ungroup",
+            "path": "{0} › {1}",
+            "added": "Added {0} folder",
+            "renamed": "Renamed {0} folder to {1}",
+            "moved": "Moved {0} folder",
+            "movedInto": "Moved {0} to {1} folder",
+            "movedOut": "Moved {0} out of {1} folder",
+            "ungrouped": "Ungrouped {0} folder",
+            "deleted": "Deleted {0} folder"
+        },
         "manager": {
             "show": "Show {0}",
             "hide": "Hide {0}",
@@ -1306,6 +1327,9 @@
             "drag": "Drag to Reorder {0}"
         },
         "groups": {
+            "deleteFolder": "Delete Folder and Groups…",
+            "deleteFolderTitle": "Delete Folder and Groups",
+            "deleteFolderMessage": "Delete the {0} folder, its groups ({1}) and their objects ({2})?",
             "renamed": "Renamed {0} group to {1}",
             "all": "All Groups",
             "showAll": "Show All Groups",
@@ -1313,6 +1337,9 @@
             "add": "Add Group"
         },
         "stages": {
+            "deleteFolder": "Delete Folder and Stages…",
+            "deleteFolderTitle": "Delete Folder and Stages",
+            "deleteFolderMessage": "Delete the {0} folder, its stages ({1}) and their objects ({2})?",
             "renamed": "Renamed {0} stage to {1}",
             "all": "All Stages",
             "showAll": "Show All Stages",

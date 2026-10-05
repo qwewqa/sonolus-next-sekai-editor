@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { GroupId } from '../../chart/groups'
-import { groups } from '../../history/groups'
+import { folderSections } from '../../chart/folders'
+import { groupFolders, groups } from '../../history/groups'
 import { i18n } from '../../i18n'
 import OptionalSelectField from './OptionalSelectField.vue'
 
@@ -17,6 +18,6 @@ const modelValue = defineModel<GroupId | undefined>({ required: true })
         v-model="modelValue"
         :empty-label
         :label="i18n.modals.form.group.label"
-        :options="[...groups.entries()].map(([id, { name }]) => [name, id])"
+        :sections="folderSections(groups, groupFolders)"
     />
 </template>

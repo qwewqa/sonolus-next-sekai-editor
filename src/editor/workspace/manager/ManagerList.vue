@@ -1,11 +1,16 @@
 <script setup lang="ts" generic="T extends number">
-import { computed, nextTick, onUnmounted, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onUnmounted, shallowRef, useId, useTemplateRef, watch } from 'vue'
+import type { FolderId, FolderTreeItem, FolderTreeRef } from '../../../chart/folders'
 import { i18n } from '../../../i18n'
 import { modals } from '../../../modals'
 import { interpolateRaw } from '../../../utils/interpolate'
 import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
 import { useScrollMemory } from '../useScrollMemory'
+import { isFolderExpanded, setFolderExpanded, type EntryPlace } from './folders'
+import FolderIcon from './icons/FolderIcon.vue'
+import FolderOpenIcon from './icons/FolderOpenIcon.vue'
+import FolderPlusIcon from './icons/FolderPlusIcon.vue'
 import ManagerAddButton from './ManagerAddButton.vue'
 import MoveDownIcon from './icons/MoveDownIcon.vue'
 import MoveHereIcon from './icons/MoveHereIcon.vue'
@@ -27,8 +32,12 @@ const props = defineProps<{
 const root = useTemplateRef<HTMLDivElement>('root')
 const list = useTemplateRef<HTMLUListElement>('list')
 useScrollMemory(() => props.scrollKey, list)
+const uid = useId()
 
 const entries = computed(() => props.model.entries())
+const names = computed(() => new Map(entries.value.map(({ id, name }) => [id, name])))
+const folders = computed(() => props.model.folders)
+const tree = computed(() => folders.value.tree())
 const strings = computed(() => props.model.strings())
 const scope = computed(() => props.model.scope)
 const focused = computed(() => props.model.focused())
@@ -38,20 +47,51 @@ const allShown = computed(() => scope.value.shownCount.value === scope.value.tot
 
 const label = (template: string, ...values: string[]) => interpolateRaw(template, ...values)
 
-const rowOf = (id: T) =>
-    list.value?.querySelector<HTMLElement>(`[data-entry-id="${String(id)}"]`) ?? undefined
+// Rows: entries and folders, told apart by kind.
 
-const focusIn = (id: T, selector: string) => {
-    rowOf(id)?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true })
+type RowKey = { type: 'entry'; id: T } | { type: 'folder'; id: FolderId }
+type FolderItem = Extract<FolderTreeItem<T>, { type: 'folder' }>
+
+const rowKey = (key: RowKey) => `${key.type === 'entry' ? 'e' : 'f'}${String(key.id)}`
+const sameKey = (a: RowKey | undefined, b: RowKey) => a?.type === b.type && a.id === b.id
+
+const folderItems = computed(
+    () => new Map(tree.value.flatMap((item) => (item.type === 'folder' ? [[item.id, item]] : []))),
+)
+const folderOfEntry = computed(() => {
+    const map = new Map<T, FolderId>()
+    for (const item of folderItems.value.values())
+        for (const id of item.members) map.set(id, item.id)
+    return map
+})
+const folderName = (id: FolderId) => folders.value.name(id)
+const folderCount = (item: FolderItem) =>
+    item.members.reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
+const shownMembers = (item: FolderItem) => item.members.filter((id) => scope.value.isShown(id))
+const membersId = (id: FolderId) => `${uid}-folder-${String(id)}`
+
+/** The name a row shows, with its folder when another entry shares it. */
+const entryTitle = (id: T, name: string) => {
+    const folder = folderOfEntry.value.get(id)
+    return folder === undefined
+        ? name
+        : label(i18n.value.workspace.folders.path, folderName(folder), name)
+}
+
+const rowOf = (key: RowKey) =>
+    list.value?.querySelector<HTMLElement>(`[data-row="${rowKey(key)}"]`) ?? undefined
+
+const focusIn = (key: RowKey, selector: string) => {
+    rowOf(key)?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true })
 }
 
 /**
  * Scrolls only the list, never the page or the panel around it, so the row
  * clears the list padding and the sticky Add item.
  */
-const reveal = (id: T) => {
+const reveal = (key: RowKey) => {
     const container = list.value
-    const row = rowOf(id)
+    const row = rowOf(key)
     if (!container || !row) return
     const bounds = container.getBoundingClientRect()
     const style = getComputedStyle(container)
@@ -114,6 +154,18 @@ const inlineMode = computed(() =>
 const hasInline = (id: T) =>
     inlineMode.value === 'hover' || (inlineMode.value === 'current' && focused.value === id)
 
+// The target's folder opens, so the target always shows.
+watch(
+    () => {
+        const id = focused.value
+        return id === undefined ? undefined : folderOfEntry.value.get(id)
+    },
+    (folder) => {
+        if (folder !== undefined && !isFolderExpanded(folder)) setFolderExpanded(folder, true)
+    },
+    { immediate: true },
+)
+
 // Selection and visibility
 
 const onSelectAll = () => {
@@ -130,21 +182,40 @@ const onSelect = (id: T) => {
     scope.value.focus(id)
 }
 
-const isSoloed = (id: T) => scope.value.isShown(id) && scope.value.shownCount.value === 1
+/** Whether exactly these entries are shown. */
+const isOnlyShown = (ids: readonly T[]) =>
+    ids.length > 0 &&
+    scope.value.shownCount.value === ids.length &&
+    ids.every((id) => scope.value.isShown(id))
 
-/** Shows only this entry, or everything again when it already is alone. */
-const solo = (id: T) => {
-    if (isSoloed(id)) {
-        scope.value.setAllShown(true)
-    } else {
-        scope.value.setAllShown(false)
-        scope.value.setShown(id, true)
-    }
+/** Shows only these entries, or everything again when they already are alone. */
+const solo = (ids: readonly T[]) => {
+    if (isOnlyShown(ids)) scope.value.setAllShown(true)
+    else scope.value.showOnly(ids)
 }
 
 const onToggle = (id: T, soloed: boolean) => {
-    if (soloed) solo(id)
+    if (soloed) solo([id])
     else scope.value.setShown(id, !scope.value.isShown(id))
+}
+
+/** A folder's eye shows every member when any is hidden, else hides them all. */
+const onToggleFolder = (item: FolderItem, soloed: boolean) => {
+    if (!item.members.length) return
+    if (soloed) solo(item.members)
+    else scope.value.setSomeShown(item.members, shownMembers(item).length < item.members.length)
+}
+
+const onExpand = async (id: FolderId, expanded: boolean, keyboard = false) => {
+    setFolderExpanded(id, expanded)
+    if (!keyboard) return
+    await nextTick()
+    focusIn({ type: 'folder', id }, '.manager-name')
+}
+
+const onParent = (id: T) => {
+    const folder = folderOfEntry.value.get(id)
+    if (folder !== undefined) focusIn({ type: 'folder', id: folder }, '.manager-name')
 }
 
 // Rows scrolled under the band get a separator and fade out at its edge; rows
@@ -162,93 +233,217 @@ const onAdd = async (event: MouseEvent) => {
     if (event.detail > 0) (event.currentTarget as HTMLElement).blur()
     const id = props.model.add()
     await nextTick()
-    reveal(id)
+    reveal({ type: 'entry', id })
     // Name the new entry right away: Enter or leaving keeps the typed name,
     // Escape keeps the generated one. The authoring target stays put.
-    startRename(id)
+    startRename({ type: 'entry', id })
+}
+
+/** Adds a folder, holding an entry if given, and names it right away. */
+const onNewFolder = async (entry?: T, event?: MouseEvent) => {
+    if (event && event.detail > 0) (event.currentTarget as HTMLElement).blur()
+    const id = folders.value.create(entry)
+    setFolderExpanded(id, true)
+    await nextTick()
+    reveal({ type: 'folder', id })
+    startRename({ type: 'folder', id })
 }
 
 // Renaming
 
-const renaming = shallowRef<T>()
+const renaming = shallowRef<RowKey>()
 
-const startRename = (id: T) => {
+const startRename = (key: RowKey) => {
     closeMenu(false)
-    renaming.value = id
+    renaming.value = key
 }
 
-const endRename = async (id: T, value: string | undefined, keyboard: boolean) => {
-    if (renaming.value !== id) return
+const endRename = async (key: RowKey, value: string | undefined, keyboard: boolean) => {
+    if (!sameKey(renaming.value, key)) return
     renaming.value = undefined
-    if (value !== undefined) props.model.rename(id, value)
+    if (value !== undefined) {
+        if (key.type === 'entry') props.model.rename(key.id, value)
+        else folders.value.rename(key.id, value)
+    }
     if (!keyboard) return
     await nextTick()
-    focusIn(id, '.manager-name')
+    focusIn(key, '.manager-name')
 }
 
-// Rows added or removed change what lies below.
-watch(entries, () => void nextTick(onListScroll), { flush: 'post' })
+const exists = (key: RowKey) =>
+    key.type === 'entry' ? names.value.has(key.id) : folderItems.value.has(key.id)
 
-// Stop renaming an entry that disappears, e.g. after an undo.
-watch(entries, (value) => {
-    const id = renaming.value
-    if (id !== undefined && !value.some((entry) => entry.id === id)) renaming.value = undefined
+// Rows added or removed change what lies below.
+watch(tree, () => void nextTick(onListScroll), { flush: 'post' })
+
+// Stop renaming a row that disappears, e.g. after an undo.
+watch(tree, () => {
+    if (renaming.value && !exists(renaming.value)) renaming.value = undefined
 })
 
 // Reordering by keyboard and drag
 
-const reorder = async (id: T, offset: -1 | 1) => {
-    props.model.move(id, offset)
+const reorder = async (key: RowKey, offset: -1 | 1) => {
+    if (key.type === 'entry') props.model.move(key.id, offset)
+    else folders.value.stepFolder(key.id, offset)
     await nextTick()
-    reveal(id)
-    focusIn(id, '.manager-name')
+    reveal(key)
+    focusIn(key, '.manager-name')
+}
+
+type RowInfo = {
+    key: RowKey
+    /** The folder holding an entry row. */
+    folder?: FolderId
+    top: number
+    height: number
 }
 
 type Drag = {
-    id: T
+    key: RowKey
     pointerId: number
-    from: number
-    to: number
     startY: number
     startScroll: number
-    /** Row centers in list content coordinates when the drag began. */
-    centers: number[]
-    step: number
+    /** Rows in list content coordinates, untransformed, when last measured. */
+    rows: RowInfo[]
+    /** The dragged rows: the entry, or the folder with its shown members. */
+    dragged: Set<string>
+    gap: number
     offset: number
+    /** Where the drop goes: into a folder, or before a remaining row (or at the end). */
+    target: { into: FolderId } | { gap: number }
     started: boolean
 }
 
 const drag = shallowRef<Drag>()
 const dragThreshold = 5
+const rowGap = 4
 
-const rowStyle = (index: number) => {
-    const current = drag.value
-    if (!current?.started) return undefined
-    if (index === current.from) return { transform: `translateY(${current.offset}px)` }
-    if (current.from < current.to && index > current.from && index <= current.to)
-        return { transform: `translateY(${-current.step}px)` }
-    if (current.to < current.from && index >= current.to && index < current.from)
-        return { transform: `translateY(${current.step}px)` }
-    return undefined
+const measureRows = (container: HTMLElement, translate: (key: string) => number) => {
+    const bounds = container.getBoundingClientRect()
+    return [...container.querySelectorAll<HTMLElement>('[data-row]')].flatMap((element) => {
+        const key = parseRowKey(element.dataset.row)
+        if (!key) return []
+        const rect = element.getBoundingClientRect()
+        const folder = element.dataset.rowFolder
+        return [
+            {
+                key,
+                folder: folder === undefined ? undefined : (Number(folder) as FolderId),
+                top:
+                    rect.top -
+                    bounds.top +
+                    container.scrollTop -
+                    translate(element.dataset.row ?? ''),
+                height: rect.height,
+            },
+        ]
+    })
 }
 
-const onDragStart = (id: T, event: PointerEvent) => {
+/** Every shown row's key by its `data-row` value. */
+const rowKeys = computed(() => {
+    const keys = new Map<string, RowKey>()
+    const add = (key: RowKey) => keys.set(rowKey(key), key)
+    for (const item of tree.value) {
+        add(
+            item.type === 'entry'
+                ? { type: 'entry', id: item.id }
+                : { type: 'folder', id: item.id },
+        )
+        if (item.type === 'folder') for (const id of item.members) add({ type: 'entry', id })
+    }
+    return keys
+})
+
+const parseRowKey = (value: string | undefined) =>
+    value === undefined ? undefined : rowKeys.value.get(value)
+
+const remaining = (current: Drag) =>
+    current.rows.filter((row) => !current.dragged.has(rowKey(row.key)))
+const draggedRows = (current: Drag) =>
+    current.rows.filter((row) => current.dragged.has(rowKey(row.key)))
+
+/** Top and height of the dragged block where it started. */
+const blockOf = (current: Drag) => {
+    const rows = draggedRows(current)
+    const first = rows[0]
+    const last = rows.at(-1)
+    if (!first || !last) return { top: 0, height: 0 }
+    return { top: first.top, height: last.top + last.height - first.top }
+}
+
+/** Translations that open a gap for the block, or close its old place. */
+const translations = computed(() => {
+    const current = drag.value
+    const result = new Map<string, number>()
+    if (!current?.started) return result
+    const rows = remaining(current)
+    const block = blockOf(current)
+    let y = current.rows[0]?.top ?? 0
+    rows.forEach((row, index) => {
+        if ('gap' in current.target && current.target.gap === index) y += block.height + rowGap
+        result.set(rowKey(row.key), y - row.top)
+        y += row.height + rowGap
+    })
+    for (const key of current.dragged) result.set(key, current.offset)
+    return result
+})
+
+const rowStyle = (key: RowKey) => {
+    const value = translations.value.get(rowKey(key))
+    return value ? { transform: `translateY(${value}px)` } : undefined
+}
+
+const isTopLevel = (row: RowInfo | undefined) => row?.folder === undefined
+
+/** The drop target for the block's current position. */
+const targetOf = (current: Drag): Drag['target'] => {
+    const rows = remaining(current)
+    // Where the held row is, not the block: a folder's members trail below it.
+    const held = current.rows.find((row) => sameKey(row.key, current.key))
+    const center = (held ? held.top + held.height / 2 : 0) + current.offset
+
+    // An entry over the middle of a folder row joins that folder.
+    if (current.key.type === 'entry') {
+        const over = rows.find(
+            (row) =>
+                row.key.type === 'folder' &&
+                center > row.top + row.height / 4 &&
+                center < row.top + (row.height * 3) / 4,
+        )
+        if (over) return { into: over.key.id as FolderId }
+    }
+
+    const gap = rows.filter((row) => row.top + row.height / 2 < center).length
+    if (current.key.type === 'entry') return { gap }
+
+    // A folder only lands between top-level items.
+    let below = gap
+    while (!isTopLevel(rows[below])) below++
+    let above = gap
+    while (above > 0 && !isTopLevel(rows[above])) above--
+    return { gap: gap - above < below - gap ? above : below }
+}
+
+const onDragStart = (key: RowKey, event: PointerEvent) => {
     const container = list.value
     if (event.button !== 0 || renaming.value !== undefined || !container) return
-    const rows = [...container.querySelectorAll<HTMLElement>('[data-entry-id]')]
-    const from = entries.value.findIndex((entry) => entry.id === id)
-    if (from === -1 || rows.length < 2) return
-    const centers = rows.map((row) => row.offsetTop + row.offsetHeight / 2)
+    const rows = measureRows(container, () => 0)
+    if (rows.length < 2) return
+    const dragged = new Set([rowKey(key)])
+    if (key.type === 'folder')
+        for (const row of rows) if (row.folder === key.id) dragged.add(rowKey(row.key))
     drag.value = {
-        id,
+        key,
         pointerId: event.pointerId,
-        from,
-        to: from,
         startY: event.clientY,
         startScroll: container.scrollTop,
-        centers,
-        step: (rows[1]?.offsetTop ?? 0) - (rows[0]?.offsetTop ?? 0),
+        rows,
+        dragged,
+        gap: rowGap,
         offset: 0,
+        target: { gap: -1 },
         started: false,
     }
     window.addEventListener('pointermove', onDragMove)
@@ -257,11 +452,45 @@ const onDragStart = (id: T, event: PointerEvent) => {
     window.addEventListener('keydown', onDragKeydown, true)
 }
 
+/**
+ * Rows snap to their new places on drop. Clearing the offsets would otherwise
+ * glide them back, leaving rows briefly away from where they are, under the
+ * pointer's next press. Run after the update, which starts those glides.
+ */
+const settleRows = () => {
+    for (const row of list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])
+        for (const animation of row.getAnimations()) animation.cancel()
+}
+
 const stopDragListeners = () => {
     window.removeEventListener('pointermove', onDragMove)
     window.removeEventListener('pointerup', onDragEnd)
     window.removeEventListener('pointercancel', onDragCancel)
     window.removeEventListener('keydown', onDragKeydown, true)
+    clearTimeout(expandTimer)
+}
+
+// Holding a dragged entry over a collapsed folder opens it.
+let expandTimer = 0
+let expandFolder: FolderId | undefined
+const expandDelay = 600
+
+const scheduleExpand = (folder: FolderId | undefined) => {
+    if (folder === expandFolder) return
+    clearTimeout(expandTimer)
+    expandFolder = folder
+    if (folder === undefined || isFolderExpanded(folder)) return
+    expandTimer = window.setTimeout(async () => {
+        setFolderExpanded(folder, true)
+        await nextTick()
+        const current = drag.value
+        const container = list.value
+        if (!current || !container) return
+        // Rows moved; measure again without the transforms in place.
+        const shift = translations.value
+        const rows = measureRows(container, (key) => shift.get(key) ?? 0)
+        drag.value = { ...current, rows }
+    }, expandDelay)
 }
 
 const onDragMove = (event: PointerEvent) => {
@@ -280,11 +509,10 @@ const onDragMove = (event: PointerEvent) => {
     else if (event.clientY > bounds.bottom - 24) container.scrollTop += 8
 
     const offset = event.clientY - current.startY + container.scrollTop - current.startScroll
-    const center = (current.centers[current.from] ?? 0) + offset
-    const to = current.centers.filter(
-        (value, index) => index !== current.from && value < center,
-    ).length
-    drag.value = { ...current, offset, to, started: true }
+    const next = { ...current, offset, started: true }
+    next.target = targetOf(next)
+    drag.value = next
+    scheduleExpand('into' in next.target ? next.target.into : undefined)
 }
 
 // A drag ends with a click on whatever is under the pointer; swallow it so
@@ -294,22 +522,51 @@ const swallowClick = (event: MouseEvent) => {
     event.preventDefault()
 }
 
+const refOf = (row: RowInfo | undefined): FolderTreeRef<T> | undefined =>
+    row &&
+    (row.key.type === 'entry'
+        ? { type: 'entry', id: row.key.id }
+        : { type: 'folder', id: row.key.id })
+
 const onDragEnd = (event: PointerEvent) => {
     const current = drag.value
     if (current?.pointerId !== event.pointerId) return
     stopDragListeners()
+    expandFolder = undefined
     drag.value = undefined
+    void nextTick(settleRows)
     if (!current.started) return
     window.addEventListener('click', swallowClick, { capture: true, once: true })
     setTimeout(() => {
         window.removeEventListener('click', swallowClick, true)
     }, 0)
-    if (current.to !== current.from) props.model.moveTo(current.id, current.to)
+
+    const { key, target } = current
+    if (key.type === 'folder') {
+        if (!('gap' in target)) return
+        const next = remaining(current)[target.gap]
+        folders.value.placeFolder(key.id, refOf(next))
+        return
+    }
+    let place: EntryPlace<T>
+    if ('into' in target) {
+        place = { folder: target.into }
+    } else {
+        const next = remaining(current)[target.gap]
+        // Before a member: into its folder there. Otherwise loose, before the row.
+        place =
+            next?.folder !== undefined && next.key.type === 'entry'
+                ? { folder: next.folder, before: next.key.id }
+                : { before: refOf(next) }
+    }
+    folders.value.placeEntry(key.id, place)
 }
 
 const onDragCancel = () => {
     stopDragListeners()
+    expandFolder = undefined
     drag.value = undefined
+    void nextTick(settleRows)
 }
 
 const onDragKeydown = (event: KeyboardEvent) => {
@@ -321,24 +578,37 @@ const onDragKeydown = (event: KeyboardEvent) => {
 
 onUnmounted(stopDragListeners)
 
-// Cancel a drag whose entries change underneath it, e.g. after an undo.
-watch(entries, () => {
+// Cancel a drag whose rows change underneath it, e.g. after an undo.
+watch(tree, () => {
     if (drag.value) onDragCancel()
 })
 
+const isDragged = (key: RowKey) => !!drag.value?.started && drag.value.dragged.has(rowKey(key))
+const isDroppingInto = computed(() => {
+    const target = drag.value?.started ? drag.value.target : undefined
+    return !!target && 'into' in target
+})
+const isDropTarget = (id: FolderId) => {
+    const target = drag.value?.started ? drag.value.target : undefined
+    return !!target && 'into' in target && target.into === id
+}
+
 // Actions and the menu
 
-const menu = shallowRef<{ id: T; anchor: HTMLElement; modals: number }>()
+const menu = shallowRef<{
+    key: RowKey
+    anchor: HTMLElement
+    modals: number
+    /** The menu's own actions, or the folder choice for an entry. */
+    mode: 'main' | 'folders'
+}>()
 
 /** Common actions are one click away on panels with room for them. */
 const inlineActions = (): ManagerRowAction[] => [
     { key: 'properties', label: strings.value.properties, icon: PropertiesIcon },
 ]
 
-const menuItems = computed((): ManagerMenuItem[] => {
-    const id = menu.value?.id
-    if (id === undefined) return []
-    const index = entries.value.findIndex((entry) => entry.id === id)
+const entryMenuItems = (id: T): ManagerMenuItem[] => {
     const manager = i18n.value.workspace.manager
     // Actions offered inline are not repeated here.
     const items: ManagerMenuItem[] = [
@@ -348,7 +618,7 @@ const menuItems = computed((): ManagerMenuItem[] => {
             : [{ key: 'properties', label: strings.value.properties, icon: PropertiesIcon }]),
         {
             key: 'solo',
-            label: isSoloed(id) ? strings.value.showAll : manager.solo,
+            label: isOnlyShown([id]) ? strings.value.showAll : manager.solo,
             icon: VisibleIcon,
             separated: true,
         },
@@ -366,29 +636,109 @@ const menuItems = computed((): ManagerMenuItem[] => {
             key: 'moveUp',
             label: strings.value.moveUp,
             icon: MoveUpIcon,
-            disabled: index <= 0,
+            disabled: !folders.value.canStepEntry(id, -1),
             separated: true,
         },
         {
             key: 'moveDown',
             label: strings.value.moveDown,
             icon: MoveDownIcon,
-            disabled: index === -1 || index >= entries.value.length - 1,
+            disabled: !folders.value.canStepEntry(id, 1),
         },
+        { key: 'moveToFolder', label: i18n.value.workspace.folders.moveTo, icon: FolderIcon },
         { key: 'delete', label: strings.value.delete, icon: ResetIcon, destructive: true },
     )
     return items
+}
+
+const folderChoiceItems = (id: T): ManagerMenuItem[] => {
+    const current = folderOfEntry.value.get(id)
+    return [
+        {
+            key: 'folder:none',
+            label: i18n.value.workspace.folders.none,
+            checked: current === undefined,
+        },
+        ...[...folderItems.value.keys()].map((folder) => ({
+            key: `folder:${String(folder)}`,
+            label: folderName(folder),
+            checked: current === folder,
+        })),
+        {
+            key: 'folder:new',
+            label: i18n.value.workspace.folders.newWith,
+            icon: FolderPlusIcon,
+            separated: true,
+        },
+    ]
+}
+
+const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
+    const manager = i18n.value.workspace.manager
+    const folderStrings = i18n.value.workspace.folders
+    return [
+        { key: 'rename', label: manager.rename, icon: RenameIcon },
+        {
+            key: 'solo',
+            label: isOnlyShown(item.members) ? strings.value.showAll : manager.solo,
+            icon: VisibleIcon,
+            separated: true,
+            disabled: !item.members.length,
+        },
+        {
+            key: 'select',
+            label: manager.select,
+            icon: SelectIcon,
+            disabled: !folderCount(item),
+        },
+        {
+            key: 'moveUp',
+            label: folderStrings.moveUp,
+            icon: MoveUpIcon,
+            disabled: !folders.value.canStepFolder(item.id, -1),
+            separated: true,
+        },
+        {
+            key: 'moveDown',
+            label: folderStrings.moveDown,
+            icon: MoveDownIcon,
+            disabled: !folders.value.canStepFolder(item.id, 1),
+        },
+        { key: 'ungroup', label: folderStrings.ungroup, icon: FolderOpenIcon },
+        {
+            key: 'delete',
+            label: strings.value.deleteFolder,
+            icon: ResetIcon,
+            destructive: true,
+        },
+    ]
+}
+
+const menuItems = computed((): ManagerMenuItem[] => {
+    const current = menu.value
+    if (!current) return []
+    const { key } = current
+    if (key.type === 'folder') {
+        const item = folderItems.value.get(key.id)
+        return item ? folderMenuItems(item) : []
+    }
+    return current.mode === 'folders' ? folderChoiceItems(key.id) : entryMenuItems(key.id)
 })
 
 const menuLabel = computed(() => {
-    const id = menu.value?.id
-    const name = entries.value.find((entry) => entry.id === id)?.name ?? ''
+    const current = menu.value
+    if (!current) return ''
+    if (current.mode === 'folders') return i18n.value.workspace.folders.moveTo
+    const name =
+        current.key.type === 'entry'
+            ? (names.value.get(current.key.id) ?? '')
+            : folderName(current.key.id)
     return label(i18n.value.workspace.manager.actions, name)
 })
 
-const onMenu = (id: T, anchor: HTMLElement) => {
-    if (menu.value?.id === id) closeMenu(false)
-    else menu.value = { id, anchor, modals: modals.length }
+const onMenu = (key: RowKey, anchor: HTMLElement) => {
+    if (menu.value && sameKey(menu.value.key, key)) closeMenu(false)
+    else menu.value = { key, anchor, modals: modals.length, mode: 'main' }
 }
 
 function closeMenu(restoreFocus: boolean) {
@@ -401,13 +751,12 @@ function closeMenu(restoreFocus: boolean) {
 }
 
 // Close when the anchor row disappears, e.g. after an undo.
-watch(entries, (value) => {
-    const id = menu.value?.id
-    if (id !== undefined && !value.some((entry) => entry.id === id)) closeMenu(false)
+watch(tree, () => {
+    if (menu.value && !exists(menu.value.key)) closeMenu(false)
 })
 
 const focusAfterDelete = (index: number) => {
-    const rows = [...(list.value?.querySelectorAll<HTMLElement>('[data-entry-id]') ?? [])]
+    const rows = [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])]
     const row = rows[Math.min(index, rows.length - 1)]
     const target =
         row?.querySelector<HTMLElement>('.manager-more') ??
@@ -415,61 +764,186 @@ const focusAfterDelete = (index: number) => {
     target?.focus({ preventScroll: true })
 }
 
+const rowIndex = (key: RowKey) =>
+    [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])].findIndex(
+        (element) => element.dataset.row === rowKey(key),
+    )
+
 const onMenuSelect = (key: string, keyboard: boolean) => {
     const current = menu.value
     if (!current) return
+    // The folder choice replaces the menu's items in place.
+    if (key === 'moveToFolder') {
+        menu.value = { ...current, mode: 'folders' }
+        return
+    }
     closeMenu(keyboard)
-    void run(current.id, key, keyboard, current.anchor)
+    void run(current.key, key, keyboard, current.anchor)
 }
 
 const onInlineAction = (id: T, key: string, button: HTMLElement, keyboard: boolean) => {
     closeMenu(false)
-    void run(id, key, keyboard, button)
+    void run({ type: 'entry', id }, key, keyboard, button)
 }
 
 /** Runs an action; keyboard users keep focus on `anchor` where it remains. */
-const run = async (id: T, key: string, keyboard: boolean, anchor: HTMLElement) => {
-    const index = entries.value.findIndex((entry) => entry.id === id)
-    switch (key) {
+const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLElement) => {
+    const index = rowIndex(key)
+    if (action.startsWith('folder:') && key.type === 'entry') {
+        await chooseFolder(key.id, action.slice('folder:'.length))
+        return
+    }
+    switch (action) {
         case 'rename':
-            startRename(id)
+            startRename(key)
             return
         case 'properties':
-            props.model.openProperties(id)
+            if (key.type === 'entry') props.model.openProperties(key.id)
             return
         case 'solo':
-            solo(id)
+            solo(key.type === 'entry' ? [key.id] : (folderItems.value.get(key.id)?.members ?? []))
             return
         case 'select':
-            selectOwned(props.model.owner, id)
+            selectOwned(
+                props.model.owner,
+                key.type === 'entry'
+                    ? key.id
+                    : new Set(folderItems.value.get(key.id)?.members ?? []),
+            )
             return
         case 'moveSelection':
-            await moveSelectionTo(props.model.owner, id)
+            if (key.type === 'entry') await moveSelectionTo(props.model.owner, key.id)
             return
         case 'moveUp':
-        case 'moveDown':
-            props.model.move(id, key === 'moveUp' ? -1 : 1)
+        case 'moveDown': {
+            const offset = action === 'moveUp' ? -1 : 1
+            if (key.type === 'entry') props.model.move(key.id, offset)
+            else folders.value.stepFolder(key.id, offset)
             await nextTick()
-            reveal(id)
+            reveal(key)
             // Reordering may move the focused button within the document, and a
             // move to either end disables that direction's button.
             if (keyboard) {
                 const target =
                     anchor.isConnected && !(anchor as HTMLButtonElement).disabled
                         ? anchor
-                        : rowOf(id)?.querySelector<HTMLElement>('.manager-more')
+                        : rowOf(key)?.querySelector<HTMLElement>('.manager-more')
                 if (target && document.activeElement !== target)
                     target.focus({ preventScroll: true })
             }
             return
+        }
+        case 'ungroup':
+            if (key.type === 'folder') folders.value.ungroup(key.id)
+            if (!keyboard) return
+            await nextTick()
+            focusAfterDelete(index)
+            return
         case 'delete':
-            props.model.remove(id)
+            if (key.type === 'entry') props.model.remove(key.id)
+            else await folders.value.remove(key.id)
             if (!keyboard) return
             await nextTick()
             focusAfterDelete(index)
             return
     }
 }
+
+const chooseFolder = async (id: T, choice: string) => {
+    if (choice === 'new') {
+        await onNewFolder(id)
+        return
+    }
+    if (choice === 'none') {
+        const folder = folderOfEntry.value.get(id)
+        if (folder === undefined) return
+        // Out of the folder, just below it.
+        const at = tree.value.findIndex((item) => item.type === 'folder' && item.id === folder)
+        const after = tree.value[at + 1]
+        folders.value.placeEntry(id, {
+            before: after && ({ type: after.type, id: after.id } as FolderTreeRef<T>),
+        })
+    } else {
+        folders.value.placeEntry(id, { folder: Number(choice) as FolderId })
+    }
+    await nextTick()
+    reveal({ type: 'entry', id })
+}
+
+// Row bindings shared by loose entries and folder members.
+
+const entryProps = (id: T, name: string) => ({
+    name,
+    nameTitle:
+        focused.value === id
+            ? label(i18n.value.workspace.manager.target, entryTitle(id, name))
+            : entryTitle(id, name),
+    current: focused.value === id,
+    shown: scope.value.isShown(id),
+    muted: !scope.value.isShown(id),
+    eyeLabel: label(
+        scope.value.isShown(id)
+            ? i18n.value.workspace.manager.hide
+            : i18n.value.workspace.manager.show,
+        name,
+    ),
+    eyeTitle: `${label(
+        scope.value.isShown(id)
+            ? i18n.value.workspace.manager.hide
+            : i18n.value.workspace.manager.show,
+        name,
+    )}\n${i18n.value.workspace.manager.soloHint}`,
+    meta: `${counts.value.get(id) ?? 0}`,
+    metaTitle: label(i18n.value.workspace.manager.objects, `${counts.value.get(id) ?? 0}`),
+    actions: inlineActions(),
+    inline: inlineMode.value,
+    menuLabel: label(i18n.value.workspace.manager.actions, name),
+    menuOpen: sameKey(menu.value?.key, { type: 'entry', id }),
+    renaming: sameKey(renaming.value, { type: 'entry', id }),
+    renameLabel: i18n.value.modals.form.name.label,
+    dragLabel: label(i18n.value.workspace.manager.drag, name),
+    dragging: isDragged({ type: 'entry', id }),
+    noGrip: width.value < 300,
+    indented: folderOfEntry.value.has(id),
+})
+
+const entryHandlers = (id: T) => {
+    const key: RowKey = { type: 'entry', id }
+    return {
+        select: () => {
+            onSelect(id)
+        },
+        toggle: (soloed: boolean) => {
+            onToggle(id, soloed)
+        },
+        action: (action: string, button: HTMLElement, keyboard: boolean) => {
+            onInlineAction(id, action, button, keyboard)
+        },
+        menu: (anchor: HTMLElement) => {
+            onMenu(key, anchor)
+        },
+        renameStart: () => {
+            startRename(key)
+        },
+        renameEnd: (value: string | undefined, keyboard: boolean) =>
+            endRename(key, value, keyboard),
+        dragStart: (event: PointerEvent) => {
+            onDragStart(key, event)
+        },
+        reorder: (offset: -1 | 1) => reorder(key, offset),
+        parent: () => {
+            onParent(id)
+        },
+    }
+}
+
+const folderEyeLabel = (item: FolderItem) =>
+    label(
+        shownMembers(item).length < item.members.length || !item.members.length
+            ? i18n.value.workspace.manager.show
+            : i18n.value.workspace.manager.hide,
+        folderName(item.id),
+    )
 </script>
 
 <template>
@@ -508,84 +982,151 @@ const run = async (id: T, key: string, keyboard: boolean, anchor: HTMLElement) =
                 :style="{ paddingRight: gutterPadding }"
                 @scroll.passive="onListScroll"
             >
-                <li
-                    v-for="({ id, name }, index) in entries"
-                    :key="id"
-                    :data-entry-id="id"
-                    :class="{ 'manager-dragged relative z-20': drag?.started && drag.id === id }"
-                    :style="rowStyle(index)"
-                >
-                    <ManagerRow
-                        class="manager-entry"
-                        :name
-                        :name-title="
-                            focused === id ? label(i18n.workspace.manager.target, name) : name
-                        "
-                        :current="focused === id"
-                        :shown="scope.isShown(id)"
-                        :muted="!scope.isShown(id)"
-                        :eye-label="
-                            label(
-                                scope.isShown(id)
-                                    ? i18n.workspace.manager.hide
-                                    : i18n.workspace.manager.show,
-                                name,
-                            )
-                        "
-                        :eye-title="`${label(
-                            scope.isShown(id)
-                                ? i18n.workspace.manager.hide
-                                : i18n.workspace.manager.show,
-                            name,
-                        )}\n${i18n.workspace.manager.soloHint}`"
-                        :meta="`${counts.get(id) ?? 0}`"
-                        :meta-title="
-                            label(i18n.workspace.manager.objects, `${counts.get(id) ?? 0}`)
-                        "
-                        :actions="inlineActions()"
-                        :inline="inlineMode"
-                        :menu-label="label(i18n.workspace.manager.actions, name)"
-                        :menu-open="menu?.id === id"
-                        :renaming="renaming === id"
-                        :rename-label="i18n.modals.form.name.label"
-                        :drag-label="label(i18n.workspace.manager.drag, name)"
-                        :dragging="drag?.started && drag.id === id"
-                        :no-grip="width < 300"
-                        @select="onSelect(id)"
-                        @toggle="onToggle(id, $event)"
-                        @action="
-                            (key, button, keyboard) => onInlineAction(id, key, button, keyboard)
-                        "
-                        @menu="onMenu(id, $event)"
-                        @rename-start="startRename(id)"
-                        @rename-end="(value, keyboard) => endRename(id, value, keyboard)"
-                        @drag-start="onDragStart(id, $event)"
-                        @reorder="reorder(id, $event)"
-                    />
-                </li>
+                <template v-for="item in tree" :key="`${item.type}${item.id}`">
+                    <li
+                        v-if="item.type === 'entry'"
+                        :data-row="`e${item.id}`"
+                        :data-entry-id="item.id"
+                        :class="{
+                            'manager-dragged relative z-20': isDragged(item),
+                            'manager-dragged-over': isDragged(item) && isDroppingInto,
+                        }"
+                        :style="rowStyle(item)"
+                    >
+                        <ManagerRow
+                            class="manager-entry"
+                            v-bind="entryProps(item.id, names.get(item.id) ?? '')"
+                            v-on="entryHandlers(item.id)"
+                        />
+                    </li>
+                    <li
+                        v-else
+                        class="manager-folder flex flex-col gap-1"
+                        :class="{ 'manager-dragged relative z-20': isDragged(item) }"
+                    >
+                        <div
+                            :data-row="`f${item.id}`"
+                            :data-folder-id="item.id"
+                            :style="rowStyle(item)"
+                        >
+                            <ManagerRow
+                                class="manager-folder-row"
+                                :name="folderName(item.id)"
+                                :name-title="
+                                    label(
+                                        isFolderExpanded(item.id)
+                                            ? i18n.workspace.folders.collapse
+                                            : i18n.workspace.folders.expand,
+                                        folderName(item.id),
+                                    )
+                                "
+                                :current="false"
+                                folder
+                                :expanded="isFolderExpanded(item.id)"
+                                :controls="membersId(item.id)"
+                                :shown="shownMembers(item).length > 0 || !item.members.length"
+                                :partial="
+                                    shownMembers(item).length > 0 &&
+                                    shownMembers(item).length < item.members.length
+                                "
+                                :muted="item.members.length > 0 && !shownMembers(item).length"
+                                :eye-label="folderEyeLabel(item)"
+                                :eye-title="`${folderEyeLabel(item)}\n${i18n.workspace.manager.soloHint}`"
+                                :meta="`${folderCount(item)}`"
+                                :meta-title="
+                                    label(i18n.workspace.manager.objects, `${folderCount(item)}`)
+                                "
+                                :menu-label="
+                                    label(i18n.workspace.manager.actions, folderName(item.id))
+                                "
+                                :menu-open="sameKey(menu?.key, item)"
+                                :renaming="sameKey(renaming, item)"
+                                :rename-label="i18n.modals.form.name.label"
+                                :drag-label="
+                                    label(i18n.workspace.manager.drag, folderName(item.id))
+                                "
+                                :dragging="isDragged(item)"
+                                :drop-target="isDropTarget(item.id)"
+                                :no-grip="width < 300"
+                                @select="onExpand(item.id, !isFolderExpanded(item.id))"
+                                @toggle="onToggleFolder(item, $event)"
+                                @menu="onMenu(item, $event)"
+                                @rename-start="startRename(item)"
+                                @rename-end="(value, keyboard) => endRename(item, value, keyboard)"
+                                @drag-start="onDragStart(item, $event)"
+                                @reorder="reorder(item, $event)"
+                                @expand="onExpand(item.id, $event, true)"
+                            />
+                        </div>
+                        <ul
+                            v-if="isFolderExpanded(item.id) && item.members.length"
+                            :id="membersId(item.id)"
+                            class="manager-members relative flex flex-col gap-1"
+                            :aria-label="folderName(item.id)"
+                        >
+                            <li
+                                v-for="id in item.members"
+                                :key="id"
+                                :data-row="`e${id}`"
+                                :data-row-folder="item.id"
+                                :data-entry-id="id"
+                                :class="{
+                                    'manager-dragged z-20': isDragged({ type: 'entry', id }),
+                                    'manager-dragged-over':
+                                        isDragged({ type: 'entry', id }) && isDroppingInto,
+                                }"
+                                :style="rowStyle({ type: 'entry', id })"
+                            >
+                                <ManagerRow
+                                    class="manager-entry"
+                                    v-bind="entryProps(id, names.get(id) ?? '')"
+                                    v-on="entryHandlers(id)"
+                                />
+                            </li>
+                        </ul>
+                    </li>
+                </template>
                 <!-- In a short panel Add follows the rows. -->
                 <li
                     v-if="!stickyAdd"
-                    class="manager-footer pointer-events-none -mx-1.5 px-1.5 pb-2 pt-3"
+                    class="manager-footer pointer-events-none -mx-1.5 flex items-center gap-1.5 px-1.5 pb-2 pt-3"
                     :style="{ marginRight: gutterPadding && `-${gutterPadding}` }"
                 >
                     <ManagerAddButton :label="strings.add" @click="onAdd" />
+                    <button
+                        type="button"
+                        class="manager-new-folder"
+                        :aria-label="i18n.workspace.folders.new"
+                        :title="i18n.workspace.folders.new"
+                        @click="onNewFolder(undefined, $event)"
+                    >
+                        <FolderPlusIcon class="manager-new-folder-icon" aria-hidden="true" />
+                    </button>
                 </li>
             </ul>
             <!-- Otherwise it floats in reach over the list, which leaves room below
         its last row and fades rows out behind it only while more lie below.
-        The button is the only thing drawn here. -->
+        The buttons are the only things drawn here. -->
             <div
                 v-if="stickyAdd"
-                class="manager-footer manager-footer-floating pointer-events-none absolute bottom-0 left-0 z-10 px-1.5 pb-2"
+                class="manager-footer manager-footer-floating pointer-events-none absolute bottom-0 left-0 z-10 flex items-center gap-1.5 px-1.5 pb-2"
                 :class="{ 'manager-footer-dragging': drag?.started }"
             >
                 <ManagerAddButton :label="strings.add" @click="onAdd" />
+                <button
+                    type="button"
+                    class="manager-new-folder"
+                    :aria-label="i18n.workspace.folders.new"
+                    :title="i18n.workspace.folders.new"
+                    @click="onNewFolder(undefined, $event)"
+                >
+                    <FolderPlusIcon class="manager-new-folder-icon" aria-hidden="true" />
+                </button>
             </div>
         </div>
         <ManagerMenu
             v-if="menu"
-            :key="menu.id"
+            :key="`${rowKey(menu.key)}-${menu.mode}`"
             :anchor="menu.anchor"
             :label="menuLabel"
             :items="menuItems"
@@ -608,6 +1149,15 @@ const run = async (id: T, key: string, keyboard: boolean, anchor: HTMLElement) =
     }
 }
 
+/* A round companion to the Add pill, raised the same way. */
+.manager-new-folder {
+    @apply pointer-events-auto flex size-10 shrink-0 items-center justify-center rounded-full bg-button shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:size-12;
+}
+
+.manager-new-folder-icon {
+    @apply size-4 fill-current [@media(pointer:coarse)]:size-5;
+}
+
 /* Out of the way of a row being dragged over it. */
 .manager-footer-floating {
     transition: opacity 150ms;
@@ -615,6 +1165,49 @@ const run = async (id: T, key: string, keyboard: boolean, anchor: HTMLElement) =
 
 .manager-footer-dragging {
     opacity: 0;
+}
+
+/*
+ * Members hang under their folder: a guide line runs down the indent between
+ * the eye column and the names (2px row inset + 36px eye + 8px), costing no
+ * height. Each member draws its stretch, bridging the gap above it, so the
+ * line follows rows that glide aside during a drag.
+ */
+.manager-members > li {
+    position: relative;
+}
+
+.manager-members > li::before {
+    content: '';
+    @apply pointer-events-none absolute -top-1 bottom-0 left-[2.875rem] w-0.5 bg-fg/15;
+}
+
+.manager-members > li:first-child::before {
+    @apply top-1 rounded-t-full;
+}
+
+.manager-members > li:last-child::before {
+    @apply bottom-1 rounded-b-full;
+}
+
+/* A member being dragged leaves its stretch behind. */
+.manager-members > li.manager-dragged::before {
+    display: none;
+}
+
+@media (pointer: coarse) {
+    .manager-members > li::before {
+        @apply left-[3.375rem];
+    }
+}
+
+/* Over a folder it would join, the held row shrinks so the marked folder shows around it. */
+.manager-dragged .manager-row {
+    transition: scale 100ms ease;
+}
+
+.manager-dragged-over .manager-row {
+    scale: 0.88;
 }
 
 /*
@@ -676,11 +1269,12 @@ const run = async (id: T, key: string, keyboard: boolean, anchor: HTMLElement) =
 }
 
 /* Neighbors glide aside while a row is dragged. */
-.manager-entries-dragging > li {
+.manager-entries-dragging [data-row] {
     transition: transform 150ms ease;
 }
 
-.manager-entries-dragging > li.manager-dragged {
+.manager-entries-dragging .manager-dragged [data-row],
+.manager-entries-dragging [data-row].manager-dragged {
     transition: none;
 }
 </style>
