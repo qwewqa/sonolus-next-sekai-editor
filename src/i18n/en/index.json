@@ -678,6 +678,7 @@
             "showEffects": "Effects",
             "showTime": "Show Time",
             "highlightSelection": "Highlight Selection",
+            "showHitboxes": "Show Hitboxes",
             "antialias": "Antialias",
             "aspectRatio": "Aspect Ratio",
             "showPreview": "Show Preview",

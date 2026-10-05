@@ -59,6 +59,10 @@ export const clamp = (x: number, min: number, max: number) => Math.min(Math.max(
 
 export const unlerpClamped = (a: number, b: number, x: number) => clamp(unlerp(a, b, x), 0, 1)
 
+// The engine's safe_unlerp_clamped: coincident endpoints use a fixed fraction.
+export const safeUnlerpClamped = (a: number, b: number, x: number, fallback = 0.5) =>
+    Math.abs(a - b) < 1e-6 ? fallback : unlerpClamped(a, b, x)
+
 export const remap = (a: number, b: number, c: number, d: number, x: number) =>
     lerp(c, d, unlerp(a, b, x))
 

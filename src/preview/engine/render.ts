@@ -15,6 +15,7 @@ import {
     latestVisibleTarget,
     queryGroupTimeIndex,
 } from './frameIndex'
+import { drawHitboxes } from './hitbox'
 import { LAYER_SLOT_EFFECT, LAYER_SLOT_GLOW_EFFECT, getZ } from './layer'
 import {
     FlickDirection,
@@ -165,6 +166,7 @@ export const renderPreviewFrame = (
         line?: (a: Vec, b: Vec, source?: object) => void
     },
     leftLimit = false,
+    showHitboxes = false,
 ) => {
     const hasReached = (target: number) => (leftLimit ? now > target : now >= target)
     const viewport = createViewport(displayWidth, displayHeight)
@@ -1251,6 +1253,8 @@ export const renderPreviewFrame = (
             }
         }
     }
+
+    if (showHitboxes) drawHitboxes(draw, skin, chart, viewport, now, leftLimit)
 
     renderer.flush()
     return layoutBackground(viewport, chart.isDynamicStages ? chart.cameras : [], camera)

@@ -3,6 +3,7 @@ import type { GroupId } from '../../../chart/groups'
 import type { NoteObject } from '../../../chart/note'
 import { connectorKindValue, noteStyleValue } from '../../../chart/noteStyle'
 import type { StageId, Stages } from '../../../chart/stages'
+import { beatToTicks, scheduleHiddenTicks } from '../../../state/entities/slides/hiddenTicks'
 import type { NoteEntity } from '../../../state/entities/slides/note'
 import {
     allowsSimLine,
@@ -140,8 +141,9 @@ export const serializeSlidesToLevelDataEntities = (
             prev = entity
         }
 
+        const hiddenTicks = scheduleHiddenTicks(infos)
+        let nextHiddenTick = 0
         let head: NoteEntity | undefined
-        const disallowHiddenTicks = new Set<number>()
         for (const [i, info] of infos.entries()) {
             const entity = getEntity(info.note)
 
@@ -183,10 +185,6 @@ export const serializeSlidesToLevelDataEntities = (
                 )
             }
 
-            if (activeRole === 'head') {
-                disallowHiddenTicks.add(tick)
-            }
-
             if (info.activeHead && activeRole === 'tail') {
                 entity.data.push({
                     name: 'activeHead',
@@ -196,68 +194,44 @@ export const serializeSlidesToLevelDataEntities = (
 
             if (isFirst || isLast || !info.note.isAttached || info.note.isConnectorSeparator) {
                 if (head) {
-                    if (
-                        info.segmentHead.connectorType !== 'guide' &&
-                        !info.segmentHead.connectorIsFake
+                    for (
+                        let hiddenTick = hiddenTicks[nextHiddenTick];
+                        hiddenTick?.endpoint === i;
+                        hiddenTick = hiddenTicks[++nextHiddenTick]
                     ) {
-                        const addTickNote = (tick: number) => {
-                            const note: LevelDataEntity = {
-                                archetype:
-                                    info.segmentHead.connectorType === 'active'
-                                        ? 'TransientHiddenTickNote'
-                                        : 'TransientHiddenDamageTickNote',
-                                data: [
-                                    {
-                                        name: EngineArchetypeDataName.Beat,
-                                        value: tick / beatToTicks,
-                                    },
-                                    {
-                                        name: 'isAttached',
-                                        value: 1,
-                                    },
-                                    {
-                                        name: 'attachHead',
-                                        ref: (getEntity(info.attachHead).name ??= getName()),
-                                    },
-                                    {
-                                        name: 'attachTail',
-                                        ref: (getEntity(info.attachTail).name ??= getName()),
-                                    },
-                                ],
-                            }
-
-                            if (info.segmentHead.connectorType === 'damage') {
-                                if (!info.damageHead) throw new Error('Unexpected missing head')
-                                note.data.push({
-                                    name: 'activeHead',
-                                    ref: (getEntity(info.damageHead).name ??= getName()),
-                                })
-                            }
-
-                            entities.push(note)
+                        const note: LevelDataEntity = {
+                            archetype:
+                                hiddenTick.connectorType === 'active'
+                                    ? 'TransientHiddenTickNote'
+                                    : 'TransientHiddenDamageTickNote',
+                            data: [
+                                {
+                                    name: EngineArchetypeDataName.Beat,
+                                    value: hiddenTick.tick / beatToTicks,
+                                },
+                                {
+                                    name: 'isAttached',
+                                    value: 1,
+                                },
+                                {
+                                    name: 'attachHead',
+                                    ref: (getEntity(hiddenTick.attachHead).name ??= getName()),
+                                },
+                                {
+                                    name: 'attachTail',
+                                    ref: (getEntity(hiddenTick.attachTail).name ??= getName()),
+                                },
+                            ],
                         }
 
-                        const headTick = Math.round(head.beat * beatToTicks)
-                        for (
-                            let i = Math.ceil(headTick / ticksPerHidden) * ticksPerHidden;
-                            i < tick;
-                            i += ticksPerHidden
-                        ) {
-                            switch (info.segmentHead.connectorType) {
-                                case 'active':
-                                    if (disallowHiddenTicks.has(i)) continue
-                                    break
-                                case 'damage':
-                                    if (info.damageHead === head && headTick === i) continue
-                                    break
-                            }
-
-                            addTickNote(i)
+                        if (hiddenTick.damageHead) {
+                            note.data.push({
+                                name: 'activeHead',
+                                ref: (getEntity(hiddenTick.damageHead).name ??= getName()),
+                            })
                         }
 
-                        if (info.damageTail === info.note) {
-                            addTickNote(tick)
-                        }
+                        entities.push(note)
                     }
 
                     const connector: LevelDataEntity = {
@@ -352,9 +326,6 @@ export const serializeSlidesToLevelDataEntities = (
 
     return entities
 }
-
-const beatToTicks = 480
-const ticksPerHidden = beatToTicks / 2
 
 const noteArchetypes: Record<NoteRole, readonly [string, string]> = {
     anchor: ['Anchor', 'Anchor'],

@@ -87,6 +87,7 @@ test('invisible anchors highlight only when selected and approaching or exactly 
         connectors: [],
         slides: [],
         simLines: [],
+        chains: [],
         cameras: [],
         groups: [createTimescaleGroup([], 0)],
         stages: [],

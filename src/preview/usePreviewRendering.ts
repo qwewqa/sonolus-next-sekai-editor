@@ -204,6 +204,8 @@ export const usePreviewRendering = (
             )
             const overlay = selectionCanvas?.value
             const leftLimit = !isPlaying.value
+            // Only redraws: the overlay never changes the compiled chart.
+            const showHitboxes = settings.previewShowHitboxes
             const args = [
                 view.cursorTime,
                 renderSize.width,
@@ -247,6 +249,7 @@ export const usePreviewRendering = (
                         ? { objects, stages, outline: outline.add, line: outline.addLine }
                         : undefined,
                     leftLimit,
+                    showHitboxes,
                 )
                 if (ctx) {
                     const scale = args[4] / 2

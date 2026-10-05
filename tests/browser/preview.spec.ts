@@ -1802,6 +1802,7 @@ test('preview options share persisted settings with the main options menu', asyn
     const order = [
         'Note Speed',
         'Highlight Selection',
+        'Show Hitboxes',
         'Effects',
         'Show Time',
         'Aspect Ratio',

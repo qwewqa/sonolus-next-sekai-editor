@@ -53,6 +53,7 @@ const chart = (
     connectors,
     slides,
     simLines: [],
+    chains: [],
     cameras: [],
     groups: [createTimescaleGroup([], 0)],
     stages: [],

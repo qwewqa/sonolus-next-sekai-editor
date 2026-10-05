@@ -678,6 +678,7 @@
       "showEffects": "효과",
       "showTime": "시간 표시",
       "highlightSelection": "선택 항목 강조",
+      "showHitboxes": "판정 범위 표시",
       "antialias": "안티앨리어싱",
       "aspectRatio": "화면 비율",
       "showPreview": "미리보기 표시",

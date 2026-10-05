@@ -1,6 +1,8 @@
 import type { NoteStyle } from '../../chart/noteStyle'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
+import type { SlideInfos } from '../../state/entities/slides/hiddenTicks'
 import type { NoteEntity } from '../../state/entities/slides/note'
+import type { BpmIntegral } from '../../state/integrals/bpms'
 import type { CameraChange, FlickDirectionValue } from './layout'
 import type { EaseTypeValue } from './math'
 import type { TimescaleGroup } from './timescale'
@@ -161,12 +163,22 @@ export type PreviewStage = {
     hasTransforms: boolean
 }
 
+// One slide's notes in the order level data links them with `next`. Compiled
+// slides keep their chain, so overlays derived from it can be cached per slide.
+export type PreviewNoteChain = {
+    infos: SlideInfos
+    /** The compiled notes, in the same order as `infos`. */
+    notes: readonly PreviewNote[]
+    bpms: BpmIntegral[]
+}
+
 export type PreviewChart = {
     isDynamicStages: boolean
     notes: PreviewNote[]
     connectors: PreviewConnector[]
     slides: PreviewSlide[]
     simLines: PreviewSimLine[]
+    chains: PreviewNoteChain[]
     cameras: CameraChange[]
     groups: TimescaleGroup[]
     stages: PreviewStage[]

@@ -24,6 +24,7 @@ import {
     type PreviewChart,
     type PreviewConnector,
     type PreviewNote,
+    type PreviewNoteChain,
     type PreviewSimLine,
     type PreviewSlide,
     type PreviewStage,
@@ -113,6 +114,7 @@ type CompiledSlide = {
     connectors: PreviewConnector[]
     slides: PreviewSlide[]
     simCandidates: SimCandidate[]
+    chain: PreviewNoteChain
 }
 
 const createDependencyCache = <T>() => {
@@ -317,6 +319,7 @@ export const createPreviewChartBuilder = () => {
         const notes: PreviewNote[] = []
         const connectors: PreviewConnector[] = []
         const slides: PreviewSlide[] = []
+        const chains: PreviewNoteChain[] = []
         const simLines: PreviewSimLine[] = []
 
         const partitionedAllowSimLines = new Map<StageId | undefined, Map<number, PreviewNote[]>>()
@@ -507,7 +510,13 @@ export const createPreviewChartBuilder = () => {
                     })
                 }
 
-                compiled = { notes, connectors, slides, simCandidates }
+                compiled = {
+                    notes,
+                    connectors,
+                    slides,
+                    simCandidates,
+                    chain: { infos, notes, bpms },
+                }
                 slideCache.set(infos, compiled)
             }
             // Avoid spread arguments: a single long slide may exceed the argument
@@ -515,6 +524,7 @@ export const createPreviewChartBuilder = () => {
             for (const note of compiled.notes) notes.push(note)
             for (const connector of compiled.connectors) connectors.push(connector)
             for (const slide of compiled.slides) slides.push(slide)
+            chains.push(compiled.chain)
             for (const { stageId, tick, note } of compiled.simCandidates) {
                 const allowSimLines = getAllowSimLines(stageId)
                 const tickNotes = allowSimLines.get(tick)
@@ -548,6 +558,7 @@ export const createPreviewChartBuilder = () => {
             connectors,
             slides,
             simLines,
+            chains,
             cameras,
             groups,
             stages,

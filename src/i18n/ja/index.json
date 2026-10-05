@@ -678,6 +678,7 @@
       "showEffects": "エフェクト",
       "showTime": "時間を表示",
       "highlightSelection": "選択対象を強調表示",
+      "showHitboxes": "判定範囲を表示",
       "antialias": "アンチエイリアス",
       "aspectRatio": "アスペクト比",
       "showPreview": "プレビューを表示",

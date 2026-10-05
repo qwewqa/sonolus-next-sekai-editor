@@ -25,6 +25,10 @@ import SettingsSection from './SettingsSection.vue'
             :label="i18n.settings.preview.highlightSelection"
         />
         <ToggleField
+            v-model="settings.previewShowHitboxes"
+            :label="i18n.settings.preview.showHitboxes"
+        />
+        <ToggleField
             v-model="settings.previewShowEffects"
             :label="i18n.settings.preview.showEffects"
         />

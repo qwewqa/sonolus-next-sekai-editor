@@ -48,6 +48,7 @@ const chart = (overrides: Partial<PreviewChart> = {}): PreviewChart => ({
     connectors: [],
     slides: [],
     simLines: [],
+    chains: [],
     cameras: [],
     groups: [createTimescaleGroup([], 0)],
     stages: [],

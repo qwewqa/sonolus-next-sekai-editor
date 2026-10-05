@@ -175,6 +175,7 @@ const settingsProperties = {
         default: 10,
     }),
     previewHighlightSelection: Type.Boolean({ default: true }),
+    previewShowHitboxes: Type.Boolean(),
     previewAntialias: Type.Boolean({ default: true }),
     previewAspectRatio: Type.Union([
         Type.Literal(previewAspectRatios[0][1]),

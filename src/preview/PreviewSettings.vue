@@ -39,6 +39,7 @@ const toggles = computed(
     () =>
         [
             ['previewHighlightSelection', i18n.value.settings.preview.highlightSelection],
+            ['previewShowHitboxes', i18n.value.settings.preview.showHitboxes],
             ['previewShowEffects', i18n.value.settings.preview.showEffects],
             ['previewShowTime', i18n.value.settings.preview.showTime],
         ] as const,

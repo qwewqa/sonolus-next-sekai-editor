@@ -27,7 +27,7 @@ import {
     ease,
     easeOutCubic,
     lerp,
-    unlerpClamped,
+    safeUnlerpClamped,
     vec,
     type EaseTypeValue,
     type Quad,
@@ -45,8 +45,7 @@ type Draw = (sprite: Sprite | undefined, quad: Quad, z: ZKey, a: number) => void
 const SLIDE_ALPHA = 1
 const GUIDE_ALPHA = 0.6
 
-const safeFraction = (a: number, b: number, value: number, fallback = 0.5) =>
-    Math.abs(a - b) < 1e-6 ? fallback : unlerpClamped(a, b, value)
+const safeFraction = safeUnlerpClamped
 
 export const ConnectorVisualState = {
     waiting: 0,
