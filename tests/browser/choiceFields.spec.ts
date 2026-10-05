@@ -128,6 +128,8 @@ test('a narrow dock uses a select and hands focus over when it widens', async ({
     await expect(select.locator('option')).toHaveText(['Mixed', 'Time Scale', 'Scroll'])
     await select.selectOption({ label: 'Time Scale' })
     expect(await transitions(page)).toEqual(['timeScale', 'timeScale', 'timeScale', 'timeScale'])
+    // Mixed is only ever the shown value, never a listed choice.
+    await expect(select.locator('option')).toHaveText(['Time Scale', 'Scroll'])
 
     const selectHeight = await select.evaluate((element) => (element as HTMLElement).offsetHeight)
     await select.focus()

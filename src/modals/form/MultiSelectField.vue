@@ -40,8 +40,8 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
                 :class="{ 'text-fg/80': modelValue === undefined }"
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
             >
-                <!-- Selected objects disagree; this option is never committed. -->
-                <option :value="undefined" disabled>
+                <!-- The value while objects disagree; never listed or committed. -->
+                <option v-if="modelValue === undefined" :value="undefined" disabled hidden>
                     {{ emptyLabel ?? i18n.modals.form.mixed }}
                 </option>
                 <template v-for="(section, index) in allSections" :key="index">

@@ -166,6 +166,11 @@ test.describe('roomy panel', () => {
         await expect(shown('Connector Ease Mode')).toHaveText('In')
         await expect(shown('Connector Layer')).toHaveText('Top')
         await expect(shown('Flick Direction')).toHaveText('None')
+        const listed = panel(page).getByRole('combobox', { name: 'Note Type', exact: true })
+        await expect(listed.locator('option').first()).toHaveText('Default')
+        await expect(
+            panel(page).locator('select option', { hasText: /^\s*(Mixed)?\s*$/ }),
+        ).toHaveCount(0)
 
         // Values that genuinely differ are still mixed.
         await select([2, 6])
