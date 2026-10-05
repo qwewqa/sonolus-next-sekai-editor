@@ -11,6 +11,7 @@ import NameField from '../../../../../modals/form/NameField.vue'
 import PropertiesModal from '../../../../../modals/form/PropertiesModal.vue'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
+import { normalizeName } from '../../../../workspace/manager/model'
 
 const props = defineProps<{
     stageId: StageId
@@ -53,7 +54,15 @@ const createModel = <K extends keyof StageObject>(key: K) =>
         },
     })
 
-const name = createModel('name')
+const storedName = createModel('name')
+// A blank name would list as a blank entry; keep the current one.
+const name = computed({
+    get: () => storedName.value,
+    set: (value: string) => {
+        const name = normalizeName(value)
+        if (name && name !== storedName.value) storedName.value = name
+    },
+})
 const isFromStart = createModel('isFromStart')
 const isUntilEnd = createModel('isUntilEnd')
 const generateSimLines = createModel('generateSimLines')

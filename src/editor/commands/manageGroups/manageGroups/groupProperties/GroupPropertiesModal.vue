@@ -9,6 +9,7 @@ import OptionalNumberField from '../../../../../modals/form/OptionalNumberField.
 import PropertiesModal from '../../../../../modals/form/PropertiesModal.vue'
 import { interpolate } from '../../../../../utils/interpolate'
 import { notify } from '../../../../notification'
+import { normalizeName } from '../../../../workspace/manager/model'
 
 const props = defineProps<{
     groupId: GroupId
@@ -51,7 +52,15 @@ const createModel = <K extends keyof GroupObject>(key: K) =>
         },
     })
 
-const name = createModel('name')
+const storedName = createModel('name')
+// A blank name would list as a blank entry; keep the current one.
+const name = computed({
+    get: () => storedName.value,
+    set: (value: string) => {
+        const name = normalizeName(value)
+        if (name && name !== storedName.value) storedName.value = name
+    },
+})
 const forceNoteSpeed = createModel('forceNoteSpeed')
 </script>
 
