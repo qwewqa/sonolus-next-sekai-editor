@@ -39,6 +39,35 @@ test.describe('dialogs', () => {
         await expect.poll(() => focused(page)).toEqual({ tag: 'SELECT', visible: true })
     })
 
+    test('a keyboard open asks for a focus ring Firefox would otherwise hide', async ({ page }) => {
+        // Firefox needs focusVisible to ring a scripted focus; record the requests.
+        await page.addInitScript(() => {
+            const calls: string[] = []
+            ;(window as unknown as { focusCalls: string[] }).focusCalls = calls
+            const focus = HTMLElement.prototype.focus
+            HTMLElement.prototype.focus = function (options?: FocusOptions) {
+                if (this.closest('dialog')) calls.push(`${this.tagName}:${!!options?.focusVisible}`)
+                return focus.call(this, options)
+            }
+        })
+        await boot(page)
+        const calls = () =>
+            page.evaluate(() =>
+                (window as unknown as { focusCalls: string[] }).focusCalls.splice(0),
+            )
+        const box = (await tools(page).last().boundingBox())!
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 3 })
+        await flyout(page).locator('button[title="Settings"]').click()
+        await expect(page.locator('dialog[open]')).toBeFocused()
+        expect(await calls()).toEqual(['DIALOG:false'])
+        await page.keyboard.press('Escape')
+
+        await page.mouse.click(400, 300)
+        await page.keyboard.press(',')
+        await expect(page.locator('dialog[open] select').first()).toBeFocused()
+        expect(await calls()).toEqual(['SELECT:true'])
+    })
+
     test.describe('on a phone', () => {
         test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 

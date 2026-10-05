@@ -32,6 +32,8 @@ const vOpen = {
         const body = el.lastElementChild
         const primary = body?.querySelector<HTMLElement>('[data-autofocus]')
         const focusDialog = byPointer && !primary
+        // Firefox hides a scripted focus ring after an earlier pointer open.
+        const focusVisible = !byPointer
         el.toggleAttribute('autofocus', focusDialog)
         el.showModal()
         setTimeout(() => {
@@ -40,7 +42,10 @@ const vOpen = {
                 return
             }
             // Otherwise its first field or button.
-            ;(primary ?? body?.querySelector('label') ?? body?.querySelector('button'))?.focus()
+            const label = body?.querySelector('label')
+            ;(primary ?? label?.control ?? label ?? body?.querySelector('button'))?.focus({
+                focusVisible,
+            })
         }, 0)
     },
 }
