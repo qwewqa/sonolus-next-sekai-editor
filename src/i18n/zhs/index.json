@@ -1250,7 +1250,12 @@
         "label": "每小节拍数"
       },
       "coverage": "适用于所选 {1} 个对象中的 {0} 个",
-      "selectOnly": "仅选择{1} ({0})"
+      "selectOnly": "仅选择{1} ({0})",
+      "unset": {
+        "unchanged": "不更改",
+        "default": "默认",
+        "copy": "复制"
+      }
     },
     "confirm": {
       "delete": "删除",

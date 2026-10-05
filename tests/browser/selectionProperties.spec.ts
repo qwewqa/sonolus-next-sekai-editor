@@ -290,3 +290,54 @@ test.describe('brush', () => {
         await expect(tool(page).locator('.brush-empty')).toBeVisible()
     })
 })
+
+test.describe('unset values', () => {
+    const tool = (page: Page) => panel(page).locator('#properties-section-tool')
+    const empty = (page: Page, label: string) =>
+        tool(page)
+            .locator('label')
+            .filter({ has: page.getByText(label, { exact: true }) })
+            .locator('select option')
+            .first()
+
+    test('creation presets say whether an unset field copies or uses the default', async ({
+        page,
+    }) => {
+        await page.keyboard.press('a')
+        await expect(empty(page, 'Note Type')).toHaveText('Copy')
+        await expect(empty(page, 'Connector Type')).toHaveText('Default')
+        await tool(page)
+            .locator('label')
+            .filter({ has: page.getByText('Copy Properties', { exact: true }) })
+            .locator('input')
+            .click()
+        await expect(empty(page, 'Note Type')).toHaveText('Default')
+    })
+
+    test('the brush calls its unset value Unchanged', async ({ page }) => {
+        await page.keyboard.press('b')
+        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('noteType')
+        await expect(empty(page, 'Note Type')).toHaveText('Unchanged')
+    })
+})
+
+test('two-value choices list the values in use while mixed', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, nextTick, settings } = window.editorTest
+        settings.rightDockWidth = 560
+        show(fixtures.events)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'timeScale',
+            ),
+        })
+        await nextTick()
+    })
+    const field = selection(page)
+        .locator('.form-field')
+        .filter({ has: page.getByRole('radiogroup', { name: 'Time Scale Transition' }) })
+    await expect(field.locator('.form-field-mixed-value')).toHaveText(['Time Scale 2', 'Scroll 2'])
+    await field.getByRole('button', { name: 'Select only Scroll (2)' }).click()
+    expect(await selectedCount(page)).toBe(2)
+})

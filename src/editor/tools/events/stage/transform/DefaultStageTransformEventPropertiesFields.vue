@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { i18n } from '../../../../../i18n'
+import EmptyLabelProvider from '../../../../../modals/form/EmptyLabelProvider.vue'
 import { defaultStageTransformEventProperties } from './index.ts'
 import CopyPropertiesField from '../../../../../modals/form/CopyPropertiesField.vue'
 import OptionalEventEaseField from '../../../../../modals/form/OptionalEventEaseField.vue'
@@ -10,6 +13,13 @@ import OptionalElevationField from '../../../../../modals/form/OptionalElevation
 
 const createModel = useProperties(defaultStageTransformEventProperties)
 
+// Unset fields copy the selected object while Copy Properties is on.
+const copyLabel = computed(() =>
+    defaultStageTransformEventProperties.value.copyProperties
+        ? i18n.value.modals.form.unset.copy
+        : i18n.value.modals.form.unset.default,
+)
+
 const rotation = createModel('rotation')
 const yTranslation = createModel('yTranslation')
 const elevation = createModel('elevation')
@@ -19,10 +29,12 @@ const copyProperties = createModel('copyProperties')
 </script>
 
 <template>
-    <OptionalRotationField v-model="rotation" />
-    <OptionalYTranslationField v-model="yTranslation" />
-    <OptionalAnchorField v-model="anchor" />
-    <OptionalEventEaseField v-model="eventEase" />
-    <OptionalElevationField v-model="elevation" />
+    <EmptyLabelProvider :label="copyLabel">
+        <OptionalRotationField v-model="rotation" />
+        <OptionalYTranslationField v-model="yTranslation" />
+        <OptionalAnchorField v-model="anchor" />
+        <OptionalEventEaseField v-model="eventEase" />
+        <OptionalElevationField v-model="elevation" />
+    </EmptyLabelProvider>
     <CopyPropertiesField v-model="copyProperties" />
 </template>

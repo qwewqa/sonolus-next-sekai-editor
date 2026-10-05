@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue'
+import { computed, nextTick, provide, useTemplateRef } from 'vue'
 import { brushProperties } from '.'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages'
 import { i18n } from '../../../i18n'
+import { emptyLabelKey } from '../../../modals/form/emptyLabel'
 import { isEditableEntity } from '../../../state/operations/editable'
 import { interpolate, interpolateRaw } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -22,6 +23,8 @@ import {
     type BrushKey,
     type PropertyField,
 } from '../../workspace/properties/fields'
+
+provide(emptyLabelKey, () => i18n.value.modals.form.unset.unchanged)
 
 const createModel = useProperties(brushProperties)
 const models = Object.fromEntries(brushFields.map((field) => [field.key, createModel(field.key)]))

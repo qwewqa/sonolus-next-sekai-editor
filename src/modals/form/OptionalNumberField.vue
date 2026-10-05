@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type Ref } from 'vue'
 import BaseField from './BaseField.vue'
+import { useEmptyLabel } from './emptyLabel'
 
 defineProps<{
     label: string
@@ -8,6 +9,8 @@ defineProps<{
     max?: number
     step?: number | 'any'
 }>()
+
+const emptyLabel = useEmptyLabel()
 
 const input: Ref<HTMLInputElement | null> = useTemplateRef('input')
 
@@ -32,7 +35,7 @@ const onFocus = (event: FocusEvent) => {
             ref="input"
             v-model.lazy="modelValue"
             class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors placeholder:text-fg/80 hover:shadow-accent focus:outline-none focus:ring-2 focus:ring-fg active:bg-accent active:text-on-accent"
-            placeholder="—"
+            :placeholder="emptyLabel?.() ?? '—'"
             type="number"
             :min
             :max

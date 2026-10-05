@@ -1250,7 +1250,12 @@
         "label": "Temps par mesure"
       },
       "coverage": "S'applique à {0} des {1} objets sélectionnés",
-      "selectOnly": "Sélectionner seulement {1} ({0})"
+      "selectOnly": "Sélectionner seulement {1} ({0})",
+      "unset": {
+        "unchanged": "Inchangé",
+        "default": "Par défaut",
+        "copy": "Copier"
+      }
     },
     "confirm": {
       "delete": "Supprimer",

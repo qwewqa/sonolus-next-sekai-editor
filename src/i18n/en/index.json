@@ -1250,7 +1250,12 @@
                 "label": "Meter"
             },
             "coverage": "Applies to {0} of {1} selected objects",
-            "selectOnly": "Select only {1} ({0})"
+            "selectOnly": "Select only {1} ({0})",
+            "unset": {
+                "unchanged": "Unchanged",
+                "default": "Default",
+                "copy": "Copy"
+            }
         },
         "confirm": {
             "delete": "Delete",

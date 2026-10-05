@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { i18n } from '../../../i18n'
+import EmptyLabelProvider from '../../../modals/form/EmptyLabelProvider.vue'
 import { defaultNoteProperties, defaultNotePropertiesPresetIndex } from '.'
 import CopyPropertiesField from '../../../modals/form/CopyPropertiesField.vue'
 import OptionalConnectorActiveIsCriticalField from '../../../modals/form/OptionalConnectorActiveIsCriticalField.vue'
@@ -24,6 +27,13 @@ import { settings } from '../../../settings'
 import { useProperties } from '../../utils/properties'
 
 const createModel = useProperties(defaultNoteProperties)
+
+// Unset fields copy the selected object while Copy Properties is on.
+const copyLabel = computed(() =>
+    defaultNoteProperties.value.copyProperties
+        ? i18n.value.modals.form.unset.copy
+        : i18n.value.modals.form.unset.default,
+)
 
 const elevation = createModel('elevation')
 const noteStyle = createModel('noteStyle')
@@ -51,23 +61,33 @@ const copyProperties = createModel('copyProperties')
         v-model="defaultNotePropertiesPresetIndex"
         :count="settings.defaultNotePropertiesPresets.length"
     />
-    <OptionalNoteTypeField v-model="noteType" />
-    <OptionalNoteStyleField v-model="noteStyle" />
-    <OptionalIsAttachedField v-model="isAttached" />
-    <OptionalIsCriticalField v-model="isCritical" />
-    <OptionalFlickDirectionField v-model="flickDirection" />
-    <OptionalIsFakeField v-model="isFake" />
-    <OptionalSfxField v-model="sfx" />
-    <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
-    <OptionalConnectorTypeField v-model="connectorType" />
-    <OptionalConnectorStyleField v-model="connectorStyle" />
-    <OptionalConnectorEaseField v-model="connectorEase" />
-    <OptionalConnectorIsFakeField v-model="connectorIsFake" />
-    <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />
-    <OptionalConnectorGuideAlphaField v-model="connectorGuideAlpha" />
-    <OptionalConnectorLayerField v-model="connectorLayer" />
-    <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
-    <OptionalConnectorPresentationField v-model="connectorPresentation" />
-    <OptionalElevationField v-model="elevation" />
+    <EmptyLabelProvider :label="copyLabel">
+        <OptionalNoteTypeField v-model="noteType" />
+        <OptionalNoteStyleField v-model="noteStyle" />
+        <OptionalIsAttachedField v-model="isAttached" />
+        <OptionalIsCriticalField v-model="isCritical" />
+        <OptionalFlickDirectionField v-model="flickDirection" />
+        <OptionalIsFakeField v-model="isFake" />
+        <OptionalSfxField v-model="sfx" />
+    </EmptyLabelProvider>
+    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+        <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
+        <OptionalConnectorTypeField v-model="connectorType" />
+    </EmptyLabelProvider>
+    <EmptyLabelProvider :label="copyLabel">
+        <OptionalConnectorStyleField v-model="connectorStyle" />
+    </EmptyLabelProvider>
+    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+        <OptionalConnectorEaseField v-model="connectorEase" />
+        <OptionalConnectorIsFakeField v-model="connectorIsFake" />
+        <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />
+        <OptionalConnectorGuideAlphaField v-model="connectorGuideAlpha" />
+        <OptionalConnectorLayerField v-model="connectorLayer" />
+        <OptionalConnectorIsPassThroughField v-model="connectorIsPassThrough" />
+        <OptionalConnectorPresentationField v-model="connectorPresentation" />
+    </EmptyLabelProvider>
+    <EmptyLabelProvider :label="copyLabel">
+        <OptionalElevationField v-model="elevation" />
+    </EmptyLabelProvider>
     <CopyPropertiesField v-model="copyProperties" />
 </template>

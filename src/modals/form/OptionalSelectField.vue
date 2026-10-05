@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
+import { useEmptyLabel } from './emptyLabel'
 
 const props = defineProps<{
     label: string
@@ -20,6 +21,8 @@ const props = defineProps<{
 const modelValue = defineModel<T | undefined>({ required: true })
 
 type Section = { label?: string; options: [string, T][] }
+const injectedEmptyLabel = useEmptyLabel()
+
 const allSections = computed((): Section[] => props.sections ?? [{ options: props.options ?? [] }])
 </script>
 
@@ -41,7 +44,9 @@ const allSections = computed((): Section[] => props.sections ?? [{ options: prop
                 :disabled
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
             >
-                <option :value="undefined">{{ emptyLabel ?? '—' }}</option>
+                <option :value="undefined">
+                    {{ emptyLabel ?? injectedEmptyLabel?.() ?? '—' }}
+                </option>
                 <template v-for="(section, index) in allSections" :key="index">
                     <optgroup v-if="section.label !== undefined" :label="section.label">
                         <option

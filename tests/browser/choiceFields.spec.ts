@@ -89,17 +89,19 @@ test.describe('roomy panel', () => {
         await expect(group.getByRole('radio', { name: 'Relative' })).toBeChecked()
     })
 
-    test('brush fields start unset and can return to unset', async ({ page }) => {
+    test('brush fields can return to unchanged, leaving the brush', async ({ page }) => {
         await open(page, { rightDockWidth: 560 })
         await panel(page).getByRole('combobox', { name: 'Tool', exact: true }).selectOption({
             label: 'Brush',
         })
-        const group = panel(page)
-            .getByRole('region', { name: 'Tool' })
-            .getByRole('radiogroup', { name: 'Time Scale Transition' })
-        const notSet = group.getByRole('radio', { name: 'Not Set', exact: true })
-        await expect(notSet).toBeChecked()
-        await expect(group.getByRole('radio', { name: 'Time Scale', exact: true })).toBeVisible()
+        const tool = panel(page).getByRole('region', { name: 'Tool' })
+        await tool
+            .getByRole('combobox', { name: 'Add Property' })
+            .selectOption('timeScaleTransition')
+        const group = tool.getByRole('radiogroup', { name: 'Time Scale Transition' })
+        // The brush names its unset value "Unchanged".
+        const unchanged = group.getByRole('radio', { name: 'Unchanged', exact: true })
+        await expect(group.getByRole('radio', { name: 'Time Scale', exact: true })).toBeChecked()
 
         const brush = () =>
             page.evaluate(async () => {
@@ -115,9 +117,9 @@ test.describe('roomy panel', () => {
             })
         await group.getByRole('radio', { name: 'Scroll', exact: true }).click()
         expect(await brush()).toBe('scroll')
-        await notSet.click()
+        await unchanged.click()
         expect(await brush()).toBeNull()
-        await expect(notSet).toBeChecked()
+        await expect(group).toHaveCount(0)
     })
 })
 
@@ -125,8 +127,9 @@ test('a narrow dock uses a select and hands focus over when it widens', async ({
     await open(page)
     await expect(transition(page)).toHaveCount(0)
     const select = panel(page).getByRole('combobox', { name: 'Time Scale Transition' })
-    await expect(select.locator('option')).toHaveText(['Mixed', 'Time Scale', 'Scroll'])
-    await select.selectOption({ label: 'Time Scale' })
+    // While mixed, options in use carry their object counts.
+    await expect(select.locator('option')).toHaveText(['Mixed', 'Time Scale · 2', 'Scroll · 2'])
+    await select.selectOption('timeScale')
     expect(await transitions(page)).toEqual(['timeScale', 'timeScale', 'timeScale', 'timeScale'])
     // Mixed is only ever the shown value, never a listed choice.
     await expect(select.locator('option')).toHaveText(['Time Scale', 'Scroll'])

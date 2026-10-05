@@ -12,6 +12,8 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
+import { useEmptyLabel } from './emptyLabel'
+import { mixedOptions, useFieldUsage } from './fieldUsage'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
 import { segmentsFit } from './segmented'
@@ -29,8 +31,13 @@ const props = defineProps<{
 const modelValue = defineModel<T | undefined>({ required: true })
 
 const id = useId()
+const emptyLabel = useEmptyLabel()
+const notSet = computed(() => emptyLabel?.() ?? i18n.value.modals.form.notSet)
 const optional = computed(() => props.variant === 'optional')
 const isMixed = computed(() => props.variant === 'multi' && modelValue.value === undefined)
+// Mixed segments list the values in use below, as selects do.
+const usage = useFieldUsage()
+const mixed = computed(() => (isMixed.value ? mixedOptions(usage?.value, props.options) : []))
 const selectOptions = computed(() =>
     props.options.map(([name, value]): [string, T] => [name, value]),
 )
@@ -113,7 +120,7 @@ watch(
 </script>
 
 <template>
-    <BaseField v-if="segmented" ref="field" :label :label-id="`${id}-label`">
+    <BaseField v-if="segmented" ref="field" :label :label-id="`${id}-label`" :mixed>
         <div
             class="form-field-segmented flex min-w-0 rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)]"
             :class="{ 'pointer-events-none opacity-40': disabled, 'text-fg/80': isMixed }"
@@ -123,7 +130,7 @@ watch(
             <span v-if="isMixed" :id="`${id}-mixed`" class="sr-only">{{
                 i18n.modals.form.mixed
             }}</span>
-            <label v-if="optional" class="relative w-8 flex-none" :title="i18n.modals.form.notSet">
+            <label v-if="optional" class="relative w-8 flex-none" :title="notSet">
                 <input
                     v-model="modelValue"
                     :class="input"
@@ -131,7 +138,7 @@ watch(
                     :name="id"
                     :value="undefined"
                     :disabled
-                    :aria-label="i18n.modals.form.notSet"
+                    :aria-label="notSet"
                 />
                 <span :class="segment" aria-hidden="true">—</span>
             </label>

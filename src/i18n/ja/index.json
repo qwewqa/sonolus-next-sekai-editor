@@ -1250,7 +1250,12 @@
         "label": "拍子"
       },
       "coverage": "選択中の{1}個のうち{0}個に適用",
-      "selectOnly": "{1}のみ選択 ({0})"
+      "selectOnly": "{1}のみ選択 ({0})",
+      "unset": {
+        "unchanged": "変更しない",
+        "default": "デフォルト",
+        "copy": "コピー"
+      }
     },
     "confirm": {
       "delete": "削除",

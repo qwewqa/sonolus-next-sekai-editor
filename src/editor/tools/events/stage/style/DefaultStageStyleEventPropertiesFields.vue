@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { i18n } from '../../../../../i18n'
+import EmptyLabelProvider from '../../../../../modals/form/EmptyLabelProvider.vue'
 import { defaultStageStyleEventProperties } from '.'
 import CopyPropertiesField from '../../../../../modals/form/CopyPropertiesField.vue'
 import OptionalDivisionLineAlphaField from '../../../../../modals/form/OptionalDivisionLineAlphaField.vue'
@@ -15,6 +18,13 @@ import { useProperties } from '../../../../utils/properties'
 
 const createModel = useProperties(defaultStageStyleEventProperties)
 
+// Unset fields copy the selected object while Copy Properties is on.
+const copyLabel = computed(() =>
+    defaultStageStyleEventProperties.value.copyProperties
+        ? i18n.value.modals.form.unset.copy
+        : i18n.value.modals.form.unset.default,
+)
+
 const judgmentLineColor = createModel('judgmentLineColor')
 const judgmentLineStyle = createModel('judgmentLineStyle')
 const leftBorderStyle = createModel('leftBorderStyle')
@@ -29,15 +39,17 @@ const copyProperties = createModel('copyProperties')
 </script>
 
 <template>
-    <OptionalJudgmentLineColorField v-model="judgmentLineColor" />
-    <OptionalJudgmentLineStyleField v-model="judgmentLineStyle" />
-    <OptionalLeftBorderStyleField v-model="leftBorderStyle" />
-    <OptionalRightBorderStyleField v-model="rightBorderStyle" />
-    <OptionalIsFullWidthField v-model="isFullWidth" />
-    <OptionalNoteAlphaField v-model="noteAlpha" />
-    <OptionalLaneAlphaField v-model="laneAlpha" />
-    <OptionalJudgmentLineAlphaField v-model="judgmentLineAlpha" />
-    <OptionalDivisionLineAlphaField v-model="divisionLineAlpha" />
-    <OptionalEventEaseField v-model="eventEase" />
+    <EmptyLabelProvider :label="copyLabel">
+        <OptionalJudgmentLineColorField v-model="judgmentLineColor" />
+        <OptionalJudgmentLineStyleField v-model="judgmentLineStyle" />
+        <OptionalLeftBorderStyleField v-model="leftBorderStyle" />
+        <OptionalRightBorderStyleField v-model="rightBorderStyle" />
+        <OptionalIsFullWidthField v-model="isFullWidth" />
+        <OptionalNoteAlphaField v-model="noteAlpha" />
+        <OptionalLaneAlphaField v-model="laneAlpha" />
+        <OptionalJudgmentLineAlphaField v-model="judgmentLineAlpha" />
+        <OptionalDivisionLineAlphaField v-model="divisionLineAlpha" />
+        <OptionalEventEaseField v-model="eventEase" />
+    </EmptyLabelProvider>
     <CopyPropertiesField v-model="copyProperties" />
 </template>

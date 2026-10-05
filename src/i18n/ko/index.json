@@ -1250,7 +1250,12 @@
         "label": "박자"
       },
       "coverage": "선택한 객체 {1}개 중 {0}개에 적용",
-      "selectOnly": "{1}만 선택 ({0})"
+      "selectOnly": "{1}만 선택 ({0})",
+      "unset": {
+        "unchanged": "변경 안 함",
+        "default": "기본",
+        "copy": "복사"
+      }
     },
     "confirm": {
       "delete": "삭제",
