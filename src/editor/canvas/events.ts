@@ -127,8 +127,8 @@ const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) =>
     return next.get(entity)
 }
 
-// Lanes, in proportion to the 0.5-lane label font.
-const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.09, stroke: 0.05 }
+// Lanes, in proportion to the 0.5-lane label font; nearer its value than its marker.
+const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.06, stroke: 0.05 }
 
 // A plain jump: Step In, the last change, or one to the same value.
 const INSTANT_ALPHA = 0.4
@@ -252,7 +252,7 @@ export const drawEvent = (
             ctx.setLineDash([])
             timeScaleMarker(ctx, x, y, isScroll, entity.hideNotes)
             const direction = x > 0 ? 1 : -1
-            const labelX = x + 0.2 * direction
+            const labelX = x + 0.23 * direction
             const glyphWidth = drawEaseGlyph(context, entity, labelX, y, direction, '#ff0')
             drawText(
                 context,

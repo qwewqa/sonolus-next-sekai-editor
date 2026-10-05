@@ -76,7 +76,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
             const height = 80
             const anchor = { x: 40, y: 40 }
             const fontFamily = 'ui-sans-serif, system-ui, sans-serif'
-            const glyphBox = { left: 0.2, top: -0.17, width: 0.3, height: 0.34 }
+            const glyphBox = { left: 0.23, top: -0.17, width: 0.3, height: 0.34 }
 
             const measureInk = (
                 ctx: CanvasRenderingContext2D,

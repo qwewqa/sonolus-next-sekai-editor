@@ -346,7 +346,7 @@ test('time-scale dashes stay in CSS pixels and stage labels respond to highlight
     assert.deepEqual(canvas.strokes[1]?.path, [['arc', -7, -10, 0.1]])
     assert.equal(canvas.strokes[1]?.color, '#ff0')
     assert.deepEqual(canvas.labels, [
-        { text: '2x+1', x: -7.2 - 0.39, y: -9.8125, align: 'end', alpha: 1 },
+        { text: '2x+1', x: -7.23 - 0.36, y: -9.8125, align: 'end', alpha: 1 },
     ])
     assert.deepEqual(canvas.dash, [])
 
@@ -505,24 +505,30 @@ test('time-scale eases show their curve toward the next change in the group', ()
         drawEvent(context, entities[index]!, false)
         return { glyph: canvas.strokes[2], label: canvas.labels[0] }
     }
+    const rounded = (path: unknown) =>
+        (path as [string, number, number][]).map(([command, x, y]) => [
+            command,
+            +x.toFixed(9),
+            +y.toFixed(9),
+        ])
 
     // Rising to the next change in the same group, past the other group's change.
     const rising = glyph(0)
     assert.equal(rising.glyph?.alpha, 1)
     assert.equal(rising.glyph?.width, 0.1)
-    assert.deepEqual(rising.glyph?.path, [
-        ['M', 7.2, -5 + 0.17],
-        ['L', 7.5, -5 - 0.17],
+    assert.deepEqual(rounded(rising.glyph?.path), [
+        ['M', 7.23, -4.83],
+        ['L', 7.53, -5.17],
     ])
     assert.equal(rising.label?.text, '1x')
     assert.ok(Math.abs(rising.label!.x - 7.59) < 1e-9)
 
     // Falling mirrors the curve.
     const falling = glyph(1)
-    assert.deepEqual(falling.glyph?.path, [
-        ['M', 7.5, -10 + 0.17],
-        ['L', 7.2, -10 + 0.17],
-        ['L', 7.2, -10 - 0.17],
+    assert.deepEqual(rounded(falling.glyph?.path), [
+        ['M', 7.53, -9.83],
+        ['L', 7.23, -9.83],
+        ['L', 7.23, -10.17],
     ])
 
     // Without a later change in its group, or toward the same value, the ease fades.
@@ -537,18 +543,11 @@ test('time-scale eases show their curve toward the next change in the group', ()
     // A held step is the plain jump: its curve shows, faded, and the value keeps its column.
     const step = glyph(4)
     assert.equal(step.glyph?.alpha, 0.4)
-    assert.deepEqual(
-        (step.glyph?.path as [string, number, number][]).map(([command, x, y]) => [
-            command,
-            +x.toFixed(9),
-            +y.toFixed(9),
-        ]),
-        [
-            ['M', 7.2, -24.83],
-            ['L', 7.2, -25.17],
-            ['L', 7.5, -25.17],
-        ],
-    )
+    assert.deepEqual(rounded(step.glyph?.path), [
+        ['M', 7.23, -24.83],
+        ['L', 7.23, -25.17],
+        ['L', 7.53, -25.17],
+    ])
     assert.ok(Math.abs(step.label!.x - 7.59) < 1e-9)
     canvas.strokes = []
     drawEvent(context, { ...entities[4]!, beat: 10 }, false)
