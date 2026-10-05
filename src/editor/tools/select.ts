@@ -63,7 +63,7 @@ import {
     type TransactionOptions,
 } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
-import { constrainLaneObject } from '../laneLimits'
+import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
 import { isEntityInScope } from '../scope'
 import {
@@ -637,7 +637,7 @@ const toMovedNoteObject = (
         const [left, size] = resize(
             entity.left + (isLeft ? 0 : entity.size),
             entity.left + (isLeft ? entity.size : 0) + (lane - startLane),
-            1 / view.laneDivision,
+            minimumNoteSize(entity.noteType),
             Number.POSITIVE_INFINITY,
             entity.left + (isLeft ? entity.size : 0),
         )

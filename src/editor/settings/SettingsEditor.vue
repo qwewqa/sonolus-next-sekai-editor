@@ -73,6 +73,16 @@ watch(
             ]"
         />
 
+        <SelectField
+            v-model="settings.zeroWidthNotes"
+            :label="i18n.settings.editor.zeroWidthNotes.title"
+            :options="[
+                [i18n.settings.editor.zeroWidthNotes.off, 'off'],
+                [i18n.settings.editor.zeroWidthNotes.anchors, 'anchors'],
+                [i18n.settings.editor.zeroWidthNotes.all, 'all'],
+            ]"
+        />
+
         <NumberField
             v-model="settings.maxScrollX"
             :label="i18n.settings.editor.maxScrollX"

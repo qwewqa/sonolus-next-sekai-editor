@@ -627,6 +627,12 @@
         "changed": "Le mode de visualisation de la forme d’onde a changé. Rechargez le fichier audio pour appliquer ce changement."
       },
       "maxScrollX": "Défilement horizontal maximal",
+      "zeroWidthNotes": {
+        "title": "Notes de largeur nulle",
+        "off": "Désactivé",
+        "anchors": "Ancres uniquement",
+        "all": "Toutes les notes"
+      },
       "dragToPanY": "Glisser pour déplacer la vue verticalement",
       "dragToPanX": "Glisser pour déplacer la vue horizontalement",
       "autoAddGroup": "Ajout automatique de groupes",

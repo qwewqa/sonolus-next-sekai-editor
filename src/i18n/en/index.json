@@ -627,6 +627,12 @@
                 "changed": "You have changed waveform visualization, select BGM file again in order for this change to take effect."
             },
             "maxScrollX": "Max Scroll X",
+            "zeroWidthNotes": {
+                "title": "Zero-Width Notes",
+                "off": "Off",
+                "anchors": "Anchors Only",
+                "all": "All Notes"
+            },
             "dragToPanY": "Drag to Pan Y",
             "dragToPanX": "Drag to Pan X",
             "autoAddGroup": "Auto Add Group",

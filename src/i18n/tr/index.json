@@ -627,6 +627,12 @@
         "changed": "Dalga formu görselleştirmesi değiştirildi. Değişikliğin uygulanması için arka plan müziği dosyasını tekrar seçin."
       },
       "maxScrollX": "En Fazla X Kaydırması",
+      "zeroWidthNotes": {
+        "title": "Sıfır Genişlikli Notalar",
+        "off": "Kapalı",
+        "anchors": "Yalnızca Sabit Noktalar",
+        "all": "Tüm Notalar"
+      },
       "dragToPanY": "Y Eksenini Kaydırmak İçin Sürükle",
       "dragToPanX": "X Eksenini Kaydırmak İçin Sürükle",
       "autoAddGroup": "Otomatik Grup Ekle",

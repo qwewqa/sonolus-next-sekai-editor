@@ -627,6 +627,12 @@
         "changed": "변경된 파형 설정을 적용하려면 BGM 파일을 다시 불러와야 합니다."
       },
       "maxScrollX": "최대 스크롤 X",
+      "zeroWidthNotes": {
+        "title": "너비 0 노트",
+        "off": "꺼짐",
+        "anchors": "앵커만",
+        "all": "모든 노트"
+      },
       "dragToPanY": "드래그하여 Y축 이동",
       "dragToPanX": "드래그하여 X축 이동",
       "autoAddGroup": "자동 그룹 추가",

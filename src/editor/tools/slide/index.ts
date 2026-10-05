@@ -17,7 +17,7 @@ import { addNote, replaceNote } from '../../../state/mutations/slides/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { bisect } from '../../../utils/ordered'
-import { constrainLaneObject } from '../../laneLimits'
+import { constrainLaneObject, minimumNoteSize } from '../../laneLimits'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
 import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
@@ -224,7 +224,8 @@ export const slide: Tool = {
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
-                const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
+                const properties = getPropertiesFromSelection(beat)
+                const [left, size] = resize(active.lane, lane, minimumNoteSize(properties.noteType))
 
                 view.entities = {
                     hovered: [],
@@ -234,7 +235,7 @@ export const slide: Tool = {
                             constrainLaneObject(
                                 {
                                     beat,
-                                    ...getPropertiesFromSelection(beat),
+                                    ...properties,
                                     left,
                                     size,
                                 },
@@ -250,7 +251,7 @@ export const slide: Tool = {
                 const [left, size] = resize(
                     active.lane,
                     lane,
-                    1 / view.laneDivision,
+                    minimumNoteSize(active.entity.noteType),
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
@@ -295,14 +296,15 @@ export const slide: Tool = {
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
-                const [left, size] = resize(active.lane, lane, 1 / view.laneDivision)
+                const properties = getPropertiesFromSelection(beat)
+                const [left, size] = resize(active.lane, lane, minimumNoteSize(properties.noteType))
 
                 add(
                     getSelectedSlideId() ?? createSlideId(),
                     constrainLaneObject(
                         {
                             beat,
-                            ...getPropertiesFromSelection(beat),
+                            ...properties,
                             left,
                             size,
                         },
@@ -316,7 +318,7 @@ export const slide: Tool = {
                 const [left, size] = resize(
                     active.lane,
                     lane,
-                    1 / view.laneDivision,
+                    minimumNoteSize(active.entity.noteType),
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),

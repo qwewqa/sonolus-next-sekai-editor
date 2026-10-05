@@ -627,6 +627,12 @@
         "changed": "您已更改波形可视化选项，请再次选择背景音乐文件以生效更改。"
       },
       "maxScrollX": "最大横向滚动范围",
+      "zeroWidthNotes": {
+        "title": "零宽度音符",
+        "off": "关",
+        "anchors": "仅锚点",
+        "all": "所有音符"
+      },
       "dragToPanY": "拖动以纵向平移",
       "dragToPanX": "拖动以横向平移",
       "autoAddGroup": "自动添加群组",

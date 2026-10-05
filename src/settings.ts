@@ -193,6 +193,12 @@ const settingsProperties = {
     width: number(16, 16, 100),
 
     maxLane: Type.Number({ default: 0, minimum: 0 }),
+    zeroWidthNotes: Type.Union(
+        [Type.Literal('anchors'), Type.Literal('off'), Type.Literal('all')],
+        {
+            default: 'anchors',
+        },
+    ),
     customMaxLane: Type.Number({ default: 6, exclusiveMinimum: 0 }),
 
     pps: number(1000, 100, 10000),

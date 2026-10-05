@@ -627,6 +627,12 @@
         "changed": "您已變更波形視覺化，請再次選擇 BGM 檔案以使此變更生效。"
       },
       "maxScrollX": "水平捲動上限",
+      "zeroWidthNotes": {
+        "title": "零寬度音符",
+        "off": "關閉",
+        "anchors": "僅錨點",
+        "all": "所有音符"
+      },
       "dragToPanY": "拖曳以平移 Y",
       "dragToPanX": "拖曳以平移 X",
       "autoAddGroup": "自動新增圖層",
