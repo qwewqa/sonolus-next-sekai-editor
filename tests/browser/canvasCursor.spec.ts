@@ -119,7 +119,7 @@ test.afterEach(async ({ page }) => {
 test('select shows grab over a note body, ew-resize at its edges and default elsewhere', async ({
     page,
 }) => {
-    await expectCursor(page, 1.5, 5, 'grab')
+    await expectCursor(page, 1.5, 5, 'move')
     await expectCursor(page, 0.2, 5, 'ew-resize')
     await expectCursor(page, 2.8, 5, 'ew-resize')
     await expectCursor(page, -6, 5, 'default')
@@ -139,23 +139,23 @@ test('an edge press keeps ew-resize through the drag and resizes the note', asyn
     expect(await notes(page)).toEqual([{ type: 'note', beat: 5, left: 0, size: 6 }])
     // Recomputed for the new geometry: the release point is the new right edge.
     expect(await cursor(page)).toBe('ew-resize')
-    await expectCursor(page, 3, 5, 'grab')
+    await expectCursor(page, 3, 5, 'move')
 })
 
 test('a body drag shows grabbing, a plain press never does', async ({ page }) => {
     await hover(page, 1.5, 5)
     await page.mouse.down()
     await settle(page)
-    expect(await cursor(page)).toBe('grab')
+    expect(await cursor(page)).toBe('move')
     await page.mouse.up()
     await settle(page)
-    expect(await cursor(page)).toBe('grab')
+    expect(await cursor(page)).toBe('move')
 
     await page.mouse.down()
     const end = await point(page, 1.5, 6)
     await page.mouse.move(end.x, end.y, { steps: 5 })
     await settle(page)
-    expect(await cursor(page)).toBe('grabbing')
+    expect(await cursor(page)).toBe('move')
     await page.mouse.up()
     await settle(page)
     expect(await notes(page)).toEqual([{ type: 'note', beat: 6, left: 0, size: 3 }])
@@ -192,7 +192,7 @@ test('a mixed selection moves instead of resizing at a note edge', async ({ page
             window.editorTest.snapshot().selected.map((entity) => entity.type),
         ),
     ).toEqual(expect.arrayContaining(['note', 'bpm']))
-    await expectCursor(page, 0.2, 5, 'grab')
+    await expectCursor(page, 0.2, 5, 'move')
 })
 
 test('a tool shortcut updates the cursor without moving the mouse', async ({ page }) => {
@@ -201,7 +201,7 @@ test('a tool shortcut updates the cursor without moving the mouse', async ({ pag
     await settle(page)
     expect(await cursor(page)).toBe('crosshair')
     await expectCursor(page, 0.2, 5, 'ew-resize')
-    await expectCursor(page, 1.5, 5, 'grab')
+    await expectCursor(page, 1.5, 5, 'move')
 })
 
 test('bpm edits show ns-resize on an existing BPM beat and crosshair elsewhere', async ({
@@ -227,7 +227,7 @@ test('timescale and point events grab existing objects and place elsewhere', asy
     })
     await useTool(page, 'timeScale')
     // Any lane at an existing timescale's beat edits it.
-    await expectCursor(page, -6, 6, 'grab')
+    await expectCursor(page, -6, 6, 'move')
     await expectCursor(page, -6, 6.5, 'crosshair')
     await useTool(page, 'stagePivotEvent')
     await expectCursor(page, -6, 6, 'crosshair')
@@ -247,7 +247,7 @@ test('camera joints resize at their edges and move from their body', async ({ pa
         )
     }, camera(7))
     await useTool(page, 'cameraEvent')
-    await expectCursor(page, -5, 7, 'grab')
+    await expectCursor(page, -5, 7, 'move')
     await expectCursor(page, -7.8, 7, 'ew-resize')
     await expectCursor(page, -2.2, 7, 'ew-resize')
     await expectCursor(page, -5, 8, 'crosshair')
@@ -285,14 +285,14 @@ test('paste shows copy only with clipboard data; offset shows ns-resize', async 
 })
 
 test('the cursor resets outside the canvas and for pen input', async ({ page }) => {
-    await expectCursor(page, 1.5, 5, 'grab')
+    await expectCursor(page, 1.5, 5, 'move')
     const box = await page.locator('canvas.editor-chart').boundingBox()
     if (!box) throw new Error('Missing chart canvas')
     await page.mouse.move(box.x + box.width / 2, box.y - 5)
     await settle(page)
     expect(await cursor(page)).toBe('auto')
 
-    await expectCursor(page, 1.5, 5, 'grab')
+    await expectCursor(page, 1.5, 5, 'move')
     const target = await point(page, 1.5, 5)
     await page.evaluate((target) => {
         const element = document.querySelector('.editor')!
@@ -310,7 +310,7 @@ test('wheel scrolling under a still mouse updates the cursor', async ({ page }) 
     await page.mouse.wheel(0, 120)
     await settle(page)
     expect(await page.evaluate(() => window.editorTest.view.time)).toBe(2)
-    expect(await cursor(page)).toBe('grab')
+    expect(await cursor(page)).toBe('move')
 })
 
 test('scaling width shows ew-resize over selected objects only', async ({ page }) => {
@@ -359,7 +359,7 @@ test.describe('elevation editor', () => {
         await page.keyboard.press('t')
         await expect(page.locator('.elevation-canvas')).toBeVisible()
         await settle(page)
-        await expectRowCursor(page, 0, 'grab')
+        await expectRowCursor(page, 0, 'move')
         await expectRowCursor(page, -1, 'ew-resize')
         await expectRowCursor(page, 1, 'ew-resize')
 
@@ -416,7 +416,7 @@ test.describe('touch', () => {
     test.use({ hasTouch: true })
 
     test('touch input leaves the cursor untouched', async ({ page }) => {
-        await expectCursor(page, 1.5, 5, 'grab')
+        await expectCursor(page, 1.5, 5, 'move')
         const target = await point(page, 1.5, 5)
         await page.evaluate((target) => {
             const element = document.querySelector('.editor')!

@@ -13,7 +13,7 @@ export { isNoteResizeStart, isRangeResizeStart, isSelectResize } from './edges'
 export const placementCursors: Record<'add' | 'edit' | 'move', CanvasCursor> = {
     add: 'crosshair',
     edit: 'ew-resize',
-    move: 'grab',
+    move: 'move',
 }
 
 export const offset = (startLane: number, lane: number, anchor = startLane) =>

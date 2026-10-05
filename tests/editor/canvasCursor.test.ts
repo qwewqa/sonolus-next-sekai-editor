@@ -59,9 +59,9 @@ test('select resizes only when every moving object shares the focus type', () =>
     }
 })
 
-test('drag cursors show grabbing for moves and crosshair for box gestures', () => {
+test('drag cursors keep move for moves and show crosshair for box gestures', () => {
     const cases: [CanvasCursor, string][] = [
-        ['grab', 'grabbing'],
+        ['move', 'move'],
         ['default', 'crosshair'],
         ['pointer', 'crosshair'],
         ['crosshair', 'crosshair'],

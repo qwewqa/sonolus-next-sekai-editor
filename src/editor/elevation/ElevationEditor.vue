@@ -366,7 +366,7 @@ const cursors = {
     add: 'crosshair',
     select: 'pointer',
     resize: 'ew-resize',
-    move: 'grab',
+    move: 'move',
 } as const
 const controls: Pick<
     Tool,

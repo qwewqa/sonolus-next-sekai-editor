@@ -212,7 +212,7 @@ export const select: Tool = {
         const target = resolveDrag(x, y)
         if (target.type === 'select') return 'default'
         if (isSelectResize(target.onlyType, target.focus, target.lane)) return 'ew-resize'
-        return target.onlyType === 'bpm' ? 'ns-resize' : 'grab'
+        return target.onlyType === 'bpm' ? 'ns-resize' : 'move'
     },
 
     dragStart(x, y) {
