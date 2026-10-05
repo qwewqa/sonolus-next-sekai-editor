@@ -13,3 +13,9 @@ export const remap = (a: number, b: number, c: number, d: number, x: number) =>
     lerp(c, d, unlerp(a, b, x))
 
 export const align = (value: number, division = 1) => Math.round(value * division) / division
+
+// Snaps values within rounding error of the grid; values off the grid stay.
+export const alignNear = (value: number, division = 1) => {
+    const aligned = align(value, division)
+    return Math.abs(value - aligned) * division < 1e-6 ? aligned : value
+}

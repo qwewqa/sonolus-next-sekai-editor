@@ -15,7 +15,7 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
 import { createTransaction } from '../../state/transaction'
-import { clamp } from '../../utils/math'
+import { alignNear, clamp } from '../../utils/math'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
 import type { EditorDrawContext } from '../canvas/types'
@@ -601,11 +601,11 @@ const controls: Pick<
 }
 
 const previousBeat = computed(() => {
-    const beat = Math.max(0, elevationBeat.value - 1 / view.division)
+    const beat = Math.max(0, alignNear(elevationBeat.value - 1 / view.division, view.division))
     return beat < elevationBeat.value ? beat : undefined
 })
 const nextBeat = computed(() => {
-    const beat = elevationBeat.value + 1 / view.division
+    const beat = alignNear(elevationBeat.value + 1 / view.division, view.division)
     return Number.isFinite(beat) && beat > elevationBeat.value ? beat : undefined
 })
 const changeBeat = (beat: number) => {
@@ -613,9 +613,11 @@ const changeBeat = (beat: number) => {
     cancelMouseControls()
     cancelTouchControls()
     cancel()
-    elevationBeat.value = Math.max(0, beat)
-    if (isElevationSideBySide.value) focusViewAtBeat(elevationBeat.value)
-    else view.cursorTime = beatToTime(state.value.bpms, elevationBeat.value)
+    const target = Math.max(0, beat)
+    if (isElevationSideBySide.value) focusViewAtBeat(target)
+    else view.cursorTime = beatToTime(state.value.bpms, target)
+    // Moving the cursor converts back from time; keep the exact beat.
+    elevationBeat.value = target
     fitViewport()
 }
 const onBeatInput = (event: Event) => {

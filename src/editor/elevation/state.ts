@@ -2,6 +2,7 @@ import { ref, watch } from 'vue'
 import { bpms } from '../../history/bpms'
 import { selectedEntities } from '../../history/selectedEntities'
 import { beatToTime, timeToBeat } from '../../state/integrals/bpms'
+import { alignNear } from '../../utils/math'
 import { editorNavigation } from '../navigation'
 import { switchToolTo, type ToolName } from '../tools'
 import { toolName } from '../tools/state'
@@ -29,7 +30,10 @@ export const openElevationEditor = (beat?: number) => {
 
     if (!isElevationEditorOpen.value) previousTool = toolName.value
     const note = selectedEntities.value.filter((entity) => entity.type === 'note').pop()
-    const displayedBeat = beat ?? note?.beat ?? timeToBeat(bpms.value, Math.max(0, view.cursorTime))
+    const displayedBeat =
+        beat ??
+        note?.beat ??
+        alignNear(timeToBeat(bpms.value, Math.max(0, view.cursorTime)), view.division)
     isElevationEditorOpen.value = true
     view.cursorTime = beatToTime(bpms.value, displayedBeat)
     elevationBeat.value = displayedBeat
@@ -58,7 +62,10 @@ watch(
     () => view.cursorTime,
     (time) => {
         if (isElevationEditorOpen.value)
-            elevationBeat.value = timeToBeat(bpms.value, Math.max(0, time))
+            elevationBeat.value = alignNear(
+                timeToBeat(bpms.value, Math.max(0, time)),
+                view.division,
+            )
     },
     { flush: 'sync' },
 )

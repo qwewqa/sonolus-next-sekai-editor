@@ -285,6 +285,36 @@ test('opening uses the selected note beat instead of the caret beat', async ({ p
     expect((await rows(page)).map((row) => row.beat)).toEqual([8])
 })
 
+test('previous and next beat steps stay on the division grid across a tempo change', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        show({
+            ...fixtures.interaction,
+            bpms: [...fixtures.interaction.bpms, { beat: 2, bpm: 180 }],
+        })
+        view.cursorTime = 3
+        view.division = 12
+    })
+    await open(page)
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await beat.fill('4')
+    await beat.press('Tab')
+    const values: string[] = []
+    for (let i = 0; i < 12; i++) {
+        await page.getByRole('button', { name: 'Next Beat' }).click()
+        values.push(await beat.inputValue())
+    }
+    for (let i = 0; i < 12; i++) {
+        await page.getByRole('button', { name: 'Previous Beat' }).click()
+        values.push(await beat.inputValue())
+    }
+    // Displayed beats are one-based: chart beat 3 + k/12 shows as 4 + k/12.
+    const expected = [...Array(12).keys()].map((i) => `${(36 + i + 1) / 12 + 1}`)
+    expect(values).toEqual([...expected, ...expected.slice(0, -1).reverse(), '4'])
+})
+
 test('context actions open the clicked note beat or empty-space beat after deselection', async ({
     page,
 }) => {
