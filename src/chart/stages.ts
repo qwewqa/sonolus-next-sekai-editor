@@ -29,6 +29,8 @@ export const addToStages = (
     },
 ) => {
     const id = i++ as StageId
+    // A blank name, e.g. from level data, gets a default like a missing one.
+    if (!name?.trim()) name = undefined
     name ??= `#${
         Math.max(
             0,

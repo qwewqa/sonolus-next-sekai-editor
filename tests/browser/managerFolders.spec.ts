@@ -242,6 +242,19 @@ test.describe('level data', () => {
         ])
     })
 
+    test('blank group and folder names load as default names', async ({ page }) => {
+        const result = await roundTrip(
+            page,
+            entities([
+                group('g0', 'Default'),
+                group('g1', '', 'f0'),
+                group('g2', '  '),
+                folder('f0', ' '),
+            ]),
+        )
+        expect(result.before).toBe('Default [f0: #1] #2')
+    })
+
     test('levels without folders and clipboard data carry no folder data', async ({ page }) => {
         const plain = await roundTrip(page, entities([group('g0', 'Default'), group('g1', 'Lead')]))
         const clipboard = await roundTrip(

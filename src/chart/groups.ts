@@ -22,6 +22,8 @@ export const addToGroups = (
     object: Omit<GroupObject, 'name'> = {},
 ) => {
     const id = i++ as GroupId
+    // A blank name, e.g. from level data, gets a default like a missing one.
+    if (!name?.trim()) name = undefined
     name ??= groups.size
         ? `#${
               Math.max(

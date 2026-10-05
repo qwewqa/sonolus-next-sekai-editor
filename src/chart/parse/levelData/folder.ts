@@ -45,7 +45,9 @@ export const parseFoldersToChart = (
     const ids = new Map<string, FolderId>()
     for (const [name, folder] of found) {
         if (topOf(name) !== name) continue
-        ids.set(name, addToFolders(folders, folder.name ?? name, folder.index))
+        // A blank name falls back to the entity name like a missing one.
+        const label = folder.name?.trim() ? folder.name : name
+        ids.set(name, addToFolders(folders, label, folder.index))
     }
     for (const name of found.keys()) {
         const id = ids.get(topOf(name))
