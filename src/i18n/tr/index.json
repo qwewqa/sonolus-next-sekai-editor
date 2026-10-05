@@ -1404,7 +1404,8 @@
         "stagePivotEventJoint": "Sahne Dönme Merkezi Olayları",
         "stageStyleEventJoint": "Sahne Stili Olayları",
         "stageTransformEventJoint": "Sahne Dönüşüm Olayları"
-      }
+      },
+      "connector": "Bağlayıcı"
     }
   }
 }

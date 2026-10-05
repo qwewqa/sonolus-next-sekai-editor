@@ -1404,7 +1404,8 @@
         "stagePivotEventJoint": "스테이지 피벗 이벤트",
         "stageStyleEventJoint": "스테이지 스타일 이벤트",
         "stageTransformEventJoint": "스테이지 변형 이벤트"
-      }
+      },
+      "connector": "커넥터"
     }
   }
 }

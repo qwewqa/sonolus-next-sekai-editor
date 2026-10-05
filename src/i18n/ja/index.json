@@ -1404,7 +1404,8 @@
         "stagePivotEventJoint": "ステージ支点イベント",
         "stageStyleEventJoint": "ステージスタイルイベント",
         "stageTransformEventJoint": "ステージ変形イベント"
-      }
+      },
+      "connector": "接続"
     }
   }
 }

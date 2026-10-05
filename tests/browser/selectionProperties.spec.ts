@@ -15,6 +15,7 @@ const open = async (page: Page) => {
     await page.evaluate(installEditorFixture)
     await page.evaluate(() => {
         window.editorTest.settings.showSidebar = true
+        window.editorTest.settings.propertiesConnectorExpanded = true
     })
     await expect(panel(page)).toBeVisible()
 }
@@ -198,5 +199,45 @@ test.describe('selection summary', () => {
         // One kind left: nothing to narrow.
         await expect(summary.getByRole('button')).toHaveCount(0)
         await expect(summary).toHaveText('Notes 4Slides 1')
+    })
+})
+
+test.describe('connector fields', () => {
+    const header = (page: Page) => selection(page).getByRole('button', { name: /^Connector/ })
+
+    test('collapse behind a summary and remember it', async ({ page }) => {
+        await showSlides(page, [
+            [{ beat: 0, connectorEase: 'outQuad', connectorLayer: 'bottom' }, { beat: 1 }],
+        ])
+        await expect(header(page)).toHaveAttribute('aria-expanded', 'true')
+        await expect(control(page, 'Connector Layer')).toHaveCount(1)
+
+        await header(page).click()
+        await expect(header(page)).toHaveAttribute('aria-expanded', 'false')
+        await expect(control(page, 'Connector Layer')).toHaveCount(0)
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            'Slide · Default · Quad Out · Bottom',
+        )
+        expect(
+            await page.evaluate(() => window.editorTest.settings.propertiesConnectorExpanded),
+        ).toBe(false)
+    })
+
+    test('a typed value commits when the fields collapse', async ({ page }) => {
+        await showSlides(page, [[{ beat: 0, connectorType: 'guide' }, { beat: 1 }]])
+        const alpha = control(page, 'Guide Alpha')
+        await alpha.fill('0.5')
+        await header(page).click()
+        await expect(alpha).toHaveCount(0)
+        await expect
+            .poll(() =>
+                page.evaluate(
+                    () =>
+                        [...window.editorTest.store.getAllEntities()].find(
+                            (entity) => entity.type === 'note' && entity.beat === 0,
+                        )?.['connectorGuideAlpha' as never],
+                ),
+            )
+            .toBe(0.5)
     })
 })

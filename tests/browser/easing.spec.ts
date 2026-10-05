@@ -67,6 +67,7 @@ test.describe('ease fields', () => {
         await page.evaluate(installEditorFixture)
         await page.evaluate(() => {
             window.editorTest.settings.showSidebar = true
+            window.editorTest.settings.propertiesConnectorExpanded = true
         })
         await expect(panel(page)).toBeVisible()
     })

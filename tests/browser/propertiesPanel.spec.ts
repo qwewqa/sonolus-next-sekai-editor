@@ -119,7 +119,7 @@ test.describe('roomy panel', () => {
     })
 
     test('values of notes a field does not apply to do not make it mixed', async ({ page }) => {
-        await open(page)
+        await open(page, { propertiesConnectorExpanded: true })
         await page.evaluate(async () => {
             const { fixtures, show, nextTick } = window.editorTest
             const base = fixtures.events.slides[0]![0]!

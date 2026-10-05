@@ -1404,7 +1404,8 @@
         "stagePivotEventJoint": "舞台樞軸事件",
         "stageStyleEventJoint": "舞台樣式事件",
         "stageTransformEventJoint": "舞台變換事件"
-      }
+      },
+      "connector": "連接線"
     }
   }
 }

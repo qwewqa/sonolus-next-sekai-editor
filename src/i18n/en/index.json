@@ -1404,7 +1404,8 @@
                 "stagePivotEventJoint": "Stage Pivot Events",
                 "stageStyleEventJoint": "Stage Style Events",
                 "stageTransformEventJoint": "Stage Transform Events"
-            }
+            },
+            "connector": "Connector"
         }
     }
 }

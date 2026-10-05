@@ -117,6 +117,7 @@ test('color controls commit, undo, and persist in creation presets', async ({ pa
         const head = { ...source.slides[0]![0]!, beat: 1 }
         window.editorTest.show({ ...source, slides: [[head, { ...head, beat: 4 }]] })
         settings.showSidebar = true
+        settings.propertiesConnectorExpanded = true
         history.replaceState({
             ...history.state.value,
             selectedEntities: [...history.state.value.store.slides.note.values()][0]!.slice(0, 1),
@@ -165,6 +166,7 @@ test('guides share the connector color control across type changes and undo', as
         }
         show({ ...fixtures.interaction, slides: [[head, { ...head, beat: 4 }]] })
         settings.showSidebar = true
+        settings.propertiesConnectorExpanded = true
         history.replaceState({
             ...history.state.value,
             selectedEntities: [...history.state.value.store.slides.note.values()][0]!.slice(0, 1),
