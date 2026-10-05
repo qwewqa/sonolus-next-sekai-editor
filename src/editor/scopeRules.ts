@@ -24,6 +24,26 @@ export const resolveScopeVisibility = <T>(
     return 'hidden'
 }
 
+/**
+ * Overrides after the show-others setting changes: turning it on clears every
+ * hide and turning it off every explicit show, so the setting always shows.
+ */
+export const followShowOthers = <T>(
+    overrides: ReadonlyMap<T, ScopeOverride>,
+    showOthers: boolean,
+): ReadonlyMap<T, ScopeOverride> => {
+    const contradicting: ScopeOverride = showOthers ? 'hidden' : 'shown'
+    if (![...overrides.values()].includes(contradicting)) return overrides
+    return new Map([...overrides].filter(([, override]) => override !== contradicting))
+}
+
+/** The entry Next (`1`) or Previous (`-1`) focuses; `undefined` is All, between the ends. */
+export const stepFocus = <T>(ids: readonly T[], focus: T | undefined, step: 1 | -1) => {
+    const index = focus === undefined ? -1 : ids.indexOf(focus)
+    if (index < 0) return step > 0 ? ids[0] : ids.at(-1)
+    return ids[index + step]
+}
+
 const ranks: Record<ScopeVisibility, number> = { hidden: 0, dimmed: 1, full: 2 }
 
 /** Both scopes must allow the entity: the less visible of the two. */

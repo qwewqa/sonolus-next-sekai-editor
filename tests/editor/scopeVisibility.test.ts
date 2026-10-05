@@ -10,9 +10,11 @@ import {
     createScopeLookup,
     entityScopeIds,
     entityScopeVisibility,
+    followShowOthers,
     fullScope,
     isScopeReduced,
     resolveScopeVisibility,
+    stepFocus,
     worstScope,
     type ScopeInputs,
     type ScopeOverride,
@@ -63,6 +65,43 @@ test('focus keeps its target fully visible and dims or hides the rest', () => {
     assert.equal(resolveScopeVisibility(groupB, groupA, undefined, false), 'hidden')
     // Showing an entry outside a restrictive focus reveals it without making it editable.
     assert.equal(resolveScopeVisibility(groupB, groupA, 'shown', false), 'dimmed')
+})
+
+test('changing the show-others setting drops the overrides contradicting it', () => {
+    const overrides = groupMask([
+        [groupA, 'hidden'],
+        [groupB, 'shown'],
+    ])
+    assert.deepEqual(followShowOthers(overrides, true), groupMask([[groupB, 'shown']]))
+    assert.deepEqual(followShowOthers(overrides, false), groupMask([[groupA, 'hidden']]))
+
+    // Unfocused entries then follow the setting.
+    for (const showOthers of [true, false]) {
+        const next = followShowOthers(overrides, showOthers)
+        for (const id of [groupA, groupB]) {
+            assert.equal(
+                resolveScopeVisibility(id, groupC, next.get(id), showOthers),
+                showOthers ? 'dimmed' : 'hidden',
+            )
+        }
+    }
+
+    // Nothing to drop keeps the same map, so the scope snapshot stays unchanged.
+    const unchanged = groupMask([[groupA, 'shown']])
+    assert.equal(followShowOthers(unchanged, true), unchanged)
+})
+
+test('next and previous step through the entries with all between the ends', () => {
+    const ids = [groupA, groupB, groupC]
+    assert.equal(stepFocus(ids, undefined, 1), groupA)
+    assert.equal(stepFocus(ids, groupA, 1), groupB)
+    assert.equal(stepFocus(ids, groupC, 1), undefined)
+    assert.equal(stepFocus(ids, undefined, -1), groupC)
+    assert.equal(stepFocus(ids, groupB, -1), groupA)
+    assert.equal(stepFocus(ids, groupA, -1), undefined)
+    // A focus that no longer exists restarts from the ends.
+    assert.equal(stepFocus([groupB], groupA, 1), groupB)
+    assert.equal(stepFocus([], undefined, 1), undefined)
 })
 
 test('scope lookups ignore stage visibility while dynamic stages are disabled', () => {
