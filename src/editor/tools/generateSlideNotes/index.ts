@@ -254,12 +254,15 @@ export const applyGeneratedSlideNotes = (notes: NoteEntity[]) => {
         }
     }
 
-    // Authoring reveals its target so generated notes never vanish.
-    revealAuthoredEntities(entities)
-    pushState(
-        interpolate(() => i18n.value.tools.generateSlideNotes.generated, `${entities.length}`),
-        transaction.commit(entities),
-    )
+    // Nothing to fill adds no undo step.
+    if (entities.length) {
+        // Authoring reveals its target so generated notes never vanish.
+        revealAuthoredEntities(entities)
+        pushState(
+            interpolate(() => i18n.value.tools.generateSlideNotes.generated, `${entities.length}`),
+            transaction.commit(entities),
+        )
+    }
     view.entities = {
         hovered: [],
         creating: [],

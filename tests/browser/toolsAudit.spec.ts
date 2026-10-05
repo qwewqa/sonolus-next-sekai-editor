@@ -191,7 +191,9 @@ test('the brush applies its properties to a clicked note and a dragged box', asy
     expect(await undoCount(page)).toBe(2)
 })
 
-test('generate slide notes fills a slide at the division', async ({ page }) => {
+test('generate slide notes fills a slide at the division; a lone note adds no undo step', async ({
+    page,
+}) => {
     await page.evaluate(() => {
         const { fixtures, show, view } = window.editorTest
         const [[a], [b]] = fixtures.interaction.slides as [
@@ -204,6 +206,11 @@ test('generate slide notes fills a slide at the division', async ({ page }) => {
     await settle(page)
     await command(page, 'generateSlideNotes')
     await click(page, -3, 3)
+    expect(await beats(page)).toEqual([3, 3.5, 4, 4.5, 5, 9])
+    expect(await undoCount(page)).toBe(1)
+
+    // A single-note slide has nothing to fill.
+    await click(page, 1, 9)
     expect(await beats(page)).toEqual([3, 3.5, 4, 4.5, 5, 9])
     expect(await undoCount(page)).toBe(1)
 })
