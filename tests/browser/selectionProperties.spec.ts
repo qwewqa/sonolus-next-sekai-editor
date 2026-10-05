@@ -309,18 +309,16 @@ test.describe('unset values', () => {
             .locator('select option')
             .first()
 
-    test('creation presets say whether an unset field copies or uses the default', async ({
-        page,
-    }) => {
+    test('creation presets say whether an unset field copies or is automatic', async ({ page }) => {
         await page.keyboard.press('a')
         await expect(empty(page, 'Note Type')).toHaveText('Copy')
-        await expect(empty(page, 'Connector Type')).toHaveText('Default')
+        await expect(empty(page, 'Connector Type')).toHaveText('Auto')
         await tool(page)
             .locator('label')
             .filter({ has: page.getByText('Copy Properties', { exact: true }) })
             .locator('input')
             .click()
-        await expect(empty(page, 'Note Type')).toHaveText('Default')
+        await expect(empty(page, 'Note Type')).toHaveText('Auto')
     })
 
     test('the brush calls its unset value Unchanged', async ({ page }) => {

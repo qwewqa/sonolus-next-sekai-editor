@@ -17,7 +17,7 @@ const createModel = useProperties(defaultStagePivotEventProperties)
 const copyLabel = computed(() =>
     defaultStagePivotEventProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const divisionSize = createModel('divisionSize')

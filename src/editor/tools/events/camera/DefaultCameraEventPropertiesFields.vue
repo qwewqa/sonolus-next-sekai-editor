@@ -20,7 +20,7 @@ const createModel = useProperties(defaultCameraEventProperties)
 const copyLabel = computed(() =>
     defaultCameraEventProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const cameraSize = createModel('cameraSize')

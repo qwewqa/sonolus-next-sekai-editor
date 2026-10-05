@@ -1249,7 +1249,7 @@
       "selectOnly": "仅选择{1} ({0})",
       "unset": {
         "unchanged": "不更改",
-        "default": "默认",
+        "auto": "自动",
         "copy": "复制"
       },
       "unknown": "未知 ({0})"

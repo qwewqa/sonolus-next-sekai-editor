@@ -15,7 +15,7 @@ const createModel = useProperties(defaultStageMaskEventProperties)
 const copyLabel = computed(() =>
     defaultStageMaskEventProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const maskSize = createModel('maskSize')

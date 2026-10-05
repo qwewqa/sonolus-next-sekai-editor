@@ -1249,7 +1249,7 @@
       "selectOnly": "Sélectionner seulement {1} ({0})",
       "unset": {
         "unchanged": "Inchangé",
-        "default": "Par défaut",
+        "auto": "Auto",
         "copy": "Copier"
       },
       "unknown": "Inconnu ({0})"

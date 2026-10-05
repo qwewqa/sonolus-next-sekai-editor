@@ -17,7 +17,7 @@ const createModel = useProperties(defaultStageTransformEventProperties)
 const copyLabel = computed(() =>
     defaultStageTransformEventProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const rotation = createModel('rotation')

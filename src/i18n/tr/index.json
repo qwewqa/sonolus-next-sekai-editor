@@ -1249,7 +1249,7 @@
       "selectOnly": "Yalnızca {1} seç ({0})",
       "unset": {
         "unchanged": "Değiştirilmez",
-        "default": "Varsayılan",
+        "auto": "Otomatik",
         "copy": "Kopyala"
       },
       "unknown": "Bilinmiyor ({0})"

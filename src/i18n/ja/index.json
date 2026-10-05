@@ -1249,7 +1249,7 @@
       "selectOnly": "{1}のみ選択 ({0})",
       "unset": {
         "unchanged": "変更しない",
-        "default": "デフォルト",
+        "auto": "自動",
         "copy": "コピー"
       },
       "unknown": "不明 ({0})"

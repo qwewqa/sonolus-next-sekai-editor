@@ -32,7 +32,7 @@ const createModel = useProperties(defaultNoteProperties)
 const copyLabel = computed(() =>
     defaultNoteProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const elevation = createModel('elevation')
@@ -70,14 +70,14 @@ const copyProperties = createModel('copyProperties')
         <OptionalIsFakeField v-model="isFake" />
         <OptionalSfxField v-model="sfx" />
     </EmptyLabelProvider>
-    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+    <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
         <OptionalConnectorTypeField v-model="connectorType" />
     </EmptyLabelProvider>
     <EmptyLabelProvider :label="copyLabel">
         <OptionalConnectorStyleField v-model="connectorStyle" />
     </EmptyLabelProvider>
-    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+    <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalConnectorEaseField v-model="connectorEase" />
         <OptionalConnectorIsFakeField v-model="connectorIsFake" />
         <OptionalConnectorActiveIsCriticalField v-model="connectorActiveIsCritical" />

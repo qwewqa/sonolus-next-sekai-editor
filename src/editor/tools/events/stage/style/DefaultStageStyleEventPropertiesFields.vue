@@ -22,7 +22,7 @@ const createModel = useProperties(defaultStageStyleEventProperties)
 const copyLabel = computed(() =>
     defaultStageStyleEventProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const judgmentLineColor = createModel('judgmentLineColor')

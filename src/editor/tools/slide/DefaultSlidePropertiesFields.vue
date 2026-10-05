@@ -32,7 +32,7 @@ const createModel = useProperties(defaultSlideProperties)
 const copyLabel = computed(() =>
     defaultSlideProperties.value.copyProperties
         ? i18n.value.modals.form.unset.copy
-        : i18n.value.modals.form.unset.default,
+        : i18n.value.modals.form.unset.auto,
 )
 
 const elevation = createModel('elevation')
@@ -70,14 +70,14 @@ const copyProperties = createModel('copyProperties')
         <OptionalIsFakeField v-model="isFake" />
         <OptionalSfxField v-model="sfx" />
     </EmptyLabelProvider>
-    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+    <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
     </EmptyLabelProvider>
     <EmptyLabelProvider :label="copyLabel">
         <OptionalConnectorTypeField v-model="connectorType" />
         <OptionalConnectorStyleField v-model="connectorStyle" />
     </EmptyLabelProvider>
-    <EmptyLabelProvider :label="i18n.modals.form.unset.default">
+    <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalConnectorEaseField v-model="connectorEase" />
     </EmptyLabelProvider>
     <EmptyLabelProvider :label="copyLabel">
