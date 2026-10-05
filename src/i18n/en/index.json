@@ -612,13 +612,13 @@
         "title": "Settings",
         "resetSettings": "Reset Settings",
         "resetSettingsHint": "Restore default settings, keeping keyboard shortcuts.",
-        "resetKeybinds": "Reset Keybinds",
+        "resetKeybinds": "Reset Shortcuts",
         "editor": {
             "title": "Editor",
             "locale": "Language",
             "elevationSideBySide": "Elevation Editor Side by Side",
             "autoSave": "Auto Save",
-            "autoSaveDelay": "Auto Save Delay",
+            "autoSaveDelay": "Auto Save Delay (s)",
             "waveformVisualization": {
                 "title": "Waveform Visualization",
                 "off": "Off",
@@ -626,7 +626,7 @@
                 "volume": "Volume",
                 "changed": "You have changed waveform visualization, select BGM file again in order for this change to take effect."
             },
-            "maxScrollX": "Max Scroll X",
+            "maxScrollX": "Max Scroll X (lanes)",
             "zeroWidthNotes": {
                 "title": "Zero-Width Notes",
                 "off": "Off",
@@ -664,15 +664,15 @@
         },
         "play": {
             "title": "Play",
-            "bgmVolume": "BGM Volume",
-            "sfxVolume": "SFX Volume",
+            "bgmVolume": "BGM Volume (%)",
+            "sfxVolume": "SFX Volume (%)",
             "startPosition": {
                 "title": "Start Position",
                 "view": "View",
                 "cursor": "Cursor"
             },
             "follow": "Follow",
-            "followPosition": "Follow Position",
+            "followPosition": "Follow Position (%)",
             "previewDuration": "Preview Duration (ms)"
         },
         "preview": {
@@ -687,7 +687,7 @@
             },
             "noteSpeed": "Note Speed",
             "renderScale": "Render Scale",
-            "showEffects": "Effects",
+            "showEffects": "Show Effects",
             "showTime": "Show Time",
             "highlightSelection": "Highlight Selection",
             "showHitboxes": "Show Hitboxes",
@@ -716,7 +716,7 @@
         },
         "touch": {
             "title": "Touch",
-            "quickScrollZone": "Quick Scroll Zone",
+            "quickScrollZone": "Quick Scroll Zone (%)",
             "scrollInertia": "Scroll Inertia",
             "longPressContextMenu": "Long Press for Context Menu"
         },

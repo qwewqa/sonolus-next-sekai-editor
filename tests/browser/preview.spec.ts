@@ -1613,7 +1613,7 @@ test.describe('preview aspect ratios', () => {
         await quality.focus()
         await quality.press('ArrowUp')
         await expect(quality).toHaveValue('1.25')
-        for (const name of ['Effects', 'Antialias']) {
+        for (const name of ['Show Effects', 'Antialias']) {
             const checkbox = controls.getByLabel(name, { exact: true })
             await checkbox.focus()
             await checkbox.press('Space')
@@ -1818,7 +1818,7 @@ test('preview options share persisted settings with the main options menu', asyn
         'Note Speed',
         'Highlight Selection',
         'Show Hitboxes',
-        'Effects',
+        'Show Effects',
         'Show Time',
         'Aspect Ratio',
         'Render Scale',
@@ -1837,7 +1837,7 @@ test('preview options share persisted settings with the main options menu', asyn
     await scale.fill('1.5')
     await scale.press('Enter')
     await preview.getByRole('radio', { name: '4:3', exact: true }).check()
-    await preview.getByLabel('Effects', { exact: true }).uncheck()
+    await preview.getByLabel('Show Effects', { exact: true }).uncheck()
     await preview.getByLabel('Antialias', { exact: true }).uncheck()
     await preview
         .getByRole('combobox', { name: 'Playback Controls', exact: true })
@@ -1868,7 +1868,7 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(
         dialog
             .locator('label')
-            .filter({ has: page.getByText('Effects', { exact: true }) })
+            .filter({ has: page.getByText('Show Effects', { exact: true }) })
             .getByRole('button'),
     ).toHaveValue('Disabled')
     await expect(
@@ -1886,7 +1886,7 @@ test('preview options share persisted settings with the main options menu', asyn
         .selectOption({ label: '21:9' })
     await dialog
         .locator('label')
-        .filter({ has: page.getByText('Effects', { exact: true }) })
+        .filter({ has: page.getByText('Show Effects', { exact: true }) })
         .getByRole('button')
         .click()
     await dialog
@@ -1905,7 +1905,7 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(speed).toHaveValue('8.5')
     await expect(scale).toHaveValue('0.75')
     await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
-    await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Show Effects', { exact: true })).toBeChecked()
     await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
     await expect(
         preview.getByRole('combobox', { name: 'Playback Controls', exact: true }),
@@ -1918,7 +1918,7 @@ test('preview options share persisted settings with the main options menu', asyn
     await expect(speed).toHaveValue('8.5')
     await expect(scale).toHaveValue('0.75')
     await expect(preview.getByRole('radio', { name: '21:9', exact: true })).toBeChecked()
-    await expect(preview.getByLabel('Effects', { exact: true })).toBeChecked()
+    await expect(preview.getByLabel('Show Effects', { exact: true })).toBeChecked()
     await expect(preview.getByLabel('Antialias', { exact: true })).toBeChecked()
     await expect(
         preview.getByRole('combobox', { name: 'Playback Controls', exact: true }),
@@ -2057,7 +2057,7 @@ test.describe('preview panel lifecycle', () => {
             page.evaluate(() => !!document.activeElement?.closest('[data-workspace-dock]'))
         await controls.getByRole('radio', { name: '21:9', exact: true }).click()
         expect(await focusInDock()).toBe(false)
-        await controls.getByLabel('Effects', { exact: true }).click()
+        await controls.getByLabel('Show Effects', { exact: true }).click()
         expect(await focusInDock()).toBe(false)
         const slider = controls.getByRole('slider', { name: 'Render Scale', exact: true })
         const box = (await slider.boundingBox())!

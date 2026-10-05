@@ -46,7 +46,7 @@ test('shortcut capture preserves the old binding until replaced or cleared', asy
     await save.click()
     await save.press('Tab')
     await expect(save).toHaveText('Unassigned')
-    await dialog.getByRole('button', { name: 'Reset Keybinds', exact: true }).click()
+    await dialog.getByRole('button', { name: 'Reset Shortcuts', exact: true }).click()
     await expect(save).toHaveText('p')
 })
 
@@ -58,7 +58,7 @@ test('settings and keybind resets are independent and remove saved overrides', a
         settings.keyboardShortcuts = { ...settings.keyboardShortcuts, save: 'l' }
     })
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: 'Reset Keybinds', exact: true }).click()
+    await dialog.getByRole('button', { name: 'Reset Shortcuts', exact: true }).click()
     expect(await page.evaluate(() => window.editorTest.settings.previewNoteSpeed)).toBe(9.25)
     expect(await page.evaluate(() => window.editorTest.settings.previewHighlightSelection)).toBe(
         false,

@@ -618,7 +618,7 @@
       "locale": "语言",
       "elevationSideBySide": "高度编辑器并排显示",
       "autoSave": "自动保存",
-      "autoSaveDelay": "自动保存延迟",
+      "autoSaveDelay": "自动保存延迟（秒）",
       "waveformVisualization": {
         "title": "波形可视化",
         "off": "关",
@@ -626,7 +626,7 @@
         "volume": "音量",
         "changed": "您已更改波形可视化选项，请再次选择背景音乐文件以生效更改。"
       },
-      "maxScrollX": "最大横向滚动范围",
+      "maxScrollX": "最大横向滚动范围（轨道）",
       "zeroWidthNotes": {
         "title": "零宽度音符",
         "off": "关",
@@ -664,15 +664,15 @@
     },
     "play": {
       "title": "播放",
-      "bgmVolume": "背景音乐音量",
-      "sfxVolume": "音效音量",
+      "bgmVolume": "背景音乐音量（%）",
+      "sfxVolume": "音效音量（%）",
       "startPosition": {
         "title": "开始位置",
         "view": "当前视图",
         "cursor": "光标"
       },
       "follow": "跟随",
-      "followPosition": "跟随位置",
+      "followPosition": "跟随位置（%）",
       "previewDuration": "预览时长（毫秒）"
     },
     "preview": {
@@ -687,7 +687,7 @@
       },
       "noteSpeed": "音符速度",
       "renderScale": "渲染比例",
-      "showEffects": "特效",
+      "showEffects": "显示特效",
       "showTime": "显示时间",
       "highlightSelection": "高亮所选对象",
       "showHitboxes": "显示判定范围",
@@ -716,7 +716,7 @@
     },
     "touch": {
       "title": "触控",
-      "quickScrollZone": "快速滚动区域",
+      "quickScrollZone": "快速滚动区域（%）",
       "scrollInertia": "滚动惯性",
       "longPressContextMenu": "长按打开右键菜单"
     },

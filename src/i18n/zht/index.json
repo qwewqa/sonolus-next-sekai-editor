@@ -618,7 +618,7 @@
       "locale": "語言",
       "elevationSideBySide": "高度編輯器並排顯示",
       "autoSave": "自動儲存",
-      "autoSaveDelay": "自動儲存週期",
+      "autoSaveDelay": "自動儲存週期（秒）",
       "waveformVisualization": {
         "title": "波形視覺化",
         "off": "關閉",
@@ -626,7 +626,7 @@
         "volume": "音量",
         "changed": "您已變更波形視覺化，請再次選擇 BGM 檔案以使此變更生效。"
       },
-      "maxScrollX": "水平捲動上限",
+      "maxScrollX": "水平捲動上限（軌道）",
       "zeroWidthNotes": {
         "title": "零寬度音符",
         "off": "關閉",
@@ -664,15 +664,15 @@
     },
     "play": {
       "title": "播放",
-      "bgmVolume": "BGM音量",
-      "sfxVolume": "音效音量",
+      "bgmVolume": "BGM音量（%）",
+      "sfxVolume": "音效音量（%）",
       "startPosition": {
         "title": "播放起點",
         "view": "檢視位置",
         "cursor": "游標位置"
       },
       "follow": "跟隨",
-      "followPosition": "跟隨位置",
+      "followPosition": "跟隨位置（%）",
       "previewDuration": "預覽時長（毫秒）"
     },
     "preview": {
@@ -687,7 +687,7 @@
       },
       "noteSpeed": "音符速度",
       "renderScale": "渲染比例",
-      "showEffects": "特效",
+      "showEffects": "顯示特效",
       "showTime": "顯示時間",
       "highlightSelection": "醒目顯示選取物件",
       "showHitboxes": "顯示判定範圍",
@@ -716,7 +716,7 @@
     },
     "touch": {
       "title": "觸碰",
-      "quickScrollZone": "快速捲動區",
+      "quickScrollZone": "快速捲動區（%）",
       "scrollInertia": "滾動慣性",
       "longPressContextMenu": "長按開啟右鍵選單"
     },

@@ -618,7 +618,7 @@
       "locale": "Langue",
       "elevationSideBySide": "Éditeur d’élévation côte à côte",
       "autoSave": "Sauvegarde Automatique",
-      "autoSaveDelay": "Délai de la Sauvegarde Automatique",
+      "autoSaveDelay": "Délai de la Sauvegarde Automatique (s)",
       "waveformVisualization": {
         "title": "Visualisation de la forme d’onde",
         "off": "Désactivée",
@@ -626,7 +626,7 @@
         "volume": "Volume",
         "changed": "Le mode de visualisation de la forme d’onde a changé. Rechargez le fichier audio pour appliquer ce changement."
       },
-      "maxScrollX": "Défilement horizontal maximal",
+      "maxScrollX": "Défilement horizontal maximal (voies)",
       "zeroWidthNotes": {
         "title": "Notes de largeur nulle",
         "off": "Désactivé",
@@ -664,15 +664,15 @@
     },
     "play": {
       "title": "Lecture",
-      "bgmVolume": "Volume de la Musique",
-      "sfxVolume": "Volume des Effets Sonores",
+      "bgmVolume": "Volume de la Musique (%)",
+      "sfxVolume": "Volume des Effets Sonores (%)",
       "startPosition": {
         "title": "Position de départ",
         "view": "Vue",
         "cursor": "Curseur"
       },
       "follow": "Suivre",
-      "followPosition": "Suivre la Position",
+      "followPosition": "Suivre la Position (%)",
       "previewDuration": "Durée de l’aperçu (ms)"
     },
     "preview": {
@@ -687,7 +687,7 @@
       },
       "noteSpeed": "Vitesse des notes",
       "renderScale": "Échelle de rendu",
-      "showEffects": "Effets",
+      "showEffects": "Afficher les effets",
       "showTime": "Afficher le temps",
       "highlightSelection": "Mettre la sélection en évidence",
       "showHitboxes": "Afficher les hitboxes",
@@ -716,7 +716,7 @@
     },
     "touch": {
       "title": "Tactile",
-      "quickScrollZone": "Zone de défilement rapide",
+      "quickScrollZone": "Zone de défilement rapide (%)",
       "scrollInertia": "Inertie de défilement",
       "longPressContextMenu": "Appui long pour le menu contextuel"
     },
