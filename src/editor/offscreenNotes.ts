@@ -19,16 +19,22 @@ export type OffscreenNoteGroup<T = unknown> = {
     targets: T[]
 }
 
+// One line of the chart's corner range labels.
+export const RANGE_LABEL_HEIGHT = 24
+
+/** Badges sit inset from top and bottom; notes in those margins count in the nearest slot. */
 export const groupOffscreenNotes = <T>(
     notes: readonly OffscreenNotePosition<T>[],
     width: number,
     top: number,
     bottom: number,
+    inset = 0,
 ) => {
     const groups = new Map<string, OffscreenNoteGroup<T>>()
-    if (!(width > 0) || bottom - top < 24) return []
-    const slots = Math.max(1, Math.floor((bottom - top) / 28))
-    const spacing = (bottom - top) / slots
+    const first = top + inset
+    if (!(width > 0) || bottom - inset - first < 24) return []
+    const slots = Math.max(1, Math.floor((bottom - inset - first) / 28))
+    const spacing = (bottom - inset - first) / slots
     for (const note of notes) {
         if (
             !Number.isFinite(note.left) ||
@@ -40,7 +46,7 @@ export const groupOffscreenNotes = <T>(
             continue
         const side = note.right < 0 ? 'left' : note.left > width ? 'right' : undefined
         if (!side) continue
-        const slot = Math.min(slots - 1, Math.floor((note.y - top) / spacing))
+        const slot = Math.min(slots - 1, Math.max(0, Math.floor((note.y - first) / spacing)))
         const key = `${side}:${slot}`
         let group = groups.get(key)
         if (group) {
@@ -51,7 +57,7 @@ export const groupOffscreenNotes = <T>(
             group = {
                 side,
                 slot,
-                y: top + (slot + 0.5) * spacing,
+                y: first + (slot + 0.5) * spacing,
                 spacing,
                 count: 1,
                 highlighted: note.highlighted,

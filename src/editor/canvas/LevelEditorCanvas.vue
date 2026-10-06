@@ -17,7 +17,7 @@ import { isVisible } from '../tools/utils'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
 import { hitOffscreenIndicator, useOffscreenIndicators } from '../offscreenIndicators'
-import { groupOffscreenNotes } from '../offscreenNotes'
+import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid } from './grid'
@@ -87,7 +87,8 @@ const offscreenGroups = computed(() => {
               ]
             : [],
     )
-    return groupOffscreenNotes(notes, view.w, 0, view.h)
+    // Clear of the range labels in the corners.
+    return groupOffscreenNotes(notes, view.w, 0, view.h, RANGE_LABEL_HEIGHT)
 })
 useOffscreenIndicators({
     navigation: () => undefined,

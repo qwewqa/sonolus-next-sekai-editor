@@ -11,7 +11,7 @@ import {
     selectOffscreenNotes,
     useOffscreenIndicators,
 } from '../offscreenIndicators'
-import { groupOffscreenNotes } from '../offscreenNotes'
+import { groupOffscreenNotes, offscreenBadgeHitWidth } from '../offscreenNotes'
 import { modals } from '../../modals'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
@@ -783,6 +783,11 @@ watchEffect(() => {
     const labels = i18n.value.elevation
     const showGroupName = settings.showGroupName
     const showStageName = settings.showStageName
+    // Axis labels move right of any left badges, which would cover them.
+    const leftBadges = offscreenGroups.value.filter(({ side }) => side === 'left')
+    const axisLabelLeft = leftBadges.length
+        ? Math.max(...leftBadges.map(({ count }) => offscreenBadgeHitWidth(count))) + 4
+        : undefined
     if (!element || !layout.width || !layout.height || !isAppActive.value) {
         frame.cancel()
         return
@@ -802,7 +807,7 @@ watchEffect(() => {
         const max = layout.elevationCenter + layout.height / 2 / layout.elevationScale
         const division = layout.elevationScale >= 60 ? 8 : layout.elevationScale >= 30 ? 4 : 1
         ctx.save()
-        ctx.textAlign = 'right'
+        ctx.textAlign = axisLabelLeft === undefined ? 'right' : 'left'
         ctx.textBaseline = 'alphabetic'
         const digits = ctx.measureText('0123456789')
         const labelBaseline = (digits.actualBoundingBoxAscent - digits.actualBoundingBoxDescent) / 2
@@ -814,8 +819,17 @@ watchEffect(() => {
             ctx.lineTo(layout.width, y)
             ctx.stroke()
             if (i % division === 0) {
+                const label = `${i / division}`
+                // Inside the grid, a halo keeps the label off its line.
+                if (axisLabelLeft !== undefined) {
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
+                    ctx.lineWidth = 3
+                    ctx.lineJoin = 'round'
+                    ctx.strokeText(label, axisLabelLeft, y + labelBaseline)
+                    ctx.lineWidth = 1
+                }
                 ctx.fillStyle = '#ffffff80'
-                ctx.fillText(`${i / division}`, 28, y + labelBaseline)
+                ctx.fillText(label, axisLabelLeft ?? 28, y + labelBaseline)
             }
         }
         ctx.restore()

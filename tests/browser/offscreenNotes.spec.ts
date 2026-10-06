@@ -279,3 +279,82 @@ test.describe('phone', () => {
         })
     })
 })
+
+test('badges keep clear of the range labels and the elevation axis', async ({ page }) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [
+                    // Notes from the bottom of the view past its top.
+                    ...Array.from({ length: 80 }, (_, index) => [
+                        { ...base, beat: index / 4, left: -40, size: 2 },
+                    ]),
+                    ...Array.from({ length: 10 }, (_, index) => [
+                        { ...base, beat: 12, left: index ? -40 : 0, size: 2, elevation: index },
+                    ]),
+                ],
+            },
+            4,
+        )
+        const [target] = [...history.state.value.store.slides.note.values()]
+            .flat()
+            .filter((note) => note.beat === 12 && note.left === 0)
+        history.replaceState({ ...history.state.value, selectedEntities: [target!] })
+        const fillText = CanvasRenderingContext2D.prototype.fillText
+        const axis: number[] = []
+        Object.assign(window, { axisLabelXs: axis })
+        // Keeps the labels of the latest elevation frame.
+        const clearRect = CanvasRenderingContext2D.prototype.clearRect
+        CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+            if (this.canvas.classList.contains('elevation-canvas')) axis.length = 0
+            return clearRect.apply(this, args)
+        }
+        CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+            if (this.canvas.classList.contains('elevation-canvas') && /^-?\d+$/.test(text))
+                axis.push(x)
+            return fillText.call(this, text, x, y, maxWidth)
+        }
+    })
+    const editor = page.locator('.editor-chart').locator('..')
+    const range = await page.evaluate(() =>
+        [...document.querySelectorAll('span')]
+            .filter((span) => /^\d\d:\d\d\.\d{3}$/.test(span.textContent ?? ''))
+            .map((span) => span.getBoundingClientRect())
+            .filter(({ height, top }) => height && top >= 0)
+            .map(({ top, bottom }) => ({ top, bottom })),
+    )
+    const [upper, lower] = range.sort((a, b) => a.top - b.top)
+    const badges = await editor
+        .locator('.offscreen-note-indicator')
+        .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect()))
+    expect(badges.length).toBeGreaterThan(5)
+    for (const badge of badges) {
+        expect(badge.top).toBeGreaterThanOrEqual(upper!.bottom)
+        expect(badge.bottom).toBeLessThanOrEqual(lower!.top)
+    }
+
+    await page.keyboard.press('t')
+    const pane = page.locator('.elevation-editor')
+    await expect(pane.locator('[data-side="left"]').first()).toBeVisible()
+    await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    )
+    const canvasLeft = await pane
+        .locator('.elevation-canvas')
+        .evaluate((canvas) => canvas.getBoundingClientRect().left)
+    const badgeRight = Math.max(
+        ...(await pane
+            .locator('[data-side="left"]')
+            .evaluateAll((elements) =>
+                elements.map((element) => element.getBoundingClientRect().right),
+            )),
+    )
+    const xs = await page.evaluate(
+        () => (window as unknown as { axisLabelXs: number[] }).axisLabelXs,
+    )
+    expect(xs.length).toBeGreaterThan(0)
+    for (const x of xs) expect(canvasLeft + x).toBeGreaterThanOrEqual(badgeRight)
+})

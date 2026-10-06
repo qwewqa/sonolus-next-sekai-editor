@@ -120,3 +120,23 @@ test('ctrl toggles badge notes into or out of the selection', () => {
     assert.deepEqual(combineSelection(['a', 'b', 'c'], ['b', 'c'], true), ['a'])
     assert.deepEqual(combineSelection(['a'], [], true), ['a'])
 })
+
+test('an inset keeps badges clear of the edges and counts the notes there', () => {
+    const groups = groupOffscreenNotes(
+        [note(-10, -1, 0), note(-10, -1, 10), note(-10, -1, 200), note(-10, -1, 395)],
+        300,
+        0,
+        400,
+        24,
+    )
+    // 352 px between the insets: 12 slots of 29.3 px from y = 24.
+    assert.deepEqual(
+        groups.map(({ slot, count, y }) => [slot, count, Math.round(y)]),
+        [
+            [0, 2, 39],
+            [6, 1, 215],
+            [11, 1, 361],
+        ],
+    )
+    assert.ok(groups.every(({ y, spacing }) => y - spacing / 2 >= 24 && y + spacing / 2 <= 376))
+})
