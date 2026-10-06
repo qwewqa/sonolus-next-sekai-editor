@@ -167,7 +167,7 @@ export const deleteStage = (stageId: StageId) => {
 }
 
 /** Deletes stages with their objects as one step, keeping at least one stage. */
-export const deleteStages = (stageIds: ReadonlySet<StageId>) => {
+const deleteStages = (stageIds: ReadonlySet<StageId>) => {
     const ids = new Set([...stageIds].filter((id) => stages.value.has(id)))
     if (!ids.size) return
     stageFolderOps.commitRemoval(

@@ -1,5 +1,5 @@
 /** Sizes of the segmented control, in rem. */
-export const segmentedSizes = {
+const segmentedSizes = {
     /** Track padding on both sides. */
     track: 0.25,
     /** Padding inside each segment. */
@@ -23,10 +23,10 @@ export const segmentsFit = (
 ) => availableWidth > 0 && segmentedWidth(labelWidths, optional, rem) <= availableWidth
 
 /** Room, in rem, a glyph and its gap take before a segment's name. */
-export const segmentGlyphWidth = 1.25
+const segmentGlyphWidth = 1.25
 
 /** A select's insets, in rem, around its value with a leading glyph and the chevron. */
-export const selectGlyphInsets = 4.125
+const selectGlyphInsets = 4.125
 
 export type ChoiceLayout = 'glyphs' | 'segments' | 'select'
 

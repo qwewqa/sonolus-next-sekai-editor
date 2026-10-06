@@ -40,7 +40,7 @@ export const propertyKinds: readonly PropertyKind[] = [
 ]
 
 /** Kinds that only exist with dynamic stages. */
-export const stageKinds: ReadonlySet<PropertyKind> = new Set([
+const stageKinds: ReadonlySet<PropertyKind> = new Set([
     'camera',
     'mask',
     'pivot',
@@ -92,7 +92,7 @@ const eventJoints: EntityType[] = [
     'stageTransformEventJoint',
 ]
 
-export const easeLabel = (t: Localization, ease: Ease) => {
+const easeLabel = (t: Localization, ease: Ease) => {
     const mode = easeMode(ease)
     const name = easeFunctionOf(ease)
     return mode && name

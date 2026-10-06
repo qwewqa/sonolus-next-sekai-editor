@@ -173,7 +173,7 @@ const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.06, stroke: 0.05 }
 const LABEL_OFFSET = 0.23
 
 /** Labels point outward from the stage, and inward where outward would leave the view. */
-export const timeScaleLabelDirection = (
+const timeScaleLabelDirection = (
     x: number,
     width: number,
     { l, r }: Pick<CanvasBounds, 'l' | 'r'>,

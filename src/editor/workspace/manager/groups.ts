@@ -152,7 +152,7 @@ export const deleteGroup = (groupId: GroupId) => {
 }
 
 /** Deletes groups with their objects as one step, keeping at least one group. */
-export const deleteGroups = (groupIds: ReadonlySet<GroupId>) => {
+const deleteGroups = (groupIds: ReadonlySet<GroupId>) => {
     const ids = new Set([...groupIds].filter((id) => groups.value.has(id)))
     if (!ids.size) return
     groupFolderOps.commitRemoval(

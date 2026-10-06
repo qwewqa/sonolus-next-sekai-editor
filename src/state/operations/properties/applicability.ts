@@ -4,7 +4,7 @@ import type { EditableObject } from '../editable'
 import { getNoteFieldsIn, type NoteFields } from './noteFields'
 
 /** Keys whose edits also set another key, so they must reach its objects too. */
-export const coupledKeys: Partial<Record<keyof EditableObject, (keyof EditableObject)[]>> = {
+const coupledKeys: Partial<Record<keyof EditableObject, (keyof EditableObject)[]>> = {
     isFake: ['connectorIsFake'],
     isCritical: ['connectorActiveIsCritical'],
 }
@@ -13,7 +13,7 @@ export const noteFieldsApply = (fields: NoteFields) => (key: string) =>
     !(key in fields) || fields[key as keyof NoteFields]
 
 /** Which of its keys an object uses; a tail's connector or an attached tick's lane is unused. */
-export const appliesIn = (store: Store, entity: Entity) =>
+const appliesIn = (store: Store, entity: Entity) =>
     entity.type === 'note' ? noteFieldsApply(getNoteFieldsIn(store, entity)) : () => true
 
 export const fieldAppliesIn = (store: Store, entity: Entity, key: string) =>

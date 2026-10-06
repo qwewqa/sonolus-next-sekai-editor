@@ -1,4 +1,4 @@
-export const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
+const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
 
 export type EaseMode = (typeof easeModes)[number]
 

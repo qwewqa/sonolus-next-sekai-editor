@@ -52,7 +52,7 @@ export const mixedRange = (field: FieldUsage | undefined) => {
 }
 
 /** Counts the objects behind each option; all zero when nothing is mixed. */
-export const optionCounts = (field: FieldUsage | undefined, options: readonly unknown[]) =>
+const optionCounts = (field: FieldUsage | undefined, options: readonly unknown[]) =>
     field?.usage ? countOptions(field.usage, options, matcher(field)) : options.map(() => 0)
 
 export const mixedOptions = (

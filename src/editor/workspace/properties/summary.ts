@@ -2,7 +2,7 @@ import type { Entity, EntityType } from '../../../state/entities'
 import type { SlideId } from '../../../state/entities/slides'
 
 /** Editable kinds in the order the summary lists them. */
-export const summaryKinds = [
+const summaryKinds = [
     'note',
     'bpm',
     'timeScale',

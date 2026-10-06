@@ -3,7 +3,7 @@ import { EaseType, clamp, ease, isStepEase, lerp, safeUnlerp, type EaseTypeValue
 
 // sekai/lib/connector.py connector_curve_detail and circular_connector_fracs.
 
-export const CONNECTOR_CURVE_ERROR = 2 * (2.5 / 1080)
+const CONNECTOR_CURVE_ERROR = 2 * (2.5 / 1080)
 
 const CURVE_BINS = 16
 const CURVE_BIN_SAMPLES = 16
@@ -66,12 +66,7 @@ const curveDerivativeBounds = (() => {
     return Float64Array.from(values)
 })()
 
-export const easeDerivativeBound = (
-    easeType: EaseTypeValue,
-    order: 1 | 2,
-    start: number,
-    end: number,
-) => {
+const easeDerivativeBound = (easeType: EaseTypeValue, order: 1 | 2, start: number, end: number) => {
     const first = clamp(Math.floor(start * CURVE_BINS), 0, CURVE_BINS - 1)
     const last = clamp(Math.ceil(end * CURVE_BINS) - 1, first, CURVE_BINS - 1)
     let run = 1
