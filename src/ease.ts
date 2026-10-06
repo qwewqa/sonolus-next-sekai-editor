@@ -1,4 +1,6 @@
+// Step first, as the usual change.
 export const easeFamilies = [
+    'step',
     'linear',
     'sine',
     'quad',
@@ -9,18 +11,13 @@ export const easeFamilies = [
     'circ',
     'back',
     'elastic',
-    'step',
 ] as const
 
 export type EaseFamily = (typeof easeFamilies)[number]
 
-// Step first, as the usual time scale change.
-export const timeScaleEaseFamilies = [
-    'step',
-    ...easeFamilies.filter(
-        (family) => family !== 'back' && family !== 'elastic' && family !== 'step',
-    ),
-] as const satisfies readonly EaseFamily[]
+export const timeScaleEaseFamilies = easeFamilies.filter(
+    (family) => family !== 'back' && family !== 'elastic',
+)
 
 export const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
 

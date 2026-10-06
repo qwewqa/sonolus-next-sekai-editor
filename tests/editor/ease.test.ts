@@ -5,6 +5,7 @@ import {
     complementEase,
     cycleEase,
     ease,
+    easeFamilies,
     easeFromValue,
     easeIntegral,
     easeLevelDataValues,
@@ -14,6 +15,7 @@ import {
     sampleEase,
     setEaseEditFamily,
     setEaseEditMode,
+    timeScaleEaseFamilies,
     timeScaleEaseLevelDataValues,
     type Ease,
     type TimeScaleEase,
@@ -214,6 +216,14 @@ test('partial ease edits keep the other half of each value', () => {
     assert.equal(setEaseEditMode<Ease>(undefined, 'in'), 'mode:in')
     assert.equal(setEaseEditMode<Ease>('outQuad', undefined), 'family:quad')
     assert.equal(setEaseEditMode<Ease>('mode:out', undefined), undefined)
+})
+
+test('every ease list puts Step first, time scales leaving out overshooting families', () => {
+    assert.equal(easeFamilies[0], 'step')
+    assert.deepEqual(
+        timeScaleEaseFamilies,
+        easeFamilies.filter((family) => family !== 'back' && family !== 'elastic'),
+    )
 })
 
 test('quick edits cycle through the modes of the current family, then linear', () => {
