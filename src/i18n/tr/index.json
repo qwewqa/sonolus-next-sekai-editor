@@ -421,8 +421,8 @@
       "title": "Yardım",
       "touchscreen": {
         "title": "Dokunmatik Ekran",
-        "tap": "Dokunmak için tek parmakla dokunun.",
-        "drag": "Tek parmakla sürükleyin.",
+        "tap": "Geçerli aracı kullanmak için tek parmakla dokunun.",
+        "drag": "Geçerli aracı kullanmak için tek parmakla sürükleyin.",
         "quickScroll": "Kaydırmak için hızlı kaydırma alanında tek parmakla sürükleyin.",
         "deselect": "Seçimi kaldırmak için iki parmakla dokunun.",
         "scrollY": "Kaydırmak için iki parmağınızı dikey olarak kaydırın.",
@@ -454,7 +454,7 @@
         "move": "Birden fazla nesneyi taşımak için nesneleri sürükleyin.",
         "selectMultiple": "Birden fazla nesneyi seçmek için boş alanı sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun."
       },
       "eraserTool": {
         "title": "Silgi Aracı",
@@ -467,7 +467,7 @@
         "brush": "Fırçalamak için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "brushMultiple": "Birden fazla nesneyi fırçalamak için sürükleyin.",
-        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun."
       },
       "pasteTool": {
         "title": "Yapıştırma Aracı",
@@ -481,7 +481,7 @@
         "add": "Eklemek için boş alana dokunun.",
         "move": "1 notayı taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın.",
+        "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Nota aracına geçin."
       },
       "slideTool": {
@@ -492,7 +492,7 @@
         "connect": "Bir nota seçiliyken bağlamak için boş alana dokunun.",
         "move": "1 notayı taşımak için sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
-        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın.",
+        "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
       },
       "splitSlide": {
@@ -503,7 +503,7 @@
       "generateSlideNotesTool": {
         "title": "Kaydırma Notası Oluşturma Aracı",
         "generate": "Tüm kaydırma boyunca nota oluşturmak için dokunarak veya sürükleyerek 1 nota seçin.",
-        "generateMultiple": "Aralarında nota oluşturmak için dokunarak veya sürükleyerek 2 nota seçin.",
+        "generateMultiple": "Aralarında nota oluşturmak için dokunarak veya sürükleyerek en az 2 nota seçin.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun."
       },
       "bpmTool": {
@@ -522,7 +522,7 @@
         "move": "Taşımak için 1 zaman ölçeğini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "markers": "Elmas işaretçiler Kaydırma geçişini kullanır. Noktalı çizgilerdeki içi boş işaretçiler notaları gizler.",
-        "ease": "Değerin yanındaki eğri, gruptaki bir sonraki değişikliğe kadar yumuşatmayı gösterir; hız doğrudan atladığında (Hiçbiri, Basamak Giriş, son değişiklik veya aynı değere değişiklik) soluk görünür."
+        "ease": "Eğri, gruptaki bir sonraki değişikliğe geçişi gösterir."
       },
       "cameraEventTool": {
         "title": "Kamera Olayı Aracı",
@@ -919,19 +919,19 @@
     "initialize": "Başlat",
     "autoSave": {
       "title": "Otomatik Kaydet",
-      "importing": "Seviye içe aktarılıyor…",
+      "importing": "Seviye geri yükleniyor…",
       "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin.",
       "unreadable": {
-        "message": "Son oturumunuzdaki kaydedilmemiş harita geri yüklenemedi. Editörün daha yeni bir sürümünden gelmiş ya da eksik saklanmış olabilir.",
-        "setAside": "Bir kenara ayrıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Silene kadar saklanır ve editör her açıldığında size yeniden sunulur. İndir, bir kopyasını dosya olarak kaydeder.",
-        "keptInPlace": "Bu sekmede otomatik kaydetme duraklatıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Silene kadar saklanır. İndir, bir kopyasını dosya olarak kaydeder.",
-        "waiting": "Daha önce geri yüklenemeyen bir harita hâlâ bir kenarda duruyor; bu yüzden bu harita yerinde kalıyor ve siz onu silene kadar bu sekmede otomatik kaydetme duraklatıldı. İndir, bir kopyasını dosya olarak kaydeder.",
-        "earlier": "Önceki bir oturumda geri yüklenemeyen kaydedilmemiş bir harita hâlâ bir kenarda duruyor.",
-        "earlierHint": "Silene kadar saklanır ve editör her açıldığında size yeniden sunulur. İndir, bir kopyasını dosya olarak kaydeder.",
+        "message": "Son oturumunuzdaki kaydedilmemiş harita geri yüklenemedi. Editörün daha yeni bir sürümü gerekebilir veya kayıtlı veriler bozulmuş olabilir.",
+        "setAside": "Yeni değişiklikleriniz bu haritanın üzerine yazmayacak. Editör bir sonraki açılışta tekrar deneyecek.",
+        "keptInPlace": "Son oturumunuzun kopyasını silene kadar bu sekmede otomatik kaydetme duraklatılır.",
+        "waiting": "Editörde daha eski bir harita da kayıtlı. Son oturumunuzun kopyasını silene kadar bu sekmede otomatik kaydetme duraklatılır.",
+        "earlier": "Önceki bir oturumdaki kaydedilmemiş harita hâlâ geri yüklenemiyor.",
+        "earlierHint": "Editör bir sonraki açılışta tekrar deneyecek.",
         "download": "İndir",
-        "downloaded": "Bir kopyası indirildi. Harita, siz silene kadar saklanmaya devam eder.",
+        "downloaded": "İndirme başlatıldı.",
         "discard": "Sil",
-        "restorable": "Önceki bir oturumda geri yüklenemeyen kaydedilmemiş bir harita artık geri yüklenebilir. Geri yüklemek, son oturumunuzdan az önce geri yüklenen haritanın ve kaydedilmemiş değişikliklerinin yerini alır. İptal Et, onu bir dahaki sefere kadar bir kenarda tutar.",
+        "restorable": "Önceki bir oturumdaki kaydedilmemiş harita artık geri yüklenebilir. Geri yüklemek, mevcut haritanın ve kaydedilmemiş değişikliklerinin yerini alır.",
         "restore": "Geri Yükle",
         "restored": "Önceki bir oturumdaki kaydedilmemiş harita geri yüklendi"
       }
@@ -1181,7 +1181,7 @@
         "press": "Bir tuşa basın veya temizlemek için tekrar tıklayın",
         "clear": "Bu kısayolu kaldırmak için tekrar tıklayın",
         "unassigned": "Atanmamış",
-        "reserved": "{0} tarayıcıya ayrılmıştır; başka bir tuşa basın",
+        "reserved": "{0} tarayıcıya veya sisteme ayrılmıştır; başka bir tuşa basın",
         "altGraph": "{0} birçok klavyede karakter yazmak için kullanılır; başka bir tuşa basın",
         "alsoRuns": "{0} komutunu da çalıştırır",
         "browserReload": "Tarayıcının yenileme kısayolunun yerine geçer",
