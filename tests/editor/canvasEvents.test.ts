@@ -5,6 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
+import { drawGrid } from '../../src/editor/canvas/grid'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { getPathD } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
@@ -643,4 +644,21 @@ test('time-scale labels turn inward only where outward would leave the view', ()
             ['B', 9.7, 'start'],
         ],
     )
+})
+
+test('a BPM label takes the place of beat labels near enough to overlap', () => {
+    const { context, canvas } = makeContext({
+        bpms: [
+            { beat: 0, bpm: 120 },
+            { beat: 9.25, bpm: 60 },
+        ],
+    })
+    const draw = (ups: number) => {
+        canvas.labels = []
+        drawGrid({ ...context, ups }, { min: 8, max: 11 }, { min: 0, max: 0 }, 1, 1, 'beat', true)
+        return canvas.labels.map(({ text }) => text)
+    }
+    // Beat 9 is 0.125 s before the change, beat 10 0.75 s after.
+    assert.deepEqual(draw(-1), ['9', '11', '12'])
+    assert.deepEqual(draw(-10), ['9', '10', '11', '12'])
 })

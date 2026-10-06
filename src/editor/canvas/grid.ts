@@ -5,6 +5,9 @@ import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
+// Half the beat (0.4) and BPM (0.5) label sizes.
+const BPM_LABEL_CLEARANCE = 0.45
+
 export const drawGrid = (
     context: EditorDrawContext,
     beats: Range<number>,
@@ -72,15 +75,20 @@ export const drawGrid = (
     }
 
     ctx.globalAlpha = 0.5
-    // A BPM label takes the place of the beat label it would overlap.
-    const bpmBeats = new Set(isBpmVisible ? state.bpms.map(({ x }) => x) : [])
+    // A BPM label takes the place of the beat labels it would overlap.
+    const bpmYs = isBpmVisible
+        ? state.bpms
+              .filter(({ x }) => x > beats.min - 1 && x < beats.max + 1)
+              .map(({ x }) => beatToTime(state.bpms, x) * ups)
+        : []
     for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
-        if (bpmBeats.has(beat)) continue
+        const y = beatToTime(state.bpms, beat) * ups
+        if (bpmYs.some((bpmY) => Math.abs(y - bpmY) < BPM_LABEL_CLEARANCE)) continue
         drawText(
             context,
             formatBeatPosition(state.bpms, beat, beatDisplay),
             6.1,
-            beatToTime(state.bpms, beat) * ups,
+            y,
             '#fff',
             0.4,
             'start',
