@@ -11,8 +11,8 @@ import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD } from '../entities/events/path'
 import type { ScopeLookup } from '../scopeRules'
-import { drawText } from './text'
-import type { EditorDrawContext } from './types'
+import { drawText, measureText } from './text'
+import type { CanvasBounds, EditorDrawContext } from './types'
 
 type DrawnEventEntity = Exclude<Entity, { type: 'note' | 'connector' }>
 
@@ -160,6 +160,20 @@ const stackOf = <T extends Entity>(
 // Lanes, in proportion to the 0.5-lane label font; nearer its value than its marker.
 const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.06, stroke: 0.05 }
 
+// From the marker to the ease glyph.
+const LABEL_OFFSET = 0.23
+
+/** Labels point outward from the stage, and inward where outward would leave the view. */
+export const timeScaleLabelDirection = (
+    x: number,
+    width: number,
+    { l, r }: Pick<CanvasBounds, 'l' | 'r'>,
+): 1 | -1 => {
+    const outward = x > 0 ? 1 : -1
+    const fits = (direction: 1 | -1) => (direction > 0 ? x + width <= r : x - width >= l)
+    return fits(outward) || !fits(-outward as 1 | -1) ? outward : (-outward as 1 | -1)
+}
+
 // A plain jump: Step In, the last change, or one to the same value.
 const INSTANT_ALPHA = 0.7
 
@@ -284,8 +298,15 @@ export const drawEvent = (
             // A same-beat jump reads as one label, in the order it plays.
             const stack = stackOf(state.store.grid.timeScale, entity, ({ groupId }) => groupId)
             if (stack && stack[0] !== entity) break
-            const direction = x > 0 ? 1 : -1
-            const labelX = x + 0.23 * direction
+            const text = (stack ?? [entity])
+                .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
+                .join('→')
+            const direction = timeScaleLabelDirection(
+                x,
+                LABEL_OFFSET + EASE_GLYPH.width + EASE_GLYPH.gap + measureText(context, text, 0.5),
+                context.bounds,
+            )
+            const labelX = x + LABEL_OFFSET * direction
             const glyphWidth = drawEaseGlyph(
                 context,
                 stack?.at(-1) ?? entity,
@@ -296,14 +317,12 @@ export const drawEvent = (
             )
             drawText(
                 context,
-                (stack ?? [entity])
-                    .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
-                    .join('→'),
+                text,
                 labelX + glyphWidth * direction,
                 y,
                 '#ff0',
                 0.5,
-                x > 0 ? 'start' : 'end',
+                direction > 0 ? 'start' : 'end',
                 context.figureMiddle,
             )
             if (
@@ -314,11 +333,11 @@ export const drawEvent = (
                 drawText(
                     context,
                     state.groups.get(entity.groupId)?.name ?? '',
-                    x + (x > 0 ? -0.2 : 0.2),
+                    x - 0.2 * direction,
                     y,
                     '#0aa',
                     0.4,
-                    x > 0 ? 'end' : 'start',
+                    direction > 0 ? 'end' : 'start',
                 )
             }
             break

@@ -121,7 +121,15 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         ctx,
                         scale,
                         pixelRatio,
-                        bounds: { l: 0, r: 0, t: 0, b: 0, w: 0, h: 0 },
+                        // The lanes the canvas shows, so labels keep their side.
+                        bounds: {
+                            l: 7 - anchor.x / scale,
+                            r: 7 + (width - anchor.x) / scale,
+                            t: 0,
+                            b: 0,
+                            w: width / scale,
+                            h: 0,
+                        },
                         ups,
                         state,
                         defaultGroupId: group,

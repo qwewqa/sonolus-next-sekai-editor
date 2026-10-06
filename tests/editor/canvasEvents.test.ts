@@ -102,6 +102,11 @@ class RecordingCanvas {
         })
     }
 
+    // Every glyph is 0.6 em wide.
+    measureText(text: string) {
+        return { width: text.length * 0.6 * parseFloat(this.font) }
+    }
+
     fillText(text: string, x: number, y: number) {
         const [sx, sy, tx, ty] = this.transform
         this.labels.push({
@@ -601,5 +606,41 @@ test('a same-beat pair draws one label in the order it plays', () => {
     assert.deepEqual(
         canvas.labels.map(({ text }) => text),
         ['1x→2x', '×2'],
+    )
+})
+
+test('time-scale labels turn inward only where outward would leave the view', () => {
+    const timeScale = (beat: number, editorLane: number, value: number): TimeScaleObject => ({
+        groupId: 2 as GroupId,
+        beat,
+        editorLane,
+        timeScale: value,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    })
+    const { context, canvas } = makeContext({
+        groups: new Map([[2 as GroupId, { name: 'B' }]]),
+        timeScales: [
+            timeScale(2, -8, 1),
+            timeScale(2, -8, 0.25),
+            timeScale(3, -6, 2),
+            timeScale(4, 9.5, 4),
+        ],
+    })
+    for (const entities of context.state.store.grid.timeScale.values())
+        for (const entity of entities) drawEvent(context, entity, true)
+    // Marker gap and ease take 0.59 lanes, and each test glyph 0.3.
+    assert.deepEqual(
+        canvas.labels.map(({ text, x, align }) => [text, Math.round(x * 100) / 100, align]),
+        [
+            ['1x→0.25x', -7.41, 'start'],
+            ['B', -8.2, 'end'],
+            ['2x', -6.59, 'end'],
+            ['B', -5.8, 'start'],
+            ['4x', 8.91, 'end'],
+            ['B', 9.7, 'start'],
+        ],
     )
 })

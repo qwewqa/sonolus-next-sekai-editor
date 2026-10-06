@@ -32,6 +32,20 @@ export const measureFigureMiddle = (fontFamily: string) => {
     return middle > 0 ? middle : FIGURE_MIDDLE
 }
 
+/** A label's width in scene units, as drawText draws it. */
+export const measureText = (
+    { ctx, scale, fontFamily }: EditorDrawContext,
+    text: string,
+    size = 0.4,
+) => {
+    ctx.save()
+    ctx.font = `${size * scale}px ${fontFamily}`
+    ctx.fontKerning = 'normal'
+    const { width } = ctx.measureText(normalizeSvgText(text))
+    ctx.restore()
+    return width / scale
+}
+
 /** Draws a label centred `middle` ems above its baseline: SVG middle by default. */
 export const drawText = (
     { ctx, scale, fontFamily, fontMiddle }: EditorDrawContext,
