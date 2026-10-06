@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { provide } from 'vue'
+import { stackLongValuesKey } from '../../modals/form/fieldLayout'
+
 defineProps<{
     title: string
 }>()
+
+// Settings values such as languages are long; on narrow screens they go below their label.
+provide(stackLongValuesKey, true)
 </script>
 
 <template>

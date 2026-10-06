@@ -324,3 +324,41 @@ test('visibility toggles list kinds in the tools’ order everywhere', async ({ 
     ])
     expect(result.cycle).toEqual(['note', 'bpm', 'timeScale', 'cameraEventJoint'])
 })
+
+for (const locale of ['fr', 'tr', 'en']) {
+    test(`${locale} settings values go below their label rather than truncate on a phone`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 375, height: 812 })
+        await page.evaluate(
+            (locale) => (window.editorTest.settings.locale = locale as never),
+            locale,
+        )
+        const dialog = page.getByRole('dialog')
+        await expect
+            .poll(() =>
+                dialog.locator('.form-field').evaluateAll((fields) => {
+                    const context = document.createElement('canvas').getContext('2d')!
+                    return fields.flatMap((field) => {
+                        const select = field.querySelector('select')
+                        if (!select?.getClientRects().length) return []
+                        const style = getComputedStyle(select)
+                        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+                        const text = select.selectedOptions[0]?.textContent.trim() ?? ''
+                        const room =
+                            select.clientWidth -
+                            parseFloat(style.paddingLeft) -
+                            parseFloat(style.paddingRight)
+                        return context.measureText(text).width > room + 0.5 ? [text] : []
+                    })
+                }),
+            )
+            .toEqual([])
+        // Short values keep their place beside the label.
+        const stacked = await dialog
+            .locator('.form-field.form-field-value-stacked')
+            .evaluateAll((fields) => fields.length)
+        expect(stacked).toBeGreaterThan(0)
+        expect(stacked).toBeLessThan(6)
+    })
+}

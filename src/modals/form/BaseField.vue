@@ -13,6 +13,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
+import { useStackLongValues, valueOverflows } from './fieldLayout'
 import { observeWidth, unobserveWidth } from './widthObserver'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
 
@@ -68,9 +69,12 @@ const description = computed(() =>
 )
 
 // A label that would clamp first drops its glyph, then takes back the room the
-// control's 10rem minimum claims; one observer serves every field.
+// control's 10rem minimum claims; one observer serves every field. Where asked,
+// as in Settings, a value that would truncate beside its label goes below it.
 const slots = useSlots()
 const labelRow = useTemplateRef<HTMLElement>('labelRow')
+const fieldRoot = useTemplateRef<HTMLElement>('fieldRoot')
+const stackLongValues = useStackLongValues()
 let frame = 0
 
 const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
@@ -79,8 +83,12 @@ const fitLabel = () => {
     const text = element?.querySelector<HTMLElement>('.form-field-text')
     if (!element || !text) return
     element.classList.remove('form-field-iconless', 'form-field-label-roomy')
+    fieldRoot.value?.classList.remove('form-field-value-stacked')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
+    const select = row.value?.querySelector('select')
+    if (stackLongValues && select && valueOverflows(select))
+        fieldRoot.value?.classList.add('form-field-value-stacked')
 }
 const refitLabel = () => {
     cancelAnimationFrame(frame)
@@ -242,7 +250,7 @@ watchEffect(
 <template>
     <!-- Lays out by the width the field actually receives (dialog, tool modal or
     dock panel), not by the viewport: the wrapper is the query container. -->
-    <div class="form-field">
+    <div ref="fieldRoot" class="form-field" @change="refitLabel">
         <!-- Coverage alone joins the label's column where it fits. -->
         <div ref="line" :class="{ 'form-field-inline': coverageOnly }">
             <component
@@ -576,6 +584,18 @@ watchEffect(
     .form-field-select-lead {
         display: none;
     }
+}
+
+/* A value too long to sit beside its label takes the full row below it. */
+.form-field.form-field-value-stacked .form-field-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+}
+
+.form-field.form-field-value-stacked .form-field-label {
+    width: auto;
 }
 
 /* A label that would otherwise clamp keeps the control to 9rem. */
