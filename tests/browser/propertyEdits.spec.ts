@@ -362,3 +362,54 @@ test('a flip that changes nothing adds no history entry', async ({ page }) => {
     await expect(page.locator('.notification')).not.toHaveText('No change')
     expect(await steps()).toBe(start + 1)
 })
+
+for (const tick of [false, true])
+    test(`a Beat edit of the initial BPM with ${tick ? 'an attached note' : 'a note'} keeps a BPM at 0`, async ({
+        page,
+    }) => {
+        const errors: string[] = []
+        page.on('pageerror', (error) => errors.push(error.message))
+        const result = await page.evaluate(async (tick) => {
+            const { fixtures, show, history, appImport } = window.editorTest
+            const base = fixtures.interaction.slides[0]![0]!
+            const note = (beat: number, left: number, isAttached = false) => ({
+                ...base,
+                beat,
+                left,
+                size: 2,
+                isAttached,
+            })
+            show(
+                {
+                    ...fixtures.interaction,
+                    bpms: [{ beat: 0, bpm: 120 }],
+                    slides: [tick ? [note(0, -4), note(2, 0, true), note(6, 4)] : [note(6, 0)]],
+                },
+                1,
+            )
+            const state = history.state.value
+            const bpm = [...state.store.grid.bpm.get(0)!].find((entity) => entity.beat === 0)!
+            const last = [...state.store.slides.note.values()].flat().at(-1)!
+            history.replaceState({ ...state, selectedEntities: [bpm, last] })
+            const { planEdit } = await appImport<
+                typeof import('../../src/state/operations/properties/plan')
+            >('/src/state/operations/properties/plan.ts')
+            const { editSelectedEditableEntities } = await appImport<
+                typeof import('../../src/editor/sidebars/default')
+            >('/src/editor/sidebars/default/index.ts')
+            // The live preview runs the same plan with preview options.
+            const preview = planEdit(
+                history.state.value,
+                [bpm, last],
+                { beat: 4 },
+                {
+                    autoAddGroup: false,
+                },
+            ).state
+            editSelectedEditableEntities({ beat: 4 })
+            const beats = (bpms: { x: number }[]) => bpms.map((integral) => integral.x)
+            return { preview: beats(preview.bpms), commit: beats(history.state.value.bpms) }
+        }, tick)
+        expect(result).toEqual({ preview: [0, 4], commit: [0, 4] })
+        expect(errors).toEqual([])
+    })

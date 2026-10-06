@@ -215,6 +215,7 @@ test('batch BPM properties retain batch semantics and commit one undo step', asy
             [...state.store.grid.bpm.values()]
                 .flatMap((entities) => [...entities])
                 .map(({ beat }) => beat)
+                .sort((a, b) => a - b)
         const result = { preview: beats(preview), committed: beats(history.state.value) }
         history.undoState()
         return {
@@ -222,5 +223,6 @@ test('batch BPM properties retain batch semantics and commit one undo step', asy
             undoRestoredSource: history.state.value === source && !history.canUndo.value,
         }
     })
-    expect(result).toEqual({ preview: [2, 2], committed: [2, 2], undoRestoredSource: true })
+    // The initial BPM stays at 0.
+    expect(result).toEqual({ preview: [0, 2, 2], committed: [0, 2, 2], undoRestoredSource: true })
 })

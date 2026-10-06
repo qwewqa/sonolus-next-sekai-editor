@@ -1,6 +1,8 @@
 import type { State } from '../..'
 import { applyEaseEdit } from '../../../ease'
 import type { Entity } from '../../entities'
+import { addBpm } from '../../mutations/bpm'
+import { getInStoreGrid } from '../../store/grid'
 import { createTransaction, type Transaction, type TransactionOptions } from '../../transaction'
 import { editBpm, editSelectedBpm } from '../bpm'
 import { isEditableEntity, type EditableEntity, type EditableObject } from '../editable'
@@ -73,15 +75,22 @@ export const planEdit = (
     const transaction = createTransaction(source, options)
     const editable = selected.filter(isEditableEntity)
     const lone = single && editable.length === 1 ? editable[0] : undefined
-    const state = transaction.commit(
-        selected.flatMap((entity) => {
-            if (!changed.includes(entity)) return [entity]
-            if (entity === lone && entity.type === 'bpm')
-                return editBpm(transaction, entity, object)
-            if (entity === lone && entity.type === 'timeScale')
-                return editTimeScale(transaction, entity, object)
-            return edits[entity.type as keyof typeof edits](transaction, entity as never, object)
-        }),
+    const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(
+        (entity) => entity.beat === 0,
     )
+    const results = selected.flatMap((entity) => {
+        if (!changed.includes(entity)) return [entity]
+        if (entity === lone && entity.type === 'bpm') return editBpm(transaction, entity, object)
+        if (entity === lone && entity.type === 'timeScale')
+            return editTimeScale(transaction, entity, object)
+        return edits[entity.type as keyof typeof edits](transaction, entity as never, object)
+    })
+    // The chart keeps a tempo at 0, as moves and flips do.
+    if (
+        initialBpm &&
+        !getInStoreGrid(transaction.store.grid, 'bpm', 0)?.some((entity) => entity.beat === 0)
+    )
+        addBpm(transaction, initialBpm)
+    const state = transaction.commit(results)
     return { state, changed }
 }
