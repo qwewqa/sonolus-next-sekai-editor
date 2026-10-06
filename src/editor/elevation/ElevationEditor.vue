@@ -290,6 +290,7 @@ const edit = (active: NonNullable<typeof drag>) => {
                 note,
                 constrainLaneObject(
                     {
+                        noteType: note.noteType,
                         left,
                         size,
                         elevation: note.elevation + active.deltaElevation,
