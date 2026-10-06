@@ -183,6 +183,29 @@ export const timeScaleLabelDirection = (
     return fits(outward) || !fits(-outward as 1 | -1) ? outward : (-outward as 1 | -1)
 }
 
+/** A time scale's label, if this one draws it: a same-beat stack labels once, at its first change. */
+export const timeScaleLabel = (context: EditorDrawContext, entity: TimeScaleEntity) => {
+    const stack = stackOf(context.state.store.grid.timeScale, entity, ({ groupId }) => groupId)
+    if (stack && stack[0] !== entity) return
+    const x = entity.editorLane
+    const text = (stack ?? [entity])
+        .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
+        .join('→')
+    const textWidth = measureText(context, text, 0.5)
+    const width = LABEL_OFFSET + EASE_GLYPH.width + EASE_GLYPH.gap + textWidth
+    const direction = timeScaleLabelDirection(x, width, context.bounds)
+    // From the ease glyph to the text's far end.
+    const near = x + LABEL_OFFSET * direction
+    const far = x + width * direction
+    return {
+        text,
+        textWidth,
+        direction,
+        min: Math.min(near, far),
+        max: Math.max(near, far),
+    }
+}
+
 // A plain jump: Step In, the last change, or one to the same value.
 const INSTANT_ALPHA = 0.7
 
@@ -294,6 +317,8 @@ export const drawEvent = (
             ctx.globalAlpha *= 0.5
             line(ctx, -6, y, 6, y)
             ctx.globalAlpha *= 2
+            // A time scale label reaching the beat column takes its place; both are 0.5 high.
+            if (context.timeScaleLabelYs?.right.some((other) => Math.abs(other - y) < 0.5)) break
             drawText(
                 context,
                 formatBpm(entity.bpm),
@@ -338,15 +363,9 @@ export const drawEvent = (
             if (part === 'line') break
             timeScaleMarker(ctx, x, y, isScroll, hideNotes)
             // A same-beat jump reads as one label, in the order it plays.
-            if (lead !== entity) break
-            const text = (stack ?? [entity])
-                .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
-                .join('→')
-            const direction = timeScaleLabelDirection(
-                x,
-                LABEL_OFFSET + EASE_GLYPH.width + EASE_GLYPH.gap + measureText(context, text, 0.5),
-                context.bounds,
-            )
+            const label = timeScaleLabel(context, entity)
+            if (!label) break
+            const { text, textWidth, direction } = label
             const labelX = x + LABEL_OFFSET * direction
             const glyphWidth = drawEaseGlyph(
                 context,
@@ -379,9 +398,7 @@ export const drawEvent = (
                 drawText(
                     context,
                     state.groups.get(entity.groupId)?.name ?? '',
-                    side === direction
-                        ? textX + (measureText(context, text, 0.5) + 0.2) * direction
-                        : x + 0.2 * side,
+                    side === direction ? textX + (textWidth + 0.2) * direction : x + 0.2 * side,
                     y,
                     '#0aa',
                     0.4,

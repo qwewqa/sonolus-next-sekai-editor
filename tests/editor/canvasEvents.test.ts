@@ -713,21 +713,21 @@ test('a BPM label takes the place of beat labels near enough to overlap', () => 
     assert.deepEqual(draw(-10), ['9', '10', '11', '12'])
 })
 
-test('edge time scale labels take the place of the time and beat labels they reach', () => {
-    const timeScale = (beat: number, editorLane: number): TimeScaleObject => ({
-        groupId,
-        beat,
-        editorLane,
-        timeScale: 15,
-        skip: 0,
-        timeScaleEase: 'inStep',
-        timeScaleTransition: 'timeScale',
-        hideNotes: false,
-    })
-    // At 120 BPM, beat 4 is 2 s and beat 6 is 3 s.
-    const { context, canvas } = makeContext({
-        timeScales: [timeScale(4, -6), timeScale(6, 6), timeScale(8, 3)],
-    })
+const edgeTimeScale = (beat: number, editorLane: number): TimeScaleObject => ({
+    groupId,
+    beat,
+    editorLane,
+    timeScale: 15,
+    skip: 0,
+    timeScaleEase: 'inStep',
+    timeScaleTransition: 'timeScale',
+    hideNotes: false,
+})
+
+/** The time and beat labels the grid draws beside these time scales, at 120 BPM. */
+const gridLabelsBeside = (timeScales: TimeScaleObject[], bounds?: { l: number; r: number }) => {
+    const { context, canvas } = makeContext({ timeScales })
+    if (bounds) context.bounds = { ...context.bounds, ...bounds }
     const entities = new Set(
         [...context.state.store.grid.timeScale.values()].flatMap((bucket) => [...bucket]),
     )
@@ -735,13 +735,57 @@ test('edge time scale labels take the place of the time and beat labels they rea
         { entity, part: 'line' as const },
         { entity, part: 'marker' as const },
     ])
-    const edges = timeScaleEdgeLabelYs(steps, context.state.bpms, context.ups)
-    assert.deepEqual(edges, { left: [-20], right: [-30] })
-    drawGrid(context, { min: 1, max: 9 }, { min: 1, max: 4 }, 1, 1, 'beat', false, edges)
-    const texts = canvas.labels.map(({ text }) => text)
-    // The lane -6 label covers 00:02, the lane 6 one beat 6 (shown as 7); the lane 3 one neither.
-    assert.ok(!texts.includes('00:02') && texts.includes('00:03') && texts.includes('00:04'))
-    assert.ok(!texts.includes('7') && texts.includes('5') && texts.includes('9'))
+    const edges = timeScaleEdgeLabelYs(context, steps)
+    drawGrid(context, { min: 1, max: 13 }, { min: 1, max: 7 }, 1, 1, 'beat', false, edges)
+    return { edges, texts: canvas.labels.map(({ text }) => text) }
+}
+
+test('edge time scale labels take the place of the time and beat labels they reach', () => {
+    // Beat b is b/2 s, shown as beat b + 1. Each label reaches 1.49 lanes past its marker.
+    const { edges, texts } = gridLabelsBeside([
+        edgeTimeScale(4, -6),
+        edgeTimeScale(6, 6),
+        edgeTimeScale(8, 3),
+        edgeTimeScale(10, -5),
+        edgeTimeScale(12, 5),
+    ])
+    assert.deepEqual(edges, { left: [-20, -50], right: [-30, -60] })
+    // Lanes ±6 and ±5 reach the columns; lane 3 doesn't.
+    for (const hidden of ['00:02', '00:05', '7', '13']) assert.ok(!texts.includes(hidden), hidden)
+    for (const shown of ['00:03', '00:04', '9', '11']) assert.ok(texts.includes(shown), shown)
+})
+
+test('labels that turn inward or sit on another lane leave the columns alone', () => {
+    // No room outside: the edge labels turn inward, away from the columns.
+    const turned = gridLabelsBeside([edgeTimeScale(4, -6), edgeTimeScale(6, 6)], { l: -7, r: 7 })
+    assert.deepEqual(turned.edges, { left: [], right: [] })
+    assert.ok(turned.texts.includes('00:02') && turned.texts.includes('7'))
+    // A same-beat stack labels only at its first change, here mid-stage.
+    const stacked = gridLabelsBeside([edgeTimeScale(4, 0), edgeTimeScale(4, -7)])
+    assert.deepEqual(stacked.edges, { left: [], right: [] })
+    assert.ok(stacked.texts.includes('00:02'))
+})
+
+test('a BPM label gives way to a time scale label reaching the beat column', () => {
+    const { context, canvas } = makeContext({
+        bpms: [
+            { beat: 0, bpm: 120 },
+            { beat: 6, bpm: 90 },
+            { beat: 8, bpm: 60 },
+        ],
+        timeScales: [edgeTimeScale(6, 5), edgeTimeScale(8, 3)],
+    })
+    const steps = [...context.state.store.grid.timeScale.values()].flatMap((bucket) =>
+        [...bucket].map((entity) => ({ entity, part: 'marker' as const })),
+    )
+    const timeScaleLabelYs = timeScaleEdgeLabelYs(context, steps)
+    const drawn = { ...context, timeScaleLabelYs }
+    drawEvent(drawn, { type: 'bpm', beat: 6, bpm: 90, meter: 4 }, false)
+    drawEvent(drawn, { type: 'bpm', beat: 8, bpm: 60, meter: 4 }, false)
+    assert.deepEqual(
+        canvas.labels.map(({ text }) => text),
+        ['60'],
+    )
 })
 
 test('a same-beat stack shares one marker showing every change on its lane', () => {

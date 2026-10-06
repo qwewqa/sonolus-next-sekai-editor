@@ -150,7 +150,6 @@ watchEffect(
         const showOtherObjects = settings.showOtherObjects
         // BPM labels are drawn, faintly, with other objects too.
         const isBpmVisible = visibilities.bpm || showOtherObjects
-        const edgeLabelYs = timeScaleEdgeLabelYs(entities, inputs.state.bpms, inputs.ups)
         const currentBeats = beats.value
         const currentTimes = times.value
         const division = view.division
@@ -170,11 +169,14 @@ watchEffect(
                 inputs.bounds,
             )
             if (!ctx) return
-            const context = {
+            const base = {
                 ...inputs,
                 ctx,
                 isHighlighted: (entity: Entity) => selected.has(entity) || !!hovered?.has(entity),
             }
+            // Measured with the frame's font and bounds, as the labels are drawn.
+            const edgeLabelYs = timeScaleEdgeLabelYs(base, entities)
+            const context = { ...base, timeScaleLabelYs: edgeLabelYs }
             waveform.draw(context, currentWaveform, offset, currentTimes)
             drawGrid(
                 context,

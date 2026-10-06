@@ -11,6 +11,9 @@ export type CanvasBounds = {
     h: number
 }
 
+/** Where time scale labels reach the time column (left) and beat column (right). */
+export type EdgeLabelYs = { left: number[]; right: number[] }
+
 // Drawing functions use editor scene coordinates. The caller installs the
 // viewport transform; scale converts scene units to CSS pixels.
 export type EditorDrawContext = {
@@ -29,4 +32,6 @@ export type EditorDrawContext = {
     figureMiddle: number
     /** Whether another object is selected or hovered, for labels that stand for several. */
     isHighlighted?: (entity: Entity) => boolean
+    /** Time scale labels in the time and beat columns, which BPM labels give way to. */
+    timeScaleLabelYs?: EdgeLabelYs
 }

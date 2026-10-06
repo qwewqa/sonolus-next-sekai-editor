@@ -1,28 +1,28 @@
 import type { Entity } from '../../state/entities'
-import { beatToTime, getMeasureBeats, type BpmIntegral } from '../../state/integrals/bpms'
+import { beatToTime, getMeasureBeats } from '../../state/integrals/bpms'
 import { formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
+import { timeScaleLabel } from './events'
 import { drawText } from './text'
-import type { EditorDrawContext } from './types'
+import type { EdgeLabelYs, EditorDrawContext } from './types'
 
 // Half the beat or time (0.4) and BPM or time scale (0.5) label sizes.
 const LABEL_CLEARANCE = 0.45
 
-/** Where time scale labels reach the time column (left) and beat column (right). */
-export type EdgeLabelYs = { left: number[]; right: number[] }
-
-/** Time scale labels at the stage edges point outward, into those columns. */
+/** Where drawn time scale labels cross into the time and beat columns, past lanes -6.1 and 6.1. */
 export const timeScaleEdgeLabelYs = (
+    context: EditorDrawContext,
     steps: { entity: Entity; part?: 'line' | 'marker' }[],
-    bpms: BpmIntegral[],
-    ups: number,
 ): EdgeLabelYs => {
     const ys: EdgeLabelYs = { left: [], right: [] }
     for (const { entity, part } of steps) {
         if (entity.type !== 'timeScale' || part === 'line') continue
-        const side = entity.editorLane <= -6 ? 'left' : entity.editorLane >= 6 ? 'right' : undefined
-        if (side) ys[side].push(beatToTime(bpms, entity.beat) * ups)
+        const label = timeScaleLabel(context, entity)
+        if (!label) continue
+        const y = beatToTime(context.state.bpms, entity.beat) * context.ups
+        if (label.min < -6.1) ys.left.push(y)
+        if (label.max > 6.1) ys.right.push(y)
     }
     return ys
 }
