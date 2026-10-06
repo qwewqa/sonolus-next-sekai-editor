@@ -81,8 +81,8 @@ test('property draft transactions preserve groups while committed property edits
     page,
 }) => {
     const result = await page.evaluate(async () => {
-        const { createEditedEntitiesState } =
-            (await import('/src/state/operations/edit.ts')) as typeof import('../../src/state/operations/edit')
+        const { planEdit } =
+            (await import('/src/state/operations/properties/plan.ts')) as typeof import('../../src/state/operations/properties/plan')
         const { history, settings, fixtures, show } = window.editorTest
         const first = fixtures.interaction.slides[0]![0]!
         show({
@@ -92,13 +92,8 @@ test('property draft transactions preserve groups while committed property edits
         settings.autoAddGroup = true
         const source = history.state.value
         const entity = source.store.slides.note.values().next().value![0]!
-        const draft = createEditedEntitiesState(
-            source,
-            [entity],
-            { left: -3 },
-            { autoAddGroup: false },
-        )
-        const committed = createEditedEntitiesState(source, [entity], { left: -3 })
+        const draft = planEdit(source, [entity], { left: -3 }, { autoAddGroup: false }).state
+        const committed = planEdit(source, [entity], { left: -3 }).state
         return {
             draftGroupsShared: draft.groups === source.groups,
             sourceGroupCount: source.groups.size,

@@ -724,7 +724,6 @@
       "setEvents": "{1} : {0} événement {2} modifié|{1} : {0} événements {2} modifiés"
     },
     "view": {
-      "title": "Vue",
       "tool": "Outil",
       "division": "Division",
       "snapping": {

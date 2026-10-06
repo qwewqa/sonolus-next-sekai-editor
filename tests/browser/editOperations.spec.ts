@@ -77,8 +77,8 @@ test.beforeEach(async ({ page }) => {
 for (const scenario of cases) {
     test(`${scenario.name} property preview matches its committed command`, async ({ page }) => {
         const result = await page.evaluate(async (scenario) => {
-            const { createEditedEntitiesState } =
-                (await import('/src/state/operations/edit.ts')) as typeof import('../../src/state/operations/edit')
+            const { planEdit } =
+                (await import('/src/state/operations/properties/plan.ts')) as typeof import('../../src/state/operations/properties/plan')
             const { editSelectedEditableEntities } =
                 (await import('/src/editor/sidebars/default/index.ts')) as typeof import('../../src/editor/sidebars/default')
             const { notification } =
@@ -120,9 +120,9 @@ for (const scenario of cases) {
             const before = serialize(source)
             const cursor = view.cursorTime
             const notificationId = notification.value.id
-            const preview = createEditedEntitiesState(source, [entity], scenario.object, {
+            const preview = planEdit(source, [entity], scenario.object, {
                 autoAddGroup: false,
-            })
+            }).state
             const sourceUnchanged = history.state.value === source && serialize(source) === before
             const previewHasNoSideEffects =
                 !history.canUndo.value && notification.value.id === notificationId
@@ -194,8 +194,8 @@ for (const scenario of cases) {
 
 test('batch BPM properties retain batch semantics and commit one undo step', async ({ page }) => {
     const result = await page.evaluate(async () => {
-        const { createEditedEntitiesState } =
-            (await import('/src/state/operations/edit.ts')) as typeof import('../../src/state/operations/edit')
+        const { planEdit } =
+            (await import('/src/state/operations/properties/plan.ts')) as typeof import('../../src/state/operations/properties/plan')
         const { editSelectedEditableEntities } =
             (await import('/src/editor/sidebars/default/index.ts')) as typeof import('../../src/editor/sidebars/default')
         const { history, store, fixtures, show } = window.editorTest
@@ -209,7 +209,7 @@ test('batch BPM properties retain batch semantics and commit one undo step', asy
         const selected = [...store.getAllEntities()].filter((entity) => entity.type === 'bpm')
         history.replaceState({ ...history.state.value, selectedEntities: selected })
         const source = history.state.value
-        const preview = createEditedEntitiesState(source, selected, { beat: 2 })
+        const preview = planEdit(source, selected, { beat: 2 }).state
         editSelectedEditableEntities({ beat: 2 })
         const beats = (state: typeof source) =>
             [...state.store.grid.bpm.values()]

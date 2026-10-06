@@ -724,7 +724,6 @@
       "setEvents": "已設定 {0} 個{2}事件的{1}"
     },
     "view": {
-      "title": "檢視",
       "tool": "工具",
       "division": "分割數",
       "snapping": {

@@ -128,7 +128,7 @@ test('chart filename survives speculative edits, committed edits, undo and redo'
 }) => {
     const result = await page.evaluate(async () => {
         const { history, fixtures, store } = window.editorTest
-        const { createEditedEntitiesState } = await import('/src/state/operations/edit.ts')
+        const { planEdit } = await import('/src/state/operations/properties/plan.ts')
         const { editSelectedEditableEntities } =
             await import('/src/editor/sidebars/default/index.ts')
         const { filename } = await import('/src/history/filename.ts')
@@ -136,7 +136,7 @@ test('chart filename survives speculative edits, committed edits, undo and redo'
         const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
         history.replaceState({ ...history.state.value, selectedEntities: [note] })
         const source = history.state.value
-        const speculative = createEditedEntitiesState(source, [note], { size: 3 })
+        const speculative = planEdit(source, [note], { size: 3 }).state
         const snapshot = () => ({
             filename: filename.value,
             size: [...store.getAllEntities()]

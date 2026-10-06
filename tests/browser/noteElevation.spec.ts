@@ -9,7 +9,7 @@ test('note elevation supports editing, round trips, legacy defaults, and reset',
     await page.evaluate(installEditorFixture)
     const result = await page.evaluate(async () => {
         const { createState } = await import('/src/state/index.ts')
-        const { createEditedEntitiesState } = await import('/src/state/operations/edit.ts')
+        const { planEdit } = await import('/src/state/operations/properties/plan.ts')
         const { serializeToLevelDataEntities } =
             await import('/src/levelData/entities/serialize/index.ts')
         const { parseLevelDataChart } = await import('/src/chart/parse/levelData/index.ts')
@@ -21,7 +21,7 @@ test('note elevation supports editing, round trips, legacy defaults, and reset',
             0,
         )
         const notes = [...original.store.slides.note.values()].flat()
-        const edited = createEditedEntitiesState(original, [notes[0]!], { elevation: -1.5 })
+        const edited = planEdit(original, [notes[0]!], { elevation: -1.5 }).state
         const serialize = (state: typeof original) =>
             serializeToLevelDataEntities(
                 state.initialLife,
@@ -39,11 +39,9 @@ test('note elevation supports editing, round trips, legacy defaults, and reset',
                 data: entity.data.filter((item) => item.name !== 'elevation'),
             })),
         )
-        const reset = createEditedEntitiesState(
-            edited,
-            [...edited.store.slides.note.values()].flat(),
-            { elevation: 0 },
-        )
+        const reset = planEdit(edited, [...edited.store.slides.note.values()].flat(), {
+            elevation: 0,
+        }).state
         return {
             imported: imported.slides.flat().map((item) => item.elevation),
             second: second.slides.flat().map((item) => item.elevation),

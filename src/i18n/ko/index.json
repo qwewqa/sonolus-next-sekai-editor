@@ -724,7 +724,6 @@
       "setEvents": "{0}개 {2} 이벤트의 {1} 설정됨"
     },
     "view": {
-      "title": "보기",
       "tool": "도구",
       "division": "분할",
       "snapping": {

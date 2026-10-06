@@ -724,7 +724,6 @@
             "setEvents": "Set {1} on {0} {2} event|Set {1} on {0} {2} events"
         },
         "view": {
-            "title": "View",
             "tool": "Tool",
             "division": "Division",
             "snapping": {

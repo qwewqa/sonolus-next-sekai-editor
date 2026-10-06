@@ -724,7 +724,6 @@
       "setEvents": "{0}個の{2}イベントの{1}を設定しました"
     },
     "view": {
-      "title": "表示",
       "tool": "ツール",
       "division": "分割数",
       "snapping": {

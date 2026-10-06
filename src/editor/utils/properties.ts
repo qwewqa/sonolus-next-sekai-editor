@@ -162,9 +162,6 @@ export const useEntitiesProperties = (
 export const fieldApplies = (entity: Entity, key: string) =>
     fieldAppliesIn(store.value, entity, key)
 
-/** Selected objects an edit writes to: those using one of its properties. */
-export const appliesToEdit = (object: EditableObject) => appliesToEditIn(store.value, object)
-
 export const aggregateEntities = (entities: readonly Entity[]) => {
     const types: Partial<Record<EntityType, boolean>> = {}
     const noteFields: Partial<NoteFields> = {}
