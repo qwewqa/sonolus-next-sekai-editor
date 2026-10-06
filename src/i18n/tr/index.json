@@ -741,12 +741,12 @@
   },
   "statusBar": {
     "group": {
-      "all": "tüm gruplar",
+      "all": "Tüm gruplar",
       "one": "{0} grubu",
       "shown": "{0}/{1} grup gösteriliyor"
     },
     "stage": {
-      "all": "tüm sahneler",
+      "all": "Tüm sahneler",
       "one": "{0} sahnesi",
       "shown": "{0}/{1} sahne gösteriliyor"
     }

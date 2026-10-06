@@ -741,13 +741,13 @@
   },
   "statusBar": {
     "group": {
-      "all": "tous les groupes",
-      "one": "groupe {0}",
+      "all": "Tous les groupes",
+      "one": "Groupe {0}",
       "shown": "{0}/{1} groupes affichés"
     },
     "stage": {
-      "all": "toutes les scènes",
-      "one": "scène {0}",
+      "all": "Toutes les scènes",
+      "one": "Scène {0}",
       "shown": "{0}/{1} scènes affichées"
     }
   },

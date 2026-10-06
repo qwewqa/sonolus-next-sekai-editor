@@ -68,3 +68,21 @@ test('plural forms follow each locale’s rules', () => {
     assert.equal(pluralForm('zhs', message, '1'), '{0} objects')
     assert.equal(pluralForm('en', 'Saved', '1'), 'Saved')
 })
+
+test('status bar scope names start with a capital where the script has case', () => {
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        const messages = read(locale)
+        for (const key of [
+            'statusBar.group.all',
+            'statusBar.group.one',
+            'statusBar.stage.all',
+            'statusBar.stage.one',
+        ]) {
+            // A leading placeholder is the name itself, as in Turkish "{0} grubu".
+            const first = messages[key]!.charAt(0)
+            assert.equal(first, first.toLocaleUpperCase(locale), `${locale} ${key}`)
+        }
+    }
+})
