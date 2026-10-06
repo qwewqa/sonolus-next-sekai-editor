@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    useId,
+    useTemplateRef,
+    watch,
+} from 'vue'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { isDragging } from '../controls/gestures/recognizers/drag'
@@ -43,6 +52,17 @@ watch(
 )
 
 const activeIndex = ref(-1)
+const flyoutId = useId()
+
+/** A group's main tool opens its flyout, if it has other members. */
+const flyoutAttributes = (index: number) =>
+    (toolbar.value[index]?.length ?? 0) > 1
+        ? {
+              'aria-haspopup': 'true',
+              'aria-expanded': activeIndex.value === index ? 'true' : 'false',
+              'aria-controls': activeIndex.value === index ? flyoutId : undefined,
+          }
+        : {}
 
 // Tools wrap into as few rows as the smallest size allows, balanced so no
 // row is left with a few orphans. On touch they then grow, up to 40px, into
@@ -208,12 +228,14 @@ onBeforeUnmount(() => {
                     class="size-[--tool-size] justify-center"
                     :name="activeName"
                     :pressed="isCommandPressed(activeName)"
+                    v-bind="flyoutAttributes(i)"
                     @pointermove="onOverMain($event, i)"
                     @click="onClickMain($event, i, activeName)"
                 />
 
                 <div
                     v-if="activeIndex === i"
+                    :id="flyoutId"
                     :ref="setFlyout"
                     v-scroll-edges
                     class="absolute w-max overflow-y-auto"

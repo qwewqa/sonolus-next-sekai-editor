@@ -90,3 +90,25 @@ test('toolbar settings show tools without a pressed state', async ({ page }) => 
     await expect(dialog.getByTitle('Select', { exact: true }).first()).toBeVisible()
     await expect(dialog.locator('[aria-pressed]')).toHaveCount(0)
 })
+
+test('groups with flyouts say so and name the open one', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['undo'], ['redo', 'select']]
+    })
+    const single = shown(page).and(page.getByTitle('Undo', { exact: true }))
+    const group = shown(page).and(page.getByTitle('Select', { exact: true }))
+    await expect(single).not.toHaveAttribute('aria-haspopup')
+    await expect(single).not.toHaveAttribute('aria-expanded')
+    await expect(group).toHaveAttribute('aria-haspopup', 'true')
+    await expect(group).toHaveAttribute('aria-expanded', 'false')
+    await expect(group).not.toHaveAttribute('aria-controls')
+
+    await group.focus()
+    await page.keyboard.press('Enter')
+    await expect(group).toHaveAttribute('aria-expanded', 'true')
+    const id = await group.getAttribute('aria-controls')
+    await expect(page.locator(`[id="${id}"]`).getByTitle('Redo', { exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(group).toHaveAttribute('aria-expanded', 'false')
+    await expect(group).not.toHaveAttribute('aria-controls')
+})
