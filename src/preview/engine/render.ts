@@ -156,6 +156,9 @@ const directionShear = (direction: FlickDirectionValue) => {
     return 0
 }
 
+// Each note's lane at its own time, per compiled chart.
+const ownLanes = new WeakMap<PreviewChart, Map<PreviewNote, number>>()
+
 export const renderPreviewFrame = (
     renderer: PreviewRenderer,
     skin: PreviewSkin,
@@ -433,6 +436,18 @@ export const renderPreviewFrame = (
               )
             : basicVisualLaneAt(note, t)
 
+    // BaseNote.lane, which keys connector depth.
+    const chartOwnLanes = ownLanes.get(chart) ?? new Map<PreviewNote, number>()
+    ownLanes.set(chart, chartOwnLanes)
+    const ownLane = (note: PreviewNote) => {
+        let lane = chartOwnLanes.get(note)
+        if (lane === undefined) {
+            lane = visualLaneAt(note, note.targetTime)
+            chartOwnLanes.set(note, lane)
+        }
+        return lane
+    }
+
     // Attached notes connect with their attachment head's ease.
     const effectiveConnectorEase = (note: PreviewNote) =>
         note.isAttached && note.attachHead ? note.attachHead.connectorEase : note.connectorEase
@@ -605,7 +620,7 @@ export const renderPreviewFrame = (
             headEndpoint,
             tailEndpoint,
             segmentHead.targetTime,
-            basicVisualLane(segmentHead),
+            ownLane(segmentHead),
             connector.segmentHeadAlpha,
             segmentTail.targetTime,
             connector.segmentTailAlpha,

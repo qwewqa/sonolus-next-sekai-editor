@@ -966,3 +966,24 @@ test('an attached note on a pivot step holds both ends of its attachment', () =>
         scoredHitbox(build([pivot(0, 0)]), isAttached).bounds,
     )
 })
+
+test('connector depth keys on the segment head lane at its own time, held on a step', () => {
+    const build = (stagePivotEvents: StagePivotEventObject[]) =>
+        preview(
+            chart([[note(2, { left: 1 }), note(6)]], {
+                isDynamicStages: true,
+                stagePivotEvents,
+            }),
+        )
+    const depth = (chart: PreviewChart, now: number) =>
+        render(chart, now, { leftLimit: false, showHitboxes: false })
+            .filter(({ sprite }) => sprite?.includes('Connection'))
+            .map(({ z }) => z[3])
+    // The head is on a step to lane 3, then the pivot moves on to lane 6.
+    const source = build([pivot(0, 0), { ...pivot(2, 3), eventEase: 'linear' }, pivot(6, 6)])
+    const lanes = depth(source, 3)
+    assert.ok(lanes.length > 0)
+    assert.deepEqual(depth(source, 5), lanes)
+    // Rel lane 2 at the held pivot 0, plus the positive-lane bias.
+    assert.ok(lanes.every((lane) => Math.abs((lane ?? 0) - (2 + 0.05)) < 1e-5))
+})
