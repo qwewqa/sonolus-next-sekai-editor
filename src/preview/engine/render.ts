@@ -182,8 +182,11 @@ export const renderPreviewFrame = (
 ) => {
     const hasReached = (target: number) => (leftLimit ? now > target : now >= target)
     const viewport = createViewport(displayWidth, displayHeight)
+    // Frames are drawn at the right limit (dynamic_stage, refresh_layout); a paused
+    // frame shows the instant before, the left limit. Note-time values are held.
+    const frameLimit = { rightLimit: !leftLimit }
     const camera = chart.isDynamicStages
-        ? getCameraInfo(viewport, chart.cameras, now)
+        ? getCameraInfo(viewport, chart.cameras, now, frameLimit)
         : defaultCameraInfo()
     const context: PreviewFrameContext = {
         now,
@@ -209,7 +212,9 @@ export const renderPreviewFrame = (
     const hideNotes = chart.groups.map((group) => hideNotesAt(group, now, leftLimit))
     const preempts = chart.groups.map((group) => preemptTime(noteSpeed, group.forceNoteSpeed))
 
-    const stageProps: StageProps[] = chart.stages.map((stage) => getStageProps(stage, now))
+    const stageProps: StageProps[] = chart.stages.map((stage) =>
+        getStageProps(stage, now, frameLimit),
+    )
     const stageTransforms: StageTransform[] = stageProps.map((props) =>
         stagePropsHasTransform(props)
             ? stagePropsTransform(context, props)
@@ -388,23 +393,30 @@ export const renderPreviewFrame = (
             ? attachFrac(note, note.attachHead, note.attachTail)
             : 1
 
+    // Earlier frames are at the right limit; `held` samples a note's own time at the left limit.
     const historicalStageProps: (Map<number, StageProps> | undefined)[] = []
-    const stagePropsAtTime = (stageIndex: number, t: number): StageProps | undefined => {
+    const heldStageProps: (Map<number, StageProps> | undefined)[] = []
+    const stagePropsAtTime = (
+        stageIndex: number,
+        t: number,
+        held = false,
+    ): StageProps | undefined => {
         const stage = stageIndex >= 0 ? chart.stages[stageIndex] : undefined
         if (!stage) return undefined
-        if (t === now) return stageProps[stageIndex]
+        if (t === now && !held) return stageProps[stageIndex]
 
-        const cache = (historicalStageProps[stageIndex] ??= new Map<number, StageProps>())
+        const caches = held ? heldStageProps : historicalStageProps
+        const cache = (caches[stageIndex] ??= new Map<number, StageProps>())
         let props = cache.get(t)
         if (!props) {
-            props = getStageProps(stage, t)
+            props = getStageProps(stage, t, { rightLimit: !held })
             cache.set(t, props)
         }
         return props
     }
 
-    const basicVisualMaskAt = (note: PreviewNote, t: number): VisualMask => {
-        const props = t === now ? stageProps[note.stageIndex] : stagePropsAtTime(note.stageIndex, t)
+    const basicVisualMaskAt = (note: PreviewNote, t: number, held = false): VisualMask => {
+        const props = stagePropsAtTime(note.stageIndex, t, held)
         return props?.maskNotes
             ? {
                   enabled: true,
@@ -415,26 +427,26 @@ export const renderPreviewFrame = (
             : noVisualMask
     }
 
-    const visualMaskAt = (note: PreviewNote, t: number): VisualMask =>
+    const visualMaskAt = (note: PreviewNote, t: number, held = false): VisualMask =>
         note.isAttached && note.attachHead && note.attachTail
             ? interpolateVisualMasks(
-                  basicVisualMaskAt(note.attachHead, t),
-                  basicVisualMaskAt(note.attachTail, t),
+                  basicVisualMaskAt(note.attachHead, t, held),
+                  basicVisualMaskAt(note.attachTail, t, held),
                   attachEasedFrac(note),
               )
-            : basicVisualMaskAt(note, t)
+            : basicVisualMaskAt(note, t, held)
 
-    const basicVisualLaneAt = (note: PreviewNote, t: number) =>
-        (stagePropsAtTime(note.stageIndex, t)?.pivotLane ?? 0) + note.lane
+    const basicVisualLaneAt = (note: PreviewNote, t: number, held = false) =>
+        (stagePropsAtTime(note.stageIndex, t, held)?.pivotLane ?? 0) + note.lane
 
-    const visualLaneAt = (note: PreviewNote, t: number) =>
+    const visualLaneAt = (note: PreviewNote, t: number, held = false) =>
         note.isAttached && note.attachHead && note.attachTail
             ? lerp(
-                  basicVisualLaneAt(note.attachHead, t),
-                  basicVisualLaneAt(note.attachTail, t),
+                  basicVisualLaneAt(note.attachHead, t, held),
+                  basicVisualLaneAt(note.attachTail, t, held),
                   attachEasedFrac(note),
               )
-            : basicVisualLaneAt(note, t)
+            : basicVisualLaneAt(note, t, held)
 
     // BaseNote.lane, which keys connector depth.
     const chartOwnLanes = ownLanes.get(chart) ?? new Map<PreviewNote, number>()
@@ -442,7 +454,7 @@ export const renderPreviewFrame = (
     const ownLane = (note: PreviewNote) => {
         let lane = chartOwnLanes.get(note)
         if (lane === undefined) {
-            lane = visualLaneAt(note, note.targetTime)
+            lane = visualLaneAt(note, note.targetTime, true)
             chartOwnLanes.set(note, lane)
         }
         return lane
@@ -452,26 +464,27 @@ export const renderPreviewFrame = (
     const effectiveConnectorEase = (note: PreviewNote) =>
         note.isAttached && note.attachHead ? note.attachHead.connectorEase : note.connectorEase
 
-    const basicYOffsetAt = (note: PreviewNote, t: number) =>
-        stagePropsAtTime(note.stageIndex, t)?.yOffset ?? 0
+    const basicYOffsetAt = (note: PreviewNote, t: number, held = false) =>
+        stagePropsAtTime(note.stageIndex, t, held)?.yOffset ?? 0
 
-    const yOffsetAt = (note: PreviewNote, t: number): number => {
+    const yOffsetAt = (note: PreviewNote, t: number, held = false): number => {
         if (note.isAttached && note.attachHead && note.attachTail) {
             return lerp(
-                basicYOffsetAt(note.attachHead, t),
-                basicYOffsetAt(note.attachTail, t),
+                basicYOffsetAt(note.attachHead, t, held),
+                basicYOffsetAt(note.attachTail, t, held),
                 attachFrac(note, note.attachHead, note.attachTail),
             )
         }
-        return basicYOffsetAt(note, t)
+        return basicYOffsetAt(note, t, held)
     }
 
     const basicStageTransformAt = (
         context: PreviewFrameContext,
         note: PreviewNote,
         t: number,
+        held = false,
     ): StageTransform => {
-        const props = stagePropsAtTime(note.stageIndex, t)
+        const props = stagePropsAtTime(note.stageIndex, t, held)
         const elevation = note.elevation ?? 0
         return props
             ? stagePropsTransform(context, props, elevation)
@@ -484,19 +497,20 @@ export const renderPreviewFrame = (
         context: PreviewFrameContext,
         note: PreviewNote,
         t: number,
+        held = false,
     ): StageTransform => {
         if (note.isAttached && note.attachHead && note.attachTail) {
             return blendStageTransform(
-                basicStageTransformAt(context, note.attachHead, t),
-                basicStageTransformAt(context, note.attachTail, t),
+                basicStageTransformAt(context, note.attachHead, t, held),
+                basicStageTransformAt(context, note.attachTail, t, held),
                 attachEasedFrac(note),
             )
         }
-        return basicStageTransformAt(context, note, t)
+        return basicStageTransformAt(context, note, t, held)
     }
 
-    const withLayoutAt = (t: number, fn: (context: PreviewFrameContext) => void) => {
-        if (!chart.isDynamicStages || !chart.cameras.length || t === now) {
+    const withLayoutAt = (t: number, fn: (context: PreviewFrameContext) => void, held = false) => {
+        if (!chart.isDynamicStages || !chart.cameras.length || (t === now && !held)) {
             fn(context)
             return
         }
@@ -504,10 +518,30 @@ export const renderPreviewFrame = (
             now,
             layout: createLayout(
                 viewport,
-                getCameraInfo(viewport, chart.cameras, t),
+                getCameraInfo(viewport, chart.cameras, t, { rightLimit: !held }),
                 chart.isDynamicStages,
             ),
         })
+    }
+
+    // The note's extents and stage values for its hit effects.
+    const effectGeometryAt = (note: PreviewNote, t: number, held = false) => {
+        const props = stagePropsAtTime(note.stageIndex, t, held)
+        const { lane, size } = maskedNoteExtents(
+            visualLaneAt(note, t, held),
+            note.size,
+            visualMaskAt(note, t, held),
+        )
+        return {
+            props,
+            lane,
+            size,
+            yOffset: yOffsetAt(note, t, held),
+            pivotLane: props?.pivotLane ?? 0,
+            halfOffset: props
+                ? props.division.start.parity === 1 && props.division.start.size % 2 === 1
+                : false,
+        }
     }
 
     let particleOrder = 0
@@ -1039,31 +1073,13 @@ export const renderPreviewFrame = (
             continue
 
         const target = note.targetTime
-        const props = stagePropsAtTime(note.stageIndex, target)
-        const pivotLane = props?.pivotLane ?? 0
-        const halfOffset = props
-            ? props.division.start.parity === 1 && props.division.start.size % 2 === 1
-            : false
-        const singleLine = props ? resolveJudgeLineStyle(props.judgeLineStyle) === 1 : false
+        // Hit particles take the frame at the target (terminate); slot effects are held.
+        const { props, lane, size, yOffset, pivotLane, halfOffset } = effectGeometryAt(note, target)
         const laneParticles = props ? props.fullWidth <= 0 : true
-
-        let lane
-        let yOffset
-        if (note.isAttached && note.attachHead && note.attachTail) {
-            lane = lerp(
-                basicVisualLaneAt(note.attachHead, target),
-                basicVisualLaneAt(note.attachTail, target),
-                attachEasedFrac(note),
-            )
-            yOffset = yOffsetAt(note, target)
-        } else {
-            lane = basicVisualLaneAt(note, target)
-            yOffset = basicYOffsetAt(note, target)
-        }
-        const mask = visualMaskAt(note, target)
-        const extents = maskedNoteExtents(lane, note.size, mask)
-        lane = extents.lane
-        const size = extents.size
+        const slot = effectGeometryAt(note, target, true)
+        const singleLine = slot.props
+            ? resolveJudgeLineStyle(slot.props.judgeLineStyle) === 1
+            : false
 
         const particleSet =
             showEffects && particle
@@ -1221,15 +1237,30 @@ export const renderPreviewFrame = (
             }
         })
 
-        if (showEffects && spriteSet && size > 0) {
+        if (showEffects && spriteSet && slot.size > 0) {
+            let slotAffine = identityStageScreenTransform
+            withLayoutAt(
+                target,
+                (context) => {
+                    slotAffine = stageTransformToAffineOrIdentity(
+                        visualStageTransformAt(context, note, target, true),
+                    )
+                },
+                true,
+            )
             if (spriteSet.slot && !singleLine && elapsed < SLOT_EFFECT_DURATION) {
                 const a = 1 - elapsed / SLOT_EFFECT_DURATION
-                for (const slotLane of iterSlotLanes(lane, size, pivotLane, halfOffset)) {
+                for (const slotLane of iterSlotLanes(
+                    slot.lane,
+                    slot.size,
+                    slot.pivotLane,
+                    slot.halfOffset,
+                )) {
                     draw(
                         spriteSet.slot,
                         transformQuadAffine(
-                            affine,
-                            layoutSlotEffect(context.layout, slotLane, yOffset),
+                            slotAffine,
+                            layoutSlotEffect(context.layout, slotLane, slot.yOffset),
                         ),
                         getZ(
                             context.now,
@@ -1238,7 +1269,7 @@ export const renderPreviewFrame = (
                             slotLane,
                             0,
                             true,
-                            affine.elevation,
+                            slotAffine.elevation,
                         ),
                         a,
                     )
@@ -1249,28 +1280,28 @@ export const renderPreviewFrame = (
                 draw(
                     spriteSet.slotGlow,
                     transformBillboard(
-                        affine,
+                        slotAffine,
                         layoutSlotGlowEffect(
                             context.layout,
-                            lane,
-                            size,
+                            slot.lane,
+                            slot.size,
                             unlerpClamped(1, 0.8, progress),
-                            yOffset,
+                            slot.yOffset,
                         ),
                         transformedVecAt(
                             context.layout,
-                            lane,
-                            approach(context.layout, 1 - yOffset),
+                            slot.lane,
+                            approach(context.layout, 1 - slot.yOffset),
                         ),
                     ),
                     getZ(
                         context.now,
                         LAYER_SLOT_GLOW_EFFECT,
                         target,
-                        lane,
+                        slot.lane,
                         0,
                         true,
-                        affine.elevation,
+                        slotAffine.elevation,
                     ),
                     1 - progress,
                 )

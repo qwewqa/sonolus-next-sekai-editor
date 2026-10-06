@@ -128,7 +128,7 @@ test('paused left limits retain unhit notes at zero, fractional and very large e
     }
 })
 
-test('frames at a tied stage transform sample the first, paused or playing', () => {
+test('paused frames sample the first tied stage transform without changing frame time', () => {
     const upcoming = { ...note(2), stageIndex: 0 }
     const initialTransform = {
         time: 0,
@@ -183,7 +183,7 @@ test('frames at a tied stage transform sample the first, paused or playing', () 
         capture(current, 1, leftLimit).find(([sprite]) => sprite === body)?.[1]
     assert.ok(bodyQuad(source, true))
     assert.deepEqual(bodyQuad(source, true), bodyQuad(reference, false))
-    assert.deepEqual(bodyQuad(source, false), bodyQuad(reference, false))
+    assert.notDeepEqual(bodyQuad(source, true), bodyQuad(source, false))
 })
 
 test('same-beat elevation transitions remain separate visible connectors before the hit', () => {

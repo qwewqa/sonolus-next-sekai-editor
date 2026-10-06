@@ -127,13 +127,21 @@ export const ease = (easeType: EaseTypeValue, x: number): number =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     easeFunctions[easeType]!(x)
 
-// sekai/lib/ease.py event_progress at the left limit
-export const eventProgress = (easeType: EaseTypeValue, t: number, tA: number, tB: number) =>
-    easeType === EaseType.inOutStep
-        ? t <= (tA + tB) / 2
-            ? 0
-            : 1
-        : ease(easeType, unlerpClamped(tA, tB, t))
+// sekai/lib/ease.py event_progress
+export const eventProgress = (
+    easeType: EaseTypeValue,
+    t: number,
+    tA: number,
+    tB: number,
+    rightLimit = false,
+) => {
+    if (easeType !== EaseType.inOutStep) return ease(easeType, unlerpClamped(tA, tB, t))
+    const jump = (tA + tB) / 2
+    return t > jump || (rightLimit && t === jump) ? 1 : 0
+}
+
+// Stage and camera queries take the left limit unless the right limit is asked for.
+export type LimitOptions = { rightLimit?: boolean }
 
 export const easeOvershoot = (easeType: EaseTypeValue) =>
     easeType >= EaseType.inElastic && easeType <= EaseType.outInElastic

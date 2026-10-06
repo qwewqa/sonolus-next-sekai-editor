@@ -11,6 +11,7 @@ import {
     vec,
     type AffineTransform,
     type EaseTypeValue,
+    type LimitOptions,
     type Quad,
     type Vec,
 } from './math'
@@ -143,11 +144,12 @@ const toCameraInfo = (context: PreviewViewport, camera: CameraChange): CameraInf
     stageTilt: camera.stageTilt,
 })
 
-// Left limit, as in Play and Watch.
+// The left limit unless the right limit is asked for, as stage props.
 export const getCameraInfo = (
     context: PreviewViewport,
     cameras: CameraChange[],
     t: number,
+    { rightLimit = false }: LimitOptions = {},
 ): CameraInfo => {
     if (!cameras.length) return defaultCameraInfo()
 
@@ -157,7 +159,7 @@ export const getCameraInfo = (
     while (lo <= hi) {
         const mid = (lo + hi) >> 1
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        if (cameras[mid]!.time < t) {
+        if (rightLimit ? cameras[mid]!.time <= t : cameras[mid]!.time < t) {
             index = mid
             lo = mid + 1
         } else {
@@ -173,7 +175,7 @@ export const getCameraInfo = (
     const b = cameras[index + 1]
     if (!b || b.time <= a.time) return toCameraInfo(context, a)
 
-    const p = eventProgress(a.ease, t, a.time, b.time)
+    const p = eventProgress(a.ease, t, a.time, b.time, rightLimit)
     const infoA = toCameraInfo(context, a)
     const infoB = toCameraInfo(context, b)
 

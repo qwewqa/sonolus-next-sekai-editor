@@ -793,8 +793,8 @@ test('toggling hitboxes only adds the overlay without recompiling or mutating th
     assert.equal(getHiddenTickHitboxes(edited.chains[0]!), ticks)
 })
 
-// Stage and camera values use the left limit: on a step, or an In-Out Step
-// midpoint, every query takes the held value from just before it.
+// A note exactly on a stage step or an In-Out Step midpoint takes the held value
+// (left limit) at its own time; frames are drawn at the right limit, as in Watch.
 const particleSprite: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
 sprites.set('particle', particleSprite)
 const stepParticle = resolveParticle(() => ({
@@ -891,10 +891,8 @@ const stepCases: StepCase[] = [
     ],
 ]
 
-const isEffect = (draw: Draw) => isSlot(draw) || isParticle(draw)
-
 for (const [name, events, held, after] of stepCases) {
-    test(`a note on a ${name} takes the held value for its hitbox, effects and frame`, () => {
+    test(`a note on a ${name} holds its hitbox and slot effects; frames take the right limit`, () => {
         // A note on the step, and a slide across it.
         const build = (overrides: Partial<Chart>, slide = true) =>
             preview(
@@ -917,18 +915,31 @@ for (const [name, events, held, after] of stepCases) {
                     particle: stepParticle,
                 })
 
-            // The whole frame on the step: stage, notes, connectors and hitboxes.
+            // A paused frame on the step is the instant before: everything is held.
+            // A playing frame draws the value after the step, except note-time values
+            // (hitboxes, slot effects, connector depth). Particles are checked below.
             const draws = frame(events, 2)
             assert.ok(draws.length > 0)
-            assert.deepEqual(draws, frame(held, 2))
+            if (leftLimit) {
+                assert.deepEqual(draws, frame(held, 2))
+            } else {
+                const live = (draws: Draw[]) =>
+                    draws
+                        .filter((draw) => draw.z[0] !== 24 && !isSlot(draw) && !isParticle(draw))
+                        .map(({ sprite, quad, a }) => ({ sprite, quad, a }))
+                assert.deepEqual(live(draws), live(frame(after, 2)))
+                assert.deepEqual(overlay(draws), overlay(frame(held, 2)))
+            }
 
-            // The note's effects keep the held value afterwards.
-            const effects = (overrides: Partial<Chart>) =>
-                frame(overrides, 2.05, false).filter(isEffect)
-            assert.ok(effects(events).some(isSlot))
-            assert.ok(effects(events).some(isParticle))
-            assert.deepEqual(effects(events), effects(held))
-            assert.notDeepEqual(effects(events), effects(after))
+            // Afterwards slot effects keep the held value; particles take the frame at the target.
+            const effects = (overrides: Partial<Chart>) => frame(overrides, 2.05, false)
+            const slots = effects(events).filter(isSlot)
+            const particles = effects(events).filter(isParticle)
+            assert.ok(slots.length > 0)
+            assert.ok(particles.length > 0)
+            assert.deepEqual(slots, effects(held).filter(isSlot))
+            assert.notDeepEqual(slots, effects(after).filter(isSlot))
+            assert.deepEqual(particles, effects(after).filter(isParticle))
         }
     })
 }
