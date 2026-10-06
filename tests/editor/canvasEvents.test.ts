@@ -820,4 +820,8 @@ test('a floored range draws a step as held values with a gap at the jump', () =>
         'M 1.99 0 V -4',
         'M 2.01 0 V -4',
     ])
+    assert.deepEqual(
+        getRangePathDs([2, 2], [-1, 1], 0, -4, 'none', 0.02),
+        getRangePathDs([2, 2], [-1, 1], 0, -4, 'inStep', 0.02),
+    )
 })
