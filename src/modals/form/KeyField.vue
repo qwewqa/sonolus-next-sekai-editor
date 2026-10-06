@@ -25,6 +25,8 @@ const modelValue = defineModel<string | undefined>({ required: true })
 provide(stackLongValuesKey, false)
 
 const isActive = ref(false)
+// A capture the keyboard started ends on Escape; a click's records it, so Escape stays bindable.
+let fromKeyboard = false
 // The chord last refused during this capture, as shown, and why.
 const refused = ref<string>()
 const refusedAs = ref<'reserved' | 'altGraph'>('reserved')
@@ -42,6 +44,7 @@ const notes = computed(() =>
 const onClick = (event: MouseEvent) => {
     if (isActive.value) modelValue.value = undefined
     isActive.value = !isActive.value
+    fromKeyboard = event.detail === 0
     refused.value = undefined
     // Safari doesn't focus clicked buttons, so keys would never reach this one.
     if (isActive.value) (event.currentTarget as HTMLElement).focus()
@@ -75,12 +78,28 @@ const modifierKeys = new Set([
 const isPartialKey = (event: KeyboardEvent) =>
     isComposingKey(event) || ['Process', 'Dead', 'Unidentified'].includes(event.key)
 
+const hasModifier = (event: KeyboardEvent) =>
+    event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
+
 const onKeyDown = (event: KeyboardEvent) => {
-    if (!isActive.value) return
+    // Delete and Backspace clear, as a second click does; a capture records them.
+    if (!isActive.value) {
+        if (['Delete', 'Backspace'].includes(event.key) && !hasModifier(event)) {
+            event.preventDefault()
+            modelValue.value = undefined
+        }
+        return
+    }
     if (event.key === 'Tab' || modifierKeys.has(event.key) || isPartialKey(event)) return
 
     event.preventDefault()
     event.stopPropagation()
+
+    if (event.key === 'Escape' && fromKeyboard && !hasModifier(event)) {
+        isActive.value = false
+        refused.value = undefined
+        return
+    }
 
     const apple = isApplePlatform()
     const binding = bindingOf(event, apple)

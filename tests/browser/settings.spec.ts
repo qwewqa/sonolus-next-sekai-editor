@@ -448,3 +448,51 @@ for (const width of [1600, 375]) {
         expect({ x: refused.x, y: refused.y }).toEqual({ x: before.x, y: before.y })
     })
 }
+
+test('from the keyboard, Escape cancels a capture and Delete or Backspace clears', async ({
+    page,
+}) => {
+    const dialog = page.getByRole('dialog')
+    const save = shortcutButton(page, 'Save')
+    await save.focus()
+    await page.keyboard.press('Enter')
+    await expect(save).toHaveText('Press a key or click again to clear')
+    await page.keyboard.press('Escape')
+    await expect(save).toHaveText('P')
+    await expect(save).toBeFocused()
+    await expect(dialog).toBeVisible()
+    expect(await savedShortcut(page, 'save')).toBe('p')
+
+    for (const key of ['Delete', 'Backspace']) {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = { ...settings.keyboardShortcuts, save: 'p' }
+        })
+        await save.focus()
+        await page.keyboard.press(key)
+        await expect(save, key).toHaveText('Unassigned')
+        expect(await savedShortcut(page, 'save'), key).toBeUndefined()
+        await expect(dialog).toBeVisible()
+    }
+
+    // While capturing, those keys bind like any other.
+    for (const [key, shown] of [
+        ['Delete', 'Delete'],
+        ['Backspace', 'Backspace'],
+        ['Enter', 'Enter'],
+    ] as const) {
+        await save.focus()
+        await page.keyboard.press('Enter')
+        await expect(save).toHaveText('Press a key or click again to clear')
+        await page.keyboard.press(key)
+        await expect(save, key).toHaveText(shown)
+        expect(await savedShortcut(page, 'save'), key).toBe(key)
+    }
+
+    // A capture started with a click still binds Escape, as before.
+    await save.click()
+    await page.keyboard.press('Escape')
+    await expect(save).toHaveText('Esc')
+    expect(await savedShortcut(page, 'save')).toBe('Escape')
+    await expect(dialog).toBeVisible()
+})
