@@ -559,3 +559,73 @@ test('Make Vertical keeps a pair that was already one and merges the rest', asyn
     // The 5 from beat 5 is replaced by the pair from beat 6, which stays a pair in order.
     expect(result).toEqual({ timeScale: [1, 2], camera: [1, 2] })
 })
+
+test('flipping vertically mirrors event and time scale eases', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { show, fixtures, history, store, appImport } = window.editorTest
+        const f = fixtures.events
+        const eases = ['inQuad', 'outCubic', 'linear', 'inSine'] as const
+        show({
+            ...f,
+            timeScales: eases.map((timeScaleEase, i) => ({
+                ...f.timeScales[0]!,
+                beat: 2 + i * 2,
+                timeScale: i + 1,
+                timeScaleEase,
+            })),
+            cameraEvents: eases.map((eventEase, i) => ({
+                ...f.cameraEvents[0]!,
+                beat: 2 + i * 2,
+                cameraZoom: i + 1,
+                eventEase,
+            })),
+            stageMaskEvents: [],
+            stagePivotEvents: [],
+            stageStyleEvents: [],
+            stageTransformEvents: [],
+            slides: [],
+        })
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const read = () =>
+            [...store.getAllEntities()]
+                .flatMap((entity) =>
+                    entity.type === 'timeScale'
+                        ? [`ts ${entity.beat}:${entity.timeScale}:${entity.timeScaleEase}`]
+                        : entity.type === 'cameraEventJoint'
+                          ? [`cam ${entity.beat}:${entity.cameraZoom}:${entity.eventEase}`]
+                          : [],
+                )
+                .sort()
+        const before = read()
+        const flip = () => {
+            history.replaceState({
+                ...history.state.value,
+                // The last joint stays out of the selection, so its segment is unchanged.
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) =>
+                        (entity.type === 'timeScale' || entity.type === 'cameraEventJoint') &&
+                        entity.beat <= 6,
+                ),
+            })
+            void commands.flipVertical.execute()
+        }
+        flip()
+        const flipped = read()
+        flip()
+        return { flipped, restored: read(), before }
+    })
+    // Each segment runs back with the complement of its ease; the last still leads out.
+    expect(result.flipped).toEqual([
+        'cam 2:3:inCubic',
+        'cam 4:2:outQuad',
+        'cam 6:1:linear',
+        'cam 8:4:inSine',
+        'ts 2:3:inCubic',
+        'ts 4:2:outQuad',
+        'ts 6:1:linear',
+        'ts 8:4:inSine',
+    ])
+    expect(result.restored).toEqual(result.before)
+})

@@ -1,6 +1,6 @@
 import type { State } from '..'
 import type { NoteObject } from '../../chart/note'
-import { complementEase } from '../../ease'
+import { complementEase, type Ease, type TimeScaleEase } from '../../ease'
 import type { Entity } from '../entities'
 import type { NoteEntity } from '../entities/slides/note'
 import { addBpm, removeBpm } from '../mutations/bpm'
@@ -60,6 +60,41 @@ const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) =>
     return properties
 }
 
+// Segments run back: a joint takes its predecessor's ease complemented, the first the last's.
+const reverseEases = (source: State, entities: EditableEntity[]) => {
+    const tracks = new Map<string, EditableEntity[]>()
+    for (const entity of entities) {
+        if (entity.type === 'note' || entity.type === 'bpm') continue
+        const key = `${entity.type}:${'groupId' in entity ? entity.groupId : ''}:${'stageId' in entity ? entity.stageId : ''}`
+        const track = tracks.get(key)
+        if (track) track.push(entity)
+        else tracks.set(key, [entity])
+    }
+    const easeOf = (entity: EditableEntity) =>
+        entity.type === 'timeScale'
+            ? entity.timeScaleEase
+            : (entity as { eventEase: Ease }).eventEase
+    const eases = new Map<EditableEntity, { timeScaleEase?: TimeScaleEase; eventEase?: Ease }>()
+    for (const track of tracks.values()) {
+        const joints = inStoredOrder(source, track, (entity) => entity).sort(
+            (a, b) => a.beat - b.beat,
+        )
+        for (const [index, joint] of joints.entries()) {
+            const previous = joints[index - 1]
+            const ease = previous
+                ? complementEase(easeOf(previous))
+                : easeOf(joints.at(-1) ?? joint)
+            eases.set(
+                joint,
+                joint.type === 'timeScale'
+                    ? { timeScaleEase: ease as TimeScaleEase }
+                    : { eventEase: ease },
+            )
+        }
+    }
+    return eases
+}
+
 export const flipVertical = (source: State, selected: Entity[]): State => {
     const entities = [...new Set(selected.filter(isEditableEntity))]
     if (!entities.length) return source
@@ -80,6 +115,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
     for (const entity of entities) remove(transaction, entity)
     // A same-beat pair stays a pair, its order mirrored as the jump now runs back.
     const ordered = inStoredOrder(source, entities, (entity) => entity, true)
+    const eases = reverseEases(source, entities)
     const placed = new Map<Entity, number>()
     const flipped: Entity[] = []
     for (const entity of ordered) {
@@ -101,7 +137,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
         }
         const added = add(transaction, {
             ...entity,
-            ...(entity.type === 'note' ? properties.get(entity) : undefined),
+            ...(entity.type === 'note' ? properties.get(entity) : eases.get(entity)),
             beat,
         })
         for (const other of added) placed.set(other, entity.beat)
