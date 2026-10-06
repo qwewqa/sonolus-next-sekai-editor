@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { easeFamilies, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
-import { useQualifiedLabels } from './qualifiedLabels'
 import EaseField from './EaseField.vue'
 
-const modelValue = defineModel<EaseEdit | undefined>({ required: true })
+defineProps<{
+    /** Names the events, for the shared field across event kinds. */
+    qualified?: boolean
+}>()
 
-const qualified = useQualifiedLabels()
+const modelValue = defineModel<EaseEdit | undefined>({ required: true })
 </script>
 
 <template>

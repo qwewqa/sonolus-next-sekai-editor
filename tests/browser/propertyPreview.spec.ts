@@ -219,8 +219,9 @@ test('property modals preview input and clear uncommitted drafts when closed', a
     await page.evaluate(async () => {
         window.editorTest.settings.showSidebar = false
         const { showModal } = await import('/src/modals/index.ts')
-        const { default: modal } = await import('/src/editor/tools/note/NotePropertiesModal.vue')
-        void showModal(modal, {})
+        const { default: modal } =
+            await import('/src/editor/workspace/properties/SelectionPropertiesModal.vue')
+        void showModal(modal, { kind: 'note' })
     })
     const lane = page.getByLabel('Lane', { exact: true })
     await expect(lane).toHaveValue('-4')

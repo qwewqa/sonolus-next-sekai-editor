@@ -4,6 +4,7 @@ import {
     nextTick,
     onBeforeUnmount,
     onMounted,
+    ref,
     useId,
     useSlots,
     useTemplateRef,
@@ -97,8 +98,75 @@ onBeforeUnmount(() => {
     cancelAnimationFrame(frame)
 })
 
+/** The detail row: how many objects the field covers, then the values in use. */
+type Chip = {
+    /** What the chip shows; a value's name and count otherwise. */
+    text?: string
+    name: string
+    count: number
+    /** The chip's action, as its accessible name. */
+    label: string
+    coverage?: boolean
+    narrow?: () => void
+}
+
+const chips = computed((): Chip[] => {
+    const usage = coverage.value
+    return [
+        ...(usage
+            ? [
+                  {
+                      text: interpolateRaw(
+                          i18n.value.modals.form.coverageChip,
+                          `${usage.covered}`,
+                          `${usage.total}`,
+                      ),
+                      name: '',
+                      label: interpolateRaw(
+                          i18n.value.modals.form.selectCovered,
+                          `${usage.covered}`,
+                          `${usage.total}`,
+                      ),
+                      count: usage.covered,
+                      coverage: true,
+                      narrow: field?.value?.narrow && (() => field.value?.narrow?.(() => true)),
+                  },
+              ]
+            : []),
+        ...[...values.value, ...(field?.value?.extra ?? [])].map((value) => ({
+            name: value.label,
+            count: value.count,
+            label: interpolateRaw(i18n.value.modals.form.selectOnly, `${value.count}`, value.label),
+            narrow: value.narrow,
+        })),
+    ]
+})
+
+// The row is one Tab stop; arrows move between its chips.
+const current = ref(0)
+const chipRow = useTemplateRef<HTMLElement>('chipRow')
+const move = (event: KeyboardEvent) => {
+    const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
+    const buttons = [...(chipRow.value?.querySelectorAll<HTMLElement>('button:enabled') ?? [])]
+    const index = buttons.indexOf(event.target as HTMLElement)
+    if (index < 0) return
+    const next =
+        event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? buttons.length - 1
+              : event.key in keys
+                ? Math.min(Math.max(index + (keys[event.key] ?? 0), 0), buttons.length - 1)
+                : undefined
+    if (next === undefined) return
+    event.preventDefault()
+    current.value = next
+    buttons[next]?.focus()
+}
+watch(chips, () => (current.value = 0))
+
 // Keys narrowing away the focused chip move on to the field's control.
-const narrow = async (value: MixedValue, event: MouseEvent) => {
+const narrow = async (value: Chip, event: MouseEvent) => {
     const chip = event.currentTarget as HTMLElement
     value.narrow?.()
     if (event.detail > 0) return
@@ -127,38 +195,39 @@ watchEffect(
     <div class="form-field">
         <component :is="labelId === undefined ? 'label' : 'div'" ref="row" class="form-field-row">
             <span ref="labelRow" class="form-field-label"
-                ><slot name="icon" /><span :id="labelId" class="form-field-text">{{ label }}</span
-                ><span
-                    v-if="coverage"
-                    class="form-field-coverage"
-                    aria-hidden="true"
-                    :title="
-                        interpolateRaw(
-                            i18n.modals.form.coverage,
-                            `${coverage.covered}`,
-                            `${coverage.total}`,
-                        )
-                    "
-                    >{{ coverage.covered }}/{{ coverage.total }}</span
-                ></span
+                ><slot name="icon" /><span :id="labelId" class="form-field-text">{{
+                    label
+                }}</span></span
             >
             <slot />
         </component>
-        <!-- Which values a mixed field holds; each selects only its objects. -->
-        <div v-if="values.length" class="form-field-mixed">
+        <!-- Which objects the field covers and which values they hold; each chip
+        selects only its objects. -->
+        <div
+            v-if="chips.length"
+            ref="chipRow"
+            class="form-field-mixed"
+            role="toolbar"
+            :aria-label="label"
+            @keydown="move"
+        >
             <button
-                v-for="(value, index) in values"
+                v-for="(chip, index) in chips"
                 :key="index"
                 type="button"
                 class="form-field-mixed-value"
-                :title="interpolateRaw(i18n.modals.form.selectOnly, `${value.count}`, value.label)"
-                :aria-label="
-                    interpolateRaw(i18n.modals.form.selectOnly, `${value.count}`, value.label)
-                "
-                :disabled="!value.narrow"
-                @click="narrow(value, $event)"
+                :class="{ 'form-field-coverage-chip': chip.coverage }"
+                :tabindex="index === current ? 0 : -1"
+                :title="chip.label"
+                :aria-label="chip.label"
+                :disabled="!chip.narrow"
+                @focus="current = index"
+                @click="narrow(chip, $event)"
             >
-                {{ value.label }} <span class="tabular-nums">{{ value.count }}</span>
+                <template v-if="chip.text">{{ chip.text }}</template>
+                <template v-else
+                    >{{ chip.name }} <span class="tabular-nums">{{ chip.count }}</span></template
+                >
             </button>
         </div>
         <span v-if="description" :id="descriptionId" class="sr-only">{{ description }}</span>
@@ -263,32 +332,38 @@ watchEffect(
     display: none;
 }
 
-/* How many selected objects use the field, when not all of them. */
-.form-field-coverage {
-    flex: none;
-    margin-left: 0.375rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-variant-numeric: tabular-nums;
-    color: rgb(68 68 102 / 0.8);
-}
-
-/* Values line up with the text in the control's pill. */
+/* One full-width row under the label and control, so labels keep their width. */
 .form-field-mixed {
     display: flex;
     flex-wrap: wrap;
-    margin-top: 0.125rem;
-    padding-left: 0.625rem;
+    gap: 0.25rem;
+    margin-top: 0.375rem;
     font-size: 0.75rem;
     line-height: 1rem;
-    color: rgb(68 68 102 / 0.8);
+    color: #30334d;
 }
 
+/* Tinted pills read as actions; coverage is outlined, apart from the values. */
 .form-field-mixed-value {
     border-radius: 9999px;
-    padding: 0.125rem 0.375rem;
+    padding: 0.125rem 0.5rem;
+    background-color: rgb(68 68 102 / 0.08);
     transition-property: color, background-color;
     transition-duration: 150ms;
+}
+
+.form-field-coverage-chip {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px rgb(68 68 102 / 0.35);
+    color: rgb(68 68 102 / 0.9);
+}
+
+/* Fingers get a real target. */
+@media (pointer: coarse) {
+    .form-field-mixed-value {
+        min-height: 2rem;
+        padding-inline: 0.75rem;
+    }
 }
 
 .form-field-mixed-value:focus-visible {
@@ -336,10 +411,6 @@ watchEffect(
         min-height: 2rem;
     }
 
-    .form-field-mixed {
-        padding-left: calc(min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) + 1.375rem);
-    }
-
     .form-field-row > :not(.form-field-label) {
         flex: 1 1 0%;
         min-width: 0;
@@ -357,10 +428,6 @@ watchEffect(
 
     .form-field-label {
         width: auto;
-    }
-
-    .form-field-mixed {
-        padding-left: calc(100% - max(6.25rem, 50%) + 0.375rem);
     }
 
     .form-field-row
@@ -395,10 +462,6 @@ watchEffect(
 @container (min-width: 32rem) {
     .form-field-label {
         width: 60%;
-    }
-
-    .form-field-mixed {
-        padding-left: calc(60% + 1.375rem);
     }
 }
 </style>

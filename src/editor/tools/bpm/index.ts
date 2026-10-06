@@ -16,8 +16,8 @@ import { notify } from '../../notification'
 import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { focusEntityAtBeat, setViewHover, snapYToBeat, view, yToValidBeat } from '../../view'
+import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
 import { hitEntitiesAtPoint } from '../utils'
-import BpmPropertiesModal from './BpmPropertiesModal.vue'
 
 let active:
     | {
@@ -80,7 +80,7 @@ export const bpm: Tool = {
                     focusEntityAtBeat(entity.beat)
 
                     if (!isSidebarVisible.value) {
-                        void showToolModal(BpmPropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, { kind: 'bpm' })
                     } else {
                         // An explicit edit gesture on the selection shows its properties.
                         revealPropertiesSection('selection')
@@ -113,7 +113,7 @@ export const bpm: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            void showToolModal(BpmPropertiesModal, {})
+            void showToolModal(SelectionPropertiesModal, { kind: 'bpm' })
         }
     },
 
@@ -216,7 +216,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    void showToolModal(BpmPropertiesModal, {})
+                    void showToolModal(SelectionPropertiesModal, { kind: 'bpm' })
                 } else {
                     const object: BpmObject = {
                         beat,
@@ -231,7 +231,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    void showToolModal(BpmPropertiesModal, {})
+                    void showToolModal(SelectionPropertiesModal, { kind: 'bpm' })
                 }
                 break
             }

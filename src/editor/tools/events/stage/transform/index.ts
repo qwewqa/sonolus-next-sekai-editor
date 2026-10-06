@@ -29,8 +29,8 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../../view'
+import SelectionPropertiesModal from '../../../../workspace/properties/SelectionPropertiesModal.vue'
 import { hitEntitiesAtPoint } from '../../../utils'
-import StageTransformEventPropertiesModal from './StageTransformEventPropertiesModal.vue'
 import StageTransformEventSidebar from './StageTransformEventSidebar.vue'
 
 type DefaultStageTransformEventProperties = {
@@ -125,7 +125,9 @@ export const stageTransformEvent: Tool = {
                             eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
-                        void showToolModal(StageTransformEventPropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, {
+                            kind: 'stageTransformEventJoint',
+                        })
                     }
                 } else {
                     replaceState({

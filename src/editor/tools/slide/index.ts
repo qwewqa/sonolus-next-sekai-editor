@@ -32,6 +32,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
+import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
 import {
     hitEntitiesAtPoint,
     isNoteResizeStart,
@@ -41,7 +42,6 @@ import {
     placementCursors,
     resize,
 } from '../utils'
-import SlidePropertiesModal from './SlidePropertiesModal.vue'
 import SlideSidebar from './SlideSidebar.vue'
 
 export const defaultSlidePropertiesPresetIndex = ref(0)
@@ -138,7 +138,7 @@ export const slide: Tool = {
                         revealPropertiesSection('selection')
                         quickEdit(defaultSlideProperties.value)
                     } else {
-                        void showToolModal(SlidePropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, { kind: 'note' })
                     }
                 } else {
                     replaceState({

@@ -31,8 +31,8 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
+import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
 import { hitEntitiesAtPoint, isVisible } from '../utils'
-import TimeScalePropertiesModal from './TimeScalePropertiesModal.vue'
 
 let active:
     | {
@@ -131,7 +131,7 @@ export const timeScale: Tool = {
                             }),
                         )
                     } else {
-                        void showToolModal(TimeScalePropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
                     }
                 } else {
                     replaceState({
@@ -169,7 +169,7 @@ export const timeScale: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            void showToolModal(TimeScalePropertiesModal, {})
+            void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
         }
     },
 
@@ -289,7 +289,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    void showToolModal(TimeScalePropertiesModal, {})
+                    void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
                 } else {
                     const object: TimeScaleObject = constrainLaneObject({
                         groupId: view.groupId ?? defaultGroupId.value,
@@ -312,7 +312,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    void showToolModal(TimeScalePropertiesModal, {})
+                    void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
                 }
                 break
             }

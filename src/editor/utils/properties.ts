@@ -1,7 +1,6 @@
 import { computed, onScopeDispose, provide, shallowRef, watch, type Ref } from 'vue'
 import { mergeEases, type Ease } from '../../ease'
 import { state as historyState } from '../../history'
-import { selectedEntities } from '../../history/selectedEntities'
 import { store } from '../../history/store'
 import { numberEditKey } from '../../modals/form/numberEdit'
 import { clearPreviewEdit, previewEdit, setPreviewEdit, type PreviewEdit } from '../../preview/edit'
@@ -16,7 +15,7 @@ import {
 import { planEdit } from '../../state/operations/properties/plan'
 import { entries } from '../../utils/object'
 import { editSelectedEditableEntities } from '../sidebars/default'
-import { aggregateValues } from './aggregate'
+import { aggregateValues, type ValueUsage } from './aggregate'
 import { getNoteFields, type NoteFields } from './noteFields'
 
 export const useProperties =
@@ -36,10 +35,16 @@ export const useProperties =
             },
         })
 
-export const useSelectedEntitiesProperties = <T extends Entity>(
-    filter: (entity: Entity) => entity is T,
+export type EntitiesAggregate = ReturnType<typeof aggregateEntities>
+
+/**
+ * Models editing a scope of the selection, such as one kind's objects. Edits
+ * and their live previews write only to the scope's objects that use them.
+ */
+export const useEntitiesProperties = (
+    entities: Ref<readonly Entity[]>,
+    aggregate: Ref<EntitiesAggregate>,
 ) => {
-    const entities = computed(() => selectedEntities.value.filter(filter))
     const draft = shallowRef<EditableObject>()
     const revision = shallowRef(0)
     let owner: symbol | undefined
@@ -47,6 +52,15 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
     let ownedPreview: PreviewEdit | undefined
     let previewing = false
     let valid = false
+
+    const only = (object: EditableObject, from = store.value) => {
+        const scope = new Set(entities.value)
+        const applies = appliesToEditIn(from, object)
+        return (entity: Entity) => scope.has(entity) && applies(entity)
+    }
+    const edit = (object: EditableObject) => {
+        editSelectedEditableEntities(object, only(object))
+    }
 
     const clearOwnedPreview = () => {
         if (ownedPreview && previewEdit.value === ownedPreview) clearPreviewEdit()
@@ -83,7 +97,7 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                 () =>
                     planEdit(current, current.selectedEntities, object, {
                         autoAddGroup: false,
-                        only: appliesToEditIn(current.store, object),
+                        only: only(object, current.store),
                     }).state,
             )
             ownedPreview = previewEdit.value
@@ -97,7 +111,7 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
             if (owner !== field) return
             const object = valid && source === historyState.value ? draft.value : undefined
             reset()
-            if (object) editSelectedEditableEntities(object, appliesToEdit(object))
+            if (object) edit(object)
         },
         cancel: (field) => {
             if (owner === field) reset()
@@ -106,21 +120,15 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
     watch(historyState, reset, { flush: 'sync' })
     onScopeDispose(reset)
 
-    const state = computed(() => aggregateEntities(entities.value))
-
     return {
-        entities,
-        types: computed(() => state.value.types),
-        noteFields: computed(() => state.value.noteFields),
-        usage: computed(() => state.value.usage),
-        createModel: <K extends DistributedKeyOf<T> & keyof EditableObject>(key: K) =>
+        createModel: <K extends keyof EditableObject>(key: K) =>
             computed({
-                get: () => draft.value?.[key] ?? state.value.model[key],
+                get: () => draft.value?.[key] ?? aggregate.value.model[key],
                 set: (value) => {
                     if (value === undefined) return
 
                     if (previewing && source) {
-                        if (state.value.model[key] === value) {
+                        if (aggregate.value.model[key] === value) {
                             draft.value = undefined
                             clearOwnedPreview()
                             return
@@ -130,37 +138,25 @@ export const useSelectedEntitiesProperties = <T extends Entity>(
                     }
 
                     reset()
-                    const object = { [key]: value }
-                    editSelectedEditableEntities(object, appliesToEdit(object))
+                    edit({ [key]: value })
                 },
             }),
-        createEaseModel: <K extends 'connectorEase' | 'eventEase' | 'timeScaleEase'>(key: K) =>
+        createEaseModel: (key: 'connectorEase' | 'eventEase' | 'timeScaleEase') =>
             computed({
+                // Values in use are those of the objects the ease applies to.
                 get: () =>
                     mergeEases(
-                        entities.value.flatMap((entity) =>
-                            fieldApplies(entity, key)
-                                ? [entity[key as never] as EditableEase<K>]
-                                : [],
-                        ),
+                        (aggregate.value.usage.get(key)?.values.keys() ?? []) as Iterable<Ease>,
                     ),
                 set: (value) => {
                     if (value === undefined) return
 
                     reset()
-                    const object = { [key]: value }
-                    editSelectedEditableEntities(object, appliesToEdit(object))
+                    edit({ [key]: value })
                 },
             }),
     }
 }
-
-type EditableEase<K extends keyof EditableObject> = Extract<
-    Exclude<EditableObject[K], undefined>,
-    Ease
->
-
-type DistributedKeyOf<T> = T extends T ? keyof T : never
 
 /** Whether an object uses a property; a tail's connector or an attached tick's lane is unused. */
 export const fieldApplies = (entity: Entity, key: string) =>
@@ -190,6 +186,38 @@ export const aggregateEntities = (entities: readonly Entity[]) => {
     })
 
     return { model: model as Partial<EditableObject>, usage, types, noteFields }
+}
+
+/** One aggregate of several kinds' aggregates, for the keys they share. */
+export const mergeAggregates = (
+    aggregates: readonly EntitiesAggregate[],
+    keys: Iterable<string>,
+): EntitiesAggregate => {
+    const model: Record<string, unknown> = {}
+    const usage = new Map<string, ValueUsage>()
+    for (const key of keys) {
+        const values = new Map<unknown, number>()
+        let covered = 0
+        let total = 0
+        for (const aggregate of aggregates) {
+            const own = aggregate.usage.get(key)
+            if (!own) continue
+            covered += own.covered
+            total += own.total
+            for (const [value, count] of own.values)
+                values.set(value, (values.get(value) ?? 0) + count)
+        }
+        if (!total) continue
+        usage.set(key, { values, covered, total })
+        if (values.size === 1) model[key] = values.keys().next().value
+    }
+    const types: EntitiesAggregate['types'] = {}
+    const noteFields: EntitiesAggregate['noteFields'] = {}
+    for (const aggregate of aggregates) {
+        Object.assign(types, aggregate.types)
+        Object.assign(noteFields, aggregate.noteFields)
+    }
+    return { model, usage, types, noteFields }
 }
 
 const aggregate = <T extends object>(

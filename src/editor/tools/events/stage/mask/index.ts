@@ -30,6 +30,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../../view'
+import SelectionPropertiesModal from '../../../../workspace/properties/SelectionPropertiesModal.vue'
 import {
     hitEntitiesAtPoint,
     isRangeResizeStart,
@@ -37,7 +38,6 @@ import {
     placementCursors,
     resize,
 } from '../../../utils'
-import StageMaskEventPropertiesModal from './StageMaskEventPropertiesModal.vue'
 import StageMaskEventSidebar from './StageMaskEventSidebar.vue'
 
 type DefaultStageMaskEventProperties = {
@@ -136,7 +136,9 @@ export const stageMaskEvent: Tool = {
                             eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
-                        void showToolModal(StageMaskEventPropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, {
+                            kind: 'stageMaskEventJoint',
+                        })
                     }
                 } else {
                     replaceState({

@@ -1266,7 +1266,9 @@
         "auto": "自動",
         "copy": "コピー"
       },
-      "unknown": "不明 ({0})"
+      "unknown": "不明 ({0})",
+      "coverageChip": "{1}個中{0}個",
+      "selectCovered": "適用されるオブジェクトのみ選択（{1}個中{0}個）"
     },
     "confirm": {
       "delete": "削除",
@@ -1439,7 +1441,10 @@
         "stageStyleEventJoint": "ステージスタイルイベント",
         "stageTransformEventJoint": "ステージ変形イベント"
       },
-      "connector": "接続"
+      "connector": "接続",
+      "selectOnly": "これのみ選択",
+      "inSlides": "{0}個のスライド内",
+      "valuesDiffer": "{0}個の値が異なります"
     }
   }
 }

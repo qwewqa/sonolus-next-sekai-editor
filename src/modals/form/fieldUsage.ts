@@ -12,6 +12,8 @@ export type FieldUsage = {
     label?: (value: unknown) => string | undefined
     /** Narrows the selection to the objects whose value passes. */
     narrow?: (predicate: (value: unknown) => boolean) => void
+    /** Values listed after those in use, such as the linear eases a mode skips. */
+    extra?: MixedValue[]
 }
 
 /** A value in use by part of a mixed selection. */

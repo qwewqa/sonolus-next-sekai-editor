@@ -1266,7 +1266,9 @@
         "auto": "自动",
         "copy": "复制"
       },
-      "unknown": "未知 ({0})"
+      "unknown": "未知 ({0})",
+      "coverageChip": "{1} 个中的 {0} 个",
+      "selectCovered": "仅选择适用的对象（{1} 个中的 {0} 个）"
     },
     "confirm": {
       "delete": "删除",
@@ -1439,7 +1441,10 @@
         "stageStyleEventJoint": "舞台样式事件",
         "stageTransformEventJoint": "舞台变换事件"
       },
-      "connector": "连接"
+      "connector": "连接",
+      "selectOnly": "仅选择",
+      "inSlides": "在 {0} 条长条中",
+      "valuesDiffer": "{0} 个值不同"
     }
   }
 }

@@ -5,11 +5,12 @@ import { aggregateValues, countOptions, valueRange } from '../../src/editor/util
 import {
     brushFields,
     fieldLabel,
+    layoutFields,
     pickBrush,
     propertyField,
     propertyFields,
     propertyKinds,
-    qualifiesLabels,
+    propertySections,
     type PropertyField,
     type SelectionContext,
 } from '../../src/editor/workspace/properties/fields'
@@ -311,8 +312,21 @@ const renderedLabels = (field: PropertyField, t: Messages, qualified: boolean) =
     return [label, (qualified && form.qualifiedMode) || form.mode]
 }
 
+// Blocks of one kind, plus General, as Selection lays out the selection.
+const blocksOf = (selection: SelectionContext) => {
+    const kinds = editableTypes.filter((type) => selection.types[type])
+    return layoutFields(
+        kinds,
+        (kind) => ({ ...selection, types: { [kind]: true } }),
+        selection,
+    ).map(({ kind, sections }) => ({
+        kind,
+        fields: propertySections.flatMap((section) => sections[section]),
+    }))
+}
+
 for (const locale of locales) {
-    test(`${locale} Selection labels stay unique for every mix of kinds`, () => {
+    test(`${locale} Selection labels stay unique within each block`, () => {
         const t = messages(locale)
         for (let mask = 1; mask < 1 << editableTypes.length; mask++) {
             const types = Object.fromEntries(
@@ -320,15 +334,18 @@ for (const locale of locales) {
             )
             for (const isDynamicStages of [true, false]) {
                 for (const count of [1, 2]) {
-                    const selection = context({ types, isDynamicStages, count })
-                    const qualified = qualifiesLabels(selection)
-                    const labels = propertyFields
-                        .filter((field) => field.show(selection))
-                        .flatMap((field) => renderedLabels(field, t, qualified))
-                    const repeated = labels.filter(
-                        (label, index) => labels.indexOf(label) !== index,
-                    )
-                    assert.deepEqual(repeated, [], `${Object.keys(types).join('+')}`)
+                    for (const { kind, fields } of blocksOf(
+                        context({ types, isDynamicStages, count }),
+                    )) {
+                        // General names a field several kinds share by what it applies to.
+                        const labels = fields.flatMap((field) =>
+                            renderedLabels(field, t, !kind && field.key === 'eventEase'),
+                        )
+                        const repeated = labels.filter(
+                            (label, index) => labels.indexOf(label) !== index,
+                        )
+                        assert.deepEqual(repeated, [], `${Object.keys(types).join('+')}`)
+                    }
                 }
             }
         }
@@ -347,12 +364,27 @@ for (const locale of locales) {
     })
 }
 
-test('labels name their kind only for selections of several kinds', () => {
-    assert.equal(qualifiesLabels(context({ types: { timeScale: true } })), false)
-    assert.equal(
-        qualifiesLabels(context({ types: { timeScale: true, cameraEventJoint: true } })),
-        true,
+test('fields of several kinds close the selection under General', () => {
+    const keys = (selection: SelectionContext) =>
+        blocksOf(selection).map(({ kind, fields }) => [kind, fields.map((field) => field.key)])
+    // One kind keeps every field in one block.
+    const notes = keys(context({ types: { note: true }, count: 3 }))
+    assert.equal(notes.length, 1)
+    assert.ok((notes[0]![1] as string[]).includes('beat'))
+    // Events each get their ease; General adds one for all of them, and Beat.
+    const events = keys(
+        context({ types: { cameraEventJoint: true, stageMaskEventJoint: true }, count: 2 }),
     )
+    assert.deepEqual(
+        events.map(([kind]) => kind),
+        ['cameraEventJoint', 'stageMaskEventJoint', undefined],
+    )
+    assert.ok((events[0]![1] as string[]).includes('eventEase'))
+    assert.deepEqual(events[2]![1], ['beat', 'eventEase', 'stageId'])
+    // Group, Stage and Elevation stay out of the kinds' blocks.
+    const mixed = keys(context({ types: { note: true, timeScale: true }, count: 2 }))
+    assert.ok(!(mixed[0]![1] as string[]).includes('groupId'))
+    assert.deepEqual(mixed[2]![1], ['groupId', 'stageId', 'elevation'])
     const t = messages('en')
     const ease = propertyField.get('timeScaleEase')!
     assert.equal(fieldLabel(ease, t, false), 'Ease')

@@ -549,8 +549,8 @@ test('note property panels render a live draft, block note drags, and let Escape
             urls.get('/src/editor/toolModals.ts') ?? '/src/editor/toolModals.ts'
         )
         const { default: properties } =
-            await import('/src/editor/tools/note/NotePropertiesModal.vue')
-        void showToolModal(properties, {})
+            await import('/src/editor/workspace/properties/SelectionPropertiesModal.vue')
+        void showToolModal(properties, { kind: 'note' })
     })
     const properties = page.locator('.editor-tool-modal')
     const lane = properties.getByRole('spinbutton', { name: 'Lane', exact: true })

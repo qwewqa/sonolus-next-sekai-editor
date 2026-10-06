@@ -38,9 +38,8 @@ import { applyBrushToEntities } from '../tools/brush'
 import { remove } from '../tools/eraser'
 import { applyGeneratedSlideNotes } from '../tools/generateSlideNotes'
 import { defaultNoteProperties } from '../tools/note'
-import NotePropertiesModal from '../tools/note/NotePropertiesModal.vue'
 import { defaultSlideProperties } from '../tools/slide'
-import SlidePropertiesModal from '../tools/slide/SlidePropertiesModal.vue'
+import SelectionPropertiesModal from '../workspace/properties/SelectionPropertiesModal.vue'
 import { quickEdit } from '../utils/quickEdit'
 import LevelEditorToolbar from '../toolbar/LevelEditorToolbar.vue'
 import EditorToolModalHost from '../EditorToolModalHost.vue'
@@ -473,10 +472,7 @@ const controls: Pick<
                     )
                 } else
                     // The same docked tool dialog the main editor opens for this gesture.
-                    void showToolModal(
-                        toolName.value === 'slide' ? SlidePropertiesModal : NotePropertiesModal,
-                        {},
-                    )
+                    void showToolModal(SelectionPropertiesModal, { kind: 'note' })
                 return
             }
         }

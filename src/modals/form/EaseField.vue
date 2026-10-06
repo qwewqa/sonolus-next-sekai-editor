@@ -2,6 +2,7 @@
 import { computed, provide } from 'vue'
 import {
     composeEase,
+    easeFamily,
     easeEditParts,
     easeModes,
     setEaseEditFamily,
@@ -13,7 +14,9 @@ import {
     type EaseMode,
 } from '../../ease'
 import { i18n } from '../../i18n'
+import FieldUsageProvider from '../../editor/workspace/properties/FieldUsageProvider.vue'
 import { unsetChoiceKey } from './emptyLabel'
+import { useFieldUsage, type FieldUsage } from './fieldUsage'
 import EaseIcon from './EaseIcon.vue'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
@@ -55,6 +58,33 @@ const modeOptions = computed(() =>
 // Linear has no mode.
 const isLinear = computed(() => family.value === 'linear')
 
+// The mode covers only curves; linear objects are listed apart, and narrow.
+const field = useFieldUsage()
+const modeUsage = computed((): FieldUsage => {
+    const own = field?.value
+    const usage = own?.usage
+    if (!own || !usage) return { usage: undefined }
+    const values = new Map<unknown, number>()
+    let linear = 0
+    for (const [value, count] of usage.values) {
+        if (easeFamily(value as Ease) === 'linear') linear += count
+        else values.set(value, count)
+    }
+    if (!linear) return own
+    if (!values.size) return { usage: undefined }
+    return {
+        ...own,
+        usage: { values, covered: usage.covered - linear, total: usage.total },
+        extra: [
+            {
+                label: i18n.value.modals.form.ease.linear,
+                count: linear,
+                narrow: () => own.narrow?.((value) => easeFamily(value as Ease) === 'linear'),
+            },
+        ],
+    }
+})
+
 // Only a complete ease has a curve to show.
 const curve = computed(() =>
     family.value && (mode.value || isLinear.value)
@@ -79,12 +109,14 @@ const curve = computed(() =>
         <MultiSelectField v-model="family" :label :options="familyOptions">
             <template v-if="curve" #leading><EaseIcon :ease="curve" /></template>
         </MultiSelectField>
-        <MultiSelectField
-            v-model="mode"
-            :label="modeLabel"
-            :options="modeOptions"
-            :disabled="isLinear"
-            :empty-label="isLinear ? '—' : undefined"
-        />
+        <FieldUsageProvider :usage="modeUsage">
+            <MultiSelectField
+                v-model="mode"
+                :label="modeLabel"
+                :options="modeOptions"
+                :disabled="isLinear"
+                :empty-label="isLinear ? '—' : undefined"
+            />
+        </FieldUsageProvider>
     </template>
 </template>

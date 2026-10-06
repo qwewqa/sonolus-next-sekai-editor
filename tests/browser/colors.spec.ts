@@ -125,9 +125,7 @@ test('color controls commit, undo, and persist in creation presets', async ({ pa
         await window.editorTest.nextTick()
     })
     await page.getByRole('combobox', { name: 'Note Color', exact: true }).selectOption('blue')
-    await page
-        .getByRole('combobox', { name: 'Color', exact: true })
-        .selectOption('purple')
+    await page.getByRole('combobox', { name: 'Color', exact: true }).selectOption('purple')
     const colors = () =>
         page.evaluate(() => {
             const head = [

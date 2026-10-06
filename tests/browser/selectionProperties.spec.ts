@@ -146,7 +146,11 @@ test.describe('mixed values', () => {
         const mode = selection(page)
             .locator('.form-field')
             .filter({ has: page.getByText('Ease Mode', { exact: true }) })
-        await expect(mode.locator('.form-field-mixed-value')).toHaveText(['In 1', 'Out 1'])
+        await expect(mode.locator('.form-field-mixed-value')).toHaveText([
+            '2 of 5',
+            'In 1',
+            'Out 1',
+        ])
     })
 
     test('numbers show their range and toggles list their values', async ({ page }) => {
@@ -171,7 +175,7 @@ test.describe('mixed values', () => {
         const attached = selection(page)
             .locator('.form-field')
             .filter({ has: page.getByText('Attached', { exact: true }) })
-        await expect(attached.locator('.form-field-coverage')).toHaveText('1/5')
+        await expect(attached.locator('.form-field-coverage-chip')).toHaveText('1 of 5')
         await expect(control(page, 'Attached')).toHaveAccessibleDescription(
             'Applies to 1 of 5 selected objects',
         )
@@ -179,12 +183,35 @@ test.describe('mixed values', () => {
         const type = selection(page)
             .locator('.form-field')
             .filter({ has: page.getByText('Note Type', { exact: true }) })
-        await expect(type.locator('.form-field-coverage')).toHaveCount(0)
+        await expect(type.locator('.form-field-coverage-chip')).toHaveCount(0)
+        // The chip narrows to the objects the field covers.
+        await attached
+            .getByRole('button', { name: 'Select only the objects it applies to (1 of 5)' })
+            .click()
+        expect(await selectedCount(page)).toBe(1)
+    })
+
+    test('chips are one Tab stop, with arrows between them', async ({ page }) => {
+        const chips = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Critical', { exact: true }) })
+            .getByRole('toolbar')
+            .getByRole('button')
+        await expect(chips).toHaveCount(2)
+        await chips.first().focus()
+        await page.keyboard.press('ArrowRight')
+        await expect(chips.nth(1)).toBeFocused()
+        await expect(chips.nth(0)).toHaveAttribute('tabindex', '-1')
+        await page.keyboard.press('Home')
+        await expect(chips.nth(0)).toBeFocused()
     })
 })
 
-test.describe('selection summary', () => {
-    test('lists each kind and narrows the selection to one', async ({ page }) => {
+test.describe('kind blocks', () => {
+    const header = (page: Page, name: RegExp) =>
+        selection(page).locator('.properties-block-header').filter({ hasText: name })
+
+    test('name each kind and narrow the selection to one', async ({ page }) => {
         await showSlides(page, [[{ beat: 0 }, { beat: 1 }, { beat: 2 }], [{ beat: 3 }]])
         await page.evaluate(async () => {
             const { history, store, nextTick } = window.editorTest
@@ -196,16 +223,46 @@ test.describe('selection summary', () => {
             })
             await nextTick()
         })
-        const summary = selection(page).locator('.selection-summary')
-        await expect(summary).toHaveText('Notes 4Slides 1BPM 1')
+        await expect(selection(page).locator('.properties-block-header h3')).toHaveText([
+            'Notes 4 · in 1 slide',
+            'BPM 1',
+            'General',
+        ])
         // Several BPM changes hide Beat; narrowing to notes brings it back.
         await expect(control(page, 'Beat')).toHaveCount(0)
-        await summary.getByRole('button', { name: 'Select only Notes (4)' }).click()
+        const notes = header(page, /^Notes/)
+        await notes.getByRole('button', { name: 'Select only Notes (4)' }).focus()
+        await page.keyboard.press('Enter')
         expect(await selectedCount(page)).toBe(4)
         await expect(control(page, 'Beat')).toHaveCount(1)
-        // One kind left: nothing to narrow.
-        await expect(summary.getByRole('button')).toHaveCount(0)
-        await expect(summary).toHaveText('Notes 4Slides 1')
+        // One kind left: nothing to narrow, and the header keeps the focus.
+        await expect(selection(page).locator('.properties-block-header button')).toHaveCount(0)
+        await expect(selection(page).locator('.properties-block-header h3')).toHaveText([
+            'Notes 4 · in 1 slide',
+        ])
+        await expect(notes.locator('h3')).toBeFocused()
+    })
+
+    test('the select only action shows its name only when it fits', async ({ page }) => {
+        await page.evaluate(async () => {
+            const { fixtures, show, history, store, nextTick } = window.editorTest
+            show(fixtures.events)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'timeScale' || entity.type === 'bpm',
+                ),
+            })
+            await nextTick()
+        })
+        const action = header(page, /^Time Scales/).getByRole('button')
+        await expect(action).toHaveText('Select only')
+        await expect(action).toHaveAccessibleName('Select only Time Scales (4)')
+        // French names it at greater length than the header has room for.
+        await page.evaluate(() => (window.editorTest.settings.locale = 'fr'))
+        const french = header(page, /^Échelles de temps/).getByRole('button')
+        await expect(french).toHaveText('')
+        await expect(french).toHaveAccessibleName('Sélectionner seulement Échelles de temps (4)')
     })
 })
 
@@ -228,6 +285,33 @@ test.describe('connector fields', () => {
         expect(
             await page.evaluate(() => window.editorTest.settings.propertiesConnectorExpanded),
         ).toBe(false)
+    })
+
+    test('the summary names what agrees and counts what differs', async ({ page }) => {
+        await showSlides(page, [
+            [{ beat: 0, connectorEase: 'inQuad', connectorLayer: 'bottom' }, { beat: 1 }],
+            [{ beat: 2, connectorEase: 'outQuad', connectorStyle: 'red' }, { beat: 3 }],
+        ])
+        await header(page).click()
+        // The easing agrees though the modes differ; differing values are left out.
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            'Slide · Quad',
+        )
+        await showSlides(page, [
+            [{ beat: 0, connectorType: 'guide', connectorLayer: 'bottom' }, { beat: 1 }],
+            [
+                {
+                    beat: 2,
+                    connectorEase: 'inQuad',
+                    connectorStyle: 'red',
+                    connectorType: 'damage',
+                },
+                { beat: 3 },
+            ],
+        ])
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            '4 values differ',
+        )
     })
 
     test('a typed value commits when the fields collapse', async ({ page }) => {
@@ -389,50 +473,66 @@ test('View picks the current group, apart from the selection’s group', async (
     await expect(control(page, 'Group')).toHaveCount(1)
 })
 
-test('labels name their kind only when the selection spans kinds', async ({ page }) => {
-    const select = (types: string[]) =>
-        page.evaluate(async (types) => {
-            const { fixtures, show, history, store, nextTick } = window.editorTest
-            if (![...store.getAllEntities()].some((entity) => entity.type === 'timeScale'))
-                show(fixtures.events)
-            history.replaceState({
-                ...history.state.value,
-                selectedEntities: [...store.getAllEntities()].filter((entity) =>
-                    types.includes(entity.type),
-                ),
-            })
-            await nextTick()
-        }, types)
-    const labels = () => selection(page).locator('.form-field-text').allTextContents()
-
-    await select(['timeScale'])
-    expect(await labels()).toEqual(expect.arrayContaining(['Ease', 'Ease Mode', 'Transition']))
-    await select(['cameraEventJoint'])
-    expect(await labels()).toEqual(expect.arrayContaining(['Zoom', 'Rotation', 'Ease']))
-
-    await select(['timeScale', 'cameraEventJoint', 'stageTransformEventJoint'])
-    const mixed = await labels()
-    expect(mixed).toEqual(
-        expect.arrayContaining([
-            'Time Scale Ease',
-            'Time Scale Ease Mode',
-            'Time Scale Transition',
-            'Camera Shift Lane',
-            'Camera Shift Size',
-            'Camera Zoom',
-            'Camera Zoom Target Lane',
-            'Camera Zoom Target Y',
-            'Camera Zoom Vertical Align',
-            'Camera Stage Tilt',
-            'Camera Rotation',
-            'Rotation',
-            'Event Ease',
-            'Event Ease Mode',
-        ]),
+test('kind blocks use short labels; General names what several kinds share', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, nextTick } = window.editorTest
+        show(fixtures.events)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((entity) =>
+                ['timeScale', 'cameraEventJoint', 'stageStyleEventJoint'].includes(entity.type),
+            ),
+        })
+        await nextTick()
+    })
+    const block = (name: RegExp) =>
+        selection(page)
+            .locator('.properties-block')
+            .filter({ has: page.locator('.properties-block-header h3', { hasText: name }) })
+    const labels = (name: RegExp) => block(name).locator('.form-field-text').allTextContents()
+    expect(await labels(/^Time Scales/)).toEqual(
+        expect.arrayContaining(['Editor Lane', 'Ease', 'Ease Mode', 'Transition']),
     )
-    expect(new Set(mixed).size).toBe(mixed.length)
-    // Accessible names follow the visible labels.
-    await expect(
-        selection(page).getByRole('combobox', { name: 'Time Scale Ease', exact: true }),
-    ).toBeVisible()
+    expect(await labels(/^Camera Events/)).toEqual(
+        expect.arrayContaining(['Shift Lane', 'Zoom', 'Rotation', 'Ease']),
+    )
+    // Editor Lane and the event ease also edit every kind having them at once.
+    expect(await labels(/^General/)).toEqual(
+        expect.arrayContaining(['Editor Lane', 'Event Ease', 'Event Ease Mode']),
+    )
+    for (const name of [/^Time Scales/, /^Camera Events/, /^General/]) {
+        const list = await labels(name)
+        expect(new Set(list).size).toBe(list.length)
+    }
+    // An edit in a kind's block reaches only that kind.
+    await block(/^Camera Events/)
+        .getByRole('combobox', { name: 'Ease', exact: true })
+        .selectOption('linear')
+    const eases = await page.evaluate(() =>
+        [...window.editorTest.store.getAllEntities()]
+            .filter((entity) => entity.type === 'stageStyleEventJoint')
+            .map((entity) => (entity as unknown as { eventEase: string }).eventEase),
+    )
+    expect(eases).toEqual(expect.arrayContaining(['inQuad']))
+})
+
+test('ease modes list linear eases apart and narrow to them', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, nextTick } = window.editorTest
+        show(fixtures.connectors)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note',
+            ),
+        })
+        await nextTick()
+    })
+    const mode = selection(page)
+        .locator('.form-field')
+        .filter({ has: page.getByText('Ease Mode', { exact: true }) })
+        .first()
+    await expect(mode.locator('.form-field-mixed-value').last()).toHaveText('Linear 5')
+    await mode.getByRole('button', { name: 'Select only Linear (5)' }).click()
+    expect(await selectedCount(page)).toBe(5)
 })

@@ -34,8 +34,8 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../../view'
+import SelectionPropertiesModal from '../../../../workspace/properties/SelectionPropertiesModal.vue'
 import { hitEntitiesAtPoint } from '../../../utils'
-import StageStyleEventPropertiesModal from './StageStyleEventPropertiesModal.vue'
 import StageStyleEventSidebar from './StageStyleEventSidebar.vue'
 
 type DefaultStageStyleEventProperties = {
@@ -135,7 +135,9 @@ export const stageStyleEvent: Tool = {
                             eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
-                        void showToolModal(StageStyleEventPropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, {
+                            kind: 'stageStyleEventJoint',
+                        })
                     }
                 } else {
                     replaceState({

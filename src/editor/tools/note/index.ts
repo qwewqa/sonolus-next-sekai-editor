@@ -31,6 +31,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../view'
+import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
 import {
     hitEntitiesAtPoint,
     isNoteResizeStart,
@@ -40,7 +41,6 @@ import {
     placementCursors,
     resize,
 } from '../utils'
-import NotePropertiesModal from './NotePropertiesModal.vue'
 import NoteSidebar from './NoteSidebar.vue'
 
 export const defaultNotePropertiesPresetIndex = ref(0)
@@ -137,7 +137,7 @@ export const note: Tool = {
                         revealPropertiesSection('selection')
                         quickEdit(defaultNoteProperties.value)
                     } else {
-                        void showToolModal(NotePropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, { kind: 'note' })
                     }
                 } else {
                     replaceState({

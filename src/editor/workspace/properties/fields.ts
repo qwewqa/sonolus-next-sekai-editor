@@ -643,10 +643,6 @@ const fields: PropertyField[] = [
 
 export const propertyFields: readonly PropertyField[] = fields
 
-/** Selections of several kinds name each field's kind where its label omits it. */
-export const qualifiesLabels = ({ types }: SelectionContext) =>
-    Object.values(types).filter(Boolean).length > 1
-
 export const fieldLabel = (field: PropertyField, t: Localization, qualified: boolean) =>
     (qualified ? field.qualifiedLabel?.(t) : undefined) ?? field.label(t)
 
@@ -659,6 +655,57 @@ export const propertySections: readonly PropertySection[] = [
     'organization',
     'advanced',
 ]
+
+type Sections = Record<PropertySection, PropertyField[]>
+
+/** Fields of a selection's block: one kind's, or the General ones every kind shares. */
+export type FieldBlock = { kind?: EntityType; sections: Sections }
+
+/** Fields of several kinds, which close a selection of several kinds under General. */
+export const generalKeys: ReadonlySet<PropertyKey> = new Set([
+    'beat',
+    'groupId',
+    'stageId',
+    'elevation',
+])
+
+/** Fields each kind shows that General also shows once for all kinds having them. */
+export const sharedKeys: ReadonlySet<PropertyKey> = new Set(['eventEase', 'editorLane'])
+
+const emptySections = () =>
+    Object.fromEntries(propertySections.map((section) => [section, []])) as unknown as Sections
+
+/** Groups the fields a selection shows by the kind they belong to. */
+export const layoutFields = (
+    kinds: readonly EntityType[],
+    kindContext: (kind: EntityType) => SelectionContext,
+    context: SelectionContext,
+): FieldBlock[] => {
+    if (kinds.length < 2) {
+        const sections = emptySections()
+        for (const field of fields) if (field.show(context)) sections[field.section].push(field)
+        return [{ kind: kinds[0], sections }]
+    }
+    const blocks: FieldBlock[] = kinds.map((kind) => ({ kind, sections: emptySections() }))
+    const general = emptySections()
+    for (const field of fields) {
+        if (generalKeys.has(field.key)) {
+            if (field.show(context)) general[field.section].push(field)
+            continue
+        }
+        let owners = 0
+        for (const block of blocks) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            if (!field.show(kindContext(block.kind!))) continue
+            block.sections[field.section].push(field)
+            owners++
+        }
+        if (owners > 1 && sharedKeys.has(field.key)) general[field.section].push(field)
+    }
+    if (propertySections.some((section) => general[section].length))
+        blocks.push({ sections: general })
+    return blocks
+}
 
 export type BrushKey = keyof BrushProperties
 

@@ -28,6 +28,7 @@ import {
     xToValidLane,
     yToValidBeat,
 } from '../../../view'
+import SelectionPropertiesModal from '../../../workspace/properties/SelectionPropertiesModal.vue'
 import {
     hitEntitiesAtPoint,
     isRangeResizeStart,
@@ -35,7 +36,6 @@ import {
     placementCursors,
     resize,
 } from '../../utils'
-import CameraEventPropertiesModal from './CameraEventPropertiesModal.vue'
 import CameraEventSidebar from './CameraEventSidebar.vue'
 
 type DefaultCameraEventProperties = {
@@ -139,7 +139,7 @@ export const cameraEvent: Tool = {
                             eventEase: cycleEase(entity.eventEase),
                         })
                     } else {
-                        void showToolModal(CameraEventPropertiesModal, {})
+                        void showToolModal(SelectionPropertiesModal, { kind: 'cameraEventJoint' })
                     }
                 } else {
                     replaceState({

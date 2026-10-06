@@ -6,40 +6,38 @@ const panel = (page: Page) => page.locator('#workspace-panel-properties')
 type Shown = { label: string; shown: string; listed: string[] }
 
 /** What every visible field shows, and the entries its list offers. */
-const fields = (page: Page) =>
-    panel(page)
-        .locator('.form-field')
-        .evaluateAll((elements) =>
-            elements.flatMap((field): Shown[] => {
-                if (!(field as HTMLElement).offsetParent) return []
-                const label = field.querySelector('.form-field-text')?.textContent?.trim() ?? ''
-                const radiogroup = field.querySelector('[role="radiogroup"]')
-                const select = field.querySelector('select')
-                const input = field.querySelector('input')
-                let shown = ''
-                let listed: string[] = []
-                if (radiogroup) {
-                    const checked = radiogroup.querySelector<HTMLInputElement>('input:checked')
-                    // Mixed checks nothing; its values are listed beneath instead.
-                    shown = checked
-                        ? (checked.closest('label')?.textContent ?? '')
-                        : [...field.querySelectorAll('.form-field-mixed-value')]
-                              .map((value) => value.textContent)
-                              .join(', ')
-                } else if (select) {
-                    shown = select.selectedOptions[0]?.textContent ?? ''
-                    listed = [...select.options]
-                        .filter((option) => !option.hidden)
-                        .map((option) => option.textContent?.trim() ?? '')
-                } else if (input) {
-                    shown = input.value || input.placeholder
-                }
-                return [{ label, shown: shown.trim(), listed }]
-            }),
-        )
+const fields = (page: Page, root = panel(page)) =>
+    root.locator('.form-field').evaluateAll((elements) =>
+        elements.flatMap((field): Shown[] => {
+            if (!(field as HTMLElement).offsetParent) return []
+            const label = field.querySelector('.form-field-text')?.textContent?.trim() ?? ''
+            const radiogroup = field.querySelector('[role="radiogroup"]')
+            const select = field.querySelector('select')
+            const input = field.querySelector('input')
+            let shown = ''
+            let listed: string[] = []
+            if (radiogroup) {
+                const checked = radiogroup.querySelector<HTMLInputElement>('input:checked')
+                // Mixed checks nothing; its values are listed beneath instead.
+                shown = checked
+                    ? (checked.closest('label')?.textContent ?? '')
+                    : [...field.querySelectorAll('.form-field-mixed-value')]
+                          .map((value) => value.textContent)
+                          .join(', ')
+            } else if (select) {
+                shown = select.selectedOptions[0]?.textContent ?? ''
+                listed = [...select.options]
+                    .filter((option) => !option.hidden)
+                    .map((option) => option.textContent?.trim() ?? '')
+            } else if (input) {
+                shown = input.value || input.placeholder
+            }
+            return [{ label, shown: shown.trim(), listed }]
+        }),
+    )
 
-const expectNoBlank = async (page: Page, context: string) => {
-    for (const field of await fields(page)) {
+const expectNoBlank = async (page: Page, context: string, root = panel(page)) => {
+    for (const field of await fields(page, root)) {
         expect(field.shown, `${context}: ${field.label}`).not.toBe('')
         for (const entry of field.listed) {
             expect(entry, `${context}: ${field.label} lists`).not.toMatch(/^(Mixed)?$/)
@@ -92,6 +90,41 @@ for (const fixture of ['events', 'interaction', 'connectors'] as const) {
         }
     })
 }
+
+test('the properties dialog on a phone shows no blank field and explains mixed ones', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(async () => {
+        const { show, fixtures, settings, nextTick } = window.editorTest
+        settings.showSidebar = false
+        show(fixtures.connectors)
+        await nextTick()
+    })
+    const dialog = page.getByRole('dialog')
+    for (const selection of ['all note', 'everything', 'one note']) {
+        await select(page, selection)
+        await page.evaluate(async () => {
+            const { editSelectionProperties } = await window.editorTest.appImport<
+                typeof import('../../src/editor/editSelectionProperties')
+            >('/src/editor/editSelectionProperties.ts')
+            editSelectionProperties()
+        })
+        await expect(dialog.locator('.form-field').first()).toBeVisible()
+        await expectNoBlank(page, `dialog ${selection}`, dialog)
+        if (selection === 'all note') {
+            await expect(dialog.locator('.properties-block-header h3')).toHaveText([
+                'Notes 48 · in 18 slides',
+            ])
+            await expect(dialog.locator('.form-field-coverage-chip').first()).toBeVisible()
+            await expect(dialog.getByLabel('Lane', { exact: true })).toHaveAttribute(
+                'placeholder',
+                '-10.5 … 8',
+            )
+        }
+        await dialog.getByRole('button', { name: 'Close' }).click()
+    }
+})
 
 test('values no option names show as unknown rather than blank', async ({ page }) => {
     await page.evaluate(async () => {

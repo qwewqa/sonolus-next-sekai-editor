@@ -1266,7 +1266,9 @@
         "auto": "Auto",
         "copy": "Copier"
       },
-      "unknown": "Inconnu ({0})"
+      "unknown": "Inconnu ({0})",
+      "coverageChip": "{0} sur {1}",
+      "selectCovered": "Sélectionner seulement les objets concernés ({0} sur {1})"
     },
     "confirm": {
       "delete": "Supprimer",
@@ -1439,7 +1441,10 @@
         "stageStyleEventJoint": "Événements de style de scène",
         "stageTransformEventJoint": "Événements de transformation de scène"
       },
-      "connector": "Connecteur"
+      "connector": "Connecteur",
+      "selectOnly": "Sélectionner seulement",
+      "inSlides": "dans {0} slide|dans {0} slides",
+      "valuesDiffer": "{0} valeur diffère|{0} valeurs diffèrent"
     }
   }
 }

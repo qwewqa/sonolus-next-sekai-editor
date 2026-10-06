@@ -1266,7 +1266,9 @@
         "auto": "Otomatik",
         "copy": "Kopyala"
       },
-      "unknown": "Bilinmiyor ({0})"
+      "unknown": "Bilinmiyor ({0})",
+      "coverageChip": "{1} içinden {0}",
+      "selectCovered": "Yalnızca uygulandığı nesneleri seç ({1} içinden {0})"
     },
     "confirm": {
       "delete": "Sil",
@@ -1439,7 +1441,10 @@
         "stageStyleEventJoint": "Sahne Stili Olayları",
         "stageTransformEventJoint": "Sahne Dönüşüm Olayları"
       },
-      "connector": "Bağlayıcı"
+      "connector": "Bağlayıcı",
+      "selectOnly": "Yalnızca bunları seç",
+      "inSlides": "{0} kaydırmada",
+      "valuesDiffer": "{0} değer farklı"
     }
   }
 }
