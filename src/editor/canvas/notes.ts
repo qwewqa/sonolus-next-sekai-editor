@@ -345,7 +345,7 @@ export const createNoteRenderer = () => {
                         stage,
                         x + entity.size / 2 - gap,
                         y + 0.3,
-                        '#a0a',
+                        '#f6f',
                         0.4,
                         group ? 'end' : 'center',
                     )

@@ -441,7 +441,7 @@ export const drawEvent = (
                 (highlighted || context.recentlyActive)
             ) {
                 const stageName = state.stages.get(entity.stageId)?.name
-                if (stageName) drawText(context, stageName, (x + (xs[1] ?? x)) / 2, y, '#a0a')
+                if (stageName) drawText(context, stageName, (x + (xs[1] ?? x)) / 2, y, '#f6f')
             }
         }
     }

@@ -337,12 +337,13 @@ test("a note's stage and group names keep a gap between them", (t) => {
         groupId: 2 as never,
     })
     createNoteRenderer().draw(context, entity, true)
-    // Centred on the note's middle (lane 1), 0.1 lane apart each.
+    // Centred on the note's middle (lane 1), 0.1 lane apart each; the stage's
+    // magenta and the group's cyan both read on the chart background.
     assert.deepEqual(
-        labels.map(({ text, x, align }) => [text, Math.round(x * 100) / 100, align]),
+        labels.map(({ text, x, align, color }) => [text, Math.round(x * 100) / 100, align, color]),
         [
-            ['Side stage', 0.9, 'end'],
-            ['Other group', 1.1, 'start'],
+            ['Side stage', 0.9, 'end', '#f6f'],
+            ['Other group', 1.1, 'start', '#0aa'],
         ],
     )
 })
