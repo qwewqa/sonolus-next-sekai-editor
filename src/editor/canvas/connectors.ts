@@ -160,8 +160,7 @@ const appendStep = (
 const safeUnlerp = (a: number, b: number, x: number, fallback: number) =>
     Math.abs(a - b) < 1e-6 ? fallback : unlerp(a, b, x)
 
-// Like the engine, a piece between attached notes eases between its own ends, so equal
-// eased ends give a straight piece. Steps hold one value per piece.
+// Like the engine, ease each piece between its own ends; steps hold one value per piece.
 const appendAttachedPiece = (
     path: Path2D,
     attachHead: Edge,

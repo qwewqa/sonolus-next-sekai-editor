@@ -39,10 +39,7 @@ export const getPathD = (
 
 const CURVE_TOLERANCE = 0.01
 
-/**
- * Paths of a range's two edges, with its width floored at `minWidth` about its center
- * as the engine does for overshooting masks and cameras.
- */
+// Edge paths of a range whose width the engine floors at minWidth about its center.
 export const getRangePathDs = (
     [leftMin, rightMin]: [number, number],
     [leftMax, rightMax]: [number, number],
