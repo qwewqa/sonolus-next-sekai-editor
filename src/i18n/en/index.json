@@ -192,7 +192,6 @@
                 },
                 "delete": "Delete Group",
                 "deleted": "Deleted {0} group",
-                "add": "Add",
                 "added": "Added {0} group"
             }
         },
@@ -212,7 +211,6 @@
                 },
                 "delete": "Delete Stage",
                 "deleted": "Deleted {0} stage",
-                "add": "Add",
                 "added": "Added {0} stage"
             }
         },

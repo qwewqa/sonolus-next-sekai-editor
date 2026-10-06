@@ -192,7 +192,6 @@
         },
         "delete": "Supprimer le groupe",
         "deleted": "Groupe {0} supprimé",
-        "add": "Ajouter",
         "added": "Groupe {0} ajouté"
       }
     },
@@ -212,7 +211,6 @@
         },
         "delete": "Supprimer la scène",
         "deleted": "Scène {0} supprimée",
-        "add": "Ajouter",
         "added": "Scène {0} ajoutée"
       }
     },

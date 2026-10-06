@@ -192,7 +192,6 @@
         },
         "delete": "Grubu sil",
         "deleted": "{0} grubu silindi",
-        "add": "Ekle",
         "added": "{0} grubu eklendi"
       }
     },
@@ -212,7 +211,6 @@
         },
         "delete": "Sahneyi sil",
         "deleted": "{0} sahnesi silindi",
-        "add": "Ekle",
         "added": "{0} sahnesi eklendi"
       }
     },
