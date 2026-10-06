@@ -82,6 +82,11 @@ test.describe('chords', () => {
         })
         await page.keyboard.press('Control+c')
         await expect(page.locator('p[data-copied]')).toHaveAttribute('data-copied', 'Note Speed')
+
+        // Other editing chords still keep the browser's action out.
+        await logDefaults(page)
+        await page.keyboard.press('Control+z')
+        expect(await lastDefault(page)).toBe(true)
     })
 
     test('a rebound undo key undoes with Ctrl too', async ({ page }) => {
