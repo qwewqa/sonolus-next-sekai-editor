@@ -675,12 +675,13 @@ test('time-scale labels turn inward only where outward would leave the view', ()
     assert.deepEqual(
         canvas.labels.map(({ text, x, align }) => [text, Math.round(x * 100) / 100, align]),
         [
+            // A label turned inward takes its group name along, after its text.
             ['1x→0.25x', -7.41, 'start'],
-            ['B', -8.2, 'end'],
+            ['B', -4.81, 'start'],
             ['2x', -6.59, 'end'],
             ['B', -5.8, 'start'],
             ['4x', 8.91, 'end'],
-            ['B', 9.7, 'start'],
+            ['B', 8.11, 'end'],
         ],
     )
 })

@@ -355,10 +355,11 @@ export const drawEvent = (
                 direction,
                 '#ff0',
             )
+            const textX = labelX + glyphWidth * direction
             drawText(
                 context,
                 text,
-                labelX + glyphWidth * direction,
+                textX,
                 y,
                 '#ff0',
                 0.5,
@@ -370,14 +371,18 @@ export const drawEvent = (
                 entity.groupId !== context.defaultGroupId &&
                 (highlighted || context.recentlyActive)
             ) {
+                // Opposite the label, unless it turned inward for want of room there.
+                const side = direction === (x > 0 ? 1 : -1) ? -direction : direction
                 drawText(
                     context,
                     state.groups.get(entity.groupId)?.name ?? '',
-                    x - 0.2 * direction,
+                    side === direction
+                        ? textX + (measureText(context, text, 0.5) + 0.2) * direction
+                        : x + 0.2 * side,
                     y,
                     '#0aa',
                     0.4,
-                    direction > 0 ? 'end' : 'start',
+                    side > 0 ? 'start' : 'end',
                 )
             }
             break
