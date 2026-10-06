@@ -413,3 +413,59 @@ test.describe('flipping, scaling and nudging a pair keeps both', () => {
             })
     }
 })
+
+/** Applies a selection transform to objects chosen by kind and beat. */
+const transformChosen = (
+    page: Page,
+    operation: 'scale' | 'translate' | 'flipVertical',
+    axis: 'beat' | 'width',
+    choose: { kinds: string[]; beats: number[]; firstOfPair?: boolean },
+) =>
+    page.evaluate(
+        async ({ operation, axis, choose }) => {
+            const { history, store, appImport } = window.editorTest
+            const { scaleSelection } = await appImport<
+                typeof import('../../src/state/operations/scaleSelection')
+            >('/src/state/operations/scaleSelection.ts')
+            const { translateSelection } = await appImport<
+                typeof import('../../src/state/operations/translateSelection')
+            >('/src/state/operations/translateSelection.ts')
+            const { flipVertical } = await appImport<
+                typeof import('../../src/state/operations/flipVertical')
+            >('/src/state/operations/flipVertical.ts')
+            const all = [...store.getAllEntities()]
+            const selected = all.filter(
+                (entity) =>
+                    choose.kinds.includes(entity.type) &&
+                    choose.beats.includes(entity.beat) &&
+                    !(
+                        choose.firstOfPair &&
+                        entity.beat === 4 &&
+                        all.find((other) => other.type === entity.type && other.beat === 4) !==
+                            entity
+                    ),
+            )
+            const source = { ...history.state.value, selectedEntities: selected }
+            history.pushState(
+                () => operation,
+                operation === 'scale'
+                    ? scaleSelection(source, selected, axis, 2)
+                    : operation === 'translate'
+                      ? translateSelection(source, selected, axis, 1)
+                      : flipVertical(source, selected),
+            )
+        },
+        { operation, axis, choose },
+    )
+
+test('scaling the width of one of a pair keeps the pair in order', async ({ page }) => {
+    await showPairs(page)
+    await transformChosen(page, 'scale', 'width', {
+        kinds: ['timeScale', 'cameraEventJoint'],
+        beats: [2, 4],
+        firstOfPair: true,
+    })
+    const after = await exported(page)
+    expect(after.timeScale).toEqual(original.timeScale)
+    expect(after.cameraEventJoint).toEqual(original.cameraEventJoint)
+})

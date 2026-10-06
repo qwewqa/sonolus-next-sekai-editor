@@ -18,8 +18,15 @@ import {
 import { addTimeScale, removeTimeScale } from '../mutations/timeScale'
 import { getInStoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
+import { editSelectedBpm } from './bpm'
 import type { EditableEntity, EditableProperties } from './editable'
+import { editSelectedCameraEvent } from './events/camera'
+import { editSelectedStageMaskEvent } from './events/stage/mask'
+import { editSelectedStagePivotEvent } from './events/stage/pivot'
+import { editSelectedStageStyleEvent } from './events/stage/style'
+import { editSelectedStageTransformEvent } from './events/stage/transform'
 import { editSelectedNote } from './note'
+import { editSelectedTimeScale } from './timeScale'
 
 type TimingEntity = Exclude<EditableEntity, { type: 'note' }>
 
@@ -46,6 +53,25 @@ const remove = (transaction: Transaction, entity: TimingEntity) => {
         case 'stageTransformEventJoint':
             removeStageTransformEventJoint(transaction, entity)
             return
+    }
+}
+// Edits in place, so same-beat objects keep their order.
+const edit = (transaction: Transaction, entity: TimingEntity, object: EditableProperties) => {
+    switch (entity.type) {
+        case 'bpm':
+            return editSelectedBpm(transaction, entity, object)
+        case 'timeScale':
+            return editSelectedTimeScale(transaction, entity, object)
+        case 'cameraEventJoint':
+            return editSelectedCameraEvent(transaction, entity, object)
+        case 'stageMaskEventJoint':
+            return editSelectedStageMaskEvent(transaction, entity, object)
+        case 'stagePivotEventJoint':
+            return editSelectedStagePivotEvent(transaction, entity, object)
+        case 'stageStyleEventJoint':
+            return editSelectedStageStyleEvent(transaction, entity, object)
+        case 'stageTransformEventJoint':
+            return editSelectedStageTransformEvent(transaction, entity, object)
     }
 }
 const add = (transaction: Transaction, entity: TimingEntity) => {
@@ -99,21 +125,24 @@ export const transformSelection = (
         const destination = destinationOf(entity, object)
         destinations.set(destination, (destinations.get(destination) ?? 0) + 1)
     }
+    const collides = (entity: EditableEntity, object: EditableProperties) =>
+        entity.type !== 'note' && (destinations.get(destinationOf(entity, object)) ?? 0) > 1
     const changed = [...changes].filter(
         ([entity, object]) =>
             Object.entries(object).some(
                 ([key, value]) => value !== (entity as unknown as Record<string, unknown>)[key],
-            ) ||
-            (entity.type !== 'note' && (destinations.get(destinationOf(entity, object)) ?? 0) > 1),
+            ) || collides(entity, object),
     )
     if (!changed.length) return source
+    const stays = (entity: EditableEntity, object: EditableProperties) =>
+        (object.beat ?? entity.beat) === entity.beat && !collides(entity, object)
     const transaction = createTransaction(source, { autoAddGroup: false })
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(
         (entity) => entity.beat === 0,
     )
     const replacements = new Map<Entity, Entity[]>()
-    for (const [entity] of changed) {
-        if (entity.type !== 'note') remove(transaction, entity)
+    for (const [entity, object] of changed) {
+        if (entity.type !== 'note' && !stays(entity, object)) remove(transaction, entity)
     }
     // A same-beat pair lands in its stored order and stays a pair.
     const ordered = inStoredOrder(source, changed, ([entity]) => entity)
@@ -121,6 +150,10 @@ export const transformSelection = (
     for (const [entity, object] of ordered) {
         if (entity.type === 'note') {
             replacements.set(entity, editSelectedNote(transaction, entity, object))
+            continue
+        }
+        if (stays(entity, object)) {
+            replacements.set(entity, edit(transaction, entity, object))
             continue
         }
         if (object.beat !== undefined) {
