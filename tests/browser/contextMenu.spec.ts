@@ -345,6 +345,42 @@ test('visible command shortcuts act once while the menu has focus', async ({ pag
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('menu shortcuts answer with Ctrl and to chord bindings, showing the chord', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.keyboardShortcuts = { ...settings.keyboardShortcuts, flip: 'Mod+Shift+h' }
+    })
+    await selectTwo(page)
+    await click(page, -3, 3)
+    const menu = page.getByRole('menu')
+    await expect(
+        menu.getByRole('menuitem', { name: 'Flip Horizontally', exact: true }),
+    ).toContainText('Ctrl+Shift+H')
+    // The bare key no longer flips; the chord does.
+    await page.keyboard.press('h')
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Control+Shift+H')
+    await expect(menu).toHaveCount(0)
+    const lefts = async () =>
+        (await snapshot(page)).selected.map((entity) => entity.left).sort((a, b) => a! - b!)
+    expect(await lefts()).toEqual([-2, 2])
+
+    // Plain keys still answer with Ctrl held, as Ctrl+Z does on the canvas.
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.keyboardShortcuts = { ...settings.keyboardShortcuts, flip: 'u' }
+    })
+    await page.keyboard.press('z')
+    await selectTwo(page)
+    await click(page, -3, 3)
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Control+u')
+    await expect(menu).toHaveCount(0)
+    expect(await lefts()).toEqual([-2, 2])
+})
+
 test('changing view zoom or scrolling dismisses an open menu', async ({ page }) => {
     await click(page, -3, 3)
     await expect(page.getByRole('menu')).toBeVisible()

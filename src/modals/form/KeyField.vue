@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { i18n } from '../../i18n'
-import { formatShortcut } from '../../utils/format'
+import { formatShortcut } from '../../editor/controls/bindings'
 import BaseField from './BaseField.vue'
 
 defineProps<{

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { settings } from '../../settings'
-import { formatShortcut } from '../../utils/format'
+import { formatShortcut } from '../controls/bindings'
 import { commands, type CommandName } from '../commands'
 import { isCoarsePointer } from '../workspace'
 

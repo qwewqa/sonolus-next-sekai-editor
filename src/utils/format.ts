@@ -19,10 +19,3 @@ export const formatTimeScale = (value: number, skip: number) => {
 
     return text
 }
-
-export const formatShortcut = (shortcut: string | undefined) =>
-    shortcut === ' '
-        ? 'Space'
-        : shortcut && /^[A-Z]$/.test(shortcut)
-          ? `Shift+${shortcut}`
-          : shortcut

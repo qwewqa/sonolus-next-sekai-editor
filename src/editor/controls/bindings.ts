@@ -173,3 +173,7 @@ export const isApplePlatform = () => {
     const data = (navigator as { userAgentData?: { platform?: string } }).userAgentData
     return /mac|iphone|ipad|ipod/i.test(data?.platform ?? navigator.platform)
 }
+
+/** A binding as this device shows it. */
+export const formatShortcut = (binding: string | undefined) =>
+    formatBinding(binding, isApplePlatform())

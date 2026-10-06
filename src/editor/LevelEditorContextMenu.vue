@@ -8,9 +8,9 @@ import { isEditableEntity } from '../state/operations/editable'
 import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
-import { formatShortcut } from '../utils/format'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
+import { formatShortcut, isApplePlatform, matchBindings } from './controls/bindings'
 import DeleteIcon from './commands/reset/ResetIcon.vue'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
@@ -213,8 +213,11 @@ watch(
     { flush: 'sync' },
 )
 
+const isApple = isApplePlatform()
+
 const onKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape' || settings.keyboardShortcuts.openContextMenu === event.key) {
+    const { names } = matchBindings(settings.keyboardShortcuts, event, isApple)
+    if (event.key === 'Escape' || names.includes('openContextMenu')) {
         event.preventDefault()
         dismiss(true)
     } else if (event.key === 'Tab') {
@@ -238,12 +241,7 @@ const onKeydown = (event: KeyboardEvent) => {
     } else {
         const action = actions.value
             .flat()
-            .find(
-                ({ name }) =>
-                    name !== 'paste' &&
-                    isCommandName(name) &&
-                    settings.keyboardShortcuts[name] === event.key,
-            )
+            .find(({ name }) => name !== 'paste' && isCommandName(name) && names.includes(name))
         if (action) {
             event.preventDefault()
             execute(action.name)
