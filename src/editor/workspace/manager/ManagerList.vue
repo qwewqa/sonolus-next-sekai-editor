@@ -612,7 +612,7 @@ type Drag = {
     gap: number
     offset: number
     /** Where the drop goes: into a folder, or before a remaining row (or at the end). */
-    target: { into: FolderId } | { gap: number }
+    target: { into: FolderId } | { gap: number; end?: FolderId }
     started: boolean
 }
 
@@ -721,7 +721,17 @@ const targetOf = (current: Drag): Drag['target'] => {
     }
 
     const gap = rows.filter((row) => row.top + row.height / 2 < center).length
-    if (current.key.type === 'entry') return { gap }
+    if (current.key.type === 'entry') {
+        // Just below a folder's last member, the upper half joins it at its end.
+        const last = rows[gap - 1]
+        if (
+            last?.folder !== undefined &&
+            rows[gap]?.folder !== last.folder &&
+            center < last.top + last.height + rowGap / 2
+        )
+            return { gap, end: last.folder }
+        return { gap }
+    }
 
     // A folder only lands between top-level items.
     let below = gap
@@ -875,6 +885,7 @@ const refOf = (row: RowInfo | undefined): FolderTreeRef<T> | undefined =>
 const entryPlace = (current: Drag): EntryPlace<T> => {
     const { target } = current
     if ('into' in target) return { folder: target.into }
+    if (target.end !== undefined) return { folder: target.end }
     const next = remaining(current)[target.gap]
     // Before a member: into its folder there. Otherwise loose, before the row.
     return next?.folder !== undefined && next.key.type === 'entry'

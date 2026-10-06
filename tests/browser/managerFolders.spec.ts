@@ -586,6 +586,89 @@ test('a drag stops scrolling at the last row', async ({ page }) => {
     expect((await tree(page)).endsWith('Part 20 Part 1')).toBe(true)
 })
 
+for (const { device, viewport, touch } of [
+    { device: 'desktop', viewport: { width: 1600, height: 1000 }, touch: false },
+    { device: 'phone', viewport: { width: 390, height: 844 }, touch: true },
+]) {
+    test.describe(`end of a folder (${device})`, () => {
+        test.use({ viewport, isMobile: touch, hasTouch: touch })
+
+        test('the upper half below a last member joins the folder, the lower half stays out', async ({
+            page,
+        }) => {
+            // Room for the rows on a phone, where the panel shares the screen.
+            await page.evaluate(() => {
+                window.editorTest.settings.topDockHeight = 600
+            })
+            const client = touch ? await page.context().newCDPSession(page) : undefined
+            /** Drags a row by its name (mouse) or handle (touch) to `y`, held at `left`, and drops it. */
+            const drop = async (name: string, y: number, left: number) => {
+                const handle = touch
+                    ? entryRow(page, name).locator('.manager-grip')
+                    : nameButton(panel(page), name)
+                const box = (await handle.boundingBox())!
+                const x = box.x + box.width / 2
+                const from = box.y + box.height / 2
+                if (client) {
+                    await client.send('Input.dispatchTouchEvent', {
+                        type: 'touchStart',
+                        touchPoints: [{ x, y: from }],
+                    })
+                    for (let step = 1; step <= 10; step++)
+                        await client.send('Input.dispatchTouchEvent', {
+                            type: 'touchMove',
+                            touchPoints: [{ x, y: from + ((y - from) * step) / 10 }],
+                        })
+                } else {
+                    await page.mouse.move(x, from)
+                    await page.mouse.down()
+                    await page.mouse.move(x, y, { steps: 10 })
+                }
+                // The held row previews the depth it lands at.
+                await expect
+                    .poll(async () => (await nameButton(panel(page), name).boundingBox())!.x)
+                    .toBe(left)
+                if (client)
+                    await client.send('Input.dispatchTouchEvent', {
+                        type: 'touchEnd',
+                        touchPoints: [],
+                    })
+                else await page.mouse.up()
+            }
+            const center = async (name: string) => {
+                const box = (await nameButton(panel(page), name).boundingBox())!
+                return box.y + box.height / 2
+            }
+
+            for (const [seed, joined, outside] of [
+                [
+                    [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']],
+                    'Default [Verse: Lead Fill Bass] Outro',
+                    'Default [Verse: Lead Fill] Bass Outro',
+                ],
+                // At the end of the list, below a folder.
+                [
+                    [['Default'], ['Bass'], ['Lead', 'Verse'], ['Fill', 'Verse']],
+                    'Default [Verse: Lead Fill Bass]',
+                    'Default [Verse: Lead Fill] Bass',
+                ],
+            ] as const) {
+                await seedGroups(page, seed.map((row) => [...row]) as [string, string?][])
+                const member = (await nameButton(panel(page), 'Fill').boundingBox())!.x
+                const loose = (await nameButton(panel(page), 'Default').boundingBox())!.x
+                const fill = await center('Fill')
+                // Rows are 40px (48px coarse) with a 4px gap: the halves split at the gap's middle.
+                const half = touch ? 26 : 22
+                await drop('Bass', fill + half - 6, member)
+                expect(await tree(page)).toBe(joined)
+                await undo(page)
+                await drop('Bass', fill + half + 6, loose)
+                expect(await tree(page)).toBe(outside)
+            }
+        })
+    })
+}
+
 test('a held row takes the indent of where it would land', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']])
     const left = async (name: string) => (await nameButton(panel(page), name).boundingBox())!.x
