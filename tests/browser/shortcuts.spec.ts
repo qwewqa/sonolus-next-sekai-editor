@@ -91,12 +91,17 @@ test.describe('chords', () => {
 
     test('pressing the chart drops selected page text, so Ctrl+C copies the objects', async ({
         page,
-        context,
     }) => {
-        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
         await setTool(page, 'select')
         const at = await page.evaluate(() => {
             const { history, store, point } = window.editorTest
+            // Firefox grants no clipboard permissions to tests, so the write is recorded instead.
+            Object.defineProperty(navigator.clipboard, 'writeText', {
+                configurable: true,
+                value: async (text: string) => {
+                    document.body.dataset.copied = text
+                },
+            })
             history.replaceState({ ...history.state.value, selectedEntities: [] })
             const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
             const text = document.body.appendChild(document.createElement('p'))
@@ -113,7 +118,7 @@ test.describe('chords', () => {
         ).toEqual({ collapsed: true, selected: 1 })
         await page.keyboard.press('Control+c')
         await expect
-            .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+            .poll(() => page.evaluate(() => document.body.dataset.copied))
             .toContain('"entities"')
     })
 
