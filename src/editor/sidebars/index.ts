@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { settings, type PropertiesSection } from '../../settings'
-import { isPanelVisible, showPanel } from '../workspace'
+import { isPanelVisible } from '../workspace'
 
 /**
  * Whether the Properties panel is on screen. Commands and tools edit in it
@@ -20,10 +20,4 @@ export const revealPropertiesSection = (section: PropertiesSection) => {
         settings.propertiesCollapsed = settings.propertiesCollapsed.filter(
             (value) => value !== section,
         )
-}
-
-/** Opens the Properties panel at a section, for requests no dialog can serve. */
-export const showPropertiesSection = (section: PropertiesSection) => {
-    showPanel('properties')
-    revealPropertiesSection(section)
 }
