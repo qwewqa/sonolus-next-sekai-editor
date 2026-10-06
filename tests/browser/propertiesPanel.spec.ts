@@ -408,3 +408,24 @@ test('view selects return to the current value when a picked command is cancelle
     await tool.selectOption({ label: 'Eraser' })
     await expect.poll(() => shown('Tool')).toBe('Eraser')
 })
+
+test('preset and brush headings match the selection kind headings', async ({ page }) => {
+    await open(page)
+    await selectNoteAt(page, 3)
+    const styles = (headings: import('@playwright/test').Locator) =>
+        headings.evaluateAll((all) =>
+            all.map((heading) => {
+                const { fontSize, fontWeight, color } = getComputedStyle(heading)
+                return { fontSize, fontWeight, color }
+            }),
+        )
+    const [kind] = await styles(panel(page).locator('.properties-block-header .font-bold'))
+    const headings = panel(page).locator('#properties-section-tool h3')
+    await page.keyboard.press('b')
+    await panel(page).getByRole('button', { name: 'Pick from Selection' }).click()
+    for (const tool of ['brush', 'a', 's']) {
+        if (tool !== 'brush') await page.keyboard.press(tool)
+        await expect(headings.first()).toBeVisible()
+        for (const style of await styles(headings)) expect(style, tool).toEqual(kind)
+    }
+})

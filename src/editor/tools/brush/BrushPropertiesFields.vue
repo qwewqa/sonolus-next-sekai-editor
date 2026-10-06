@@ -172,7 +172,7 @@ const clear = () => {
             class="brush-group flex flex-col gap-3 border-t border-fg/15 pt-3"
             :aria-label="i18n.tools.brush.kinds[kind]"
         >
-            <h3 class="text-xs font-bold text-fg/80">{{ i18n.tools.brush.kinds[kind] }}</h3>
+            <h3 class="text-sm font-bold">{{ i18n.tools.brush.kinds[kind] }}</h3>
             <div
                 v-for="field in fields"
                 :key="field.key"
