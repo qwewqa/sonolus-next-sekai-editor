@@ -574,6 +574,7 @@ test('a drag stops scrolling at the last row', async ({ page }) => {
     // Moving on at the edge carries the held row past the rows; the list stops there.
     for (let step = 0; step < 120; step++)
         await page.mouse.move(part.x + 60 + (step % 2), bounds.y + bounds.height - 10)
+    await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(end - 2)
     await page.waitForTimeout(300)
     expect(await list.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(end)
     // The held row stays in sight: the fade toward the hidden Add is off.
