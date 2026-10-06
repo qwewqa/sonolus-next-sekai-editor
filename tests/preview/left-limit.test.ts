@@ -219,6 +219,7 @@ test('slide heads keep the incoming connector at tied endpoints in the left limi
     const slide: PreviewSlide = {
         activeHead: head,
         activeTail: tail,
+        notes: [head, first, second, tail],
         kind: ConnectorKind.activeNormal,
         connectors,
     }

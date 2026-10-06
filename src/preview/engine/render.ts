@@ -46,8 +46,8 @@ import {
 } from './layout'
 import { interpolateVisualMasks, maskedNoteExtents, noVisualMask, type VisualMask } from './mask'
 import {
+    connectorFractions,
     connectorInterpFrac,
-    ease,
     isNoneEase,
     lerp,
     remapClamped,
@@ -271,17 +271,19 @@ export const renderPreviewFrame = (
         return basicVisualLane(note)
     }
 
+    // sekai/lib/note.py get_attach_frac
+    const attachFrac = (note: PreviewNote, head: PreviewNote, tail: PreviewNote) =>
+        safeUnlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
+
     const basicYOffset = (note: PreviewNote) =>
         note.stageIndex >= 0 ? (stageProps[note.stageIndex]?.yOffset ?? 0) : 0
 
     const visualYOffset = (note: PreviewNote): number => {
         if (note.isAttached && note.attachHead && note.attachTail) {
-            return remapClamped(
-                note.attachHead.targetTime,
-                note.attachTail.targetTime,
+            return lerp(
                 basicYOffset(note.attachHead),
                 basicYOffset(note.attachTail),
-                note.targetTime,
+                attachFrac(note, note.attachHead, note.attachTail),
             )
         }
         return basicYOffset(note)
@@ -292,12 +294,10 @@ export const renderPreviewFrame = (
 
     const visualNoteAlpha = (note: PreviewNote): number => {
         if (note.isAttached && note.attachHead && note.attachTail) {
-            return remapClamped(
-                note.attachHead.targetTime,
-                note.attachTail.targetTime,
+            return lerp(
                 basicVisualNoteAlpha(note.attachHead),
                 basicVisualNoteAlpha(note.attachTail),
-                note.targetTime,
+                attachFrac(note, note.attachHead, note.attachTail),
             )
         }
         return basicVisualNoteAlpha(note)
@@ -362,9 +362,9 @@ export const renderPreviewFrame = (
             const tailProgress = basicProgress(tail)
             const headFrac = !hasReached(head.targetTime)
                 ? 0
-                : unlerpClamped(head.targetTime, tail.targetTime, now)
-            const frac = unlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
-            return remapClamped(headFrac, 1, headProgress, tailProgress, frac)
+                : safeUnlerpClamped(head.targetTime, tail.targetTime, now)
+            const frac = safeUnlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
+            return lerp(headProgress, tailProgress, safeUnlerpClamped(headFrac, 1, frac))
         }
         return basicProgress(note)
     }
@@ -373,19 +373,13 @@ export const renderPreviewFrame = (
 
     const headEaseFrac = (note: PreviewNote) =>
         note.isAttached && note.attachHead && note.attachTail
-            ? unlerpClamped(note.attachHead.targetTime, note.attachTail.targetTime, note.targetTime)
+            ? attachFrac(note, note.attachHead, note.attachTail)
             : 0
 
     const tailEaseFrac = (note: PreviewNote) =>
         note.isAttached && note.attachHead && note.attachTail
-            ? unlerpClamped(note.attachHead.targetTime, note.attachTail.targetTime, note.targetTime)
+            ? attachFrac(note, note.attachHead, note.attachTail)
             : 1
-
-    const effectiveAttachHead = (note: PreviewNote) =>
-        note.isAttached && note.attachHead ? note.attachHead : note
-
-    const effectiveAttachTail = (note: PreviewNote) =>
-        note.isAttached && note.attachTail ? note.attachTail : note
 
     const historicalStageProps: (Map<number, StageProps> | undefined)[] = []
     const stagePropsAtTime = (stageIndex: number, t: number): StageProps | undefined => {
@@ -426,17 +420,28 @@ export const renderPreviewFrame = (
     const basicVisualLaneAt = (note: PreviewNote, t: number) =>
         (stagePropsAtTime(note.stageIndex, t)?.pivotLane ?? 0) + note.lane
 
+    const visualLaneAt = (note: PreviewNote, t: number) =>
+        note.isAttached && note.attachHead && note.attachTail
+            ? lerp(
+                  basicVisualLaneAt(note.attachHead, t),
+                  basicVisualLaneAt(note.attachTail, t),
+                  attachEasedFrac(note),
+              )
+            : basicVisualLaneAt(note, t)
+
+    // Attached notes connect with their attachment head's ease.
+    const effectiveConnectorEase = (note: PreviewNote) =>
+        note.isAttached && note.attachHead ? note.attachHead.connectorEase : note.connectorEase
+
     const basicYOffsetAt = (note: PreviewNote, t: number) =>
         stagePropsAtTime(note.stageIndex, t)?.yOffset ?? 0
 
     const yOffsetAt = (note: PreviewNote, t: number): number => {
         if (note.isAttached && note.attachHead && note.attachTail) {
-            return remapClamped(
-                note.attachHead.targetTime,
-                note.attachTail.targetTime,
+            return lerp(
                 basicYOffsetAt(note.attachHead, t),
                 basicYOffsetAt(note.attachTail, t),
-                note.targetTime,
+                attachFrac(note, note.attachHead, note.attachTail),
             )
         }
         return basicYOffsetAt(note, t)
@@ -689,55 +694,69 @@ export const renderPreviewFrame = (
                 return
             if (groupHidesNotesAt(current.segmentHead, t)) return
 
-            const attachHead = effectiveAttachHead(current.head)
-            const attachTail = effectiveAttachTail(current.tail)
+            const { head, tail } = current
+            const headMask = visualMaskAt(head, t)
+            const tailMask = visualMaskAt(tail, t)
+            let lane = visualLaneAt(head, t)
+            let size = head.size
+            let maskLeft = headMask.left
+            let maskRight = headMask.right
+            if (!isNoneEase(current.ease)) {
+                const [, interpFrac] = connectorFractions(
+                    current.ease,
+                    head.targetTime,
+                    headEaseFrac(head),
+                    tail.targetTime,
+                    tailEaseFrac(tail),
+                    t,
+                )
+                lane = lerp(lane, visualLaneAt(tail, t), interpFrac)
+                size = lerp(head.size, tail.size, interpFrac)
+                maskLeft = lerp(headMask.left, tailMask.left, interpFrac)
+                maskRight = lerp(headMask.right, tailMask.right, interpFrac)
+            }
+            const extents = maskedNoteExtents(lane, Math.max(0, size), {
+                enabled: headMask.enabled && tailMask.enabled,
+                left: maskLeft,
+                right: maskRight,
+            })
 
-            const frac =
-                Math.abs(attachHead.targetTime - attachTail.targetTime) < 1e-6
-                    ? 0.5
-                    : unlerpClamped(attachHead.targetTime, attachTail.targetTime, t)
-            const easedFrac = ease(current.ease, frac)
-
-            const segmentFrac = remapClamped(
-                current.head.targetTime,
-                current.tail.targetTime,
-                0,
-                1,
-                t,
-            )
-
-            const mask = interpolateVisualMasks(
-                basicVisualMaskAt(attachHead, t),
-                basicVisualMaskAt(attachTail, t),
-                easedFrac,
-            )
-            const extents = maskedNoteExtents(
-                lerp(basicVisualLaneAt(attachHead, t), basicVisualLaneAt(attachTail, t), easedFrac),
-                Math.max(0, lerp(attachHead.size, attachTail.size, easedFrac)),
-                mask,
-            )
+            // The slide head follows the note chain, attached notes included.
+            const notes = slide.notes
+            let index = Math.max(0, notes.indexOf(slide.activeHead))
+            const passed = (note: PreviewNote) =>
+                leftLimit && t === now ? t > note.targetTime : t >= note.targetTime
+            for (let next = notes[index + 1]; next && passed(next); next = notes[index + 1]) index++
+            const segmentHead = notes[index] ?? slide.activeHead
+            const segmentTail = notes[index + 1]
+            let noteAlpha = visualNoteAlpha(segmentHead)
+            let transform = visualStageTransformAt(context, segmentHead, t)
+            if (segmentTail) {
+                const [frac, transformFrac] = connectorFractions(
+                    effectiveConnectorEase(segmentHead),
+                    segmentHead.targetTime,
+                    headEaseFrac(segmentHead),
+                    segmentTail.targetTime,
+                    tailEaseFrac(segmentTail),
+                    t,
+                )
+                transform = blendStageTransform(
+                    transform,
+                    visualStageTransformAt(context, segmentTail, t),
+                    transformFrac,
+                )
+                noteAlpha = lerp(noteAlpha, visualNoteAlpha(segmentTail), frac)
+            }
             return {
                 connector: current,
                 ...extents,
-                yOffset: remapClamped(
-                    current.head.targetTime,
-                    current.tail.targetTime,
-                    yOffsetAt(current.head, t),
-                    yOffsetAt(current.tail, t),
-                    t,
+                yOffset: lerp(
+                    yOffsetAt(head, t),
+                    yOffsetAt(tail, t),
+                    safeUnlerpClamped(head.targetTime, tail.targetTime, t),
                 ),
-                noteAlpha: lerp(
-                    visualNoteAlpha(current.head),
-                    visualNoteAlpha(current.tail),
-                    segmentFrac,
-                ),
-                affine: stageTransformToAffineOrIdentity(
-                    blendStageTransform(
-                        basicStageTransformAt(context, attachHead, t),
-                        basicStageTransformAt(context, attachTail, t),
-                        easedFrac,
-                    ),
-                ),
+                noteAlpha,
+                affine: stageTransformToAffineOrIdentity(transform),
             }
         }
 

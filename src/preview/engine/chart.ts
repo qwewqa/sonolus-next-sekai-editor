@@ -490,6 +490,7 @@ export const createPreviewChartBuilder = () => {
                     slides.push({
                         activeHead,
                         activeTail,
+                        notes,
                         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                         kind: activeConnectors[0]!.kind,
                         connectors: activeConnectors,

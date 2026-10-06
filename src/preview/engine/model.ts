@@ -102,6 +102,8 @@ export type PreviewConnector = {
 export type PreviewSlide = {
     activeHead: PreviewNote
     activeTail: PreviewNote
+    /** Every note of the slide in order, attached notes included. */
+    notes: readonly PreviewNote[]
     kind: ConnectorKindValue
     connectors: PreviewConnector[]
 }

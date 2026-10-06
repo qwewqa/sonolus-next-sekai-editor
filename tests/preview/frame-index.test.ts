@@ -62,6 +62,7 @@ const slide = (tailTimes: number[]): PreviewSlide => {
     return {
         activeHead: head,
         activeTail: tail,
+        notes: [head, tail],
         kind: ConnectorKind.activeNormal,
         connectors: tailTimes.map((time) => ({
             kind: ConnectorKind.activeNormal,
@@ -316,6 +317,7 @@ test('visibility candidates include attachment endpoints, long connectors and th
             {
                 activeHead: head,
                 activeTail: tail,
+                notes: [head, tail],
                 kind: ConnectorKind.activeNormal,
                 connectors: [],
             },

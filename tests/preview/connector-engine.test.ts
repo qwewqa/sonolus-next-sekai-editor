@@ -140,3 +140,81 @@ test('attached notes take no negative size where the ease overshoots', () => {
     )
     assert.equal(attached?.size, 0)
 })
+
+test('slide heads interpolate between the sizes of the connector around them', () => {
+    const slideNote = (
+        beat: number,
+        left: number,
+        size: number,
+        extra: Partial<NoteObject> = {},
+    ) => ({
+        ...anchor(beat, 0, 'inOutBack'),
+        noteType: 'default' as const,
+        connectorType: 'active' as const,
+        connectorStyle: 'default' as const,
+        isFake: true,
+        connectorIsFake: true,
+        left,
+        size,
+        ...extra,
+    })
+    const chart: Chart = {
+        initialLife: 1000,
+        isDynamicStages: false,
+        bpms: [{ beat: 0, bpm: 60 }],
+        groups: new Map([[groupId, { name: 'Default' }]]),
+        stages: new Map([
+            [
+                stageId,
+                { name: 'Stage', isFromStart: true, isUntilEnd: true, generateSimLines: 'global' },
+            ],
+        ]),
+        cameraEvents: [],
+        stageMaskEvents: [],
+        stagePivotEvents: [],
+        stageStyleEvents: [],
+        stageTransformEvents: [],
+        timeScales: [],
+        slides: [
+            [
+                slideNote(7, -3.1, 0.2),
+                slideNote(7.2, 0, 0, { isAttached: true }),
+                slideNote(7.4, 0, 0, { isAttached: true, isConnectorSeparator: true }),
+                slideNote(8, 0, 0, { isAttached: true }),
+                slideNote(9, 1, 4),
+            ],
+        ],
+    }
+    const middle: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+    const skin = resolveSkin((name) =>
+        name === 'Sekai Slide Note Middle'
+            ? middle
+            : name.startsWith('Sekai')
+              ? { ...middle }
+              : undefined,
+    )
+    const quads: Quad[] = []
+    const renderer: PreviewRenderer = {
+        maxViewportSize: { width: 1920, height: 1080 },
+        setTexture() {},
+        begin() {},
+        draw(sprite, quad, _z, alpha) {
+            // Only the moving head is at the judge line.
+            if (sprite === middle && alpha > 0 && Math.abs(quad.bl.y + 0.6563) < 1e-3)
+                quads.push(quad)
+        },
+        flush() {},
+        isContextLost: () => false,
+        dispose() {},
+    }
+    const preview = buildPreviewChart(createState(chart, 0), 6)
+    renderPreviewFrame(renderer, skin, preview, 7.3, 1920, 1080, 1920, 1080, 6, false)
+    // From Watch mode; the global ease alone would give this BACK slide no width here.
+    const expected = [-0.8301, -0.6563, -0.76, -0.5085, -0.76, -0.5085, -0.8301, -0.6563]
+    assert.equal(quads.length, 1)
+    const actual = [quads[0]!.bl, quads[0]!.tl, quads[0]!.tr, quads[0]!.br].flatMap(({ x, y }) => [
+        x,
+        y,
+    ])
+    for (const [i, value] of actual.entries()) assert.ok(Math.abs(value - expected[i]!) < 1e-4)
+})

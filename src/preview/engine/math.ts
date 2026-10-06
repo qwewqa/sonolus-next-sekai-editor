@@ -162,6 +162,28 @@ export const connectorInterpFrac = (
               fallback,
           )
 
+// sekai/lib/connector.py get_connector_fractions
+export const connectorFractions = (
+    easeType: EaseTypeValue,
+    headTargetTime: number,
+    headEaseFrac: number,
+    tailTargetTime: number,
+    tailEaseFrac: number,
+    targetTime: number,
+): [targetFrac: number, interpFrac: number] => {
+    const targetFrac = safeUnlerpClamped(headTargetTime, tailTargetTime, targetTime)
+    return [
+        targetFrac,
+        connectorInterpFrac(
+            easeType,
+            headEaseFrac,
+            tailEaseFrac,
+            lerp(headEaseFrac, tailEaseFrac, targetFrac),
+            targetFrac,
+        ),
+    ]
+}
+
 export const easeOutCubic = (x: number) => {
     const t = clamp(x, 0, 1)
     return 1 - (1 - t) ** 3
