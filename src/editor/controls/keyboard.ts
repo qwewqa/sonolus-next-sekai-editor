@@ -17,10 +17,13 @@ const isTextEntry = (target: EventTarget | null) =>
         !['button', 'checkbox', 'radio', 'range', 'color', 'file'].includes(target.type)) ||
     (target instanceof HTMLElement && target.isContentEditable)
 
-// Fields keep every key; buttons keep only the keys that press them.
+// Space and Enter press a focused button, and nothing else.
+const pressesButton = (event: KeyboardEvent) =>
+    event.target instanceof HTMLButtonElement && (event.key === ' ' || event.key === 'Enter')
+
+// Fields keep every key.
 const keepsDefault = (event: KeyboardEvent) => {
     const { target } = event
-    if (target instanceof HTMLButtonElement) return event.key === ' ' || event.key === 'Enter'
     return (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -32,7 +35,7 @@ const keepsDefault = (event: KeyboardEvent) => {
 const isApple = isApplePlatform()
 
 const onKeydown = (event: KeyboardEvent) => {
-    if (modals.length) return
+    if (modals.length || pressesButton(event)) return
 
     const commandChord = isCommandChord(event) && isCharacter(event.key)
     // In docks, fields keep their keys; other controls pass only unclaimed Ctrl or Cmd chords.

@@ -246,6 +246,43 @@ test.describe('chords', () => {
         expect(await toolName(page)).toBe('slide')
         expect(await lastDefault(page)).toBe(true)
     })
+
+    test('Space and Enter on a focused button press only the button', async ({ page }) => {
+        const isPlaying = () =>
+            page.evaluate(
+                async () =>
+                    (
+                        await window.editorTest.appImport<typeof import('../../src/player')>(
+                            '/src/player.ts',
+                        )
+                    ).isPlaying.value,
+            )
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = { ...settings.keyboardShortcuts, help: 'Enter' }
+            settings.toolbar = [
+                ['undo'],
+                ...settings.toolbar.map((group) => group.filter((name) => name !== 'undo')),
+            ]
+        })
+        await edit(page)
+        const undo = page.locator('[data-editor-toolbar] button[title="Undo"]')
+        await undo.focus()
+        await page.keyboard.press('Space')
+        expect(await isEdited(page)).toBe(false)
+        expect(await isPlaying()).toBe(false)
+
+        await edit(page)
+        await undo.focus()
+        await page.keyboard.press('Enter')
+        expect(await isEdited(page)).toBe(false)
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+
+        // Other keys still run their shortcuts.
+        await setTool(page, 'select')
+        await page.keyboard.press('s')
+        expect(await toolName(page)).toBe('slide')
+    })
 })
 
 test.describe('dock', () => {
