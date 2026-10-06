@@ -900,12 +900,14 @@ watchEffect(() => {
         drawElevationConnections(ctx, aboveNotes)
         for (const row of visibleRows) {
             if (selected.has(row.note) || row.note === hover) {
+                // At least the 0.2-lane placeholder a zero-width note draws.
+                const w = Math.max(row.w, layout.laneScale * 0.2)
                 ctx.setLineDash([6, 4])
                 ctx.strokeStyle = '#ffffff80'
                 ctx.strokeRect(
-                    row.x - row.w / 2 - 3,
+                    row.x - w / 2 - 3,
                     row.y - layout.laneScale * 0.3 - 3,
-                    row.w + 6,
+                    w + 6,
                     layout.laneScale * 0.6 + 6,
                 )
                 ctx.setLineDash([])

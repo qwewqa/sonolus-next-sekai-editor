@@ -1527,3 +1527,35 @@ test('the snap select carries a chevron clear of its value at every header width
         expect(chevron.bottom, `${width}`).toBeLessThanOrEqual(pill.bottom)
     }
 })
+
+test('a zero-width note is outlined as wide as its placeholder', async ({ page }) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show({ ...fixtures.interaction, slides: [[{ ...base, beat: 6, left: 1, size: 0 }]] }, 3)
+        view.cursorTime = 3
+    })
+    await open(page)
+    const result = await page.evaluate(async () => {
+        const { history, store } = window.editorTest
+        const widths: number[] = []
+        const strokeRect = CanvasRenderingContext2D.prototype.strokeRect
+        CanvasRenderingContext2D.prototype.strokeRect = function (x, y, w, h) {
+            if (this.canvas.classList.contains('elevation-canvas') && this.getLineDash().length)
+                widths.push(w)
+            return strokeRect.call(this, x, y, w, h)
+        }
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        await window.editorTest.nextTick()
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        )
+        CanvasRenderingContext2D.prototype.strokeRect = strokeRect
+        return { widths, laneScale: window.elevationTest.scene.elevationLayout.value.laneScale }
+    })
+    // The placeholder is 0.2 lanes wide, as on the main canvas.
+    expect(result.widths.at(-1)).toBeCloseTo(0.2 * result.laneScale + 6, 6)
+})
