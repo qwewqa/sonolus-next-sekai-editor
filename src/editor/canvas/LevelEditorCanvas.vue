@@ -144,10 +144,11 @@ watchEffect(
         const entities = drawSteps.value
         const hovered = inputs.recentlyActive ? undefined : hoveredSet.value
         const visibilities = view.visibilities
-        const isBpmVisible = visibilities.bpm
         // Captured here: the frame callback runs untracked.
         const scope = scopeLookup.value
         const showOtherObjects = settings.showOtherObjects
+        // BPM labels are drawn, faintly, with other objects too.
+        const isBpmVisible = visibilities.bpm || showOtherObjects
         const currentBeats = beats.value
         const currentTimes = times.value
         const division = view.division

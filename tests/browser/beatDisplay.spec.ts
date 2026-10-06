@@ -320,3 +320,43 @@ test('measure modes emphasize off-grid boundaries and keep phone labels visible'
         await page.screenshot({ path: testInfo.outputPath(`measure-grid-${width}.png`) })
     }
 })
+
+test('a faint BPM label under Show Other Objects still replaces its beat label', async ({
+    page,
+}) => {
+    const texts = await page.evaluate(async () => {
+        const { show, fixtures, settings, view } = window.editorTest
+        settings.beatDisplay = 'measure'
+        settings.showOtherObjects = true
+        view.visibilities = { ...view.visibilities, bpm: false }
+        const drawn: string[] = []
+        const fillText = CanvasRenderingContext2D.prototype.fillText
+        CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+            if (
+                this.canvas instanceof HTMLCanvasElement &&
+                this.canvas.classList.contains('editor-chart')
+            )
+                drawn.push(text)
+            return fillText.call(this, text, ...args)
+        }
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 2, bpm: 90 },
+                ],
+            },
+            1,
+        )
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        )
+        CanvasRenderingContext2D.prototype.fillText = fillText
+        return drawn
+    })
+    // The BPM change at beat 2 is drawn, faint, where measure 2.1 would be.
+    expect(texts.some((text) => text.includes('90'))).toBe(true)
+    expect(texts).toContain('1.2')
+    expect(texts).not.toContain('2.1')
+})
