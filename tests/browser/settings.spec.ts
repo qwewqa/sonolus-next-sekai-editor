@@ -401,3 +401,19 @@ test('wheeling past the end of the list leaves the dialog in place', async ({ pa
         .poll(() => dialog.evaluate((element) => [element.scrollTop, element.scrollHeight]))
         .toEqual([0, await dialog.evaluate((element) => element.clientHeight)])
 })
+
+test('unassigned shortcuts are muted like other placeholder text', async ({ page }) => {
+    const unassigned = page
+        .getByRole('dialog')
+        .locator('button', { hasText: /^Unassigned$/ })
+        .first()
+    await unassigned.scrollIntoViewIfNeeded()
+    const alpha = await unassigned.evaluate((button) => {
+        const match = /rgba?\((?:[\d.]+[ ,]+){3}([\d.]+)/.exec(
+            getComputedStyle(button).color.replace(/\s*\/\s*/, ' '),
+        )
+        return match ? Number(match[1]) : 1
+    })
+    // /50 fell to about 2.5:1 contrast.
+    expect(alpha).toBeCloseTo(0.8, 2)
+})

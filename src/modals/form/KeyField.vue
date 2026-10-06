@@ -114,7 +114,7 @@ const onBlur = () => {
             class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
             :class="{
                 'animate-pulse': isActive,
-                'text-fg/50': !isActive && !formatShortcut(modelValue),
+                'text-fg/80': !isActive && !formatShortcut(modelValue),
             }"
             type="button"
             :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
