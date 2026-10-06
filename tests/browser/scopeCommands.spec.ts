@@ -254,3 +254,7 @@ test('stage commands behave the same after manager changes', async ({ page }) =>
         visibility: { Center: 'full', 'Side stage': 'full', Back: 'full' },
     })
 })
+
+test('the status bar lists the group before the stage', async ({ page }) => {
+    await expect(page.locator('.status-chip')).toHaveText([/^All Groups/, /^All Stages/])
+})

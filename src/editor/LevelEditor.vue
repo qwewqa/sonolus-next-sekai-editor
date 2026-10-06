@@ -322,6 +322,26 @@ const stageCount = computed(() =>
             <!-- The scope chips open their managers. Long names truncate while the
             shown count stays visible. -->
             <button
+                type="button"
+                class="status-chip relative flex min-w-0 max-w-[40%] px-1"
+                :title="i18n.commands.manageGroups.title"
+                @click="onStatusChip($event, manageGroups)"
+            >
+                <span class="flex min-w-0">
+                    <span v-for="(part, i) in group" :key="i" :class="partClass(part)">{{
+                        part.text
+                    }}</span>
+                </span>
+                <span
+                    v-if="groupCount"
+                    class="ml-1 shrink-0 whitespace-nowrap"
+                    :title="groupCount.label"
+                >
+                    <span aria-hidden="true">· {{ groupCount.short }}</span>
+                    <span class="sr-only">{{ groupCount.label }}</span>
+                </span>
+            </button>
+            <button
                 v-if="isDynamicStages"
                 type="button"
                 class="status-chip relative flex min-w-0 max-w-[40%] px-1"
@@ -340,26 +360,6 @@ const stageCount = computed(() =>
                 >
                     <span aria-hidden="true">· {{ stageCount.short }}</span>
                     <span class="sr-only">{{ stageCount.label }}</span>
-                </span>
-            </button>
-            <button
-                type="button"
-                class="status-chip relative flex min-w-0 max-w-[40%] px-1"
-                :title="i18n.commands.manageGroups.title"
-                @click="onStatusChip($event, manageGroups)"
-            >
-                <span class="flex min-w-0">
-                    <span v-for="(part, i) in group" :key="i" :class="partClass(part)">{{
-                        part.text
-                    }}</span>
-                </span>
-                <span
-                    v-if="groupCount"
-                    class="ml-1 shrink-0 whitespace-nowrap"
-                    :title="groupCount.label"
-                >
-                    <span aria-hidden="true">· {{ groupCount.short }}</span>
-                    <span class="sr-only">{{ groupCount.label }}</span>
                 </span>
             </button>
             <span class="shrink-0">1/{{ view.division }}</span>
