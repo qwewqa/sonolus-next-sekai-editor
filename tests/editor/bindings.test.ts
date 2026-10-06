@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import {
+    bindingOf,
+    browserShortcutOf,
+    formatBinding,
+    isReservedChord,
+    matchBindings,
+    normalizeBinding,
+    parseChord,
+    stringifyChord,
+    type KeyInput,
+} from '../../src/editor/controls/bindings'
+
+// Modifiers by letter: c Ctrl, m Meta, a Alt, s Shift, g AltGraph.
+const press = (key: string, modifiers = ''): KeyInput => ({
+    key,
+    ctrlKey: modifiers.includes('c'),
+    metaKey: modifiers.includes('m'),
+    altKey: modifiers.includes('a'),
+    shiftKey: modifiers.includes('s'),
+    getModifierState: (name) => name === 'AltGraph' && modifiers.includes('g'),
+})
+
+test('chords round trip and plain keys never parse as chords', () => {
+    for (const binding of ['Mod+z', 'Mod+Shift+s', 'Mod++', 'Mod+ ', 'Shift+ArrowUp', 'Mod+Alt+F2'])
+        assert.equal(stringifyChord(parseChord(binding)!), binding)
+    for (const binding of ['+', 'Shift', 'Control', 'Mod', ' ', 'U', 'ArrowUp', 'Mod+'])
+        assert.equal(parseChord(binding), undefined)
+})
+
+test('a key press records its chord, keeping characters typed with Shift or AltGr plain', () => {
+    const cases: [KeyInput, string, boolean?][] = [
+        [press('s'), 's'],
+        [press('U', 's'), 'U'],
+        [press('!', 's'), '!'],
+        [press('ArrowUp'), 'ArrowUp'],
+        [press(' '), ' '],
+        [press('s', 'c'), 'Mod+s'],
+        [press('z', 'm'), 'Mod+z'],
+        [press('z', 'cm'), 'Mod+z'],
+        [press('S', 'cs'), 'Mod+Shift+s'],
+        // Caps Lock reports an uppercase letter without Shift.
+        [press('Z', 'c'), 'Mod+z'],
+        [press('!', 'cs'), 'Mod+!'],
+        [press('+', 'cs'), 'Mod++'],
+        [press(' ', 'c'), 'Mod+ '],
+        [press('a', 'a'), 'Alt+a'],
+        [press('ArrowUp', 's'), 'Shift+ArrowUp'],
+        [press('ArrowUp', 'c'), 'Mod+ArrowUp'],
+        [press('[', 'ca'), '['],
+        [press('[', 'g'), '['],
+        [press('F2', 'ca'), 'Mod+Alt+F2'],
+        // Option types characters on Apple keyboards.
+        [press('å', 'a'), 'å', true],
+        [press('ArrowUp', 'a'), 'Alt+ArrowUp', true],
+    ]
+    for (const [input, binding, apple] of cases)
+        assert.equal(bindingOf(input, apple ?? false), binding, JSON.stringify(input))
+})
+
+test('equal chords share one spelling', () => {
+    assert.equal(normalizeBinding('Mod+S'), 'Mod+s')
+    assert.equal(normalizeBinding('Mod+Shift+!'), 'Mod+!')
+    assert.equal(normalizeBinding('Shift+ArrowUp'), 'Shift+ArrowUp')
+    assert.equal(normalizeBinding('U'), 'U')
+})
+
+const defaults = {
+    undo: 'z',
+    copy: 'c',
+    slide: 's',
+    note: 'a',
+    flip: 'u',
+    flipVertical: 'U',
+    zoomXOut: '[',
+    scrollUp: 'ArrowUp',
+    play: ' ',
+}
+const match = (shortcuts: Record<string, string>, input: KeyInput, apple = false) =>
+    matchBindings(shortcuts, input, apple)
+
+test('plain bindings answer to their key whatever modifiers are held', () => {
+    const cases: [KeyInput, string[]][] = [
+        [press('z'), ['undo']],
+        [press('z', 'c'), ['undo']],
+        [press('z', 'm'), ['undo']],
+        [press('s', 'c'), ['slide']],
+        [press('a', 'a'), ['note']],
+        [press('U', 's'), ['flipVertical']],
+        [press('U', 'cs'), ['flipVertical']],
+        [press('[', 'ca'), ['zoomXOut']],
+        [press('ArrowUp', 'c'), ['scrollUp']],
+        [press('ArrowUp', 's'), ['scrollUp']],
+        [press(' ', 'c'), ['play']],
+        [press('A', 'cs'), []],
+    ]
+    for (const [input, names] of cases)
+        assert.deepEqual(match(defaults, input), { names, exact: false }, JSON.stringify(input))
+})
+
+test('a chord bound exactly wins over the plain binding of its key', () => {
+    const shortcuts = { ...defaults, save: 'Mod+s', jumpUp: 'Shift+ArrowUp', bpm: 'Alt+a' }
+    assert.deepEqual(match(shortcuts, press('s', 'c')), { names: ['save'], exact: true })
+    assert.deepEqual(match(shortcuts, press('s', 'm')), { names: ['save'], exact: true })
+    assert.deepEqual(match(shortcuts, press('s')).names, ['slide'])
+    assert.deepEqual(match(shortcuts, press('s', 'a')).names, ['slide'])
+    assert.deepEqual(match(shortcuts, press('S', 'cs')).names, [])
+    assert.deepEqual(match(shortcuts, press('ArrowUp', 's')), { names: ['jumpUp'], exact: true })
+    assert.deepEqual(match(shortcuts, press('ArrowUp', 'c')).names, ['scrollUp'])
+    assert.deepEqual(match(shortcuts, press('a', 'a')), { names: ['bpm'], exact: true })
+    assert.deepEqual(match(shortcuts, press('a')).names, ['note'])
+    // Caps Lock leaves the chord's letter uppercase.
+    assert.deepEqual(match(shortcuts, press('S', 'c')).names, ['save'])
+    // Chords never answer to the bare key.
+    assert.deepEqual(match({ save: 'Mod+s' }, press('s')).names, [])
+})
+
+test('duplicate bindings all run', () => {
+    assert.deepEqual(match({ slide: 's', save: 's' }, press('s')).names, ['slide', 'save'])
+    assert.deepEqual(match({ slide: 'Mod+s', save: 'Mod+S' }, press('s', 'c')).names, [
+        'slide',
+        'save',
+    ])
+})
+
+test('the browser keeps its reserved chords, per platform', () => {
+    assert.equal(isReservedChord(press('w', 'c'), false), true)
+    assert.equal(isReservedChord(press('T', 'cs'), false), true)
+    assert.equal(isReservedChord(press('F4', 'a'), false), true)
+    assert.equal(isReservedChord(press('h', 'c'), false), false)
+    assert.equal(isReservedChord(press(' ', 'c'), false), false)
+    assert.equal(isReservedChord(press('w', 'm'), false), false)
+    assert.equal(isReservedChord(press('h', 'm'), true), true)
+    assert.equal(isReservedChord(press('q', 'm'), true), true)
+    assert.equal(isReservedChord(press('h', 'c'), true), false)
+    assert.equal(isReservedChord(press('s', 'c'), false), false)
+})
+
+test('bindings that take a browser shortcut name it', () => {
+    assert.equal(browserShortcutOf('Mod+r'), 'reload')
+    assert.equal(browserShortcutOf('r'), 'reload')
+    assert.equal(browserShortcutOf('R'), 'reload')
+    assert.equal(browserShortcutOf('F5'), 'reload')
+    assert.equal(browserShortcutOf('f'), 'find')
+    assert.equal(browserShortcutOf('Mod+f'), 'find')
+    assert.equal(browserShortcutOf('='), 'zoom')
+    assert.equal(browserShortcutOf('Mod++'), 'zoom')
+    assert.equal(browserShortcutOf('0'), 'zoom')
+    assert.equal(browserShortcutOf('Alt+r'), undefined)
+    assert.equal(browserShortcutOf('Mod+s'), undefined)
+    assert.equal(browserShortcutOf('ArrowUp'), undefined)
+})
+
+test('bindings read as Ctrl chords, or Apple menu symbols', () => {
+    assert.equal(formatBinding(' ', false), 'Space')
+    assert.equal(formatBinding('U', false), 'Shift+U')
+    assert.equal(formatBinding('s', false), 's')
+    assert.equal(formatBinding('Mod+s', false), 'Ctrl+S')
+    assert.equal(formatBinding('Mod+Shift+s', false), 'Ctrl+Shift+S')
+    assert.equal(formatBinding('Mod+ ', false), 'Ctrl+Space')
+    assert.equal(formatBinding('Alt+ArrowUp', false), 'Alt+ArrowUp')
+    assert.equal(formatBinding('Mod++', false), 'Ctrl++')
+    assert.equal(formatBinding('Mod+Alt+Shift+s', true), '⌥⇧⌘S')
+    assert.equal(formatBinding('s', true), 's')
+    assert.equal(formatBinding(undefined, false), undefined)
+})
