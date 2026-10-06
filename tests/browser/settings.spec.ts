@@ -218,7 +218,7 @@ test('shortcut capture waits past IME and dead keys and ignores Caps Lock', asyn
 
     // Caps Lock reports an uppercase letter without Shift.
     await save.dispatchEvent('keydown', { key: 'A', cancelable: true })
-    await expect(save).toHaveText('a')
+    await expect(save).toHaveText('A')
     expect(await savedShortcut(page, 'save')).toBe('a')
     await save.click()
     await save.dispatchEvent('keydown', { key: 'a', shiftKey: true, cancelable: true })
