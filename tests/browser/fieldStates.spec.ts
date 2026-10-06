@@ -183,3 +183,27 @@ test('a rejected number entry returns to the actual value', async ({ page }) => 
     await size.press('Enter')
     expect(await page.evaluate(() => window.editorTest.view.noteSize)).toBe(3)
 })
+
+test('an unset choice in a select looks like an unset number field', async ({ page }) => {
+    await page.keyboard.press('a')
+    const field = (label: string) =>
+        panel(page)
+            .locator('.form-field')
+            .filter({ has: page.locator('.form-field-text').getByText(label, { exact: true }) })
+    const noteType = field('Note Type').locator('select')
+    await expect(noteType.locator('option:checked')).toHaveText('Copy')
+    const colors = await page.evaluate(
+        ([select, input]) => ({
+            unset: getComputedStyle(select!).color,
+            placeholder: getComputedStyle(input!, '::placeholder').color,
+            option: getComputedStyle((select as HTMLSelectElement).options[1]!).color,
+            set: getComputedStyle(document.querySelector('#workspace-panel-properties select')!)
+                .color,
+        }),
+        [await noteType.elementHandle(), await field('Elevation').locator('input').elementHandle()],
+    )
+    expect(colors.unset).toBe(colors.placeholder)
+    // The list itself, and a set value such as the preset number, stay full strength.
+    expect(colors.option).toBe('rgb(68, 68, 102)')
+    expect(colors.set).toBe('rgb(68, 68, 102)')
+})

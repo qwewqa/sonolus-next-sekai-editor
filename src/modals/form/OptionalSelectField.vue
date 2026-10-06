@@ -47,9 +47,11 @@ const unknown = computed(() =>
             >
                 <slot name="leading" />
             </span>
+            <!-- Unset reads like an empty number field's placeholder; the list stays dark. -->
             <select
                 v-model.lazy="modelValue"
                 :disabled
+                :class="{ 'text-fg/80': modelValue === undefined }"
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 @change="resyncSelect($event, () => modelValue)"
             >
@@ -59,6 +61,7 @@ const unknown = computed(() =>
                     :value="undefined"
                     :disabled="!unsetChoice"
                     :hidden="!unsetChoice"
+                    class="text-fg"
                 >
                     {{ emptyLabel ?? injectedEmptyLabel?.() ?? i18n.modals.form.notSet }}
                 </option>
@@ -67,11 +70,16 @@ const unknown = computed(() =>
                     {{ unknownLabel(modelValue) }}
                 </option>
                 <template v-for="(section, index) in allSections" :key="index">
-                    <optgroup v-if="section.label !== undefined" :label="section.label">
+                    <optgroup
+                        v-if="section.label !== undefined"
+                        :label="section.label"
+                        class="text-fg"
+                    >
                         <option
                             v-for="([name, value], option) in section.options"
                             :key="option"
                             :value
+                            class="text-fg"
                         >
                             {{ name }}
                         </option>
@@ -81,6 +89,7 @@ const unknown = computed(() =>
                             v-for="([name, value], option) in section.options"
                             :key="option"
                             :value
+                            class="text-fg"
                         >
                             {{ name }}
                         </option>
