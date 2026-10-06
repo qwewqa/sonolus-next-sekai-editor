@@ -964,9 +964,11 @@ const menu = shallowRef<{
 }>()
 
 /** Common actions are one click away on panels with room for them. */
-const inlineActions = (): ManagerRowAction[] => [
+// One array for every row, so unrelated renders leave rows alone.
+const inlineActions = computed((): ManagerRowAction[] => [
     { key: 'properties', label: strings.value.properties, icon: PropertiesIcon },
-]
+])
+const noActions: ManagerRowAction[] = []
 
 const entryMenuItems = (id: T): ManagerMenuItem[] => {
     const manager = i18n.value.workspace.manager
@@ -1398,7 +1400,7 @@ const selectingProps = (checked: boolean | 'mixed', name: string) =>
               selecting: true,
               checked,
               checkLabel: label(i18n.value.workspace.manager.selectItem, name),
-              actions: [],
+              actions: noActions,
               menuLabel: undefined,
               renameLabel: undefined,
               dragLabel: undefined,
@@ -1429,7 +1431,7 @@ const entryProps = (id: T, name: string) => ({
     )}\n${i18n.value.workspace.manager.soloHint}`,
     meta: `${counts.value.get(id) ?? 0}`,
     metaTitle: label(i18n.value.workspace.manager.objects, `${counts.value.get(id) ?? 0}`),
-    actions: inlineActions(),
+    actions: inlineActions.value,
     inline: inlineMode.value,
     menuLabel: label(i18n.value.workspace.manager.actions, name),
     menuOpen: sameKey(menu.value?.key, { type: 'entry', id }),

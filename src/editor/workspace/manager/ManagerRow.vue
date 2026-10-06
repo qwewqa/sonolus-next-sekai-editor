@@ -14,7 +14,7 @@ window.addEventListener(
 </script>
 
 <script setup lang="ts">
-import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
+import { nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import ChevronIcon from '../ChevronIcon.vue'
 import CheckedIcon from './icons/CheckedIcon.vue'
 import GripIcon from './icons/GripIcon.vue'
@@ -297,12 +297,15 @@ const onNameDblclick = (event: MouseEvent) => {
 }
 
 const input = useTemplateRef<HTMLInputElement>('input')
+// Set once per rename, so updates to the row never overwrite the typing.
+const draft = ref('')
 let renameDone = false
 
 watch(
     () => props.renaming,
     async (renaming) => {
         if (!renaming) return
+        draft.value = props.name
         renameDone = false
         await nextTick()
         input.value?.focus({ preventScroll: true })
@@ -386,9 +389,9 @@ const onRenameBlur = (event: FocusEvent) => {
         <input
             v-if="renaming"
             ref="input"
+            v-model="draft"
             class="manager-rename"
             type="text"
-            :value="name"
             :aria-label="renameLabel"
             enterkeyhint="done"
             @keydown="onRenameKeydown"

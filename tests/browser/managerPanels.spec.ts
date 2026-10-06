@@ -548,6 +548,39 @@ test('names rename inline with double click, F2 and the menu', async ({ page }) 
     expect((await groupState(page)).names).toEqual(['Base', 'Other group', 'Third'])
 })
 
+test('a rename keeps the typed name while its row and list update', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group', 'Third'])
+    const panel = await openGroups(page)
+    const input = panel.locator('.manager-rename')
+    await nameButton(panel, 'Other group').focus()
+    await page.keyboard.press('F2')
+    await page.keyboard.type('Typed')
+
+    // The row itself updates: its group is hidden, then gains a note.
+    await page.evaluate(async () => {
+        const { view, nextTick } = window.editorTest
+        view.groupVisibility = new Map([[2 as never, false as never]])
+        await nextTick()
+    })
+    await expect(input).toHaveValue('Typed')
+    await page.keyboard.type(' more')
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        const note = [...store.getAllEntities()].find(
+            (entity) => entity.type === 'note' && (entity.groupId as number) === 1,
+        )!
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [note],
+        })
+        await nextTick()
+    })
+    await page.setViewportSize({ width: 1500, height: 900 })
+    await expect(input).toHaveValue('Typed more')
+    await page.keyboard.press('Enter')
+    expect((await groupState(page)).names).toEqual(['Default', 'Typed more', 'Third'])
+})
+
 test('alt-clicking an eye shows only that entry and toggles back', async ({ page }) => {
     await seedGroups(page, ['Default', 'Other group', 'Third'])
     const panel = await openGroups(page)
