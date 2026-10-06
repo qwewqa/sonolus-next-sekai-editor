@@ -549,3 +549,18 @@ test('the selection bar fits the narrowest dock', async ({ page }) => {
         expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width)
     }
 })
+
+test("the band's count keeps clear of the pressed Select toggle", async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await list.getByRole('button', { name: 'Hide Bass', exact: true }).click()
+    await list.locator('.manager-mode').click()
+    await expect(list.locator('.manager-mode')).toHaveAttribute('aria-pressed', 'true')
+    const gap = await list.locator('.manager-all').evaluate((row) => {
+        const range = document.createRange()
+        range.selectNodeContents(row.querySelector('.manager-meta')!)
+        const text = range.getBoundingClientRect()
+        return row.querySelector('.manager-mode')!.getBoundingClientRect().left - text.right
+    })
+    expect(gap).toBeGreaterThanOrEqual(4)
+})

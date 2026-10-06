@@ -608,8 +608,9 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply relative flex h-9 w-10 shrink-0 items-center justify-end;
 }
 
+/* Inset so a count clears a filled button beside it, e.g. the pressed Select. */
 .manager-meta {
-    @apply text-right text-xs tabular-nums text-fg/80;
+    @apply pr-1.5 text-right text-xs tabular-nums text-fg/80;
 }
 
 .manager-inline {
