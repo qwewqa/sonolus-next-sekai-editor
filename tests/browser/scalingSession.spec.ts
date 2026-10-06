@@ -253,6 +253,27 @@ for (const axis of ['beat', 'elevation'] as const) {
     })
 }
 
+test('Enter during an IME conversion leaves the scaling open', async ({ page }) => {
+    await prepareThree(page, 'beat')
+    await factor(page).fill('2')
+    await factor(page).evaluate((element) => {
+        const press = (init: KeyboardEventInit, keyCode?: number) => {
+            const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, ...init })
+            if (keyCode !== undefined)
+                Object.defineProperty(event, 'keyCode', { get: () => keyCode })
+            element.dispatchEvent(event)
+        }
+        press({ isComposing: true })
+        // Chrome's first IME keydown has keyCode 229 without isComposing.
+        press({}, 229)
+    })
+    await expect(panel(page)).toBeVisible()
+    expect((await summary(page)).canUndo).toBe(false)
+    await factor(page).press('Enter')
+    await expect(panel(page)).toHaveCount(0)
+    expect((await summary(page)).canUndo).toBe(true)
+})
+
 test('live factor leaves chart history untouched until Apply, with one undo', async ({
     page,
 }, testInfo) => {
