@@ -147,7 +147,7 @@ const clear = () => {
             </label>
             <button
                 type="button"
-                class="brush-pick min-w-0 flex-1 basis-36 truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
+                class="brush-pick min-w-0 flex-[1_0_auto] truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
                 :disabled="!selection.usage.size"
                 @click="pick"
             >
