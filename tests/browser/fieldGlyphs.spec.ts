@@ -287,3 +287,36 @@ test('command names line up in one icon column that text glyphs fit', async ({ p
     expect(flyout.filter(({ overflow }) => overflow)).toEqual([])
     expect(new Set(flyout.map(({ name }) => name)).size).toBe(1)
 })
+
+for (const width of [336, 260]) {
+    test(`select values keep 1.75rem beside the chevron at a ${width}px dock`, async ({ page }) => {
+        await open(page, { rightDockWidth: width })
+        await page.evaluate(async () => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+            })
+            await nextTick()
+        })
+        const selects = await panel(page)
+            .locator('.form-field-select > select')
+            .evaluateAll((selects) =>
+                selects
+                    .filter((select) => select.getClientRects().length)
+                    .map((select) => {
+                        const box = select.getBoundingClientRect()
+                        const padding = parseFloat(getComputedStyle(select).paddingRight)
+                        const chevron = select
+                            .parentElement!.querySelector('.form-field-select-icon svg')!
+                            .getBoundingClientRect()
+                        return { padding, clear: chevron.left - (box.right - padding) }
+                    }),
+            )
+        expect(selects.length).toBeGreaterThan(3)
+        for (const { padding, clear } of selects) {
+            expect(padding).toBe(28)
+            expect(clear).toBeGreaterThanOrEqual(2)
+        }
+    })
+}

@@ -318,7 +318,7 @@ watchEffect(
 }
 
 .form-field-select > select {
-    padding-right: 2rem;
+    padding-right: 1.75rem;
 }
 
 .form-field-select-icon {
