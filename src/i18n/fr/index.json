@@ -421,8 +421,8 @@
       "title": "Aide",
       "touchscreen": {
         "title": "Écran Tactile",
-        "tap": "Appuyez avec un doigt pour agir.",
-        "drag": "Glissez d'un seul doigt pour faire glisser.",
+        "tap": "Appuyez avec un doigt pour utiliser l’outil actuel.",
+        "drag": "Glissez d’un seul doigt pour utiliser l’outil actuel.",
         "quickScroll": "Glissez un doigt dans la zone de défilement rapide pour faire défiler.",
         "deselect": "Appuyez avec deux doigts pour désélectionner.",
         "scrollY": "Glissez deux doigts verticalement pour faire défiler.",
@@ -454,7 +454,7 @@
         "move": "Glissez des objets pour les déplacer.",
         "selectMultiple": "Glissez une zone vide pour sélectionner plusieurs objets.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
+        "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide."
       },
       "eraserTool": {
         "title": "Outil Gomme",
@@ -467,7 +467,7 @@
         "brush": "Appuyez sur des objets pour les peindre.",
         "deselect": "Appuyez sur une zone vide pour désélectionner tous les objets.",
         "brushMultiple": "Glissez pour peindre plusieurs objets.",
-        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
+        "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide."
       },
       "pasteTool": {
         "title": "Outil Coller",
@@ -481,7 +481,7 @@
         "add": "Appuyez sur une zone vide pour ajouter.",
         "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées.",
+        "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide.",
         "properties": "Passez à l'outil Note de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "slideTool": {
@@ -492,7 +492,7 @@
         "connect": "Appuyez sur une zone vide avec une note sélectionnée pour la connecter.",
         "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
-        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées.",
+        "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide.",
         "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "splitSlide": {
@@ -503,7 +503,7 @@
       "generateSlideNotesTool": {
         "title": "Outil Générer les notes de slide",
         "generate": "Appuyez ou glissez pour sélectionner une note et générer les notes de tout le slide.",
-        "generateMultiple": "Appuyez ou glissez pour sélectionner deux notes et générer les notes entre elles.",
+        "generateMultiple": "Appuyez ou glissez pour sélectionner deux notes ou plus et générer les notes entre elles.",
         "deselect": "Appuyez sur une zone vide pour tout désélectionner."
       },
       "bpmTool": {
@@ -522,7 +522,7 @@
         "move": "Glissez 1 échelle de temps pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "markers": "Les marqueurs en losange utilisent la transition Défilement. Les marqueurs creux sur des lignes pointillées masquent les notes.",
-        "ease": "La courbe à côté de la valeur montre l’interpolation jusqu’au prochain changement du groupe. Elle est estompée quand la vitesse saute simplement : Aucune, Palier en Accélération, dernier changement ou changement vers la même valeur."
+        "ease": "La courbe indique l’interpolation vers le prochain changement du groupe."
       },
       "cameraEventTool": {
         "title": "Outil Événement de caméra",
@@ -774,8 +774,8 @@
         "title": "Propriétés du Pinceau"
       },
       "add": "Ajouter une propriété",
-      "pick": "Reprendre la sélection",
-      "picked": "{0} propriété reprise de la sélection|{0} propriétés reprises de la sélection",
+      "pick": "Copier depuis la sélection",
+      "picked": "{0} propriété copiée depuis la sélection|{0} propriétés copiées depuis la sélection",
       "clear": "Effacer",
       "remove": "Retirer {0}",
       "kinds": {
@@ -919,19 +919,19 @@
     "initialize": "Initialiser",
     "autoSave": {
       "title": "Sauvegarde Automatique",
-      "importing": "Importation du niveau…",
+      "importing": "Restauration du niveau…",
       "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet.",
       "unreadable": {
-        "message": "La partition non sauvegardée de votre dernière session n’a pas pu être restaurée. Elle provient peut-être d’une version plus récente de l’éditeur, ou elle a été stockée de façon incomplète.",
-        "setAside": "Elle a été mise de côté : vos nouvelles modifications ne la remplaceront pas. Elle est conservée, et vous sera proposée à chaque démarrage de l’éditeur, jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
-        "keptInPlace": "La sauvegarde automatique est suspendue dans cet onglet : vos nouvelles modifications ne la remplaceront pas. Elle est conservée jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
-        "waiting": "Une partition plus ancienne qui n’a pas pu être restaurée est toujours mise de côté : celle-ci reste donc en place, et la sauvegarde automatique est suspendue dans cet onglet jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
-        "earlier": "Une partition non sauvegardée qui n’a pas pu être restaurée lors d’une session précédente est toujours mise de côté.",
-        "earlierHint": "Elle est conservée, et vous sera proposée à chaque démarrage de l’éditeur, jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
+        "message": "La partition non sauvegardée de votre dernière session n’a pas pu être restaurée. Elle nécessite peut-être une version plus récente de l’éditeur, ou ses données sauvegardées sont peut-être endommagées.",
+        "setAside": "Vos nouvelles modifications ne remplaceront pas cette partition. L’éditeur réessaiera à la prochaine ouverture.",
+        "keptInPlace": "La sauvegarde automatique est suspendue dans cet onglet jusqu’à ce que vous supprimiez la copie de votre dernière session.",
+        "waiting": "Une partition plus ancienne est aussi conservée dans l’éditeur. La sauvegarde automatique est suspendue dans cet onglet jusqu’à ce que vous supprimiez la copie de votre dernière session.",
+        "earlier": "L’éditeur ne peut toujours pas restaurer une partition non sauvegardée d’une session précédente.",
+        "earlierHint": "L’éditeur réessaiera à la prochaine ouverture.",
         "download": "Télécharger",
-        "downloaded": "Une copie a été téléchargée. La partition reste conservée jusqu’à ce que vous la supprimiez.",
+        "downloaded": "Téléchargement lancé.",
         "discard": "Supprimer",
-        "restorable": "Une partition non sauvegardée qui n’a pas pu être restaurée lors d’une session précédente peut maintenant l’être. La restaurer remplace la partition qui vient d’être restaurée depuis votre dernière session, avec ses modifications non sauvegardées. Annuler la garde de côté pour la prochaine fois.",
+        "restorable": "Une partition non sauvegardée d’une session précédente peut maintenant être restaurée. La restaurer remplacera la partition actuelle, y compris ses modifications non sauvegardées.",
         "restore": "Restaurer",
         "restored": "Partition non sauvegardée d’une session précédente restaurée"
       }
@@ -1048,7 +1048,7 @@
       },
       "connectorIsPassThrough": {
         "label": "Traverser la ligne de jugement",
-        "qualified": "Traverser la ligne de jugement"
+        "qualified": "Connecteur traversant la ligne de jugement"
       },
       "connectorLayer": {
         "label": "Couche",
@@ -1181,11 +1181,11 @@
         "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
         "clear": "Cliquez à nouveau pour supprimer ce raccourci",
         "unassigned": "Non attribué",
-        "reserved": "{0} est réservé au navigateur ; appuyez sur une autre touche",
+        "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche",
         "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche",
         "alsoRuns": "Exécute aussi {0}",
-        "browserReload": "Remplace l'actualisation du navigateur",
-        "browserFind": "Remplace la recherche du navigateur"
+        "browserReload": "Remplace le raccourci d’actualisation du navigateur",
+        "browserFind": "Remplace le raccourci de recherche du navigateur"
       },
       "maskLeft": {
         "label": "Voie du masque"
@@ -1431,13 +1431,13 @@
       "showAll": "Afficher tous les groupes",
       "hideAll": "Masquer tous les groupes",
       "add": "Ajouter un groupe",
-      "movedSelectedInto": "Groupes sélectionnés ({0}) déplacés dans le dossier {1}",
-      "movedSelectedOut": "Groupes sélectionnés ({0}) sortis des dossiers",
-      "deletedSelected": "Groupes sélectionnés ({0}) supprimés",
+      "movedSelectedInto": "Groupe sélectionné ({0}) déplacé dans le dossier {1}|Groupes sélectionnés ({0}) déplacés dans le dossier {1}",
+      "movedSelectedOut": "Groupe sélectionné ({0}) sorti des dossiers|Groupes sélectionnés ({0}) sortis des dossiers",
+      "deletedSelected": "Groupe sélectionné ({0}) supprimé|Groupes sélectionnés ({0}) supprimés",
       "deleteSelectedTitle": "Supprimer les groupes",
       "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?",
       "duplicated": "Groupe {0} dupliqué",
-      "duplicatedSelected": "Groupes sélectionnés ({0}) dupliqués"
+      "duplicatedSelected": "Groupe sélectionné ({0}) dupliqué|Groupes sélectionnés ({0}) dupliqués"
     },
     "stages": {
       "deleteFolder": "Supprimer le dossier et ses scènes…",
@@ -1450,13 +1450,13 @@
       "add": "Ajouter une scène",
       "disabled": "Les scènes dynamiques sont désactivées pour ce niveau.",
       "enable": "Activer les scènes dynamiques",
-      "movedSelectedInto": "Scènes sélectionnées ({0}) déplacées dans le dossier {1}",
-      "movedSelectedOut": "Scènes sélectionnées ({0}) sorties des dossiers",
-      "deletedSelected": "Scènes sélectionnées ({0}) supprimées",
+      "movedSelectedInto": "Scène sélectionnée ({0}) déplacée dans le dossier {1}|Scènes sélectionnées ({0}) déplacées dans le dossier {1}",
+      "movedSelectedOut": "Scène sélectionnée ({0}) sortie des dossiers|Scènes sélectionnées ({0}) sorties des dossiers",
+      "deletedSelected": "Scène sélectionnée ({0}) supprimée|Scènes sélectionnées ({0}) supprimées",
       "deleteSelectedTitle": "Supprimer les scènes",
       "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?",
       "duplicated": "Scène {0} dupliquée",
-      "duplicatedSelected": "Scènes sélectionnées ({0}) dupliquées"
+      "duplicatedSelected": "Scène sélectionnée ({0}) dupliquée|Scènes sélectionnées ({0}) dupliquées"
     },
     "properties": {
       "sections": "Sections des propriétés",
