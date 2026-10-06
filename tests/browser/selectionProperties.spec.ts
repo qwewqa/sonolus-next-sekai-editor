@@ -314,6 +314,23 @@ test.describe('connector fields', () => {
         )
     })
 
+    test('the summary stays empty when it has nothing to name', async ({ page }) => {
+        await showSlides(page, [[{ beat: 0 }, { beat: 1, isAttached: true }, { beat: 2 }]])
+        await page.evaluate(async () => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'note' && entity.beat === 1,
+                ),
+            })
+            await nextTick()
+        })
+        // Only Separator applies to an attached tick.
+        await header(page).click()
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText('')
+    })
+
     test('a typed value commits when the fields collapse', async ({ page }) => {
         await showSlides(page, [[{ beat: 0, connectorType: 'guide' }, { beat: 1 }]])
         const alpha = control(page, 'Guide Alpha')

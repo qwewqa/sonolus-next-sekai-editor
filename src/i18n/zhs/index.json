@@ -984,8 +984,7 @@
         "center": "中心"
       },
       "connectorActiveIsCritical": {
-        "label": "关键长按音符",
-        "qualified": "关键长按音符"
+        "label": "关键长按音符"
       },
       "ease": {
         "linear": "线性",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "缓动",
         "qualified": "连接缓动",
-        "mode": "缓动模式",
-        "qualifiedMode": "连接缓动模式"
+        "mode": "缓动模式"
       },
       "connectorIsFake": {
         "label": "假长按音符"
       },
       "connectorGuideAlpha": {
-        "label": "引导不透明度",
-        "qualified": "引导不透明度"
+        "label": "引导不透明度"
       },
       "colors": {
         "neutral": "白",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "缓动",
         "qualified": "时间尺度缓动",
-        "mode": "缓动模式",
-        "qualifiedMode": "时间尺度缓动模式"
+        "mode": "缓动模式"
       },
       "timeScaleTransition": {
         "label": "过渡",
@@ -1432,7 +1428,6 @@
       "noTool": "当前工具没有设置。",
       "kinds": {
         "note": "音符",
-        "slides": "长按音符",
         "bpm": "BPM",
         "timeScale": "时间尺度",
         "cameraEventJoint": "镜头事件",

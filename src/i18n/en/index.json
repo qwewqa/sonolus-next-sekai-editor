@@ -984,8 +984,7 @@
                 "center": "Center"
             },
             "connectorActiveIsCritical": {
-                "label": "Slide Critical",
-                "qualified": "Slide Critical"
+                "label": "Slide Critical"
             },
             "ease": {
                 "linear": "Linear",
@@ -1007,15 +1006,13 @@
             "connectorEase": {
                 "label": "Ease",
                 "qualified": "Connector Ease",
-                "mode": "Ease Mode",
-                "qualifiedMode": "Connector Ease Mode"
+                "mode": "Ease Mode"
             },
             "connectorIsFake": {
                 "label": "Slide Fake"
             },
             "connectorGuideAlpha": {
-                "label": "Guide Alpha",
-                "qualified": "Guide Alpha"
+                "label": "Guide Alpha"
             },
             "colors": {
                 "neutral": "Neutral",
@@ -1223,8 +1220,7 @@
             "timeScaleEase": {
                 "label": "Ease",
                 "qualified": "Time Scale Ease",
-                "mode": "Ease Mode",
-                "qualifiedMode": "Time Scale Ease Mode"
+                "mode": "Ease Mode"
             },
             "timeScaleTransition": {
                 "label": "Transition",
@@ -1432,7 +1428,6 @@
             "noTool": "The current tool has no settings.",
             "kinds": {
                 "note": "Notes",
-                "slides": "Slides",
                 "bpm": "BPM",
                 "timeScale": "Time Scales",
                 "cameraEventJoint": "Camera Events",

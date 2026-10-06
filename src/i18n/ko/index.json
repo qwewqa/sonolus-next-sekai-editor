@@ -984,8 +984,7 @@
         "center": "중심"
       },
       "connectorActiveIsCritical": {
-        "label": "크리티컬 슬라이드",
-        "qualified": "크리티컬 슬라이드"
+        "label": "크리티컬 슬라이드"
       },
       "ease": {
         "linear": "선형",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "이징",
         "qualified": "커넥터 이징",
-        "mode": "이징 모드",
-        "qualifiedMode": "커넥터 이징 모드"
+        "mode": "이징 모드"
       },
       "connectorIsFake": {
         "label": "페이크 슬라이드"
       },
       "connectorGuideAlpha": {
-        "label": "가이드 불투명도",
-        "qualified": "가이드 불투명도"
+        "label": "가이드 불투명도"
       },
       "colors": {
         "neutral": "하양",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "이징",
         "qualified": "시간 배율 이징",
-        "mode": "이징 모드",
-        "qualifiedMode": "시간 배율 이징 모드"
+        "mode": "이징 모드"
       },
       "timeScaleTransition": {
         "label": "전환",
@@ -1432,7 +1428,6 @@
       "noTool": "현재 도구에는 설정이 없습니다.",
       "kinds": {
         "note": "노트",
-        "slides": "슬라이드",
         "bpm": "BPM",
         "timeScale": "시간 배율",
         "cameraEventJoint": "카메라 이벤트",

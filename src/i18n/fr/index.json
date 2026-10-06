@@ -984,8 +984,7 @@
         "center": "Centre"
       },
       "connectorActiveIsCritical": {
-        "label": "Slide Critique",
-        "qualified": "Slide Critique"
+        "label": "Slide Critique"
       },
       "ease": {
         "linear": "Linéaire",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "Interpolation",
         "qualified": "Interpolation du connecteur",
-        "mode": "Mode d’interpolation",
-        "qualifiedMode": "Mode d’interpolation du connecteur"
+        "mode": "Mode d’interpolation"
       },
       "connectorIsFake": {
         "label": "Slide factice"
       },
       "connectorGuideAlpha": {
-        "label": "Opacité du Guide",
-        "qualified": "Opacité du Guide"
+        "label": "Opacité du Guide"
       },
       "colors": {
         "neutral": "Neutre",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "Interpolation",
         "qualified": "Interpolation de l’échelle de temps",
-        "mode": "Mode d’interpolation",
-        "qualifiedMode": "Mode d’interpolation de l’échelle de temps"
+        "mode": "Mode d’interpolation"
       },
       "timeScaleTransition": {
         "label": "Transition",
@@ -1432,7 +1428,6 @@
       "noTool": "L’outil actuel n’a pas de réglages.",
       "kinds": {
         "note": "Notes",
-        "slides": "Slides",
         "bpm": "BPM",
         "timeScale": "Échelles de temps",
         "cameraEventJoint": "Événements de caméra",

@@ -984,8 +984,7 @@
         "center": "Merkez"
       },
       "connectorActiveIsCritical": {
-        "label": "Kritik Kaydırma",
-        "qualified": "Kritik Kaydırma"
+        "label": "Kritik Kaydırma"
       },
       "ease": {
         "linear": "Doğrusal",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "Yumuşatma",
         "qualified": "Bağlayıcı Yumuşatma",
-        "mode": "Yumuşatma Modu",
-        "qualifiedMode": "Bağlayıcı Yumuşatma Modu"
+        "mode": "Yumuşatma Modu"
       },
       "connectorIsFake": {
         "label": "Sahte Kaydırma"
       },
       "connectorGuideAlpha": {
-        "label": "Kılavuz Opaklığı",
-        "qualified": "Kılavuz Opaklığı"
+        "label": "Kılavuz Opaklığı"
       },
       "colors": {
         "neutral": "Nötr",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "Yumuşatma",
         "qualified": "Zaman Ölçeği Yumuşatması",
-        "mode": "Yumuşatma Modu",
-        "qualifiedMode": "Zaman Ölçeği Yumuşatma Modu"
+        "mode": "Yumuşatma Modu"
       },
       "timeScaleTransition": {
         "label": "Geçiş",
@@ -1432,7 +1428,6 @@
       "noTool": "Geçerli aracın ayarı yok.",
       "kinds": {
         "note": "Notalar",
-        "slides": "Kaydırmalar",
         "bpm": "BPM",
         "timeScale": "Zaman Ölçekleri",
         "cameraEventJoint": "Kamera Olayları",

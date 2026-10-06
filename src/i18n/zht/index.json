@@ -984,8 +984,7 @@
         "center": "置中"
       },
       "connectorActiveIsCritical": {
-        "label": "金色滑條",
-        "qualified": "金色滑條"
+        "label": "金色滑條"
       },
       "ease": {
         "linear": "線性",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "緩動",
         "qualified": "連接線緩動",
-        "mode": "緩動模式",
-        "qualifiedMode": "連接線緩動模式"
+        "mode": "緩動模式"
       },
       "connectorIsFake": {
         "label": "假滑條"
       },
       "connectorGuideAlpha": {
-        "label": "引導線不透明度",
-        "qualified": "引導線不透明度"
+        "label": "引導線不透明度"
       },
       "colors": {
         "neutral": "預設",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "緩動",
         "qualified": "時間倍率緩動",
-        "mode": "緩動模式",
-        "qualifiedMode": "時間倍率緩動模式"
+        "mode": "緩動模式"
       },
       "timeScaleTransition": {
         "label": "過渡",
@@ -1432,7 +1428,6 @@
       "noTool": "目前的工具沒有設定。",
       "kinds": {
         "note": "音符",
-        "slides": "滑條",
         "bpm": "BPM",
         "timeScale": "時間倍率",
         "cameraEventJoint": "攝影機事件",

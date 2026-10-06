@@ -105,6 +105,7 @@ const connectorSummary = computed(() => {
             ? [field.valueLabel(i18n.value, value as never)]
             : []
     })
+    if (!fields.length) return ''
     return parts.length
         ? parts.join(' · ')
         : interpolateRaw(i18n.value.workspace.properties.valuesDiffer, `${fields.length}`)

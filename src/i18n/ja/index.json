@@ -984,8 +984,7 @@
         "center": "中央"
       },
       "connectorActiveIsCritical": {
-        "label": "スライドクリティカル",
-        "qualified": "スライドクリティカル"
+        "label": "スライドクリティカル"
       },
       "ease": {
         "linear": "直線",
@@ -1007,15 +1006,13 @@
       "connectorEase": {
         "label": "加減速",
         "qualified": "接続の加減速",
-        "mode": "加減速モード",
-        "qualifiedMode": "接続の加減速モード"
+        "mode": "加減速モード"
       },
       "connectorIsFake": {
         "label": "スライドフェイク"
       },
       "connectorGuideAlpha": {
-        "label": "ガイドの不透明度",
-        "qualified": "ガイドの不透明度"
+        "label": "ガイドの不透明度"
       },
       "colors": {
         "neutral": "灰",
@@ -1223,8 +1220,7 @@
       "timeScaleEase": {
         "label": "ハイスピード変化",
         "qualified": "ハイスピード変化",
-        "mode": "ハイスピード変化モード",
-        "qualifiedMode": "ハイスピード変化モード"
+        "mode": "ハイスピード変化モード"
       },
       "timeScaleTransition": {
         "label": "遷移方式",
@@ -1432,7 +1428,6 @@
       "noTool": "現在のツールには設定がありません。",
       "kinds": {
         "note": "ノーツ",
-        "slides": "スライド",
         "bpm": "BPM",
         "timeScale": "ハイスピード",
         "cameraEventJoint": "カメライベント",
