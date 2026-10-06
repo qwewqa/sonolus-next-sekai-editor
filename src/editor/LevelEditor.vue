@@ -22,7 +22,7 @@ import { groupScope, stageScope } from './scope'
 import LevelEditorToolbar from './toolbar/LevelEditorToolbar.vue'
 import EditorToolModalHost from './EditorToolModalHost.vue'
 import { hasToolModal } from './toolModals'
-import { tool } from './tools'
+import { switchToolTo, tool, toolName, type ToolName } from './tools'
 import { brushProperties } from './tools/brush'
 import { view } from './view'
 import { manageGroups } from './commands/manageGroups'
@@ -168,6 +168,18 @@ watch([groups, () => brushProperties.value.groupId], () => {
     if (groups.value.has(brushProperties.value.groupId)) return
 
     brushProperties.value.groupId = undefined
+})
+
+// Event tools need dynamic stages, which undo can turn off; their events would not save.
+const eventTools = new Set<ToolName>([
+    'cameraEvent',
+    'stageMaskEvent',
+    'stagePivotEvent',
+    'stageStyleEvent',
+    'stageTransformEvent',
+])
+watch(isDynamicStages, (value) => {
+    if (!value && eventTools.has(toolName.value)) switchToolTo('select')
 })
 
 watch([stages, isDynamicStages, () => view.stageId], () => {

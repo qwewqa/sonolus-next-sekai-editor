@@ -492,3 +492,42 @@ test('charts above the former entity limit still create recoverable colored data
         )
         .toBe(10001)
 })
+
+test('undoing dynamic stages leaves the event tools, whose events it could not save', async ({
+    page,
+}) => {
+    const command = page.evaluate(async () => {
+        const { appImport, history } = window.editorTest
+        history.resetState(false)
+        const { cameraEvent } = await appImport<
+            typeof import('../../src/editor/commands/events/camera')
+        >('/src/editor/commands/events/camera/index.ts')
+        await cameraEvent.execute()
+    })
+    await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click()
+    await command
+    const tool = () =>
+        page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            return toolName.value
+        })
+    expect(await tool()).toBe('cameraEvent')
+
+    await page.keyboard.press('Control+z')
+    expect(await page.evaluate(() => window.editorTest.history.state.value.isDynamicStages)).toBe(
+        false,
+    )
+    await expect.poll(tool).toBe('select')
+    const { x, y } = await page.evaluate(() => window.editorTest.point(0, 6))
+    await page.mouse.click(x, y)
+    expect(
+        await page.evaluate(
+            () =>
+                [...window.editorTest.store.getAllEntities()].filter(
+                    (entity) => entity.type === 'cameraEventJoint',
+                ).length,
+        ),
+    ).toBe(0)
+})
