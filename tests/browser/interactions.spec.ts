@@ -9,18 +9,28 @@ const settle = (page: Page) =>
         )
     })
 
-const touch = (page: Page, type: string, points: { id: number; x: number; y: number }[]) =>
+const touch = (
+    page: Page,
+    type: string,
+    points: { id: number; x: number; y: number }[],
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean } = {},
+) =>
     page.evaluate(
-        ({ type, points }) => {
+        ({ type, points, modifiers }) => {
             const target = document.querySelector('.editor')!
             const changedTouches = points.map(
                 ({ id, x, y }) => new Touch({ identifier: id, target, clientX: x, clientY: y }),
             )
             target.dispatchEvent(
-                new TouchEvent(type, { changedTouches, bubbles: true, cancelable: true }),
+                new TouchEvent(type, {
+                    changedTouches,
+                    bubbles: true,
+                    cancelable: true,
+                    ...modifiers,
+                }),
             )
         },
-        { type, points },
+        { type, points, modifiers },
     )
 
 test.beforeEach(async ({ page }) => {
@@ -78,6 +88,31 @@ test('cancelled touch taps and drags do not create notes or leave previews', asy
     await touch(page, 'touchend', [start])
     await settle(page)
     expect(await page.evaluate(() => window.editorTest.snapshot().notes.length)).toBe(5)
+})
+
+test('Cmd taps toggle objects in and out of the selection, as Ctrl taps do', async ({ page }) => {
+    await page.locator('.editor').click({ position: { x: 100, y: 100 } })
+    await page.keyboard.press('f')
+    const tap = async (lane: number, beat: number, modifiers = {}) => {
+        const at = await page.evaluate(({ lane, beat }) => window.editorTest.point(lane, beat), {
+            lane,
+            beat,
+        })
+        const point = { ...at, id: 1 }
+        await touch(page, 'touchstart', [point], modifiers)
+        await touch(page, 'touchend', [point], modifiers)
+        await settle(page)
+    }
+    const selected = () =>
+        page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length)
+    await tap(-3, 3)
+    expect(await selected()).toBe(1)
+    for (const modifiers of [{ metaKey: true }, { ctrlKey: true }]) {
+        await tap(1, 5, modifiers)
+        expect(await selected()).toBe(2)
+        await tap(1, 5, modifiers)
+        expect(await selected()).toBe(1)
+    }
 })
 
 test('pinches starting with aligned fingers keep zoom continuous and finite', async ({ page }) => {
