@@ -1172,7 +1172,12 @@
         "input": "입력 키",
         "press": "키를 누르거나 다시 클릭하여 삭제",
         "clear": "다시 클릭하여 단축키 삭제",
-        "unassigned": "미지정"
+        "unassigned": "미지정",
+        "reserved": "{0}은(는) 브라우저가 사용합니다. 다른 키를 누르세요",
+        "alsoRuns": "{0}도 함께 실행됩니다",
+        "browserReload": "브라우저 새로 고침 대신 실행됩니다",
+        "browserFind": "브라우저 찾기 대신 실행됩니다",
+        "browserZoom": "브라우저 확대/축소 대신 실행됩니다"
       },
       "maskLeft": {
         "label": "마스크 레인"

@@ -240,3 +240,66 @@ test.describe('dock', () => {
         await expect(control(page, 'Critical')).toBeFocused()
     })
 })
+
+test.describe('saved shortcuts', () => {
+    test('a record saved before chords loads and runs unchanged', async ({ page }) => {
+        // As 757e7e9 wrote it: the whole record once any binding changed.
+        const saved = await page.evaluate(() => {
+            const record = { ...window.editorTest.settings.keyboardShortcuts, undo: 'l', bpm: 'U' }
+            localStorage.setItem(
+                'sonolus-next-sekai-editor.keyboardShortcuts',
+                JSON.stringify(record),
+            )
+            return record
+        })
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(installEditorFixture)
+        await page.mouse.click(700, 400)
+        expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts)).toEqual(
+            saved,
+        )
+
+        await edit(page)
+        await page.keyboard.press('Control+l')
+        expect(await isEdited(page)).toBe(false)
+        await setTool(page, 'select')
+        await page.keyboard.press('Shift+U')
+        expect(await toolName(page)).toBe('bpm')
+        expect(
+            JSON.parse(
+                (await page.evaluate(() =>
+                    localStorage.getItem('sonolus-next-sekai-editor.keyboardShortcuts'),
+                )) ?? '{}',
+            ),
+        ).toEqual(saved)
+    })
+
+    test('a chord binding persists and Reset Shortcuts removes it', async ({ page }) => {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = { ...settings.keyboardShortcuts, bpm: 'Mod+Shift+b' }
+        })
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(installEditorFixture)
+        await page.mouse.click(700, 400)
+        await setTool(page, 'select')
+        await page.keyboard.press('Control+Shift+B')
+        expect(await toolName(page)).toBe('bpm')
+
+        await page.keyboard.press(',')
+        await page
+            .getByRole('dialog')
+            .getByRole('button', { name: 'Reset Shortcuts', exact: true })
+            .click()
+        expect(
+            await page.evaluate(() =>
+                localStorage.getItem('sonolus-next-sekai-editor.keyboardShortcuts'),
+            ),
+        ).toBeNull()
+        expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.bpm)).toBe(
+            'q',
+        )
+    })
+})

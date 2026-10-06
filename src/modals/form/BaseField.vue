@@ -21,6 +21,8 @@ const props = defineProps<{
     labelId?: string
     /** Values in use while mixed; toggles leave it unset and get theirs from the usage. */
     mixed?: MixedValue[]
+    /** Short remarks under the field, such as a shortcut's conflicts. */
+    notes?: string[]
 }>()
 
 const field = useFieldUsage()
@@ -58,6 +60,7 @@ const description = computed(() =>
             `${i18n.value.modals.form.mixed}: ${values.value
                 .map(({ label, count }) => `${label} ${count}`)
                 .join(', ')}`,
+        ...(props.notes ?? []),
     ]
         .filter(Boolean)
         .join('. '),
@@ -287,6 +290,9 @@ watchEffect(
                 </button>
             </div>
         </div>
+        <div v-if="notes?.length" class="form-field-notes" aria-hidden="true">
+            <p v-for="note in notes" :key="note">{{ note }}</p>
+        </div>
         <span v-if="description" :id="descriptionId" class="sr-only">{{ description }}</span>
     </div>
 </template>
@@ -440,6 +446,13 @@ watchEffect(
     .form-field-inline:not(.form-field-stacked) {
         grid-template-columns: minmax(0, 1fr) auto calc(40% - 0.75rem);
     }
+}
+
+.form-field-notes {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: rgb(68 68 102 / 0.8);
 }
 
 /* Tinted pills read as actions; coverage is muted text, apart from the values. */

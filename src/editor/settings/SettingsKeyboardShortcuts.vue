@@ -1,8 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { i18n } from '../../i18n'
 import KeyField from '../../modals/form/KeyField.vue'
 import { settings } from '../../settings'
+import { interpolateRaw } from '../../utils/interpolate'
 import { commands, type CommandName } from '../commands'
+import {
+    browserShortcutOf,
+    commandChordBinding,
+    normalizeBinding,
+    parseChord,
+} from '../controls/bindings'
 import SettingsSection from './SettingsSection.vue'
 
 const getKey = (name: CommandName) => settings.keyboardShortcuts[name]
@@ -13,6 +21,44 @@ const setKey = (name: CommandName, key: string | undefined) => {
     else shortcuts[name] = key
     settings.keyboardShortcuts = shortcuts
 }
+
+// Commands sharing a binding all run; each row names the others.
+const notes = computed(() => {
+    const bound = (Object.entries(settings.keyboardShortcuts) as [CommandName, string][]).filter(
+        ([, key]) => key,
+    )
+    const users = new Map<string, CommandName[]>()
+    for (const [name, key] of bound) {
+        const binding = normalizeBinding(key)
+        users.set(binding, [...(users.get(binding) ?? []), name])
+    }
+    const { key: messages } = i18n.value.modals.form
+    const browser = {
+        reload: messages.browserReload,
+        find: messages.browserFind,
+        zoom: messages.browserZoom,
+    }
+    return new Map(
+        bound.map(([name, key]) => {
+            const others = (users.get(normalizeBinding(key)) ?? []).filter(
+                (other) => other !== name,
+            )
+            const list: string[] = []
+            if (others.length)
+                list.push(
+                    interpolateRaw(
+                        messages.alsoRuns,
+                        others.map((other) => commands[other].title()).join(', '),
+                    ),
+                )
+            // A plain key loses its Ctrl chord to a command bound to that chord exactly.
+            const chord = parseChord(key) ? undefined : commandChordBinding(key)
+            const kind = chord && users.has(chord) ? undefined : browserShortcutOf(key)
+            if (kind) list.push(browser[kind])
+            return [name, list]
+        }),
+    )
+})
 </script>
 
 <template>
@@ -22,6 +68,7 @@ const setKey = (name: CommandName, key: string | undefined) => {
             :key="name"
             :label="command.title()"
             :model-value="getKey(name)"
+            :notes="notes.get(name)"
             @update:model-value="setKey(name, $event)"
         >
             <template #icon>

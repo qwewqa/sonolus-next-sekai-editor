@@ -1172,7 +1172,12 @@
         "input": "Tuş Girin",
         "press": "Bir tuşa basın veya temizlemek için tekrar tıklayın",
         "clear": "Bu kısayolu kaldırmak için tekrar tıklayın",
-        "unassigned": "Atanmamış"
+        "unassigned": "Atanmamış",
+        "reserved": "{0} tarayıcıya ayrılmıştır; başka bir tuşa basın",
+        "alsoRuns": "{0} komutunu da çalıştırır",
+        "browserReload": "Tarayıcının yenileme kısayolunun yerine geçer",
+        "browserFind": "Tarayıcının bulma kısayolunun yerine geçer",
+        "browserZoom": "Tarayıcının yakınlaştırma kısayolunun yerine geçer"
       },
       "maskLeft": {
         "label": "Maske Şeridi"

@@ -1172,7 +1172,12 @@
                 "input": "Input Key",
                 "press": "Press a key or click again to clear",
                 "clear": "Click again to remove this shortcut",
-                "unassigned": "Unassigned"
+                "unassigned": "Unassigned",
+                "reserved": "{0} belongs to the browser; press another key",
+                "alsoRuns": "Also runs {0}",
+                "browserReload": "Replaces the browser's reload",
+                "browserFind": "Replaces the browser's find",
+                "browserZoom": "Replaces the browser's zoom"
             },
             "maskLeft": {
                 "label": "Mask Lane"

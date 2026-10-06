@@ -1172,7 +1172,12 @@
         "input": "输入键",
         "press": "按一个键，或再次点击以清除",
         "clear": "再次点击以移除此快捷键",
-        "unassigned": "未设置"
+        "unassigned": "未设置",
+        "reserved": "{0} 由浏览器保留，请按其他键",
+        "alsoRuns": "同时执行{0}",
+        "browserReload": "将取代浏览器的刷新",
+        "browserFind": "将取代浏览器的查找",
+        "browserZoom": "将取代浏览器的缩放"
       },
       "maskLeft": {
         "label": "遮罩轨道"

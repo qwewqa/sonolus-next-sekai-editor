@@ -1172,7 +1172,12 @@
         "input": "輸入鍵位",
         "press": "按一個鍵，或再次點選以清除",
         "clear": "再次點選以移除此快捷鍵",
-        "unassigned": "未設定"
+        "unassigned": "未設定",
+        "reserved": "{0} 由瀏覽器保留，請按其他鍵",
+        "alsoRuns": "同時執行{0}",
+        "browserReload": "將取代瀏覽器的重新整理",
+        "browserFind": "將取代瀏覽器的尋找",
+        "browserZoom": "將取代瀏覽器的縮放"
       },
       "maskLeft": {
         "label": "遮罩軌道"
