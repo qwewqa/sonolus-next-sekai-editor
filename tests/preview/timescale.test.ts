@@ -359,3 +359,13 @@ test('eased speeds integrate exactly and additively for every time scale ease', 
         }
     }
 })
+
+test('falling scroll speeds keep the ease value at the exact midpoint', () => {
+    // speed_at reverses falling curves for precision everywhere but the midpoint.
+    const group = createTimescaleGroup(
+        [change(0, 1, { ease: 40, transitionStyle: 1 }), change(1, 0.5, { transitionStyle: 1 })],
+        0,
+    )
+    close(noteDistance(group, 0.5, 0.75), 0.125)
+    close(noteDistance(group, 0.25, 0.375), 0.125)
+})

@@ -155,13 +155,10 @@ const speedAt = (change: TimescaleChange, next: TimescaleChange | undefined, t: 
     if (!next || isNoneEase(change.ease) || t <= change.time) return change.timescale
     if (t >= next.time) return next.timescale
 
-    // Evaluate a falling curve from its lower speed, as the engine does.
-    return next.timescale >= change.timescale
-        ? interpolateSpeed(
-              change.timescale,
-              next.timescale,
-              ease(change.ease, timeFraction(change.time, next.time, t)),
-          )
+    // Evaluate a falling curve from its lower speed, as the engine does, apart from its midpoint.
+    const fraction = timeFraction(change.time, next.time, t)
+    return next.timescale >= change.timescale || fraction === 0.5
+        ? interpolateSpeed(change.timescale, next.timescale, ease(change.ease, fraction))
         : interpolateSpeed(
               next.timescale,
               change.timescale,
