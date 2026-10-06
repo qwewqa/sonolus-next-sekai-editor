@@ -1,5 +1,5 @@
 import type { EventEase } from '../../../chart/events'
-import { ease, easeOvershoot, sampleEase } from '../../../ease'
+import { ease, easeOvershoot, isStepEase, sampleEase } from '../../../ease'
 import { lerp } from '../../../utils/math'
 
 type PathD = (xMin: number, xMax: number, yMin: number, yMax: number) => string
@@ -55,18 +55,38 @@ export const getRangePathDs = (
             getPathD(leftMin, leftMax, yMin, yMax, eventEase),
             getPathD(rightMin, rightMax, yMin, yMax, eventEase),
         ]
+    const edgesAt = (q: number) => {
+        const center = lerp((leftMin + rightMin) / 2, (leftMax + rightMax) / 2, q)
+        const half = Math.max(minWidth, widthAt(q)) / 2
+        return { left: center - half, right: center + half }
+    }
+    if (isStepEase(eventEase)) {
+        // Steps hold one value per half, so a jump shows as a gap, as in exact paths.
+        const first = ease(eventEase, 0.25)
+        const second = ease(eventEase, 0.75)
+        const pieces =
+            first === second
+                ? [{ from: 0, to: 1, q: first }]
+                : [
+                      { from: 0, to: 0.5, q: first },
+                      { from: 0.5, to: 1, q: second },
+                  ]
+        const side = (key: 'left' | 'right') =>
+            pieces
+                .map(
+                    ({ from, to, q }) =>
+                        `M ${edgesAt(q)[key]} ${lerp(yMin, yMax, from)} V ${lerp(yMin, yMax, to)}`,
+                )
+                .join(' ')
+        return [side('left'), side('right')]
+    }
     const span = Math.max(Math.abs(leftMax - leftMin), Math.abs(rightMax - rightMin))
     const points = sampleEase(
         eventEase,
         0,
         1,
         CURVE_TOLERANCE / Math.max(span, CURVE_TOLERANCE),
-    ).map((p) => {
-        const q = ease(eventEase, p)
-        const center = lerp((leftMin + rightMin) / 2, (leftMax + rightMax) / 2, q)
-        const half = Math.max(minWidth, widthAt(q)) / 2
-        return { left: center - half, right: center + half, y: lerp(yMin, yMax, p) }
-    })
+    ).map((p) => ({ ...edgesAt(ease(eventEase, p)), y: lerp(yMin, yMax, p) }))
     return [
         points.map(({ left, y }, index) => `${index ? 'L' : 'M'} ${left} ${y}`).join(' '),
         points.map(({ right, y }, index) => `${index ? 'L' : 'M'} ${right} ${y}`).join(' '),

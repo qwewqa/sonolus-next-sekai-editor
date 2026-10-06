@@ -799,3 +799,15 @@ test('any highlighted change of a same-beat stack shows its group name', () => {
         ['1x→2x', 'B'],
     )
 })
+
+test('a floored range draws a step as held values with a gap at the jump', () => {
+    // From 0 to 0.01 lanes wide, under the 0.02 floor: each side holds its value.
+    assert.deepEqual(getRangePathDs([-1, 1], [4, 4.01], 0, -4, 'inOutStep', 0.02), [
+        'M -1 0 V -2 M 3.995 -2 V -4',
+        'M 1 0 V -2 M 4.015 -2 V -4',
+    ])
+    assert.deepEqual(getRangePathDs([2, 2], [-1, 1], 0, -4, 'inStep', 0.02), [
+        'M 1.99 0 V -4',
+        'M 2.01 0 V -4',
+    ])
+})
