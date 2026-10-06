@@ -512,3 +512,50 @@ for (const [operation, extra] of [
         )
     })
 }
+
+test('Make Vertical keeps a pair that was already one and merges the rest', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { show, fixtures, history, store, appImport } = window.editorTest
+        const f = fixtures.events
+        const note = fixtures.interaction.slides[0]![0]!
+        show({
+            ...f,
+            timeScales: [
+                { ...f.timeScales[0]!, beat: 5, timeScale: 5 },
+                { ...f.timeScales[0]!, beat: 6, timeScale: 1 },
+                { ...f.timeScales[0]!, beat: 6, timeScale: 2 },
+            ],
+            cameraEvents: [
+                { ...f.cameraEvents[0]!, beat: 5, cameraZoom: 5 },
+                { ...f.cameraEvents[0]!, beat: 6, cameraZoom: 1 },
+                { ...f.cameraEvents[0]!, beat: 6, cameraZoom: 2 },
+            ],
+            stageMaskEvents: [],
+            stagePivotEvents: [],
+            stageStyleEvents: [],
+            stageTransformEvents: [],
+            slides: [[{ ...note, beat: 4 }], [{ ...note, beat: 8 }]],
+        })
+        const { makeVertical } = await appImport<
+            typeof import('../../src/state/operations/makeVertical')
+        >('/src/state/operations/makeVertical.ts')
+        // In beat order, as a box selection lists them; the latest beat wins a collision.
+        const selected = [...store.getAllEntities()]
+            .filter(
+                (entity) => entity.type === 'note' || (entity.type !== 'bpm' && entity.beat >= 5),
+            )
+            .sort((a, b) => a.beat - b.beat)
+        const next = makeVertical({ ...history.state.value, selectedEntities: selected }, selected)
+        const at4 = (type: 'timeScale' | 'cameraEventJoint') =>
+            [...(next.store.grid[type].get(4) ?? [])]
+                .filter((entity) => entity.beat === 4)
+                .map((entity) =>
+                    entity.type === 'timeScale'
+                        ? entity.timeScale
+                        : (entity as never)['cameraZoom'],
+                )
+        return { timeScale: at4('timeScale'), camera: at4('cameraEventJoint') }
+    })
+    // The 5 from beat 5 is replaced by the pair from beat 6, which stays a pair in order.
+    expect(result).toEqual({ timeScale: [1, 2], camera: [1, 2] })
+})
