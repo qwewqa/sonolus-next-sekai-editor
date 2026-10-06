@@ -105,6 +105,16 @@ export const matchBindings = <N extends string>(
     return { names, exact: false }
 }
 
+/**
+ * Whether a handled key keeps the browser's action out. With Ctrl or Cmd only
+ * letters do (save, print, find...); zoom, tab switching and navigation stay.
+ */
+export const blocksDefault = (input: KeyInput, exact: boolean) => {
+    if (input.ctrlKey || input.metaKey)
+        return /^[a-z]$/i.test(input.key) && (exact || isCommandChord(input))
+    return exact || !input.altKey
+}
+
 /** The Ctrl or Cmd chord a binding takes: its own, or a plain character's. */
 const commandChordOf = (binding: string): Chord | undefined => {
     const chord = parseChord(binding)
@@ -120,7 +130,7 @@ const commandChordOf = (binding: string): Chord | undefined => {
         : { mod: true, alt: false, shift: false, key: binding }
 }
 
-export type BrowserShortcut = 'reload' | 'find' | 'zoom'
+export type BrowserShortcut = 'reload' | 'find'
 
 /** The browser action a binding replaces while the editor has focus. */
 export const browserShortcutOf = (binding: string): BrowserShortcut | undefined => {
@@ -129,7 +139,6 @@ export const browserShortcutOf = (binding: string): BrowserShortcut | undefined 
     if (!chord) return
     if (chord.key === 'r') return 'reload'
     if (chord.key === 'f' && !chord.shift) return 'find'
-    if (['=', '-', '+', '0'].includes(chord.key)) return 'zoom'
 }
 
 /** The chord a plain character binding also answers to, for conflicts with chords. */

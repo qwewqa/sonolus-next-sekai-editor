@@ -1176,8 +1176,7 @@
         "reserved": "{0} 由浏览器保留，请按其他键",
         "alsoRuns": "同时执行{0}",
         "browserReload": "将取代浏览器的刷新",
-        "browserFind": "将取代浏览器的查找",
-        "browserZoom": "将取代浏览器的缩放"
+        "browserFind": "将取代浏览器的查找"
       },
       "maskLeft": {
         "label": "遮罩轨道"

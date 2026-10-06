@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
     bindingOf,
+    blocksDefault,
     browserShortcutOf,
     formatBinding,
     isReservedChord,
@@ -144,12 +145,40 @@ test('bindings that take a browser shortcut name it', () => {
     assert.equal(browserShortcutOf('F5'), 'reload')
     assert.equal(browserShortcutOf('f'), 'find')
     assert.equal(browserShortcutOf('Mod+f'), 'find')
-    assert.equal(browserShortcutOf('='), 'zoom')
-    assert.equal(browserShortcutOf('Mod++'), 'zoom')
-    assert.equal(browserShortcutOf('0'), 'zoom')
+    // Zoom keys keep the browser's zoom.
+    assert.equal(browserShortcutOf('='), undefined)
+    assert.equal(browserShortcutOf('Mod++'), undefined)
+    assert.equal(browserShortcutOf('0'), undefined)
     assert.equal(browserShortcutOf('Alt+r'), undefined)
     assert.equal(browserShortcutOf('Mod+s'), undefined)
     assert.equal(browserShortcutOf('ArrowUp'), undefined)
+})
+
+test('Ctrl or Cmd keep the browser action out only for letters', () => {
+    const cases: [KeyInput, boolean, boolean][] = [
+        [press('s'), false, true],
+        [press('U', 's'), false, true],
+        [press('ArrowUp', 's'), false, true],
+        [press('s', 'c'), false, true],
+        [press('s', 'm'), false, true],
+        [press('S', 'cs'), true, true],
+        [press('s', 'ca'), true, true],
+        [press('=', 'c'), false, false],
+        [press('0', 'm'), false, false],
+        [press('1', 'c'), false, false],
+        [press('1', 'c'), true, false],
+        [press('[', 'm'), false, false],
+        [press('ArrowLeft', 'm'), false, false],
+        [press('PageDown', 'c'), true, false],
+        [press('ArrowUp', 'c'), false, false],
+        // AltGr and Alt keep theirs unless a chord is bound exactly.
+        [press('[', 'ca'), false, false],
+        [press('a', 'ca'), false, false],
+        [press('a', 'a'), false, false],
+        [press('a', 'a'), true, true],
+    ]
+    for (const [input, exact, blocks] of cases)
+        assert.equal(blocksDefault(input, exact), blocks, JSON.stringify({ ...input, exact }))
 })
 
 test('bindings read as Ctrl chords, or Apple menu symbols', () => {

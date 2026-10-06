@@ -1176,8 +1176,7 @@
         "reserved": "{0} est réservé au navigateur ; appuyez sur une autre touche",
         "alsoRuns": "Exécute aussi {0}",
         "browserReload": "Remplace l'actualisation du navigateur",
-        "browserFind": "Remplace la recherche du navigateur",
-        "browserZoom": "Remplace le zoom du navigateur"
+        "browserFind": "Remplace la recherche du navigateur"
       },
       "maskLeft": {
         "label": "Voie du masque"

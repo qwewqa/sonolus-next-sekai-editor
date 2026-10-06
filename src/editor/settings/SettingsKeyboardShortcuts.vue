@@ -36,7 +36,6 @@ const notes = computed(() => {
     const browser = {
         reload: messages.browserReload,
         find: messages.browserFind,
-        zoom: messages.browserZoom,
     }
     return new Map(
         bound.map(([name, key]) => {

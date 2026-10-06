@@ -1176,8 +1176,7 @@
         "reserved": "{0} 由瀏覽器保留，請按其他鍵",
         "alsoRuns": "同時執行{0}",
         "browserReload": "將取代瀏覽器的重新整理",
-        "browserFind": "將取代瀏覽器的尋找",
-        "browserZoom": "將取代瀏覽器的縮放"
+        "browserFind": "將取代瀏覽器的尋找"
       },
       "maskLeft": {
         "label": "遮罩軌道"

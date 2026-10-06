@@ -153,9 +153,12 @@ test.describe('chords', () => {
     })
 
     test('Alt, AltGr and named keys with Ctrl keep running their bindings', async ({ page }) => {
+        await logDefaults(page)
         await setTool(page, 'select')
         await page.keyboard.press('Alt+a')
         expect(await toolName(page)).toBe('note')
+        // Alt keeps the browser's action.
+        expect(await lastDefault(page)).toBe(false)
 
         // AltGr arrives as Ctrl+Alt; [ zooms out horizontally.
         const width = () => page.evaluate(() => window.editorTest.settings.width)
@@ -169,6 +172,46 @@ test.describe('chords', () => {
         const start = await time()
         await page.keyboard.press('Control+ArrowUp')
         await expect.poll(time).not.toBe(start)
+        expect(await lastDefault(page)).toBe(false)
+    })
+
+    test('Ctrl or Cmd with zoom, tab and navigation keys runs bindings and keeps the browser action', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = { ...settings.keyboardShortcuts, brush: 'Mod+]' }
+        })
+        await logDefaults(page)
+        const width = await page.evaluate(() => window.editorTest.settings.width)
+        // Zoom In Y is =; the browser still zooms.
+        const pps = () => page.evaluate(() => window.editorTest.settings.pps)
+        const before = await pps()
+        await page.keyboard.press('Control+Equal')
+        expect(await pps()).not.toBe(before)
+        expect(await lastDefault(page)).toBe(false)
+
+        // Division 1/1 is 1; the browser still switches tabs.
+        expect(await page.evaluate(() => window.editorTest.view.division)).not.toBe(1)
+        await page.keyboard.press('Control+1')
+        expect(await page.evaluate(() => window.editorTest.view.division)).toBe(1)
+        expect(await lastDefault(page)).toBe(false)
+
+        // Zoom Out X is [; Cmd+[ still goes back on macOS.
+        await page.keyboard.press('Meta+BracketLeft')
+        expect(await page.evaluate(() => window.editorTest.settings.width)).not.toBe(width)
+        expect(await lastDefault(page)).toBe(false)
+
+        // An exact chord on a symbol runs and keeps the browser action too.
+        await setTool(page, 'select')
+        await page.keyboard.press('Control+BracketRight')
+        expect(await toolName(page)).toBe('brush')
+        expect(await lastDefault(page)).toBe(false)
+
+        // Letters keep it out.
+        await page.keyboard.press('Control+s')
+        expect(await toolName(page)).toBe('slide')
+        expect(await lastDefault(page)).toBe(true)
     })
 })
 

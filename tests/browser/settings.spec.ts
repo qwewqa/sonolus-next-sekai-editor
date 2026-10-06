@@ -177,7 +177,8 @@ test('shared and browser-claiming bindings are named under their rows', async ({
         "Replaces the browser's reload",
     )
     await expect(shortcutField(page, 'Select')).toContainText("Replaces the browser's find")
-    await expect(shortcutField(page, 'Zoom In Y')).toContainText("Replaces the browser's zoom")
+    // The browser keeps zooming with Ctrl+=.
+    await expect(shortcutField(page, 'Zoom In Y')).not.toContainText('Replaces')
     await expect(shortcutField(page, 'Save')).not.toContainText('Replaces')
 
     await shortcutButton(page, 'Save').click()

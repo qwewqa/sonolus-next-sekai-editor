@@ -3,7 +3,13 @@ import { modals } from '../../modals'
 import { settings } from '../../settings'
 import { commands } from '../commands'
 import { isInWorkspaceDock } from '../workspace'
-import { isApplePlatform, isCharacter, isCommandChord, matchBindings } from './bindings'
+import {
+    blocksDefault,
+    isApplePlatform,
+    isCharacter,
+    isCommandChord,
+    matchBindings,
+} from './bindings'
 
 const isTextEntry = (target: EventTarget | null) =>
     target instanceof HTMLTextAreaElement ||
@@ -46,9 +52,8 @@ const onKeydown = (event: KeyboardEvent) => {
         return
 
     // Handled keys skip browser defaults such as Firefox quick find, WebKit Backspace
-    // navigation and Ctrl+S saving the page; Alt and AltGr keep theirs unless bound.
-    if (exact || isCommandChord(event) || (!event.ctrlKey && !event.altKey && !event.metaKey))
-        event.preventDefault()
+    // navigation and Ctrl+S saving the page; zoom and tab keys keep theirs.
+    if (blocksDefault(event, exact)) event.preventDefault()
 }
 
 export const useKeyboardControl = () => {
