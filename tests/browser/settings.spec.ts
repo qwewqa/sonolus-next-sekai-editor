@@ -169,6 +169,14 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
     await page.keyboard.press('Control+h')
     await expect(save).toHaveText('Ctrl+H')
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
+
+    // Ctrl+Alt+letter reads as AltGr, so it would record the bare letter.
+    await save.click()
+    await save.dispatchEvent('keydown', { key: 'k', ctrlKey: true, altKey: true })
+    await expect(save).toHaveText(
+        'Ctrl+Alt+K types characters on many keyboards; press another key',
+    )
+    expect(await savedShortcut(page, 'save')).toBe('Mod+h')
 })
 
 test('shared and browser-claiming bindings are named under their rows', async ({ page }) => {

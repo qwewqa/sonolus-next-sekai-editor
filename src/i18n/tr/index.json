@@ -1176,6 +1176,7 @@
         "clear": "Bu kısayolu kaldırmak için tekrar tıklayın",
         "unassigned": "Atanmamış",
         "reserved": "{0} tarayıcıya ayrılmıştır; başka bir tuşa basın",
+        "altGraph": "{0} birçok klavyede karakter yazmak için kullanılır; başka bir tuşa basın",
         "alsoRuns": "{0} komutunu da çalıştırır",
         "browserReload": "Tarayıcının yenileme kısayolunun yerine geçer",
         "browserFind": "Tarayıcının bulma kısayolunun yerine geçer"

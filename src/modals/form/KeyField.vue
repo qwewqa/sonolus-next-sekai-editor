@@ -4,6 +4,8 @@ import { i18n } from '../../i18n'
 import {
     bindingOf,
     formatShortcut,
+    formatBinding,
+    isAltGraphLetter,
     isApplePlatform,
     isReservedChord,
 } from '../../editor/controls/bindings'
@@ -18,13 +20,14 @@ defineProps<{
 const modelValue = defineModel<string | undefined>({ required: true })
 
 const isActive = ref(false)
-// The chord last refused during this capture, as shown.
+// The chord last refused during this capture, as shown, and why.
 const refused = ref<string>()
+const refusedAs = ref<'reserved' | 'altGraph'>('reserved')
 
 const prompt = computed(() =>
     refused.value === undefined
         ? i18n.value.modals.form.key.press
-        : interpolateRaw(i18n.value.modals.form.key.reserved, refused.value),
+        : interpolateRaw(i18n.value.modals.form.key[refusedAs.value], refused.value),
 )
 
 const onClick = (event: MouseEvent) => {
@@ -71,6 +74,13 @@ const onKeyDown = (event: KeyboardEvent) => {
     // Pages never receive these on a real keyboard; capture waits for another key.
     if (isReservedChord(event, apple)) {
         refused.value = formatShortcut(binding)
+        refusedAs.value = 'reserved'
+        return
+    }
+    // Recorded, it would be the bare letter; say so rather than store that.
+    if (isAltGraphLetter(event, apple)) {
+        refused.value = formatBinding(`Mod+Alt+${event.key.toLowerCase()}`, apple)
+        refusedAs.value = 'altGraph'
         return
     }
     modelValue.value = binding

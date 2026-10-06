@@ -1176,6 +1176,7 @@
                 "clear": "Click again to remove this shortcut",
                 "unassigned": "Unassigned",
                 "reserved": "{0} belongs to the browser; press another key",
+                "altGraph": "{0} types characters on many keyboards; press another key",
                 "alsoRuns": "Also runs {0}",
                 "browserReload": "Replaces the browser's reload",
                 "browserFind": "Replaces the browser's find"

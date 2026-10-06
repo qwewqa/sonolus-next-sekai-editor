@@ -1176,6 +1176,7 @@
         "clear": "Cliquez à nouveau pour supprimer ce raccourci",
         "unassigned": "Non attribué",
         "reserved": "{0} est réservé au navigateur ; appuyez sur une autre touche",
+        "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche",
         "alsoRuns": "Exécute aussi {0}",
         "browserReload": "Remplace l'actualisation du navigateur",
         "browserFind": "Remplace la recherche du navigateur"

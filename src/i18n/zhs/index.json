@@ -1176,6 +1176,7 @@
         "clear": "再次点击以移除此快捷键",
         "unassigned": "未设置",
         "reserved": "{0} 由浏览器保留，请按其他键",
+        "altGraph": "{0} 在许多键盘上用于输入字符，请按其他键",
         "alsoRuns": "同时执行{0}",
         "browserReload": "将取代浏览器的刷新",
         "browserFind": "将取代浏览器的查找"

@@ -5,6 +5,7 @@ import {
     blocksDefault,
     browserShortcutOf,
     formatBinding,
+    isAltGraphLetter,
     isReservedChord,
     matchBindings,
     normalizeBinding,
@@ -130,6 +131,19 @@ test('duplicate bindings all run', () => {
     ])
 })
 
+test('Ctrl+Alt+letter is refused outside Apple platforms, never recorded bare', () => {
+    // It records as the bare letter, so capture refuses it instead.
+    assert.equal(bindingOf(press('k', 'ca'), false), 'k')
+    assert.equal(isAltGraphLetter(press('k', 'ca'), false), true)
+    assert.equal(isAltGraphLetter(press('K', 'cas'), false), true)
+    // A real AltGr letter, Option on Apple, and other keys record as they are.
+    assert.equal(isAltGraphLetter(press('ą', 'cag'), false), false)
+    assert.equal(isAltGraphLetter(press('k', 'ca'), true), false)
+    assert.equal(isAltGraphLetter(press('[', 'ca'), false), false)
+    assert.equal(isAltGraphLetter(press('F2', 'ca'), false), false)
+    assert.equal(isAltGraphLetter(press('k', 'c'), false), false)
+})
+
 test('the browser keeps its reserved chords, per platform', () => {
     assert.equal(isReservedChord(press('w', 'c'), false), true)
     assert.equal(isReservedChord(press('T', 'cs'), false), true)
@@ -167,7 +181,6 @@ test('Ctrl or Cmd keep the browser action out only for letters', () => {
         [press('s', 'c'), false, true],
         [press('s', 'm'), false, true],
         [press('S', 'cs'), true, true],
-        [press('s', 'ca'), true, true],
         [press('=', 'c'), false, false],
         [press('0', 'm'), false, false],
         [press('1', 'c'), false, false],

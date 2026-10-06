@@ -47,6 +47,17 @@ export const stringifyChord = ({ mod, alt, shift, key }: Chord) =>
 const isAltGraph = (input: KeyInput) =>
     !!input.getModifierState?.('AltGraph') || (input.ctrlKey && input.altKey)
 
+/**
+ * Ctrl+Alt+letter outside Apple platforms: read as AltGr, so it can be neither
+ * recorded nor matched as a chord.
+ */
+export const isAltGraphLetter = (input: KeyInput, apple: boolean) =>
+    !apple &&
+    input.ctrlKey &&
+    input.altKey &&
+    !input.getModifierState?.('AltGraph') &&
+    isLetter(input.key)
+
 /** Ctrl or Cmd held as a command modifier, not as part of AltGr. */
 export const isCommandChord = (input: KeyInput) =>
     (input.ctrlKey || input.metaKey) && !input.altKey && !input.getModifierState?.('AltGraph')
