@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { i18n } from '../../i18n'
 import {
     bindingOf,
@@ -12,6 +12,7 @@ import {
 import { isComposingKey } from '../../utils/composition'
 import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
+import { stackLongValuesKey } from './fieldLayout'
 
 const props = defineProps<{
     label: string
@@ -19,6 +20,9 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<string | undefined>({ required: true })
+
+// The button stays under the pointer through capture; long text wraps in place.
+provide(stackLongValuesKey, false)
 
 const isActive = ref(false)
 // The chord last refused during this capture, as shown, and why.
@@ -111,7 +115,7 @@ const onBlur = () => {
             /></span>
         </template>
         <button
-            class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+            class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
             :class="{
                 'animate-pulse': isActive,
                 'text-fg/80': !isActive && !formatShortcut(modelValue),
@@ -132,3 +136,11 @@ const onBlur = () => {
         <span class="sr-only" role="status">{{ refusal }}</span>
     </BaseField>
 </template>
+
+<style scoped>
+/* One line rounds fully at 2xl; wrapped lines round as a card. */
+.key-field-button {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+</style>

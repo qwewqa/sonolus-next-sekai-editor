@@ -417,3 +417,34 @@ test('unassigned shortcuts are muted like other placeholder text', async ({ page
     // /50 fell to about 2.5:1 contrast.
     expect(alpha).toBeCloseTo(0.8, 2)
 })
+
+for (const width of [1600, 375]) {
+    test(`a shortcut's button stays under the pointer while capturing at ${width}px`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width, height: 812 })
+        const field = page
+            .getByRole('dialog')
+            .locator('.form-field')
+            .filter({ has: page.getByText('Save', { exact: true }) })
+        const save = field.getByRole('button')
+        await save.scrollIntoViewIfNeeded()
+        const before = (await save.boundingBox())!
+        await save.click()
+        await expect(save).toHaveText('Press a key or click again to clear')
+        // Measured after the field's refit frame.
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        const during = (await save.boundingBox())!
+        expect({ x: during.x, y: during.y, width: during.width }).toEqual({
+            x: before.x,
+            y: before.y,
+            width: before.width,
+        })
+        await expect(field).not.toHaveClass(/form-field-value-stacked/)
+        // A refusal goes under the row and leaves the button in place too.
+        await save.press('Control+t')
+        const refused = (await save.boundingBox())!
+        expect({ x: refused.x, y: refused.y }).toEqual({ x: before.x, y: before.y })
+    })
+}
