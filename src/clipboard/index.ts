@@ -11,6 +11,7 @@ type ClipboardEntry = {
         lane: number
         beat: number
         chart: Chart
+        source?: ClipboardData['source']
     }
 }
 
@@ -92,6 +93,7 @@ const getClipboardEntry = (text: string): ClipboardEntry => {
                 lane: data.lane,
                 beat: data.beat,
                 chart,
+                source: data.source,
             },
         }
     } catch {

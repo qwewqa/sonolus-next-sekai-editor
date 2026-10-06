@@ -26,6 +26,7 @@ import { interpolate } from '../../../utils/interpolate'
 import { editorNavigation } from '../../navigation'
 import { notify } from '../../notification'
 import { view, xToLane, yToValidBeat } from '../../view'
+import { clipboardSource } from '../copy'
 import CutIcon from './CutIcon.vue'
 
 export const cut: Command = {
@@ -70,6 +71,7 @@ export const cut: Command = {
             beat: position?.beat ?? yToValidBeat(view.pointer.y),
             entities: copiedEntities,
             ...serializeEditorMetadata(copiedEntities, copiedStore),
+            source: clipboardSource(),
         })
 
         const removeEntities = entities.filter(

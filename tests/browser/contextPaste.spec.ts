@@ -172,3 +172,89 @@ test('menu Paste uses the right-click position and leaves the current tool activ
         }),
     ).toBe('note')
 })
+
+test('pastes keep their groups and stages in the same chart, and map by position elsewhere', async ({
+    page,
+}) => {
+    const result = await page.evaluate(async () => {
+        const { show, fixtures, history, appImport } = window.editorTest
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async () => undefined,
+        })
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const { pasteAtPosition } = await appImport<typeof import('../../src/editor/tools/paste')>(
+            '/src/editor/tools/paste/index.ts',
+        )
+        const note = fixtures.interaction.slides[0]![0]!
+        const chart = {
+            ...fixtures.interaction,
+            isDynamicStages: true,
+            groups: new Map([
+                [1, { name: 'A' }],
+                [2, { name: 'B' }],
+                [3, { name: 'C' }],
+            ]) as never,
+            stages: new Map([
+                [1, { ...fixtures.events.stages.get(1 as never)!, name: 'X' }],
+                [2, { ...fixtures.events.stages.get(1 as never)!, name: 'Y' }],
+            ]) as never,
+            slides: [[{ ...note, beat: 1, groupId: 2 as never, stageId: 2 as never }]],
+        }
+        const copyNote = () => {
+            const source = history.state.value
+            history.replaceState({
+                ...source,
+                selectedEntities: [...source.store.slides.note.values()].flat(),
+            })
+            void commands.copy.execute()
+        }
+        const paste = async () => {
+            await pasteAtPosition(0, 4, { ctrl: false, shift: false })
+            const after = history.state.value
+            const [pasted] = after.selectedEntities as unknown as {
+                groupId: never
+                stageId: never
+            }[]
+            return `${after.groups.get(pasted!.groupId)?.name}/${after.stages.get(pasted!.stageId)?.name}`
+        }
+        const results: string[] = []
+        for (const change of ['reversed', 'firstDeleted', 'inserted'] as const) {
+            show(chart, 3)
+            copyNote()
+            const state = history.state.value
+            const groups = [...state.groups]
+            history.replaceState({
+                ...state,
+                groups: new Map(
+                    change === 'reversed'
+                        ? groups.reverse()
+                        : change === 'firstDeleted'
+                          ? groups.slice(1)
+                          : [[9, { name: 'New' }], ...groups],
+                ) as never,
+                stages: new Map(change === 'reversed' ? [...state.stages].reverse() : state.stages),
+            })
+            results.push(await paste())
+        }
+        // Another chart has its own ids, so a paste there maps by position.
+        show(chart, 3)
+        copyNote()
+        show(
+            {
+                ...chart,
+                groups: new Map([
+                    [3, { name: 'R' }],
+                    [1, { name: 'P' }],
+                    [2, { name: 'Q' }],
+                ]) as never,
+            },
+            3,
+        )
+        results.push(await paste())
+        return results
+    })
+    expect(result).toEqual(['B/Y', 'B/Y', 'B/Y', 'P/Y'])
+})

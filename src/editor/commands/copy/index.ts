@@ -1,5 +1,6 @@
 import type { Command } from '..'
 import { setClipboardData } from '../../../clipboard/index.ts'
+import { chartSessionId } from '../../../history/chartSession'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { groups } from '../../../history/groups'
 import { initialLife } from '../../../history/initialLife'
@@ -57,11 +58,20 @@ export const copy: Command = {
             ...getAnchor(entities, view.pointer.x, view.pointer.y),
             entities: copiedEntities,
             ...serializeEditorMetadata(copiedEntities, copiedStore),
+            source: clipboardSource(),
         })
 
         notify(interpolate(() => i18n.value.commands.copy.copied, `${entities.length}`))
     },
 }
+
+/** Lets a paste into the same chart keep each object's own group and stage. */
+export const clipboardSource = () => ({
+    chart: chartSessionId(),
+    groups: [...groups.value.keys()],
+    // Stages are listed only with dynamic stages.
+    ...(isDynamicStages.value ? { stages: [...stages.value.keys()] } : {}),
+})
 
 const getAnchor = (entities: Entity[], x: number, y: number) => {
     const hitEntities = hitAllEntitiesAtPoint(x, y)

@@ -10,8 +10,10 @@ import type { Chart } from '../../../chart/index.ts'
 import type { FlickDirection, NoteObject } from '../../../chart/note'
 import type { StageId } from '../../../chart/stages'
 import type { TimeScaleObject } from '../../../chart/timeScale'
+import type { ClipboardData } from '../../../clipboard/data/schema'
 import { clipboardEntry, updateClipboard } from '../../../clipboard/index.ts'
 import { pushState, state } from '../../../history'
+import { chartSessionId } from '../../../history/chartSession'
 import { checkDynamicStages, isDynamicStages } from '../../../history/dynamicStages'
 import { defaultGroupId, groups } from '../../../history/groups'
 import { defaultStageId, stages } from '../../../history/stages'
@@ -80,7 +82,7 @@ export const paste: Tool = {
         const data = clipboardEntry.value?.data
         if (!data) return
 
-        const entities = cachedTransform(data.chart)
+        const entities = cachedTransform(data)
         if (!entities.length) return
 
         const onlyType = getOnlyEntityType(entities)
@@ -120,14 +122,14 @@ export const paste: Tool = {
 
     cursor() {
         const data = clipboardEntry.value?.data
-        return data && cachedTransform(data.chart).length ? 'copy' : 'default'
+        return data && cachedTransform(data).length ? 'copy' : 'default'
     },
 
     dragStart(x, y, modifiers) {
         const data = clipboardEntry.value?.data
         if (!data) return false
 
-        const entities = transform(data.chart)
+        const entities = transform(data)
         if (!entities.length) return false
 
         active = {
@@ -284,7 +286,7 @@ export const pasteAtPosition = async (
     const data = clipboardEntry.value?.data
     if (!data) return
 
-    const entities = transform(data.chart).filter(
+    const entities = transform(data).filter(
         (entity) => !options.notesOnly || entity.type === 'note',
     )
     if (!entities.length) return
@@ -349,15 +351,34 @@ export const pasteAtPosition = async (
     notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
 }
 
-const transform = (chart: Chart) => {
-    const groupIds = [...groups.value.keys()]
-    const groupMappings = new Map(
-        [...chart.groups.keys()].map((id, index) => [id, groupIds[index]]),
-    )
+type ClipboardChart = { chart: Chart; source?: ClipboardData['source'] }
 
-    const stageIds = [...stages.value.keys()]
-    const stageMappings = new Map(
-        [...chart.stages.keys()].map((id, index) => [id, stageIds[index]]),
+// Pastes into the copying chart keep their own groups and stages; others map by position.
+const mapIds = <T extends number>(
+    pasted: Iterable<T>,
+    current: ReadonlyMap<T, unknown>,
+    own?: readonly number[],
+) => {
+    const ids = [...current.keys()]
+    return new Map(
+        [...pasted].map((id, index) => {
+            const target = (own ? own[index] : ids[index]) as T | undefined
+            return [id, target !== undefined && current.has(target) ? target : undefined]
+        }),
+    )
+}
+
+const transform = ({ chart, source }: ClipboardChart) => {
+    const same = source?.chart === chartSessionId()
+    const groupMappings = mapIds(
+        chart.groups.keys(),
+        groups.value,
+        same ? source.groups : undefined,
+    )
+    const stageMappings = mapIds(
+        chart.stages.keys(),
+        stages.value,
+        same ? source.stages : undefined,
     )
 
     const mapGroupId = <T extends { groupId: GroupId }>(object: T) => ({
@@ -395,24 +416,29 @@ const transform = (chart: Chart) => {
 export const getPasteNoteEntities = () => {
     const data = clipboardEntry.value?.data
     return data
-        ? cachedTransform(data.chart).filter(
-              (entity): entity is NoteEntity => entity.type === 'note',
-          )
+        ? cachedTransform(data).filter((entity): entity is NoteEntity => entity.type === 'note')
         : []
 }
 
 let transformCache:
     | {
-          chart: Chart
+          data: ClipboardChart
+          keys: unknown[]
           entities: Entity[]
       }
     | undefined
 
-const cachedTransform = (chart: Chart) => {
-    if (transformCache?.chart !== chart) {
+const cachedTransform = (data: ClipboardChart) => {
+    // Mappings follow the chart's groups and stages too.
+    const keys = [groups.value, stages.value, chartSessionId()]
+    if (
+        transformCache?.data !== data ||
+        transformCache.keys.some((key, index) => key !== keys[index])
+    ) {
         transformCache = {
-            chart,
-            entities: transform(chart),
+            data,
+            keys,
+            entities: transform(data),
         }
     }
 
