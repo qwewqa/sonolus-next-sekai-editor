@@ -19,6 +19,7 @@ import { i18n } from '../../../i18n'
 import { modals, showModal } from '../../../modals'
 import ConfirmModal from '../../../modals/ConfirmModal.vue'
 import { interpolateRaw } from '../../../utils/interpolate'
+import CopyIcon from '../../commands/copy/CopyIcon.vue'
 import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
 import CloseIcon from '../CloseIcon.vue'
@@ -905,6 +906,7 @@ const entryMenuItems = (id: T): ManagerMenuItem[] => {
         ...(hasInline(id)
             ? []
             : [{ key: 'properties', label: strings.value.properties, icon: PropertiesIcon }]),
+        { key: 'duplicate', label: manager.duplicate, icon: CopyIcon },
         {
             key: 'solo',
             label: isOnlyShown([id]) ? strings.value.showAll : manager.solo,
@@ -969,6 +971,7 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
     return [
         { key: 'add', label: strings.value.add, icon: AddIcon },
         { key: 'rename', label: manager.rename, icon: RenameIcon },
+        { key: 'duplicate', label: manager.duplicate, icon: CopyIcon },
         {
             key: 'solo',
             label: isOnlyShown(item.members) ? strings.value.showAll : manager.solo,
@@ -1037,6 +1040,7 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
             disabled: none,
             separated: true,
         },
+        { key: 'duplicate', label: manager.duplicateSelected, icon: CopyIcon, disabled: none },
         checkedOf(allIds.value) === true
             ? { key: 'selectNone', label: manager.selectNone, icon: SelectMultipleIcon }
             : { key: 'selectAll', label: manager.selectAll, icon: SelectMultipleIcon },
@@ -1179,6 +1183,16 @@ const runBulk = async (action: string) => {
         case 'select':
             selectOwned(props.model.owner, new Set(selectedIds.value))
             return
+        case 'duplicate': {
+            // The copies become the selection, ready to move together.
+            const copies = folders.value.duplicate(new Set(selectedIds.value))
+            const [first] = copies
+            if (first === undefined) return
+            setSelection(copies, copies.at(-1))
+            await nextTick()
+            reveal({ type: 'entry', id: first })
+            return
+        }
         case 'selectAll':
             setSelection(allIds.value, anchor)
             return
@@ -1212,6 +1226,9 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
             return
         case 'properties':
             if (key.type === 'entry') props.model.openProperties(key.id)
+            return
+        case 'duplicate':
+            await duplicateRow(key)
             return
         case 'solo':
             solo(key.type === 'entry' ? [key.id] : (folderItems.value.get(key.id)?.members ?? []))
@@ -1260,6 +1277,25 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
             focusAfterDelete(index)
             return
     }
+}
+
+/** Duplicates a row and names the copy right away, as Add does. */
+const duplicateRow = async (key: RowKey) => {
+    let copy: RowKey | undefined
+    if (key.type === 'entry') {
+        const [id] = folders.value.duplicate(new Set([key.id]))
+        if (id !== undefined) copy = { type: 'entry', id }
+    } else {
+        const id = folders.value.duplicateFolder(key.id)
+        if (id !== undefined) {
+            setFolderExpanded(id, true)
+            copy = { type: 'folder', id }
+        }
+    }
+    if (!copy) return
+    await nextTick()
+    reveal(copy)
+    startRename(copy)
 }
 
 const chooseFolder = async (id: T, choice: string) => {

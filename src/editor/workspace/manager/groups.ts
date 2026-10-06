@@ -8,6 +8,7 @@ import { showModal } from '../../../modals'
 import type { Entity } from '../../../state/entities'
 import { removeNote } from '../../../state/mutations/slides/note'
 import { removeTimeScale } from '../../../state/mutations/timeScale'
+import { duplicateOwned } from '../../../state/operations/duplicateOwned'
 import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import GroupPropertiesModal from '../../commands/manageGroups/manageGroups/groupProperties/GroupPropertiesModal.vue'
@@ -116,6 +117,11 @@ export const groupFolderOps = createFolderOps({
     withData: (state, groups, groupFolders) => ({ ...state, groups, groupFolders }),
     removeEntries: removeGroups,
     entriesOf: (state) => state.groups,
+    addEntry: (entries, name, entry) => {
+        const { name: _, ...value } = entry
+        return addToGroups(entries, name, value)[0]
+    },
+    duplicateObjects: (state, copies) => duplicateOwned(state, { key: 'groupId', copies }),
     owner: 'groupId',
     strings: () => ({
         movedEntry: i18n.value.commands.manageGroups.modal.moved,
@@ -123,6 +129,8 @@ export const groupFolderOps = createFolderOps({
         deleteFolderMessage: i18n.value.workspace.groups.deleteFolderMessage,
         movedSelectedInto: i18n.value.workspace.groups.movedSelectedInto,
         movedSelectedOut: i18n.value.workspace.groups.movedSelectedOut,
+        duplicated: i18n.value.workspace.groups.duplicated,
+        duplicatedSelected: i18n.value.workspace.groups.duplicatedSelected,
     }),
 })
 

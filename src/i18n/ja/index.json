@@ -1371,7 +1371,8 @@
       "movedInto": "{0}を{1}フォルダーに移動しました",
       "movedOut": "{0}を{1}フォルダーから出しました",
       "ungrouped": "{0}フォルダーを解除しました",
-      "deleted": "{0}フォルダーを削除しました"
+      "deleted": "{0}フォルダーを削除しました",
+      "duplicated": "{0}フォルダーを複製しました"
     },
     "manager": {
       "show": "{0}を表示",
@@ -1396,7 +1397,10 @@
       "hideSelected": "選択項目を非表示",
       "soloSelected": "選択項目だけを表示",
       "deleteSelected": "選択項目を削除…",
-      "selectionActions": "選択項目のその他の操作"
+      "selectionActions": "選択項目のその他の操作",
+      "duplicate": "複製",
+      "duplicateSelected": "選択項目を複製",
+      "copyName": "{0} ({1})"
     },
     "groups": {
       "deleteFolder": "フォルダーとグループを削除…",
@@ -1411,7 +1415,9 @@
       "movedSelectedOut": "選択した{0}個のグループをフォルダーから出しました",
       "deletedSelected": "選択した{0}個のグループを削除しました",
       "deleteSelectedTitle": "グループを削除",
-      "deleteSelectedMessage": "選択した{0}個のグループと、その{1}個のオブジェクトを削除しますか？"
+      "deleteSelectedMessage": "選択した{0}個のグループと、その{1}個のオブジェクトを削除しますか？",
+      "duplicated": "{0}グループを複製しました",
+      "duplicatedSelected": "選択した{0}個のグループを複製しました"
     },
     "stages": {
       "deleteFolder": "フォルダーとステージを削除…",
@@ -1428,7 +1434,9 @@
       "movedSelectedOut": "選択した{0}個のステージをフォルダーから出しました",
       "deletedSelected": "選択した{0}個のステージを削除しました",
       "deleteSelectedTitle": "ステージを削除",
-      "deleteSelectedMessage": "選択した{0}個のステージと、その{1}個のオブジェクトを削除しますか？"
+      "deleteSelectedMessage": "選択した{0}個のステージと、その{1}個のオブジェクトを削除しますか？",
+      "duplicated": "{0}ステージを複製しました",
+      "duplicatedSelected": "選択した{0}個のステージを複製しました"
     },
     "properties": {
       "sections": "プロパティのセクション",

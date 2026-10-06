@@ -1371,7 +1371,8 @@
             "movedInto": "Moved {0} to {1} folder",
             "movedOut": "Moved {0} out of {1} folder",
             "ungrouped": "Ungrouped {0} folder",
-            "deleted": "Deleted {0} folder"
+            "deleted": "Deleted {0} folder",
+            "duplicated": "Duplicated {0} folder"
         },
         "manager": {
             "show": "Show {0}",
@@ -1396,7 +1397,10 @@
             "hideSelected": "Hide Selected",
             "soloSelected": "Show Only Selected",
             "deleteSelected": "Delete Selected…",
-            "selectionActions": "More Actions for Selection"
+            "selectionActions": "More Actions for Selection",
+            "duplicate": "Duplicate",
+            "duplicateSelected": "Duplicate Selected",
+            "copyName": "{0} ({1})"
         },
         "groups": {
             "deleteFolder": "Delete Folder and Groups…",
@@ -1411,7 +1415,9 @@
             "movedSelectedOut": "Moved selected groups ({0}) out of folders",
             "deletedSelected": "Deleted selected groups ({0})",
             "deleteSelectedTitle": "Delete Groups",
-            "deleteSelectedMessage": "Delete the selected groups ({0}) and their objects ({1})?"
+            "deleteSelectedMessage": "Delete the selected groups ({0}) and their objects ({1})?",
+            "duplicated": "Duplicated {0} group",
+            "duplicatedSelected": "Duplicated selected groups ({0})"
         },
         "stages": {
             "deleteFolder": "Delete Folder and Stages…",
@@ -1428,7 +1434,9 @@
             "movedSelectedOut": "Moved selected stages ({0}) out of folders",
             "deletedSelected": "Deleted selected stages ({0})",
             "deleteSelectedTitle": "Delete Stages",
-            "deleteSelectedMessage": "Delete the selected stages ({0}) and their objects ({1})?"
+            "deleteSelectedMessage": "Delete the selected stages ({0}) and their objects ({1})?",
+            "duplicated": "Duplicated {0} stage",
+            "duplicatedSelected": "Duplicated selected stages ({0})"
         },
         "properties": {
             "sections": "Properties Sections",

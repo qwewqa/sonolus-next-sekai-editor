@@ -386,6 +386,8 @@ test('action menu supports the keyboard and keeps chart rules', async ({ page })
 
     // Arrow keys skip disabled items and wrap.
     await page.keyboard.press('ArrowDown')
+    await expect(item('Duplicate')).toBeFocused()
+    await page.keyboard.press('ArrowDown')
     await expect(item('Show Only This')).toBeFocused()
     // Properties is inline on this wide panel, so the menu leaves it out.
     await expect(item('Edit Group Properties')).toHaveCount(0)

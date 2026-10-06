@@ -1371,7 +1371,8 @@
       "movedInto": "{0} déplacé dans le dossier {1}",
       "movedOut": "{0} sorti du dossier {1}",
       "ungrouped": "Dossier {0} dissous",
-      "deleted": "Dossier {0} supprimé"
+      "deleted": "Dossier {0} supprimé",
+      "duplicated": "Dossier {0} dupliqué"
     },
     "manager": {
       "show": "Afficher {0}",
@@ -1396,7 +1397,10 @@
       "hideSelected": "Masquer la sélection",
       "soloSelected": "Afficher uniquement la sélection",
       "deleteSelected": "Supprimer la sélection…",
-      "selectionActions": "Plus d’actions pour la sélection"
+      "selectionActions": "Plus d’actions pour la sélection",
+      "duplicate": "Dupliquer",
+      "duplicateSelected": "Dupliquer la sélection",
+      "copyName": "{0} ({1})"
     },
     "groups": {
       "deleteFolder": "Supprimer le dossier et ses groupes…",
@@ -1411,7 +1415,9 @@
       "movedSelectedOut": "Groupes sélectionnés ({0}) sortis des dossiers",
       "deletedSelected": "Groupes sélectionnés ({0}) supprimés",
       "deleteSelectedTitle": "Supprimer les groupes",
-      "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?"
+      "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?",
+      "duplicated": "Groupe {0} dupliqué",
+      "duplicatedSelected": "Groupes sélectionnés ({0}) dupliqués"
     },
     "stages": {
       "deleteFolder": "Supprimer le dossier et ses scènes…",
@@ -1428,7 +1434,9 @@
       "movedSelectedOut": "Scènes sélectionnées ({0}) sorties des dossiers",
       "deletedSelected": "Scènes sélectionnées ({0}) supprimées",
       "deleteSelectedTitle": "Supprimer les scènes",
-      "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?"
+      "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?",
+      "duplicated": "Scène {0} dupliquée",
+      "duplicatedSelected": "Scènes sélectionnées ({0}) dupliquées"
     },
     "properties": {
       "sections": "Sections des propriétés",

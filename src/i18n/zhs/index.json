@@ -1371,7 +1371,8 @@
       "movedInto": "已将 {0} 移至 {1} 文件夹",
       "movedOut": "已将 {0} 移出 {1} 文件夹",
       "ungrouped": "已解散 {0} 文件夹",
-      "deleted": "已删除 {0} 文件夹"
+      "deleted": "已删除 {0} 文件夹",
+      "duplicated": "已为 {0} 文件夹创建副本"
     },
     "manager": {
       "show": "显示 {0}",
@@ -1396,7 +1397,10 @@
       "hideSelected": "隐藏所选",
       "soloSelected": "仅显示所选",
       "deleteSelected": "删除所选…",
-      "selectionActions": "所选项的更多操作"
+      "selectionActions": "所选项的更多操作",
+      "duplicate": "创建副本",
+      "duplicateSelected": "为所选创建副本",
+      "copyName": "{0} ({1})"
     },
     "groups": {
       "deleteFolder": "删除文件夹及群组…",
@@ -1411,7 +1415,9 @@
       "movedSelectedOut": "已将所选的 {0} 个群组移出文件夹",
       "deletedSelected": "已删除所选的 {0} 个群组",
       "deleteSelectedTitle": "删除群组",
-      "deleteSelectedMessage": "删除所选的 {0} 个群组及其中的 {1} 个对象？"
+      "deleteSelectedMessage": "删除所选的 {0} 个群组及其中的 {1} 个对象？",
+      "duplicated": "已为 {0} 群组创建副本",
+      "duplicatedSelected": "已为所选的 {0} 个群组创建副本"
     },
     "stages": {
       "deleteFolder": "删除文件夹及舞台…",
@@ -1428,7 +1434,9 @@
       "movedSelectedOut": "已将所选的 {0} 个舞台移出文件夹",
       "deletedSelected": "已删除所选的 {0} 个舞台",
       "deleteSelectedTitle": "删除舞台",
-      "deleteSelectedMessage": "删除所选的 {0} 个舞台及其中的 {1} 个对象？"
+      "deleteSelectedMessage": "删除所选的 {0} 个舞台及其中的 {1} 个对象？",
+      "duplicated": "已为 {0} 舞台创建副本",
+      "duplicatedSelected": "已为所选的 {0} 个舞台创建副本"
     },
     "properties": {
       "sections": "属性分区",

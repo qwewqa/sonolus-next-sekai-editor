@@ -11,6 +11,7 @@ import { removeStagePivotEventJoint } from '../../../state/mutations/events/stag
 import { removeStageStyleEventJoint } from '../../../state/mutations/events/stage/style'
 import { removeStageTransformEventJoint } from '../../../state/mutations/events/stage/transform.ts'
 import { removeNote } from '../../../state/mutations/slides/note'
+import { duplicateOwned } from '../../../state/operations/duplicateOwned'
 import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import StagePropertiesModal from '../../commands/manageStages/manageStages/stageProperties/StagePropertiesModal.vue'
@@ -131,6 +132,11 @@ export const stageFolderOps = createFolderOps({
     withData: (state, stages, stageFolders) => ({ ...state, stages, stageFolders }),
     removeEntries: removeStages,
     entriesOf: (state) => state.stages,
+    addEntry: (entries, name, entry) => {
+        const { name: _, ...value } = entry
+        return addToStages(entries, name, value)[0]
+    },
+    duplicateObjects: (state, copies) => duplicateOwned(state, { key: 'stageId', copies }),
     owner: 'stageId',
     strings: () => ({
         movedEntry: i18n.value.commands.manageStages.modal.moved,
@@ -138,6 +144,8 @@ export const stageFolderOps = createFolderOps({
         deleteFolderMessage: i18n.value.workspace.stages.deleteFolderMessage,
         movedSelectedInto: i18n.value.workspace.stages.movedSelectedInto,
         movedSelectedOut: i18n.value.workspace.stages.movedSelectedOut,
+        duplicated: i18n.value.workspace.stages.duplicated,
+        duplicatedSelected: i18n.value.workspace.stages.duplicatedSelected,
     }),
 })
 

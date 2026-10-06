@@ -2,9 +2,11 @@ import { shallowReactive } from 'vue'
 import {
     addToFolders,
     buildFolderTree,
+    copyName,
     entriesInTreeOrder,
     flattenFolderTree,
     folderOfEntry,
+    insertCopiesInTree,
     insertFolderInTree,
     moveEntriesInTree,
     moveEntryInTree,
@@ -61,6 +63,9 @@ export type FolderStrings = {
     /** Moving selected entries ({0}: their count) into a folder ({1}), or out. */
     movedSelectedInto: string
     movedSelectedOut: string
+    /** Duplicating an entry ({0}: its name), or several ({0}: their count). */
+    duplicated: string
+    duplicatedSelected: string
 }
 
 /** Folder editing for one collection; every change is one undoable step. */
@@ -74,6 +79,10 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
     /** The state without these entries and their objects, keeping at least one entry. */
     removeEntries: (ids: ReadonlySet<K>) => State
     entriesOf: (state: State) => ReadonlyMap<K, V>
+    /** Adds an entry with this name and data to the map, returning its id. */
+    addEntry: (entries: Map<K, V>, name: string, value: V) => K
+    /** The state with copies of these entries' objects, owned by their copies. */
+    duplicateObjects: (state: State, copies: ReadonlyMap<K, K>) => State
     owner: OwnerKey
     strings: () => FolderStrings
 }) => {
@@ -100,6 +109,37 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
             const name = interpolateRaw(i18n.value.workspace.folders.defaultName, `${n}`)
             if (!names.has(name)) return name
         }
+    }
+
+    /** Copies entries with their objects in one step; a folder copy's members keep their names. */
+    const duplicateIn = (
+        ids: readonly K[],
+        message: (copies: ReadonlyMap<K, K>) => () => string,
+        folder?: { source: FolderId; copy: FolderId; folders: Folders },
+    ) => {
+        const entries = new Map(config.entries())
+        const taken = new Set([...entries.values()].map(({ name }) => name))
+        const copies = new Map<K, K>()
+        for (const id of ids) {
+            const value = entries.get(id)
+            if (!value) continue
+            const name = folder
+                ? value.name
+                : copyName(value.name, taken, i18n.value.workspace.manager.copyName)
+            taken.add(name)
+            copies.set(id, config.addEntry(entries, name, value))
+        }
+        const base = config.duplicateObjects(
+            config.withData(state.value, entries, config.folders()),
+            copies,
+        )
+        commit(
+            insertCopiesInTree(tree(), copies, folder),
+            message(copies),
+            folder?.folders ?? config.folders(),
+            base,
+        )
+        return copies
     }
 
     const members = (id: FolderId) =>
@@ -250,6 +290,39 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
         },
 
         canStepFolder: (id: FolderId, offset: -1 | 1) => !!stepFolderInTree(tree(), id, offset),
+
+        /** Duplicates entries with their objects; returns the copies in order. */
+        duplicate(ids: ReadonlySet<K>): K[] {
+            const sources = entriesInTreeOrder(tree()).filter((id) => ids.has(id))
+            if (!sources.length) return []
+            const copies = duplicateIn(sources, (copies) =>
+                copies.size === 1
+                    ? interpolate(() => config.strings().duplicated, nameOf(sources[0] as K))
+                    : interpolate(() => config.strings().duplicatedSelected, `${copies.size}`),
+            )
+            return sources.flatMap((id) => {
+                const copy = copies.get(id)
+                return copy === undefined ? [] : [copy]
+            })
+        },
+
+        /** Duplicates a folder with its members and their objects; returns the copy. */
+        duplicateFolder(id: FolderId) {
+            const folder = config.folders().get(id)
+            if (!folder) return
+            const folders: Folders = new Map(config.folders())
+            const names = new Set([...folders.values()].map(({ name }) => name))
+            const copy = addToFolders(
+                folders,
+                copyName(folder.name, names, i18n.value.workspace.manager.copyName),
+            )
+            duplicateIn(
+                members(id),
+                () => interpolate(() => i18n.value.workspace.folders.duplicated, folder.name),
+                { source: id, copy, folders },
+            )
+            return copy
+        },
 
         /** Removes a folder, keeping its members where they are. */
         ungroup(id: FolderId) {

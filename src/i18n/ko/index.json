@@ -1371,7 +1371,8 @@
       "movedInto": "{0}을(를) {1} 폴더로 이동함",
       "movedOut": "{0}을(를) {1} 폴더에서 꺼냄",
       "ungrouped": "{0} 폴더 해제됨",
-      "deleted": "{0} 폴더 삭제됨"
+      "deleted": "{0} 폴더 삭제됨",
+      "duplicated": "{0} 폴더 복제됨"
     },
     "manager": {
       "show": "{0} 표시",
@@ -1396,7 +1397,10 @@
       "hideSelected": "선택 항목 숨기기",
       "soloSelected": "선택 항목만 표시",
       "deleteSelected": "선택 항목 삭제…",
-      "selectionActions": "선택 항목 추가 작업"
+      "selectionActions": "선택 항목 추가 작업",
+      "duplicate": "복제",
+      "duplicateSelected": "선택 항목 복제",
+      "copyName": "{0} ({1})"
     },
     "groups": {
       "deleteFolder": "폴더와 그룹 삭제…",
@@ -1411,7 +1415,9 @@
       "movedSelectedOut": "선택한 그룹 {0}개를 폴더에서 꺼냄",
       "deletedSelected": "선택한 그룹 {0}개 삭제됨",
       "deleteSelectedTitle": "그룹 삭제",
-      "deleteSelectedMessage": "선택한 그룹 {0}개와 오브젝트 {1}개를 삭제할까요?"
+      "deleteSelectedMessage": "선택한 그룹 {0}개와 오브젝트 {1}개를 삭제할까요?",
+      "duplicated": "{0} 그룹 복제됨",
+      "duplicatedSelected": "선택한 그룹 {0}개 복제됨"
     },
     "stages": {
       "deleteFolder": "폴더와 스테이지 삭제…",
@@ -1428,7 +1434,9 @@
       "movedSelectedOut": "선택한 스테이지 {0}개를 폴더에서 꺼냄",
       "deletedSelected": "선택한 스테이지 {0}개 삭제됨",
       "deleteSelectedTitle": "스테이지 삭제",
-      "deleteSelectedMessage": "선택한 스테이지 {0}개와 오브젝트 {1}개를 삭제할까요?"
+      "deleteSelectedMessage": "선택한 스테이지 {0}개와 오브젝트 {1}개를 삭제할까요?",
+      "duplicated": "{0} 스테이지 복제됨",
+      "duplicatedSelected": "선택한 스테이지 {0}개 복제됨"
     },
     "properties": {
       "sections": "속성 섹션",

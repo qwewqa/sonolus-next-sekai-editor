@@ -1371,7 +1371,8 @@
       "movedInto": "已將 {0} 移至 {1} 資料夾",
       "movedOut": "已將 {0} 移出 {1} 資料夾",
       "ungrouped": "已解散 {0} 資料夾",
-      "deleted": "已刪除 {0} 資料夾"
+      "deleted": "已刪除 {0} 資料夾",
+      "duplicated": "已為 {0} 資料夾建立複本"
     },
     "manager": {
       "show": "顯示 {0}",
@@ -1396,7 +1397,10 @@
       "hideSelected": "隱藏所選",
       "soloSelected": "僅顯示所選",
       "deleteSelected": "刪除所選…",
-      "selectionActions": "所選項目的更多操作"
+      "selectionActions": "所選項目的更多操作",
+      "duplicate": "建立複本",
+      "duplicateSelected": "為所選建立複本",
+      "copyName": "{0} ({1})"
     },
     "groups": {
       "deleteFolder": "刪除資料夾及圖層…",
@@ -1411,7 +1415,9 @@
       "movedSelectedOut": "已將所選的 {0} 個圖層移出資料夾",
       "deletedSelected": "已刪除所選的 {0} 個圖層",
       "deleteSelectedTitle": "刪除圖層",
-      "deleteSelectedMessage": "刪除所選的 {0} 個圖層及其中的 {1} 個物件？"
+      "deleteSelectedMessage": "刪除所選的 {0} 個圖層及其中的 {1} 個物件？",
+      "duplicated": "已為 {0} 圖層建立複本",
+      "duplicatedSelected": "已為所選的 {0} 個圖層建立複本"
     },
     "stages": {
       "deleteFolder": "刪除資料夾及舞台…",
@@ -1428,7 +1434,9 @@
       "movedSelectedOut": "已將所選的 {0} 個舞台移出資料夾",
       "deletedSelected": "已刪除所選的 {0} 個舞台",
       "deleteSelectedTitle": "刪除舞台",
-      "deleteSelectedMessage": "刪除所選的 {0} 個舞台及其中的 {1} 個物件？"
+      "deleteSelectedMessage": "刪除所選的 {0} 個舞台及其中的 {1} 個物件？",
+      "duplicated": "已為 {0} 舞台建立複本",
+      "duplicatedSelected": "已為所選的 {0} 個舞台建立複本"
     },
     "properties": {
       "sections": "屬性分區",
