@@ -57,8 +57,9 @@ onUnmounted(() => {
         role="dialog"
         :aria-label="label"
         tabindex="-1"
+        data-tool-dialog
         class="editor-tool-modal absolute inset-x-0 bottom-2 z-30 mx-auto flex max-h-[70%] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden rounded-xl bg-modal text-fg shadow-xl outline-none ring-1 ring-fg/10"
-        @keydown.stop="onKeydown"
+        @keydown="onKeydown"
         @pointerdown.stop
         @mousedown.stop
         @touchstart.stop

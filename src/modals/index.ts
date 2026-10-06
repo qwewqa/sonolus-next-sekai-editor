@@ -15,6 +15,11 @@ export const modals = shallowReactive<Modal[]>([])
 
 export const isToolModalOpen = computed(() => modals.some((modal) => modal.presentation === 'tool'))
 
+/** Dialogs that hold the editor; tool dialogs float over a live chart instead. */
+export const isBlockingModalOpen = computed(() =>
+    modals.some((modal) => modal.presentation !== 'tool'),
+)
+
 export const closeModal = (modal: Modal, result?: never) => {
     const index = modals.indexOf(modal)
     if (index === -1) return

@@ -1,5 +1,5 @@
 import { onMounted, onUnmounted } from 'vue'
-import { modals } from '../../modals'
+import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
 import { settings } from '../../settings'
 import { commands } from '../commands'
 import { isInWorkspaceDock } from '../workspace'
@@ -17,9 +17,19 @@ const isTextEntry = (target: EventTarget | null) =>
         !['button', 'checkbox', 'radio', 'range', 'color', 'file'].includes(target.type)) ||
     (target instanceof HTMLElement && target.isContentEditable)
 
-// Space and Enter press a focused button, and nothing else.
-const pressesButton = (event: KeyboardEvent) =>
-    event.target instanceof HTMLButtonElement && (event.key === ' ' || event.key === 'Enter')
+// Space and Enter press a focused button, and Space a checkbox or radio, and nothing else.
+const pressesButton = ({ target, key }: KeyboardEvent) => {
+    if (
+        target instanceof HTMLButtonElement ||
+        (target instanceof HTMLInputElement && ['button', 'submit', 'reset'].includes(target.type))
+    )
+        return key === ' ' || key === 'Enter'
+    return (
+        target instanceof HTMLInputElement &&
+        ['checkbox', 'radio'].includes(target.type) &&
+        key === ' '
+    )
+}
 
 // Fields keep every key.
 const keepsDefault = (event: KeyboardEvent) => {
@@ -34,14 +44,29 @@ const keepsDefault = (event: KeyboardEvent) => {
 
 const isApple = isApplePlatform()
 
+const isInToolDialog = (element: Element | null) => !!element?.closest('[data-tool-dialog]')
+
+// Radios and chip rows move with arrow keys.
+const movesFocus = (element: Element, key: string) =>
+    /^(Arrow|Home$|End$)/.test(key) && element.matches('input[type="radio"], [role="toolbar"] *')
+
 const onKeydown = (event: KeyboardEvent) => {
-    if (modals.length || pressesButton(event)) return
+    if (isBlockingModalOpen.value || pressesButton(event)) return
+    // An open tool dialog takes Escape.
+    if (isToolModalOpen.value && event.key === 'Escape') return
 
     const commandChord = isCommandChord(event) && isCharacter(event.key)
+    const active = document.activeElement
     // In docks, fields keep their keys; other controls pass only unclaimed Ctrl or Cmd chords.
-    if (isInWorkspaceDock(document.activeElement)) {
-        if (!commandChord || event.defaultPrevented || isTextEntry(document.activeElement)) return
+    // Tool dialogs float over the chart, so only their fields and selects hold keys that way.
+    const inDialog = isInToolDialog(active)
+    if (
+        isInWorkspaceDock(active) ||
+        (inDialog && (isTextEntry(active) || active instanceof HTMLSelectElement))
+    ) {
+        if (!commandChord || event.defaultPrevented || isTextEntry(active)) return
     }
+    if (inDialog && active && movesFocus(active, event.key)) return
 
     const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
     for (const name of names) void commands[name].execute()

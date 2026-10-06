@@ -285,6 +285,113 @@ test.describe('chords', () => {
     })
 })
 
+test.describe('tool dialogs', () => {
+    const dialog = (page: Page) => page.locator('.editor-tool-modal')
+    const division = (page: Page) => page.evaluate(() => window.editorTest.view.division)
+    const selected = (page: Page) =>
+        page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length)
+
+    test.beforeEach(async ({ page }) => {
+        await page.evaluate(() => {
+            window.editorTest.settings.propertiesPosition = 'disabled'
+        })
+        await setTool(page, 'note')
+        await edit(page)
+        await page.keyboard.press('a')
+        await expect(dialog(page)).toBeFocused()
+    })
+
+    test('shortcuts run from the chart and the dialog, but not its fields', async ({ page }) => {
+        // Focused as it opens, the dialog passes keys on.
+        await page.keyboard.press('z')
+        expect(await isEdited(page)).toBe(false)
+        await page.keyboard.press('Control+y')
+        expect(await isEdited(page)).toBe(true)
+
+        // Fields keep their keys.
+        const before = await division(page)
+        const field = dialog(page).locator('input[type="number"]').first()
+        await field.fill('')
+        await field.press('3')
+        await expect(field).toHaveValue('3')
+        expect(await division(page)).toBe(before)
+
+        // Other controls pass keys on, except those that press them.
+        const toggle = dialog(page).locator('input[type="button"]').first()
+        await toggle.focus()
+        await page.keyboard.press('z')
+        expect(await isEdited(page)).toBe(false)
+        await page.keyboard.press('Control+y')
+        expect(await isEdited(page)).toBe(true)
+        const shown = await toggle.inputValue()
+        await page.keyboard.press('Space')
+        await expect(toggle).not.toHaveValue(shown)
+        expect(
+            await page.evaluate(
+                async () =>
+                    (
+                        await window.editorTest.appImport<typeof import('../../src/player')>(
+                            '/src/player.ts',
+                        )
+                    ).isPlaying.value,
+            ),
+        ).toBe(false)
+
+        // A click on the chart leaves the dialog open and gives the keys back.
+        await page.mouse.click(300, 200)
+        await expect(dialog(page)).toBeVisible()
+        await page.keyboard.press('z')
+        expect(await isEdited(page)).toBe(false)
+
+        // Escape closes the dialog rather than deselecting.
+        const count = await selected(page)
+        await page.keyboard.press('Escape')
+        await expect(dialog(page)).toHaveCount(0)
+        expect(await selected(page)).toBe(count)
+    })
+
+    test('undo by shortcut leaves no stale dialog preview', async ({ page }) => {
+        await page.keyboard.press('Escape')
+        await page.evaluate(async () => {
+            const { editSelectionProperties } = await window.editorTest.appImport<
+                typeof import('../../src/editor/editSelectionProperties')
+            >('/src/editor/editSelectionProperties.ts')
+            editSelectionProperties()
+        })
+        const size = dialog(page)
+            .locator('label')
+            .filter({ has: page.getByText('Size', { exact: true }) })
+            .locator('input')
+        await size.fill('5')
+        const preview = () =>
+            page.evaluate(async () => {
+                const { previewEdit } =
+                    await window.editorTest.appImport<typeof import('../../src/preview/edit')>(
+                        '/src/preview/edit.ts',
+                    )
+                return !!previewEdit.value
+            })
+        expect(await preview()).toBe(true)
+        // Leaving the field commits it; undo then takes that edit back, preview and all.
+        await page.mouse.click(300, 200)
+        await page.keyboard.press('z')
+        expect(await isEdited(page)).toBe(true)
+        expect(await preview()).toBe(false)
+        await expect(size).not.toHaveValue('5')
+    })
+
+    test('switching tools closes the dialog; Settings still holds every key', async ({ page }) => {
+        await page.keyboard.press('f')
+        expect(await toolName(page)).toBe('select')
+        await expect(dialog(page)).toHaveCount(0)
+
+        await page.keyboard.press(',')
+        await expect(page.getByRole('dialog')).toBeVisible()
+        await page.keyboard.press('z')
+        expect(await isEdited(page)).toBe(true)
+    })
+})
+
 test.describe('dock', () => {
     test.beforeEach(async ({ page }) => {
         await page.evaluate(async () => {
