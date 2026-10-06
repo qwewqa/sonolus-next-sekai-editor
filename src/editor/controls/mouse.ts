@@ -14,7 +14,7 @@ import { gesture } from './gestures/gesture'
 import { drag } from './gestures/recognizers/drag'
 import { tap } from './gestures/recognizers/tap'
 
-const mouseGesture = gesture(drag(false), tap())
+const mouseGesture = gesture(drag(false), tap(Infinity))
 
 export const hasMouseControls = () => mouseGesture.pointerCount > 0
 

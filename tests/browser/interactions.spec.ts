@@ -175,3 +175,16 @@ test('Shift+wheel scrolls lanes the same way in pixel, line and page modes', asy
     expect(await scroll(1, 3)).toBe(pixel)
     expect(await scroll(2, 1)).toBe(pixel)
 })
+
+test('a slow mouse click still acts as a click', async ({ page }) => {
+    await page.keyboard.press('a')
+    const before = await page.evaluate(() => window.editorTest.snapshot().notes.length)
+    const { x, y } = await page.evaluate(() => window.editorTest.point(2, 6))
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.waitForTimeout(600)
+    await page.mouse.up()
+    await expect
+        .poll(() => page.evaluate(() => window.editorTest.snapshot().notes.length))
+        .toBe(before + 1)
+})
