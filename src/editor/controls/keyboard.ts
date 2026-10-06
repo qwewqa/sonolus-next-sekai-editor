@@ -70,7 +70,9 @@ const onKeydown = (event: KeyboardEvent) => {
 
     const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
     for (const name of names) void commands[name].execute()
-    if (!names.length || keepsDefault(event)) return
+    if (!names.length) return
+    // A command chord has no native use outside text entry, so selects and toggles drop it.
+    if (keepsDefault(event) && !(isCommandChord(event) && !isTextEntry(event.target))) return
     // Selected page text keeps its native copy and cut.
     if (
         isCommandChord(event) &&

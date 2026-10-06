@@ -317,8 +317,18 @@ test.describe('tool dialogs', () => {
         expect(await division(page)).toBe(before)
 
         // Other controls pass keys on, except those that press them.
+        await logDefaults(page)
+        const select = dialog(page).locator('select').first()
+        await select.focus()
+        await page.keyboard.press('Control+z')
+        expect(await isEdited(page)).toBe(false)
+        // The chord's browser action stays out.
+        expect(await lastDefault(page)).toBe(true)
         const toggle = dialog(page).locator('input[type="button"]').first()
         await toggle.focus()
+        await page.keyboard.press('Control+y')
+        expect(await isEdited(page)).toBe(true)
+        expect(await lastDefault(page)).toBe(true)
         await page.keyboard.press('z')
         expect(await isEdited(page)).toBe(false)
         await page.keyboard.press('Control+y')
@@ -428,8 +438,11 @@ test.describe('dock', () => {
         // No option starts with q, so type-ahead changes nothing here.
         await page.keyboard.press('q')
         expect(await toolName(page)).toBe('select')
+        await logDefaults(page)
         await page.keyboard.press('Control+z')
         expect(await isEdited(page)).toBe(false)
+        // The chord's browser action stays out.
+        expect(await lastDefault(page)).toBe(true)
     })
 
     test('a number field keeps Ctrl+Z for its own text', async ({ page }) => {
@@ -453,10 +466,14 @@ test.describe('dock', () => {
         await control(page, 'Critical').focus()
         await page.keyboard.press('s')
         expect(await toolName(page)).toBe('select')
+        await logDefaults(page)
         await page.keyboard.press('Control+s')
         expect(await toolName(page)).toBe('slide')
+        // Ctrl+S doesn't also save the page.
+        expect(await lastDefault(page)).toBe(true)
         await page.keyboard.press('Control+Shift+B')
         expect(await toolName(page)).toBe('bpm')
+        expect(await lastDefault(page)).toBe(true)
         await expect(control(page, 'Critical')).toBeFocused()
     })
 })
