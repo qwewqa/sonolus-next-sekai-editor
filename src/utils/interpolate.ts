@@ -9,10 +9,11 @@ export const setInterpolationLocale = (locale: () => string) => {
 }
 
 // Messages with singular and plural forms agree with their first value.
+// One pass, so values go in verbatim, even with "$&" or "{1}" in them.
 const fill = (message: string, params: string[]) =>
-    params.reduce(
-        (message, param, index) => message.replace(`{${index}}`, param),
-        pluralForm(currentLocale(), message, params[0]),
+    pluralForm(currentLocale(), message, params[0]).replace(
+        /\{(\d+)\}/g,
+        (placeholder, index: string) => params[Number(index)] ?? placeholder,
     )
 
 export const interpolate =
