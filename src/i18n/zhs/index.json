@@ -951,6 +951,9 @@
     "form": {
       "confirm": "确认",
       "mixed": "混合",
+      "mixedValues": "混合：{0}",
+      "listJoin": "{0}、{1}",
+      "sentenceJoin": "{0}。{1}",
       "notSet": "未设置",
       "anchor": {
         "label": "对齐基准",

@@ -951,6 +951,9 @@
     "form": {
       "confirm": "確認",
       "mixed": "混在",
+      "mixedValues": "混在：{0}",
+      "listJoin": "{0}、{1}",
+      "sentenceJoin": "{0}。{1}",
       "notSet": "未設定",
       "anchor": {
         "label": "基準位置",

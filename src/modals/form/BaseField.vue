@@ -51,23 +51,33 @@ const values = computed(
         ),
 )
 
-const description = computed(() =>
-    [
-        coverage.value &&
-            interpolateRaw(
-                i18n.value.modals.form.coverage,
-                `${coverage.value.covered}`,
-                `${coverage.value.total}`,
-            ),
-        values.value.length &&
-            `${i18n.value.modals.form.mixed}: ${values.value
-                .map(({ label, count }) => `${label} ${count}`)
-                .join(', ')}`,
-        ...(props.notes ?? []),
-    ]
-        .filter(Boolean)
-        .join('. '),
-)
+// Joined in the locale's punctuation, as "。" and "、" in Japanese.
+const join = (template: string, parts: string[]) =>
+    parts.length ? parts.reduce((text, part) => interpolateRaw(template, text, part)) : ''
+
+const description = computed(() => {
+    const messages = i18n.value.modals.form
+    return join(
+        messages.sentenceJoin,
+        [
+            coverage.value &&
+                interpolateRaw(
+                    messages.coverage,
+                    `${coverage.value.covered}`,
+                    `${coverage.value.total}`,
+                ),
+            values.value.length &&
+                interpolateRaw(
+                    messages.mixedValues,
+                    join(
+                        messages.listJoin,
+                        values.value.map(({ label, count }) => `${label} ${count}`),
+                    ),
+                ),
+            ...(props.notes ?? []),
+        ].filter((part): part is string => !!part),
+    )
+})
 
 // A label that would clamp first drops its glyph, then takes back the room the
 // control's 10rem minimum claims; one observer serves every field. Where asked,

@@ -951,6 +951,9 @@
     "form": {
       "confirm": "Onayla",
       "mixed": "Karışık",
+      "mixedValues": "Karışık: {0}",
+      "listJoin": "{0}, {1}",
+      "sentenceJoin": "{0}. {1}",
       "notSet": "Ayarlanmadı",
       "anchor": {
         "label": "Sabit Nokta",

@@ -951,6 +951,9 @@
     "form": {
       "confirm": "Confirmer",
       "mixed": "Mixte",
+      "mixedValues": "Mixte : {0}",
+      "listJoin": "{0}, {1}",
+      "sentenceJoin": "{0}. {1}",
       "notSet": "Non défini",
       "anchor": {
         "label": "Ancrage",

@@ -10,6 +10,7 @@ import {
     type Ref,
 } from 'vue'
 import { i18n } from '../../i18n'
+import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 import { isUnset, mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
@@ -101,7 +102,7 @@ const onFocus = (event: FocusEvent) => {
             "
             :title="
                 modelValue === undefined && range
-                    ? `${i18n.modals.form.mixed}: ${range}`
+                    ? interpolateRaw(i18n.modals.form.mixedValues, range)
                     : undefined
             "
             class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors placeholder:text-fg/80 hover:shadow-accent focus:outline-none focus:ring-2 focus:ring-fg active:bg-accent active:text-on-accent"

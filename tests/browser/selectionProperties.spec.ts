@@ -233,6 +233,26 @@ test.describe('mixed values', () => {
         await page.keyboard.press('Home')
         await expect(chips.nth(0)).toBeFocused()
     })
+
+    test('descriptions join coverage and values in each locale’s punctuation', async ({ page }) => {
+        const type = control(page, 'Ease Type')
+        await expect(type).toHaveAccessibleDescription(
+            'Applies to 2 of 5 selected objects. Mixed: In 1, Out 1',
+        )
+        await type.evaluate((element) => element.setAttribute('data-ease-type', ''))
+        const described = page.locator('[data-ease-type]')
+        for (const [locale, description] of [
+            [
+                'fr',
+                "S'applique à 2 des 5 objets sélectionnés. Mixte : Accélération 1, Décélération 1",
+            ],
+            ['ja', '選択中の5個のうち2個に適用。混在：加速 1、減速 1'],
+            ['zhs', '适用于所选 5 个对象中的 2 个。混合：缓入 1、缓出 1'],
+        ] as const) {
+            await page.evaluate((locale) => (window.editorTest.settings.locale = locale), locale)
+            await expect(described).toHaveAccessibleDescription(description)
+        }
+    })
 })
 
 test.describe('kind blocks', () => {
