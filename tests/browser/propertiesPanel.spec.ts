@@ -532,3 +532,35 @@ for (const locale of ['ja', 'fr']) {
         }
     })
 }
+
+test('a kind heading never wraps its count onto a line alone', async ({ page }) => {
+    await open(page, { locale: 'fr', rightDockWidth: 260 })
+    await page.evaluate(async () => {
+        const { history, store, nextTick, show, fixtures } = window.editorTest
+        show(fixtures.events)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()],
+        })
+        await nextTick()
+    })
+    const lone = await panel(page)
+        .locator('.properties-block-header h3')
+        .evaluateAll((headings) =>
+            headings.flatMap((heading) => {
+                const count = heading.querySelector('.tabular-nums')
+                if (!count) return []
+                const range = document.createRange()
+                range.selectNodeContents(count)
+                const countLine = range.getBoundingClientRect()
+                // Text before the count on the same line.
+                range.setStart(heading, 0)
+                range.setEndBefore(count)
+                const before = [...range.getClientRects()].filter(
+                    (rect) => rect.width > 1 && Math.abs(rect.top - countLine.top) < 2,
+                )
+                return before.length ? [] : [heading.textContent]
+            }),
+        )
+    expect(lone).toEqual([])
+})

@@ -131,6 +131,9 @@ const kindLabel = computed(() =>
         ? i18n.value.workspace.properties.kinds[props.kind]
         : i18n.value.tools.brush.kinds.general,
 )
+// The label but its last letter, which holds the count.
+const kindHead = computed(() => Array.from(kindLabel.value).slice(0, -1).join(''))
+const kindTail = computed(() => Array.from(kindLabel.value).at(-1) ?? '')
 const slidesText = computed(() =>
     interpolateRaw(i18n.value.workspace.properties.inSlides, `${props.slides}`),
 )
@@ -197,11 +200,16 @@ const narrowKind = async (event: MouseEvent) => {
                 class="min-w-0 flex-1 text-sm focus:outline-none"
                 @vue:updated="measure"
             >
-                <span class="font-bold">{{ kindLabel }}</span>
                 <template v-if="kind">
-                    {{ ' ' }}<span class="tabular-nums text-fg/80">{{ count }}</span>
+                    <!-- The count wraps with the label's last letter, never alone. -->
+                    <span class="font-bold">{{ kindHead }}</span
+                    ><span class="whitespace-nowrap"
+                        ><span class="font-bold">{{ kindTail }}</span
+                        >&nbsp;<span class="tabular-nums text-fg/80">{{ count }}</span></span
+                    >
                     <span v-if="slides" class="text-fg/80"> · {{ slidesText }}</span>
                 </template>
+                <span v-else class="font-bold">{{ kindLabel }}</span>
             </h3>
             <button
                 v-if="kind && narrowable"
