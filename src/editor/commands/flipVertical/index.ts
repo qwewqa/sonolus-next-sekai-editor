@@ -17,7 +17,10 @@ export const flipVertical: Command = {
             return
         }
         const flipped = flip(source, source.selectedEntities)
-        if (flipped === source) return
+        if (flipped === source) {
+            notify(() => i18n.value.sidebars.default.noChange)
+            return
+        }
         const message = interpolate(
             () => i18n.value.commands.flipVertical.flipped,
             `${flipped.selectedEntities.length}`,

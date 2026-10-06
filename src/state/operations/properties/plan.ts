@@ -1,9 +1,9 @@
 import type { State } from '../..'
 import { applyEaseEdit } from '../../../ease'
 import type { Entity } from '../../entities'
-import { createTransaction, type TransactionOptions } from '../../transaction'
+import { createTransaction, type Transaction, type TransactionOptions } from '../../transaction'
 import { editBpm, editSelectedBpm } from '../bpm'
-import { isEditableEntity, type EditableObject } from '../editable'
+import { isEditableEntity, type EditableEntity, type EditableObject } from '../editable'
 import { editSelectedCameraEvent } from '../events/camera'
 import { editSelectedStageMaskEvent } from '../events/stage/mask'
 import { editSelectedStagePivotEvent } from '../events/stage/pivot'
@@ -29,6 +29,13 @@ const edits = {
     stageTransformEventJoint: editSelectedStageTransformEvent,
     note: editSelectedNote,
 }
+
+/** Edits one object in place, as each kind's tool does without moving it. */
+export const editEntity = (
+    transaction: Transaction,
+    entity: EditableEntity,
+    object: EditableObject,
+): Entity[] => edits[entity.type](transaction, entity as never, object)
 
 const easeKeys = new Set(['connectorEase', 'eventEase', 'timeScaleEase'])
 

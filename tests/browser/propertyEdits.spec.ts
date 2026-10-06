@@ -319,3 +319,46 @@ test.describe('kept writes', () => {
         expect((await notes(page, ['left', 'size']))[0]).toEqual([20, 0])
     })
 })
+
+test('a flip that changes nothing adds no history entry', async ({ page }) => {
+    const steps = () =>
+        page.evaluate(() => {
+            const { history } = window.editorTest
+            let steps = 0
+            while (history.undoState() !== undefined) steps++
+            for (let i = 0; i < steps; i++) history.redoState()
+            return steps
+        })
+    const flip = (type: string, command: 'flip' | 'flipVertical' = 'flip', count = Infinity) =>
+        page.evaluate(
+            async ({ type, command, count }) => {
+                const { history, store, appImport } = window.editorTest
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: [...store.getAllEntities()]
+                        .filter((e) => e.type === type)
+                        .slice(0, count),
+                })
+                const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+                    '/src/editor/commands/index.ts',
+                )
+                void commands[command].execute()
+            },
+            { type, command, count },
+        )
+    await page.evaluate(() => {
+        const { fixtures, show } = window.editorTest
+        show(fixtures.events)
+    })
+    const start = await steps()
+    await flip('bpm')
+    await expect(page.locator('.notification')).toHaveText('No change')
+    expect(await steps()).toBe(start)
+    // Flipping one object vertically moves nothing either.
+    await flip('cameraEventJoint', 'flipVertical', 1)
+    await expect(page.locator('.notification')).toHaveText('No change')
+    expect(await steps()).toBe(start)
+    await flip('cameraEventJoint')
+    await expect(page.locator('.notification')).not.toHaveText('No change')
+    expect(await steps()).toBe(start + 1)
+})

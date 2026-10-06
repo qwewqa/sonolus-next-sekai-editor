@@ -4,14 +4,9 @@ import { pushState, state } from '../../../history'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
 import type { Entity } from '../../../state/entities'
-import { editSelectedCameraEvent } from '../../../state/operations/events/camera'
-import { editSelectedStageMaskEvent } from '../../../state/operations/events/stage/mask'
-import { editSelectedStagePivotEvent } from '../../../state/operations/events/stage/pivot'
-import { editSelectedStageStyleEvent } from '../../../state/operations/events/stage/style'
-import { editSelectedStageTransformEvent } from '../../../state/operations/events/stage/transform'
-import { editSelectedNote } from '../../../state/operations/note'
-import { editSelectedTimeScale } from '../../../state/operations/timeScale'
-import { createTransaction, type Transaction } from '../../../state/transaction'
+import type { EditableEntity, EditableObject } from '../../../state/operations/editable'
+import { editChanges, editEntity } from '../../../state/operations/properties/plan'
+import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { view } from '../../view'
@@ -31,11 +26,23 @@ export const flip: Command = {
             return
         }
 
+        const changes = new Map<Entity, EditableObject>()
+        for (const entity of entities) {
+            const object = flips[entity.type]?.(entities, entity as never)
+            if (object && editChanges(entity, object)) changes.set(entity, object)
+        }
+        // Nothing to flip, as with BPM changes alone: no history entry.
+        if (!changes.size) {
+            notify(() => i18n.value.sidebars.default.noChange)
+            return
+        }
+
         const transaction = createTransaction(state.value)
 
-        const flippedEntities = entities.flatMap(
-            (entity) => flips[entity.type]?.(transaction, entities, entity as never) ?? [entity],
-        )
+        const flippedEntities = entities.flatMap((entity) => {
+            const object = changes.get(entity)
+            return object ? editEntity(transaction, entity as EditableEntity, object) : [entity]
+        })
 
         pushState(
             interpolate(() => i18n.value.commands.flip.flipped, `${entities.length}`),
@@ -50,7 +57,7 @@ export const flip: Command = {
     },
 }
 
-type Flip<T> = (transaction: Transaction, entities: Entity[], entity: T) => Entity[]
+type Flip<T> = (entities: Entity[], entity: T) => EditableObject
 
 const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
     none: 'none',
@@ -66,54 +73,47 @@ const flips: {
     [T in Entity as T['type']]: Flip<T> | undefined
 } = {
     bpm: undefined,
-    timeScale: (transaction, entities, entity) =>
-        editSelectedTimeScale(transaction, entity, {
-            editorLane: entities.every((entity) => entity.type === 'timeScale')
-                ? -entity.editorLane
-                : entity.editorLane,
-        }),
+    timeScale: (entities, entity) => ({
+        editorLane: entities.every((entity) => entity.type === 'timeScale')
+            ? -entity.editorLane
+            : entity.editorLane,
+    }),
 
-    cameraEventJoint: (transaction, entities, entity) =>
-        editSelectedCameraEvent(transaction, entity, {
-            cameraLeft: -(entity.cameraLeft + entity.cameraSize),
-            cameraZoomTargetLane: -entity.cameraZoomTargetLane,
-            cameraRotation: -entity.cameraRotation,
-        }),
+    cameraEventJoint: (entities, entity) => ({
+        cameraLeft: -(entity.cameraLeft + entity.cameraSize),
+        cameraZoomTargetLane: -entity.cameraZoomTargetLane,
+        cameraRotation: -entity.cameraRotation,
+    }),
     cameraEventConnection: undefined,
 
-    stageMaskEventJoint: (transaction, entities, entity) =>
-        editSelectedStageMaskEvent(transaction, entity, {
-            maskLeft: -(entity.maskLeft + entity.maskSize),
-        }),
+    stageMaskEventJoint: (entities, entity) => ({
+        maskLeft: -(entity.maskLeft + entity.maskSize),
+    }),
     stageMaskEventConnection: undefined,
 
-    stagePivotEventJoint: (transaction, entities, entity) =>
-        editSelectedStagePivotEvent(transaction, entity, {
-            pivotLane: -entity.pivotLane,
-        }),
+    stagePivotEventJoint: (entities, entity) => ({
+        pivotLane: -entity.pivotLane,
+    }),
     stagePivotEventConnection: undefined,
 
-    stageStyleEventJoint: (transaction, entities, entity) =>
-        editSelectedStageStyleEvent(transaction, entity, {
-            editorLane: entities.every((entity) => entity.type === 'stageStyleEventJoint')
-                ? -entity.editorLane
-                : entity.editorLane,
-            leftBorderStyle: entity.rightBorderStyle,
-            rightBorderStyle: entity.leftBorderStyle,
-        }),
+    stageStyleEventJoint: (entities, entity) => ({
+        editorLane: entities.every((entity) => entity.type === 'stageStyleEventJoint')
+            ? -entity.editorLane
+            : entity.editorLane,
+        leftBorderStyle: entity.rightBorderStyle,
+        rightBorderStyle: entity.leftBorderStyle,
+    }),
     stageStyleEventConnection: undefined,
 
-    stageTransformEventJoint: (transaction, entities, entity) =>
-        editSelectedStageTransformEvent(transaction, entity, {
-            rotation: -entity.rotation,
-            xTranslation: -entity.xTranslation,
-        }),
+    stageTransformEventJoint: (entities, entity) => ({
+        rotation: -entity.rotation,
+        xTranslation: -entity.xTranslation,
+    }),
     stageTransformEventConnection: undefined,
 
-    note: (transaction, entities, entity) =>
-        editSelectedNote(transaction, entity, {
-            left: -(entity.left + entity.size),
-            flickDirection: flippedFlickDirections[entity.flickDirection],
-        }),
+    note: (entities, entity) => ({
+        left: -(entity.left + entity.size),
+        flickDirection: flippedFlickDirections[entity.flickDirection],
+    }),
     connector: undefined,
 }
