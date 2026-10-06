@@ -921,6 +921,7 @@
       "title": "Sauvegarde Automatique",
       "importing": "Restauration du niveau…",
       "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet.",
+      "paused": "La sauvegarde automatique est suspendue dans cet onglet. L’éditeur essaiera de restaurer la partition non sauvegardée de votre dernière session à la prochaine ouverture.",
       "unreadable": {
         "message": "La partition non sauvegardée de votre dernière session n’a pas pu être restaurée. Elle nécessite peut-être une version plus récente de l’éditeur, ou ses données sauvegardées sont peut-être endommagées.",
         "setAside": "Vos nouvelles modifications ne remplaceront pas cette partition. L’éditeur réessaiera à la prochaine ouverture.",

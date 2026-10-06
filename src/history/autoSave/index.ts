@@ -142,7 +142,16 @@ export const useAutoSave = () => {
             },
         })
         // Closed before it finished: auto save stays off, so the recovery waits for the next start.
-        if (!loaded.done) return
+        if (!loaded.done) {
+            // A recovery set aside is safe from auto save already.
+            if (data === undefined) restoring = false
+            else
+                void showModal(InfoModal, {
+                    title: () => i18n.value.history.autoSave.title,
+                    message: () => i18n.value.history.autoSave.paused,
+                })
+            return
+        }
         const { primary, earlier } = loaded
 
         // One dialog at a time: an earlier recovery still unreadable first, as discarding it makes room.

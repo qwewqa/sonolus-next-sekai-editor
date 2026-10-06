@@ -791,20 +791,28 @@ test('a set-aside recovery that now opens trades places with one that does not',
     expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
 })
 
-test('closing the loading dialog before a recovery opens keeps the recovery', async ({ page }) => {
-    const stored = readableRecovery('kept-chart', 150)
-    await page.addInitScript(() => {
-        // Holds the dialog open before it parses, on the first start only.
+/** Holds the recovery loading dialog open before it parses, on the first start only. */
+const holdLoading = (page: Page) =>
+    page.addInitScript(() => {
         if (sessionStorage.getItem('held')) return
         sessionStorage.setItem('held', 'true')
         const setTimeout = window.setTimeout
         window.setTimeout = ((handler: TimerHandler, delay?: number, ...rest: unknown[]) =>
             setTimeout(handler, delay === 50 ? 60_000 : delay, ...rest)) as typeof window.setTimeout
     })
+
+test('closing the loading dialog before a recovery opens keeps the recovery', async ({ page }) => {
+    const stored = readableRecovery('kept-chart', 150)
+    await holdLoading(page)
     await reloadWith(page, { recovery: stored })
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText('Restoring level')
     await dialog.getByRole('button', { name: 'Close' }).click()
+    // Says why auto save is off and when the chart comes back.
+    await expect(dialog).toHaveText(
+        /Auto save is paused in this tab\. The editor will try to restore your last session's unsaved chart next time it starts\./,
+    )
+    await dialog.getByRole('button', { name: 'OK' }).click()
     await expect(dialog).toHaveCount(0)
 
     // A later change, such as a selection, must not remove it.
@@ -826,6 +834,24 @@ test('closing the loading dialog before a recovery opens keeps the recovery', as
     await page.reload()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect.poll(() => openChart(page)).toEqual({ filename: 'kept-chart', bpm: 150 })
+})
+
+test('closing the loading dialog with only a set-aside recovery keeps auto save on', async ({
+    page,
+}) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    await holdLoading(page)
+    await reloadWith(page, { aside: earlier })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('Restoring level')
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    // No notice: auto save cannot touch a set-aside recovery.
+    await expect(dialog).toHaveCount(0)
+
+    await page.evaluate(installEditorFixture)
+    await editNamedChart(page)
+    await expect.poll(async () => (await unreadableStores(page)).recovery).not.toBeNull()
+    expect((await unreadableStores(page)).aside).toBe(earlier)
 })
 
 test('an unreadable recovery that cannot be set aside pauses auto save instead', async ({

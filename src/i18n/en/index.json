@@ -921,6 +921,7 @@
             "title": "Auto Save",
             "importing": "Restoring level…",
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab.",
+            "paused": "Auto save is paused in this tab. The editor will try to restore your last session's unsaved chart next time it starts.",
             "unreadable": {
                 "message": "The editor could not restore the unsaved chart from your last session. It may need a newer editor version, or the saved data may be damaged.",
                 "setAside": "New changes will not replace this saved chart. The editor will try again the next time it starts.",

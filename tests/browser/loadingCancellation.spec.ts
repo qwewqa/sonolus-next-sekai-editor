@@ -154,6 +154,11 @@ for (const command of ['open', 'autosave'] as const) {
         )
         await expect.poll(() => page.evaluate(() => window.loadingReview.held)).toBe(true)
         await page.keyboard.press('Escape')
+        // A cancelled recovery says auto save is paused.
+        if (command === 'autosave') {
+            await expect(page.getByRole('dialog')).toContainText('Auto save is paused')
+            await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click()
+        }
         await expect(page.getByRole('dialog')).toHaveCount(0)
         await page.evaluate(() => {
             const { history } = window.editorTest
