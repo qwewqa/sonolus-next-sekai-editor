@@ -616,3 +616,72 @@ test('ease functions list linear eases apart and narrow to them', async ({ page 
     await name.getByRole('button', { name: 'Select only Linear (5)' }).click()
     expect(await selectedCount(page)).toBe(5)
 })
+
+test('the selection dialog follows the selection', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => {
+        const { settings, fixtures, show } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        show({
+            ...fixtures.interaction,
+            bpms: [...fixtures.interaction.bpms, { beat: 4, bpm: 90 }],
+        })
+    })
+    const select = (kinds: string[]) =>
+        page.evaluate(async (kinds) => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter((entity) =>
+                    kinds.includes(entity.type),
+                ),
+            })
+            await nextTick()
+        }, kinds)
+    const dialog = page.locator('.editor-tool-modal')
+    const named = (name: string) => page.getByRole('dialog', { name, exact: true })
+
+    await select(['note'])
+    await page.evaluate(async () => {
+        const { editSelectionProperties } = await window.editorTest.appImport<
+            typeof import('../../src/editor/editSelectionProperties')
+        >('/src/editor/editSelectionProperties.ts')
+        editSelectionProperties()
+    })
+    await expect(named('Note Properties')).toBeVisible()
+
+    await select(['bpm'])
+    await expect(named('BPM Properties')).toBeVisible()
+    await expect(dialog).not.toContainText('No object selected')
+    await expect(dialog.getByText('BPM', { exact: true }).first()).toBeVisible()
+
+    await select(['bpm', 'note'])
+    await expect(named('Selection')).toBeVisible()
+
+    // A kind's own dialog over a mixed selection stays on its kind through edits.
+    await page.evaluate(async () => {
+        const { appImport } = window.editorTest
+        const { showToolModal } = await appImport<typeof import('../../src/editor/toolModals')>(
+            '/src/editor/toolModals.ts',
+        )
+        const { default: SelectionPropertiesModal } = await appImport<{
+            default: typeof import('../../src/editor/workspace/properties/SelectionPropertiesModal.vue').default
+        }>('/src/editor/workspace/properties/SelectionPropertiesModal.vue')
+        void showToolModal(SelectionPropertiesModal, { kind: 'note' })
+    })
+    await expect(named('Note Properties')).toBeVisible()
+    await page.evaluate(async () => {
+        const { appImport, nextTick } = window.editorTest
+        const { editSelectedEditableEntities } = await appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        editSelectedEditableEntities({ isCritical: true })
+        await nextTick()
+    })
+    await expect(named('Note Properties')).toBeVisible()
+
+    await select([])
+    await expect(dialog).toHaveCount(0)
+})
