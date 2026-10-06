@@ -13,7 +13,7 @@ import { isComposingKey } from '../../utils/composition'
 import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 
-defineProps<{
+const props = defineProps<{
     label: string
     notes?: string[]
 }>()
@@ -25,10 +25,14 @@ const isActive = ref(false)
 const refused = ref<string>()
 const refusedAs = ref<'reserved' | 'altGraph'>('reserved')
 
-const prompt = computed(() =>
+const refusal = computed(() =>
     refused.value === undefined
-        ? i18n.value.modals.form.key.press
+        ? undefined
         : interpolateRaw(i18n.value.modals.form.key[refusedAs.value], refused.value),
+)
+// A refusal reads in full under the row, like the other notes, not cut off in the button.
+const notes = computed(() =>
+    refusal.value === undefined ? props.notes : [...(props.notes ?? []), refusal.value],
 )
 
 const onClick = (event: MouseEvent) => {
@@ -90,6 +94,7 @@ const onKeyDown = (event: KeyboardEvent) => {
     }
     modelValue.value = binding
     isActive.value = false
+    refused.value = undefined
 }
 
 const onBlur = () => {
@@ -112,21 +117,18 @@ const onBlur = () => {
                 'text-fg/50': !isActive && !formatShortcut(modelValue),
             }"
             type="button"
-            :title="
-                isActive
-                    ? refused === undefined
-                        ? i18n.modals.form.key.clear
-                        : prompt
-                    : i18n.modals.form.key.input
-            "
+            :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
             @mousedown="onMouseDown"
             @click="onClick"
             @keydown="onKeyDown"
             @blur="onBlur"
         >
             {{
-                isActive ? prompt : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
+                isActive
+                    ? i18n.modals.form.key.press
+                    : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
             }}
         </button>
+        <span class="sr-only" role="status">{{ refusal }}</span>
     </BaseField>
 </template>

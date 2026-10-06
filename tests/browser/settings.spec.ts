@@ -122,6 +122,12 @@ const shortcutField = (page: Page, name: string) =>
         .filter({ has: page.locator('.form-field-text').getByText(name, { exact: true }) })
 const shortcutButton = (page: Page, name: string) =>
     shortcutField(page, name).locator('label').getByRole('button')
+/** The refusal under a capturing row; the button keeps its prompt. */
+const expectRefused = async (page: Page, name: string, message: string) => {
+    await expect(shortcutButton(page, name)).toHaveText('Press a key or click again to clear')
+    await expect(shortcutField(page, name).locator('.form-field-notes')).toContainText(message)
+    await expect(shortcutField(page, name).getByRole('status')).toContainText(message)
+}
 const savedShortcut = (page: Page, name: string) =>
     page.evaluate((name) => window.editorTest.settings.keyboardShortcuts[name as 'save'], name)
 
@@ -163,24 +169,34 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
     const save = shortcutButton(page, 'Save')
     await save.click()
     await save.dispatchEvent('keydown', { key: 'w', ctrlKey: true, cancelable: true })
-    await expect(save).toHaveText('Ctrl+W is reserved by the browser or system. Press another key.')
+    await expectRefused(
+        page,
+        'Save',
+        'Ctrl+W is reserved by the browser or system. Press another key.',
+    )
     expect(await savedShortcut(page, 'save')).toBe('p')
     // Ctrl+H reaches pages off Apple devices, so it can be bound.
     await page.keyboard.press('Control+h')
     await expect(save).toHaveText('Ctrl+H')
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
+    // The refusal goes once capture ends.
+    await expect(shortcutField(page, 'Save')).not.toContainText('is reserved')
 
     // Ctrl+Alt+letter reads as AltGr, so it would record the bare letter.
     await save.click()
     await save.dispatchEvent('keydown', { key: 'k', ctrlKey: true, altKey: true })
-    await expect(save).toHaveText(
+    await expectRefused(
+        page,
+        'Save',
         'Ctrl+Alt+K types characters on many keyboards. Press another key.',
     )
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
 
     // So does Ctrl+Alt+digit.
     await save.dispatchEvent('keydown', { key: '1', ctrlKey: true, altKey: true })
-    await expect(save).toHaveText(
+    await expectRefused(
+        page,
+        'Save',
         'Ctrl+Alt+1 types characters on many keyboards. Press another key.',
     )
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
@@ -213,11 +229,9 @@ test('shortcut capture waits past IME and dead keys and ignores Caps Lock', asyn
 test('shared and browser-claiming bindings are named under their rows', async ({ page }) => {
     // Default plain keys that also answer to the browser's Ctrl chords.
     await expect(shortcutField(page, 'Manage Stages')).toContainText(
-        "Replaces the browser's reload shortcut",
+        "Replaces the browser's reload",
     )
-    await expect(shortcutField(page, 'Select')).toContainText(
-        "Replaces the browser's find shortcut",
-    )
+    await expect(shortcutField(page, 'Select')).toContainText("Replaces the browser's find")
     // The browser keeps zooming with Ctrl+=.
     await expect(shortcutField(page, 'Zoom In Y')).not.toContainText('Replaces')
     await expect(shortcutField(page, 'Save')).not.toContainText('Replaces')
@@ -232,9 +246,7 @@ test('shared and browser-claiming bindings are named under their rows', async ({
     await shortcutButton(page, 'Save').click()
     await page.keyboard.press('Control+r')
     await expect(shortcutField(page, 'Slide')).not.toContainText('Also runs')
-    await expect(shortcutField(page, 'Save')).toContainText(
-        "Replaces the browser's reload shortcut",
-    )
+    await expect(shortcutField(page, 'Save')).toContainText("Replaces the browser's reload")
     await expect(shortcutField(page, 'Manage Stages')).not.toContainText('Replaces')
 })
 
@@ -257,7 +269,11 @@ test.describe('on Apple devices', () => {
         const save = shortcutButton(page, 'Save')
         await save.click()
         await save.dispatchEvent('keydown', { key: 'h', metaKey: true, cancelable: true })
-        await expect(save).toHaveText('⌘H is reserved by the browser or system. Press another key.')
+        await expectRefused(
+            page,
+            'Save',
+            '⌘H is reserved by the browser or system. Press another key.',
+        )
         await page.keyboard.press('Meta+Shift+KeyS')
         await expect(save).toHaveText('⇧⌘S')
         expect(await savedShortcut(page, 'save')).toBe('Mod+Shift+s')
