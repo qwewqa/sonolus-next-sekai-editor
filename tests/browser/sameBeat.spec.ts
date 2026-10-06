@@ -403,6 +403,110 @@ test('a sideways drag keeps a time-scale pair and its order', async ({ page }) =
     expect((await exported(page)).timeScale).toEqual(original.timeScale)
 })
 
+/** Drags a selected object of `kind` sideways by `lanes` with the select tool. */
+const dragSideways = async (page: Page, kind: Kind | 'note', lanes: number) => {
+    const { from, to } = await page.evaluate(
+        ({ kind, lanes }) => {
+            const { history, point } = window.editorTest
+            const entity = history.state.value.selectedEntities.find(
+                (entity) => entity.type === kind,
+            )!
+            return {
+                from: point(entity.hitbox!.lane, 4),
+                to: point(entity.hitbox!.lane + lanes, 4),
+            }
+        },
+        { kind, lanes },
+    )
+    await page.evaluate(async () => {
+        const { toolName } = await window.editorTest.appImport<
+            typeof import('../../src/editor/tools/state')
+        >('/src/editor/tools/state.ts')
+        toolName.value = 'select'
+    })
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move((from.x + to.x) / 2, from.y, { steps: 4 })
+    await page.mouse.move(to.x, to.y, { steps: 4 })
+    await page.mouse.up()
+}
+
+for (const kind of ['timeScale', 'cameraEventJoint', 'stageMaskEventJoint'] as const)
+    for (const value of [1, 2])
+        test(`a sideways drag of ${kind} ${value} alone keeps its pair and the order`, async ({
+            page,
+        }) => {
+            await showPairs(page)
+            await select(page, kind, [value])
+            // The selected one's place, and the partner itself, at beat 4.
+            const places = (partner?: unknown) =>
+                page.evaluate(
+                    ({ kind, partner }) => {
+                        const { history } = window.editorTest
+                        const { selectedEntities, store } = history.state.value
+                        const pair = [...(store.grid[kind].get(4) ?? [])].filter(
+                            (entity) => entity.beat === 4,
+                        )
+                        const moved = pair.find((entity) => selectedEntities.includes(entity))!
+                        const other = pair.find((entity) => entity !== moved)
+                        const keep = window as unknown as { partner?: unknown }
+                        if (!partner) keep.partner = other
+                        return {
+                            count: pair.length,
+                            index: pair.indexOf(moved),
+                            lane: moved.hitbox!.lane,
+                            same: other === keep.partner,
+                        }
+                    },
+                    { kind, partner },
+                )
+            const before = await places()
+            await dragSideways(page, kind, -1)
+            const after = await places(true)
+            // It moved at its beat, kept its place and left its partner alone.
+            expect(after.lane).not.toBe(before.lane)
+            expect(after).toMatchObject({ count: 2, index: before.index, same: true })
+        })
+
+test('a sideways drag with a BPM of a pair selected keeps its partner', async ({ page }) => {
+    await showPairs(page)
+    await page.evaluate(async () => {
+        const { history, fixtures, appImport, nextTick } = window.editorTest
+        const { createTransaction } = await appImport<typeof import('../../src/state/transaction')>(
+            '/src/state/transaction.ts',
+        )
+        const { addNote } = await appImport<typeof import('../../src/state/mutations/slides/note')>(
+            '/src/state/mutations/slides/note.ts',
+        )
+        const { createSlideId } = await appImport<typeof import('../../src/state/entities/slides')>(
+            '/src/state/entities/slides/index.ts',
+        )
+        const transaction = createTransaction(history.state.value)
+        const [note] = addNote(transaction, createSlideId(), {
+            ...fixtures.interaction.slides[0]![0]!,
+            beat: 4,
+            left: -1,
+            size: 2,
+            isAttached: false,
+        })
+        const bpm = [...history.state.value.store.grid.bpm.get(4)!].find(
+            (entity) => entity.beat === 4 && entity.bpm === 120,
+        )!
+        history.replaceState(transaction.commit([bpm, note!]))
+        await nextTick()
+    })
+    await dragSideways(page, 'note', -1)
+    const lefts = await page.evaluate(() =>
+        [...window.editorTest.store.getAllEntities()].flatMap((entity) =>
+            entity.type === 'note' ? [entity.left] : [],
+        ),
+    )
+    expect(lefts).toEqual([-2])
+    const after = await exported(page)
+    expect(after.bpm).toEqual(original.bpm)
+    expect(after.bpmIntegrals).toEqual(original.bpmIntegrals)
+})
+
 test.describe('flipping, scaling and nudging a pair keeps both', () => {
     test.beforeEach(async ({ page }) => showPairs(page))
 

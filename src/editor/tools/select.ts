@@ -36,26 +36,34 @@ import {
 } from '../../state/entities/events/joints/stage/transform'
 import { toNoteEntity, type NoteEntity } from '../../state/entities/slides/note'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../state/entities/timeScale'
-import { addBpm, removeBpm } from '../../state/mutations/bpm'
-import { addCameraEventJoint, removeCameraEventJoint } from '../../state/mutations/events/camera'
+import { addBpm, removeBpm, replaceBpm } from '../../state/mutations/bpm'
+import {
+    addCameraEventJoint,
+    removeCameraEventJoint,
+    replaceCameraEventJoint,
+} from '../../state/mutations/events/camera'
 import {
     addStageMaskEventJoint,
     removeStageMaskEventJoint,
+    replaceStageMaskEventJoint,
 } from '../../state/mutations/events/stage/mask'
 import {
     addStagePivotEventJoint,
     removeStagePivotEventJoint,
+    replaceStagePivotEventJoint,
 } from '../../state/mutations/events/stage/pivot'
 import {
     addStageStyleEventJoint,
     removeStageStyleEventJoint,
+    replaceStageStyleEventJoint,
 } from '../../state/mutations/events/stage/style'
 import {
     addStageTransformEventJoint,
     removeStageTransformEventJoint,
+    replaceStageTransformEventJoint,
 } from '../../state/mutations/events/stage/transform'
 import { replaceNote } from '../../state/mutations/slides/note'
-import { addTimeScale, removeTimeScale } from '../../state/mutations/timeScale'
+import { addTimeScale, removeTimeScale, replaceTimeScale } from '../../state/mutations/timeScale'
 import { getInStoreGrid } from '../../state/store/grid'
 import {
     createTransaction,
@@ -756,6 +764,8 @@ const moves: {
 } = {
     bpm: (transaction, onlyType, entity, startLane, lane, beat, focus, batch) => {
         const object = toMovedBpmObject(entity, beat)
+        // A move along its beat is an edit: it keeps its place and replaces nothing.
+        if (object.beat === entity.beat) return replaceBpm(transaction, entity, object)
 
         if (entity.beat) removeBpm(transaction, entity)
 
@@ -768,6 +778,8 @@ const moves: {
     },
     timeScale: (transaction, onlyType, entity, startLane, lane, beat, focus, batch) => {
         const object = toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat && object.groupId === entity.groupId)
+            return replaceTimeScale(transaction, entity, object)
 
         removeTimeScale(transaction, entity)
 
@@ -784,6 +796,7 @@ const moves: {
 
     cameraEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
         const object = toMovedCameraEventObject(onlyType, entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat) return replaceCameraEventJoint(transaction, entity, object)
 
         removeCameraEventJoint(transaction, entity)
         return addCameraEventJoint(transaction, object)
@@ -792,6 +805,8 @@ const moves: {
 
     stageMaskEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
         const object = toMovedStageMaskEventObject(onlyType, entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat && object.stageId === entity.stageId)
+            return replaceStageMaskEventJoint(transaction, entity, object)
 
         removeStageMaskEventJoint(transaction, entity)
         return addStageMaskEventJoint(transaction, object)
@@ -800,6 +815,8 @@ const moves: {
 
     stagePivotEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
         const object = toMovedStagePivotEventObject(entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat && object.stageId === entity.stageId)
+            return replaceStagePivotEventJoint(transaction, entity, object)
 
         removeStagePivotEventJoint(transaction, entity)
         return addStagePivotEventJoint(transaction, object)
@@ -808,6 +825,8 @@ const moves: {
 
     stageStyleEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
         const object = toMovedStageStyleEventObject(onlyType, entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat && object.stageId === entity.stageId)
+            return replaceStageStyleEventJoint(transaction, entity, object)
 
         removeStageStyleEventJoint(transaction, entity)
         return addStageStyleEventJoint(transaction, object)
@@ -816,6 +835,8 @@ const moves: {
 
     stageTransformEventJoint: (transaction, onlyType, entity, startLane, lane, beat, focus) => {
         const object = toMovedStageTransformEventObject(entity, startLane, lane, beat, focus)
+        if (object.beat === entity.beat && object.stageId === entity.stageId)
+            return replaceStageTransformEventJoint(transaction, entity, object)
 
         removeStageTransformEventJoint(transaction, entity)
         return addStageTransformEventJoint(transaction, object)
