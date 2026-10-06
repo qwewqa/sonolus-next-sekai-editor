@@ -37,7 +37,12 @@ const shortcut = computed(() =>
         :title
         :aria-pressed="pressed"
     >
-        <component :is="commands[name].icon.is" class="size-4" v-bind="commands[name].icon.props" />
+        <!-- Beside a label, wide icons such as text chips keep their width. -->
+        <component
+            :is="commands[name].icon.is"
+            :class="showLabel ? 'h-4 w-auto min-w-4' : 'size-4'"
+            v-bind="commands[name].icon.props"
+        />
         <template v-if="showLabel">
             <span class="ml-2 flex-grow text-left text-sm">{{ title }}</span>
             <span v-if="shortcut" class="ml-4 text-xs text-fg/80">{{ shortcut }}</span>

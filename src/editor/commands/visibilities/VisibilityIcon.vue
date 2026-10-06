@@ -9,8 +9,9 @@ defineProps<{
 </script>
 
 <template>
-    <div class="relative">
-        <component :is class="absolute size-full" v-bind="props" />
+    <!-- The icon sets the size, so a wide text chip keeps its room beside a label. -->
+    <div class="relative flex justify-center">
+        <component :is class="h-full w-auto min-w-full" v-bind="props" />
         <svg
             class="absolute bottom-0 right-0 size-1/2"
             xmlns="http://www.w3.org/2000/svg"

@@ -185,3 +185,39 @@ test('a shortcut icon gives way before its name would clamp, and returns with ro
     await page.setViewportSize({ width: 1600, height: 1000 })
     await expect(long.locator('.form-field-icon')).toBeVisible()
 })
+
+test('wide text icons keep clear of their names in the shortcut list and flyouts', async ({
+    page,
+}) => {
+    // Space from the icon's drawn chip (not its box) to the name.
+    const gap = (row: import('@playwright/test').Locator, text: string) =>
+        row.evaluate((row, text) => {
+            const chip = [...row.querySelectorAll('span, div')]
+                .filter((element) => element.textContent?.trim() === 'BPM')
+                .at(-1)!
+            const name = [...row.querySelectorAll('span')].find(
+                (element) => element.textContent?.trim() === text,
+            )!
+            return name.getBoundingClientRect().left - chip.getBoundingClientRect().right
+        }, text)
+
+    await open(page)
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    const row = page
+        .locator('dialog[open] .form-field')
+        .filter({ has: page.getByText('Toggle BPM Visibility', { exact: true }) })
+    expect(await gap(row, 'Toggle BPM Visibility')).toBeGreaterThanOrEqual(6)
+    await page.keyboard.press('Escape')
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    const shown = page.locator('[data-editor-toolbar] > div > div > button')
+    await shown.and(page.getByTitle('Cycle Object Visibilities', { exact: true })).hover()
+    const item = page
+        .locator('[data-editor-toolbar] > div > div > div button')
+        .filter({ hasText: 'Toggle BPM Visibility' })
+    await expect(item).toBeVisible()
+    expect(await gap(item, 'Toggle BPM Visibility')).toBeGreaterThanOrEqual(6)
+})
