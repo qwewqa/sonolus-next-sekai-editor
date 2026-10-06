@@ -460,8 +460,7 @@
         "title": "橡皮擦工具",
         "erase": "点击要擦除的对象。",
         "deselect": "点击空白处即可取消选择所有对象。",
-        "eraseMultiple": "拖动以框选擦除多个对象。",
-        "shift": "按下 Shift 键即可操作所有相关音符。"
+        "eraseMultiple": "拖动以框选擦除多个对象。"
       },
       "brushTool": {
         "title": "笔刷工具",

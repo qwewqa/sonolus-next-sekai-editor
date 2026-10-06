@@ -460,8 +460,7 @@
         "title": "橡皮擦工具",
         "erase": "點擊以擦除物件。",
         "deselect": "點選空白處可取消選取所有物件。",
-        "eraseMultiple": "拖曳以刪除多個物件。",
-        "shift": "使用 Shift 鍵對所有相關音符進行操作。"
+        "eraseMultiple": "拖曳以刪除多個物件。"
       },
       "brushTool": {
         "title": "筆刷工具",

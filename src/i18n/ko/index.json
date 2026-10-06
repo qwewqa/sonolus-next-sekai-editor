@@ -460,8 +460,7 @@
         "title": "지우개 도구",
         "erase": "객체를 눌러 지웁니다.",
         "deselect": "빈 곳을 눌러 모든 객체를 선택 해제합니다.",
-        "eraseMultiple": "드래그하여 여러 객체를 지웁니다.",
-        "shift": "Shift 키를 사용하면 관련된 모든 노트에 적용됩니다."
+        "eraseMultiple": "드래그하여 여러 객체를 지웁니다."
       },
       "brushTool": {
         "title": "브러시 도구",

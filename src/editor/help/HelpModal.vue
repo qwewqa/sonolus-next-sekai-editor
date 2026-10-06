@@ -47,7 +47,6 @@ import HelpSection from './HelpSection.vue'
             <li>{{ i18n.help.modal.eraserTool.erase }}</li>
             <li>{{ i18n.help.modal.eraserTool.deselect }}</li>
             <li>{{ i18n.help.modal.eraserTool.eraseMultiple }}</li>
-            <li>{{ i18n.help.modal.eraserTool.shift }}</li>
         </HelpSection>
 
         <HelpSection :title="i18n.help.modal.brushTool.title" command="brush">

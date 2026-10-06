@@ -460,8 +460,7 @@
         "title": "Silgi Aracı",
         "erase": "Silmek için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
-        "eraseMultiple": "Birden fazla nesneyi silmek için sürükleyin.",
-        "shift": "Tüm ilgili notalar üzerinde işlem yapmak için Shift tuşunu kullanın."
+        "eraseMultiple": "Birden fazla nesneyi silmek için sürükleyin."
       },
       "brushTool": {
         "title": "Fırça Aracı",

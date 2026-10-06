@@ -460,8 +460,7 @@
         "title": "Outil Gomme",
         "erase": "Appuyez sur les objets pour les effacer.",
         "deselect": "Appuyez sur une zone vide pour désélectionner tous les objets.",
-        "eraseMultiple": "Glissez pour effacer plusieurs objets.",
-        "shift": "Utilisez la touche Maj pour agir sur toutes les notes associées."
+        "eraseMultiple": "Glissez pour effacer plusieurs objets."
       },
       "brushTool": {
         "title": "Outil Pinceau",

@@ -460,8 +460,7 @@
                 "title": "Eraser Tool",
                 "erase": "Tap objects to erase.",
                 "deselect": "Tap empty space to deselect all objects.",
-                "eraseMultiple": "Drag to erase multiple objects.",
-                "shift": "Use Shift key to operate on all related notes."
+                "eraseMultiple": "Drag to erase multiple objects."
             },
             "brushTool": {
                 "title": "Brush Tool",
