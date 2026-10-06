@@ -28,6 +28,7 @@ import type { PreviewStage, StageTransformEvent } from '../../src/preview/engine
 import {
     drawDynamicStage,
     getStageProps,
+    getStagePropsFrom,
     stagePropsHasTransform,
 } from '../../src/preview/engine/stage'
 import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
@@ -87,8 +88,8 @@ test('stage masks default off and switch at keyframes without interpolation', ()
     assert.equal(halfway.lane, 0)
     assert.equal(halfway.width, 4)
     assert.equal(halfway.maskNotes, true)
-    assert.equal(getStageProps(value, 3, true).maskNotes, true)
-    assert.equal(getStageProps(value, 3).maskNotes, false)
+    assert.equal(getStageProps(value, 3).maskNotes, true)
+    assert.equal(getStagePropsFrom(value, 3).maskNotes, false)
     assert.equal(getStageProps(value, 4).maskNotes, false)
 })
 
@@ -101,9 +102,9 @@ test('left limits use the first same-time keyframe for geometry and the previous
         ],
     })
 
-    const before = getStageProps(value, 2, true)
+    const before = getStageProps(value, 2)
     assert.deepEqual([before.lane, before.width, before.maskNotes], [3, 4, false])
-    const after = getStageProps(value, 2)
+    const after = getStagePropsFrom(value, 2)
     assert.deepEqual([after.lane, after.width, after.maskNotes], [7, 2, true])
 })
 
@@ -121,8 +122,8 @@ test('stage elevation follows outgoing easing and respects same-time left limits
 
     assert.equal(getStageProps(value, -1).elevation, 2)
     assert.equal(getStageProps(value, 1).elevation, 3)
-    assert.equal(getStageProps(value, 2, true).elevation, 6)
-    assert.equal(getStageProps(value, 2).elevation, 10)
+    assert.equal(getStageProps(value, 2).elevation, 6)
+    assert.equal(getStagePropsFrom(value, 2).elevation, 10)
     assert.equal(stagePropsHasTransform(getStageProps(value, 1)), true)
 })
 
@@ -436,4 +437,88 @@ test('camera sizes have the engine minimum at events, not only between them', ()
     assert.deepEqual(at.zoomTarget, floor.zoomTarget)
     const before = getCameraInfo(viewport, [camera(1, 0.005), camera(2, 6)], 0)
     assert.equal(before.size, 0.01)
+})
+
+test('In-Out Step midpoints hold at the left limit and jump at the right limit', () => {
+    const inOut = EaseType.inOutStep
+    const value = stage({
+        masks: [
+            { time: 0, lane: 0, size: 1, maskNotes: true, ease: inOut },
+            { time: 4, lane: 3, size: 2, maskNotes: true, ease: EaseType.linear },
+        ],
+        pivots: [
+            { time: 0, lane: 0, divisionSize: 1, divisionParity: 0, yOffset: 0, ease: inOut },
+            { time: 4, lane: 5, divisionSize: 3, divisionParity: 1, yOffset: 0.5, ease: 0 },
+        ],
+        styles: [
+            {
+                time: 0,
+                judgeLineColor: 0,
+                judgeLineStyle: 0,
+                leftBorderStyle: 0,
+                rightBorderStyle: 0,
+                fullWidth: 0,
+                noteAlpha: 1,
+                laneAlpha: 1,
+                judgeLineAlpha: 1,
+                divisionLineAlpha: 1,
+                ease: inOut,
+            },
+            {
+                time: 4,
+                judgeLineColor: 1,
+                judgeLineStyle: 1,
+                leftBorderStyle: 1,
+                rightBorderStyle: 1,
+                fullWidth: 1,
+                noteAlpha: 0.5,
+                laneAlpha: 0.5,
+                judgeLineAlpha: 0.5,
+                divisionLineAlpha: 0.5,
+                ease: EaseType.linear,
+            },
+        ],
+        transforms: [
+            transformEvent({ time: 0, ease: inOut }),
+            transformEvent({ time: 4, rotate: 1, elevation: 2 }),
+        ],
+    })
+    const summary = (t: number, rightLimit = false) => {
+        const props = (rightLimit ? getStagePropsFrom : getStageProps)(value, t)
+        return [
+            props.lane,
+            props.pivotLane,
+            props.yOffset,
+            props.division.progress,
+            props.judgeLineStyle.progress,
+            props.noteAlpha,
+            props.rotate,
+            props.elevation,
+        ]
+    }
+    const before = [0, 0, 0, 0, 0, 1, 0, 0]
+    const after = [3, 5, 0.5, 1, 1, 0.5, 1, 2]
+    assert.deepEqual(summary(2), before)
+    assert.deepEqual(summary(2, true), after)
+    assert.deepEqual(summary(1.9), before)
+    assert.deepEqual(summary(2.1), after)
+
+    const viewport = createViewport(1600, 900)
+    const camera = (time: number, rotate: number) => ({
+        time,
+        lane: 0,
+        size: 12,
+        zoom: 1,
+        zoomTargetLane: 0,
+        zoomTargetY: 0,
+        zoomVerticalAlign: 0 as const,
+        rotate,
+        stageTilt: 1,
+        ease: inOut,
+    })
+    const cameras = [camera(0, 0), camera(4, 1)]
+    assert.equal(getCameraInfo(viewport, cameras, 1.9).rotate, 0)
+    assert.equal(getCameraInfo(viewport, cameras, 2).rotate, 0)
+    assert.equal(getCameraInfo(viewport, cameras, 2.1).rotate, 1)
+    assert.equal(getCameraInfo(viewport, cameras, 4).rotate, 1)
 })

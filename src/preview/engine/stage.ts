@@ -21,13 +21,13 @@ import {
 } from './layout'
 import {
     clamp,
-    ease,
+    eventProgress,
     lerp,
     lerpVec,
     rotateVec,
     transformQuadAffine,
-    unlerp,
     vec,
+    type EaseTypeValue,
     type Quad,
     type Vec,
 } from './math'
@@ -114,7 +114,7 @@ const findEvent = (events: { time: number }[], t: number, leftLimit: boolean) =>
     return result
 }
 
-const queryEvents = <T extends { time: number }>(
+const queryEvents = <T extends { time: number; ease: EaseTypeValue }>(
     events: T[],
     t: number,
     leftLimit: boolean,
@@ -126,10 +126,10 @@ const queryEvents = <T extends { time: number }>(
     if (!a) return [undefined, b, 0]
     if (!b || b.time <= a.time) return [a, undefined, 0]
 
-    return [a, b, clamp(unlerp(a.time, b.time, t), 0, 1)]
+    return [a, b, eventProgress(a.ease, t, a.time, b.time, leftLimit)]
 }
 
-export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false): StageProps => {
+const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): StageProps => {
     const props: StageProps = {
         lane: 0,
         width: 0,
@@ -154,13 +154,13 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         elevation: 0,
     }
 
-    const [maskA, maskB, maskFrac] = queryEvents(stage.masks, t, leftLimit)
+    const [maskA, maskB, maskProgress] = queryEvents(stage.masks, t, leftLimit)
     if (maskA) {
         props.lane = maskA.lane
         props.width = maskA.size
         props.maskNotes = maskA.maskNotes
         if (maskB) {
-            const p = ease(maskA.ease, maskFrac)
+            const p = maskProgress
             props.lane = lerp(maskA.lane, maskB.lane, p)
             props.width = Math.max(0, lerp(maskA.size, maskB.size, p))
         }
@@ -170,7 +170,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.maskNotes = maskB.maskNotes
     }
 
-    const [pivotA, pivotB, pivotFrac] = queryEvents(stage.pivots, t, leftLimit)
+    const [pivotA, pivotB, pivotProgress] = queryEvents(stage.pivots, t, leftLimit)
     if (pivotA) {
         props.pivotLane = pivotA.lane
         props.division.start = {
@@ -180,7 +180,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.division.end = props.division.start
         props.yOffset = pivotA.yOffset
         if (pivotB) {
-            const p = ease(pivotA.ease, pivotFrac)
+            const p = pivotProgress
             props.pivotLane = lerp(pivotA.lane, pivotB.lane, p)
             props.division.end = {
                 size: Math.trunc(pivotB.divisionSize),
@@ -199,7 +199,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.yOffset = pivotB.yOffset
     }
 
-    const [styleA, styleB, styleFrac] = queryEvents(stage.styles, t, leftLimit)
+    const [styleA, styleB, styleProgress] = queryEvents(stage.styles, t, leftLimit)
     if (styleA) {
         props.judgeLineColor = {
             start: styleA.judgeLineColor,
@@ -227,7 +227,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.fullWidth = styleA.fullWidth
         props.divisionLineAlpha = styleA.divisionLineAlpha
         if (styleB) {
-            const p = ease(styleA.ease, styleFrac)
+            const p = styleProgress
             props.judgeLineColor.end = styleB.judgeLineColor
             props.judgeLineColor.progress = p
             props.judgeLineStyle.end = styleB.judgeLineStyle
@@ -278,7 +278,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.divisionLineAlpha = styleB.divisionLineAlpha
     }
 
-    const [transformA, transformB, transformFrac] = queryEvents(stage.transforms, t, leftLimit)
+    const [transformA, transformB, transformProgress] = queryEvents(stage.transforms, t, leftLimit)
     if (transformA) {
         props.rotate = transformA.rotate
         props.xLaneTranslate = transformA.xLaneTranslate
@@ -286,7 +286,7 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.centerWeight = transformA.centerWeight
         props.elevation = transformA.elevation
         if (transformB) {
-            const p = ease(transformA.ease, transformFrac)
+            const p = transformProgress
             props.rotate = lerp(transformA.rotate, transformB.rotate, p)
             props.xLaneTranslate = lerp(transformA.xLaneTranslate, transformB.xLaneTranslate, p)
             props.yLaneTranslate = lerp(transformA.yLaneTranslate, transformB.yLaneTranslate, p)
@@ -303,6 +303,12 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
 
     return props
 }
+
+// Play and Watch use the left limit.
+export const getStageProps = (stage: PreviewStage, t: number) => stagePropsAt(stage, t, true)
+
+// The value from t on, for editing.
+export const getStagePropsFrom = (stage: PreviewStage, t: number) => stagePropsAt(stage, t, false)
 
 export const stagePropsHasTransform = (props: StageProps) =>
     props.rotate !== 0 ||

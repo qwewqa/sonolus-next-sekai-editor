@@ -299,7 +299,6 @@ export type Hitbox = {
 }
 
 type StageGeometry = {
-    pivotLane: number
     props: StageProps
     transform: StageTransform
 }
@@ -312,9 +311,8 @@ type InputGeometry = {
 }
 
 /**
- * Camera and stage state at one input time (InputGeometryContext). Pivot lanes
- * include events at the timestamp; masks, offsets, transforms and the camera use
- * the left limit. Only the stages of the queried notes are sampled.
+ * Camera and stage state at one input time (InputGeometryContext), at the left
+ * limit. Only the stages of the queried notes are sampled.
  */
 export type GeometryContext = {
     chart: PreviewChart
@@ -334,9 +332,7 @@ export const createGeometryContext = (
     time,
     layout: layoutTransformAtCamera(
         viewport,
-        chart.isDynamicStages
-            ? getCameraInfo(viewport, chart.cameras, time, true)
-            : defaultCameraInfo(),
+        chart.isDynamicStages ? getCameraInfo(viewport, chart.cameras, time) : defaultCameraInfo(),
     ),
     stages: new Map(),
 })
@@ -346,9 +342,8 @@ const stageGeometry = (context: GeometryContext, stageIndex: number) => {
     if (!stage) return
     let geometry = context.stages.get(stageIndex)
     if (!geometry) {
-        const props = getStageProps(stage, context.time, true)
+        const props = getStageProps(stage, context.time)
         geometry = {
-            pivotLane: getStageProps(stage, context.time).pivotLane,
             props,
             // Untransformed stages still have a rotation pivot to blend with.
             transform: computeStageTransform(
@@ -393,7 +388,7 @@ const basicInputGeometry = (context: GeometryContext, note: PreviewNote): InputG
     }
     const { props } = stage
     return {
-        lane: stage.pivotLane + note.lane,
+        lane: props.pivotLane + note.lane,
         mask: props.maskNotes
             ? {
                   enabled: true,

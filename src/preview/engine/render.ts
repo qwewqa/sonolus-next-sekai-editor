@@ -180,7 +180,7 @@ export const renderPreviewFrame = (
     const hasReached = (target: number) => (leftLimit ? now > target : now >= target)
     const viewport = createViewport(displayWidth, displayHeight)
     const camera = chart.isDynamicStages
-        ? getCameraInfo(viewport, chart.cameras, now, leftLimit)
+        ? getCameraInfo(viewport, chart.cameras, now)
         : defaultCameraInfo()
     const context: PreviewFrameContext = {
         now,
@@ -206,9 +206,7 @@ export const renderPreviewFrame = (
     const hideNotes = chart.groups.map((group) => hideNotesAt(group, now, leftLimit))
     const preempts = chart.groups.map((group) => preemptTime(noteSpeed, group.forceNoteSpeed))
 
-    const stageProps: StageProps[] = chart.stages.map((stage) =>
-        getStageProps(stage, now, leftLimit),
-    )
+    const stageProps: StageProps[] = chart.stages.map((stage) => getStageProps(stage, now))
     const stageTransforms: StageTransform[] = stageProps.map((props) =>
         stagePropsHasTransform(props)
             ? stagePropsTransform(context, props)

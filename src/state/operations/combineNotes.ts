@@ -1,6 +1,6 @@
 import type { State } from '..'
 import { buildPreviewChart } from '../../preview/engine/chart'
-import { getStageProps } from '../../preview/engine/stage'
+import { getStagePropsFrom } from '../../preview/engine/stage'
 import type { Entity } from '../entities'
 import { createSlideId } from '../entities/slides'
 import { beatToTime } from '../integrals/bpms'
@@ -51,7 +51,7 @@ export const combineNotes = (source: State, selected: Entity[]): State => {
         const stage = index === undefined ? undefined : stages[index]
         return (
             (positions.get(note)?.elevation ?? note.elevation) +
-            (stage ? getStageProps(stage, beatToTime(source.bpms, note.beat)).elevation : 0)
+            (stage ? getStagePropsFrom(stage, beatToTime(source.bpms, note.beat)).elevation : 0)
         )
     }
     const notes = [...byBeat]

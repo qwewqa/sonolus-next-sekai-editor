@@ -35,6 +35,7 @@ import { EaseType, type Quad, type Vec } from '../../src/preview/engine/math'
 import { NoteKind, type PreviewChart, type PreviewNote } from '../../src/preview/engine/model'
 import { renderPreviewFrame } from '../../src/preview/engine/render'
 import type { PreviewRenderer, ZKey } from '../../src/preview/gl'
+import { resolveParticle, type PreviewParticle } from '../../src/preview/particle'
 import { resolveSkin, type Sprite } from '../../src/preview/skin'
 import { createState, type State } from '../../src/state'
 
@@ -121,7 +122,17 @@ type Draw = { sprite?: string; quad: Quad; z: ZKey; a: number }
 const render = (
     source: PreviewChart,
     now: number,
-    { leftLimit = true, showHitboxes = true } = {},
+    {
+        leftLimit = true,
+        showHitboxes = true,
+        showEffects = false,
+        particle,
+    }: {
+        leftLimit?: boolean
+        showHitboxes?: boolean
+        showEffects?: boolean
+        particle?: PreviewParticle
+    } = {},
 ): Draw[] => {
     const draws: Draw[] = []
     const renderer: PreviewRenderer = {
@@ -145,8 +156,8 @@ const render = (
         width,
         height,
         noteSpeed,
-        false,
-        undefined,
+        showEffects,
+        particle,
         undefined,
         leftLimit,
         showHitboxes,
@@ -578,9 +589,9 @@ const camera = (beat: number, overrides: Partial<CameraEventObject> = {}): Camer
     ...overrides,
 })
 
-test('pivots include the event at the input time; masks, transforms and the camera do not', () => {
-    // Every family steps at 2. The pivot moves the note to lane 3, while the
-    // stepped mask would clip it and the transform and camera would rotate it.
+test('input geometry holds every family, pivots included, at a step on the input time', () => {
+    // Every family steps at 2. The stepped pivot would move the note to lane 3,
+    // the mask would clip it and the transform and camera would rotate it.
     const events: Partial<Chart> = {
         isDynamicStages: true,
         stagePivotEvents: [pivot(0, 0), pivot(2, 3)],
@@ -589,14 +600,14 @@ test('pivots include the event at the input time; masks, transforms and the came
         cameraEvents: [camera(0), camera(2, { cameraRotation: 90 })],
     }
     const source = preview(chart([[note(2)]], events))
-    closeQuad(scoredHitbox(source, () => true).bounds, expectedBounds(2, 4, 1, 2.5))
+    closeQuad(scoredHitbox(source, () => true).bounds, expectedBounds(-1, 1, 1, 2.5))
 
     // Live connector geometry samples the same way, while playing or paused.
     const slide = preview(chart([[note(0), note(4)]], events))
     for (const leftLimit of [false, true]) {
         const connector = bounds(render(slide, 2, { leftLimit })).filter(({ a }) => a === 0.6)
         assert.equal(connector.length, 6)
-        toLine(connector, expectedBounds(2, 4, 1, 2.5))
+        toLine(connector, expectedBounds(-1, 1, 1, 2.5))
     }
 })
 
@@ -780,4 +791,178 @@ test('toggling hitboxes only adds the overlay without recompiling or mutating th
     assert.notEqual(edited, compiled)
     assert.equal(edited.chains[0], first)
     assert.equal(getHiddenTickHitboxes(edited.chains[0]!), ticks)
+})
+
+// Stage and camera values use the left limit: on a step, or an In-Out Step
+// midpoint, every query takes the held value from just before it.
+const particleSprite: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+sprites.set('particle', particleSprite)
+const stepParticle = resolveParticle(() => ({
+    groups: [
+        {
+            count: 1,
+            particles: [
+                {
+                    sprite: particleSprite,
+                    tint: { r: 1, g: 1, b: 1 },
+                    start: 0,
+                    duration: 1,
+                    x: { from: { c: 0 }, to: { c: 0 }, ease: 'linear' },
+                    y: { from: { c: 0 }, to: { c: 0 }, ease: 'linear' },
+                    w: { from: { c: 1 }, to: { c: 1 }, ease: 'linear' },
+                    h: { from: { c: 1 }, to: { c: 1 }, ease: 'linear' },
+                    r: { from: { c: 0 }, to: { c: 0 }, ease: 'linear' },
+                    a: { from: { c: 1 }, to: { c: 1 }, ease: 'linear' },
+                },
+            ],
+        },
+    ],
+}))
+const isSlot = ({ sprite }: Draw) => sprite?.startsWith('Sekai Slot') ?? false
+const isParticle = ({ sprite }: Draw) => sprite === 'particle'
+
+// Events, the held values alone, and the values after the step alone.
+type StepCase = [string, Partial<Chart>, Partial<Chart>, Partial<Chart>]
+const rotated = { cameraRotation: 90, cameraZoom: 2 }
+const elevated = [transform(0, 0, { elevation: 2 })]
+const stepCases: StepCase[] = [
+    ...(['none', 'inStep'] as const).map((eventEase): StepCase => [
+        `pivot step (${eventEase})`,
+        { stagePivotEvents: [{ ...pivot(0, 0), eventEase }, pivot(2, 3)] },
+        { stagePivotEvents: [pivot(0, 0)] },
+        { stagePivotEvents: [pivot(0, 3)] },
+    ]),
+    [
+        'pivot In-Out Step midpoint',
+        { stagePivotEvents: [{ ...pivot(0, 0), eventEase: 'inOutStep' }, pivot(4, 6)] },
+        { stagePivotEvents: [pivot(0, 0)] },
+        { stagePivotEvents: [pivot(0, 6)] },
+    ],
+    [
+        'division step',
+        {
+            stagePivotEvents: [
+                { ...pivot(0, 0), divisionSize: 2 },
+                { ...pivot(2, 0), divisionSize: 3, divisionParity: 'odd' },
+            ],
+        },
+        { stagePivotEvents: [{ ...pivot(0, 0), divisionSize: 2 }] },
+        { stagePivotEvents: [{ ...pivot(0, 0), divisionSize: 3, divisionParity: 'odd' }] },
+    ],
+    [
+        'mask In-Out Step midpoint',
+        {
+            stageMaskEvents: [{ ...mask(0, -12, 24), eventEase: 'inOutStep' }, mask(4, 0, 4)],
+        },
+        { stageMaskEvents: [mask(0, -12, 24)] },
+        { stageMaskEvents: [mask(0, 0, 4)] },
+    ],
+    [
+        'style In-Out Step midpoint',
+        {
+            stageStyleEvents: [
+                style(0, { eventEase: 'inOutStep' }),
+                style(4, { judgmentLineStyle: 'singleLine' }),
+            ],
+        },
+        { stageStyleEvents: [style(0)] },
+        { stageStyleEvents: [style(0, { judgmentLineStyle: 'singleLine' })] },
+    ],
+    [
+        'transform In-Out Step midpoint',
+        {
+            stageTransformEvents: [
+                transform(0, 0, { eventEase: 'inOutStep' }),
+                transform(4, 90, { elevation: 2 }),
+            ],
+        },
+        { stageTransformEvents: [transform(0, 0)] },
+        { stageTransformEvents: [transform(0, 90, { elevation: 2 })] },
+    ],
+    // Cameras only move transformed stages; the frame's own camera matches in all three.
+    [
+        'camera In-Out Step midpoint',
+        {
+            stageTransformEvents: elevated,
+            cameraEvents: [camera(0, { eventEase: 'inOutStep' }), camera(4, rotated)],
+        },
+        { stageTransformEvents: elevated, cameraEvents: [camera(0), camera(2.01, rotated)] },
+        { stageTransformEvents: elevated, cameraEvents: [camera(0, rotated)] },
+    ],
+]
+
+const isEffect = (draw: Draw) => isSlot(draw) || isParticle(draw)
+
+for (const [name, events, held, after] of stepCases) {
+    test(`a note on a ${name} takes the held value for its hitbox, effects and frame`, () => {
+        // A note on the step, and a slide across it.
+        const build = (overrides: Partial<Chart>, slide = true) =>
+            preview(
+                chart([[note(2)], ...(slide ? [[note(0), note(2.5, { left: 1 })]] : [])], {
+                    isDynamicStages: true,
+                    ...overrides,
+                }),
+            )
+        const onStep = (note: PreviewNote) => note.targetTime === 2
+        closeQuad(
+            scoredHitbox(build(events), onStep).bounds,
+            scoredHitbox(build(held), onStep).bounds,
+        )
+
+        for (const leftLimit of [false, true]) {
+            const frame = (overrides: Partial<Chart>, now: number, slide = true) =>
+                render(build(overrides, slide), now, {
+                    leftLimit,
+                    showEffects: true,
+                    particle: stepParticle,
+                })
+
+            // The whole frame on the step: stage, notes, connectors and hitboxes.
+            const draws = frame(events, 2)
+            assert.ok(draws.length > 0)
+            assert.deepEqual(draws, frame(held, 2))
+
+            // The note's effects keep the held value afterwards.
+            const effects = (overrides: Partial<Chart>) =>
+                frame(overrides, 2.05, false).filter(isEffect)
+            assert.ok(effects(events).some(isSlot))
+            assert.ok(effects(events).some(isParticle))
+            assert.deepEqual(effects(events), effects(held))
+            assert.notDeepEqual(effects(events), effects(after))
+        }
+    })
+}
+
+test('frames just after an In-Out Step midpoint draw the value after the jump', () => {
+    const build = (overrides: Partial<Chart>) =>
+        preview(chart([[note(2.2)]], { isDynamicStages: true, ...overrides }))
+    const source = build({
+        stagePivotEvents: [{ ...pivot(0, 0), eventEase: 'inOutStep' }, pivot(4, 6)],
+    })
+    const after = build({ stagePivotEvents: [pivot(0, 6)] })
+    const isBody = ({ sprite }: Draw) => sprite?.startsWith('Sekai Normal Note') ?? false
+
+    for (const leftLimit of [false, true]) {
+        const body = render(source, 2.01, { leftLimit, showHitboxes: false }).filter(isBody)
+        assert.ok(body.length > 0)
+        assert.deepEqual(
+            body,
+            render(after, 2.01, { leftLimit, showHitboxes: false }).filter(isBody),
+        )
+    }
+})
+
+test('an attached note on a pivot step holds both ends of its attachment', () => {
+    const build = (stagePivotEvents: StagePivotEventObject[]) =>
+        preview(
+            chart([[note(0), note(2, { isAttached: true }), note(4, { left: 2 })]], {
+                isDynamicStages: true,
+                stagePivotEvents,
+            }),
+        )
+    const isAttached = (note: PreviewNote) => note.isAttached
+    closeQuad(
+        scoredHitbox(build([pivot(0, 0), pivot(2, 3)]), isAttached).bounds,
+        scoredHitbox(build([pivot(0, 0)]), isAttached).bounds,
+    )
 })
