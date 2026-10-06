@@ -20,6 +20,25 @@ const focused = (page: Page) =>
     }))
 
 test.describe('dialogs', () => {
+    test('are named by their titles', async ({ page }) => {
+        await boot(page)
+        await page.keyboard.press(',')
+        await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+
+        await page.evaluate(async () => {
+            const { appImport } = window.editorTest
+            const { showModal } =
+                await appImport<typeof import('../../src/modals')>('/src/modals/index.ts')
+            const { default: ConfirmModal } = await appImport<{
+                default: typeof import('../../src/modals/ConfirmModal.vue').default
+            }>('/src/modals/ConfirmModal.vue')
+            void showModal(ConfirmModal, { title: () => 'Named Title', message: () => 'Body' })
+        })
+        await expect(page.getByRole('dialog', { name: 'Named Title', exact: true })).toBeVisible()
+    })
+
     test('a pointer open focuses the dialog, a keyboard open its first field', async ({ page }) => {
         await boot(page)
         // Settings sits in the last group, which opens on hover.

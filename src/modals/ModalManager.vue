@@ -28,6 +28,8 @@ onUnmounted(() => {
 
 const vOpen = {
     mounted(el: HTMLDialogElement) {
+        const title = el.querySelector('[data-modal-title]')
+        if (title) el.setAttribute('aria-labelledby', title.id)
         // The body's primary action always takes focus, as a confirm button must.
         const body = el.lastElementChild
         const primary = body?.querySelector<HTMLElement>('[data-autofocus]')

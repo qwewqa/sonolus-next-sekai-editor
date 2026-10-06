@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, watch } from 'vue'
+import { inject, useId, watch } from 'vue'
 import { vScrollEdges } from '../directives/scrollEdges'
 import CloseIcon from '../editor/workspace/CloseIcon.vue'
 import { i18n } from '../i18n'
@@ -22,6 +22,9 @@ if (modalTitle)
 defineEmits<{
     close: []
 }>()
+
+// The dialog around it is named by this title.
+const titleId = useId()
 </script>
 
 <template>
@@ -29,7 +32,7 @@ defineEmits<{
         class="flex h-12 shrink-0 items-center justify-between gap-2 bg-header pl-4 pr-1.5 font-bold [@media(pointer:coarse)]:h-[52px]"
         :class="modalTitle ? 'text-base' : 'text-lg'"
     >
-        <span class="min-w-0 truncate" :title>{{ title }}</span>
+        <span :id="titleId" class="min-w-0 truncate" data-modal-title :title>{{ title }}</span>
         <button
             type="button"
             class="flex size-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:size-11"
