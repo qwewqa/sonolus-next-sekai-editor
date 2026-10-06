@@ -214,26 +214,48 @@ test.describe('edit labels', () => {
 
 // Hidden values are kept and written on purpose; these results must not change.
 test.describe('kept writes', () => {
-    const panel = (page: Page, object: Record<string, unknown>, beats?: number[]) =>
-        page.evaluate(
-            async ({ object, beats }) => {
-                const { history, store, appImport } = window.editorTest
-                const { editSelectedEditableEntities } = await appImport<
-                    typeof import('../../src/editor/sidebars/default')
-                >('/src/editor/sidebars/default/index.ts')
-                const { appliesToEdit } = await appImport<
-                    typeof import('../../src/editor/utils/properties')
-                >('/src/editor/utils/properties.ts')
-                history.replaceState({
-                    ...history.state.value,
-                    selectedEntities: [...store.getAllEntities()].filter(
-                        (e) => e.type === 'note' && (!beats || beats.includes(e.beat)),
-                    ),
-                })
-                editSelectedEditableEntities(object, appliesToEdit(object))
-            },
-            { object, beats },
-        )
+    const labels = {
+        isCritical: 'Critical',
+        isFake: 'Fake',
+        isConnectorSeparator: 'Separator',
+        isAttached: 'Attached',
+        size: 'Size',
+        left: 'Lane',
+    }
+    /** Selects the notes at these beats (all by default) and sets one field in the Properties panel. */
+    const panel = async (
+        page: Page,
+        key: keyof typeof labels,
+        value: boolean | number,
+        beats?: number[],
+    ) => {
+        await page.evaluate(async (beats) => {
+            const { history, store, settings, nextTick } = window.editorTest
+            settings.showSidebar = true
+            settings.propertiesConnectorExpanded = true
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (e) => e.type === 'note' && (!beats || beats.includes(e.beat)),
+                ),
+            })
+            await nextTick()
+        }, beats)
+        const control = page
+            .locator('#workspace-panel-properties #properties-section-selection label')
+            .filter({ has: page.getByText(labels[key], { exact: true }) })
+            .locator('input')
+        if (typeof value === 'number') {
+            await control.fill(`${value}`)
+            await control.press('Enter')
+        } else {
+            // A Mixed toggle turns on first.
+            const shown = value ? 'Enabled' : 'Disabled'
+            for (let i = 0; i < 2 && (await control.inputValue()) !== shown; i++)
+                await control.click()
+            await expect(control).toHaveValue(shown)
+        }
+    }
     const notes = (page: Page, keys: string[]) =>
         page.evaluate(
             (keys) =>
@@ -246,7 +268,7 @@ test.describe('kept writes', () => {
 
     test('Critical on anchors also makes their slide critical', async ({ page }) => {
         await showSlides(page, [[{ beat: 0, noteType: 'anchor' }, { beat: 2 }], [{ beat: 4 }]])
-        await panel(page, { isCritical: true }, [0, 4])
+        await panel(page, 'isCritical', true, [0, 4])
         expect(await notes(page, ['isCritical', 'connectorActiveIsCritical'])).toEqual([
             [true, true],
             [false, false],
@@ -256,7 +278,7 @@ test.describe('kept writes', () => {
 
     test('Fake also sets Slide Fake, hidden ones included', async ({ page }) => {
         await showSlides(page, [[{ beat: 0 }, { beat: 2 }]])
-        await panel(page, { isFake: true })
+        await panel(page, 'isFake', true)
         expect(await notes(page, ['isFake', 'connectorIsFake'])).toEqual([
             [true, true],
             [true, true],
@@ -271,7 +293,7 @@ test.describe('kept writes', () => {
                 { beat: 2 },
             ],
         ])
-        await panel(page, { isConnectorSeparator: true }, [1])
+        await panel(page, 'isConnectorSeparator', true, [1])
         expect(await notes(page, ['connectorType', 'connectorLayer'])).toEqual([
             ['active', 'top'],
             ['guide', 'over'],
@@ -304,7 +326,7 @@ test.describe('kept writes', () => {
                 { beat: 2, elevation: 4, left: 4 },
             ],
         ])
-        await panel(page, { isAttached: false }, [1])
+        await panel(page, 'isAttached', false, [1])
         expect(await notes(page, ['left', 'elevation'])).toEqual([
             [0, 0],
             [2, 0],
@@ -314,8 +336,8 @@ test.describe('kept writes', () => {
             window.editorTest.settings.zeroWidthNotes = 'off'
             window.editorTest.settings.maxLane = 6
         })
-        await panel(page, { size: 0 }, [0])
-        await panel(page, { left: 20 }, [0])
+        await panel(page, 'size', 0, [0])
+        await panel(page, 'left', 20, [0])
         expect((await notes(page, ['left', 'size']))[0]).toEqual([20, 0])
     })
 })
