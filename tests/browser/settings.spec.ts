@@ -112,3 +112,17 @@ test('shortcut capture takes keys when a click does not focus the button', async
     )
     expect(focusMayMove).toBe(false)
 })
+
+test('shortcut capture waits past modifiers for the key they modify', async ({ page }) => {
+    const undo = page
+        .getByRole('dialog')
+        .locator('label')
+        .filter({ has: page.getByText('Undo', { exact: true }) })
+        .getByRole('button')
+    await undo.click()
+    await page.keyboard.press('Shift')
+    await expect(undo).toHaveText('Press a key or click again to clear')
+    await page.keyboard.press('Control+z')
+    await expect(undo).toHaveText('z')
+    expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.undo)).toBe('z')
+})

@@ -24,9 +24,28 @@ const onMouseDown = (event: MouseEvent) => {
     if (isActive.value) event.preventDefault()
 }
 
+// Modifiers alone are never bindings; capture waits for the key they modify.
+const modifierKeys = new Set([
+    'Alt',
+    'AltGraph',
+    'CapsLock',
+    'Control',
+    'Fn',
+    'FnLock',
+    'Hyper',
+    'Meta',
+    'NumLock',
+    'OS',
+    'ScrollLock',
+    'Shift',
+    'Super',
+    'Symbol',
+    'SymbolLock',
+])
+
 const onKeyDown = (event: KeyboardEvent) => {
     if (!isActive.value) return
-    if (event.key === 'Tab') return
+    if (event.key === 'Tab' || modifierKeys.has(event.key)) return
 
     event.preventDefault()
     event.stopPropagation()
