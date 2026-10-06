@@ -172,13 +172,13 @@ export const commands = {
 
     cycleVisibilities,
     noteVisibility,
+    bpmVisibility,
+    timeScaleVisibility,
     cameraEventVisibility,
     stageMaskEventVisibility,
     stagePivotEventVisibility,
     stageStyleEventVisibility,
     stageTransformEventVisibility,
-    timeScaleVisibility,
-    bpmVisibility,
 
     division1: division(1),
     division2: division(2),

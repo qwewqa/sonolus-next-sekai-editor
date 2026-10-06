@@ -220,3 +220,48 @@ test.describe('on Apple devices', () => {
         expect(await savedShortcut(page, 'save')).toBe('Mod+Shift+s')
     })
 })
+
+test('visibility toggles list kinds in the tools’ order everywhere', async ({ page }) => {
+    const kinds = ['Note', 'BPM', 'Time Scale', 'Camera Event', 'Stage Mask Event']
+    // The keyboard shortcut list.
+    const names = await page
+        .getByRole('dialog')
+        .locator('section')
+        .filter({ has: page.getByRole('heading', { name: 'Keyboard Shortcuts' }) })
+        .locator('.form-field-text')
+        .allInnerTexts()
+    const toggles = names.flatMap((name) => /^Toggle (.*) Visibility$/.exec(name.trim())?.[1] ?? [])
+    expect(toggles.slice(0, kinds.length)).toEqual(kinds)
+
+    const result = await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        const { settings, view, history, fixtures } = window.editorTest
+        const chart = structuredClone(fixtures.notes)
+        chart.isDynamicStages = true
+        history.resetState(false, chart, 0, 'visibility.json')
+        // The default toolbar's flyout, read upward from its button.
+        const group = settings.toolbar.find((names) => names.includes('cycleVisibilities')) ?? []
+        // Each cycle shows one kind alone, in order.
+        const cycle: string[] = []
+        for (let step = 0; step < 4; step++) {
+            commands.cycleVisibilities.execute()
+            cycle.push(
+                Object.entries(view.visibilities)
+                    .filter(([, shown]) => shown)
+                    .map(([type]) => type)
+                    .filter((type) => type !== 'connector' && !type.endsWith('Connection'))
+                    .join(),
+            )
+        }
+        return { group: [...group].reverse(), cycle }
+    })
+    expect(result.group.slice(0, 6)).toEqual([
+        'cycleVisibilities',
+        'noteVisibility',
+        'bpmVisibility',
+        'timeScaleVisibility',
+        'cameraEventVisibility',
+        'stageMaskEventVisibility',
+    ])
+    expect(result.cycle).toEqual(['note', 'bpm', 'timeScale', 'cameraEventJoint'])
+})

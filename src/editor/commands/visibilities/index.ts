@@ -8,19 +8,19 @@ import VisibilityIcon from './VisibilityIcon.vue'
 
 export const nonDynamicStagesVisibilityTypes = {
     note: ['note', 'connector'],
-    timeScale: ['timeScale'],
     bpm: ['bpm'],
+    timeScale: ['timeScale'],
 } satisfies Record<string, EntityType[]>
 
 export const dynamicStagesVisibilityTypes = {
     note: ['note', 'connector'],
+    bpm: ['bpm'],
+    timeScale: ['timeScale'],
     cameraEvent: ['cameraEventJoint', 'cameraEventConnection'],
     stageMaskEvent: ['stageMaskEventJoint', 'stageMaskEventConnection'],
     stagePivotEvent: ['stagePivotEventJoint', 'stagePivotEventConnection'],
     stageStyleEvent: ['stageStyleEventJoint', 'stageStyleEventConnection'],
     stageTransformEvent: ['stageTransformEventJoint', 'stageTransformEventConnection'],
-    timeScale: ['timeScale'],
-    bpm: ['bpm'],
 } satisfies Record<string, EntityType[]>
 
 export const createVisibility = (
