@@ -384,3 +384,24 @@ test('a value glyph gives way only when that lets the value fit', async ({ page 
     // French "Haut à Gauche" (Up Left) fits only without its arrow.
     expect(gaveWay).toBeGreaterThan(0)
 })
+
+test('shortcut notes start with the name, not under its icon', async ({ page }) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    const row = page
+        .locator('dialog[open] .form-field')
+        .filter({ has: page.locator('.form-field-text').getByText('Select', { exact: true }) })
+        .first()
+    await expect(row.locator('.form-field-notes')).toBeVisible()
+    const [name, note] = await row.evaluate((row) =>
+        ['.form-field-text', '.form-field-notes p'].map((selector) => {
+            const range = document.createRange()
+            range.selectNodeContents(row.querySelector(selector)!)
+            return range.getBoundingClientRect().left
+        }),
+    )
+    expect(Math.abs(name! - note!)).toBeLessThan(1)
+})

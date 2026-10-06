@@ -454,6 +454,15 @@ watchEffect(
     color: rgb(68 68 102 / 0.8);
 }
 
+/* Under a label with an icon, notes start with the label's text. */
+.form-field:has(.form-field-label > .form-field-icon) .form-field-notes {
+    padding-left: 1.75rem;
+}
+
+.form-field:has(.form-field-iconless) .form-field-notes {
+    padding-left: 0;
+}
+
 /* Tinted pills read as actions; coverage is muted text, apart from the values. */
 .form-field-mixed-value {
     border-radius: 9999px;
