@@ -891,3 +891,47 @@ for (const separator of [false, true])
             )
             expect(restored).toEqual(before)
         })
+
+test('a level file loads a time-scale pair along its chain, not its listing', async ({ page }) => {
+    const loaded = await page.evaluate(async () => {
+        const { parseLevelDataChart } = await window.editorTest.appImport<
+            typeof import('../../src/chart/parse/levelData')
+        >('/src/chart/parse/levelData/index.ts')
+        const timeScale = (name: string, group: string, value: number, next?: string) => ({
+            name,
+            archetype: '#TIMESCALE_CHANGE',
+            data: [
+                { name: '#TIMESCALE_GROUP', ref: group },
+                { name: '#BEAT', value: 4 },
+                { name: '#TIMESCALE', value },
+                { name: '#TIMESCALE_SKIP', value: 0 },
+                { name: '#TIMESCALE_EASE', value: 0 },
+                ...(next ? [{ name: 'next', ref: next }] : []),
+            ],
+        })
+        const chart = parseLevelDataChart([
+            { archetype: 'Initialization', data: [] },
+            {
+                archetype: '#BPM_CHANGE',
+                data: [
+                    { name: '#BEAT', value: 0 },
+                    { name: '#BPM', value: 120 },
+                ],
+            },
+            { name: 'a', archetype: '#TIMESCALE_GROUP', data: [{ name: 'first', ref: 'a1' }] },
+            // Its first is missing; the file still loads, as before.
+            { name: 'b', archetype: '#TIMESCALE_GROUP', data: [{ name: 'first', ref: 'gone' }] },
+            // Listed second-first; the engine plays 1 then 2.
+            timeScale('a2', 'a', 2),
+            timeScale('a1', 'a', 1, 'a2'),
+            // Outside any chain, still loaded.
+            timeScale('a3', 'a', 3),
+            timeScale('b1', 'b', 5),
+        ])
+        const groups = [...chart.groups.keys()]
+        return chart.timeScales.map(
+            ({ groupId, timeScale }) => `${groups.indexOf(groupId)}:${timeScale}`,
+        )
+    })
+    expect(loaded).toEqual(['0:1', '0:2', '0:3', '1:5'])
+})

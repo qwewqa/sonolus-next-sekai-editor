@@ -1,13 +1,30 @@
-import { EngineArchetypeDataName, EngineArchetypeName } from '@sonolus/core'
+import { EngineArchetypeDataName, EngineArchetypeName, type LevelDataEntity } from '@sonolus/core'
 import Type from 'typebox'
-import { getOptionalValue, getValue, type ParseCtx } from '.'
+import { getOptionalRef, getOptionalValue, getValue, type ParseCtx } from '.'
 import { easeFromValue, timeScaleEaseLevelDataValues, type TimeScaleEase } from '../../../ease'
 import { beatSchema } from './schemas'
 
 export const parseTimeScalesToChart = ({ chart, entities, getGroupId }: ParseCtx) => {
-    for (const entity of entities) {
-        if (entity.archetype !== EngineArchetypeName.TimeScaleChange) continue
+    const timeScales = entities.filter(
+        (entity) => entity.archetype === EngineArchetypeName.TimeScaleChange,
+    )
+    const refs = new Map(
+        timeScales.flatMap((entity) => (entity.name ? [[entity.name, entity]] : [])),
+    )
+    // Each group's chain first, as the engine plays it; the rest as listed.
+    const ordered = new Set<LevelDataEntity>()
+    for (const group of entities) {
+        if (group.archetype !== '#TIMESCALE_GROUP') continue
+        for (let ref = getOptionalRef(group, 'first'); ref !== undefined;) {
+            const entity = refs.get(ref)
+            if (!entity || ordered.has(entity)) break
+            ordered.add(entity)
+            ref = getOptionalRef(entity, 'next')
+        }
+    }
+    for (const entity of timeScales) ordered.add(entity)
 
+    for (const entity of ordered) {
         chart.timeScales.push({
             groupId: getGroupId(entity),
             beat: getValue(entity, EngineArchetypeDataName.Beat, beatSchema),
