@@ -208,3 +208,70 @@ test('cached note artwork distinguishes color overrides', (t) => {
     draw(2, 'red')
     assert.equal(canvases.length, 3)
 })
+
+test("a zero-width fake note's X spans its placeholder box", (t) => {
+    // Each red stroke's points, in note units.
+    const crosses: [number, number][][] = []
+    const makeCanvasContext = () => {
+        let path: [number, number][] = []
+        const target: Record<string, unknown> = { globalAlpha: 1 }
+        return new Proxy(target, {
+            get(target, property) {
+                if (property in target) return Reflect.get(target, property)
+                if (property === 'beginPath') return () => (path = [])
+                if (property === 'moveTo' || property === 'lineTo')
+                    return (x: number, y: number) => path.push([x, y])
+                if (property === 'stroke')
+                    return () => {
+                        if (target.strokeStyle === '#f44') crosses.push(path)
+                    }
+                return () => {}
+            },
+        }) as unknown as CanvasRenderingContext2D
+    }
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'document')
+    Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: {
+            createElement: () => ({ width: 0, height: 0, getContext: makeCanvasContext }),
+        },
+    })
+    t.after(() => {
+        if (original) Object.defineProperty(globalThis, 'document', original)
+        else Reflect.deleteProperty(globalThis, 'document')
+    })
+    const renderer = createNoteRenderer()
+    const context = {
+        ctx: makeCanvasContext(),
+        scale: 40,
+        pixelRatio: 1,
+        ups: -2,
+        recentlyActive: false,
+        state: { bpms: [{ x: 0, y: 0, s: 0.5 }], store: { slides: { info: new Map() } } },
+    } as unknown as EditorDrawContext
+    const extents = (noteType: NoteEntity['noteType'], size: number) => {
+        crosses.length = 0
+        renderer.draw(
+            context,
+            note(0, {
+                noteType,
+                size,
+                left: 0,
+                noteStyle: 'default',
+                flickDirection: 'none',
+                isCritical: false,
+                isFake: true,
+            }),
+            false,
+        )
+        const points = crosses.flat()
+        const xs = points.map(([x]) => x)
+        const ys = points.map(([, y]) => y)
+        return [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    }
+    // Over the 0.2-wide placeholder, at the body's own height.
+    assert.deepEqual(extents('default', 0), [-0.1, 0.1, 0, 0.6])
+    assert.deepEqual(extents('trace', 0), [-0.1, 0.1, 0.15, 0.45])
+    // Sized notes keep their X.
+    assert.deepEqual(extents('default', 2), [0, 2, 0, 0.6])
+})

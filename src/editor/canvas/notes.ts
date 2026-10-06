@@ -178,14 +178,18 @@ const drawArtwork = (
     ctx.restore()
 
     if (type !== 'anchor' && entity.isFake) {
+        // A zero-width placeholder takes the X over its own box.
+        const flat = size <= 0 && (type === 'tick' || type === 'damage' || type === 'trace')
+        const [left, right] = size > 0 ? [0, size] : [x, x + w]
+        const [top, bottom] = flat ? [0.15, 0.45] : [0, 0.6]
         ctx.strokeStyle = '#f44'
         ctx.beginPath()
-        ctx.moveTo(0, 0)
-        ctx.lineTo(size, 0.6)
+        ctx.moveTo(left, top)
+        ctx.lineTo(right, bottom)
         ctx.stroke()
         ctx.beginPath()
-        ctx.moveTo(0, 0.6)
-        ctx.lineTo(size, 0)
+        ctx.moveTo(left, bottom)
+        ctx.lineTo(right, top)
         ctx.stroke()
     }
 }
