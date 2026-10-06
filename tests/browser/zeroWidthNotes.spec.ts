@@ -66,29 +66,36 @@ for (const [setting, expected] of [
     })
 }
 
-test('the elevation editor lets anchors reach zero width within lane limits', async ({ page }) => {
-    await page.evaluate(() => {
-        const { fixtures, show, settings, history } = window.editorTest
-        settings.maxLane = 6
-        settings.elevationEditorSideBySide = 'disallow'
-        const [[base]] = fixtures.interaction.slides as [
-            [(typeof fixtures.interaction.slides)[0][0]],
-        ]
-        show({
-            ...fixtures.interaction,
-            slides: [
-                [{ ...base, beat: 4, left: 0, size: 2, elevation: 1, noteType: 'anchor' }],
-                [{ ...base, beat: 4, left: 3, size: 2, elevation: 3, noteType: 'default' }],
-            ],
-        })
-        history.replaceState({
-            ...history.state.value,
-            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
-        })
-    })
+const openElevation = async (page: Page, maxLane: number, setting: string) => {
+    await page.evaluate(
+        ({ maxLane, setting }) => {
+            const { fixtures, show, settings, history } = window.editorTest
+            settings.maxLane = maxLane
+            settings.zeroWidthNotes = setting as typeof settings.zeroWidthNotes
+            settings.elevationEditorSideBySide = 'disallow'
+            const [[base]] = fixtures.interaction.slides as [
+                [(typeof fixtures.interaction.slides)[0][0]],
+            ]
+            show({
+                ...fixtures.interaction,
+                slides: [
+                    [{ ...base, beat: 4, left: 0, size: 2, elevation: 1, noteType: 'anchor' }],
+                    [{ ...base, beat: 4, left: 3, size: 2, elevation: 3, noteType: 'default' }],
+                ],
+            })
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+            })
+        },
+        { maxLane, setting },
+    )
     await page.keyboard.press('t')
     await expect(page.locator('.elevation-canvas')).toBeVisible()
-    const point = (lane: number, elevation: number) =>
+}
+
+const elevationDrag = async (page: Page, from: number, to: number, elevation: number, via = to) => {
+    const point = (lane: number) =>
         page.evaluate(
             async ({ lane, elevation }) => {
                 const { elevationLayout } = await window.editorTest.appImport<
@@ -104,19 +111,44 @@ test('the elevation editor lets anchors reach zero width within lane limits', as
             },
             { lane, elevation },
         )
-    // Right edges dragged onto the left edges.
-    for (const [from, to, elevation] of [
-        [1.9, -0.1, 1],
-        [4.9, 2.9, 3],
-    ] as const) {
-        const start = await point(from, elevation)
-        const end = await point(to, elevation)
-        await page.mouse.move(start.x, start.y)
-        await page.mouse.down()
-        await page.mouse.move(end.x, end.y, { steps: 6 })
-        await settle(page)
-        await page.mouse.up()
-        await settle(page)
-    }
-    expect(await sizes(page)).toEqual({ anchor: 0, default: 1 })
+    const start = await point(from)
+    const middle = await point(via)
+    const end = await point(to)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(middle.x, middle.y, { steps: 6 })
+    await page.mouse.move(end.x, end.y, { steps: 6 })
+    await settle(page)
+    await page.mouse.up()
+    await settle(page)
+}
+
+for (const maxLane of [0, 6]) {
+    test(`the elevation editor resizes by the setting with lane limit ${maxLane}`, async ({
+        page,
+    }) => {
+        await openElevation(page, maxLane, 'anchors')
+        // Right edges dragged onto the left edges.
+        await elevationDrag(page, 1.9, -0.1, 1)
+        await elevationDrag(page, 4.9, 2.9, 3)
+        expect(await sizes(page)).toEqual({ anchor: 0, default: 1 })
+    })
+}
+
+test('elevation drags add notes as narrow as the setting allows', async ({ page }) => {
+    await openElevation(page, 0, 'all')
+    await page.evaluate(async () => {
+        const { commands } = await window.editorTest.appImport<
+            typeof import('../../src/editor/commands')
+        >('/src/editor/commands/index.ts')
+        await commands.note1.execute()
+    })
+    // Out and back to where the drag started.
+    await elevationDrag(page, -4, -4.1, 5, -2)
+    const added = await page.evaluate(() =>
+        [...window.editorTest.store.getAllEntities()].flatMap((entity) =>
+            entity.type === 'note' && entity.left < -2 ? [entity.size] : [],
+        ),
+    )
+    expect(added).toEqual([0])
 })

@@ -31,7 +31,7 @@ import { cancelTouchControls } from '../controls/touch'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { closeContextMenu, contextMenu } from '../contextMenu'
-import { constrainLaneObject } from '../laneLimits'
+import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { isSidebarVisible, revealPropertiesSection } from '../sidebars'
 import { panelTools, tools, toolName, type Tool } from '../tools'
 import { applyBrushToEntities } from '../tools/brush'
@@ -57,6 +57,7 @@ import { alignLane, view, focusViewAtBeat } from '../view'
 import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
 import {
     createElevationNote,
+    elevationNoteMinimum,
     pasteElevationNotes,
     previewElevationNote,
     previewElevationPaste,
@@ -280,7 +281,7 @@ const edit = (active: NonNullable<typeof drag>) => {
                 ? resize(
                       active.anchor,
                       active.movingEdge + active.deltaLane,
-                      0,
+                      minimumNoteSize(note.noteType),
                       Number.POSITIVE_INFINITY,
                       active.movingEdge,
                   )
@@ -537,7 +538,11 @@ const controls: Pick<
     },
     dragUpdate(x, y, modifiers) {
         if (adding) {
-            const [left, size] = resize(adding.lane, xToLane(x), 1 / view.laneDivision)
+            const [left, size] = resize(
+                adding.lane,
+                xToLane(x),
+                elevationNoteMinimum(elevationBeat.value, adding.slide),
+            )
             creating.value = ghostRows([
                 previewElevationNote(
                     left,
@@ -611,7 +616,11 @@ const controls: Pick<
         }
         if (adding) {
             const current = adding
-            const [left, size] = resize(current.lane, xToLane(x), 1 / view.laneDivision)
+            const [left, size] = resize(
+                current.lane,
+                xToLane(x),
+                elevationNoteMinimum(elevationBeat.value, current.slide),
+            )
             const elevation = snapElevation(yToElevation(y), settings.elevationSnap)
             cancel()
             createElevationNote(left, elevation, elevationBeat.value, current.slide, size)

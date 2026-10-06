@@ -8,7 +8,7 @@ import { addNote } from '../../state/mutations/slides/note'
 import { createTransaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
 import type { Modifiers } from '../controls/gestures/pointer'
-import { constrainLaneObject } from '../laneLimits'
+import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
 import { revealAuthoringTarget } from '../scope'
 import { getNotePropertiesFromSelection } from '../tools/note'
@@ -17,6 +17,13 @@ import { getSelectedSlideId, getSlidePropertiesFromSelection } from '../tools/sl
 import { view } from '../view'
 import { getElevationStageProps } from './scene'
 
+const getElevationProperties = (beat: number, asSlide: boolean) =>
+    asSlide ? getSlidePropertiesFromSelection(beat) : getNotePropertiesFromSelection()
+
+/** The narrowest note a drag adds, by the Zero-Width Notes setting. */
+export const elevationNoteMinimum = (beat: number, asSlide: boolean) =>
+    minimumNoteSize(getElevationProperties(beat, asSlide).noteType)
+
 export const previewElevationNote = (
     lane: number,
     elevation: number,
@@ -24,9 +31,7 @@ export const previewElevationNote = (
     asSlide: boolean,
     size?: number,
 ) => {
-    const properties = asSlide
-        ? getSlidePropertiesFromSelection(beat)
-        : getNotePropertiesFromSelection()
+    const properties = getElevationProperties(beat, asSlide)
     const stage = getElevationStageProps(properties.stageId, beat)
     return toNoteEntity(
         asSlide ? (getSelectedSlideId() ?? createSlideId()) : createSlideId(),
