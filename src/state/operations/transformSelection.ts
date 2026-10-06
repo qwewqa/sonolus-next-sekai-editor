@@ -67,6 +67,25 @@ const add = (transaction: Transaction, entity: TimingEntity) => {
     }
 }
 
+/** Same-beat timing objects of a kind together where the first appears, in stored order. */
+export const inStoredOrder = <T>(source: State, items: T[], entityOf: (item: T) => Entity) => {
+    const keys = items.map((item, index) => {
+        const entity = entityOf(item)
+        return entity.type === 'note' ? `${index}` : `${entity.type}:${entity.beat}`
+    })
+    const first = new Map<string, number>()
+    for (const [index, key] of keys.entries()) if (!first.has(key)) first.set(key, index)
+    const rank = (entity: Entity) =>
+        getInStoreGrid(source.store.grid, entity.type, entity.beat)?.indexOf(entity) ?? 0
+    return items
+        .map((item, index) => ({ item, index, at: first.get(keys[index] ?? '') ?? index }))
+        .sort(
+            (a, b) =>
+                a.at - b.at || rank(entityOf(a.item)) - rank(entityOf(b.item)) || a.index - b.index,
+        )
+        .map(({ item }) => item)
+}
+
 export const transformSelection = (
     source: State,
     selected: Entity[],
@@ -96,7 +115,10 @@ export const transformSelection = (
     for (const [entity] of changed) {
         if (entity.type !== 'note') remove(transaction, entity)
     }
-    for (const [entity, object] of changed) {
+    // A same-beat pair lands in its stored order and stays a pair.
+    const ordered = inStoredOrder(source, changed, ([entity]) => entity)
+    const placed = new Map<Entity, number>()
+    for (const [entity, object] of ordered) {
         if (entity.type === 'note') {
             replacements.set(entity, editSelectedNote(transaction, entity, object))
             continue
@@ -106,6 +128,7 @@ export const transformSelection = (
                 []) {
                 if (
                     other.beat === object.beat &&
+                    placed.get(other) !== entity.beat &&
                     (!('groupId' in entity) ||
                         ('groupId' in other && other.groupId === entity.groupId)) &&
                     (!('stageId' in entity) ||
@@ -115,7 +138,9 @@ export const transformSelection = (
                 }
             }
         }
-        replacements.set(entity, add(transaction, { ...entity, ...object }))
+        const added = add(transaction, { ...entity, ...object })
+        for (const other of added) placed.set(other, entity.beat)
+        replacements.set(entity, added)
     }
     if (
         initialBpm &&

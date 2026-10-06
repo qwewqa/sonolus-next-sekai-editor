@@ -24,6 +24,7 @@ import { getInStoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
 import { connectorProperties } from './connectorProperties'
 import { isEditableEntity, type EditableEntity } from './editable'
+import { inStoredOrder } from './transformSelection'
 
 const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) => {
     const properties = new Map<NoteEntity, Partial<NoteObject>>()
@@ -77,8 +78,11 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
     // Remove the entire selection first. Sequential moves can otherwise delete
     // each other's destination, particularly when swapping BPMs and events.
     for (const entity of entities) remove(transaction, entity)
+    // A same-beat pair lands in its stored order and stays a pair.
+    const ordered = inStoredOrder(source, entities, (entity) => entity)
+    const placed = new Map<Entity, number>()
     const flipped: Entity[] = []
-    for (const entity of entities) {
+    for (const entity of ordered) {
         const beat = min + (max - entity.beat)
         if (entity.type !== 'note') {
             // Match the editor's move behavior: a timing point replaces an
@@ -86,6 +90,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
             for (const other of getInStoreGrid(transaction.store.grid, entity.type, beat) ?? []) {
                 if (
                     other.beat === beat &&
+                    placed.get(other) !== entity.beat &&
                     (!('groupId' in entity) ||
                         ('groupId' in other && other.groupId === entity.groupId)) &&
                     (!('stageId' in entity) ||
@@ -94,13 +99,13 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
                     remove(transaction, other)
             }
         }
-        flipped.push(
-            ...add(transaction, {
-                ...entity,
-                ...(entity.type === 'note' ? properties.get(entity) : undefined),
-                beat,
-            }),
-        )
+        const added = add(transaction, {
+            ...entity,
+            ...(entity.type === 'note' ? properties.get(entity) : undefined),
+            beat,
+        })
+        for (const other of added) placed.set(other, entity.beat)
+        flipped.push(...added)
     }
     // Moving the initial BPM must not leave the chart without a tempo at zero.
     if (

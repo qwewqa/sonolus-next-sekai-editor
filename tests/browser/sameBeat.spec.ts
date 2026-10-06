@@ -348,3 +348,68 @@ test('a sideways drag keeps a time-scale pair and its order', async ({ page }) =
     expect(lanes[0]).not.toBe(8)
     expect((await exported(page)).timeScale).toEqual(original.timeScale)
 })
+
+test.describe('flipping, scaling and nudging a pair keeps both', () => {
+    test.beforeEach(async ({ page }) => showPairs(page))
+
+    const transform = (page: Page, kind: Kind, operation: 'flip' | 'scale' | 'translate') =>
+        page.evaluate(
+            async ({ kind, operation }) => {
+                const { history, store, appImport, nextTick } = window.editorTest
+                // The initial BPM stays put; every other object of the kind moves.
+                const selected = [...store.getAllEntities()].filter(
+                    (entity) => entity.type === kind && entity.beat > 0,
+                )
+                history.replaceState({ ...history.state.value, selectedEntities: selected })
+                if (operation === 'flip') {
+                    const { flipVertical } = await appImport<
+                        typeof import('../../src/editor/commands/flipVertical')
+                    >('/src/editor/commands/flipVertical/index.ts')
+                    flipVertical.execute()
+                } else if (operation === 'scale') {
+                    const { scaleSelection } = await appImport<
+                        typeof import('../../src/state/operations/scaleSelection')
+                    >('/src/state/operations/scaleSelection.ts')
+                    history.pushState(
+                        () => 'scale',
+                        scaleSelection(history.state.value, selected, 'beat', 2, 2),
+                    )
+                } else {
+                    const { translateSelection } = await appImport<
+                        typeof import('../../src/state/operations/translateSelection')
+                    >('/src/state/operations/translateSelection.ts')
+                    history.pushState(
+                        () => 'translate',
+                        translateSelection(history.state.value, selected, 'beat', 1),
+                    )
+                }
+                await nextTick()
+            },
+            { kind, operation },
+        )
+
+    for (const kind of ['timeScale', 'bpm', 'cameraEventJoint', 'stageMaskEventJoint'] as const) {
+        // Flipped, each pair keeps its stored order at its mirrored beat.
+        const flipped = {
+            timeScale: [3, 1, 2, 0.5],
+            bpm: [120, 200, 120, 180],
+            cameraEventJoint: [3, 1, 2, 0.5],
+            stageMaskEventJoint: [1.5, 0.5, 1, 2.5],
+        }[kind]
+
+        test(`${kind}: flip vertically`, async ({ page }) => {
+            await transform(page, kind, 'flip')
+            const after = await exported(page)
+            expect(after[kind]).toEqual(flipped)
+            if (kind === 'bpm') expect(after.bpmIntegrals).toEqual(flipped)
+        })
+
+        for (const operation of ['scale', 'translate'] as const)
+            test(`${kind}: ${operation} in time`, async ({ page }) => {
+                await transform(page, kind, operation)
+                const after = await exported(page)
+                expect(after[kind]).toEqual(original[kind])
+                if (kind === 'bpm') expect(after.bpmIntegrals).toEqual(original.bpmIntegrals)
+            })
+    }
+})
