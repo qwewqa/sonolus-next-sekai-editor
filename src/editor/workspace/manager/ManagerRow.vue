@@ -603,9 +603,10 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply bg-accent/35 ring-2 ring-inset ring-accent;
 }
 
-/* One trailing column for counts, which inline actions overlay in place. */
+/* One trailing column for counts, which inline actions overlay in place; a
+   long count widens it and the name gives way. */
 .manager-slot {
-    @apply relative flex h-9 w-10 shrink-0 items-center justify-end;
+    @apply relative flex h-9 min-w-10 shrink-0 items-center justify-end;
 }
 
 /* Inset so a count clears a filled button beside it, e.g. the pressed Select. */
@@ -639,7 +640,7 @@ const onRenameBlur = (event: FocusEvent) => {
 }
 
 .manager-row-current .manager-slot-current .manager-meta {
-    @apply w-10;
+    @apply min-w-10;
 }
 
 @media (hover: hover) {

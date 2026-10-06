@@ -564,3 +564,32 @@ test("the band's count keeps clear of the pressed Select toggle", async ({ page 
     })
     expect(gap).toBeGreaterThanOrEqual(4)
 })
+
+test('a long band count widens its column and the name gives way', async ({ page }) => {
+    await seedGroups(
+        page,
+        Array.from({ length: 150 }, (_, i): Seed[number] => [`Group ${i + 1}`]),
+    )
+    await page.evaluate(() => {
+        const { settings, view } = window.editorTest
+        settings.groupsPosition = 'left'
+        settings.leftDockWidth = 220
+        view.groupVisibility = new Map(
+            Array.from({ length: 27 }, (_, i) => [(1003 + i) as never, 'hidden' as const]),
+        )
+    })
+    const list = panel(page)
+    await list.locator('.manager-mode').click()
+    await expect(list.locator('.manager-all .manager-meta')).toHaveText('123/150')
+    const gaps = await list.locator('.manager-all').evaluate((row) => {
+        const range = document.createRange()
+        range.selectNodeContents(row.querySelector('.manager-meta')!)
+        const text = range.getBoundingClientRect()
+        return {
+            name: text.left - row.querySelector('.manager-name')!.getBoundingClientRect().right,
+            mode: row.querySelector('.manager-mode')!.getBoundingClientRect().left - text.right,
+        }
+    })
+    expect(gaps.name).toBeGreaterThanOrEqual(0)
+    expect(gaps.mode).toBeGreaterThanOrEqual(4)
+})
