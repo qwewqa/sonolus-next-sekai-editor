@@ -177,6 +177,55 @@ const narrow = async (value: Chip, event: MouseEvent) => {
         ?.focus()
 }
 
+// Coverage alone sits beside the label, giving way before the label would wrap more or break a word.
+const coverageOnly = computed(() => chips.value.length === 1 && !!chips.value[0]?.coverage)
+const line = useTemplateRef<HTMLElement>('line')
+let lineWidth = 0
+let lineFrame = 0
+const fitCoverage = () => {
+    const element = line.value
+    const text = labelRow.value?.querySelector<HTMLElement>('.form-field-text')
+    if (!element || !text) return
+    element.classList.add('form-field-stacked')
+    if (!coverageOnly.value) return
+    const stackedHeight = text.scrollHeight
+    element.classList.remove('form-field-stacked')
+    text.style.overflowWrap = 'normal'
+    const fits =
+        text.scrollWidth <= text.clientWidth + 1 &&
+        text.scrollHeight <= Math.min(stackedHeight, text.clientHeight) + 1
+    text.style.overflowWrap = ''
+    if (!fits) element.classList.add('form-field-stacked')
+}
+const lineObserver = new ResizeObserver(([entry]) => {
+    if (!entry || entry.contentRect.width === lineWidth) return
+    lineWidth = entry.contentRect.width
+    refitCoverage()
+})
+const observeLine = () => {
+    lineObserver.disconnect()
+    lineWidth = 0
+    if (coverageOnly.value && line.value) lineObserver.observe(line.value)
+    fitCoverage()
+}
+const refitCoverage = () => {
+    if (!coverageOnly.value) return
+    cancelAnimationFrame(lineFrame)
+    lineFrame = requestAnimationFrame(fitCoverage)
+}
+onMounted(() => {
+    observeLine()
+    document.fonts.addEventListener('loadingdone', refitCoverage)
+})
+watch([coverageOnly, () => props.label, () => chips.value[0]?.text], observeLine, {
+    flush: 'post',
+})
+onBeforeUnmount(() => {
+    lineObserver.disconnect()
+    cancelAnimationFrame(lineFrame)
+    document.fonts.removeEventListener('loadingdone', refitCoverage)
+})
+
 // The control is slotted, so it is linked to the description here.
 watchEffect(
     () => {
@@ -193,42 +242,50 @@ watchEffect(
     <!-- Lays out by the width the field actually receives (dialog, tool modal or
     dock panel), not by the viewport: the wrapper is the query container. -->
     <div class="form-field">
-        <component :is="labelId === undefined ? 'label' : 'div'" ref="row" class="form-field-row">
-            <span ref="labelRow" class="form-field-label"
-                ><slot name="icon" /><span :id="labelId" class="form-field-text">{{
-                    label
-                }}</span></span
+        <!-- Coverage alone joins the label's column where it fits. -->
+        <div ref="line" :class="{ 'form-field-inline': coverageOnly }">
+            <component
+                :is="labelId === undefined ? 'label' : 'div'"
+                ref="row"
+                class="form-field-row"
             >
-            <slot />
-        </component>
-        <!-- Which objects the field covers and which values they hold; each chip
-        selects only its objects. -->
-        <div
-            v-if="chips.length"
-            ref="chipRow"
-            class="form-field-mixed"
-            role="toolbar"
-            :aria-label="label"
-            @keydown="move"
-        >
-            <button
-                v-for="(chip, index) in chips"
-                :key="index"
-                type="button"
-                class="form-field-mixed-value"
-                :class="{ 'form-field-coverage-chip': chip.coverage }"
-                :tabindex="index === current ? 0 : -1"
-                :title="chip.label"
-                :aria-label="chip.label"
-                :disabled="!chip.narrow"
-                @focus="current = index"
-                @click="narrow(chip, $event)"
-            >
-                <template v-if="chip.text">{{ chip.text }}</template>
-                <template v-else
-                    >{{ chip.name }} <span class="tabular-nums">{{ chip.count }}</span></template
+                <span ref="labelRow" class="form-field-label"
+                    ><slot name="icon" /><span :id="labelId" class="form-field-text">{{
+                        label
+                    }}</span></span
                 >
-            </button>
+                <slot />
+            </component>
+            <!-- Which objects the field covers and which values they hold; each chip
+        selects only its objects. -->
+            <div
+                v-if="chips.length"
+                ref="chipRow"
+                class="form-field-mixed"
+                role="toolbar"
+                :aria-label="label"
+                @keydown="move"
+            >
+                <button
+                    v-for="(chip, index) in chips"
+                    :key="index"
+                    type="button"
+                    class="form-field-mixed-value"
+                    :class="{ 'form-field-coverage-chip': chip.coverage }"
+                    :tabindex="index === current ? 0 : -1"
+                    :title="chip.label"
+                    :aria-label="chip.label"
+                    :disabled="!chip.narrow"
+                    @focus="current = index"
+                    @click="narrow(chip, $event)"
+                >
+                    <template v-if="chip.text">{{ chip.text }}</template>
+                    <template v-else
+                        >{{ chip.name }}
+                        <span class="tabular-nums">{{ chip.count }}</span></template
+                    >
+                </button>
+            </div>
         </div>
         <span v-if="description" :id="descriptionId" class="sr-only">{{ description }}</span>
     </div>
@@ -341,6 +398,45 @@ watchEffect(
     font-size: 0.75rem;
     line-height: 1rem;
     color: #30334d;
+}
+
+/* Coverage alone sits in the label's column, leaving the control where it is. */
+@container (min-width: 19rem) {
+    .form-field-inline:not(.form-field-stacked) {
+        display: grid;
+        grid-template-columns:
+            minmax(0, 1fr) auto
+            calc(100% - min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) - 0.75rem);
+        column-gap: 0.375rem;
+        align-items: center;
+    }
+
+    .form-field-inline:not(.form-field-stacked) > .form-field-row {
+        display: contents;
+    }
+
+    .form-field-inline:not(.form-field-stacked) .form-field-label {
+        grid-area: 1 / 1;
+        width: auto;
+        min-width: 0;
+    }
+
+    .form-field-inline:not(.form-field-stacked) > .form-field-row > :not(.form-field-label) {
+        grid-area: 1 / 3;
+    }
+
+    .form-field-inline:not(.form-field-stacked) > .form-field-mixed {
+        grid-area: 1 / 2;
+        flex-wrap: nowrap;
+        margin-top: 0;
+        white-space: nowrap;
+    }
+}
+
+@container (min-width: 32rem) {
+    .form-field-inline:not(.form-field-stacked) {
+        grid-template-columns: minmax(0, 1fr) auto calc(40% - 0.75rem);
+    }
 }
 
 /* Tinted pills read as actions; coverage is outlined, apart from the values. */

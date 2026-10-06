@@ -191,6 +191,29 @@ test.describe('mixed values', () => {
         expect(await selectedCount(page)).toBe(1)
     })
 
+    test('coverage alone sits beside the label, on its own row in narrow docks', async ({
+        page,
+    }) => {
+        const field = (label: string) =>
+            selection(page)
+                .locator('.form-field')
+                .filter({ has: page.getByText(label, { exact: true }) })
+        const sameRow = async (label: string) => {
+            const chip = await field(label).locator('.form-field-mixed').boundingBox()
+            const input = await control(page, label).boundingBox()
+            return !!chip && !!input && chip.y + chip.height / 2 < input.y + input.height
+        }
+        expect(await sameRow('Attached')).toBe(true)
+        // Controls keep their column.
+        const attached = await control(page, 'Attached').boundingBox()
+        const type = await control(page, 'Note Type').boundingBox()
+        expect(attached?.x).toBeCloseTo(type?.x ?? 0, 0)
+        // Values in use keep their own row.
+        expect(await sameRow('Critical')).toBe(false)
+        await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 260))
+        await expect.poll(() => sameRow('Attached')).toBe(false)
+    })
+
     test('chips are one Tab stop, with arrows between them', async ({ page }) => {
         const chips = selection(page)
             .locator('.form-field')
