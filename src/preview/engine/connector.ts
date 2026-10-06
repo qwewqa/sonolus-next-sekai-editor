@@ -25,7 +25,7 @@ import {
     type PreviewLayout,
     type StageTransform,
 } from './layout'
-import type { VisualMask } from './mask'
+import { uncrossedMask, type VisualMask } from './mask'
 import {
     EaseType,
     applyAffine,
@@ -394,12 +394,13 @@ const connectorMaskStatus = (
     return ConnectorMaskStatus.needsClipping
 }
 
-const maskedConnectorExtentsByLimits = (
+export const maskedConnectorExtentsByLimits = (
     lane: number,
     size: number,
-    maskLeft: number,
-    maskRight: number,
+    crossedLeft: number,
+    crossedRight: number,
 ) => {
+    const { left: maskLeft, right: maskRight } = uncrossedMask(crossedLeft, crossedRight)
     const maskedLeft = clamp(lane - size, maskLeft, maskRight)
     const maskedRight = clamp(lane + size, maskLeft, maskRight)
     const maskedSize = (maskedRight - maskedLeft) / 2
