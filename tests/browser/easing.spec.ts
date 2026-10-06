@@ -436,20 +436,21 @@ test('saved presets with legacy eases migrate without losing other properties', 
                 { connectorEase: 'in', isCritical: true, copyProperties: false },
                 { connectorEase: 'none', noteType: 'trace', copyProperties: true },
                 { connectorEase: 'outIn', flickDirection: 'up', copyProperties: true },
-                { connectorEase: 'out', copyProperties: true },
+                { connectorEase: 'inStep', copyProperties: true },
                 { connectorEase: 'inOut', noteType: 'anchor', copyProperties: true },
             ]),
         )
         localStorage.setItem(
             'sonolus-next-sekai-editor.defaultNotePropertiesPresets',
             JSON.stringify([
-                { connectorEase: 'linear', copyProperties: true },
                 { connectorEase: 'family:sine', isCritical: true, copyProperties: true },
                 { connectorEase: 'mode:out', copyProperties: true },
-                { connectorEase: 'inOutElastic', noteType: 'trace', copyProperties: true },
+                { connectorEase: 'family:linear', copyProperties: true },
+                { connectorEase: 'family:step', noteType: 'anchor', copyProperties: true },
             ]),
         )
     })
+    // Presets from 757e7e9 saved quad modes and 'none'; later builds saved family and mode edits.
     await page.goto('/')
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
     await page.evaluate(installEditorFixture)
@@ -459,16 +460,16 @@ test('saved presets with legacy eases migrate without losing other properties', 
     }))
     expect(presets.slide).toEqual([
         { connectorEase: 'inQuad', isCritical: true, copyProperties: false },
-        { connectorEase: 'inStep', noteType: 'trace', copyProperties: true },
+        { connectorEase: 'none', noteType: 'trace', copyProperties: true },
         { connectorEase: 'outInQuad', flickDirection: 'up', copyProperties: true },
-        { connectorEase: 'outQuad', copyProperties: true },
+        { connectorEase: 'inStep', copyProperties: true },
         { connectorEase: 'inOutQuad', noteType: 'anchor', copyProperties: true },
     ])
     expect(presets.note).toEqual([
+        { connectorEase: 'function:sine', isCritical: true, copyProperties: true },
+        { connectorEase: 'type:out', copyProperties: true },
         { connectorEase: 'linear', copyProperties: true },
-        { connectorEase: 'family:sine', isCritical: true, copyProperties: true },
-        { connectorEase: 'mode:out', copyProperties: true },
-        { connectorEase: 'inOutElastic', noteType: 'trace', copyProperties: true },
+        { connectorEase: 'function:step', noteType: 'anchor', copyProperties: true },
     ])
 })
 

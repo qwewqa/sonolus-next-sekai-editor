@@ -2,7 +2,7 @@ import Type from 'typebox'
 import Value from 'typebox/value'
 import { shallowRef, watch } from 'vue'
 import { noteStyles, noteStyleSchema } from './chart/noteStyle'
-import { easeEdits, type Ease, type EaseEdit } from './ease'
+import { easeEdits, type EaseEdit } from './ease'
 import { isCommandName, type CommandName } from './editor/commands'
 import { migrateToolbar } from './editor/toolbar/migrate'
 import { isPanelId, panelIds, type PanelId } from './editor/workspace/layout'
@@ -508,14 +508,23 @@ const settingsProperties = {
     }),
 }
 
-// Eases before the easing families were quadratic, and steps were 'none'.
-const legacyEases: Partial<Record<string, Ease>> = {
+// Eases before the easing functions were quadratic.
+const legacyEases: Partial<Record<string, EaseEdit>> = {
     in: 'inQuad',
     out: 'outQuad',
     inOut: 'inOutQuad',
     outIn: 'outInQuad',
-    none: 'inStep',
+    'family:linear': 'linear',
 }
+
+// Partial edits of the easing family and mode became the Function and Type.
+const migrateEase = (ease: string) =>
+    legacyEases[ease] ??
+    (ease.startsWith('family:')
+        ? `function:${ease.slice(7)}`
+        : ease.startsWith('mode:')
+          ? `type:${ease.slice(5)}`
+          : ease)
 
 // Older presets stored guide and active/damage colors separately. Preserve the
 // color that applied to an explicit guide preset; otherwise prefer an explicit
@@ -524,7 +533,7 @@ const migratePreset = (value: unknown) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return value
     const { connectorGuideColor, ...preset } = value as Record<string, unknown>
     if (typeof preset.connectorEase === 'string')
-        preset.connectorEase = legacyEases[preset.connectorEase] ?? preset.connectorEase
+        preset.connectorEase = migrateEase(preset.connectorEase)
     if (
         noteStyles.some((style) => style !== 'default' && style === connectorGuideColor) &&
         (preset.connectorType === 'guide' ||
