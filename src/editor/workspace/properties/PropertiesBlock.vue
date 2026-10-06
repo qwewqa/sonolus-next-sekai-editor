@@ -237,7 +237,7 @@ const narrowKind = async (event: MouseEvent) => {
                     <ChevronIcon
                         :direction="settings.propertiesConnectorExpanded ? 'down' : 'right'"
                     />
-                    <span :id="`${connectorId}-heading`" class="shrink-0 font-medium">{{
+                    <span :id="`${connectorId}-heading`" class="shrink-0 text-sm font-bold">{{
                         i18n.workspace.properties.connector
                     }}</span>
                     <span

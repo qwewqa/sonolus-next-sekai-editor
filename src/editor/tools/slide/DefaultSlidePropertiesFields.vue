@@ -61,6 +61,9 @@ const copyProperties = createModel('copyProperties')
         v-model="defaultSlidePropertiesPresetIndex"
         :count="settings.defaultSlidePropertiesPresets.length"
     />
+    <h3 class="border-t border-fg/15 pt-3 text-sm font-bold">
+        {{ i18n.tools.brush.kinds.note }}
+    </h3>
     <EmptyLabelProvider :label="copyLabel">
         <OptionalNoteTypeField v-model="noteType" />
         <OptionalNoteStyleField v-model="noteStyle" />
@@ -70,6 +73,9 @@ const copyProperties = createModel('copyProperties')
         <OptionalIsFakeField v-model="isFake" />
         <OptionalSfxField v-model="sfx" />
     </EmptyLabelProvider>
+    <h3 class="border-t border-fg/15 pt-3 text-sm font-bold">
+        {{ i18n.workspace.properties.connector }}
+    </h3>
     <EmptyLabelProvider :label="i18n.modals.form.unset.auto">
         <OptionalIsConnectorSeparatorField v-model="isConnectorSeparator" />
     </EmptyLabelProvider>

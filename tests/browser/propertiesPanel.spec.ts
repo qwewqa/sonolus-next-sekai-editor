@@ -423,11 +423,36 @@ test('preset and brush headings match the selection kind headings', async ({ pag
     const headings = panel(page).locator('#properties-section-tool h3')
     await page.keyboard.press('b')
     await panel(page).getByRole('button', { name: 'Pick from Selection' }).click()
-    for (const tool of ['brush', 'a', 's']) {
-        if (tool !== 'brush') await page.keyboard.press(tool)
+    for (const tool of ['brush', 'note', 'slide']) {
+        if (tool !== 'brush')
+            await page.evaluate(async (tool) => {
+                const { switchToolTo } = await import('/src/editor/tools/index.ts')
+                switchToolTo(tool as 'note' | 'slide')
+            }, tool)
         await expect(headings.first()).toBeVisible()
+        if (tool !== 'brush')
+            // The tool's title, then a heading over every group, the first included.
+            await expect(headings, tool).toHaveText([
+                tool === 'note' ? 'Default Note Properties' : 'Default Slide Properties',
+                'Note',
+                'Connector',
+                'General',
+            ])
         for (const style of await styles(headings)) expect(style, tool).toEqual(kind)
     }
+
+    // The Selection's Connector disclosure shares the style beside its chevron.
+    await page.evaluate(async () => {
+        const { history, store, nextTick, show, fixtures } = window.editorTest
+        show(fixtures.connectors)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        await nextTick()
+    })
+    const [connector] = await styles(panel(page).locator('.properties-subsection [id$="-heading"]'))
+    expect(connector).toEqual(kind)
 })
 
 for (const width of [336, 260]) {
