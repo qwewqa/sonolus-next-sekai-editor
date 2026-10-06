@@ -22,7 +22,7 @@ import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid } from './grid'
 import { createNoteRenderer } from './notes'
-import { orderEntities } from './ordering'
+import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
 import { FIGURE_MIDDLE, measureFigureMiddle, measureTextMiddle } from './text'
 import type { EditorDrawContext } from './types'
@@ -65,6 +65,7 @@ const orderedEntities = computed(() =>
         showOtherObjects: settings.showOtherObjects,
     }),
 )
+const drawSteps = computed(() => toDrawSteps(orderedEntities.value))
 const hoveredSet = computed(() => new Set(hoveredEntities.value))
 const offscreenGroups = computed(() => {
     const bounds = viewBox.value
@@ -121,10 +122,11 @@ const drawEntity = (
     entity: Entity,
     highlighted: boolean,
     opacity = 1,
+    part?: DrawStep['part'],
 ) => {
     if (entity.type === 'note') notes.draw(context, entity, highlighted, opacity)
     else if (entity.type === 'connector') connectors.draw(context, entity, highlighted, opacity)
-    else drawEvent(context, entity, highlighted, opacity)
+    else drawEvent(context, entity, highlighted, opacity, part)
 }
 
 // Dependencies are captured synchronously; rendering runs once with the latest
@@ -138,7 +140,7 @@ watchEffect(
         const canvas = chartCanvas.value
         const inputs = contextInputs.value
         if (!canvas || !inputs.width || !inputs.height) return
-        const entities = orderedEntities.value
+        const entities = drawSteps.value
         const hovered = inputs.recentlyActive ? undefined : hoveredSet.value
         const visibilities = view.visibilities
         const isBpmVisible = visibilities.bpm
@@ -183,8 +185,8 @@ watchEffect(
             ctx.stroke()
             ctx.restore()
             drawEventInfinities(context, visibilities, scope, showOtherObjects)
-            for (const { entity, highlighted, opacity } of entities) {
-                drawEntity(context, entity, highlighted || !!hovered?.has(entity), opacity)
+            for (const { entity, highlighted, opacity, part } of entities) {
+                drawEntity(context, entity, highlighted || !!hovered?.has(entity), opacity, part)
             }
         })
     },

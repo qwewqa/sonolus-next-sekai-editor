@@ -698,3 +698,36 @@ test('a same-beat stack shares one marker showing every change on its lane', () 
             .every(({ dash }) => dash.length),
     )
 })
+
+test('a time scale draws its line and its marker and label as separate parts', () => {
+    const { context, canvas } = makeContext()
+    const entity: TimeScaleEntity = {
+        type: 'timeScale',
+        groupId,
+        beat: 2,
+        editorLane: 7,
+        timeScale: 2,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    }
+    const draw = (part?: 'line' | 'marker') => {
+        canvas.strokes = []
+        canvas.labels = []
+        drawEvent(context, entity, false, 1, part)
+        return {
+            lines: canvas.strokes.filter(({ path }) =>
+                (path as unknown[][]).every(([command]) => command === 'M' || command === 'L'),
+            ).length,
+            markers: canvas.strokes.filter(({ path }) =>
+                (path as unknown[][]).some(([command]) => command === 'arc'),
+            ).length,
+            labels: canvas.labels.map(({ text }) => text),
+        }
+    }
+    // Lines span the stage to the marker, and the ease glyph is a line too.
+    assert.deepEqual(draw('line'), { lines: 1, markers: 0, labels: [] })
+    assert.deepEqual(draw('marker'), { lines: 1, markers: 1, labels: ['2x'] })
+    assert.deepEqual(draw(), { lines: 2, markers: 1, labels: ['2x'] })
+})

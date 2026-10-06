@@ -239,12 +239,16 @@ const drawConnection = (context: EditorDrawContext, entity: EventConnectionEntit
     for (const path of cached.paths) ctx.stroke(path)
 }
 
+/** A time scale's line, or its marker and label, for drawing them in separate layers. */
+export type TimeScalePart = 'line' | 'marker'
+
 /** Draws one event without retaining reactive editor state. */
 export const drawEvent = (
     context: EditorDrawContext,
     entity: DrawnEventEntity,
     highlighted: boolean,
     opacity = 1,
+    part?: TimeScalePart,
 ) => {
     const { ctx, state, ups } = context
     ctx.save()
@@ -299,14 +303,17 @@ export const drawEvent = (
             const hideNotes = members.some(({ hideNotes }) => hideNotes)
             // Hollow markers keep the line out of their interior.
             const gap = hideNotes ? (isScroll ? DIAMOND_RADIUS : 0.1) : 0
-            ctx.strokeStyle = '#ff0'
-            ctx.globalAlpha *= 0.5
-            if (hideNotes) ctx.setLineDash([2 / context.scale, 2 / context.scale])
-            ctx.lineDashOffset = 0
-            if (x - gap > Math.min(x, -6)) line(ctx, Math.min(x, -6), y, x - gap, y)
-            if (x + gap < Math.max(x, 6)) line(ctx, x + gap, y, Math.max(x, 6), y)
-            ctx.globalAlpha *= 2
-            ctx.setLineDash([])
+            if (part !== 'marker') {
+                ctx.strokeStyle = '#ff0'
+                ctx.globalAlpha *= 0.5
+                if (hideNotes) ctx.setLineDash([2 / context.scale, 2 / context.scale])
+                ctx.lineDashOffset = 0
+                if (x - gap > Math.min(x, -6)) line(ctx, Math.min(x, -6), y, x - gap, y)
+                if (x + gap < Math.max(x, 6)) line(ctx, x + gap, y, Math.max(x, 6), y)
+                ctx.globalAlpha *= 2
+                ctx.setLineDash([])
+            }
+            if (part === 'line') break
             timeScaleMarker(ctx, x, y, isScroll, hideNotes)
             // A same-beat jump reads as one label, in the order it plays.
             if (lead !== entity) break

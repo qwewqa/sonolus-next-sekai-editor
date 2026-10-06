@@ -3,7 +3,7 @@ import test from 'node:test'
 import type { GroupId } from '../../src/chart/groups'
 import type { ConnectorLayer, ConnectorType } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
-import { orderEntities, type EntityVisibility } from '../../src/editor/canvas/ordering'
+import { orderEntities, toDrawSteps, type EntityVisibility } from '../../src/editor/canvas/ordering'
 import { createFrameScheduler, prepareSurface } from '../../src/editor/canvas/surface'
 import { createScopeLookup, type ScopeInputs } from '../../src/editor/scopeRules'
 import { openFrame } from '../../src/frame'
@@ -490,4 +490,19 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
         assert.equal(ctx.lineWidth, (2 * bounds.w) / cssWidth)
         assertPaintRestored()
     }
+})
+
+test('time scale markers draw above slides and notes while their lines stay below', () => {
+    const timeScale = { type: 'timeScale', beat: 2, groupId: group } as Entity
+    const slide = connector('over', 'active')
+    const centerNote = note(5)
+    const steps = toDrawSteps(
+        orderEntities([centerNote, slide, timeScale], new Set(), visibility()),
+    ).map(({ entity, part }) => [entity, part])
+    assert.deepEqual(steps, [
+        [timeScale, 'line'],
+        [centerNote, undefined],
+        [slide, undefined],
+        [timeScale, 'marker'],
+    ])
 })

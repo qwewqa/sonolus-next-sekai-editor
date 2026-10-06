@@ -108,3 +108,16 @@ export const orderEntities = (
             highlighted: info.isSelected,
             opacity: info.isFull ? 1 : 0.25,
         }))
+
+export type DrawStep = ReturnType<typeof orderEntities>[number] & { part?: 'line' | 'marker' }
+
+/** Time scale markers and labels go above slides and notes; their lines stay in place. */
+export const toDrawSteps = (ordered: ReturnType<typeof orderEntities>): DrawStep[] => {
+    const markers: DrawStep[] = []
+    const steps = ordered.map((step): DrawStep => {
+        if (step.entity.type !== 'timeScale') return step
+        markers.push({ ...step, part: 'marker' })
+        return { ...step, part: 'line' }
+    })
+    return [...steps, ...markers]
+}
