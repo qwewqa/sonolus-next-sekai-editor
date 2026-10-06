@@ -46,8 +46,6 @@ export const measureText = (
     return width / scale
 }
 
-const LABEL_HALO = 'rgba(0, 0, 0, 0.4)'
-
 /** Draws a label centred `middle` ems above its baseline: SVG middle by default. */
 export const drawText = (
     { ctx, scale, fontFamily, fontMiddle }: EditorDrawContext,
@@ -71,12 +69,6 @@ export const drawText = (
     ctx.fontKerning = 'normal'
     ctx.textBaseline = 'alphabetic'
     ctx.textAlign = align
-    // A faint dark halo keeps labels legible over lines and slides.
-    ctx.strokeStyle = LABEL_HALO
-    ctx.lineWidth = Math.max(2, fontSize * 0.16)
-    ctx.lineJoin = 'round'
-    ctx.setLineDash([])
-    ctx.strokeText(normalized, 0, fontSize * middle)
     ctx.fillStyle = color
     ctx.fillText(normalized, 0, fontSize * middle)
     ctx.restore()
