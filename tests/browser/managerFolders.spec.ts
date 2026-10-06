@@ -699,6 +699,19 @@ test('a held row takes the indent of where it would land', async ({ page }) => {
     await hold('Bass', (await nameButton(panel(page), 'Fill').boundingBox())!.y + 2)
     expect(await left('Bass')).toBe(member)
     expect(await marked()).not.toBe('none')
+    // The folder's guide line runs on across the slot opened for it.
+    const breaks = await panel(page)
+        .locator('.manager-members > li:not(.manager-dragged)')
+        .evaluateAll((members) =>
+            members.slice(1).flatMap((member, index) => {
+                const above = members[index]!.getBoundingClientRect()
+                const top =
+                    member.getBoundingClientRect().top +
+                    parseFloat(getComputedStyle(member, '::before').top)
+                return top > above.bottom + 0.5 ? [Math.round(top - above.bottom)] : []
+            }),
+        )
+    expect(breaks).toEqual([])
     await page.mouse.up()
     expect(await tree(page)).toBe('Default [Verse: Lead Bass Fill] Outro')
 

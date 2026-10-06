@@ -695,9 +695,13 @@ const translations = computed(() => {
     return result
 })
 
+// A row pushed down to open a slot also says by how much, so a member's guide
+// line can reach back across the slot to the one above.
 const rowStyle = (key: RowKey) => {
     const value = translations.value.get(rowKey(key))
-    return value ? { transform: `translateY(${value}px)` } : undefined
+    return value
+        ? { transform: `translateY(${value}px)`, '--row-shift': `${Math.max(0, value)}px` }
+        : undefined
 }
 
 const isTopLevel = (row: RowInfo | undefined) => row?.folder === undefined
@@ -1878,11 +1882,13 @@ const folderEyeLabel = (item: FolderItem) =>
 .manager-members > li::before {
     content: '';
     left: var(--guide-x);
-    @apply pointer-events-none absolute -top-1 bottom-0 w-0.5 bg-fg/30;
+    top: calc(-0.25rem - var(--row-shift, 0px));
+    @apply pointer-events-none absolute bottom-0 w-0.5 bg-fg/30;
 }
 
 .manager-members > li:first-child::before {
-    @apply top-1 rounded-t-full;
+    top: calc(0.25rem - var(--row-shift, 0px));
+    @apply rounded-t-full;
 }
 
 .manager-members > li:last-child::before {
