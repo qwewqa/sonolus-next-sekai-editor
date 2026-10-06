@@ -95,6 +95,11 @@ test('plain bindings answer to their key whatever modifiers are held', () => {
         [press('ArrowUp', 's'), ['scrollUp']],
         [press(' ', 'c'), ['play']],
         [press('A', 'cs'), []],
+        // Letters read by Shift alone: Caps Lock, and Cmd+Shift lowercased on macOS.
+        [press('U'), ['flip']],
+        [press('Z', 'c'), ['undo']],
+        [press('u', 'ms'), ['flipVertical']],
+        [press('u', 's'), ['flipVertical']],
     ]
     for (const [input, names] of cases)
         assert.deepEqual(match(defaults, input), { names, exact: false }, JSON.stringify(input))

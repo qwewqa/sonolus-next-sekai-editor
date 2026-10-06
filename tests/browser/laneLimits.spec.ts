@@ -217,7 +217,7 @@ test('switching limits refreshes a stationary hover ghost without changing the c
     expect(
         await page.evaluate(() => window.editorTest.view.entities.creating[0]!.hitbox!.lane),
     ).toBeGreaterThan(6)
-    await page.keyboard.press('L')
+    await page.keyboard.press('Shift+L')
     expect(
         await page.evaluate(() => {
             const ghost = window.editorTest.view.entities.creating[0]!

@@ -99,8 +99,14 @@ export const matchBindings = <N extends string>(
             .map(([name]) => name)
         if (names.length) return { names, exact: true }
     }
+    // A letter's case is Shift's alone, whatever Caps Lock or the platform report.
+    const key = isLetter(input.key)
+        ? input.shiftKey
+            ? input.key.toUpperCase()
+            : input.key.toLowerCase()
+        : input.key
     const names = entries
-        .filter(([, value]) => value === input.key && !parseChord(value))
+        .filter(([, value]) => value === key && !parseChord(value))
         .map(([name]) => name)
     return { names, exact: false }
 }
