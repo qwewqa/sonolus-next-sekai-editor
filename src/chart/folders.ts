@@ -427,3 +427,73 @@ export const folderSections = <K, V extends FolderMember & { name: string }>(
     }
     return sections
 }
+
+/**
+ * Places copies right after their sources, in the same folder; with `folder`,
+ * its copy follows it, holding the copies of its members in order.
+ */
+export const insertCopiesInTree = <K>(
+    tree: readonly FolderTreeItem<K>[],
+    copies: ReadonlyMap<K, K>,
+    folder?: { source: FolderId; copy: FolderId },
+): FolderTreeItem<K>[] => {
+    const withCopies = (ids: readonly K[]) =>
+        ids.flatMap((id) => {
+            const copy = copies.get(id)
+            return copy === undefined ? [id] : [id, copy]
+        })
+    return tree.flatMap((item): FolderTreeItem<K>[] => {
+        if (item.type === 'entry') {
+            const copy = copies.get(item.id)
+            return copy === undefined ? [item] : [item, { type: 'entry', id: copy }]
+        }
+        if (folder?.source !== item.id) return [{ ...item, members: withCopies(item.members) }]
+        const members = item.members.flatMap((id) => {
+            const copy = copies.get(id)
+            return copy === undefined ? [] : [copy]
+        })
+        return [
+            { ...item, members: [...item.members] },
+            { type: 'folder', id: folder.copy, members },
+        ]
+    })
+}
+
+/**
+ * A copy's name, unused among `taken`: numbered names ("#3") take the next
+ * number as Add does; others take the template's ("{0} ({1})") lowest free
+ * number from 2, bumping a number they already carry.
+ */
+export const copyName = (name: string, taken: ReadonlySet<string>, template: string) => {
+    if (/^#\d+$/.test(name))
+        return `#${
+            Math.max(
+                0,
+                ...[...taken]
+                    .map((name) => (name.startsWith('#') ? +name.slice(1) : 0))
+                    .filter(Number.isInteger),
+            ) + 1
+        }`
+
+    const parts = template.split(/(\{[01]\})/)
+    const order = parts.filter((part) => part === '{0}' || part === '{1}')
+    const pattern = new RegExp(
+        `^${parts
+            .map((part) =>
+                part === '{0}'
+                    ? '(.+?)'
+                    : part === '{1}'
+                      ? '(\\d+)'
+                      : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            )
+            .join('')}$`,
+    )
+    const match = pattern.exec(name)
+    const base = match ? (match[order.indexOf('{0}') + 1] ?? name) : name
+    for (let n = 2; ; n++) {
+        const candidate = parts
+            .map((part) => (part === '{0}' ? base : part === '{1}' ? `${n}` : part))
+            .join('')
+        if (!taken.has(candidate)) return candidate
+    }
+}
