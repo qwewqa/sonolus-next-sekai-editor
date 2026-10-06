@@ -210,6 +210,49 @@ test.describe('edit labels', () => {
             ),
         ).toBe(2)
     })
+
+    test("an attached tick's lane and width count as no change", async ({ page }) => {
+        await showSlides(page, [
+            [
+                { beat: 0, left: -4 },
+                { beat: 1, isAttached: true, flickDirection: 'none' },
+                { beat: 2, left: 4 },
+            ],
+        ])
+        const run = (properties: Record<string, unknown> | 'flip', ticksOnly: boolean) =>
+            page.evaluate(
+                async ({ properties, ticksOnly }) => {
+                    const { history, store, appImport } = window.editorTest
+                    const notes = [...store.getAllEntities()].filter(
+                        (e) => e.type === 'note' && (!ticksOnly || e.isAttached),
+                    )
+                    if (properties === 'flip') {
+                        history.replaceState({ ...history.state.value, selectedEntities: notes })
+                        const { commands } = await appImport<
+                            typeof import('../../src/editor/commands')
+                        >('/src/editor/commands/index.ts')
+                        void commands.flip.execute()
+                        return
+                    }
+                    const brush = await appImport<typeof import('../../src/editor/tools/brush')>(
+                        '/src/editor/tools/brush/index.ts',
+                    )
+                    brush.brushProperties.value = properties
+                    brush.applyBrushToEntities(notes)
+                },
+                { properties, ticksOnly },
+            )
+        const notification = page.locator('.notification')
+        await run({ size: 5 }, true)
+        await expect(notification).toHaveText('No change')
+        await run('flip', true)
+        await expect(notification).toHaveText('No change')
+        await run({ size: 5 }, false)
+        await expect(notification).toHaveText('Brushed 2 objects')
+        // A stored hidden value still counts.
+        await run({ elevation: 3 }, true)
+        await expect(notification).toHaveText('Brushed 1 object')
+    })
 })
 
 // Hidden values are kept and written on purpose; these results must not change.

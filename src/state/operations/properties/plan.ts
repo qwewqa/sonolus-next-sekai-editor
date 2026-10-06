@@ -2,6 +2,7 @@ import type { State } from '../..'
 import { applyEaseEdit } from '../../../ease'
 import type { Entity } from '../../entities'
 import { addBpm } from '../../mutations/bpm'
+import type { Store } from '../../store'
 import { getInStoreGrid } from '../../store/grid'
 import { createTransaction, type Transaction, type TransactionOptions } from '../../transaction'
 import { editBpm, editSelectedBpm } from '../bpm'
@@ -14,6 +15,8 @@ import { editSelectedStageTransformEvent } from '../events/stage/transform'
 import { editSelectedNote } from '../note'
 import { editSelectedTimeScale, editTimeScale } from '../timeScale'
 import { inStoredOrder } from '../transformSelection'
+import { noteFieldsApply } from './applicability'
+import { getNoteFieldsIn } from './noteFields'
 
 export type PlanOptions = TransactionOptions & {
     /** Edits only these selected objects; the rest stay selected unchanged. */
@@ -41,12 +44,19 @@ export const editEntity = (
 ): Entity[] => edits[entity.type](transaction, entity as never, object)
 
 const easeKeys = new Set(['connectorEase', 'eventEase', 'timeScaleEase'])
+// Fields the slide derives when unused, such as an attached tick's lane and width.
+const derivedKeys = new Set(['left', 'size'])
 
 /** Whether an edit would change any value the object holds. */
-export const editChanges = (entity: Entity, object: EditableObject) => {
+export const editChanges = (store: Store, entity: Entity, object: EditableObject) => {
     const values = entity as unknown as Record<string, unknown>
+    let applies: ((key: string) => boolean) | undefined
     for (const [key, value] of Object.entries(object as Record<string, unknown>)) {
         if (value === undefined || !(key in entity)) continue
+        if (entity.type === 'note' && derivedKeys.has(key)) {
+            applies ??= noteFieldsApply(getNoteFieldsIn(store, entity))
+            if (!applies(key)) continue
+        }
         const next = easeKeys.has(key) ? applyEaseEdit(value as never, values[key] as never) : value
         if (next !== values[key]) return true
     }
@@ -71,7 +81,9 @@ export const planEdit = (
 ) => {
     const changed = selected.filter(
         (entity) =>
-            isEditableEntity(entity) && (!only || only(entity)) && editChanges(entity, object),
+            isEditableEntity(entity) &&
+            (!only || only(entity)) &&
+            editChanges(source.store, entity, object),
     )
     const transaction = createTransaction(source, options)
     const editable = selected.filter(isEditableEntity)

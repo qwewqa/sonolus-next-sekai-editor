@@ -29,7 +29,8 @@ export const flip: Command = {
         const changes = new Map<Entity, EditableObject>()
         for (const entity of entities) {
             const object = flips[entity.type]?.(entities, entity as never)
-            if (object && editChanges(entity, object)) changes.set(entity, object)
+            if (object && editChanges(state.value.store, entity, object))
+                changes.set(entity, object)
         }
         // Nothing to flip, as with BPM changes alone: no history entry.
         if (!changes.size) {
