@@ -24,6 +24,14 @@ export const changeBgm = async (file?: File) => {
         file,
     })
     if (!newBgm) return
+    // Confirming it unchanged is no edit.
+    const old = currentBgm.value
+    if (
+        newBgm.buffer === old.buffer &&
+        newBgm.offset === old.offset &&
+        newBgm.filename === old.filename
+    )
+        return
 
     pushState(() => i18n.value.commands.bgm.changed, {
         ...state.value,

@@ -17,7 +17,8 @@ export const properties: Command = {
         const newInitialLife = await showModal(PropertiesModal, {
             initialLife: initialLife.value,
         })
-        if (!newInitialLife) return
+        // Confirming it unchanged is no edit.
+        if (!newInitialLife || newInitialLife === initialLife.value) return
 
         pushState(() => i18n.value.commands.properties.changed, {
             ...state.value,

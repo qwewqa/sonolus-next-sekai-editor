@@ -643,3 +643,28 @@ test('an unreadable recovery that cannot be set aside pauses auto save instead',
         ),
     ).toBe(stored)
 })
+
+for (const dialog of ['properties', 'bgm'] as const)
+    test(`confirming the ${dialog} dialog unchanged adds no history entry`, async ({ page }) => {
+        await page.evaluate(() => {
+            const { history, fixtures } = window.editorTest
+            history.resetState(false, fixtures.interaction, 0.0041, 'clean-chart')
+        })
+        const command = page.evaluate(async (dialog) => {
+            const { commands } = await window.editorTest.appImport<
+                typeof import('../../src/editor/commands')
+            >('/src/editor/commands/index.ts')
+            await commands[dialog].execute()
+        }, dialog)
+        await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click()
+        await command
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+        // Let the dialog's result reach the command before checking for an entry.
+        await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)))
+        expect(
+            await page.evaluate(() => ({
+                canUndo: window.editorTest.history.canUndo.value,
+                isDirty: window.editorTest.history.isDirty.value,
+            })),
+        ).toEqual({ canUndo: false, isDirty: false })
+    })
