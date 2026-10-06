@@ -189,7 +189,7 @@ const wheel = (event: WheelEvent) => {
                         scrollViewYBy(-(event.deltaX * 20), settings.mouseSmoothScrolling)
                     break
                 case WheelEvent.DOM_DELTA_PAGE:
-                    scrollViewXBy(-event.deltaY * bounds.w, settings.mouseSmoothScrolling)
+                    scrollViewXBy(event.deltaY * bounds.w, settings.mouseSmoothScrolling)
                     if (event.deltaX)
                         scrollViewYBy(-event.deltaX * bounds.h, settings.mouseSmoothScrolling)
                     break

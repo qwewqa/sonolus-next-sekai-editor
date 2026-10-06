@@ -147,3 +147,31 @@ test('selection hit testing includes note and BPM edges across beat buckets', as
     })
     expect(hits).toEqual({ note: true, bpm: true })
 })
+
+test('Shift+wheel scrolls lanes the same way in pixel, line and page modes', async ({ page }) => {
+    const scroll = (deltaMode: number, deltaY: number) =>
+        page.evaluate(
+            ({ deltaMode, deltaY }) => {
+                const { settings, view } = window.editorTest
+                settings.mouseSmoothScrolling = false
+                settings.maxScrollX = 1000
+                view.lane = 0
+                document.querySelector('.editor')!.dispatchEvent(
+                    new WheelEvent('wheel', {
+                        deltaMode,
+                        deltaY,
+                        shiftKey: true,
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                )
+                return Math.sign(view.lane)
+            },
+            { deltaMode, deltaY },
+        )
+    // Pixel, line and page delta modes.
+    const pixel = await scroll(0, 100)
+    expect(pixel).not.toBe(0)
+    expect(await scroll(1, 3)).toBe(pixel)
+    expect(await scroll(2, 1)).toBe(pixel)
+})
