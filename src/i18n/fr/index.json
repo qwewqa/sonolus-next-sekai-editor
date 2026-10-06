@@ -777,7 +777,6 @@
       "pick": "Reprendre la sélection",
       "picked": "{0} propriété reprise de la sélection|{0} propriétés reprises de la sélection",
       "clear": "Effacer",
-      "empty": "Le pinceau ne change encore rien. Ajoutez une propriété ou reprenez celles de la sélection.",
       "remove": "Retirer {0}",
       "kinds": {
         "general": "Général",

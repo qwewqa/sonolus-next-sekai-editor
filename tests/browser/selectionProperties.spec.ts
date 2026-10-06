@@ -408,7 +408,7 @@ test.describe('brush', () => {
     })
 
     test('starts empty and lists only the properties it sets', async ({ page }) => {
-        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+        await expect(tool(page).locator('.brush-group')).toHaveCount(0)
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
 
         // Added properties start from the selection's value when it agrees.
@@ -433,7 +433,7 @@ test.describe('brush', () => {
         await page.keyboard.press('Enter')
         await expect(tool(page).getByRole('combobox', { name: 'Add Property' })).toBeFocused()
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
-        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+        await expect(tool(page).locator('.brush-group')).toHaveCount(0)
     })
 
     test('picks agreeing values from the selection and clears them', async ({ page }) => {
@@ -445,7 +445,7 @@ test.describe('brush', () => {
         // Beat and lane are never brushed.
         await expect(tool(page).locator('[data-brush-key="left"]')).toHaveCount(0)
         await tool(page).getByRole('button', { name: 'Clear', exact: true }).click()
-        await expect(tool(page).locator('.brush-empty')).toBeVisible()
+        await expect(tool(page).locator('.brush-group')).toHaveCount(0)
     })
 
     test('never offers the stage without dynamic stages', async ({ page }) => {

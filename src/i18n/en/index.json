@@ -777,7 +777,6 @@
             "pick": "Pick from Selection",
             "picked": "Picked {0} property from the selection|Picked {0} properties from the selection",
             "clear": "Clear",
-            "empty": "The brush changes nothing yet. Add a property or pick them from the selection.",
             "remove": "Remove {0}",
             "kinds": {
                 "general": "General",

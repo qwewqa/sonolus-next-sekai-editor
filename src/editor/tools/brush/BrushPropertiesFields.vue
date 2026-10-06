@@ -173,7 +173,6 @@ const clear = () => {
             </button>
         </div>
 
-        <p v-if="!groups.length" class="brush-empty text-fg/80">{{ i18n.tools.brush.empty }}</p>
         <section
             v-for="{ kind, fields } in groups"
             :key="kind"
