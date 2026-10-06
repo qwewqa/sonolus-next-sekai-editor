@@ -275,3 +275,74 @@ test("a zero-width fake note's X spans its placeholder box", (t) => {
     // Sized notes keep their X.
     assert.deepEqual(extents('default', 2), [0, 2, 0, 0.6])
 })
+
+test("a note's stage and group names keep a gap between them", (t) => {
+    const labels: { text: string; x: number; align: string; color: string }[] = []
+    const makeCanvasContext = () => {
+        let x = 0
+        const target: Record<string, unknown> = { globalAlpha: 1 }
+        return new Proxy(target, {
+            get(target, property) {
+                if (property in target) return Reflect.get(target, property)
+                if (property === 'translate') return (dx: number) => (x = dx)
+                if (property === 'fillText')
+                    return (text: string) =>
+                        labels.push({
+                            text,
+                            x,
+                            align: target.textAlign as string,
+                            color: target.fillStyle as string,
+                        })
+                if (property === 'measureText') return () => ({ width: 0 })
+                return () => {}
+            },
+        }) as unknown as CanvasRenderingContext2D
+    }
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'document')
+    Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: {
+            createElement: () => ({ width: 0, height: 0, getContext: makeCanvasContext }),
+        },
+    })
+    t.after(() => {
+        if (original) Object.defineProperty(globalThis, 'document', original)
+        else Reflect.deleteProperty(globalThis, 'document')
+    })
+    const context = {
+        ctx: makeCanvasContext(),
+        scale: 40,
+        pixelRatio: 1,
+        ups: -2,
+        recentlyActive: false,
+        showStageName: true,
+        showGroupName: true,
+        defaultGroupId: 1,
+        state: {
+            bpms: [{ x: 0, y: 0, s: 0.5 }],
+            store: { slides: { info: new Map() } },
+            isDynamicStages: true,
+            stages: new Map([[2, { name: 'Side stage' }]]),
+            groups: new Map([[2, { name: 'Other group' }]]),
+        },
+    } as unknown as EditorDrawContext
+    const entity = note(0, {
+        size: 2,
+        left: 0,
+        noteStyle: 'default',
+        flickDirection: 'none',
+        isCritical: false,
+        isFake: false,
+        stageId: 2 as never,
+        groupId: 2 as never,
+    })
+    createNoteRenderer().draw(context, entity, true)
+    // Centred on the note's middle (lane 1), 0.1 lane apart each.
+    assert.deepEqual(
+        labels.map(({ text, x, align }) => [text, Math.round(x * 100) / 100, align]),
+        [
+            ['Side stage', 0.9, 'end'],
+            ['Other group', 1.1, 'start'],
+        ],
+    )
+})

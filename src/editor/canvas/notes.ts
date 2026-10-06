@@ -7,6 +7,9 @@ import { noteStyleColors } from '../../utils/colors'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
+// Lanes between a note's stage and group names and its middle.
+const NAME_GAP = 0.1
+
 type NoteInfo = SlideNoteInfo
 
 type NoteVisualType = 'anchor' | 'damage' | 'trace' | 'tick' | 'single' | 'head' | 'tail'
@@ -334,11 +337,13 @@ export const createNoteRenderer = () => {
                     context.showGroupName &&
                     entity.groupId !== context.defaultGroupId &&
                     state.groups.get(entity.groupId)?.name
+                // Side by side, the names keep 0.1 lane each from the middle.
+                const gap = stage && group ? NAME_GAP : 0
                 if (stage) {
                     drawText(
                         context,
                         stage,
-                        x + entity.size / 2,
+                        x + entity.size / 2 - gap,
                         y + 0.3,
                         '#a0a',
                         0.4,
@@ -349,7 +354,7 @@ export const createNoteRenderer = () => {
                     drawText(
                         context,
                         group,
-                        x + entity.size / 2,
+                        x + entity.size / 2 + gap,
                         y + 0.3,
                         '#0aa',
                         0.4,
