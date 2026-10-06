@@ -1024,8 +1024,8 @@
         "step": "Palier",
         "in": "Accélération",
         "out": "Décélération",
-        "inOut": "Accélération puis décélération",
-        "outIn": "Décélération puis accélération"
+        "inOut": "Accél.-décél.",
+        "outIn": "Décél.-accél."
       },
       "connectorEase": {
         "label": "Interpolation",

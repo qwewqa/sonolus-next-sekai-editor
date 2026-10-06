@@ -20,7 +20,7 @@
   },
   "commands": {
     "elevation": {
-      "title": "Yükseklik editörü"
+      "title": "Yükseklik Editörü"
     },
     "bgm": {
       "title": "Arka Plan Müziği",
@@ -573,7 +573,7 @@
   },
   "elevation": {
     "edit": "Yükseklikleri düzenle",
-    "header": "Yükseklik editörü",
+    "header": "Yükseklik Editörü",
     "beat": "Vuruş",
     "previousBeat": "Önceki vuruş",
     "nextBeat": "Sonraki vuruş",
