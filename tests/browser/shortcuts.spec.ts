@@ -70,18 +70,18 @@ test.describe('chords', () => {
         })
     }
 
-    test('Ctrl+C keeps copying selected page text', async ({ context, page }) => {
-        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-        await page.evaluate(async () => {
-            await navigator.clipboard.writeText('before')
+    test('Ctrl+C keeps copying selected page text', async ({ page }) => {
+        await page.evaluate(() => {
             const text = document.body.appendChild(document.createElement('p'))
             text.textContent = 'Note Speed'
             getSelection()?.selectAllChildren(text)
+            // The browser fires copy only when the key's default action runs.
+            document.addEventListener('copy', () => {
+                text.dataset.copied = String(getSelection())
+            })
         })
         await page.keyboard.press('Control+c')
-        await expect
-            .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-            .toBe('Note Speed')
+        await expect(page.locator('p[data-copied]')).toHaveAttribute('data-copied', 'Note Speed')
     })
 
     test('a rebound undo key undoes with Ctrl too', async ({ page }) => {
