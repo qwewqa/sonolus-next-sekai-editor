@@ -1,12 +1,31 @@
-import { beatToTime, getMeasureBeats } from '../../state/integrals/bpms'
+import type { Entity } from '../../state/entities'
+import { beatToTime, getMeasureBeats, type BpmIntegral } from '../../state/integrals/bpms'
 import { formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
 import { drawText } from './text'
 import type { EditorDrawContext } from './types'
 
-// Half the beat (0.4) and BPM (0.5) label sizes.
-const BPM_LABEL_CLEARANCE = 0.45
+// Half the beat or time (0.4) and BPM or time scale (0.5) label sizes.
+const LABEL_CLEARANCE = 0.45
+
+/** Where time scale labels reach the time column (left) and beat column (right). */
+export type EdgeLabelYs = { left: number[]; right: number[] }
+
+/** Time scale labels at the stage edges point outward, into those columns. */
+export const timeScaleEdgeLabelYs = (
+    steps: { entity: Entity; part?: 'line' | 'marker' }[],
+    bpms: BpmIntegral[],
+    ups: number,
+): EdgeLabelYs => {
+    const ys: EdgeLabelYs = { left: [], right: [] }
+    for (const { entity, part } of steps) {
+        if (entity.type !== 'timeScale' || part === 'line') continue
+        const side = entity.editorLane <= -6 ? 'left' : entity.editorLane >= 6 ? 'right' : undefined
+        if (side) ys[side].push(beatToTime(bpms, entity.beat) * ups)
+    }
+    return ys
+}
 
 export const drawGrid = (
     context: EditorDrawContext,
@@ -16,6 +35,7 @@ export const drawGrid = (
     laneDivision = 1,
     beatDisplay: BeatDisplay = 'measure',
     isBpmVisible = false,
+    edgeLabelYs: EdgeLabelYs = { left: [], right: [] },
 ) => {
     const { ctx, bounds, scale, state, ups } = context
     ctx.save()
@@ -75,15 +95,19 @@ export const drawGrid = (
     }
 
     ctx.globalAlpha = 0.5
-    // A BPM label takes the place of the beat labels it would overlap.
+    // A BPM or edge time scale label takes the place of the beat or time labels
+    // it would overlap.
     const bpmYs = isBpmVisible
         ? state.bpms
               .filter(({ x }) => x > beats.min - 1 && x < beats.max + 1)
               .map(({ x }) => beatToTime(state.bpms, x) * ups)
         : []
+    const beatYs = [...bpmYs, ...edgeLabelYs.right]
+    const near = (ys: number[], y: number) =>
+        ys.some((other) => Math.abs(y - other) < LABEL_CLEARANCE)
     for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
         const y = beatToTime(state.bpms, beat) * ups
-        if (bpmYs.some((bpmY) => Math.abs(y - bpmY) < BPM_LABEL_CLEARANCE)) continue
+        if (near(beatYs, y)) continue
         drawText(
             context,
             formatBeatPosition(state.bpms, beat, beatDisplay),
@@ -96,6 +120,7 @@ export const drawGrid = (
         )
     }
     for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++) {
+        if (near(edgeLabelYs.left, time * ups)) continue
         drawText(
             context,
             formatIntegerTime(time),

@@ -20,7 +20,7 @@ import { hitOffscreenIndicator, useOffscreenIndicators } from '../offscreenIndic
 import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
-import { drawGrid } from './grid'
+import { drawGrid, timeScaleEdgeLabelYs } from './grid'
 import { createNoteRenderer } from './notes'
 import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
@@ -150,6 +150,7 @@ watchEffect(
         const showOtherObjects = settings.showOtherObjects
         // BPM labels are drawn, faintly, with other objects too.
         const isBpmVisible = visibilities.bpm || showOtherObjects
+        const edgeLabelYs = timeScaleEdgeLabelYs(entities, inputs.state.bpms, inputs.ups)
         const currentBeats = beats.value
         const currentTimes = times.value
         const division = view.division
@@ -183,6 +184,7 @@ watchEffect(
                 laneDivision,
                 beatDisplay,
                 isBpmVisible,
+                edgeLabelYs,
             )
             ctx.save()
             ctx.strokeStyle = '#fff'

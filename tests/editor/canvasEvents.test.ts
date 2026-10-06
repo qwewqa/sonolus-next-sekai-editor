@@ -5,7 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
-import { drawGrid } from '../../src/editor/canvas/grid'
+import { drawGrid, timeScaleEdgeLabelYs } from '../../src/editor/canvas/grid'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { getPathD, getRangePathDs } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
@@ -711,6 +711,37 @@ test('a BPM label takes the place of beat labels near enough to overlap', () => 
     // Beat 9 is 0.125 s before the change, beat 10 0.75 s after.
     assert.deepEqual(draw(-1), ['9', '11', '12'])
     assert.deepEqual(draw(-10), ['9', '10', '11', '12'])
+})
+
+test('edge time scale labels take the place of the time and beat labels they reach', () => {
+    const timeScale = (beat: number, editorLane: number): TimeScaleObject => ({
+        groupId,
+        beat,
+        editorLane,
+        timeScale: 15,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    })
+    // At 120 BPM, beat 4 is 2 s and beat 6 is 3 s.
+    const { context, canvas } = makeContext({
+        timeScales: [timeScale(4, -6), timeScale(6, 6), timeScale(8, 3)],
+    })
+    const entities = new Set(
+        [...context.state.store.grid.timeScale.values()].flatMap((bucket) => [...bucket]),
+    )
+    const steps = [...entities].flatMap((entity) => [
+        { entity, part: 'line' as const },
+        { entity, part: 'marker' as const },
+    ])
+    const edges = timeScaleEdgeLabelYs(steps, context.state.bpms, context.ups)
+    assert.deepEqual(edges, { left: [-20], right: [-30] })
+    drawGrid(context, { min: 1, max: 9 }, { min: 1, max: 4 }, 1, 1, 'beat', false, edges)
+    const texts = canvas.labels.map(({ text }) => text)
+    // The lane -6 label covers 00:02, the lane 6 one beat 6 (shown as 7); the lane 3 one neither.
+    assert.ok(!texts.includes('00:02') && texts.includes('00:03') && texts.includes('00:04'))
+    assert.ok(!texts.includes('7') && texts.includes('5') && texts.includes('9'))
 })
 
 test('a same-beat stack shares one marker showing every change on its lane', () => {
