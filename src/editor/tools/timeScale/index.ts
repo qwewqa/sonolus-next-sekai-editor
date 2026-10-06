@@ -114,20 +114,9 @@ export const timeScale: Tool = {
                                 timeScale: entity.timeScale,
                                 skip: entity.skip,
                                 timeScaleTransition: entity.timeScaleTransition,
-                                ...(entity.timeScaleEase === 'inStep' && !entity.hideNotes
-                                    ? {
-                                          timeScaleEase: 'linear',
-                                          hideNotes: false,
-                                      }
-                                    : entity.timeScaleEase !== 'inStep' && !entity.hideNotes
-                                      ? {
-                                            timeScaleEase: 'inStep',
-                                            hideNotes: true,
-                                        }
-                                      : {
-                                            timeScaleEase: 'inStep',
-                                            hideNotes: false,
-                                        }),
+                                // A tap toggles hiding notes and keeps the ease.
+                                timeScaleEase: entity.timeScaleEase,
+                                hideNotes: !entity.hideNotes,
                             }),
                         )
                     } else {

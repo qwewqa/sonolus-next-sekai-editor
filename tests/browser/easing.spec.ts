@@ -415,3 +415,61 @@ test('saved presets with legacy eases migrate without losing other properties', 
         { connectorEase: 'inOutElastic', noteType: 'trace', copyProperties: true },
     ])
 })
+
+test('tapping a selected time scale toggles hiding notes and keeps its ease', async ({ page }) => {
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, settings, appImport } = window.editorTest
+        settings.showSidebar = true
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [],
+                timeScales: [
+                    {
+                        groupId: 1 as never,
+                        beat: 4,
+                        editorLane: 2,
+                        timeScale: 2,
+                        skip: 0,
+                        timeScaleEase: 'outCubic',
+                        timeScaleTransition: 'timeScale',
+                        hideNotes: false,
+                    },
+                ],
+            },
+            2,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'timeScale',
+            ),
+        })
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        await commands.timeScale.execute()
+    })
+    const timeScale = () =>
+        page.evaluate(() => {
+            const entity = [...window.editorTest.store.getAllEntities()].find(
+                (entity) => entity.type === 'timeScale',
+            )
+            return entity?.type === 'timeScale'
+                ? [entity.timeScaleEase, entity.hideNotes]
+                : undefined
+        })
+    const tap = async () => {
+        const point = await page.evaluate(() => window.editorTest.point(2, 4))
+        await page.mouse.click(point.x, point.y)
+        await page.evaluate(() => window.editorTest.nextTick())
+    }
+    await tap()
+    expect(await timeScale()).toEqual(['outCubic', true])
+    await tap()
+    expect(await timeScale()).toEqual(['outCubic', false])
+})
