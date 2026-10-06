@@ -1,5 +1,6 @@
 import type { Store } from '..'
 import type { Chart } from '../../../chart'
+import type { BpmIntegral } from '../../integrals/bpms'
 import { createStoreBpms } from './bpm'
 import { createStoreCameraEvents } from './events/camera'
 import { createStoreStageMaskEvents } from './events/stage/mask'
@@ -9,7 +10,7 @@ import { createStoreStageTransformEvents } from './events/stage/transform'
 import { createStoreSlides } from './slide'
 import { createStoreTimeScales } from './timeScale'
 
-export const createStore = (chart: Chart) => {
+export const createStore = (chart: Chart, bpms?: BpmIntegral[]) => {
     const store: Store = {
         grid: {
             bpm: new Map(),
@@ -57,7 +58,7 @@ export const createStore = (chart: Chart) => {
     createStoreStageStyleEvents(store, chart)
     createStoreStageTransformEvents(store, chart)
 
-    createStoreSlides(store, chart)
+    createStoreSlides(store, chart, bpms)
 
     return store
 }

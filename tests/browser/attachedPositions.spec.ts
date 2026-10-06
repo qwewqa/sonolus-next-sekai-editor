@@ -84,3 +84,35 @@ test('BPM edits after a slide leave its attached notes alone', async ({ page }) 
         }),
     ).toBe(true)
 })
+
+for (const command of ['copy', 'cut'] as const)
+    test(`${command} keeps a slide with an attached note without selecting its BPM`, async ({
+        page,
+        context,
+    }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+        const result = await page.evaluate(async (command) => {
+            const { history, appImport } = window.editorTest
+            const notes = [...history.state.value.store.slides.note.values()].flat()
+            history.replaceState({ ...history.state.value, selectedEntities: notes })
+            const commands = await appImport<typeof import('../../src/editor/commands')>(
+                '/src/editor/commands/index.ts',
+            )
+            const { clipboardEntry } =
+                await appImport<typeof import('../../src/clipboard')>('/src/clipboard/index.ts')
+            await commands.commands[command].execute()
+            const slide = clipboardEntry.value?.data?.chart.slides[0] ?? []
+            return {
+                copied: slide.map((note) => [note.beat, note.isAttached]),
+                left: [...history.state.value.store.slides.note.values()].flat().length,
+            }
+        }, command)
+        expect(result).toEqual({
+            copied: [
+                [0, false],
+                [2, true],
+                [4, false],
+            ],
+            left: command === 'cut' ? 0 : 3,
+        })
+    })

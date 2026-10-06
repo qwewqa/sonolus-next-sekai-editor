@@ -43,20 +43,24 @@ export const cut: Command = {
             return
         }
 
-        const copiedStore = createStore({
-            initialLife: initialLife.value,
-            isDynamicStages: isDynamicStages.value,
-            bpms: getEntities(entities, 'bpm'),
-            timeScales: getEntities(entities, 'timeScale'),
-            cameraEvents: getEntities(entities, 'cameraEventJoint'),
-            stageMaskEvents: getEntities(entities, 'stageMaskEventJoint'),
-            stagePivotEvents: getEntities(entities, 'stagePivotEventJoint'),
-            stageStyleEvents: getEntities(entities, 'stageStyleEventJoint'),
-            stageTransformEvents: getEntities(entities, 'stageTransformEventJoint'),
-            groups: groups.value,
-            stages: stages.value,
-            slides: getSlides(entities),
-        })
+        const copiedStore = createStore(
+            {
+                initialLife: initialLife.value,
+                isDynamicStages: isDynamicStages.value,
+                bpms: getEntities(entities, 'bpm'),
+                timeScales: getEntities(entities, 'timeScale'),
+                cameraEvents: getEntities(entities, 'cameraEventJoint'),
+                stageMaskEvents: getEntities(entities, 'stageMaskEventJoint'),
+                stagePivotEvents: getEntities(entities, 'stagePivotEventJoint'),
+                stageStyleEvents: getEntities(entities, 'stageStyleEventJoint'),
+                stageTransformEvents: getEntities(entities, 'stageTransformEventJoint'),
+                groups: groups.value,
+                stages: stages.value,
+                slides: getSlides(entities),
+            },
+            // The selection may hold no BPM; attached notes keep their document places.
+            state.value.bpms,
+        )
         const copiedEntities = serializeToLevelDataEntities(
             initialLife.value,
             isDynamicStages.value,
