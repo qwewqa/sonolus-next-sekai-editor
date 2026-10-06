@@ -277,9 +277,6 @@ const inlineMode = computed(() =>
 )
 /** Touch drag handles, where names keep enough room beside them. */
 const hasGrip = computed(() => width.value >= 300)
-/** The selection bar's room: a count without its label, a visibility button. */
-const compactBar = computed(() => width.value < (isCoarse.value ? 340 : 280))
-const barVisibility = computed(() => width.value >= (isCoarse.value ? 360 : 300))
 
 /** Whether a row offers its inline actions, which the menu then leaves out. */
 const hasInline = (id: T) =>
@@ -467,6 +464,39 @@ const onBulkVisibility = () => {
 const selectionCount = computed(() =>
     label(i18n.value.workspace.manager.selecting, `${selectedIds.value.length}`),
 )
+
+// The selection bar drops its visibility button, then the count's label, when
+// the label doesn't fit.
+const bar = useTemplateRef<HTMLElement>('bar')
+const barLabel = shallowRef(true)
+const barVisibility = shallowRef(true)
+let barContext: CanvasRenderingContext2D | null | undefined
+const measureBar = () => {
+    const element = bar.value
+    const count = element?.querySelector<HTMLElement>('.manager-selection-count')
+    const round = element?.querySelector<HTMLElement>('.manager-bulk-move')
+    const done = count?.parentElement
+    if (!element || !count || !round || !done) return
+    barContext ??= document.createElement('canvas').getContext('2d')
+    if (!barContext) return
+    const style = getComputedStyle(count)
+    barContext.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    const text = Math.ceil(barContext.measureText(selectionCount.value).width)
+    const barStyle = getComputedStyle(element)
+    const button = round.getBoundingClientRect().width + parseFloat(barStyle.columnGap)
+    // Beside Move, Delete and More, less the Done button's own chrome.
+    const room =
+        element.clientWidth -
+        parseFloat(barStyle.paddingLeft) -
+        parseFloat(barStyle.paddingRight) -
+        (done.getBoundingClientRect().width - count.clientWidth) -
+        parseFloat(style.paddingLeft) -
+        3 * button
+    barLabel.value = text <= room
+    barVisibility.value = text + button <= room
+}
+watch([bar, width, isCoarse, selectionCount], measureBar, { flush: 'post' })
+onMounted(() => void document.fonts.ready.then(measureBar))
 
 const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.isShown(id)))
 
@@ -1709,6 +1739,7 @@ const folderEyeLabel = (item: FolderItem) =>
             <!-- While selecting, the selection's actions take its place, pinned in reach. -->
             <div
                 v-if="selecting"
+                ref="bar"
                 class="manager-footer manager-footer-floating manager-selection-bar pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex items-center gap-1.5 px-1.5 pb-2"
             >
                 <button
@@ -1723,9 +1754,11 @@ const folderEyeLabel = (item: FolderItem) =>
                     >
                         <CloseIcon class="size-3.5 [@media(pointer:coarse)]:size-4" />
                     </span>
-                    <span class="truncate pl-1 tabular-nums" aria-hidden="true">{{
-                        compactBar ? selectedIds.length : selectionCount
-                    }}</span>
+                    <span
+                        class="manager-selection-count truncate pl-1 tabular-nums"
+                        aria-hidden="true"
+                        >{{ barLabel ? selectionCount : selectedIds.length }}</span
+                    >
                 </button>
                 <span class="sr-only" role="status">{{ selectionCount }}</span>
                 <button

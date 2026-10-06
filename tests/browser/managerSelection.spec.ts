@@ -593,3 +593,63 @@ test('a long band count widens its column and the name gives way', async ({ page
     expect(gaps.name).toBeGreaterThanOrEqual(0)
     expect(gaps.mode).toBeGreaterThanOrEqual(4)
 })
+
+for (const [device, viewport, mobile] of [
+    ['desktop', { width: 1600, height: 1000 }, false],
+    ['phone', { width: 375, height: 812 }, true],
+] as const) {
+    test.describe(`${device} selection bar`, () => {
+        test.use({ viewport, isMobile: mobile, hasTouch: mobile })
+
+        for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
+            test(`${locale} shows its count in full`, async ({ page }) => {
+                await seedGroups(page, seed)
+                await page.evaluate(
+                    (locale) => (window.editorTest.settings.locale = locale as never),
+                    locale,
+                )
+                const list = panel(page)
+                const bar = list.locator('.manager-selection-bar')
+                if (mobile) {
+                    await list.locator('.manager-mode').tap()
+                    for (const name of ['Default', 'Other', 'Bass']) {
+                        await nameButton(list, name).tap()
+                    }
+                } else {
+                    for (const name of ['Default', 'Other', 'Bass']) {
+                        await nameButton(list, name).click({ modifiers: ['ControlOrMeta'] })
+                    }
+                }
+                const count = bar.locator('.manager-selection-done > span').last()
+                await expect(count).toContainText('3')
+                await expect
+                    .poll(() => count.evaluate((span) => span.scrollWidth <= span.clientWidth))
+                    .toBe(true)
+                const panelBox = (await list.boundingBox())!
+                for (const button of await bar.getByRole('button').all()) {
+                    const box = (await button.boundingBox())!
+                    expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width)
+                }
+                // English keeps its words and the visibility button at the default dock.
+                if (locale === 'en' && !mobile) {
+                    await expect(count).toHaveText('3 Selected')
+                    await expect(bar.locator('.manager-bulk-visibility')).toBeVisible()
+                }
+            })
+        }
+    })
+}
+
+test('a long list keeps the full selection bar while the count is short', async ({ page }) => {
+    await seedGroups(
+        page,
+        Array.from({ length: 150 }, (_, i): Seed[number] => [`Group ${i + 1}`]),
+    )
+    const list = panel(page)
+    for (const name of ['Group 1', 'Group 2', 'Group 3']) {
+        await nameButton(list, name).click({ modifiers: ['ControlOrMeta'] })
+    }
+    const bar = list.locator('.manager-selection-bar')
+    await expect(bar.locator('.manager-selection-done > span').last()).toHaveText('3 Selected')
+    await expect(bar.locator('.manager-bulk-visibility')).toBeVisible()
+})
