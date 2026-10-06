@@ -117,7 +117,7 @@ class RecordingCanvas {
 const groupId = 1 as GroupId
 const stageId = 1 as StageId
 
-const makeContext = () => {
+const makeContext = (overrides: Partial<Chart> = {}) => {
     const chart: Chart = {
         initialLife: 1000,
         isDynamicStages: true,
@@ -141,6 +141,7 @@ const makeContext = () => {
         stageTransformEvents: [],
         timeScales: [],
         slides: [],
+        ...overrides,
     }
     const canvas = new RecordingCanvas()
     const context: EditorDrawContext = {
@@ -564,4 +565,41 @@ test('event paths draw steps as held values and sample other curves', () => {
     const xs = sampled.filter((_, index) => index % 3 === 1).map(Number)
     assert.ok(Math.min(...xs) < -0.15)
     assert.ok(Math.abs(xs.at(-1)! - 2) < 1e-12)
+})
+
+test('a same-beat pair draws one label in the order it plays', () => {
+    const timeScale = (value: number): TimeScaleObject => ({
+        groupId,
+        beat: 2,
+        editorLane: 7,
+        timeScale: value,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    })
+    const camera = (zoom: number) => ({
+        beat: 3,
+        cameraLeft: -6,
+        cameraSize: 12,
+        cameraZoom: zoom,
+        cameraZoomTargetLane: 0,
+        cameraZoomTargetY: 0,
+        cameraZoomVerticalAlign: 'default' as const,
+        cameraRotation: 0,
+        cameraStageTilt: 1,
+        eventEase: 'linear' as const,
+    })
+    const { context, canvas } = makeContext({
+        timeScales: [timeScale(1), timeScale(2)],
+        cameraEvents: [camera(1), camera(2)],
+    })
+    const { grid } = context.state.store
+    for (const type of ['timeScale', 'cameraEventJoint'] as const)
+        for (const entities of grid[type].values())
+            for (const entity of entities) drawEvent(context, entity, false)
+    assert.deepEqual(
+        canvas.labels.map(({ text }) => text),
+        ['1x→2x', '×2'],
+    )
 })

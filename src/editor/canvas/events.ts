@@ -127,6 +127,36 @@ const nextTimeScale = ({ state }: EditorDrawContext, entity: TimeScaleEntity) =>
     return next.get(entity)
 }
 
+const stacks = new WeakMap<Map<number, Set<Entity>>, Map<Entity, readonly Entity[]>>()
+
+/**
+ * Objects at one beat of one track (a group's time scales, a stage's events),
+ * in the order the chart plays them, for each object stacked with others.
+ */
+const stackOf = <T extends Entity>(
+    grid: Map<number, Set<T>>,
+    entity: T,
+    track: (entity: T) => unknown,
+): readonly T[] | undefined => {
+    let stacked = stacks.get(grid) as Map<T, readonly T[]> | undefined
+    if (!stacked) {
+        stacked = new Map()
+        for (const entities of grid.values()) {
+            const byTrack = new Map<string, T[]>()
+            for (const other of entities) {
+                const key = `${String(track(other))}:${other.beat}`
+                const list = byTrack.get(key)
+                if (list) list.push(other)
+                else byTrack.set(key, [other])
+            }
+            for (const list of byTrack.values())
+                if (list.length > 1) for (const other of list) stacked.set(other, list)
+        }
+        stacks.set(grid, stacked)
+    }
+    return stacked.get(entity)
+}
+
 // Lanes, in proportion to the 0.5-lane label font; nearer its value than its marker.
 const EASE_GLYPH = { width: 0.3, height: 0.34, gap: 0.06, stroke: 0.05 }
 
@@ -251,12 +281,24 @@ export const drawEvent = (
             ctx.globalAlpha *= 2
             ctx.setLineDash([])
             timeScaleMarker(ctx, x, y, isScroll, entity.hideNotes)
+            // A same-beat jump reads as one label, in the order it plays.
+            const stack = stackOf(state.store.grid.timeScale, entity, ({ groupId }) => groupId)
+            if (stack && stack[0] !== entity) break
             const direction = x > 0 ? 1 : -1
             const labelX = x + 0.23 * direction
-            const glyphWidth = drawEaseGlyph(context, entity, labelX, y, direction, '#ff0')
+            const glyphWidth = drawEaseGlyph(
+                context,
+                stack?.at(-1) ?? entity,
+                labelX,
+                y,
+                direction,
+                '#ff0',
+            )
             drawText(
                 context,
-                formatTimeScale(entity.timeScale, entity.skip),
+                (stack ?? [entity])
+                    .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
+                    .join('→'),
                 labelX + glyphWidth * direction,
                 y,
                 '#ff0',
@@ -308,6 +350,23 @@ export const drawEvent = (
             ctx.globalAlpha *= 2
             ctx.strokeStyle = '#fff'
             for (const x of xs) marker(ctx, x, y)
+            // Same-beat joints of one track draw as one; say how many there are.
+            const stack = stackOf(
+                state.store.grid[entity.type] as Map<number, Set<Entity>>,
+                entity,
+                (joint) => ('stageId' in joint ? joint.stageId : undefined),
+            )
+            if (stack?.[0] === entity)
+                drawText(
+                    context,
+                    `×${stack.length}`,
+                    x + 0.15,
+                    y - 0.25,
+                    color,
+                    0.35,
+                    'start',
+                    context.figureMiddle,
+                )
             if (
                 entity.type !== 'cameraEventJoint' &&
                 context.showStageName &&
