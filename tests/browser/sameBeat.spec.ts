@@ -151,22 +151,23 @@ const pick = (page: Page, kind: Kind, values: number[]) =>
         { kind, values },
     )
 
-const select = (page: Page, kind: Kind, values: number[]) =>
+/** Selects in stored order, or the reverse, as clicking the second first does. */
+const select = (page: Page, kind: Kind, values: number[], reversed = false) =>
     page.evaluate(
-        async ({ kind, values }) => {
+        async ({ kind, values, reversed }) => {
             const { history, store, nextTick } = window.editorTest
+            const selected = [...store.getAllEntities()].filter((entity) => {
+                const record = entity as unknown as Record<string, number>
+                const value = record.timeScale ?? record.bpm ?? record.cameraZoom ?? record.maskSize
+                return entity.type === kind && entity.beat === 4 && values.includes(value!)
+            })
             history.replaceState({
                 ...history.state.value,
-                selectedEntities: [...store.getAllEntities()].filter((entity) => {
-                    const record = entity as unknown as Record<string, number>
-                    const value =
-                        record.timeScale ?? record.bpm ?? record.cameraZoom ?? record.maskSize
-                    return entity.type === kind && entity.beat === 4 && values.includes(value!)
-                }),
+                selectedEntities: reversed ? selected.reverse() : selected,
             })
             await nextTick()
         },
-        { kind, values },
+        { kind, values, reversed },
     )
 
 const edits: Record<Kind, Record<string, unknown>> = {
@@ -208,6 +209,12 @@ for (const kind of Object.keys(edits) as Kind[]) {
         test('editing both together keeps the order', async ({ page }) => {
             await select(page, kind, kind === 'bpm' ? [120, 180] : [1, 2])
             await editSelection(page, edits[kind])
+            expect(await exported(page)).toEqual(original)
+        })
+
+        test('moving a pair selected in reverse by Beat keeps the order', async ({ page }) => {
+            await select(page, kind, kind === 'bpm' ? [120, 180] : [1, 2], true)
+            await editSelection(page, { beat: 5 })
             expect(await exported(page)).toEqual(original)
         })
 
@@ -332,6 +339,41 @@ test('a time scale moved into a group goes after the ones already at its beat', 
     })
     expect((await exported(page)).timeScale).toEqual([1, 2, 5])
 })
+
+for (const [kind, key] of [
+    ['timeScale', 'groupId'],
+    ['stageMaskEventJoint', 'stageId'],
+] as const)
+    test(`a ${key} change of a ${kind} pair selected in reverse keeps the order`, async ({
+        page,
+    }) => {
+        await showPairs(page)
+        await select(page, kind, [1, 2], true)
+        const target = await page.evaluate(
+            ({ key }) =>
+                (window.editorTest.history.state.value.selectedEntities[0] as never)[key] === 1
+                    ? 2
+                    : 1,
+            { key },
+        )
+        await editSelection(page, { [key]: target })
+        const values = await page.evaluate(
+            ({ kind, key, target }) =>
+                [...(window.editorTest.history.state.value.store.grid[kind].get(4) ?? [])]
+                    .filter(
+                        (entity) =>
+                            entity.beat === 4 &&
+                            (entity as unknown as Record<string, number>)[key] === target,
+                    )
+                    .map(
+                        (entity) =>
+                            (entity as unknown as Record<string, number>).timeScale ??
+                            (entity as unknown as Record<string, number>).maskSize,
+                    ),
+            { kind, key, target },
+        )
+        expect(values).toEqual([1, 2])
+    })
 
 test('a sideways drag keeps a time-scale pair and its order', async ({ page }) => {
     await showPairs(page)

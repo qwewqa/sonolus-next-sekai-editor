@@ -13,6 +13,7 @@ import { editSelectedStageStyleEvent } from '../events/stage/style'
 import { editSelectedStageTransformEvent } from '../events/stage/transform'
 import { editSelectedNote } from '../note'
 import { editSelectedTimeScale, editTimeScale } from '../timeScale'
+import { inStoredOrder } from '../transformSelection'
 
 export type PlanOptions = TransactionOptions & {
     /** Edits only these selected objects; the rest stay selected unchanged. */
@@ -78,20 +79,25 @@ export const planEdit = (
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(
         (entity) => entity.beat === 0,
     )
-    const changes = new Set(changed)
-    const results = selected.flatMap((entity) => {
-        if (!changes.has(entity)) return [entity]
-        if (entity === lone && entity.type === 'bpm') return editBpm(transaction, entity, object)
-        if (entity === lone && entity.type === 'timeScale')
-            return editTimeScale(transaction, entity, object)
-        return edits[entity.type as keyof typeof edits](transaction, entity as never, object)
-    })
+    const results = new Map<Entity, Entity[]>()
+    // Moved same-beat objects land in their stored order, whatever the selection order.
+    for (const entity of inStoredOrder(source, changed, (entity) => entity)) {
+        if (results.has(entity)) continue
+        results.set(
+            entity,
+            entity === lone && entity.type === 'bpm'
+                ? editBpm(transaction, entity, object)
+                : entity === lone && entity.type === 'timeScale'
+                  ? editTimeScale(transaction, entity, object)
+                  : edits[entity.type as keyof typeof edits](transaction, entity as never, object),
+        )
+    }
     // The chart keeps a tempo at 0, as moves and flips do.
     if (
         initialBpm &&
         !getInStoreGrid(transaction.store.grid, 'bpm', 0)?.some((entity) => entity.beat === 0)
     )
         addBpm(transaction, initialBpm)
-    const state = transaction.commit(results)
+    const state = transaction.commit(selected.flatMap((entity) => results.get(entity) ?? [entity]))
     return { state, changed }
 }
