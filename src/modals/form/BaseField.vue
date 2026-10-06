@@ -408,7 +408,6 @@ watchEffect(
         grid-template-columns:
             minmax(0, 1fr) auto
             calc(100% - min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) - 0.75rem);
-        column-gap: 0.375rem;
         align-items: center;
     }
 
@@ -426,8 +425,11 @@ watchEffect(
         grid-area: 1 / 3;
     }
 
+    /* The usual 12px label gap before the control, and half that after the label. */
     .form-field-inline:not(.form-field-stacked) > .form-field-mixed {
         grid-area: 1 / 2;
+        margin-left: 0.375rem;
+        margin-right: 0.75rem;
         flex-wrap: nowrap;
         margin-top: 0;
         white-space: nowrap;

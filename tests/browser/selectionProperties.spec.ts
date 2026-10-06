@@ -208,6 +208,11 @@ test.describe('mixed values', () => {
         const attached = await control(page, 'Attached').boundingBox()
         const type = await control(page, 'Note Type').boundingBox()
         expect(attached?.x).toBeCloseTo(type?.x ?? 0, 0)
+        // The chip keeps the usual 12px label gap from its control.
+        const chip = await field('Attached').locator('.form-field-coverage-chip').boundingBox()
+        expect((attached?.x ?? 0) - ((chip?.x ?? 0) + (chip?.width ?? 0))).toBeGreaterThanOrEqual(
+            11.5,
+        )
         // Values in use keep their own row.
         expect(await sameRow('Critical')).toBe(false)
         await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 260))
