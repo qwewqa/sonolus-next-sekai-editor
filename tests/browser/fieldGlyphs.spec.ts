@@ -320,3 +320,54 @@ for (const width of [336, 260]) {
         }
     })
 }
+
+test('a value glyph gives way only when that lets the value fit', async ({ page }) => {
+    await open(page)
+    const shown = (label: string) =>
+        lead(page, label).evaluate((lead) => getComputedStyle(lead).display !== 'none')
+    const fits = (label: string) =>
+        field(page, label)
+            .locator('select')
+            .evaluate((select) => select.scrollWidth <= select.clientWidth)
+    // The default note colour, "デフォルト", fits only without its swatch.
+    await page.evaluate(() => (window.editorTest.settings.locale = 'ja'))
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (e) => e.type === 'note' && e.beat === 7,
+            ),
+        })
+        await nextTick()
+    })
+    await expect.poll(() => shown('ノーツの色')).toBe(false)
+    expect(await fits('ノーツの色')).toBe(true)
+    // Up Left in French truncates either way, so its arrow stays.
+    await page.evaluate(() => (window.editorTest.settings.locale = 'fr'))
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (e) => e.type === 'note' && e.beat === 3,
+            ),
+        })
+        await nextTick()
+    })
+    await expect.poll(() => shown('Direction du Flick')).toBe(true)
+    // With room, the swatch returns.
+    await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 560))
+    await page.evaluate(() => (window.editorTest.settings.locale = 'ja'))
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (e) => e.type === 'note' && e.beat === 7,
+            ),
+        })
+        await nextTick()
+    })
+    await expect.poll(() => shown('ノーツの色')).toBe(true)
+})

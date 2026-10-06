@@ -1,7 +1,8 @@
 <script setup lang="ts" generic="const T">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
+import { useLeadFit } from './leadFit'
 import { resyncSelect } from './resync'
 import { i18n } from '../../i18n'
 import { useEmptyLabel, useUnsetChoice } from './emptyLabel'
@@ -32,16 +33,23 @@ const unknown = computed(() =>
         allSections.value.flatMap((section) => section.options),
     ),
 )
+
+const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
 </script>
 
 <template>
     <BaseField :label>
         <div
+            ref="wrapper"
             class="form-field-select group"
-            :class="{ 'opacity-40': disabled, 'form-field-select-leading': $slots.leading }"
+            :class="{
+                'opacity-40': disabled,
+                'form-field-select-leading': $slots.leading && !leadless,
+            }"
         >
             <span
                 v-if="$slots.leading"
+                v-show="!leadless"
                 class="form-field-select-lead group-active:text-on-accent"
                 aria-hidden="true"
             >
