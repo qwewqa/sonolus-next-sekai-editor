@@ -11,11 +11,13 @@ defineProps<{
 <template>
     <section>
         <h2 class="flex items-center gap-2 font-bold">
-            <!-- Flat, unlike the raised toolbar button, so it does not read as clickable. -->
+            <!-- Flat, unlike the raised toolbar button, so it does not read as clickable.
+            An icon column, so text glyphs fit and the titles line up. -->
             <span
                 v-if="command"
-                class="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-button px-1.5 font-normal"
+                class="flex size-7 shrink-0 items-center justify-center rounded-full bg-button font-normal"
                 aria-hidden="true"
+                data-icon-column
             >
                 <component
                     :is="commands[command].icon.is"
