@@ -139,6 +139,30 @@ test.describe('edit labels', () => {
         await expect(page.locator('.notification')).toHaveText('Set Elevation on 2 objects')
     })
 
+    test('name the one kind of event or change that changed', async ({ page }) => {
+        const select = (type: string) =>
+            page.evaluate((type) => {
+                const { history, store } = window.editorTest
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: [...store.getAllEntities()].filter((e) => e.type === type),
+                })
+            }, type)
+        await page.evaluate(() => {
+            const { fixtures, show } = window.editorTest
+            show(fixtures.events)
+        })
+        await select('timeScale')
+        await edit(page, { hideNotes: true })
+        await expect(page.locator('.notification')).toHaveText('Set Hide Notes on 3 time scales')
+        await select('cameraEventJoint')
+        await edit(page, { cameraZoom: 2 })
+        await expect(page.locator('.notification')).toHaveText('Set Camera Zoom on 4 camera events')
+        await select('bpm')
+        await edit(page, { bpm: 200, meter: 3 })
+        await expect(page.locator('.notification')).toHaveText('Edited 2 BPM changes')
+    })
+
     test('add no history entry when nothing changes', async ({ page }) => {
         await showSlides(page, [
             [{ beat: 0, isCritical: true, connectorActiveIsCritical: true }],

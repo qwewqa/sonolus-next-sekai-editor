@@ -120,7 +120,7 @@ export const stageStyleEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.selected,
                         `${targets.length}`,
-                        () => i18n.value.events.stageStyleEvent,
+                        () => i18n.value.eventKinds.stageStyleEvent,
                     ),
                 )
             } else {
@@ -154,7 +154,7 @@ export const stageStyleEvent: Tool = {
                         interpolate(
                             () => i18n.value.tools.events.selected,
                             '1',
-                            () => i18n.value.events.stageStyleEvent,
+                            () => i18n.value.eventKinds.stageStyleEvent,
                         ),
                     )
                 }
@@ -190,7 +190,7 @@ export const stageStyleEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.moving,
                     '1',
-                    () => i18n.value.events.stageStyleEvent,
+                    () => i18n.value.eventKinds.stageStyleEvent,
                 ),
             )
 
@@ -205,7 +205,7 @@ export const stageStyleEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.adding,
                     '1',
-                    () => i18n.value.events.stageStyleEvent,
+                    () => i18n.value.eventKinds.stageStyleEvent,
                 ),
             )
 
@@ -417,7 +417,7 @@ const add = (object: StageStyleEventObject) => {
         interpolate(
             () => i18n.value.tools.events.added,
             '1',
-            () => i18n.value.events.stageStyleEvent,
+            () => i18n.value.eventKinds.stageStyleEvent,
         ),
         (transaction) => addStageStyleEventJoint(transaction, object),
     )
@@ -431,7 +431,7 @@ const edit = (
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
-            () => i18n.value.events.stageStyleEvent,
+            () => i18n.value.eventKinds.stageStyleEvent,
         ),
         (transaction) => editSelectedStageStyleEvent(transaction, entity, object),
     )
@@ -442,7 +442,7 @@ const move = (entity: StageStyleEventJointEntity, object: StageStyleEventObject)
         interpolate(
             () => i18n.value.tools.events.moved,
             '1',
-            () => i18n.value.events.stageStyleEvent,
+            () => i18n.value.eventKinds.stageStyleEvent,
         ),
         (transaction) => editSelectedStageStyleEvent(transaction, entity, object),
     )

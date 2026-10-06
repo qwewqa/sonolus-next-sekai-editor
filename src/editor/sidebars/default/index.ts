@@ -13,25 +13,59 @@ import { view } from '../../view'
 import { fieldLabel, propertyField } from '../../workspace/properties/fields'
 export { isEditableEntity } from '../../../state/operations/editable'
 
+// Event joints and the word messages qualify their events with.
+const eventKinds = {
+    cameraEventJoint: 'cameraEvent',
+    stageMaskEventJoint: 'stageMaskEvent',
+    stagePivotEventJoint: 'stagePivotEvent',
+    stageStyleEventJoint: 'stageStyleEvent',
+    stageTransformEventJoint: 'stageTransformEvent',
+} as const
+
+type Messages = { set: () => string; edited: () => string; kind?: () => string }
+
+// Messages naming the one kind that changed, else objects.
+const kindMessages = (changed: readonly Entity[]): Messages => {
+    const kinds = new Set(changed.map(({ type }) => type))
+    const [kind] = kinds
+    const t = () => i18n.value
+    if (kinds.size !== 1 || !kind)
+        return { set: () => t().sidebars.default.set, edited: () => t().sidebars.default.edited }
+    if (kind === 'note')
+        return {
+            set: () => t().sidebars.default.setNotes,
+            edited: () => t().sidebars.default.editedNotes,
+        }
+    if (kind === 'bpm')
+        return { set: () => t().sidebars.default.setBpm, edited: () => t().tools.bpm.edited }
+    if (kind === 'timeScale')
+        return {
+            set: () => t().sidebars.default.setTimeScales,
+            edited: () => t().tools.timeScale.edited,
+        }
+    if (kind in eventKinds) {
+        const event = eventKinds[kind as keyof typeof eventKinds]
+        return {
+            set: () => t().sidebars.default.setEvents,
+            edited: () => t().tools.events.edited,
+            kind: () => t().eventKinds[event],
+        }
+    }
+    return { set: () => t().sidebars.default.set, edited: () => t().sidebars.default.edited }
+}
+
 /** Names an edit by its one property, and counts the objects it changed. */
 export const editLabel = (object: EditableObject, changed: readonly Entity[]) => {
     const keys = Object.entries(object as Record<string, unknown>).flatMap(([key, value]) =>
         value === undefined || !propertyField.has(key as never) ? [] : [key],
     )
-    const notes = changed.every((entity) => entity.type === 'note')
-    const count = `${changed.length}`
+    const messages = kindMessages(changed)
+    const count = String(changed.length)
+    const kind = messages.kind ?? (() => '')
     const field = keys.length === 1 ? propertyField.get(keys[0] as never) : undefined
     if (field)
-        return interpolate(
-            () => (notes ? i18n.value.sidebars.default.setNotes : i18n.value.sidebars.default.set),
-            count,
-            () => fieldLabel(field, i18n.value, true),
-        )
-    return interpolate(
-        () =>
-            notes ? i18n.value.sidebars.default.editedNotes : i18n.value.sidebars.default.edited,
-        count,
-    )
+        return interpolate(messages.set, count, () => fieldLabel(field, i18n.value, true), kind)
+    return interpolate(messages.edited, count, kind)
 }
 
 /** Edits the selected objects, or only those `only` accepts. */

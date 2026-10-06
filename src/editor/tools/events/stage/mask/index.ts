@@ -121,7 +121,7 @@ export const stageMaskEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.selected,
                         `${targets.length}`,
-                        () => i18n.value.events.stageMaskEvent,
+                        () => i18n.value.eventKinds.stageMaskEvent,
                     ),
                 )
             } else {
@@ -155,7 +155,7 @@ export const stageMaskEvent: Tool = {
                         interpolate(
                             () => i18n.value.tools.events.selected,
                             '1',
-                            () => i18n.value.events.stageMaskEvent,
+                            () => i18n.value.eventKinds.stageMaskEvent,
                         ),
                     )
                 }
@@ -193,7 +193,7 @@ export const stageMaskEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.moving,
                         '1',
-                        () => i18n.value.events.stageMaskEvent,
+                        () => i18n.value.eventKinds.stageMaskEvent,
                     ),
                 )
 
@@ -207,7 +207,7 @@ export const stageMaskEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.editing,
                         '1',
-                        () => i18n.value.events.stageMaskEvent,
+                        () => i18n.value.eventKinds.stageMaskEvent,
                     ),
                 )
 
@@ -226,7 +226,7 @@ export const stageMaskEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.adding,
                     '1',
-                    () => i18n.value.events.stageMaskEvent,
+                    () => i18n.value.eventKinds.stageMaskEvent,
                 ),
             )
 
@@ -485,7 +485,7 @@ const add = (object: StageMaskEventObject) => {
         interpolate(
             () => i18n.value.tools.events.added,
             '1',
-            () => i18n.value.events.stageMaskEvent,
+            () => i18n.value.eventKinds.stageMaskEvent,
         ),
         (transaction) => addStageMaskEventJoint(transaction, object),
     )
@@ -499,7 +499,7 @@ const edit = (
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
-            () => i18n.value.events.stageMaskEvent,
+            () => i18n.value.eventKinds.stageMaskEvent,
         ),
         (transaction) => editSelectedStageMaskEvent(transaction, entity, object),
     )
@@ -510,7 +510,7 @@ const move = (entity: StageMaskEventJointEntity, object: StageMaskEventObject) =
         interpolate(
             () => i18n.value.tools.events.moved,
             '1',
-            () => i18n.value.events.stageMaskEvent,
+            () => i18n.value.eventKinds.stageMaskEvent,
         ),
         (transaction) => editSelectedStageMaskEvent(transaction, entity, object),
     )

@@ -11,6 +11,13 @@
     "stageStyleEvent": "Événement de style de scène",
     "stageTransformEvent": "Événement de transformation de scène"
   },
+  "eventKinds": {
+    "cameraEvent": "de caméra",
+    "stageMaskEvent": "de masque de scène",
+    "stagePivotEvent": "de pivot de scène",
+    "stageStyleEvent": "de style de scène",
+    "stageTransformEvent": "de transformation de scène"
+  },
   "commands": {
     "elevation": {
       "title": "Éditeur d’élévation"
@@ -504,18 +511,18 @@
       },
       "bpmTool": {
         "title": "Outil BPM",
-        "select": "Appuyez sur des objets BPM pour sélectionner 1 objet.",
-        "edit": "Appuyez sur 1 objet BPM pour le modifier.",
+        "select": "Appuyez sur des changements de BPM pour en sélectionner 1.",
+        "edit": "Appuyez sur 1 changement de BPM pour le modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
-        "move": "Glissez 1 objet BPM pour le déplacer.",
+        "move": "Glissez 1 changement de BPM pour le déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection."
       },
       "timeScaleTool": {
         "title": "Outil Échelle de Temps",
-        "select": "Appuyez sur des objets Échelle de Temps pour sélectionner 1 objet.",
-        "edit": "Appuyez sur 1 objet Échelle de Temps pour le modifier.",
+        "select": "Appuyez sur des échelles de temps pour en sélectionner 1.",
+        "edit": "Appuyez sur 1 échelle de temps pour la modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
-        "move": "Glissez 1 objet Échelle de Temps pour le déplacer.",
+        "move": "Glissez 1 échelle de temps pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "markers": "Les marqueurs en losange utilisent la transition Défilement. Les marqueurs creux sur des lignes pointillées masquent les notes.",
         "ease": "La courbe à côté de la valeur montre l’interpolation jusqu’au prochain changement du groupe. Elle est estompée quand la vitesse saute simplement : Palier en Accélération, dernier changement ou changement vers la même valeur."
@@ -714,7 +721,10 @@
       "editedNotes": "{0} note modifiée|{0} notes modifiées",
       "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
       "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
-      "noChange": "Aucun changement"
+      "noChange": "Aucun changement",
+      "setBpm": "{1} : {0} changement de BPM modifié|{1} : {0} changements de BPM modifiés",
+      "setTimeScales": "{1} : {0} échelle de temps modifiée|{1} : {0} échelles de temps modifiées",
+      "setEvents": "{1} : {0} événement {2} modifié|{1} : {0} événements {2} modifiés"
     },
     "view": {
       "title": "Vue",
@@ -747,13 +757,13 @@
     },
     "bpm": {
       "title": "BPM",
-      "adding": "Ajout de {0} objet BPM|Ajout de {0} objets BPM",
-      "added": "{0} objet BPM ajouté|{0} objets BPM ajoutés",
-      "edited": "{0} objet BPM modifié|{0} objets BPM modifiés",
-      "moving": "Déplacement de {0} objet BPM|Déplacement de {0} objets BPM",
-      "moved": "{0} objet BPM déplacé|{0} objets BPM déplacés",
-      "replaced": "{0} objet BPM remplacé|{0} objets BPM remplacés",
-      "selected": "{0} objet BPM sélectionné|{0} objets BPM sélectionnés",
+      "adding": "Ajout de {0} changement de BPM|Ajout de {0} changements de BPM",
+      "added": "{0} changement de BPM ajouté|{0} changements de BPM ajoutés",
+      "edited": "{0} changement de BPM modifié|{0} changements de BPM modifiés",
+      "moving": "Déplacement de {0} changement de BPM|Déplacement de {0} changements de BPM",
+      "moved": "{0} changement de BPM déplacé|{0} changements de BPM déplacés",
+      "replaced": "{0} changement de BPM remplacé|{0} changements de BPM remplacés",
+      "selected": "{0} changement de BPM sélectionné|{0} changements de BPM sélectionnés",
       "modal": {
         "title": "Propriétés du BPM"
       }
@@ -850,25 +860,25 @@
     },
     "timeScale": {
       "title": "Échelle de temps",
-      "adding": "Ajout de {0} objet Échelle de Temps|Ajout de {0} objets Échelle de Temps",
-      "added": "{0} objet Échelle de Temps ajouté|{0} objets Échelle de Temps ajoutés",
-      "edited": "{0} objet Échelle de Temps modifié|{0} objets Échelle de Temps modifiés",
-      "moving": "Déplacement de {0} objet Échelle de Temps|Déplacement de {0} objets Échelle de Temps",
-      "moved": "{0} objet Échelle de Temps déplacé|{0} objets Échelle de Temps déplacés",
-      "replaced": "{0} objet Échelle de Temps remplacé|{0} objets Échelle de Temps remplacés",
-      "selected": "{0} objet Échelle de Temps sélectionné|{0} objets Échelle de Temps sélectionnés",
+      "adding": "Ajout de {0} échelle de temps|Ajout de {0} échelles de temps",
+      "added": "{0} échelle de temps ajoutée|{0} échelles de temps ajoutées",
+      "edited": "{0} échelle de temps modifiée|{0} échelles de temps modifiées",
+      "moving": "Déplacement de {0} échelle de temps|Déplacement de {0} échelles de temps",
+      "moved": "{0} échelle de temps déplacée|{0} échelles de temps déplacées",
+      "replaced": "{0} échelle de temps remplacée|{0} échelles de temps remplacées",
+      "selected": "{0} échelle de temps sélectionnée|{0} échelles de temps sélectionnées",
       "modal": {
         "title": "Propriétés de l'Échelle de Temps"
       }
     },
     "events": {
-      "adding": "Ajout de {0} objet {1}|Ajout de {0} objets {1}",
-      "added": "{0} objet {1} ajouté|{0} objets {1} ajoutés",
-      "editing": "Modification de {0} objet {1}|Modification de {0} objets {1}",
-      "edited": "{0} objet {1} modifié|{0} objets {1} modifiés",
-      "moving": "Déplacement de {0} objet {1}|Déplacement de {0} objets {1}",
-      "moved": "{0} objet {1} déplacé|{0} objets {1} déplacés",
-      "selected": "{0} objet {1} sélectionné|{0} objets {1} sélectionnés",
+      "adding": "Ajout de {0} événement {1}|Ajout de {0} événements {1}",
+      "added": "{0} événement {1} ajouté|{0} événements {1} ajoutés",
+      "editing": "Modification de {0} événement {1}|Modification de {0} événements {1}",
+      "edited": "{0} événement {1} modifié|{0} événements {1} modifiés",
+      "moving": "Déplacement de {0} événement {1}|Déplacement de {0} événements {1}",
+      "moved": "{0} événement {1} déplacé|{0} événements {1} déplacés",
+      "selected": "{0} événement {1} sélectionné|{0} événements {1} sélectionnés",
       "modal": {
         "title": "Propriétés de {0}"
       },

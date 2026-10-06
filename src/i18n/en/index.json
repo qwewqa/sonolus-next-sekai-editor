@@ -11,6 +11,13 @@
         "stageStyleEvent": "Stage Style Event",
         "stageTransformEvent": "Stage Transform Event"
     },
+    "eventKinds": {
+        "cameraEvent": "camera",
+        "stageMaskEvent": "stage mask",
+        "stagePivotEvent": "stage pivot",
+        "stageStyleEvent": "stage style",
+        "stageTransformEvent": "stage transform"
+    },
     "commands": {
         "elevation": {
             "title": "Elevation Editor"
@@ -504,64 +511,64 @@
             },
             "bpmTool": {
                 "title": "BPM Tool",
-                "select": "Tap BPM objects to select 1 object.",
-                "edit": "Tap 1 BPM object to edit.",
+                "select": "Tap BPM changes to select 1 BPM change.",
+                "edit": "Tap 1 BPM change to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 BPM object to move.",
+                "move": "Drag 1 BPM change to move.",
                 "ctrl": "Use Ctrl key to add objects to selection."
             },
             "timeScaleTool": {
                 "title": "Time Scale Tool",
-                "select": "Tap Time Scale objects to select 1 object.",
-                "edit": "Tap 1 Time Scale object to edit.",
+                "select": "Tap time scales to select 1 time scale.",
+                "edit": "Tap 1 time scale to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Time Scale object to move.",
+                "move": "Drag 1 time scale to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "markers": "Diamond markers use the Scroll transition. Hollow markers on dotted lines hide notes.",
                 "ease": "The curve beside the value shows the ease toward the next change in the group. It is faded when the speed simply jumps: Step In, the last change, or a change to the same value."
             },
             "cameraEventTool": {
                 "title": "Camera Event Tool",
-                "select": "Tap Camera Event objects to select 1 object.",
-                "edit": "Tap 1 Camera Event object to edit.",
+                "select": "Tap camera events to select 1 camera event.",
+                "edit": "Tap 1 camera event to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Camera Event object to move.",
+                "move": "Drag 1 camera event to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "properties": "Switch to Camera Event Tool again to change default properties."
             },
             "stageMaskEventTool": {
                 "title": "Stage Mask Event Tool",
-                "select": "Tap Stage Mask Event objects to select 1 object.",
-                "edit": "Tap 1 Stage Mask Event object to edit.",
+                "select": "Tap stage mask events to select 1 stage mask event.",
+                "edit": "Tap 1 stage mask event to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Stage Mask Event object to move.",
+                "move": "Drag 1 stage mask event to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "properties": "Switch to Stage Mask Event Tool again to change default properties."
             },
             "stagePivotEventTool": {
                 "title": "Stage Pivot Event Tool",
-                "select": "Tap Stage Pivot Event objects to select 1 object.",
-                "edit": "Tap 1 Stage Pivot Event object to edit.",
+                "select": "Tap stage pivot events to select 1 stage pivot event.",
+                "edit": "Tap 1 stage pivot event to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Stage Pivot Event object to move.",
+                "move": "Drag 1 stage pivot event to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "properties": "Switch to Stage Pivot Event Tool again to change default properties."
             },
             "stageStyleEventTool": {
                 "title": "Stage Style Event Tool",
-                "select": "Tap Stage Style Event objects to select 1 object.",
-                "edit": "Tap 1 Stage Style Event object to edit.",
+                "select": "Tap stage style events to select 1 stage style event.",
+                "edit": "Tap 1 stage style event to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Stage Style Event object to move.",
+                "move": "Drag 1 stage style event to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "properties": "Switch to Stage Style Event Tool again to change default properties."
             },
             "stageTransformEventTool": {
                 "title": "Stage Transform Event Tool",
-                "select": "Tap Stage Transform Event objects to select 1 object.",
-                "edit": "Tap 1 Stage Transform Event object to edit.",
+                "select": "Tap stage transform events to select 1 stage transform event.",
+                "edit": "Tap 1 stage transform event to edit.",
                 "add": "Tap empty space to add.",
-                "move": "Drag 1 Stage Transform Event object to move.",
+                "move": "Drag 1 stage transform event to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "properties": "Switch to Stage Transform Event Tool again to change default properties."
             }
@@ -714,7 +721,10 @@
             "editedNotes": "Edited {0} note|Edited {0} notes",
             "set": "Set {1} on {0} object|Set {1} on {0} objects",
             "setNotes": "Set {1} on {0} note|Set {1} on {0} notes",
-            "noChange": "No change"
+            "noChange": "No change",
+            "setBpm": "Set {1} on {0} BPM change|Set {1} on {0} BPM changes",
+            "setTimeScales": "Set {1} on {0} time scale|Set {1} on {0} time scales",
+            "setEvents": "Set {1} on {0} {2} event|Set {1} on {0} {2} events"
         },
         "view": {
             "title": "View",
@@ -747,13 +757,13 @@
         },
         "bpm": {
             "title": "BPM",
-            "adding": "Adding {0} BPM object|Adding {0} BPM objects",
-            "added": "Added {0} BPM object|Added {0} BPM objects",
-            "edited": "Edited {0} BPM object|Edited {0} BPM objects",
-            "moving": "Moving {0} BPM object|Moving {0} BPM objects",
-            "moved": "Moved {0} BPM object|Moved {0} BPM objects",
-            "replaced": "Replaced {0} BPM object|Replaced {0} BPM objects",
-            "selected": "Selected {0} BPM object|Selected {0} BPM objects",
+            "adding": "Adding {0} BPM change|Adding {0} BPM changes",
+            "added": "Added {0} BPM change|Added {0} BPM changes",
+            "edited": "Edited {0} BPM change|Edited {0} BPM changes",
+            "moving": "Moving {0} BPM change|Moving {0} BPM changes",
+            "moved": "Moved {0} BPM change|Moved {0} BPM changes",
+            "replaced": "Replaced {0} BPM change|Replaced {0} BPM changes",
+            "selected": "Selected {0} BPM change|Selected {0} BPM changes",
             "modal": {
                 "title": "BPM Properties"
             }
@@ -850,25 +860,25 @@
         },
         "timeScale": {
             "title": "Time Scale",
-            "adding": "Adding {0} Time Scale object|Adding {0} Time Scale objects",
-            "added": "Added {0} Time Scale object|Added {0} Time Scale objects",
-            "edited": "Edited {0} Time Scale object|Edited {0} Time Scale objects",
-            "moving": "Moving {0} Time Scale object|Moving {0} Time Scale objects",
-            "moved": "Moved {0} Time Scale object|Moved {0} Time Scale objects",
-            "replaced": "Replaced {0} Time Scale object|Replaced {0} Time Scale objects",
-            "selected": "Selected {0} Time Scale object|Selected {0} Time Scale objects",
+            "adding": "Adding {0} time scale|Adding {0} time scales",
+            "added": "Added {0} time scale|Added {0} time scales",
+            "edited": "Edited {0} time scale|Edited {0} time scales",
+            "moving": "Moving {0} time scale|Moving {0} time scales",
+            "moved": "Moved {0} time scale|Moved {0} time scales",
+            "replaced": "Replaced {0} time scale|Replaced {0} time scales",
+            "selected": "Selected {0} time scale|Selected {0} time scales",
             "modal": {
                 "title": "Time Scale Properties"
             }
         },
         "events": {
-            "adding": "Adding {0} {1} object|Adding {0} {1} objects",
-            "added": "Added {0} {1} object|Added {0} {1} objects",
-            "editing": "Editing {0} {1} object|Editing {0} {1} objects",
-            "edited": "Edited {0} {1} object|Edited {0} {1} objects",
-            "moving": "Moving {0} {1} object|Moving {0} {1} objects",
-            "moved": "Moved {0} {1} object|Moved {0} {1} objects",
-            "selected": "Selected {0} {1} object|Selected {0} {1} objects",
+            "adding": "Adding {0} {1} event|Adding {0} {1} events",
+            "added": "Added {0} {1} event|Added {0} {1} events",
+            "editing": "Editing {0} {1} event|Editing {0} {1} events",
+            "edited": "Edited {0} {1} event|Edited {0} {1} events",
+            "moving": "Moving {0} {1} event|Moving {0} {1} events",
+            "moved": "Moved {0} {1} event|Moved {0} {1} events",
+            "selected": "Selected {0} {1} event|Selected {0} {1} events",
             "modal": {
                 "title": "{0} Properties"
             },

@@ -110,7 +110,7 @@ export const stageTransformEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.selected,
                         `${targets.length}`,
-                        () => i18n.value.events.stageTransformEvent,
+                        () => i18n.value.eventKinds.stageTransformEvent,
                     ),
                 )
             } else {
@@ -144,7 +144,7 @@ export const stageTransformEvent: Tool = {
                         interpolate(
                             () => i18n.value.tools.events.selected,
                             '1',
-                            () => i18n.value.events.stageTransformEvent,
+                            () => i18n.value.eventKinds.stageTransformEvent,
                         ),
                     )
                 }
@@ -180,7 +180,7 @@ export const stageTransformEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.moving,
                     '1',
-                    () => i18n.value.events.stageTransformEvent,
+                    () => i18n.value.eventKinds.stageTransformEvent,
                 ),
             )
 
@@ -195,7 +195,7 @@ export const stageTransformEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.adding,
                     '1',
-                    () => i18n.value.events.stageTransformEvent,
+                    () => i18n.value.eventKinds.stageTransformEvent,
                 ),
             )
 
@@ -387,7 +387,7 @@ const add = (object: StageTransformEventObject) => {
         interpolate(
             () => i18n.value.tools.events.added,
             '1',
-            () => i18n.value.events.stageTransformEvent,
+            () => i18n.value.eventKinds.stageTransformEvent,
         ),
         (transaction) => addStageTransformEventJoint(transaction, object),
     )
@@ -401,7 +401,7 @@ const edit = (
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
-            () => i18n.value.events.stageTransformEvent,
+            () => i18n.value.eventKinds.stageTransformEvent,
         ),
         (transaction) => editSelectedStageTransformEvent(transaction, entity, object),
     )
@@ -412,7 +412,7 @@ const move = (entity: StageTransformEventJointEntity, object: StageTransformEven
         interpolate(
             () => i18n.value.tools.events.moved,
             '1',
-            () => i18n.value.events.stageTransformEvent,
+            () => i18n.value.eventKinds.stageTransformEvent,
         ),
         (transaction) => editSelectedStageTransformEvent(transaction, entity, object),
     )

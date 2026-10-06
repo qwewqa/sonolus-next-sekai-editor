@@ -124,7 +124,7 @@ export const cameraEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.selected,
                         `${targets.length}`,
-                        () => i18n.value.events.cameraEvent,
+                        () => i18n.value.eventKinds.cameraEvent,
                     ),
                 )
             } else {
@@ -156,7 +156,7 @@ export const cameraEvent: Tool = {
                         interpolate(
                             () => i18n.value.tools.events.selected,
                             '1',
-                            () => i18n.value.events.cameraEvent,
+                            () => i18n.value.eventKinds.cameraEvent,
                         ),
                     )
                 }
@@ -194,7 +194,7 @@ export const cameraEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.moving,
                         '1',
-                        () => i18n.value.events.cameraEvent,
+                        () => i18n.value.eventKinds.cameraEvent,
                     ),
                 )
 
@@ -208,7 +208,7 @@ export const cameraEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.editing,
                         '1',
-                        () => i18n.value.events.cameraEvent,
+                        () => i18n.value.eventKinds.cameraEvent,
                     ),
                 )
 
@@ -227,7 +227,7 @@ export const cameraEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.adding,
                     '1',
-                    () => i18n.value.events.cameraEvent,
+                    () => i18n.value.eventKinds.cameraEvent,
                 ),
             )
 
@@ -500,7 +500,7 @@ const add = (object: CameraEventObject) => {
         interpolate(
             () => i18n.value.tools.events.added,
             '1',
-            () => i18n.value.events.cameraEvent,
+            () => i18n.value.eventKinds.cameraEvent,
         ),
         (transaction) => addCameraEventJoint(transaction, object),
     )
@@ -514,7 +514,7 @@ const edit = (
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
-            () => i18n.value.events.cameraEvent,
+            () => i18n.value.eventKinds.cameraEvent,
         ),
         (transaction) => editSelectedCameraEvent(transaction, entity, object),
     )
@@ -525,7 +525,7 @@ const move = (entity: CameraEventJointEntity, object: CameraEventObject) => {
         interpolate(
             () => i18n.value.tools.events.moved,
             '1',
-            () => i18n.value.events.cameraEvent,
+            () => i18n.value.eventKinds.cameraEvent,
         ),
         (transaction) => editSelectedCameraEvent(transaction, entity, object),
     )

@@ -110,7 +110,7 @@ export const stagePivotEvent: Tool = {
                     interpolate(
                         () => i18n.value.tools.events.selected,
                         `${targets.length}`,
-                        () => i18n.value.events.stagePivotEvent,
+                        () => i18n.value.eventKinds.stagePivotEvent,
                     ),
                 )
             } else {
@@ -144,7 +144,7 @@ export const stagePivotEvent: Tool = {
                         interpolate(
                             () => i18n.value.tools.events.selected,
                             '1',
-                            () => i18n.value.events.stagePivotEvent,
+                            () => i18n.value.eventKinds.stagePivotEvent,
                         ),
                     )
                 }
@@ -180,7 +180,7 @@ export const stagePivotEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.moving,
                     '1',
-                    () => i18n.value.events.stagePivotEvent,
+                    () => i18n.value.eventKinds.stagePivotEvent,
                 ),
             )
 
@@ -195,7 +195,7 @@ export const stagePivotEvent: Tool = {
                 interpolate(
                     () => i18n.value.tools.events.adding,
                     '1',
-                    () => i18n.value.events.stagePivotEvent,
+                    () => i18n.value.eventKinds.stagePivotEvent,
                 ),
             )
 
@@ -385,7 +385,7 @@ const add = (object: StagePivotEventObject) => {
         interpolate(
             () => i18n.value.tools.events.added,
             '1',
-            () => i18n.value.events.stagePivotEvent,
+            () => i18n.value.eventKinds.stagePivotEvent,
         ),
         (transaction) => addStagePivotEventJoint(transaction, object),
     )
@@ -399,7 +399,7 @@ const edit = (
         interpolate(
             () => i18n.value.tools.events.edited,
             '1',
-            () => i18n.value.events.stagePivotEvent,
+            () => i18n.value.eventKinds.stagePivotEvent,
         ),
         (transaction) => editSelectedStagePivotEvent(transaction, entity, object),
     )
@@ -410,7 +410,7 @@ const move = (entity: StagePivotEventJointEntity, object: StagePivotEventObject)
         interpolate(
             () => i18n.value.tools.events.moved,
             '1',
-            () => i18n.value.events.stagePivotEvent,
+            () => i18n.value.eventKinds.stagePivotEvent,
         ),
         (transaction) => editSelectedStagePivotEvent(transaction, entity, object),
     )

@@ -11,6 +11,13 @@
     "stageStyleEvent": "Sahne Stili Olayı",
     "stageTransformEvent": "Sahne Dönüşüm Olayı"
   },
+  "eventKinds": {
+    "cameraEvent": "kamera",
+    "stageMaskEvent": "sahne maskesi",
+    "stagePivotEvent": "sahne dönme merkezi",
+    "stageStyleEvent": "sahne stili",
+    "stageTransformEvent": "sahne dönüşüm"
+  },
   "commands": {
     "elevation": {
       "title": "Yükseklik editörü"
@@ -504,64 +511,64 @@
       },
       "bpmTool": {
         "title": "BPM Aracı",
-        "select": "1 nesne seçmek için BPM nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 BPM nesnesine dokunun.",
+        "select": "1 BPM değişikliği seçmek için BPM değişikliklerine dokunun.",
+        "edit": "Düzenlemek için 1 BPM değişikliğine dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 BPM nesnesini sürükleyin.",
+        "move": "Taşımak için 1 BPM değişikliğini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın."
       },
       "timeScaleTool": {
         "title": "Zaman Ölçeği Aracı",
-        "select": "1 nesne seçmek için Zaman Ölçeği nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Zaman Ölçeği nesnesine dokunun.",
+        "select": "1 zaman ölçeği seçmek için zaman ölçeklerine dokunun.",
+        "edit": "Düzenlemek için 1 zaman ölçeğine dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Zaman Ölçeği nesnesini sürükleyin.",
+        "move": "Taşımak için 1 zaman ölçeğini sürükleyin.",
         "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
         "markers": "Elmas işaretçiler Kaydırma geçişini kullanır. Noktalı çizgilerdeki içi boş işaretçiler notaları gizler.",
         "ease": "Değerin yanındaki eğri, gruptaki bir sonraki değişikliğe kadar yumuşatmayı gösterir; hız doğrudan atladığında (Basamak Giriş, son değişiklik veya aynı değere değişiklik) soluk görünür."
       },
       "cameraEventTool": {
         "title": "Kamera Olayı Aracı",
-        "select": "1 nesne seçmek için Kamera Olayı nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Kamera Olayı nesnesine dokunun.",
+        "select": "1 kamera olayı seçmek için kamera olaylarına dokunun.",
+        "edit": "Düzenlemek için 1 kamera olayına dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Kamera Olayı nesnesini sürükleyin.",
+        "move": "Taşımak için 1 kamera olayını sürükleyin.",
         "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "properties": "Varsayılan Özellikleri değiştirmek için tekrar Kamera Olayı aracına geçin."
       },
       "stageMaskEventTool": {
         "title": "Sahne Maskesi Olayı Aracı",
-        "select": "1 nesne seçmek için Sahne Maskesi Olayı nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Sahne Maskesi Olayı nesnesine dokunun.",
+        "select": "1 sahne maskesi olayı seçmek için sahne maskesi olaylarına dokunun.",
+        "edit": "Düzenlemek için 1 sahne maskesi olayına dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Sahne Maskesi Olayı nesnesini sürükleyin.",
+        "move": "Taşımak için 1 sahne maskesi olayını sürükleyin.",
         "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Maskesi Olayı aracına geçin."
       },
       "stagePivotEventTool": {
         "title": "Sahne Dönme Merkezi Olayı Aracı",
-        "select": "1 nesne seçmek için Sahne Dönme Merkezi Olayı nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Sahne Dönme Merkezi Olayı nesnesine dokunun.",
+        "select": "1 sahne dönme merkezi olayı seçmek için sahne dönme merkezi olaylarına dokunun.",
+        "edit": "Düzenlemek için 1 sahne dönme merkezi olayına dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Sahne Dönme Merkezi Olayı nesnesini sürükleyin.",
+        "move": "Taşımak için 1 sahne dönme merkezi olayını sürükleyin.",
         "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Dönme Merkezi Olayı aracına geçin."
       },
       "stageStyleEventTool": {
         "title": "Sahne Stili Olayı Aracı",
-        "select": "1 nesne seçmek için Sahne Stili Olayı nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Sahne Stili Olayı nesnesine dokunun.",
+        "select": "1 sahne stili olayı seçmek için sahne stili olaylarına dokunun.",
+        "edit": "Düzenlemek için 1 sahne stili olayına dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Sahne Stili Olayı nesnesini sürükleyin.",
+        "move": "Taşımak için 1 sahne stili olayını sürükleyin.",
         "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Stili Olayı aracına geçin."
       },
       "stageTransformEventTool": {
         "title": "Sahne Dönüşüm Olayı Aracı",
-        "select": "1 nesne seçmek için Sahne Dönüşüm Olayı nesnelerine dokunun.",
-        "edit": "Düzenlemek için 1 Sahne Dönüşüm Olayı nesnesine dokunun.",
+        "select": "1 sahne dönüşüm olayı seçmek için sahne dönüşüm olaylarına dokunun.",
+        "edit": "Düzenlemek için 1 sahne dönüşüm olayına dokunun.",
         "add": "Eklemek için boş alana dokunun.",
-        "move": "Taşımak için 1 Sahne Dönüşüm Olayı nesnesini sürükleyin.",
+        "move": "Taşımak için 1 sahne dönüşüm olayını sürükleyin.",
         "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "properties": "Varsayılan Özellikleri değiştirmek için tekrar Sahne Dönüşüm Olayı aracına geçin."
       }
@@ -714,7 +721,10 @@
       "editedNotes": "{0} nota düzenlendi",
       "set": "{0} nesnede {1} ayarlandı",
       "setNotes": "{0} notada {1} ayarlandı",
-      "noChange": "Değişiklik yok"
+      "noChange": "Değişiklik yok",
+      "setBpm": "{0} BPM değişikliğinde {1} ayarlandı",
+      "setTimeScales": "{0} zaman ölçeğinde {1} ayarlandı",
+      "setEvents": "{0} {2} olayında {1} ayarlandı"
     },
     "view": {
       "title": "Görünüm",
@@ -747,13 +757,13 @@
     },
     "bpm": {
       "title": "BPM",
-      "adding": "{0} BPM nesnesi ekleniyor",
-      "added": "{0} BPM nesnesi eklendi",
-      "edited": "{0} BPM nesnesi düzenlendi",
-      "moving": "{0} BPM nesnesi taşınıyor",
-      "moved": "{0} BPM nesnesi taşındı",
-      "replaced": "{0} BPM nesnesi değiştirildi",
-      "selected": "{0} BPM nesnesi seçildi",
+      "adding": "{0} BPM değişikliği ekleniyor",
+      "added": "{0} BPM değişikliği eklendi",
+      "edited": "{0} BPM değişikliği düzenlendi",
+      "moving": "{0} BPM değişikliği taşınıyor",
+      "moved": "{0} BPM değişikliği taşındı",
+      "replaced": "{0} BPM değişikliği değiştirildi",
+      "selected": "{0} BPM değişikliği seçildi",
       "modal": {
         "title": "BPM Özellikleri"
       }
@@ -850,25 +860,25 @@
     },
     "timeScale": {
       "title": "Zaman Ölçeği",
-      "adding": "{0} Zaman Ölçeği nesnesi ekleniyor",
-      "added": "{0} Zaman Ölçeği nesnesi eklendi",
-      "edited": "{0} Zaman Ölçeği nesnesi düzenlendi",
-      "moving": "{0} Zaman Ölçeği nesnesi taşınıyor",
-      "moved": "{0} Zaman Ölçeği nesnesi taşındı",
-      "replaced": "{0} Zaman Ölçeği nesnesi değiştirildi",
-      "selected": "{0} Zaman Ölçeği nesnesi seçildi",
+      "adding": "{0} zaman ölçeği ekleniyor",
+      "added": "{0} zaman ölçeği eklendi",
+      "edited": "{0} zaman ölçeği düzenlendi",
+      "moving": "{0} zaman ölçeği taşınıyor",
+      "moved": "{0} zaman ölçeği taşındı",
+      "replaced": "{0} zaman ölçeği değiştirildi",
+      "selected": "{0} zaman ölçeği seçildi",
       "modal": {
         "title": "Zaman Ölçeği Özellikleri"
       }
     },
     "events": {
-      "adding": "{0} {1} nesnesi ekleniyor",
-      "added": "{0} {1} nesnesi eklendi",
-      "editing": "{0} {1} nesnesi düzenleniyor",
-      "edited": "{0} {1} nesnesi düzenlendi",
-      "moving": "{0} {1} nesnesi taşınıyor",
-      "moved": "{0} {1} nesnesi taşındı",
-      "selected": "{0} {1} nesnesi seçildi",
+      "adding": "{0} {1} olayı ekleniyor",
+      "added": "{0} {1} olayı eklendi",
+      "editing": "{0} {1} olayı düzenleniyor",
+      "edited": "{0} {1} olayı düzenlendi",
+      "moving": "{0} {1} olayı taşınıyor",
+      "moved": "{0} {1} olayı taşındı",
+      "selected": "{0} {1} olayı seçildi",
       "modal": {
         "title": "{0} Özellikleri"
       },
