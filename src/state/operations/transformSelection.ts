@@ -93,21 +93,25 @@ const add = (transaction: Transaction, entity: TimingEntity) => {
     }
 }
 
-/** Same-beat timing objects of a kind together where the first appears, in stored order or its mirror. */
+/** Same-beat objects of a kind, or notes of a slide, together where the first appears, in stored order or its mirror. */
 export const inStoredOrder = <T>(
     source: State,
     items: T[],
     entityOf: (item: T) => Entity,
     mirrored = false,
 ) => {
-    const keys = items.map((item, index) => {
+    const keys = items.map((item) => {
         const entity = entityOf(item)
-        return entity.type === 'note' ? `${index}` : `${entity.type}:${entity.beat}`
+        return entity.type === 'note'
+            ? `note:${entity.slideId}:${entity.beat}`
+            : `${entity.type}:${entity.beat}`
     })
     const first = new Map<string, number>()
     for (const [index, key] of keys.entries()) if (!first.has(key)) first.set(key, index)
     const rank = (entity: Entity) =>
-        (getInStoreGrid(source.store.grid, entity.type, entity.beat)?.indexOf(entity) ?? 0) *
+        ((entity.type === 'note'
+            ? source.store.slides.note.get(entity.slideId)?.indexOf(entity)
+            : getInStoreGrid(source.store.grid, entity.type, entity.beat)?.indexOf(entity)) ?? 0) *
         (mirrored ? -1 : 1)
     return items
         .map((item, index) => ({ item, index, at: first.get(keys[index] ?? '') ?? index }))

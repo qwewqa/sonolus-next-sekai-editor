@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import type { NoteObject } from '../../src/chart/note'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 // Same-beat pairs are discontinuous jumps; their order is what the engine plays.
@@ -775,3 +776,91 @@ test('flipping vertically mirrors event and time scale eases', async ({ page }) 
     ])
     expect(result.restored).toEqual(result.before)
 })
+
+/** A slide with a same-beat pair at beat 2, optionally a separator on its second. */
+const slidePair = (separator: boolean): Partial<NoteObject>[] => [
+    { beat: 0, left: 0, connectorEase: 'inQuad' },
+    { beat: 2, left: -4, connectorEase: 'outSine' },
+    {
+        beat: 2,
+        left: 4,
+        connectorEase: 'inCubic',
+        ...(separator ? { isConnectorSeparator: true, connectorType: 'guide' } : {}),
+    },
+    ...(separator ? [] : [{ beat: 3, left: 0, isAttached: true }]),
+    { beat: 4, left: 0, connectorEase: 'linear' },
+]
+
+/** Flips the whole slide, selected in stored order or the reverse, and flips it back. */
+const flipSlide = (page: Page, separator: boolean, reversed: boolean) =>
+    page.evaluate(
+        async ({ notes, reversed }) => {
+            const { show, fixtures, history, appImport } = window.editorTest
+            const { flipVertical } = await appImport<
+                typeof import('../../src/state/operations/flipVertical')
+            >('/src/state/operations/flipVertical.ts')
+            show({
+                ...fixtures.interaction,
+                slides: [
+                    notes.map((note) => ({ ...fixtures.interaction.slides[0]![0]!, ...note })),
+                ],
+            })
+            // Stored order, each connector's segment type, and attached places.
+            const read = () => {
+                const { store } = history.state.value
+                const [infos] = [...store.slides.info.values()]
+                const [connectors] = [...store.slides.connector.values()]
+                return {
+                    notes: infos!.map(
+                        ({ note }) =>
+                            `${note.beat}@${Math.round(note.left * 1000) / 1000}/${note.connectorEase}${note.isAttached ? '/A' : ''}${note.isConnectorSeparator ? '/S' : ''}`,
+                    ),
+                    connectors: connectors!.map(
+                        ({ head, tail, segmentHead }) =>
+                            `${head.beat}@${head.left}-${tail.beat}@${tail.left} ${segmentHead.connectorType}`,
+                    ),
+                }
+            }
+            const flip = () => {
+                const notes = [...history.state.value.store.slides.note.values()].flat()
+                const selected = reversed ? notes.reverse() : notes
+                history.pushState(
+                    () => 'flip',
+                    flipVertical({ ...history.state.value, selectedEntities: selected }, selected),
+                )
+            }
+            const before = read()
+            flip()
+            const flipped = read()
+            flip()
+            return { before, flipped, restored: read() }
+        },
+        { notes: slidePair(separator), reversed },
+    )
+
+for (const separator of [false, true])
+    for (const reversed of [false, true])
+        test(`flipping a slide${separator ? ' with a separator' : ''} mirrors its same-beat pair, selected ${reversed ? 'in reverse' : 'in order'}`, async ({
+            page,
+        }) => {
+            const { before, flipped, restored } = await flipSlide(page, separator, reversed)
+            // The path runs back through the pair, and each segment keeps its type.
+            expect(flipped).toEqual(
+                separator
+                    ? {
+                          notes: ['0@0/outCubic', '2@4/inSine/S', '2@-4/outQuad', '4@0/linear'],
+                          connectors: ['0@0-2@4 guide', '2@4-2@-4 active', '2@-4-4@0 active'],
+                      }
+                    : {
+                          notes: [
+                              '0@0/outCubic',
+                              '1@3.5/linear/A',
+                              '2@4/inSine',
+                              '2@-4/outQuad',
+                              '4@0/linear',
+                          ],
+                          connectors: ['0@0-2@4 active', '2@4-2@-4 active', '2@-4-4@0 active'],
+                      },
+            )
+            expect(restored).toEqual(before)
+        })
