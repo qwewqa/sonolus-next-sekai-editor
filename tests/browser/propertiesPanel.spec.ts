@@ -429,3 +429,48 @@ test('preset and brush headings match the selection kind headings', async ({ pag
         for (const style of await styles(headings)) expect(style, tool).toEqual(kind)
     }
 })
+
+for (const width of [336, 260]) {
+    test(`brush controls line up with the panel's at a ${width}px dock`, async ({ page }) => {
+        await open(page, { rightDockWidth: width, propertiesCollapsed: ['selection'] })
+        await selectNoteAt(page, 3)
+        await page.keyboard.press('b')
+        await panel(page).getByRole('button', { name: 'Pick from Selection' }).click()
+        const layout = await panel(page).evaluate((panel) => {
+            const lefts = (selector: string) => [
+                ...new Set(
+                    [
+                        ...panel.querySelectorAll(
+                            `${selector} .form-field-row > :not(.form-field-label)`,
+                        ),
+                    ].map((control) => Math.round(control.getBoundingClientRect().left)),
+                ),
+            ]
+            const rows = [...panel.querySelectorAll('[data-brush-key]')].map((row) => {
+                const text = row.querySelector('.form-field-text')!
+                const range = document.createRange()
+                range.selectNodeContents(text)
+                return {
+                    text: range.getBoundingClientRect().right,
+                    remove: row
+                        .querySelector('.brush-remove')!
+                        .getBoundingClientRect()
+                        .toJSON() as DOMRect,
+                    control: row
+                        .querySelector('.form-field-row > :not(.form-field-label)')!
+                        .getBoundingClientRect().left,
+                }
+            })
+            return {
+                brush: lefts('[data-brush-key]'),
+                view: lefts('#properties-section-view'),
+                rows,
+            }
+        })
+        expect(layout.brush).toEqual(layout.view)
+        for (const row of layout.rows) {
+            expect(row.remove.left).toBeGreaterThanOrEqual(row.text)
+            expect(row.remove.right).toBeLessThanOrEqual(row.control)
+        }
+    })
+}

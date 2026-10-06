@@ -173,21 +173,21 @@ const clear = () => {
             :aria-label="i18n.tools.brush.kinds[kind]"
         >
             <h3 class="text-sm font-bold">{{ i18n.tools.brush.kinds[kind] }}</h3>
+            <!-- Fields measure the full row, as elsewhere in the panel, so their columns
+            line up; remove sits at the end of the label column. -->
             <div
                 v-for="field in fields"
                 :key="field.key"
-                class="flex items-start gap-1"
+                class="brush-row relative flex flex-col gap-3"
                 :data-brush-key="field.key"
             >
-                <div class="flex min-w-0 flex-1 flex-col gap-3">
-                    <component
-                        :is="optionalFieldComponents[field.key]"
-                        v-model="models[field.key]!.value"
-                    />
-                </div>
+                <component
+                    :is="optionalFieldComponents[field.key]"
+                    v-model="models[field.key]!.value"
+                />
                 <button
                     type="button"
-                    class="brush-remove -mr-2 flex size-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:bg-header-hover [@media(pointer:coarse)]:size-11"
+                    class="brush-remove absolute flex size-8 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:bg-header-hover [@media(pointer:coarse)]:size-11"
                     :aria-label="
                         interpolateRaw(i18n.tools.brush.remove, fieldLabel(field, i18n, true))
                     "
@@ -200,3 +200,80 @@ const clear = () => {
         </section>
     </div>
 </template>
+
+<style scoped>
+/*
+ * Remove ends the label column, which BaseField sizes from the field's width.
+ * --label-w repeats that rule per layout, on the descendants, since a container
+ * query never styles its own container. The glyph centre sits 1.25rem before
+ * the column ends; labels keep clear of it.
+ */
+.brush-row {
+    container-type: inline-size;
+    --remove-size: 2rem;
+    --remove-room: calc(1.25rem + var(--remove-size) / 2);
+}
+
+@media (pointer: coarse) {
+    .brush-row {
+        --remove-size: 2.75rem;
+    }
+}
+
+.brush-remove {
+    inset-block: 0;
+    margin-block: auto;
+}
+
+/* An ease brings two fields; remove belongs to the first. */
+.brush-row:has(> .form-field + .form-field) .brush-remove {
+    inset-block: auto;
+    top: calc(1rem - var(--remove-size) / 2);
+    margin-block: 0;
+}
+
+@container (min-width: 13.5rem) {
+    .brush-remove {
+        left: calc(var(--label-w) - var(--remove-room));
+    }
+
+    .brush-row :deep(.form-field-label) {
+        padding-right: var(--remove-room);
+    }
+}
+
+@container (min-width: 19rem) {
+    .brush-remove,
+    .brush-row :deep(.form-field-label) {
+        --label-w: min(max(calc(45cqw - 0.375rem), 11rem), calc(100cqw - 9rem));
+    }
+}
+
+@container (min-width: 32rem) {
+    .brush-remove,
+    .brush-row :deep(.form-field-label) {
+        --label-w: 60cqw;
+    }
+}
+
+@container (min-width: 13.5rem) and (max-width: 18.99rem) {
+    .brush-remove,
+    .brush-row :deep(.form-field-label) {
+        --label-w: calc(100cqw - max(6.25rem, 50cqw) - 0.5rem);
+    }
+}
+
+/* Stacked: remove ends the label line, which keeps clear of it. */
+@container (max-width: 13.49rem) {
+    .brush-remove {
+        inset-block: auto;
+        top: calc(0.625rem - var(--remove-size) / 2);
+        right: calc(0.75rem - var(--remove-size) / 2);
+        margin-block: 0;
+    }
+
+    .brush-row :deep(.form-field-label) {
+        padding-right: var(--remove-room);
+    }
+}
+</style>
