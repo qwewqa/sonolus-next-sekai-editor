@@ -89,6 +89,45 @@ test.describe('chords', () => {
         expect(await lastDefault(page)).toBe(true)
     })
 
+    test('with page text selected, Ctrl+C and Ctrl+X leave selected objects alone', async ({
+        page,
+    }) => {
+        const notes = await page.evaluate(() => {
+            const { history, store } = window.editorTest
+            // Firefox grants no clipboard permissions to tests, so writes are recorded instead.
+            Object.defineProperty(navigator.clipboard, 'writeText', {
+                configurable: true,
+                value: async (text: string) => {
+                    document.body.dataset.written = text
+                },
+            })
+            const notes = [...store.getAllEntities()].filter((entity) => entity.type === 'note')
+            history.replaceState({ ...history.state.value, selectedEntities: notes })
+            const text = document.body.appendChild(document.createElement('p'))
+            text.textContent = 'Note Speed'
+            getSelection()?.selectAllChildren(text)
+            document.addEventListener('copy', () => (text.dataset.copied = String(getSelection())))
+            document.addEventListener('cut', () => (text.dataset.cut = 'true'))
+            return notes.length
+        })
+        expect(notes).toBeGreaterThan(0)
+        const count = () =>
+            page.evaluate(
+                () =>
+                    [...window.editorTest.store.getAllEntities()].filter(
+                        (entity) => entity.type === 'note',
+                    ).length,
+            )
+
+        await page.keyboard.press('Control+c')
+        await expect(page.locator('p[data-copied]')).toHaveAttribute('data-copied', 'Note Speed')
+        await page.keyboard.press('Control+x')
+        await expect(page.locator('p[data-cut]')).toHaveCount(1)
+        await page.waitForTimeout(100)
+        expect(await page.evaluate(() => document.body.dataset.written)).toBeUndefined()
+        expect(await count()).toBe(notes)
+    })
+
     test('pressing the chart drops selected page text, so Ctrl+C copies the objects', async ({
         page,
     }) => {

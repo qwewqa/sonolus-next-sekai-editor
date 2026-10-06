@@ -69,17 +69,17 @@ const onKeydown = (event: KeyboardEvent) => {
     if (inDialog && active && movesFocus(active, event.key)) return
 
     const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
-    for (const name of names) void commands[name].execute()
-    if (!names.length) return
-    // A command chord has no native use outside text entry, so selects and toggles drop it.
-    if (keepsDefault(event) && !(isCommandChord(event) && !isTextEntry(event.target))) return
-    // Selected page text keeps its native copy and cut.
+    // Selected page text keeps its native copy and cut, and the objects stay as they are.
     if (
         isCommandChord(event) &&
         names.some((name) => name === 'copy' || name === 'cut') &&
         getSelection()?.isCollapsed === false
     )
         return
+    for (const name of names) void commands[name].execute()
+    if (!names.length) return
+    // A command chord has no native use outside text entry, so selects and toggles drop it.
+    if (keepsDefault(event) && !(isCommandChord(event) && !isTextEntry(event.target))) return
 
     // Handled keys skip browser defaults such as Firefox quick find, WebKit Backspace
     // navigation and Ctrl+S saving the page; zoom and tab keys keep theirs.
