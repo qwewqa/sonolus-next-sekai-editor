@@ -12,11 +12,11 @@ import {
     fieldAppliesIn,
     noteFieldsApply,
 } from '../../state/operations/properties/applicability'
+import { getNoteFieldsIn } from '../../state/operations/properties/noteFields'
 import { planEdit } from '../../state/operations/properties/plan'
-import { entries } from '../../utils/object'
 import { editSelectedEditableEntities } from '../sidebars/default'
 import { aggregateValues, type ValueUsage } from './aggregate'
-import { getNoteFields, type NoteFields } from './noteFields'
+import type { NoteFields } from './noteFields'
 
 export const useProperties =
     <T>(ref: Ref<T>) =>
@@ -169,12 +169,13 @@ export const aggregateEntities = (entities: readonly Entity[]) => {
     const types: Partial<Record<EntityType, boolean>> = {}
     const noteFields: Partial<NoteFields> = {}
     const noteFieldsOf = new Map<Entity, NoteFields>()
+    const current = store.value
 
     for (const entity of entities) {
         types[entity.type] = true
         if (entity.type !== 'note') continue
 
-        const fields = getNoteFields(entity)
+        const fields = getNoteFieldsIn(current, entity)
         noteFieldsOf.set(entity, fields)
         aggregate(noteFields, fields)
     }
@@ -220,14 +221,9 @@ export const mergeAggregates = (
     return { model, usage, types, noteFields }
 }
 
-const aggregate = <T extends object>(
-    aggregate: Partial<T>,
-    object: T,
-    include?: (key: keyof T) => boolean,
-) => {
-    for (const [key, value] of entries(object)) {
-        if (include && !include(key)) continue
-
+const aggregate = <T extends object>(aggregate: Partial<T>, object: T) => {
+    for (const key in object) {
+        const value = object[key]
         if (key in aggregate) {
             if (aggregate[key] === undefined) continue
 

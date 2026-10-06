@@ -25,7 +25,8 @@ export const aggregateValues = <T extends object>(
 
     for (const object of objects) {
         const applies = appliesTo(object)
-        for (const [key, value] of Object.entries(object)) {
+        for (const key in object) {
+            const value = object[key]
             let entry = usage.get(key)
             if (!entry) {
                 entry = { values: new Map(), covered: 0, total: 0 }
