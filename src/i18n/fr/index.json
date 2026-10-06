@@ -1025,8 +1025,8 @@
       "connectorEase": {
         "label": "Interpolation",
         "qualified": "Interpolation du connecteur",
-        "type": "Type d’interpolation",
-        "function": "Fonction d’interpolation"
+        "type": "Type d’interp.",
+        "function": "Fonction d’interp."
       },
       "connectorIsFake": {
         "label": "Slide factice"
@@ -1092,9 +1092,9 @@
       "eventEase": {
         "label": "Interpolation",
         "qualified": "Interpolation de l’événement",
-        "type": "Type d’interpolation",
-        "function": "Fonction d’interpolation",
-        "qualifiedType": "Type d’interpolation de l’événement",
+        "type": "Type d’interp.",
+        "function": "Fonction d’interp.",
+        "qualifiedType": "Type d’interp. de l’événement",
         "qualifiedFunction": "Fonction d’interp. de l’événement"
       },
       "file": {
@@ -1247,8 +1247,8 @@
       "timeScaleEase": {
         "label": "Interpolation",
         "qualified": "Interpolation de l’échelle de temps",
-        "type": "Type d’interpolation",
-        "function": "Fonction d’interpolation"
+        "type": "Type d’interp.",
+        "function": "Fonction d’interp."
       },
       "timeScaleTransition": {
         "label": "Transition",
