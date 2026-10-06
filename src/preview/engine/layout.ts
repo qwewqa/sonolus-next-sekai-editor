@@ -569,26 +569,42 @@ export const computeStageTransform = (
     }
 }
 
+// Both projections share the camera axis; extrapolation stops at zero height instead of flipping.
+const stageProjectionBlendFrac = (
+    a: StageScreenTransform,
+    b: StageScreenTransform,
+    frac: number,
+) => {
+    if (frac >= 0 && frac <= 1) return frac
+    const traceA = a.a00 + a.a11
+    const traceB = b.a00 + b.a11
+    if (traceA !== traceB && lerp(traceA, traceB, frac) < 1) return (1 - traceA) / (traceB - traceA)
+    return frac
+}
+
 export const blendStageTransform = (
     a: StageTransform,
     b: StageTransform,
     frac: number,
-): StageTransform => ({
-    sr: lerp(a.sr, b.sr, frac),
-    px: lerp(a.px, b.px, frac),
-    py: lerp(a.py, b.py, frac),
-    tx: lerp(a.tx, b.tx, frac),
-    ty: lerp(a.ty, b.ty, frac),
-    projection: {
-        a00: lerp(a.projection.a00, b.projection.a00, frac),
-        a01: lerp(a.projection.a01, b.projection.a01, frac),
-        a02: lerp(a.projection.a02, b.projection.a02, frac),
-        a10: lerp(a.projection.a10, b.projection.a10, frac),
-        a11: lerp(a.projection.a11, b.projection.a11, frac),
-        a12: lerp(a.projection.a12, b.projection.a12, frac),
-        elevation: lerp(a.projection.elevation, b.projection.elevation, frac),
-    },
-})
+): StageTransform => {
+    const projectionFrac = stageProjectionBlendFrac(a.projection, b.projection, frac)
+    return {
+        sr: lerp(a.sr, b.sr, frac),
+        px: lerp(a.px, b.px, frac),
+        py: lerp(a.py, b.py, frac),
+        tx: lerp(a.tx, b.tx, frac),
+        ty: lerp(a.ty, b.ty, frac),
+        projection: {
+            a00: lerp(a.projection.a00, b.projection.a00, projectionFrac),
+            a01: lerp(a.projection.a01, b.projection.a01, projectionFrac),
+            a02: lerp(a.projection.a02, b.projection.a02, projectionFrac),
+            a10: lerp(a.projection.a10, b.projection.a10, projectionFrac),
+            a11: lerp(a.projection.a11, b.projection.a11, projectionFrac),
+            a12: lerp(a.projection.a12, b.projection.a12, projectionFrac),
+            elevation: lerp(a.projection.elevation, b.projection.elevation, projectionFrac),
+        },
+    }
+}
 
 export const layoutSekaiStage = (context: PreviewLayout): Quad => {
     const w = ((2048 / 1420) * 12) / 2

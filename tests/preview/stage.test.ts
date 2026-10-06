@@ -402,3 +402,16 @@ test('overshooting style blends draw with alphas in range and collapse borders i
     // The left border would have negative width; only the right one is drawn.
     assert.equal(draws.filter(({ sprite }) => sprite === border).length, 1)
 })
+
+test('extrapolated transform blends stop elevation projections at zero height', () => {
+    const elevated = {
+        ...identityStageTransform,
+        projection: { ...identityStageScreenTransform, a00: 0.6, a11: 0.6, elevation: 4 },
+    }
+    const blended = blendStageTransform(identityStageTransform, elevated, 2)
+    assert.equal(blended.projection.a00 + blended.projection.a11, 1)
+    assert.equal(blended.projection.elevation, 5)
+    // Inside the interval and away from a flip, the blend is unchanged.
+    assert.equal(blendStageTransform(identityStageTransform, elevated, 0.5).projection.a00, 0.8)
+    assert.equal(blendStageTransform(identityStageTransform, elevated, -1).projection.a00, 1.4)
+})
