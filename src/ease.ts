@@ -102,6 +102,9 @@ export const easeValues = Object.fromEntries([
     ),
 ]) as Record<Ease, number>
 
+// NONE, which v2.14 engines also accept.
+export const easeLevelDataValue = (ease: Ease) => (ease === 'inStep' ? 0 : easeValues[ease])
+
 const easesByValue = new Map<number, Ease>([
     [0, 'inStep'],
     ...eases.map((ease) => [easeValues[ease], ease] as const),

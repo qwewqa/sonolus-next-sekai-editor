@@ -3,7 +3,7 @@ import type { GroupId } from '../../../chart/groups'
 import type { NoteObject } from '../../../chart/note'
 import { connectorKindValue, noteStyleValue } from '../../../chart/noteStyle'
 import type { StageId, Stages } from '../../../chart/stages'
-import { easeValues } from '../../../ease'
+import { easeLevelDataValue } from '../../../ease'
 import { beatToTicks, scheduleHiddenTicks } from '../../../state/entities/slides/hiddenTicks'
 import type { NoteEntity } from '../../../state/entities/slides/note'
 import {
@@ -104,7 +104,7 @@ export const serializeSlidesToLevelDataEntities = (
                     },
                     {
                         name: 'connectorEase',
-                        value: easeValues[note.connectorEase],
+                        value: easeLevelDataValue(note.connectorEase),
                     },
                     {
                         name: 'segmentKind',

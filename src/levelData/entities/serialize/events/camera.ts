@@ -1,7 +1,7 @@
 import { EngineArchetypeDataName, type LevelDataEntity } from '@sonolus/core'
 import { serializeEventsToLevelDataEntities } from '.'
 import { getStoreEntities } from '..'
-import { easeValues } from '../../../../ease'
+import { easeLevelDataValue } from '../../../../ease'
 import type { Store } from '../../../../state/store'
 
 export const serializeCameraEventsToLevelDataEntities = (
@@ -57,7 +57,7 @@ export const serializeCameraEventsToLevelDataEntities = (
                 },
                 {
                     name: 'ease',
-                    value: easeValues[joint.eventEase],
+                    value: easeLevelDataValue(joint.eventEase),
                 },
             ],
         }),

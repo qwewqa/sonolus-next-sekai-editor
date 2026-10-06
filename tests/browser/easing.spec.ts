@@ -203,7 +203,7 @@ test.describe('ease fields', () => {
     })
 })
 
-test('every ease round trips through level data, and legacy NONE reads as a step in', async ({
+test('every ease round trips through level data, and IN_STEP reads as a step in', async ({
     page,
 }) => {
     await page.goto('/')
@@ -328,7 +328,7 @@ test('every ease round trips through level data, and legacy NONE reads as a step
             timeScale: parsed.timeScales.map((timeScale) => timeScale.timeScaleEase),
         }
         for (const name of ['connectorEase', 'ease', '#TIMESCALE_EASE'])
-            for (const data of values(entities, name)) if (data.value === 38) data.value = 0
+            for (const data of values(entities, name)) if (data.value === 0) data.value = 38
         const legacy = parseLevelDataChart(entities)
         const rejected = [30, 37, 42].map((value) => {
             const copy = structuredClone(entities)
@@ -358,9 +358,10 @@ test('every ease round trips through level data, and legacy NONE reads as a step
     const sorted = <T>(values: T[]) => [...values].sort()
     const range = (from: number, to: number) =>
         Array.from({ length: to - from + 1 }, (_, index) => from + index)
-    expect(sorted(result.written.connector)).toEqual(sorted(range(1, 41)))
-    expect(sorted(result.written.event)).toEqual(sorted(range(1, 41)))
-    expect(sorted(result.written.timeScale)).toEqual(sorted([...range(1, 29), ...range(38, 41)]))
+    // In steps are written as NONE.
+    expect(sorted(result.written.connector)).toEqual(sorted([...range(0, 37), ...range(39, 41)]))
+    expect(sorted(result.written.event)).toEqual(sorted([...range(0, 37), ...range(39, 41)]))
+    expect(sorted(result.written.timeScale)).toEqual(sorted([...range(0, 29), ...range(39, 41)]))
     expect(sorted(result.read.connector)).toEqual(sorted(result.eases))
     expect(sorted(result.read.event)).toEqual(sorted(result.eases))
     expect(sorted(result.read.timeScale)).toEqual(sorted(result.timeScaleEases))

@@ -37,15 +37,20 @@ for (const format of ['compressed', 'unversioned'] as const) {
         page,
     }) => {
         const { levelData } = parseAutoSave(legacyColors.autoSave)
-        // Upgrades write default meters (5aef4e8) and legacy NONE as IN_STEP (64a3335).
+        // Upgrades write default meters (5aef4e8); legacy NONE stays NONE.
         const upgraded = structuredClone(levelData)
         for (const entity of upgraded.entities) {
             if (entity.archetype === '#BPM_CHANGE' && !entity.data.some((d) => d.name === 'meter'))
                 entity.data.push({ name: 'meter', value: 4 })
-            for (const d of entity.data)
-                if (d.name === '#TIMESCALE_EASE' && 'value' in d && d.value === 0) d.value = 38
         }
         expect(upgraded).not.toEqual(levelData)
+        expect(
+            levelData.entities.some((entity) =>
+                entity.data.some(
+                    (d) => d.name === '#TIMESCALE_EASE' && 'value' in d && d.value === 0,
+                ),
+            ),
+        ).toBe(true)
         await page.evaluate(
             (save) => {
                 localStorage.setItem(
