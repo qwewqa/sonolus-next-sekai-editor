@@ -924,7 +924,13 @@
         "autoSave": {
             "title": "Auto Save",
             "importing": "Importing level…",
-            "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab."
+            "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab.",
+            "unreadable": {
+                "message": "The unsaved chart from your last session could not be restored. It may come from a newer version of the editor, or it was stored incompletely.",
+                "setAside": "It has been set aside, so your new changes will not replace it. Download it to keep a copy.",
+                "keptInPlace": "Auto save is paused in this tab, so your new changes will not replace it. Download it to keep a copy.",
+                "download": "Download"
+            }
         },
         "changes": {
             "title": "Changes",

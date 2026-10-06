@@ -11,11 +11,13 @@ import LoadingModal from '../../modals/LoadingModal.vue'
 import { settings } from '../../settings'
 import type { State } from '../../state'
 import { hasSameChartData } from '../../state/data'
-import { storageGet, storageRemove, storageSet } from '../../storage'
+import { storageGetText, storageRemove, storageSet } from '../../storage'
 import { timeout } from '../../utils/promise'
 import { filename } from '../filename'
 import { parseAutoSave } from './parse'
 import { serializeAutoSave } from './serialize'
+import { setRecoveryAside } from './unreadable'
+import UnreadableRecoveryModal from './UnreadableRecoveryModal.vue'
 
 let errorReported = false
 
@@ -23,7 +25,8 @@ export const useAutoSave = () => {
     let id: number | undefined
     let savedState: State | undefined
     let changed = false
-    const data = storageGet('autoSave.levelData', undefined)
+    // Read as text so damaged JSON still counts as a recovery to keep.
+    const data = storageGetText('autoSave.levelData')
     let restoring = !!data
 
     const flush = () => {
@@ -108,20 +111,33 @@ export const useAutoSave = () => {
         void showModal(LoadingModal, {
             title: () => i18n.value.history.autoSave.title,
             async *task(signal: AbortSignal) {
+                let keptInPlace = false
                 try {
                     yield () => i18n.value.history.autoSave.importing
                     await timeout(50)
                     signal.throwIfAborted()
 
-                    const { filename, levelData, defaultGuideColors } = parseAutoSave(data)
+                    let chart, parsed
+                    try {
+                        parsed = parseAutoSave(JSON.parse(data))
+                        chart = parseLevelDataChart(
+                            parsed.levelData.entities,
+                            parsed.defaultGuideColors,
+                        )
+                        validateChart(chart)
+                    } catch (error) {
+                        console.error('Failed to restore chart recovery:', error)
+                        // Never let the next edit replace a recovery this version cannot open.
+                        keptInPlace = !setRecoveryAside(data)
+                        void showModal(UnreadableRecoveryModal, { text: data, keptInPlace })
+                        return
+                    }
 
-                    const chart = parseLevelDataChart(levelData.entities, defaultGuideColors)
-                    validateChart(chart)
-
-                    resetState(true, chart, levelData.bgmOffset, filename)
+                    resetState(true, chart, parsed.levelData.bgmOffset, parsed.filename)
                     savedState = state.value
                 } finally {
-                    restoring = false
+                    // Without a copy aside, auto save stays off so it cannot overwrite it.
+                    restoring = keptInPlace
                 }
             },
         })

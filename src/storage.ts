@@ -18,3 +18,16 @@ export const storageSet = (key: string, value: unknown) => {
 export const storageRemove = (key: string) => {
     localStorage.removeItem(`${name}.${key}`)
 }
+
+/** The stored text as written, even when it is not valid JSON. */
+export const storageGetText = (key: string): string | undefined => {
+    try {
+        return localStorage.getItem(`${name}.${key}`) ?? undefined
+    } catch {
+        return
+    }
+}
+
+export const storageSetText = (key: string, value: string) => {
+    localStorage.setItem(`${name}.${key}`, value)
+}

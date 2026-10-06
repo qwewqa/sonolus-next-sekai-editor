@@ -924,7 +924,13 @@
     "autoSave": {
       "title": "Sauvegarde Automatique",
       "importing": "Importation du niveau…",
-      "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet."
+      "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet.",
+      "unreadable": {
+        "message": "La partition non sauvegardée de votre dernière session n’a pas pu être restaurée. Elle provient peut-être d’une version plus récente de l’éditeur, ou elle a été stockée de façon incomplète.",
+        "setAside": "Elle a été mise de côté : vos nouvelles modifications ne la remplaceront pas. Téléchargez-la pour en garder une copie.",
+        "keptInPlace": "La sauvegarde automatique est suspendue dans cet onglet : vos nouvelles modifications ne la remplaceront pas. Téléchargez-la pour en garder une copie.",
+        "download": "Télécharger"
+      }
     },
     "changes": {
       "title": "Modifications",

@@ -924,7 +924,13 @@
     "autoSave": {
       "title": "Otomatik Kaydet",
       "importing": "Seviye içe aktarılıyor…",
-      "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin."
+      "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin.",
+      "unreadable": {
+        "message": "Son oturumunuzdaki kaydedilmemiş harita geri yüklenemedi. Editörün daha yeni bir sürümünden gelmiş ya da eksik saklanmış olabilir.",
+        "setAside": "Bir kenara ayrıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Bir kopyasını saklamak için indirin.",
+        "keptInPlace": "Bu sekmede otomatik kaydetme duraklatıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Bir kopyasını saklamak için indirin.",
+        "download": "İndir"
+      }
     },
     "changes": {
       "title": "Değişiklikler",

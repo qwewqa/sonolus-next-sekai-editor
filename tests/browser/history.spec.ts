@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { gunzipSync, gzipSync } from 'node:zlib'
 import { parseAutoSave } from '../../src/history/autoSave/parse'
 import { installEditorFixture } from './editorFixture'
 import legacyColors from './fixtures/legacy-colors.json' with { type: 'json' }
@@ -530,4 +532,114 @@ test('undoing dynamic stages leaves the event tools, whose events it could not s
                 ).length,
         ),
     ).toBe(0)
+})
+
+// A level from a newer build: a time scale ease this build does not know.
+const futureLevel = {
+    bgmOffset: 0,
+    entities: [
+        { archetype: 'Initialization', data: [] },
+        {
+            archetype: '#BPM_CHANGE',
+            data: [
+                { name: '#BEAT', value: 0 },
+                { name: '#BPM', value: 120 },
+            ],
+        },
+        { name: 'g', archetype: '#TIMESCALE_GROUP', data: [] },
+        {
+            archetype: '#TIMESCALE_CHANGE',
+            data: [
+                { name: '#TIMESCALE_GROUP', ref: 'g' },
+                { name: '#BEAT', value: 1 },
+                { name: '#TIMESCALE', value: 2 },
+                { name: '#TIMESCALE_SKIP', value: 0 },
+                { name: '#TIMESCALE_EASE', value: 99 },
+            ],
+        },
+    ],
+}
+
+for (const { label, stored, file } of [
+    {
+        label: 'from a newer version',
+        stored: JSON.stringify({
+            version: 1,
+            filename: 'future-chart',
+            levelData: gzipSync(JSON.stringify(futureLevel)).toString('base64'),
+        }),
+        // The level file it wraps, as Save writes it.
+        file: { name: 'future-chart', gzip: true },
+    },
+    {
+        label: 'stored incompletely',
+        stored: JSON.stringify(futureLevel).slice(0, 120),
+        file: { name: 'Recovery.txt', gzip: false },
+    },
+]) {
+    test(`an unreadable recovery ${label} is set aside, explained and downloadable`, async ({
+        page,
+    }) => {
+        await page.evaluate((stored) => {
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', stored)
+        }, stored)
+        await page.reload()
+        const dialog = page.getByRole('dialog')
+        await expect(dialog).toContainText('could not be restored')
+        await expect(dialog).toContainText('your new changes will not replace it')
+        await expect(dialog).not.toContainText('Error')
+        const stores = () =>
+            page.evaluate(() => ({
+                recovery: localStorage.getItem('sonolus-next-sekai-editor.autoSave.levelData'),
+                aside: localStorage.getItem('sonolus-next-sekai-editor.autoSave.unreadable'),
+            }))
+        expect(await stores()).toEqual({ recovery: null, aside: stored })
+
+        const downloading = page.waitForEvent('download')
+        await dialog.getByRole('button', { name: 'Download' }).click()
+        const download = await downloading
+        expect(download.suggestedFilename()).toBe(file.name)
+        const bytes = readFileSync((await download.path())!)
+        if (file.gzip) expect(JSON.parse(gunzipSync(bytes).toString())).toEqual(futureLevel)
+        else expect(bytes.toString()).toBe(stored)
+        await dialog.getByRole('button', { name: 'OK' }).click()
+        await expect(dialog).toHaveCount(0)
+
+        // A later edit writes its own recovery and leaves the set-aside one alone.
+        await page.evaluate(installEditorFixture)
+        await editNamedChart(page)
+        await expect.poll(async () => (await stores()).recovery).not.toBeNull()
+        expect((await stores()).aside).toBe(stored)
+    })
+}
+
+test('an unreadable recovery that cannot be set aside pauses auto save instead', async ({
+    page,
+}) => {
+    const stored = JSON.stringify(futureLevel)
+    await page.addInitScript(() => {
+        const setItem = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key, value) {
+            if (key.endsWith('autoSave.unreadable'))
+                throw new DOMException('Storage is full', 'QuotaExceededError')
+            setItem.call(this, key, value)
+        }
+    })
+    await page.evaluate((stored) => {
+        localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', stored)
+    }, stored)
+    await page.reload()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('Auto save is paused in this tab')
+    await dialog.getByRole('button', { name: 'OK' }).click()
+
+    await page.evaluate(installEditorFixture)
+    await editNamedChart(page)
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+    await page.waitForTimeout(200)
+    expect(
+        await page.evaluate(() =>
+            localStorage.getItem('sonolus-next-sekai-editor.autoSave.levelData'),
+        ),
+    ).toBe(stored)
 })
