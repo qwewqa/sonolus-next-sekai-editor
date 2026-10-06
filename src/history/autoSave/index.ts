@@ -8,7 +8,6 @@ import { i18n } from '../../i18n'
 import { serializeEditorMetadata } from '../../levelData/editorMetadata'
 import { serializeToLevelData } from '../../levelData/serialize'
 import { showModal } from '../../modals'
-import ConfirmModal from '../../modals/ConfirmModal.vue'
 import InfoModal from '../../modals/InfoModal.vue'
 import LoadingModal from '../../modals/LoadingModal.vue'
 import { settings } from '../../settings'
@@ -18,6 +17,7 @@ import { storageGetText, storageRemove, storageSet } from '../../storage'
 import { timeout } from '../../utils/promise'
 import { filename } from '../filename'
 import { parseAutoSave } from './parse'
+import RestorableRecoveryModal from './RestorableRecoveryModal.vue'
 import { serializeAutoSave } from './serialize'
 import {
     removeRecovery,
@@ -164,15 +164,10 @@ export const useAutoSave = () => {
 
         let unreadable: UnreadableRecovery | undefined
         if (aside !== undefined && earlier) {
-            // Restoring it must not silently replace a recovery just restored.
-            if (
-                !isDirty.value ||
-                (await showModal(ConfirmModal, {
-                    title: () => i18n.value.history.autoSave.title,
-                    message: () => i18n.value.history.autoSave.unreadable.restorable,
-                    confirm: () => i18n.value.history.autoSave.unreadable.restore,
-                }))
-            ) {
+            // Restoring it must not silently replace a recovery just restored; it may go instead.
+            const choice = isDirty.value ? await showModal(RestorableRecoveryModal, {}) : 'restore'
+            if (choice === 'discard') removeRecovery('earlier')
+            if (choice === 'restore') {
                 resetState(true, earlier.chart, earlier.offset, earlier.filename)
                 savedState = state.value
                 notify(() => i18n.value.history.autoSave.unreadable.restored)

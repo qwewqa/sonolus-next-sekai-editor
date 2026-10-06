@@ -784,6 +784,25 @@ test('a set-aside recovery that now opens asks before replacing the last session
     expect(await unreadableStores(page)).toEqual({ recovery: earlier, aside: null })
 })
 
+test('a set-aside recovery that now opens can be discarded instead', async ({ page }) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    const last = readableRecovery('last-chart', 90)
+    await reloadWith(page, { recovery: last, aside: earlier })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('can now restore an unsaved chart')
+    await dialog.getByRole('button', { name: 'Discard' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'last-chart', bpm: 90 })
+    expect(await unreadableStores(page)).toEqual({ recovery: last, aside: null })
+
+    // Never offered again.
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.waitForTimeout(300)
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'last-chart', bpm: 90 })
+})
+
 test('a set-aside recovery that now opens trades places with one that does not', async ({
     page,
 }) => {
