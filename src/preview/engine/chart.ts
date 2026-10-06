@@ -387,10 +387,13 @@ export const createPreviewChartBuilder = () => {
 
                     previewNote.attachHead = getPreviewNote(info.attachHead)
                     previewNote.attachTail = getPreviewNote(info.attachTail)
-                    previewNote.size = lerp(
-                        previewNote.attachHead.size,
-                        previewNote.attachTail.size,
-                        attachEasedFrac(previewNote),
+                    previewNote.size = Math.max(
+                        0,
+                        lerp(
+                            previewNote.attachHead.size,
+                            previewNote.attachTail.size,
+                            attachEasedFrac(previewNote),
+                        ),
                     )
                 }
 

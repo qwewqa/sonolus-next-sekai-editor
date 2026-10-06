@@ -108,3 +108,35 @@ test("step connectors hold their value at the head's own time", () => {
     const actual = [quad!.bl, quad!.tl, quad!.tr, quad!.br].flatMap(({ x, y }) => [x, y])
     for (const [i, value] of actual.entries()) assert.ok(Math.abs(value - expected[i]!) < 1e-4)
 })
+
+test('attached notes take no negative size where the ease overshoots', () => {
+    const chart: Chart = {
+        initialLife: 1000,
+        isDynamicStages: false,
+        bpms: [{ beat: 0, bpm: 60 }],
+        groups: new Map([[groupId, { name: 'Default' }]]),
+        stages: new Map([
+            [
+                stageId,
+                { name: 'Stage', isFromStart: true, isUntilEnd: true, generateSimLines: 'global' },
+            ],
+        ]),
+        cameraEvents: [],
+        stageMaskEvents: [],
+        stagePivotEvents: [],
+        stageStyleEvents: [],
+        stageTransformEvents: [],
+        timeScales: [],
+        slides: [
+            [
+                { ...anchor(1, 0, 'inBack'), size: 0.2 },
+                { ...anchor(1.8, 0, 'inBack'), isAttached: true },
+                { ...anchor(3, 0, 'linear'), size: 4 },
+            ],
+        ],
+    }
+    const attached = buildPreviewChart(createState(chart, 0), 6).notes.find(
+        (note) => note.isAttached,
+    )
+    assert.equal(attached?.size, 0)
+})
