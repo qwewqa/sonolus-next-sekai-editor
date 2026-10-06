@@ -669,13 +669,15 @@ const pastes: {
     timeScale: (transaction, onlyType, entity, startLane, lane, beat, flip, batch) => {
         const object = toMovedTimeScaleObject(onlyType, entity, startLane, lane, beat, flip)
 
-        const overlap = getInStoreGrid(transaction.store.grid, 'timeScale', object.beat)?.find(
-            (entity) =>
-                entity.beat === object.beat &&
-                entity.groupId === object.groupId &&
-                !batch.includes(entity),
-        )
-        if (overlap) removeTimeScale(transaction, overlap)
+        // Replaces every one of its group at the beat, a pair too, but not its own batch.
+        const overlaps = getInStoreGrid(transaction.store.grid, 'timeScale', object.beat) ?? []
+        for (const overlap of overlaps)
+            if (
+                overlap.beat === object.beat &&
+                overlap.groupId === object.groupId &&
+                !batch.includes(overlap)
+            )
+                removeTimeScale(transaction, overlap)
 
         return addTimeScale(transaction, object)
     },

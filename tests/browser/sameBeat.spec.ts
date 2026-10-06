@@ -935,3 +935,112 @@ test('a level file loads a time-scale pair along its chain, not its listing', as
     })
     expect(loaded).toEqual(['0:1', '0:2', '0:3', '1:5'])
 })
+
+test.describe('a lone time scale placed on a pair replaces both', () => {
+    test.beforeEach(async ({ page }) => {
+        await showPairs(page)
+        // Another group's time scale at the beat, which stays.
+        await page.evaluate(async () => {
+            const { history, appImport, fixtures, nextTick } = window.editorTest
+            const { createTransaction } = await appImport<
+                typeof import('../../src/state/transaction')
+            >('/src/state/transaction.ts')
+            const { addTimeScale } = await appImport<
+                typeof import('../../src/state/mutations/timeScale')
+            >('/src/state/mutations/timeScale.ts')
+            const transaction = createTransaction(history.state.value)
+            addTimeScale(transaction, {
+                ...fixtures.events.timeScales[0]!,
+                groupId: 2 as never,
+                beat: 4,
+                timeScale: 7,
+            })
+            history.replaceState(transaction.commit([]))
+            await nextTick()
+        })
+    })
+
+    /** Selects time scales by beat and value. */
+    const selectTimeScales = (page: Page, beat: number, values?: number[]) =>
+        page.evaluate(
+            async ({ beat, values }) => {
+                const { history, store, nextTick } = window.editorTest
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: [...store.getAllEntities()].filter(
+                        (entity) =>
+                            entity.type === 'timeScale' &&
+                            entity.beat === beat &&
+                            (!values || values.includes(entity.timeScale)),
+                    ),
+                })
+                await nextTick()
+            },
+            { beat, values },
+        )
+
+    /** Each time scale at beat 4 as group:value, in stored order. */
+    const atBeat4 = (page: Page) =>
+        page.evaluate(() =>
+            [...(window.editorTest.history.state.value.store.grid.timeScale.get(4) ?? [])]
+                .filter((entity) => entity.beat === 4)
+                .map((entity) => `${entity.groupId as number}:${entity.timeScale}`),
+        )
+
+    const copyAndPaste = (page: Page, beatOffset: number) =>
+        page.evaluate(async (beatOffset) => {
+            const { appImport } = window.editorTest
+            const { copy } = await appImport<typeof import('../../src/editor/commands/copy')>(
+                '/src/editor/commands/copy/index.ts',
+            )
+            const { pasteAtPosition } = await appImport<
+                typeof import('../../src/editor/tools/paste')
+            >('/src/editor/tools/paste/index.ts')
+            copy.execute()
+            await pasteAtPosition(0, beatOffset, { ctrl: false, shift: false })
+        }, beatOffset)
+
+    test('pasted', async ({ page }) => {
+        await selectTimeScales(page, 6)
+        await copyAndPaste(page, -2)
+        expect((await atBeat4(page)).sort()).toEqual(['1:3', '2:7'])
+    })
+
+    test('moved by its Beat', async ({ page }) => {
+        await selectTimeScales(page, 6)
+        await editSelection(page, { beat: 4 })
+        expect((await atBeat4(page)).sort()).toEqual(['1:3', '2:7'])
+    })
+
+    test('dragged with the select tool', async ({ page }) => {
+        await selectTimeScales(page, 6)
+        const { from, to } = await page.evaluate(async () => {
+            const { history, point, appImport } = window.editorTest
+            const { beatToTime } = await appImport<typeof import('../../src/state/integrals/bpms')>(
+                '/src/state/integrals/bpms.ts',
+            )
+            const { bpms, selectedEntities } = history.state.value
+            const lane = selectedEntities[0]!.hitbox!.lane
+            // Beat 6 plays after the tempo change at 4.
+            return { from: point(lane, beatToTime(bpms, 6) * 2), to: point(lane, 4) }
+        })
+        await page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            toolName.value = 'select'
+        })
+        await page.mouse.move(from.x, from.y)
+        await page.mouse.down()
+        await page.mouse.move(from.x, (from.y + to.y) / 2, { steps: 4 })
+        await page.mouse.move(to.x, to.y, { steps: 4 })
+        await page.mouse.up()
+        expect((await atBeat4(page)).sort()).toEqual(['1:3', '2:7'])
+    })
+
+    test('a pasted pair replaces the pair and stays one', async ({ page }) => {
+        await selectTimeScales(page, 4, [1, 2])
+        await copyAndPaste(page, 0)
+        expect((await atBeat4(page)).filter((entry) => entry !== '2:7')).toEqual(['1:1', '1:2'])
+    })
+})

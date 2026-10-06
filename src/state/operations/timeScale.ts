@@ -36,10 +36,10 @@ export const editTimeScale = (
     const beat = object.beat ?? entity.beat
     const groupId = object.groupId ?? entity.groupId
     if (beat !== entity.beat) {
-        const overlap = getInStoreGrid(transaction.store.grid, 'timeScale', beat)?.find(
-            (candidate) => candidate.beat === beat && candidate.groupId === groupId,
-        )
-        if (overlap) removeTimeScale(transaction, overlap)
+        // Replaces every one of its group at the beat, a pair too.
+        for (const overlap of getInStoreGrid(transaction.store.grid, 'timeScale', beat) ?? [])
+            if (overlap.beat === beat && overlap.groupId === groupId)
+                removeTimeScale(transaction, overlap)
     }
     return editSelectedTimeScale(transaction, entity, object)
 }
