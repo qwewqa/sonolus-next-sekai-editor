@@ -577,3 +577,28 @@ test('a loaded BGM offset shows in milliseconds without floating point noise', a
         await expect(dialogs).toHaveCount(0)
     }
 })
+
+test('confirming the BGM dialog keeps a loaded offset exactly', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    const dialogs = page.getByRole('dialog')
+    for (const seconds of [0.0041, 0.0153, -4.095, 0.1234567]) {
+        await page.evaluate((offset) => {
+            const { history, fixtures } = window.editorTest
+            history.resetState(false, fixtures.interaction, offset, 'offset.json')
+        }, seconds)
+        await page.keyboard.press('m')
+        await dialogs.getByRole('button', { name: 'Confirm' }).click()
+        await expect(dialogs).toHaveCount(0)
+        expect(await page.evaluate(() => window.editorTest.history.state.value.bgm.offset)).toBe(
+            seconds,
+        )
+    }
+    // A typed offset converts without float noise too.
+    await page.keyboard.press('m')
+    await dialogs.getByRole('spinbutton', { name: 'Offset (ms)' }).fill('4.1')
+    await dialogs.getByRole('button', { name: 'Confirm' }).click()
+    await expect(dialogs).toHaveCount(0)
+    expect(await page.evaluate(() => window.editorTest.history.state.value.bgm.offset)).toBe(0.0041)
+})

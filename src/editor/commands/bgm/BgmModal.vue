@@ -24,10 +24,12 @@ const emit = defineEmits<{
     close: [bgm?: Bgm]
 }>()
 
+// Drops float noise: 0.0041 s shows as 4.1 ms, not 4.1000000000000005.
+const shownOffset = Number((props.bgm.offset * 1000).toPrecision(15))
+
 const model = shallowReactive({
     ...props.bgm,
-    // Drops float noise: 0.0041 s shows as 4.1 ms, not 4.1000000000000005.
-    offset: Number((props.bgm.offset * 1000).toPrecision(15)),
+    offset: shownOffset,
 })
 
 let request: AbortController | undefined
@@ -108,7 +110,11 @@ const onSubmit = () => {
     emit('close', {
         // eslint-disable-next-line @typescript-eslint/no-misused-spread
         ...model,
-        offset: model.offset / 1000,
+        // An untouched offset stays exact; 4.1 / 1000 would be 0.0040999999999999995.
+        offset:
+            model.offset === shownOffset
+                ? props.bgm.offset
+                : Number((model.offset / 1000).toPrecision(15)),
     })
 }
 </script>
