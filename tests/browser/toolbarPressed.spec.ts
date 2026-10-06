@@ -112,3 +112,33 @@ test('groups with flyouts say so and name the open one', async ({ page }) => {
     await expect(group).toHaveAttribute('aria-expanded', 'false')
     await expect(group).not.toHaveAttribute('aria-controls')
 })
+
+test('a tool dialog keeps the members chosen in each group', async ({ page }) => {
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        settings.toolbar = [['redo', 'undo'], ['note']]
+    })
+    const undo = shown(page).and(page.getByTitle('Undo', { exact: true }))
+    await undo.hover()
+    await toolbar(page).getByTitle('Redo', { exact: true }).click()
+    await expect(shown(page).and(page.getByTitle('Redo', { exact: true }))).toBeVisible()
+
+    await run(page, 'note')
+    // Run again, the tool opens its settings dialog, which stays open.
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.note.execute()
+    })
+    await expect(page.locator('.editor-tool-modal')).toBeVisible()
+    await expect(toolbar(page)).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.editor-tool-modal')).toHaveCount(0)
+    await expect(shown(page).and(page.getByTitle('Redo', { exact: true }))).toBeVisible()
+
+    // A new layout starts from each group's default.
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['redo', 'undo'], ['select']]
+    })
+    await expect(undo).toBeVisible()
+})

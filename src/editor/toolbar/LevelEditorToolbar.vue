@@ -1,3 +1,11 @@
+<script lang="ts">
+import type { CommandName as Name } from '../commands'
+
+// Each layout's shown members, kept while a tool dialog hides the toolbar.
+const shownByLayout = new Map<string, Name[]>()
+const layoutOf = (toolbar: Name[][]) => toolbar.map((group) => group.join(',')).join('|')
+</script>
+
 <script setup lang="ts">
 import {
     computed,
@@ -32,11 +40,21 @@ const activeNames = ref<CommandName[]>([])
 
 watch(
     toolbar,
-    (toolbar) => {
-        activeNames.value = toolbar.map((commands) => commands[commands.length - 1] ?? 'select')
+    (toolbar, previous) => {
+        const layout = layoutOf(toolbar)
+        if (previous && layoutOf(previous) === layout) return
+        // A remount keeps the members shown before; a new layout starts from the defaults.
+        const kept = previous ? undefined : shownByLayout.get(layout)
+        activeNames.value = toolbar.map(
+            (commands, index) => kept?.[index] ?? commands[commands.length - 1] ?? 'select',
+        )
     },
     { immediate: true },
 )
+watch(activeNames, (names) => shownByLayout.set(layoutOf(toolbar.value), [...names]), {
+    deep: true,
+    immediate: true,
+})
 
 // A group switches to its member whose tool comes into use, nearest its default.
 watch(
