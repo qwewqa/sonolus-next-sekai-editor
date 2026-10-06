@@ -295,24 +295,29 @@ test('connector path cache survives panning, but updates for zoom and BPM edits'
     assert.notEqual(fills[4]!.path, fills[3]!.path)
 })
 
+/** Each line of a cross as its start and end points, rounded. */
+const crossEnds = (path: RecordedPath) => {
+    const round = (value: number) => Math.round(value * 1e6) / 1e6 + 0
+    const lines: number[][] = []
+    for (const [command, x = 0, y = 0] of path.commands) {
+        if (command === 'M') lines.push([round(x), round(y)])
+        else lines.at(-1)!.splice(2, 2, round(x), round(y))
+    }
+    return lines
+}
+
 test('fake connector crosses use non-scaling strokes and restore caller drawing state', () => {
     const { context, ctx, strokes, renderer } = fixture()
     const first = note(0, 0, 2, { connectorEase: 'inStep', connectorIsFake: true })
     const last = note(4, 4, 4)
     renderer.draw(context, toConnectorEntity(first, last, first, last, first, last), false, 0.25)
-    assert.deepEqual(strokes.at(-1), {
-        path: Object.assign(new RecordedPath(), {
-            commands: [
-                ['M', 0, -0],
-                ['L', 8, -4],
-                ['M', 4, -4],
-                ['L', 2, -0],
-            ],
-        }),
-        alpha: 0.2,
-        width: 0.05,
-        style: '#f44',
-    })
+    const { path, ...style } = strokes.at(-1)!
+    assert.deepEqual(style, { alpha: 0.2, width: 0.05, style: '#f44' })
+    // Over the held body, from corner to corner.
+    assert.deepEqual(crossEnds(path), [
+        [0, 0, 2, -4],
+        [2, 0, 0, -4],
+    ])
     assert.equal(ctx.globalAlpha, 1)
     assert.equal(ctx.lineWidth, 1)
     assert.equal(ctx.strokeStyle, '#000')
@@ -418,4 +423,53 @@ test('pieces between attached notes ease between their own ends, as the engine d
         command === 'Z' ? [] : values.filter((_, index) => index % 2 === 0),
     )
     assert.ok(Math.min(...curveXs) < -3.5 - 0.5)
+})
+
+test('fake connector crosses follow the drawn body', () => {
+    const cross = (entity: ReturnType<typeof toConnectorEntity>) => {
+        const { context, fills, strokes, renderer } = fixture()
+        renderer.draw(context, entity, false)
+        return { body: fills[0]!.path.commands, cross: strokes.at(-1)!.path }
+    }
+    const fake = { connectorIsFake: true }
+
+    // A None connector holds its head's lane, and so does its cross.
+    const held = note(0, 0, 2, { ...fake, connectorEase: 'none' })
+    const last = note(4, 4, 4)
+    assert.deepEqual(
+        crossEnds(cross(toConnectorEntity(held, last, held, last, held, last)).cross),
+        [
+            [0, 0, 2, -4],
+            [2, 0, 0, -4],
+        ],
+    )
+
+    // A linear one, widening, keeps straight lines corner to corner.
+    const linear = note(0, 0, 2, { ...fake, connectorEase: 'linear' })
+    const straight = cross(toConnectorEntity(linear, last, linear, last, linear, last)).cross
+    assert.equal(straight.commands.length, 4)
+    assert.deepEqual(crossEnds(straight), [
+        [0, 0, 8, -4],
+        [2, 0, 4, -4],
+    ])
+
+    // An overshooting ease crosses at its own middle, not the straight one.
+    const back = note(0, 0, 2, { ...fake, connectorEase: 'outBack' })
+    const { cross: curved } = cross(toConnectorEntity(back, last, back, last, back, last))
+    const q = 1 + 2.70158 * (0.5 - 1) ** 3 + 1.70158 * (0.5 - 1) ** 2
+    const middle = curved.commands[16]!
+    assert.ok(Math.abs(middle[1]! - (4 * q + (2 + 2 * q) / 2)) < 1e-6)
+    assert.ok(Math.abs(middle[2]! + 2) < 1e-6)
+
+    // A piece after an attached note crosses its own corners.
+    const first = note(0, 0, 2, { ...fake, connectorEase: 'inQuad' })
+    const attached = note(2, 0, 0, { isAttached: true })
+    const piece = cross(toConnectorEntity(attached, last, first, last, first, last))
+    const n = (piece.body.length - 1) / 2
+    const corner = (index: number) =>
+        (piece.body[index]!.slice(1) as number[]).map((value) => Math.round(value * 1e6) / 1e6 + 0)
+    assert.deepEqual(crossEnds(piece.cross), [
+        [...corner(0), ...corner(n)],
+        [...corner(2 * n - 1), ...corner(n - 1)],
+    ])
 })

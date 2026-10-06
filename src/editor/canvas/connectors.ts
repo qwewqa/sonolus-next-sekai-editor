@@ -8,6 +8,15 @@ import type { EditorDrawContext } from './types'
 
 type Edge = { time: number; left: number; size: number }
 
+/** A stretch of the drawn body: its ends' y and its edges a fraction along it. */
+type Region = {
+    yHead: number
+    yTail: number
+    at: (u: number) => Omit<Edge, 'time'>
+    /** Held or linear: its cross runs corner to corner. */
+    straight: boolean
+}
+
 type ConnectorGraphic = {
     bpms: BpmIntegral[]
     ups: number
@@ -123,7 +132,9 @@ const appendConstant = (
     yHead: number,
     yTail: number,
     edges: Path2D | undefined,
+    regions?: Region[],
 ) => {
+    regions?.push({ yHead, yTail, at: () => ({ left, size }), straight: true })
     path.rect(left, yTail, size, yHead - yTail)
     edges?.moveTo(left, yHead)
     edges?.lineTo(left, yTail)
@@ -141,6 +152,7 @@ const appendStep = (
     connectorEase: Ease,
     ups: number,
     edges: Path2D | undefined,
+    regions?: Region[],
 ) => {
     const at = (q: number) => ({
         left: lerp(attachHead.left, attachTail.left, q),
@@ -148,13 +160,13 @@ const appendStep = (
     })
     const tMiddle = (attachHead.time + attachTail.time) / 2
     if (easeMode(connectorEase) === 'inOut' && tHead < tMiddle && tMiddle < tTail) {
-        appendConstant(path, attachHead, tHead * ups, tMiddle * ups, edges)
-        appendConstant(path, attachTail, tMiddle * ups, tTail * ups, edges)
+        appendConstant(path, attachHead, tHead * ups, tMiddle * ups, edges, regions)
+        appendConstant(path, attachTail, tMiddle * ups, tTail * ups, edges, regions)
         return
     }
 
     const p = unlerp(attachHead.time, attachTail.time, (tHead + tTail) / 2)
-    appendConstant(path, at(ease(connectorEase, p)), tHead * ups, tTail * ups, edges)
+    appendConstant(path, at(ease(connectorEase, p)), tHead * ups, tTail * ups, edges, regions)
 }
 
 const safeUnlerp = (a: number, b: number, x: number, fallback: number) =>
@@ -170,6 +182,7 @@ const appendAttachedPiece = (
     connectorEase: Ease,
     ups: number,
     edges: Path2D | undefined,
+    regions?: Region[],
 ) => {
     const fHead = safeUnlerp(attachHead.time, attachTail.time, tHead, 0.5)
     const fTail = safeUnlerp(attachHead.time, attachTail.time, tTail, 0.5)
@@ -199,7 +212,14 @@ const appendAttachedPiece = (
 
     if (isStepEase(connectorEase)) {
         const constant = (from: number, to: number, tFrom: number, tTo: number) => {
-            appendConstant(path, at(interpFrac((from + to) / 2, 0)), tFrom * ups, tTo * ups, edges)
+            appendConstant(
+                path,
+                at(interpFrac((from + to) / 2, 0)),
+                tFrom * ups,
+                tTo * ups,
+                edges,
+                regions,
+            )
         }
         if (connectorEase === 'inOutStep' && fHead < 0.5 && 0.5 < fTail) {
             const tSplit = lerp(tHead, tTail, (0.5 - fHead) / (fTail - fHead))
@@ -211,6 +231,15 @@ const appendAttachedPiece = (
         return
     }
 
+    regions?.push({
+        yHead: tHead * ups,
+        yTail: tTail * ups,
+        at: (u) => {
+            const f = lerp(fHead, fTail, u)
+            return at(interpFrac(f, safeUnlerp(fHead, fTail, f, 0)))
+        },
+        straight: connectorEase === 'linear',
+    })
     const span = Math.max(
         Math.abs(tail.left - head.left),
         Math.abs(tail.left + tail.size - head.left - head.size),
@@ -246,6 +275,25 @@ const appendAttachedPiece = (
 
 const CURVE_TOLERANCE = 0.01
 
+const CROSS_SAMPLES = 32
+
+// An X across a stretch of the body, following its edges.
+const appendCross = (marker: Path2D, { yHead, yTail, at, straight }: Region) => {
+    const samples = straight ? 1 : CROSS_SAMPLES
+    const points = Array.from({ length: samples + 1 }, (_, index) => {
+        const u = index / samples
+        return { ...at(u), u, y: lerp(yHead, yTail, u) }
+    })
+    for (const [index, { left, size, u, y }] of points.entries()) {
+        if (index) marker.lineTo(left + size * u, y)
+        else marker.moveTo(left + size * u, y)
+    }
+    for (const [index, { left, size, u, y }] of points.entries()) {
+        if (index) marker.lineTo(left + size * (1 - u), y)
+        else marker.moveTo(left + size * (1 - u), y)
+    }
+}
+
 const createGraphic = (
     entity: ConnectorEntity,
     bpms: BpmIntegral[],
@@ -264,10 +312,39 @@ const createGraphic = (
     const first = { time: tAttachHead, left: attachHead.left, size: attachHead.size }
     const last = { time: tAttachTail, left: attachTail.left, size: attachTail.size }
 
+    const regions: Region[] = []
     const attached = head.isAttached || tail.isAttached
     if (attached)
-        appendAttachedPiece(path, first, last, tHead, tTail, attachHead.connectorEase, ups, edges)
+        appendAttachedPiece(
+            path,
+            first,
+            last,
+            tHead,
+            tTail,
+            attachHead.connectorEase,
+            ups,
+            edges,
+            regions,
+        )
     const pieceEase = attached ? undefined : attachHead.connectorEase
+    // Every unattached ease but a step draws one eased stretch, compound quads included.
+    if (pieceEase && !isStepEase(pieceEase)) {
+        const pHead = safeUnlerp(tAttachHead, tAttachTail, tHead, 0)
+        const pTail = safeUnlerp(tAttachHead, tAttachTail, tTail, 1)
+        regions.push({
+            yHead,
+            yTail,
+            at: (u) => {
+                const q = ease(pieceEase, lerp(pHead, pTail, u))
+                const size = lerp(first.size, last.size, q)
+                return {
+                    left: lerp(first.left, last.left, q) + Math.min(size, 0) / 2,
+                    size: Math.max(size, 0),
+                }
+            },
+            straight: pieceEase === 'linear',
+        })
+    }
     // Linear and quadratic eases are exact; the rest are sampled.
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (pieceEase) {
@@ -327,8 +404,9 @@ const createGraphic = (
         case undefined:
             break
         default: {
-            const append = isStepEase(pieceEase) ? appendStep : appendCurve
-            append(path, first, last, tHead, tTail, pieceEase, ups, edges)
+            if (isStepEase(pieceEase))
+                appendStep(path, first, last, tHead, tTail, pieceEase, ups, edges, regions)
+            else appendCurve(path, first, last, tHead, tTail, pieceEase, ups, edges)
         }
     }
 
@@ -360,15 +438,8 @@ const createGraphic = (
 
     let fakeMarker: Path2D | undefined
     if (segmentHead.connectorType !== 'guide' && segmentHead.connectorIsFake) {
-        const lHead = remap(tAttachHead, tAttachTail, first.left, last.left, tHead)
-        const lTail = remap(tAttachHead, tAttachTail, first.left, last.left, tTail)
-        const sHead = remap(tAttachHead, tAttachTail, first.size, last.size, tHead)
-        const sTail = remap(tAttachHead, tAttachTail, first.size, last.size, tTail)
         fakeMarker = new Path2D()
-        fakeMarker.moveTo(lHead, yHead)
-        fakeMarker.lineTo(lTail + sTail, yTail)
-        fakeMarker.moveTo(lTail, yTail)
-        fakeMarker.lineTo(lHead + sHead, yHead)
+        for (const region of regions) appendCross(fakeMarker, region)
     }
 
     return {
