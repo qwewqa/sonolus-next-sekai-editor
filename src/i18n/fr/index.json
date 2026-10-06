@@ -4,7 +4,7 @@
     "default": "Par défaut"
   },
   "events": {
-    "event": "événement",
+    "event": "Événement",
     "cameraEvent": "Événement de caméra",
     "stageMaskEvent": "Événement de masque de scène",
     "stagePivotEvent": "Événement de pivot de scène",

@@ -86,3 +86,16 @@ test('status bar scope names start with a capital where the script has case', ()
         }
     }
 })
+
+test('event tool names start with a capital where the script has case', () => {
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        const messages = read(locale)
+        for (const [key, text] of Object.entries(messages)) {
+            if (!key.startsWith('events.')) continue
+            const first = text.charAt(0)
+            assert.equal(first, first.toLocaleUpperCase(locale), `${locale} ${key}`)
+        }
+    }
+})

@@ -4,7 +4,7 @@
     "default": "Varsayılan"
   },
   "events": {
-    "event": "olay",
+    "event": "Olay",
     "cameraEvent": "Kamera Olayı",
     "stageMaskEvent": "Sahne Maskesi Olayı",
     "stagePivotEvent": "Sahne Dönme Merkezi Olayı",
