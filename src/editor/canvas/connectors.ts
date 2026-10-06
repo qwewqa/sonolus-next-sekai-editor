@@ -157,6 +157,94 @@ const appendStep = (
     appendConstant(path, at(ease(connectorEase, p)), tHead * ups, tTail * ups, edges)
 }
 
+const safeUnlerp = (a: number, b: number, x: number, fallback: number) =>
+    Math.abs(a - b) < 1e-6 ? fallback : unlerp(a, b, x)
+
+// Like the engine, a piece between attached notes eases between its own ends, so equal
+// eased ends give a straight piece. Steps hold one value per piece.
+const appendAttachedPiece = (
+    path: Path2D,
+    attachHead: Edge,
+    attachTail: Edge,
+    tHead: number,
+    tTail: number,
+    connectorEase: Ease,
+    ups: number,
+    edges: Path2D | undefined,
+) => {
+    const fHead = safeUnlerp(attachHead.time, attachTail.time, tHead, 0.5)
+    const fTail = safeUnlerp(attachHead.time, attachTail.time, tTail, 0.5)
+    // Attached notes sit on the curve at their time, with sizes floored at 0 about their centers.
+    const edgeAt = (f: number) => {
+        const q = ease(connectorEase, f)
+        const size = lerp(attachHead.size, attachTail.size, q)
+        return {
+            left: lerp(attachHead.left, attachTail.left, q) + Math.min(size, 0) / 2,
+            size: Math.max(size, 0),
+        }
+    }
+    const head = edgeAt(fHead)
+    const tail = edgeAt(fTail)
+    const pinned = (f: number) => (f <= 0 ? 0 : f >= 1 ? 1 : ease(connectorEase, f))
+    const interpFrac = (f: number, fallback: number) =>
+        connectorEase === 'inStep'
+            ? 0
+            : safeUnlerp(pinned(fHead), pinned(fTail), ease(connectorEase, f), fallback)
+    const at = (interp: number) => {
+        const size = lerp(head.size, tail.size, interp)
+        return {
+            left: lerp(head.left, tail.left, interp) + Math.min(size, 0) / 2,
+            size: Math.max(size, 0),
+        }
+    }
+
+    if (isStepEase(connectorEase)) {
+        const constant = (from: number, to: number, tFrom: number, tTo: number) => {
+            appendConstant(path, at(interpFrac((from + to) / 2, 0)), tFrom * ups, tTo * ups, edges)
+        }
+        if (connectorEase === 'inOutStep' && fHead < 0.5 && 0.5 < fTail) {
+            const tSplit = lerp(tHead, tTail, (0.5 - fHead) / (fTail - fHead))
+            constant(fHead, 0.5, tHead, tSplit)
+            constant(0.5, fTail, tSplit, tTail)
+        } else {
+            constant(fHead, fTail, tHead, tTail)
+        }
+        return
+    }
+
+    const span = Math.max(
+        Math.abs(tail.left - head.left),
+        Math.abs(tail.left + tail.size - head.left - head.size),
+    )
+    const points = sampleEase(
+        connectorEase,
+        fHead,
+        fTail,
+        CURVE_TOLERANCE / Math.max(span, CURVE_TOLERANCE),
+    ).map((f) => ({
+        ...at(interpFrac(f, safeUnlerp(fHead, fTail, f, 0))),
+        y: lerp(attachHead.time, attachTail.time, f) * ups,
+    }))
+    for (const [index, { left, y }] of points.entries()) {
+        if (index) {
+            path.lineTo(left, y)
+            edges?.lineTo(left, y)
+        } else {
+            path.moveTo(left, y)
+            edges?.moveTo(left, y)
+        }
+    }
+    for (const [index, { left, size, y }] of [...points].reverse().entries()) {
+        path.lineTo(left + size, y)
+        if (index) {
+            edges?.lineTo(left + size, y)
+        } else {
+            edges?.moveTo(left + size, y)
+        }
+    }
+    path.closePath()
+}
+
 const CURVE_TOLERANCE = 0.01
 
 const createGraphic = (
@@ -177,9 +265,13 @@ const createGraphic = (
     const first = { time: tAttachHead, left: attachHead.left, size: attachHead.size }
     const last = { time: tAttachTail, left: attachTail.left, size: attachTail.size }
 
+    const attached = head.isAttached || tail.isAttached
+    if (attached)
+        appendAttachedPiece(path, first, last, tHead, tTail, attachHead.connectorEase, ups, edges)
+    const pieceEase = attached ? undefined : attachHead.connectorEase
     // Linear and quadratic eases are exact; the rest are sampled.
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-    switch (attachHead.connectorEase) {
+    switch (pieceEase) {
         case 'linear': {
             const lHead = remap(tAttachHead, tAttachTail, first.left, last.left, tHead)
             const lTail = remap(tAttachHead, tAttachTail, first.left, last.left, tTail)
@@ -198,7 +290,7 @@ const createGraphic = (
         }
         case 'inQuad':
         case 'outQuad':
-            appendEase(path, first, last, tHead, tTail, attachHead.connectorEase, ups, edges)
+            appendEase(path, first, last, tHead, tTail, pieceEase, ups, edges)
             break
         case 'inOutQuad':
         case 'outInQuad': {
@@ -214,7 +306,7 @@ const createGraphic = (
                     middle,
                     tHead,
                     Math.min(middle.time, tTail),
-                    attachHead.connectorEase === 'inOutQuad' ? 'inQuad' : 'outQuad',
+                    pieceEase === 'inOutQuad' ? 'inQuad' : 'outQuad',
                     ups,
                     edges,
                 )
@@ -226,16 +318,18 @@ const createGraphic = (
                     last,
                     Math.max(tHead, middle.time),
                     tTail,
-                    attachHead.connectorEase === 'inOutQuad' ? 'outQuad' : 'inQuad',
+                    pieceEase === 'inOutQuad' ? 'outQuad' : 'inQuad',
                     ups,
                     edges,
                 )
             }
             break
         }
+        case undefined:
+            break
         default: {
-            const append = isStepEase(attachHead.connectorEase) ? appendStep : appendCurve
-            append(path, first, last, tHead, tTail, attachHead.connectorEase, ups, edges)
+            const append = isStepEase(pieceEase) ? appendStep : appendCurve
+            append(path, first, last, tHead, tTail, pieceEase, ups, edges)
         }
     }
 

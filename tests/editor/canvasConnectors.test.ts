@@ -393,3 +393,28 @@ test('other curves are sampled polylines that keep overshoot and collapse negati
     }
     assert.equal(strokes[0]!.path.commands.filter(([command]) => command === 'M').length, 2)
 })
+
+test('pieces between attached notes ease between their own ends, as the engine draws them', () => {
+    const { context, fills, renderer } = fixture()
+    const first = note(0, -3.5, 1, { connectorEase: 'inBack' })
+    const last = note(4, 2.5, 1)
+    // IN_BACK returns to 0 here, so the piece's ends share one eased value.
+    const root = 4 * (1.70158 / 2.70158)
+    const separator = note(root, -3.5, 1, { isAttached: true, isConnectorSeparator: true })
+    renderer.draw(context, toConnectorEntity(first, separator, first, last, first, last), false)
+    const xs = fills[0]!.path.commands.flatMap(([command, ...values]) =>
+        command === 'Z' ? [] : values.filter((_, index) => index % 2 === 0),
+    )
+    // Straight, without the dip of the whole curve.
+    assert.ok(Math.min(...xs) > -3.5 - 1e-6)
+    assert.ok(Math.max(...xs) < -2.5 + 1e-6)
+
+    // Elsewhere the piece follows the whole curve.
+    const { context: other, fills: curve, renderer: curveRenderer } = fixture()
+    const middle = note(2, 0, 0, { isAttached: true, isConnectorSeparator: true })
+    curveRenderer.draw(other, toConnectorEntity(first, middle, first, last, first, last), false)
+    const curveXs = curve[0]!.path.commands.flatMap(([command, ...values]) =>
+        command === 'Z' ? [] : values.filter((_, index) => index % 2 === 0),
+    )
+    assert.ok(Math.min(...curveXs) < -3.5 - 0.5)
+})
