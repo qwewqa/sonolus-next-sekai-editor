@@ -13,6 +13,7 @@ import { lockCursor, unlockCursor } from './cursor'
 import { gesture } from './gestures/gesture'
 import { drag } from './gestures/recognizers/drag'
 import { tap } from './gestures/recognizers/tap'
+import { clearPageSelection } from './pageSelection'
 
 const mouseGesture = gesture(drag(false), tap(Infinity))
 
@@ -45,6 +46,8 @@ export const cancelMouseControls = (restoreTool = true) => {
 
 const mousedown = (event: MouseEvent) => {
     closeContextMenu()
+    // Selected page text would keep its native copy over the objects pressed after it.
+    clearPageSelection()
     const p = toP(event)
     updateViewPointer(p)
 

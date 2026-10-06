@@ -12,6 +12,7 @@ import { threeTap } from './gestures/recognizers/threeTap'
 import { twoTap } from './gestures/recognizers/twoTap'
 import { zoomX } from './gestures/recognizers/zoomX'
 import { zoomY } from './gestures/recognizers/zoomY'
+import { clearPageSelection } from './pageSelection'
 
 const touchGesture = gesture(zoomY(), zoomX(), pan(), drag(true), tap(), twoTap(), threeTap())
 
@@ -66,6 +67,7 @@ const toPs = (event: TouchEvent) =>
     }))
 
 const touchstart = (event: TouchEvent) => {
+    clearPageSelection()
     const ps = toPs(event)
     updateViewPointer(ps[0])
 

@@ -89,6 +89,34 @@ test.describe('chords', () => {
         expect(await lastDefault(page)).toBe(true)
     })
 
+    test('pressing the chart drops selected page text, so Ctrl+C copies the objects', async ({
+        page,
+        context,
+    }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+        await setTool(page, 'select')
+        const at = await page.evaluate(() => {
+            const { history, store, point } = window.editorTest
+            history.replaceState({ ...history.state.value, selectedEntities: [] })
+            const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
+            const text = document.body.appendChild(document.createElement('p'))
+            text.textContent = 'Note Speed'
+            getSelection()?.selectAllChildren(text)
+            return point(note.hitbox!.lane, note.beat)
+        })
+        await page.mouse.click(at.x, at.y)
+        expect(
+            await page.evaluate(() => ({
+                collapsed: getSelection()?.isCollapsed,
+                selected: window.editorTest.history.state.value.selectedEntities.length,
+            })),
+        ).toEqual({ collapsed: true, selected: 1 })
+        await page.keyboard.press('Control+c')
+        await expect
+            .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+            .toContain('"entities"')
+    })
+
     test('a rebound undo key undoes with Ctrl too', async ({ page }) => {
         await page.evaluate(() => {
             const { settings } = window.editorTest
