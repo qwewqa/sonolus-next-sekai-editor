@@ -2,6 +2,7 @@
 import { computed, nextTick, useId, useTemplateRef, watch, type StyleValue } from 'vue'
 import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
+import { resyncInput } from '../modals/form/resync'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { workspaceDockAttribute } from '../editor/workspace'
@@ -159,16 +160,20 @@ const normalizeNumber = (
     { min, max, step }: { min: number; max: number; step: number },
 ) => Math.min(max, Math.max(min, Math.round(value * (1 / step)) / (1 / step)))
 
-const onNumberChange = (
-    event: Event,
+// Written on change only, so re-renders never overwrite the typing.
+const numberField = (
     key: 'previewNoteSpeed' | 'previewRenderScale',
     range: { min: number; max: number; step: number },
-) => {
-    const input = event.target as HTMLInputElement
-    const value = Number.parseFloat(input.value)
-    if (Number.isFinite(value)) settings[key] = normalizeNumber(value, range)
-    input.value = settings[key].toString()
-}
+) =>
+    computed({
+        get: () => settings[key],
+        set: (value: number | string) => {
+            const number = Number.parseFloat(`${value}`)
+            if (Number.isFinite(number)) settings[key] = normalizeNumber(number, range)
+        },
+    })
+const noteSpeedField = numberField('previewNoteSpeed', previewNoteSpeed)
+const renderScaleField = numberField('previewRenderScale', previewRenderScale)
 
 const onNumberKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Enter') (event.currentTarget as HTMLInputElement).blur()
@@ -285,6 +290,7 @@ const onPlacementChange = () => {
                             :step="previewNoteSpeed.sliderStep"
                         />
                         <input
+                            v-model.lazy="noteSpeedField"
                             class="preview-number"
                             type="number"
                             :aria-label="i18n.settings.preview.noteSpeed"
@@ -292,8 +298,7 @@ const onPlacementChange = () => {
                             :min="previewNoteSpeed.min"
                             :max="previewNoteSpeed.max"
                             :step="previewNoteSpeed.step"
-                            :value="settings.previewNoteSpeed"
-                            @change="onNumberChange($event, 'previewNoteSpeed', previewNoteSpeed)"
+                            @change="resyncInput($event, () => `${settings.previewNoteSpeed}`)"
                             @keydown="onNumberKeydown"
                         />
                     </span>
@@ -367,6 +372,7 @@ const onPlacementChange = () => {
                             :step="previewRenderScale.step"
                         />
                         <input
+                            v-model.lazy="renderScaleField"
                             class="preview-number"
                             type="number"
                             :aria-label="i18n.settings.preview.renderScale"
@@ -374,10 +380,7 @@ const onPlacementChange = () => {
                             :min="previewRenderScale.min"
                             :max="previewRenderScale.max"
                             :step="previewRenderScale.step"
-                            :value="settings.previewRenderScale"
-                            @change="
-                                onNumberChange($event, 'previewRenderScale', previewRenderScale)
-                            "
+                            @change="resyncInput($event, () => `${settings.previewRenderScale}`)"
                             @keydown="onNumberKeydown"
                         />
                     </span>

@@ -1794,6 +1794,38 @@ test.describe('preview aspect ratios', () => {
     })
 })
 
+test('preview number fields keep typing through re-renders and normalize on change', async ({
+    page,
+}) => {
+    const preview = page.locator('.preview-controls')
+    for (const [label, typed] of [
+        ['Note Speed', '9.2'],
+        ['Render Scale', '1.5'],
+    ] as const) {
+        const field = preview.getByRole('spinbutton', { name: label, exact: true })
+        await field.fill(typed)
+        // Another setting changing re-renders the form.
+        const toggle = () =>
+            page.evaluate(async () => {
+                const { settings, nextTick } = window.editorTest
+                settings.previewShowHitboxes = !settings.previewShowHitboxes
+                await nextTick()
+            })
+        await toggle()
+        await expect(field).toHaveValue(typed)
+        await field.press('Enter')
+        await expect(field).toHaveValue(typed)
+        await toggle()
+    }
+    const speed = preview.getByRole('spinbutton', { name: 'Note Speed', exact: true })
+    await speed.fill('99')
+    await speed.press('Enter')
+    await expect(speed).toHaveValue('12')
+    await speed.fill('')
+    await speed.press('Enter')
+    await expect(speed).toHaveValue('12')
+})
+
 test('preview options share persisted settings with the main options menu', async ({ page }) => {
     const preview = page.locator('.preview-controls')
     for (const label of ['Note Speed', 'Render Scale']) {

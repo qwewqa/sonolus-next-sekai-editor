@@ -13,6 +13,7 @@ import {
 } from '../offscreenIndicators'
 import { groupOffscreenNotes, offscreenBadgeHitWidth } from '../offscreenNotes'
 import { modals } from '../../modals'
+import { resyncInput } from '../../modals/form/resync'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
 import type { State } from '../../state'
@@ -666,14 +667,14 @@ const changeBeat = (beat: number) => {
     elevationBeat.value = target
     fitViewport()
 }
-const onBeatInput = (event: Event) => {
-    const input = event.target as HTMLInputElement
-    if (!Number.isFinite(input.valueAsNumber) || input.valueAsNumber < 1) {
-        input.value = `${toDisplayedBeat(elevationBeat.value)}`
-        return
-    }
-    changeBeat(fromDisplayedBeat(input.valueAsNumber))
-}
+// Written on change only, so re-renders never overwrite the typing.
+const beatField = computed({
+    get: () => toDisplayedBeat(elevationBeat.value),
+    set: (value: number | string) => {
+        if (typeof value === 'number' && Number.isFinite(value) && value >= 1)
+            changeBeat(fromDisplayedBeat(value))
+    },
+})
 const onKeydown = (event: KeyboardEvent) => {
     // An open drawer takes Escape first.
     if (modals.length || event.defaultPrevented) return
@@ -1068,14 +1069,14 @@ onUnmounted(() => {
                         <label class="elevation-beat-field"
                             ><span class="elevation-label">{{ i18n.elevation.beat }}</span
                             ><input
+                                v-model.lazy="beatField"
                                 :class="headerField"
                                 class="focus:ring-2"
                                 type="number"
                                 min="1"
                                 :step="1 / view.division"
-                                :value="toDisplayedBeat(elevationBeat)"
                                 :aria-label="i18n.elevation.beat"
-                                @change="onBeatInput"
+                                @change="resyncInput($event, () => `${beatField}`)"
                         /></label>
                         <button
                             type="button"

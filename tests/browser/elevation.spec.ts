@@ -272,6 +272,29 @@ test('only exact-beat notes appear and all editor filters still apply', async ({
     await expect.poll(async () => (await rows(page)).map((row) => row.beat)).toEqual([8])
 })
 
+test('the Beat field keeps typing through re-renders and restores invalid values', async ({
+    page,
+}) => {
+    await open(page)
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await expect(beat).toHaveValue('7')
+    await beat.fill('9')
+    // Hovering the canvas and resizing both re-render the editor.
+    const box = (await page.locator('canvas.elevation-canvas').boundingBox())!
+    for (let i = 0; i < 5; i++) await page.mouse.move(box.x + 50 + i * 20, box.y + 200 + i * 10)
+    await page.setViewportSize({ width: 1500, height: 900 })
+    await expect(beat).toHaveValue('9')
+    await beat.press('Enter')
+    await expect.poll(async () => (await rows(page)).map((row) => row.beat)).toEqual([8])
+
+    await beat.fill('0')
+    await beat.press('Tab')
+    await expect(beat).toHaveValue('9')
+    await beat.fill('')
+    await beat.press('Tab')
+    await expect(beat).toHaveValue('9')
+})
+
 test('opening uses the selected note beat instead of the caret beat', async ({ page }) => {
     await page.evaluate(() => {
         const { history } = window.editorTest
