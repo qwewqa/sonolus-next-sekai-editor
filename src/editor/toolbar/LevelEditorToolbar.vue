@@ -72,11 +72,10 @@ watch(
 const activeIndex = ref(-1)
 const flyoutId = useId()
 
-/** A group's main tool opens its flyout, if it has other members. */
+/** A group's main tool discloses its flyout, if it has other members. */
 const flyoutAttributes = (index: number) =>
     (toolbar.value[index]?.length ?? 0) > 1
         ? {
-              'aria-haspopup': 'true',
               'aria-expanded': activeIndex.value === index ? 'true' : 'false',
               'aria-controls': activeIndex.value === index ? flyoutId : undefined,
           }

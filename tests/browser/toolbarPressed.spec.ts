@@ -99,7 +99,8 @@ test('groups with flyouts say so and name the open one', async ({ page }) => {
     const group = shown(page).and(page.getByTitle('Select', { exact: true }))
     await expect(single).not.toHaveAttribute('aria-haspopup')
     await expect(single).not.toHaveAttribute('aria-expanded')
-    await expect(group).toHaveAttribute('aria-haspopup', 'true')
+    // A disclosure, not a menu: the flyout holds plain buttons.
+    await expect(group).not.toHaveAttribute('aria-haspopup')
     await expect(group).toHaveAttribute('aria-expanded', 'false')
     await expect(group).not.toHaveAttribute('aria-controls')
 
