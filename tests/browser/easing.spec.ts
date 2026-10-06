@@ -605,3 +605,44 @@ test('placed and imported time scales are None and write NONE', async ({ page })
         { eases: ['none'], values: [0] },
     ])
 })
+
+test('an unchanged brush ease half fits its select at the default dock', async ({ page }) => {
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(() => (window.editorTest.settings.showSidebar = true))
+    await page.keyboard.press('b')
+    await page.evaluate(async () => {
+        const { settings, appImport } = window.editorTest
+        settings.propertiesSection = 'tool'
+        settings.propertiesCollapsed = ['selection', 'view']
+        const brush = await appImport<typeof import('../../src/editor/tools/brush')>(
+            '/src/editor/tools/brush/index.ts',
+        )
+        brush.brushProperties.value = { connectorEase: 'type:in' }
+    })
+    for (const locale of ['en', 'fr', 'ja']) {
+        await page.evaluate(
+            (locale) => (window.editorTest.settings.locale = locale as never),
+            locale,
+        )
+        const select = page.locator('#properties-section-tool select').nth(2)
+        await expect(select).toBeVisible()
+        const fit = await select.evaluate((element: HTMLSelectElement) => {
+            const style = getComputedStyle(element)
+            const span = document.createElement('span')
+            span.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap'
+            span.style.font = style.font
+            span.textContent = element.selectedOptions[0]?.textContent?.trim() ?? ''
+            document.body.append(span)
+            const width = span.getBoundingClientRect().width
+            span.remove()
+            const room =
+                element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+            return { text: span.textContent, width, room }
+        })
+        expect(fit.text).not.toBe('')
+        expect(fit.width, `${locale} ${fit.text}`).toBeLessThanOrEqual(fit.room)
+    }
+})

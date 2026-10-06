@@ -311,20 +311,21 @@ watchEffect(
     white-space: nowrap;
 }
 
-/* Selects carry a trailing chevron inside the pill; the value keeps clear of it. */
+/* Selects carry a trailing chevron inside the pill, which sits near its end so
+   values such as Unchanged fit at the default dock; the value keeps clear of it. */
 .form-field-select {
     position: relative;
 }
 
 .form-field-select > select {
-    padding-right: 2.25rem;
+    padding-right: 2rem;
 }
 
 .form-field-select-icon {
     pointer-events: none;
     position: absolute;
     inset-block: 0;
-    right: 1rem;
+    right: 0.75rem;
     display: flex;
     align-items: center;
 }
