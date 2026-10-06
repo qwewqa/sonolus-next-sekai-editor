@@ -791,6 +791,43 @@ test('a set-aside recovery that now opens trades places with one that does not',
     expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
 })
 
+test('closing the loading dialog before a recovery opens keeps the recovery', async ({ page }) => {
+    const stored = readableRecovery('kept-chart', 150)
+    await page.addInitScript(() => {
+        // Holds the dialog open before it parses, on the first start only.
+        if (sessionStorage.getItem('held')) return
+        sessionStorage.setItem('held', 'true')
+        const setTimeout = window.setTimeout
+        window.setTimeout = ((handler: TimerHandler, delay?: number, ...rest: unknown[]) =>
+            setTimeout(handler, delay === 50 ? 60_000 : delay, ...rest)) as typeof window.setTimeout
+    })
+    await reloadWith(page, { recovery: stored })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('Importing level')
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toHaveCount(0)
+
+    // A later change, such as a selection, must not remove it.
+    await page.evaluate(async () => {
+        const pathname = '/src/history/index.ts'
+        const url =
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => entry.name)
+                .find((name) => new URL(name).pathname === pathname) ?? pathname
+        const { replaceState, state } = (await import(url)) as typeof import('../../src/history')
+        replaceState({ ...state.value, selectedEntities: [] })
+        document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.waitForTimeout(200)
+    expect(await unreadableStores(page)).toEqual({ recovery: stored, aside: null })
+
+    // Offered again on the next start.
+    await page.reload()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect.poll(() => openChart(page)).toEqual({ filename: 'kept-chart', bpm: 150 })
+})
+
 test('an unreadable recovery that cannot be set aside pauses auto save instead', async ({
     page,
 }) => {

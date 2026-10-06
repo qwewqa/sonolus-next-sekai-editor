@@ -141,11 +141,8 @@ export const useAutoSave = () => {
                 loaded.done = true
             },
         })
-        // Closed before it finished.
-        if (!loaded.done) {
-            restoring = false
-            return
-        }
+        // Closed before it finished: auto save stays off, so the recovery waits for the next start.
+        if (!loaded.done) return
         const { primary, earlier } = loaded
 
         // One dialog at a time: an earlier recovery still unreadable first, as discarding it makes room.
