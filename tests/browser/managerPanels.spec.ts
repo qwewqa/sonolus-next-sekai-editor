@@ -1181,3 +1181,33 @@ test('the properties dialog keeps a name rather than storing a blank one', async
     await name.press('Enter')
     expect((await groupState(page)).names).toEqual(['Default', 'Renamed'])
 })
+
+test('the manager dialog settles its floating Add without a resize loop', async ({ page }) => {
+    await page.evaluate(() => {
+        const errors: string[] = []
+        ;(window as unknown as { loopErrors: string[] }).loopErrors = errors
+        addEventListener('error', (event) => errors.push(event.message))
+    })
+    await seedGroups(page, ['Default'])
+    await page.evaluate(() => {
+        window.editorTest.settings.groupsPosition = 'disabled'
+    })
+    await page.keyboard.press('e')
+    const dialog = page.locator('dialog')
+    await expect(dialog.locator('.manager-entry')).toHaveCount(1)
+    // The dialog has room, so Add floats however few rows it holds.
+    await expect(dialog.locator('.manager-footer-floating')).toHaveCount(1)
+    // Rows grow the dialog without changing that decision.
+    for (const count of [2, 3, 4]) {
+        await dialog.getByRole('button', { name: 'Add Group', exact: true }).click()
+        await page.keyboard.press('Escape')
+        await expect(dialog.locator('.manager-entry')).toHaveCount(count)
+        await expect(dialog.locator('.manager-footer-floating')).toHaveCount(1)
+    }
+    await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    )
+    expect(
+        await page.evaluate(() => (window as unknown as { loopErrors: string[] }).loopErrors),
+    ).toEqual([])
+})

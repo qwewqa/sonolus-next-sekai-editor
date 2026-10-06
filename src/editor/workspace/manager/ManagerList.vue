@@ -23,6 +23,7 @@ import CopyIcon from '../../commands/copy/CopyIcon.vue'
 import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
 import CloseIcon from '../CloseIcon.vue'
+import { workspaceSize } from '..'
 import { hasScrollMemory, useScrollMemory } from '../useScrollMemory'
 import { isFolderExpanded, setFolderExpanded, type EntryPlace } from './folders'
 import AddIcon from './icons/AddIcon.vue'
@@ -228,6 +229,10 @@ const observer = new ResizeObserver((entries) => {
         // which must not decide whether Add floats.
         else listHeight.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
     }
+    if (dialog.value?.open && listHeight.value > 0) {
+        const chrome = dialog.value.getBoundingClientRect().height - listHeight.value
+        if (chrome > 0) dialogChrome.value = chrome
+    }
     onListScroll()
     if (revealOnMeasure && listHeight.value > 0) {
         revealOnMeasure = false
@@ -246,10 +251,18 @@ watch(list, (element, previous) => {
 })
 // The Add item follows the rows; it floats in reach at the bottom of long
 // lists, unless the list is too short to show it beside at least two rows.
-const stickyAdd = computed(() => listHeight.value >= (isCoarse.value ? 176 : 156))
+// In a dialog the list's height follows Add's place, so the dialog's room decides.
+const dialog = shallowRef<HTMLDialogElement | null>(null)
+const dialogChrome = shallowRef(160)
+// Dialogs are at most 1rem shorter than the viewport.
+const dialogRoom = computed(() => workspaceSize.value.height - 16 - dialogChrome.value)
+const stickyAdd = computed(
+    () => (dialog.value ? dialogRoom.value : listHeight.value) >= (isCoarse.value ? 176 : 156),
+)
 watch(root, (element, previous) => {
     if (previous) observer.unobserve(previous)
     if (element) observer.observe(element)
+    dialog.value = element?.closest('dialog') ?? null
 })
 onUnmounted(() => {
     observer.disconnect()
