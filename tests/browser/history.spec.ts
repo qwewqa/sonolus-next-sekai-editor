@@ -817,7 +817,7 @@ test('closing the loading dialog before a recovery opens keeps the recovery', as
     await dialog.getByRole('button', { name: 'Close' }).click()
     // Says why auto save is off and when the chart comes back.
     await expect(dialog).toHaveText(
-        /Auto save is paused in this tab\. The editor will try to restore your last session's unsaved chart next time it starts\./,
+        /Auto save is paused in this tab\. The editor will try to restore the unsaved chart from your last session the next time it starts\./,
     )
     await dialog.getByRole('button', { name: 'OK' }).click()
     await expect(dialog).toHaveCount(0)
