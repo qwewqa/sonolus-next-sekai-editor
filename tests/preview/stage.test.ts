@@ -415,3 +415,25 @@ test('extrapolated transform blends stop elevation projections at zero height', 
     assert.equal(blendStageTransform(identityStageTransform, elevated, 0.5).projection.a00, 0.8)
     assert.equal(blendStageTransform(identityStageTransform, elevated, -1).projection.a00, 1.4)
 })
+
+test('camera sizes have the engine minimum at events, not only between them', () => {
+    const viewport = createViewport(1600, 900)
+    const camera = (time: number, size: number) => ({
+        time,
+        lane: 0,
+        size,
+        zoom: 1,
+        zoomTargetLane: 1,
+        zoomTargetY: 0,
+        zoomVerticalAlign: 0 as const,
+        rotate: 0,
+        stageTilt: 1,
+        ease: EaseType.linear,
+    })
+    const at = getCameraInfo(viewport, [camera(0, 0.005)], 0)
+    const floor = getCameraInfo(viewport, [camera(0, 0.01)], 0)
+    assert.equal(at.size, 0.01)
+    assert.deepEqual(at.zoomTarget, floor.zoomTarget)
+    const before = getCameraInfo(viewport, [camera(1, 0.005), camera(2, 6)], 0)
+    assert.equal(before.size, 0.01)
+})

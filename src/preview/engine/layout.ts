@@ -123,14 +123,17 @@ export const defaultCameraInfo = (): CameraInfo => ({
     stageTilt: 1,
 })
 
+const CAMERA_MIN_SIZE = 0.01
+const CAMERA_MIN_ZOOM = 0.01
+
 const toCameraInfo = (context: PreviewViewport, camera: CameraChange): CameraInfo => ({
     lane: camera.lane,
-    size: camera.size,
+    size: Math.max(CAMERA_MIN_SIZE, camera.size),
     zoom: camera.zoom,
     zoomTarget: cameraZoomTargetAt(
         context,
         camera.lane,
-        camera.size,
+        Math.max(CAMERA_MIN_SIZE, camera.size),
         camera.zoomTargetLane,
         camera.zoomTargetY,
         camera.stageTilt,
@@ -176,9 +179,8 @@ export const getCameraInfo = (
 
     return {
         lane: lerp(a.lane, b.lane, p),
-        // Overshooting eases keep the camera from collapsing or inverting.
-        size: Math.max(0.01, lerp(a.size, b.size, p)),
-        zoom: Math.max(0.01, lerp(a.zoom, b.zoom, p)),
+        size: Math.max(CAMERA_MIN_SIZE, lerp(a.size, b.size, p)),
+        zoom: Math.max(CAMERA_MIN_ZOOM, lerp(a.zoom, b.zoom, p)),
         zoomTarget: vec(
             lerp(infoA.zoomTarget.x, infoB.zoomTarget.x, p),
             lerp(infoA.zoomTarget.y, infoB.zoomTarget.y, p),
