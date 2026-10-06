@@ -6,7 +6,8 @@ import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import type { Entity, EntityType } from '../../../state/entities'
 import { isEditableEntity } from '../../../state/operations/editable'
-import { aggregateEntities, mergeAggregates } from '../../utils/properties'
+import type { Store } from '../../../state/store'
+import { aggregateEntities, mergeAggregates, type EntitiesAggregate } from '../../utils/properties'
 import { generalKeys, layoutFields, sharedKeys, type SelectionContext } from './fields'
 import PropertiesBlock from './PropertiesBlock.vue'
 import { summarizeSelection, type SummaryKind } from './summary'
@@ -29,20 +30,35 @@ const summary = computed(() =>
     ),
 )
 
-// Each kind is aggregated once; General merges the kinds' keys it shows.
+type KindAggregate = { entities: Entity[]; aggregate: EntitiesAggregate }
+
+const sameEntities = (a: readonly Entity[], b: readonly Entity[]) =>
+    a.length === b.length && a.every((entity, i) => entity === b[i])
+
+// Each kind is aggregated once, kept while its objects and the chart stay; General merges them.
+let previous: { store: Store; kinds: Map<EntityType, KindAggregate> } | undefined
 const byKind = computed(() => {
+    const current = store.value
     const groups = new Map<EntityType, Entity[]>()
     for (const entity of entities.value) {
         const group = groups.get(entity.type)
         if (group) group.push(entity)
         else groups.set(entity.type, [entity])
     }
-    return new Map(
-        [...groups].map(([kind, list]) => [
-            kind,
-            { entities: list, aggregate: aggregateEntities(list) },
-        ]),
+    const kept = previous?.store === current ? previous.kinds : undefined
+    const kinds = new Map(
+        [...groups].map(([kind, list]): [EntityType, KindAggregate] => {
+            const old = kept?.get(kind)
+            return [
+                kind,
+                old && sameEntities(old.entities, list)
+                    ? old
+                    : { entities: list, aggregate: aggregateEntities(list) },
+            ]
+        }),
     )
+    previous = { store: current, kinds }
+    return kinds
 })
 
 const context = (kinds: SummaryKind[], count: number): SelectionContext => {

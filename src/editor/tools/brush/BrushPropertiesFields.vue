@@ -51,7 +51,9 @@ const menu = computed(() =>
     byKind(brushFields.filter((field) => !isSet(field) && available(field))),
 )
 
+// Aggregated only when used, so selecting stays cheap while the brush shows.
 const selection = computed(() => aggregateEntities(selectedEntities.value.filter(isEditableEntity)))
+const canPick = computed(() => selectedEntities.value.some(isEditableEntity))
 
 // Values the editor's view already suggests.
 const fromView: Partial<Record<BrushKey, () => unknown>> = {
@@ -148,7 +150,7 @@ const clear = () => {
             <button
                 type="button"
                 class="brush-pick min-w-0 flex-[1_0_auto] truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
-                :disabled="!selection.usage.size"
+                :disabled="!canPick"
                 @click="pick"
             >
                 {{ i18n.tools.brush.pick }}
