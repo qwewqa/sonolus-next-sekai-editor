@@ -228,16 +228,14 @@ export const getStageProps = (stage: PreviewStage, t: number, leftLimit = false)
         props.divisionLineAlpha = styleA.divisionLineAlpha
         if (styleB) {
             const p = ease(styleA.ease, styleFrac)
-            // Overshooting eases keep blends and alphas within their range.
-            const blend = clamp(p, 0, 1)
             props.judgeLineColor.end = styleB.judgeLineColor
-            props.judgeLineColor.progress = blend
+            props.judgeLineColor.progress = p
             props.judgeLineStyle.end = styleB.judgeLineStyle
-            props.judgeLineStyle.progress = blend
+            props.judgeLineStyle.progress = p
             props.leftBorderStyle.end = styleB.leftBorderStyle
-            props.leftBorderStyle.progress = blend
+            props.leftBorderStyle.progress = p
             props.rightBorderStyle.end = styleB.rightBorderStyle
-            props.rightBorderStyle.progress = blend
+            props.rightBorderStyle.progress = p
             props.noteAlpha = clamp(lerp(styleA.noteAlpha, styleB.noteAlpha, p), 0, 1)
             props.laneAlpha = clamp(lerp(styleA.laneAlpha, styleB.laneAlpha, p), 0, 1)
             props.judgeLineAlpha = clamp(
@@ -335,7 +333,7 @@ const transitionWeight = (transition: Transition<number>, target: number) => {
     let weight = 0
     if (transition.start === target) weight += 1 - transition.progress
     if (transition.end === target) weight += transition.progress
-    return weight
+    return Math.max(0, weight)
 }
 
 const borderStyleWidth = (style: number, normal: number, medium: number, light: number) => {
@@ -352,10 +350,13 @@ const borderStyleWidth = (style: number, normal: number, medium: number, light: 
 }
 
 const borderWidth = (style: Transition<number>, normal: number, medium: number, light: number) =>
-    lerp(
-        borderStyleWidth(style.start, normal, medium, light),
-        borderStyleWidth(style.end, normal, medium, light),
-        style.progress,
+    Math.max(
+        0,
+        lerp(
+            borderStyleWidth(style.start, normal, medium, light),
+            borderStyleWidth(style.end, normal, medium, light),
+            style.progress,
+        ),
     )
 
 const borderSpriteTransition = (style: Transition<number>): Transition<number> => {
@@ -366,17 +367,37 @@ const borderSpriteTransition = (style: Transition<number>): Transition<number> =
     return { start, end, progress: start === end ? 0 : style.progress }
 }
 
-const blendBorderLayout = (start: Quad, end: Quad, progress: number): Quad => ({
-    bl: lerpVec(start.bl, end.bl, progress),
-    br: lerpVec(start.br, end.br, progress),
-    tl: lerpVec(start.tl, end.tl, progress),
-    tr: lerpVec(start.tr, end.tr, progress),
-})
+// Overshooting blends collapse an edge at its midpoint instead of flipping it.
+const blendBorderLayout = (start: Quad, end: Quad, progress: number): Quad => {
+    const result = {
+        bl: lerpVec(start.bl, end.bl, progress),
+        br: lerpVec(start.br, end.br, progress),
+        tl: lerpVec(start.tl, end.tl, progress),
+        tr: lerpVec(start.tr, end.tr, progress),
+    }
+    const flipped = (a: Vec, b: Vec, startA: Vec, startB: Vec, endA: Vec, endB: Vec) =>
+        (b.x - a.x) * (startB.x - startA.x + endB.x - endA.x) +
+            (b.y - a.y) * (startB.y - startA.y + endB.y - endA.y) <
+        0
+    if (flipped(result.bl, result.br, start.bl, start.br, end.bl, end.br)) {
+        const mid = lerpVec(result.bl, result.br, 0.5)
+        result.bl = mid
+        result.br = mid
+    }
+    if (flipped(result.tl, result.tr, start.tl, start.tr, end.tl, end.tr)) {
+        const mid = lerpVec(result.tl, result.tr, 0.5)
+        result.tl = mid
+        result.tr = mid
+    }
+    return result
+}
 
 const borderBlendAlpha = (alpha: number, progress: number) => {
-    const remaining = 1 - alpha * progress
-    return remaining > 0 ? (alpha * (1 - progress)) / remaining : 0
+    const remaining = 1 - clamp(alpha * Math.max(0, progress), 0, 1)
+    return remaining > 0 ? clamp((alpha * Math.max(0, 1 - progress)) / remaining, 0, 1) : 0
 }
+
+const clampAlpha = (alpha: number) => clamp(alpha, 0, 1)
 
 const isCollapsedBorder = (q: Quad) =>
     q.bl.x === q.br.x && q.bl.y === q.br.y && q.tl.x === q.tr.x && q.tl.y === q.tr.y
@@ -458,6 +479,10 @@ export const drawDynamicStage = (
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const spritesB = skin.judgments[judgeLineColor.end] ?? skin.judgments[0]!
     const pSprites = spritesSame ? 0 : judgeLineColor.progress
+    const wSpritesStart = Math.max(0, 1 - pSprites)
+    const wSpritesEnd = Math.max(0, pSprites)
+    const wDivStart = Math.max(0, 1 - division.progress)
+    const wDivEnd = Math.max(0, division.progress)
 
     const wDefault = transitionWeight(judgeLineStyle, 0)
     const wSingleLine = transitionWeight(judgeLineStyle, 1)
@@ -510,7 +535,7 @@ export const drawDynamicStage = (
             case 0:
             case 3: {
                 if (!isLeft) q = { bl: q.br, br: q.bl, tl: q.tr, tr: q.tl }
-                draw(skin.stageBorder, place(q), zKey, alpha)
+                draw(skin.stageBorder, place(q), zKey, clampAlpha(alpha))
                 break
             }
             case 1: {
@@ -518,7 +543,7 @@ export const drawDynamicStage = (
                     skin.laneDivider,
                     snapDividerThicknessToScreenPixels(context, place(q)),
                     zKey,
-                    alpha,
+                    clampAlpha(alpha),
                 )
                 break
             }
@@ -563,7 +588,7 @@ export const drawDynamicStage = (
                     place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
                 ),
                 zKey,
-                alpha,
+                clampAlpha(alpha),
             )
         }
     }
@@ -611,8 +636,8 @@ export const drawDynamicStage = (
                 place(layoutJudgmentDivider(pos)),
             )
             const edgeWeight = width > 0 ? Math.abs(pos - lane) / width : 0
-            draw(sprites.center, divLayout, zLo, alpha)
-            draw(sprites.edge, divLayout, zHi, alpha * edgeWeight)
+            draw(sprites.center, divLayout, zLo, clampAlpha(alpha))
+            draw(sprites.edge, divLayout, zHi, clampAlpha(alpha * edgeWeight))
         }
     }
 
@@ -655,7 +680,7 @@ export const drawDynamicStage = (
             case 0:
             case 3: {
                 if (!isLeft) q = { bl: q.br, br: q.bl, tl: q.tr, tr: q.tl }
-                draw(sprites.edgeLeft, place(q), zKey, alpha)
+                draw(sprites.edgeLeft, place(q), zKey, clampAlpha(alpha))
                 break
             }
             case 1: {
@@ -663,7 +688,7 @@ export const drawDynamicStage = (
                     sprites.edge,
                     snapDividerThicknessToScreenPixels(context, place(q)),
                     zKey,
-                    alpha,
+                    clampAlpha(alpha),
                 )
                 break
             }
@@ -700,8 +725,8 @@ export const drawDynamicStage = (
         const topR = place(
             perspectiveRect(context.layout, rJl, lane, 1 - nh, 1 - nh + nh / f, travel),
         )
-        const gradA = alpha * (1 - fw)
-        const edgeA = alpha * fw
+        const gradA = clampAlpha(alpha * (1 - fw))
+        const edgeA = clampAlpha(alpha * fw)
         if (gradA > 0) {
             draw(sprites.gradient, bottomL, zKey, gradA)
             draw(sprites.gradient, bottomR, zKey, gradA)
@@ -721,19 +746,24 @@ export const drawDynamicStage = (
         const layout = place(
             perspectiveRect(context.layout, lJl, rJl, 1 - halfThick, 1 + halfThick, travel),
         )
-        draw(sprites.singleLine, layout, zKey, alpha)
+        draw(sprites.singleLine, layout, zKey, clampAlpha(alpha))
     }
 
     const la = laneAlpha * (1 - fw)
     if (la > 0) {
-        draw(skin.laneBackground, place(layoutStageLaneByEdges(context.layout, l, r)), z(0), la)
+        draw(
+            skin.laneBackground,
+            place(layoutStageLaneByEdges(context.layout, l, r)),
+            z(0),
+            clampAlpha(la),
+        )
 
         const pLeft = leftBorderStyle.progress
         if (leftBorderStyle.start === leftBorderStyle.end) {
             drawLeftBorder(leftBorderStyle.start, z(3), la)
         } else {
             drawLeftBorder(leftBorderStyle.start, z(3), borderBlendAlpha(la, pLeft))
-            drawLeftBorder(leftBorderStyle.end, z(4), la * pLeft)
+            drawLeftBorder(leftBorderStyle.end, z(4), la * Math.max(0, pLeft))
         }
 
         const pRight = rightBorderStyle.progress
@@ -741,34 +771,33 @@ export const drawDynamicStage = (
             drawRightBorder(rightBorderStyle.start, z(3), la)
         } else {
             drawRightBorder(rightBorderStyle.start, z(3), borderBlendAlpha(la, pRight))
-            drawRightBorder(rightBorderStyle.end, z(4), la * pRight)
+            drawRightBorder(rightBorderStyle.end, z(4), la * Math.max(0, pRight))
         }
 
         const laDiv = la * props.divisionLineAlpha
         if (laDiv > 0) {
-            const pDiv = division.progress
             if (
                 division.start.size === division.end.size &&
                 division.start.parity === division.end.parity
             ) {
                 drawDividers(division.start.size, division.start.parity, pivotLane, z(3), laDiv)
             } else {
-                if (1 - pDiv > 0) {
+                if (wDivStart > 0) {
                     drawDividers(
                         division.start.size,
                         division.start.parity,
                         pivotLane,
                         z(3),
-                        laDiv * (1 - pDiv),
+                        laDiv * wDivStart,
                     )
                 }
-                if (pDiv > 0) {
+                if (wDivEnd > 0) {
                     drawDividers(
                         division.end.size,
                         division.end.parity,
                         pivotLane,
                         z(4),
-                        laDiv * pDiv,
+                        laDiv * wDivEnd,
                     )
                 }
             }
@@ -783,16 +812,15 @@ export const drawDynamicStage = (
     if (jaBar > 0) {
         const bgLayout = place(perspectiveRect(context.layout, lJl, rJl, 1 - nh, 1 + nh, travel))
         if (spritesSame) {
-            draw(spritesA.background, bgLayout, z(1), jaBar)
+            draw(spritesA.background, bgLayout, z(1), clampAlpha(jaBar))
         } else {
-            draw(spritesA.background, bgLayout, z(1), jaBar * (1 - pSprites))
-            draw(spritesB.background, bgLayout, z(2), jaBar * pSprites)
+            draw(spritesA.background, bgLayout, z(1), clampAlpha(jaBar * wSpritesStart))
+            draw(spritesB.background, bgLayout, z(2), clampAlpha(jaBar * wSpritesEnd))
         }
     }
 
     const pLeft = leftBorderStyle.progress
     const pRight = rightBorderStyle.progress
-    const pDiv = division.progress
 
     const startHasHalfOffset = division.start.parity === 1 && division.start.size % 2 === 1
     const endHasHalfOffset = division.end.parity === 1 && division.end.size % 2 === 1
@@ -808,7 +836,7 @@ export const drawDynamicStage = (
                 pivotLane,
                 z(5),
                 z(6),
-                jaDec * (1 - pSprites),
+                jaDec * wSpritesStart,
             )
             drawJudgmentDividers(
                 spritesB,
@@ -816,7 +844,7 @@ export const drawDynamicStage = (
                 pivotLane,
                 z(9),
                 z(10),
-                jaDec * pSprites,
+                jaDec * wSpritesEnd,
             )
         } else if (spritesSame) {
             drawJudgmentDividers(
@@ -825,14 +853,14 @@ export const drawDynamicStage = (
                 pivotLane,
                 z(5),
                 z(6),
-                jaDec * (1 - pDiv),
+                jaDec * wDivStart,
             )
-            drawJudgmentDividers(spritesA, endHasHalfOffset, pivotLane, z(7), z(8), jaDec * pDiv)
+            drawJudgmentDividers(spritesA, endHasHalfOffset, pivotLane, z(7), z(8), jaDec * wDivEnd)
         } else {
-            const alphaAa = (1 - pSprites) * (1 - pDiv)
-            const alphaAb = (1 - pSprites) * pDiv
-            const alphaBa = pSprites * (1 - pDiv)
-            const alphaBb = pSprites * pDiv
+            const alphaAa = wSpritesStart * wDivStart
+            const alphaAb = wSpritesStart * wDivEnd
+            const alphaBa = wSpritesEnd * wDivStart
+            const alphaBb = wSpritesEnd * wDivEnd
             if (alphaAa > 0)
                 drawJudgmentDividers(
                     spritesA,
@@ -876,8 +904,8 @@ export const drawDynamicStage = (
         if (spritesSame) {
             drawGradient(spritesA, z(13), jaBar)
         } else {
-            drawGradient(spritesA, z(13), jaBar * (1 - pSprites))
-            drawGradient(spritesB, z(14), jaBar * pSprites)
+            drawGradient(spritesA, z(13), jaBar * wSpritesStart)
+            drawGradient(spritesB, z(14), jaBar * wSpritesEnd)
         }
     }
 
@@ -885,10 +913,10 @@ export const drawDynamicStage = (
         if (spritesSame && leftBorderStyle.start === leftBorderStyle.end) {
             drawLeftJudgmentBorder(spritesA, leftBorderStyle.start, z(5), jaDec)
         } else {
-            const alphaAa = borderBlendAlpha(jaDec * (1 - pSprites), pLeft)
-            const alphaAb = jaDec * (1 - pSprites) * pLeft
-            const alphaBa = borderBlendAlpha(jaDec * pSprites, pLeft)
-            const alphaBb = jaDec * pSprites * pLeft
+            const alphaAa = borderBlendAlpha(jaDec * wSpritesStart, pLeft)
+            const alphaAb = jaDec * wSpritesStart * Math.max(0, pLeft)
+            const alphaBa = borderBlendAlpha(jaDec * wSpritesEnd, pLeft)
+            const alphaBb = jaDec * wSpritesEnd * Math.max(0, pLeft)
             if (alphaAa > 0) drawLeftJudgmentBorder(spritesA, leftBorderStyle.start, z(5), alphaAa)
             if (alphaAb > 0) drawLeftJudgmentBorder(spritesA, leftBorderStyle.end, z(7), alphaAb)
             if (alphaBa > 0) drawLeftJudgmentBorder(spritesB, leftBorderStyle.start, z(9), alphaBa)
@@ -898,10 +926,10 @@ export const drawDynamicStage = (
         if (spritesSame && rightBorderStyle.start === rightBorderStyle.end) {
             drawRightJudgmentBorder(spritesA, rightBorderStyle.start, z(5), jaDec)
         } else {
-            const alphaAa = borderBlendAlpha(jaDec * (1 - pSprites), pRight)
-            const alphaAb = jaDec * (1 - pSprites) * pRight
-            const alphaBa = borderBlendAlpha(jaDec * pSprites, pRight)
-            const alphaBb = jaDec * pSprites * pRight
+            const alphaAa = borderBlendAlpha(jaDec * wSpritesStart, pRight)
+            const alphaAb = jaDec * wSpritesStart * Math.max(0, pRight)
+            const alphaBa = borderBlendAlpha(jaDec * wSpritesEnd, pRight)
+            const alphaBb = jaDec * wSpritesEnd * Math.max(0, pRight)
             if (alphaAa > 0)
                 drawRightJudgmentBorder(spritesA, rightBorderStyle.start, z(5), alphaAa)
             if (alphaAb > 0) drawRightJudgmentBorder(spritesA, rightBorderStyle.end, z(7), alphaAb)
@@ -915,8 +943,8 @@ export const drawDynamicStage = (
         if (spritesSame) {
             drawSingleLine(spritesA, z(15), jaSingle)
         } else {
-            drawSingleLine(spritesA, z(15), jaSingle * (1 - pSprites))
-            drawSingleLine(spritesB, z(16), jaSingle * pSprites)
+            drawSingleLine(spritesA, z(15), jaSingle * wSpritesStart)
+            drawSingleLine(spritesB, z(16), jaSingle * wSpritesEnd)
         }
     }
 }
@@ -963,7 +991,7 @@ const drawFallbackStage = (
                 skin.stageLeftBorder,
                 place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
                 zMid,
-                la,
+                clampAlpha(la),
             )
         }
         if (rightWidth > 0) {
@@ -977,7 +1005,7 @@ const drawFallbackStage = (
                 skin.stageRightBorder,
                 place({ bl: layoutB.bl, tl: layoutT.tl, tr: layoutT.tr, br: layoutB.br }),
                 zMid,
-                la,
+                clampAlpha(la),
             )
         }
 
@@ -991,22 +1019,27 @@ const drawFallbackStage = (
             const kEnd = Math.ceil((r - shiftedPivot - eps) / divisionSize) - 1
             for (let k = kStart; k <= kEnd; k++) {
                 const pos = shiftedPivot + k * divisionSize
-                draw(skin.lane, place(layoutStageLaneByEdges(context.layout, prev, pos)), zLo, la)
+                draw(
+                    skin.lane,
+                    place(layoutStageLaneByEdges(context.layout, prev, pos)),
+                    zLo,
+                    clampAlpha(la),
+                )
                 prev = pos
             }
         }
-        draw(skin.lane, place(layoutStageLaneByEdges(context.layout, prev, r)), zLo, la)
+        draw(skin.lane, place(layoutStageLaneByEdges(context.layout, prev, r)), zLo, clampAlpha(la))
     }
 
     if (ja * wDefault > 0) {
         const layout = place(perspectiveRect(context.layout, lJl, rJl, 1 - nh, 1 + nh, travel))
-        draw(skin.judgmentLine, layout, zHi, ja * wDefault)
+        draw(skin.judgmentLine, layout, zHi, clampAlpha(ja * wDefault))
     }
     if (ja * wSingleLine > 0) {
         const halfThick = nh / JUDGE_LINE_BORDER_FACTOR / 2
         const layout = place(
             perspectiveRect(context.layout, lJl, rJl, 1 - halfThick, 1 + halfThick, travel),
         )
-        draw(skin.judgmentLine, layout, zSingle, ja * wSingleLine)
+        draw(skin.judgmentLine, layout, zSingle, clampAlpha(ja * wSingleLine))
     }
 }

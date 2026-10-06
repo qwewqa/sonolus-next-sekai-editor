@@ -302,7 +302,7 @@ test('custom and fallback stage borders interpolate width without fading or dupl
     }
 })
 
-test('overshooting eases keep camera, mask and style values within their ranges', () => {
+test('overshooting eases keep camera, mask and style values within their ranges, but not style blends', () => {
     const viewport = createViewport(1600, 900)
     const camera = (time: number, size: number, zoom: number) => ({
         time,
@@ -351,8 +351,54 @@ test('overshooting eases keep camera, mask and style values within their ranges'
         styled.judgeLineAlpha,
         styled.divisionLineAlpha,
         styled.fullWidth,
-        styled.judgeLineColor.progress,
-        styled.leftBorderStyle.progress,
     ])
         assert.equal(value, 1)
+    // As in the engine, blends overshoot and their weights are bounded where they are drawn.
+    assert.ok(styled.judgeLineColor.progress > 1)
+    assert.ok(styled.leftBorderStyle.progress > 1)
+})
+
+test('overshooting style blends draw with alphas in range and collapse borders instead of flipping them', () => {
+    const context = {
+        now: 0,
+        layout: createLayout(createViewport(1600, 900), defaultCameraInfo(), true),
+    }
+    const sprite = (): Sprite => ({ u0: 0, v0: 0, u1: 1, v1: 1 })
+    const border = sprite()
+    const judgment = {
+        background: sprite(),
+        center: sprite(),
+        edge: sprite(),
+        edgeLeft: sprite(),
+        gradient: sprite(),
+        singleLine: sprite(),
+    }
+    const skin: PreviewSkin = {
+        ...resolveSkin(() => undefined),
+        judgments: [judgment, { ...judgment, background: sprite() }],
+        stageBorder: border,
+        laneDivider: sprite(),
+        laneBackground: sprite(),
+    }
+    const draws: { sprite?: Sprite; quad: Quad; alpha: number }[] = []
+    drawDynamicStage(
+        context,
+        (sprite, quad, _z, alpha) => draws.push({ sprite, quad, alpha }),
+        skin,
+        {
+            ...getStageProps(stage(), 0),
+            width: 6,
+            laneAlpha: 1,
+            judgeLineAlpha: 1,
+            divisionLineAlpha: 1,
+            judgeLineColor: { start: 0, end: 1, progress: 1.3 },
+            division: { start: { size: 1, parity: 0 }, end: { size: 2, parity: 1 }, progress: 1.3 },
+            leftBorderStyle: { start: 0, end: 2, progress: 1.2 },
+            rightBorderStyle: { start: 0, end: 0, progress: 0 },
+        },
+    )
+    assert.ok(draws.length > 0)
+    for (const { alpha } of draws) assert.ok(alpha >= 0 && alpha <= 1, `${alpha}`)
+    // The left border would have negative width; only the right one is drawn.
+    assert.equal(draws.filter(({ sprite }) => sprite === border).length, 1)
 })
