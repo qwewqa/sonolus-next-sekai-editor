@@ -228,6 +228,25 @@ for (const { width, height, side, timeInStrip, compact } of [
                     ? box(clock).top + box(clock).height / 2 - (toggle.top + toggle.height / 2)
                     : undefined,
                 toggle: toggle.width,
+                // Steppers take touches over the track's full height and the gaps between them.
+                stepperHits: [...document.querySelectorAll('.transport-track button')].every(
+                    (button, index, buttons) => {
+                        const { left, right, top, bottom } = box(button)
+                        const x = (left + right) / 2
+                        const next = buttons[index + 1]
+                        const gap =
+                            next &&
+                            document.elementFromPoint(
+                                (right + box(next).left) / 2,
+                                (top + bottom) / 2,
+                            )
+                        return (
+                            document.elementFromPoint(x, top - 1.5) === button &&
+                            document.elementFromPoint(x, bottom + 1.5) === button &&
+                            (!next || gap === button || gap === next)
+                        )
+                    },
+                ),
             }
         })
         // Play is the frequent control; the steppers and the settings toggle,
@@ -238,6 +257,7 @@ for (const { width, height, side, timeInStrip, compact } of [
         expect(geometry.rows).toBe(1)
         expect(geometry.bar).toBe(52)
         expect(geometry.toggle).toBe(36)
+        expect(geometry.stepperHits).toBe(true)
         await expect(page.getByRole('button', { name: /^Step Size: 10 ms$/i })).toBeVisible({
             visible: compact,
         })

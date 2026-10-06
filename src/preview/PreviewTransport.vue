@@ -313,13 +313,20 @@ const stripStyle = computed(() => ({
 }
 
 /* Touch: Play, the frequent control, is 44 px in a 52 px strip; the steppers,
-   used less often, are 40 px. */
+   used less often, are drawn at 40 px but take touches across the track's full
+   44 px height and up to their neighbours. */
 .is-coarse .transport-play {
     @apply h-11 w-11;
 }
 
 .is-coarse .transport-track .transport-button {
-    @apply h-10;
+    @apply relative h-10;
+}
+
+.is-coarse .transport-track .transport-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px -1px;
 }
 
 .is-coarse .transport-step,
