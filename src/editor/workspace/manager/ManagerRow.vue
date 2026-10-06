@@ -1,3 +1,18 @@
+<script lang="ts">
+// The last two presses anywhere: a double click renames only when both hit the name.
+let presses: { target: EventTarget | null; x: number }[] = []
+window.addEventListener(
+    'pointerdown',
+    (event) => {
+        presses = [
+            presses.at(-1) ?? { target: null, x: 0 },
+            { target: event.target, x: event.clientX },
+        ]
+    },
+    true,
+)
+</script>
+
 <script setup lang="ts">
 import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 import ChevronIcon from '../ChevronIcon.vue'
@@ -270,7 +285,13 @@ const onNamePointerdown = (event: PointerEvent) => {
  * A double click renames the target only, so it never doubles as choosing a
  * new target; F2 and the menu rename any row.
  */
-const onNameDblclick = () => {
+const onNameDblclick = (event: MouseEvent) => {
+    const button = event.currentTarget as HTMLElement
+    // A folder's chevron, up to its label, only toggles.
+    const start = button.querySelector('.manager-label-box')?.getBoundingClientRect().left ?? 0
+    const onName = ({ target, x }: (typeof presses)[number]) =>
+        target instanceof Node && button.contains(target) && (!props.folder || x >= start)
+    if (presses.length < 2 || !presses.every(onName)) return
     // Folders are never the target; their double click toggles twice, then renames.
     if (props.renameLabel && (currentAtPress || props.folder)) emit('renameStart')
 }

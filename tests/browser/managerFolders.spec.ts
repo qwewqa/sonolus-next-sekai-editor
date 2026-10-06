@@ -583,6 +583,42 @@ test('New Folder adds and names a folder at the end', async ({ page }) => {
     expect(await tree(page)).toBe('Default Lead [Drums:]')
 })
 
+test('double clicks on a folder chevron only toggle it', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Outro']])
+    const name = folderRow(page, 'Verse').locator('.manager-name')
+    await folderRow(page, 'Verse').locator('.manager-chevron').dblclick()
+    await expect(name).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel(page).locator('.manager-rename')).toHaveCount(0)
+    // A second press on the label after one on the eye counts for neither.
+    const client = await page.context().newCDPSession(page)
+    for (const [locator, clickCount] of [
+        [folderRow(page, 'Verse').locator('.manager-eye'), 1],
+        [folderRow(page, 'Verse').locator('.manager-label'), 2],
+    ] as const) {
+        const box = (await locator.boundingBox())!
+        const point = {
+            x: box.x + box.width / 2,
+            y: box.y + box.height / 2,
+            button: 'left' as const,
+        }
+        await client.send('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            ...point,
+            clickCount,
+        })
+        await client.send('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            ...point,
+            clickCount,
+        })
+    }
+    await expect(name).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel(page).locator('.manager-rename')).toHaveCount(0)
+    // The label still renames.
+    await folderRow(page, 'Verse').locator('.manager-label').dblclick()
+    await expect(panel(page).locator('.manager-rename')).toBeFocused()
+})
+
 test('pickers group options by folder and the status bar names shared names by folder', async ({
     page,
 }) => {
@@ -704,6 +740,49 @@ test.describe('touch', () => {
         expect(parts.countInside).toBe(true)
         expect(parts.countWidth).toBeGreaterThan(0)
         await expect(page.getByText('1/4', { exact: true })).toBeInViewport()
+    })
+
+    test('double taps on a chevron or across controls never rename', async ({ page }) => {
+        await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Outro']])
+        await page.evaluate(() => {
+            window.editorTest.view.groupId = 1002 as never
+        })
+        const client = await page.context().newCDPSession(page)
+        // Two quick taps, the second where the first was or on another control.
+        const doubleTap = async (first: Locator, second = first) => {
+            const points = []
+            for (const locator of [first, second]) {
+                const box = (await locator.boundingBox())!
+                points.push({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
+            }
+            for (const point of points) {
+                await client.send('Input.dispatchTouchEvent', {
+                    type: 'touchStart',
+                    touchPoints: [point],
+                })
+                await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+                // Taps closer than 40ms are no double tap.
+                await page.waitForTimeout(80)
+            }
+            // Past the double-tap delay, so the next pair starts afresh.
+            await page.waitForTimeout(600)
+        }
+        const rename = panel(page).locator('.manager-rename')
+        const verse = folderRow(page, 'Verse')
+        await doubleTap(verse.locator('.manager-chevron'))
+        await expect(verse.locator('.manager-name')).toHaveAttribute('aria-expanded', 'true')
+        await expect(rename).toHaveCount(0)
+
+        // A tap on the eye and then the name is no double tap on the name.
+        await doubleTap(verse.locator('.manager-eye'), verse.locator('.manager-label'))
+        await expect(rename).toHaveCount(0)
+        const outro = entryRow(page, 'Outro')
+        await doubleTap(outro.locator('.manager-eye'), outro.locator('.manager-label'))
+        await expect(rename).toHaveCount(0)
+
+        // Two taps on the target's name still rename it.
+        await doubleTap(outro.locator('.manager-label'))
+        await expect(rename).toBeFocused()
     })
 
     test('a long press on a folder opens its menu', async ({ page }) => {
