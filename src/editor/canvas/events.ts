@@ -317,8 +317,6 @@ export const drawEvent = (
             ctx.globalAlpha *= 0.5
             line(ctx, -6, y, 6, y)
             ctx.globalAlpha *= 2
-            // A time scale label reaching the beat column takes its place; both are 0.5 high.
-            if (context.timeScaleLabelYs?.right.some((other) => Math.abs(other - y) < 0.5)) break
             drawText(
                 context,
                 formatBpm(entity.bpm),

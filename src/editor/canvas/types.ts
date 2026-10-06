@@ -32,6 +32,4 @@ export type EditorDrawContext = {
     figureMiddle: number
     /** Whether another object is selected or hovered, for labels that stand for several. */
     isHighlighted?: (entity: Entity) => boolean
-    /** Time scale labels in the time and beat columns, which BPM labels give way to. */
-    timeScaleLabelYs?: EdgeLabelYs
 }

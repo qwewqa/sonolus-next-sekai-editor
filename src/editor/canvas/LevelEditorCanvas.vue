@@ -176,7 +176,7 @@ watchEffect(
             }
             // Measured with the frame's font and bounds, as the labels are drawn.
             const edgeLabelYs = timeScaleEdgeLabelYs(base, entities)
-            const context = { ...base, timeScaleLabelYs: edgeLabelYs }
+            const context = base
             waveform.draw(context, currentWaveform, offset, currentTimes)
             drawGrid(
                 context,

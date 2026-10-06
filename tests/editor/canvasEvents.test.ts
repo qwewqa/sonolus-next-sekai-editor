@@ -766,7 +766,7 @@ test('labels that turn inward or sit on another lane leave the columns alone', (
     assert.ok(stacked.texts.includes('00:02'))
 })
 
-test('a BPM label gives way to a time scale label reaching the beat column', () => {
+test('a BPM label stays drawn where a time scale label reaches the beat column', () => {
     const { context, canvas } = makeContext({
         bpms: [
             { beat: 0, bpm: 120 },
@@ -778,13 +778,13 @@ test('a BPM label gives way to a time scale label reaching the beat column', () 
     const steps = [...context.state.store.grid.timeScale.values()].flatMap((bucket) =>
         [...bucket].map((entity) => ({ entity, part: 'marker' as const })),
     )
-    const timeScaleLabelYs = timeScaleEdgeLabelYs(context, steps)
-    const drawn = { ...context, timeScaleLabelYs }
-    drawEvent(drawn, { type: 'bpm', beat: 6, bpm: 90, meter: 4 }, false)
-    drawEvent(drawn, { type: 'bpm', beat: 8, bpm: 60, meter: 4 }, false)
+    // The overlap stays visible, so the time scale can be moved clear of it.
+    assert.ok(timeScaleEdgeLabelYs(context, steps).right.length > 0)
+    drawEvent(context, { type: 'bpm', beat: 6, bpm: 90, meter: 4 }, false)
+    drawEvent(context, { type: 'bpm', beat: 8, bpm: 60, meter: 4 }, false)
     assert.deepEqual(
         canvas.labels.map(({ text }) => text),
-        ['60'],
+        ['90', '60'],
     )
 })
 
