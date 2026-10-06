@@ -174,7 +174,7 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
     await save.click()
     await save.dispatchEvent('keydown', { key: 'k', ctrlKey: true, altKey: true })
     await expect(save).toHaveText(
-        'Ctrl+Alt+K types characters on many keyboards; press another key',
+        'Ctrl+Alt+K types characters on many keyboards. Press another key.',
     )
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
 })

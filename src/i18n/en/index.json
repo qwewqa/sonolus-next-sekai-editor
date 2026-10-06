@@ -1182,7 +1182,7 @@
                 "clear": "Click again to remove this shortcut",
                 "unassigned": "Unassigned",
                 "reserved": "{0} is reserved by the browser or system. Press another key.",
-                "altGraph": "{0} types characters on many keyboards; press another key",
+                "altGraph": "{0} types characters on many keyboards. Press another key.",
                 "alsoRuns": "Also runs {0}",
                 "browserReload": "Replaces the browser's reload shortcut",
                 "browserFind": "Replaces the browser's find shortcut"
