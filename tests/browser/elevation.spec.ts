@@ -1497,3 +1497,33 @@ test('keyboard panning uses the active elevation pane width after resizing the s
     expect(await notes(page)).toEqual(initial)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
+
+test('the snap select carries a chevron clear of its value at every header width', async ({
+    page,
+}) => {
+    await page.keyboard.press('t')
+    const snap = page.getByRole('combobox', { name: 'Elevation Snapping', exact: true })
+    for (const width of [1600, 390, 300]) {
+        await page.setViewportSize({ width, height: 844 })
+        await settle(page)
+        const { pill, chevron, text } = await snap.evaluate((select: HTMLSelectElement) => {
+            const box = (element: Element) => element.getBoundingClientRect().toJSON() as DOMRect
+            const icon = select.parentElement!.querySelector('svg')!
+            // The value's width, measured in the select's own font.
+            const context = document.createElement('canvas').getContext('2d')!
+            context.font = getComputedStyle(select).font
+            const value = select.selectedOptions[0]!.textContent!.trim()
+            const pill = box(select)
+            const left = pill.left + parseFloat(getComputedStyle(select).paddingLeft)
+            return {
+                pill,
+                chevron: box(icon),
+                text: { left, right: left + context.measureText(value).width },
+            }
+        })
+        expect(chevron.left, `${width}`).toBeGreaterThanOrEqual(text.right + 4)
+        expect(chevron.right, `${width}`).toBeLessThanOrEqual(pill.right - 8)
+        expect(chevron.top, `${width}`).toBeGreaterThanOrEqual(pill.top)
+        expect(chevron.bottom, `${width}`).toBeLessThanOrEqual(pill.bottom)
+    }
+})

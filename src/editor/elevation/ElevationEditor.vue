@@ -1088,22 +1088,26 @@ onUnmounted(() => {
                     </div>
                     <label class="elevation-snap"
                         ><span class="elevation-label">{{ i18n.elevation.snap }}</span
-                        ><select
-                            v-model="settings.elevationSnap"
-                            :class="headerField"
-                            class="cursor-pointer focus-visible:ring-2"
-                            :aria-label="i18n.elevation.snapping"
-                        >
-                            <option :value="0">{{ i18n.elevation.off }}</option>
-                            <option
-                                v-for="division in [1, 2, 4, 8, 16, 32, 64]"
-                                :key="division"
-                                :value="division"
+                        ><span class="elevation-select group"
+                            ><select
+                                v-model="settings.elevationSnap"
+                                :class="headerField"
+                                class="cursor-pointer focus-visible:ring-2"
+                                :aria-label="i18n.elevation.snapping"
                             >
-                                1/{{ division }}
-                            </option>
-                        </select></label
-                    >
+                                <option :value="0">{{ i18n.elevation.off }}</option>
+                                <option
+                                    v-for="division in [1, 2, 4, 8, 16, 32, 64]"
+                                    :key="division"
+                                    :value="division"
+                                >
+                                    1/{{ division }}
+                                </option></select
+                            ><span
+                                class="elevation-select-icon group-active:text-on-accent"
+                                aria-hidden="true"
+                                ><ChevronIcon direction="down" /></span></span
+                    ></label>
                 </div>
                 <button
                     type="button"
@@ -1231,7 +1235,26 @@ onUnmounted(() => {
 }
 
 .elevation-snap .elevation-field {
-    width: 4rem;
+    width: 5rem;
+    padding-right: 1.75rem;
+}
+
+/* A select carries a trailing chevron inside its pill, as form fields do. */
+.elevation-select {
+    position: relative;
+    display: flex;
+    min-width: 0;
+}
+
+.elevation-select-icon {
+    pointer-events: none;
+    position: absolute;
+    inset-block: 0;
+    right: 0.75rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    color: theme('colors.fg');
 }
 
 @container (max-width: 19rem) {

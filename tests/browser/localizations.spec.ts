@@ -72,20 +72,22 @@ for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
                     }),
                 ).toBe(true)
             }
-            const labelBounds = await header.locator('label span').evaluateAll((labels) =>
-                labels.map((label) => {
-                    const bounds = label.getBoundingClientRect()
-                    const input = label.nextElementSibling!.getBoundingClientRect()
-                    return {
-                        right: bounds.right,
-                        bottom: bounds.bottom,
-                        inputLeft: input.x,
-                        inputTop: input.y,
-                        width: label.scrollWidth,
-                        visibleWidth: label.clientWidth,
-                    }
-                }),
-            )
+            const labelBounds = await header
+                .locator('label .elevation-label')
+                .evaluateAll((labels) =>
+                    labels.map((label) => {
+                        const bounds = label.getBoundingClientRect()
+                        const input = label.nextElementSibling!.getBoundingClientRect()
+                        return {
+                            right: bounds.right,
+                            bottom: bounds.bottom,
+                            inputLeft: input.x,
+                            inputTop: input.y,
+                            width: label.scrollWidth,
+                            visibleWidth: label.clientWidth,
+                        }
+                    }),
+                )
             for (const label of labelBounds) {
                 expect(label.right <= label.inputLeft || label.bottom <= label.inputTop).toBe(true)
                 expect(label.width).toBeLessThanOrEqual(label.visibleWidth)
