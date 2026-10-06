@@ -1582,3 +1582,57 @@ test('a zero-width note is outlined as wide as its placeholder', async ({ page }
     // The placeholder is 0.2 lanes wide, as on the main canvas.
     expect(result.widths.at(-1)).toBeCloseTo(0.2 * result.laneScale + 6, 6)
 })
+
+test('header controls take keys as dock controls do', async ({ page }) => {
+    const tool = () =>
+        page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            return toolName.value
+        })
+    await open(page)
+    const before = await tool()
+    await page.evaluate(async () => {
+        const { history, store, appImport } = window.editorTest
+        const { editSelectedEditableEntities } = await appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        editSelectedEditableEntities({ isCritical: true })
+        const log: boolean[] = []
+        ;(window as unknown as { keyLog: boolean[] }).keyLog = log
+        addEventListener('keydown', (event) => {
+            if (!['Control', 'Meta', 'Shift', 'Alt'].includes(event.key))
+                log.push(event.defaultPrevented)
+        })
+    })
+    const canUndo = () => page.evaluate(() => window.editorTest.history.canUndo.value)
+    expect(await canUndo()).toBe(true)
+
+    // A select keeps plain keys, and editing chords pass.
+    const snap = page.getByRole('combobox', { name: 'Elevation Snapping', exact: true })
+    await snap.focus()
+    await page.keyboard.press('s')
+    expect(await tool()).toBe(before)
+    await page.keyboard.press('Control+z')
+    expect(await canUndo()).toBe(false)
+    expect(
+        await page.evaluate(() => (window as unknown as { keyLog: boolean[] }).keyLog.at(-1)),
+    ).toBe(true)
+
+    // A pointer click returns keys to the editor.
+    const next = page.getByRole('button', { name: 'Next Beat', exact: true })
+    await next.click()
+    await expect(next).not.toBeFocused()
+    await page.keyboard.press('s')
+    expect(await tool()).toBe('slide')
+
+    // Escape on a header control still closes the editor that replaces the chart.
+    await snap.focus()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.elevation-editor')).toHaveCount(0)
+})

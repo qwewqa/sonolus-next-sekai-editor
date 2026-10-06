@@ -240,3 +240,9 @@ export const workspaceDockAttribute = 'data-workspace-dock'
 
 export const isInWorkspaceDock = (element: Element | null) =>
     !!element?.closest(`[${workspaceDockAttribute}]`)
+
+/** Marks chrome outside docks whose controls take keys as dock controls do. */
+export const dockKeysAttribute = 'data-dock-keys'
+
+export const takesDockKeys = (element: Element | null) =>
+    !!element?.closest(`[${workspaceDockAttribute}], [${dockKeysAttribute}]`)

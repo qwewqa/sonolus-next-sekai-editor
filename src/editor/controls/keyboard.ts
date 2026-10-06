@@ -2,7 +2,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
 import { settings } from '../../settings'
 import { commands } from '../commands'
-import { isInWorkspaceDock } from '../workspace'
+import { takesDockKeys } from '../workspace'
 import {
     blocksDefault,
     isApplePlatform,
@@ -61,7 +61,7 @@ const onKeydown = (event: KeyboardEvent) => {
     // Tool dialogs float over the chart, so only their fields and selects hold keys that way.
     const inDialog = isInToolDialog(active)
     if (
-        isInWorkspaceDock(active) ||
+        takesDockKeys(active) ||
         (inDialog && (isTextEntry(active) || active instanceof HTMLSelectElement))
     ) {
         if (!commandChord || event.defaultPrevented || isTextEntry(active)) return

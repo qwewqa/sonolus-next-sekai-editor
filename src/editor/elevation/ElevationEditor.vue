@@ -53,7 +53,7 @@ import { fromDisplayedBeat, toDisplayedBeat } from '../beatDisplay'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
 import { scopeLookup } from '../scope'
 import { isScopeReduced } from '../scopeRules'
-import { isInWorkspaceDock } from '../workspace'
+import { dockKeysAttribute, isInWorkspaceDock } from '../workspace'
 import { alignLane, view, focusViewAtBeat } from '../view'
 import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
 import {
@@ -675,6 +675,10 @@ const beatField = computed({
             changeBeat(fromDisplayedBeat(value))
     },
 })
+// Pointer clicks on header buttons return keyboard shortcuts to the editor, as in docks.
+const blurAfterPointer = (event: MouseEvent) => {
+    if (event.detail > 0 && event.target instanceof Element) event.target.closest('button')?.blur()
+}
 const onKeydown = (event: KeyboardEvent) => {
     // An open drawer takes Escape first.
     if (modals.length || event.defaultPrevented) return
@@ -1045,8 +1049,9 @@ onUnmounted(() => {
         <EditorToolModalHost pane="elevation" />
         <div
             ref="header"
+            :[dockKeysAttribute]="''"
             class="elevation-header absolute inset-x-0 top-0 isolate border-b border-white/10 bg-preview text-sm text-white/80"
-            @keydown.stop
+            @click="blurAfterPointer"
         >
             <div class="elevation-header-layout px-4">
                 <span
