@@ -21,7 +21,7 @@ export const setRecoveryAside = (text: string): Exclude<UnreadableRecovery, 'ear
     return 'aside'
 }
 
-/** Removes a recovery the user downloaded or discarded. */
+/** Removes a recovery the user discarded. */
 export const removeRecovery = (kept: UnreadableRecovery) => {
     storageRemove(
         kept === 'aside' || kept === 'earlier' ? unreadableRecoveryKey : 'autoSave.levelData',

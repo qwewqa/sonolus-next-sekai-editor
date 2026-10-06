@@ -112,7 +112,7 @@ export const useAutoSave = () => {
             document.removeEventListener('visibilitychange', onVisibilityChange)
         })
 
-    /** Offers an unreadable recovery; true once it is downloaded or discarded. */
+    /** Offers an unreadable recovery; true once it is discarded. */
     const offerUnreadable = async (text: string, kept: UnreadableRecovery) => {
         if (!(await showModal(UnreadableRecoveryModal, { text, kept }))) return false
         removeRecovery(kept)

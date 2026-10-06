@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { i18n } from '../../i18n'
 import BaseModal from '../../modals/BaseModal.vue'
 import { toRecoveryFile, type UnreadableRecovery } from './unreadable'
@@ -10,10 +10,12 @@ const props = defineProps<{
     kept: UnreadableRecovery
 }>()
 
-const emit = defineEmits<{
-    /** Download or Discard removes the stored copy; closing otherwise keeps it. */
-    close: [result?: 'download' | 'discard']
+defineEmits<{
+    /** Only Discard removes the stored copy: browsers never confirm a download saved. */
+    close: [result?: 'discard']
 }>()
+
+const downloaded = ref(false)
 
 const paragraphs = computed(() => {
     const strings = i18n.value.history.autoSave.unreadable
@@ -32,7 +34,7 @@ const paragraphs = computed(() => {
 const download = () => {
     const { blob, name } = toRecoveryFile(props.text)
     saveAs(blob, name)
-    emit('close', 'download')
+    downloaded.value = true
 }
 </script>
 
@@ -40,6 +42,9 @@ const download = () => {
     <BaseModal :title="i18n.history.autoSave.title" @close="$emit('close')">
         <div class="flex flex-col gap-2">
             <p v-for="(paragraph, index) in paragraphs" :key="index">{{ paragraph }}</p>
+            <p v-if="downloaded" role="status">
+                {{ i18n.history.autoSave.unreadable.downloaded }}
+            </p>
         </div>
 
         <div class="flex flex-wrap justify-end gap-2">

@@ -925,12 +925,13 @@
       "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet.",
       "unreadable": {
         "message": "La partition non sauvegardée de votre dernière session n’a pas pu être restaurée. Elle provient peut-être d’une version plus récente de l’éditeur, ou elle a été stockée de façon incomplète.",
-        "setAside": "Elle a été mise de côté : vos nouvelles modifications ne la remplaceront pas. Elle vous sera proposée à nouveau tant que vous ne l’aurez pas téléchargée ou supprimée.",
-        "keptInPlace": "La sauvegarde automatique est suspendue dans cet onglet : vos nouvelles modifications ne la remplaceront pas. Téléchargez-la pour en garder une copie, ou supprimez-la.",
-        "waiting": "Une partition plus ancienne qui n’a pas pu être restaurée est toujours mise de côté : celle-ci reste donc en place, et la sauvegarde automatique est suspendue dans cet onglet jusqu’à ce que vous la téléchargiez ou la supprimiez.",
+        "setAside": "Elle a été mise de côté : vos nouvelles modifications ne la remplaceront pas. Elle est conservée, et vous sera proposée à chaque démarrage de l’éditeur, jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
+        "keptInPlace": "La sauvegarde automatique est suspendue dans cet onglet : vos nouvelles modifications ne la remplaceront pas. Elle est conservée jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
+        "waiting": "Une partition plus ancienne qui n’a pas pu être restaurée est toujours mise de côté : celle-ci reste donc en place, et la sauvegarde automatique est suspendue dans cet onglet jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
         "earlier": "Une partition non sauvegardée qui n’a pas pu être restaurée lors d’une session précédente est toujours mise de côté.",
-        "earlierHint": "Téléchargez-la pour en garder une copie, ou supprimez-la. Choisissez OK pour qu’elle vous soit proposée à nouveau la prochaine fois.",
+        "earlierHint": "Elle est conservée, et vous sera proposée à chaque démarrage de l’éditeur, jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
         "download": "Télécharger",
+        "downloaded": "Une copie a été téléchargée. La partition reste conservée jusqu’à ce que vous la supprimiez.",
         "discard": "Supprimer"
       }
     },

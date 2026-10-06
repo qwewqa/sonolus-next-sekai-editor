@@ -608,9 +608,11 @@ for (const { label, stored, file } of [
         await expect.poll(async () => (await stores()).recovery).not.toBeNull()
         expect((await stores()).aside).toBe(stored)
 
-        // Offered again on the next start; downloading it removes the stored copy.
+        // Offered again on the next start. Browsers never confirm a download saved,
+        // so downloading keeps the stored copy; only Discard removes it.
         await page.reload()
         await expect(dialog).toContainText('is still set aside')
+        await expect(dialog).toContainText('until you discard it')
         const downloading = page.waitForEvent('download')
         await dialog.getByRole('button', { name: 'Download' }).click()
         const download = await downloading
@@ -618,6 +620,17 @@ for (const { label, stored, file } of [
         const bytes = readFileSync((await download.path())!)
         if (file.gzip) expect(JSON.parse(gunzipSync(bytes).toString())).toEqual(futureLevel)
         else expect(bytes.toString()).toBe(stored)
+        await expect(dialog.getByRole('status')).toHaveText(
+            'A copy was downloaded. The chart is still kept until you discard it.',
+        )
+        expect((await stores()).aside).toBe(stored)
+        await dialog.getByRole('button', { name: 'OK' }).click()
+        await expect(dialog).toHaveCount(0)
+        expect((await stores()).aside).toBe(stored)
+
+        await page.reload()
+        await dialog.getByRole('button', { name: 'Download' }).click()
+        await dialog.getByRole('button', { name: 'Discard' }).click()
         await expect(dialog).toHaveCount(0)
         expect((await stores()).aside).toBeNull()
     })
