@@ -157,3 +157,27 @@ test('a tool dialog keeps the members chosen in each group', async ({ page }) =>
     })
     await expect(undo).toBeVisible()
 })
+
+test('flyout hints show named keys readably and punctuation as large as letters', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['speedUp', 'scrollLeft', 'stop', 'select']]
+    })
+    await shown(page)
+        .and(page.getByTitle('Select', { exact: true }))
+        .hover()
+    const hint = (title: string) =>
+        toolbar(page).getByTitle(title, { exact: true }).locator('span').last()
+    await expect(hint('Scroll Left')).toHaveText('←')
+    await expect(hint('Stop')).toHaveText('Backspace')
+    const style = (title: string) =>
+        hint(title).evaluate((element) => {
+            const { fontSize, fontWeight } = getComputedStyle(element)
+            return { size: parseFloat(fontSize), weight: Number(fontWeight) }
+        })
+    const letter = await style('Select')
+    const punctuation = await style('Increase Playback Speed')
+    expect(punctuation.size).toBeGreaterThan(letter.size)
+    expect(punctuation.weight).toBeGreaterThanOrEqual(700)
+})

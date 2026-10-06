@@ -144,7 +144,7 @@ test('shortcut capture waits past modifiers and records the chord they make', as
     for (const [key, saved, shown] of [
         ['Meta+Shift+KeyS', 'Mod+Shift+s', 'Ctrl+Shift+S'],
         ['Alt+KeyA', 'Alt+a', 'Alt+A'],
-        ['Shift+ArrowUp', 'Shift+ArrowUp', 'Shift+ArrowUp'],
+        ['Shift+ArrowUp', 'Shift+ArrowUp', 'Shift+↑'],
         ['Control+Space', 'Mod+ ', 'Ctrl+Space'],
         // Shift alone stays part of the character, as before.
         ['Shift+KeyU', 'U', 'Shift+U'],

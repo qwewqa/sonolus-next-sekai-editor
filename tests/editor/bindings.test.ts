@@ -220,9 +220,37 @@ test('bindings read as Ctrl chords, or Apple menu symbols', () => {
     assert.equal(formatBinding('Mod+s', false), 'Ctrl+S')
     assert.equal(formatBinding('Mod+Shift+s', false), 'Ctrl+Shift+S')
     assert.equal(formatBinding('Mod+ ', false), 'Ctrl+Space')
-    assert.equal(formatBinding('Alt+ArrowUp', false), 'Alt+ArrowUp')
+    assert.equal(formatBinding('Alt+ArrowUp', false), 'Alt+↑')
     assert.equal(formatBinding('Mod++', false), 'Ctrl++')
     assert.equal(formatBinding('Mod+Alt+Shift+s', true), '⌥⇧⌘S')
     assert.equal(formatBinding('s', true), 'S')
     assert.equal(formatBinding(undefined, false), undefined)
+})
+
+test('named keys read as on the keycap, for display only', () => {
+    const names: [string, string][] = [
+        ['ArrowLeft', '←'],
+        ['ArrowRight', '→'],
+        ['ArrowUp', '↑'],
+        ['ArrowDown', '↓'],
+        ['PageUp', 'Page Up'],
+        ['PageDown', 'Page Down'],
+        ['Home', 'Home'],
+        ['End', 'End'],
+        ['Escape', 'Esc'],
+        ['Delete', 'Delete'],
+        ['Backspace', 'Backspace'],
+        ['Enter', 'Enter'],
+        ['F5', 'F5'],
+    ]
+    for (const [key, shown] of names) {
+        assert.equal(formatBinding(key, false), shown)
+        assert.equal(formatBinding(`Mod+Shift+${key}`, false), `Ctrl+Shift+${shown}`)
+        assert.equal(formatBinding(`Mod+${key}`, true), `⌘${shown}`)
+    }
+    // Stored and matched as the DOM names them.
+    assert.equal(bindingOf(press('ArrowLeft'), false), 'ArrowLeft')
+    assert.deepEqual(matchBindings({ scrollLeft: 'ArrowLeft' }, press('ArrowLeft'), false).names, [
+        'scrollLeft',
+    ])
 })

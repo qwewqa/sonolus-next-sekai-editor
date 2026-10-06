@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { settings } from '../../settings'
-import { formatShortcut } from '../controls/bindings'
+import { formatShortcut, isPunctuationShortcut } from '../controls/bindings'
 import { commands, type CommandName } from '../commands'
 import { isCoarsePointer } from '../workspace'
 
@@ -53,7 +53,16 @@ const shortcut = computed(() =>
         />
         <template v-if="showLabel">
             <span class="ml-2 flex-grow text-left text-sm">{{ title }}</span>
-            <span v-if="shortcut" class="ml-4 text-xs text-fg/80">{{ shortcut }}</span>
+            <span
+                v-if="shortcut"
+                class="ml-4"
+                :class="
+                    isPunctuationShortcut(shortcut)
+                        ? 'text-sm font-bold leading-4'
+                        : 'text-xs text-fg/80'
+                "
+                >{{ shortcut }}</span
+            >
         </template>
     </button>
 </template>

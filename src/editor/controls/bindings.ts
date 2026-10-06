@@ -176,19 +176,32 @@ export const isReservedChord = (input: KeyInput, apple: boolean) => {
     return ['n', 't', 'w', 'tab', 'escape'].includes(key)
 }
 
+// Keys whose DOM names read poorly; shown only, never stored.
+const keyNames = new Map([
+    [' ', 'Space'],
+    ['ArrowLeft', '←'],
+    ['ArrowRight', '→'],
+    ['ArrowUp', '↑'],
+    ['ArrowDown', '↓'],
+    ['PageUp', 'Page Up'],
+    ['PageDown', 'Page Down'],
+    ['Escape', 'Esc'],
+])
+
 /** Readable text for a binding; Apple platforms use the menu symbols. */
 export const formatBinding = (binding: string | undefined, apple: boolean) => {
     if (binding === undefined || binding === '') return binding
     const chord = parseChord(binding)
     if (!chord) {
         // Letters show as on the keycap; Shift is named, so a capital is never ambiguous.
-        if (binding === ' ') return 'Space'
+        const named = keyNames.get(binding)
+        if (named) return named
         const upper = binding.toUpperCase()
         if (!isLetter(binding) || upper.length !== 1) return binding
         return binding === upper ? `Shift+${binding}` : upper
     }
     const key =
-        chord.key === ' ' ? 'Space' : isLetter(chord.key) ? chord.key.toUpperCase() : chord.key
+        keyNames.get(chord.key) ?? (isLetter(chord.key) ? chord.key.toUpperCase() : chord.key)
     if (apple)
         return `${chord.alt ? '⌥' : ''}${chord.shift ? '⇧' : ''}${chord.mod ? '⌘' : ''}${key}`
     return [chord.mod && 'Ctrl', chord.alt && 'Alt', chord.shift && 'Shift', key]
@@ -202,6 +215,9 @@ export const isApplePlatform = () => {
     const data = (navigator as { userAgentData?: { platform?: string } }).userAgentData
     return /mac|iphone|ipad|ipod/i.test(data?.platform ?? navigator.platform)
 }
+
+/** A shown shortcut that is one punctuation mark, which needs more size and weight to read. */
+export const isPunctuationShortcut = (shortcut: string) => /^[!-/:-@[-`{-~]$/.test(shortcut)
 
 /** A binding as this device shows it. */
 export const formatShortcut = (binding: string | undefined) =>

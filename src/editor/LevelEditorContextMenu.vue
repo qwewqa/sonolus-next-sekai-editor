@@ -10,7 +10,12 @@ import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
-import { formatShortcut, isApplePlatform, matchBindings } from './controls/bindings'
+import {
+    formatShortcut,
+    isApplePlatform,
+    isPunctuationShortcut,
+    matchBindings,
+} from './controls/bindings'
 import DeleteIcon from './commands/reset/ResetIcon.vue'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
@@ -327,9 +332,16 @@ onUnmounted(() => {
                                 aria-hidden="true"
                             />
                             <span class="flex-1">{{ title }}</span>
-                            <span v-if="shortcut" class="text-xs text-fg/80" aria-hidden="true">{{
-                                shortcut
-                            }}</span>
+                            <span
+                                v-if="shortcut"
+                                :class="
+                                    isPunctuationShortcut(shortcut)
+                                        ? 'text-sm font-bold leading-4'
+                                        : 'text-xs text-fg/80'
+                                "
+                                aria-hidden="true"
+                                >{{ shortcut }}</span
+                            >
                         </button>
                     </div>
                 </template>
