@@ -12,6 +12,7 @@ import { i18n } from '../../../i18n'
 import { serializeEditorMetadata } from '../../../levelData/editorMetadata'
 import { serializeToLevelDataEntities } from '../../../levelData/entities/serialize'
 import type { Entity, EntityOfType, EntityType } from '../../../state/entities'
+import { inStoredOrder } from '../../../state/operations/transformSelection'
 import { createStore } from '../../../state/store/creates'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -100,8 +101,13 @@ const getAnchor = (entities: Entity[], x: number, y: number) => {
     }
 }
 
+// A same-beat pair keeps its stored order, whatever the selection order.
 const getEntities = <T extends EntityType>(entities: Entity[], type: T) =>
-    entities.filter((entity): entity is EntityOfType<T> => entity.type === type)
+    inStoredOrder(
+        state.value,
+        entities.filter((entity): entity is EntityOfType<T> => entity.type === type),
+        (entity) => entity,
+    )
 
 const getSlides = (entities: Entity[]) => {
     const selectedNotes = entities.filter((entity) => entity.type === 'note')

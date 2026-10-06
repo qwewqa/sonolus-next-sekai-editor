@@ -20,6 +20,7 @@ import { removeStageStyleEventJoint } from '../../../state/mutations/events/stag
 import { removeStageTransformEventJoint } from '../../../state/mutations/events/stage/transform.ts'
 import { removeNote } from '../../../state/mutations/slides/note'
 import { removeTimeScale } from '../../../state/mutations/timeScale'
+import { inStoredOrder } from '../../../state/operations/transformSelection'
 import { createStore } from '../../../state/store/creates'
 import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
@@ -111,8 +112,13 @@ export const cut: Command = {
     },
 }
 
+// A same-beat pair keeps its stored order, whatever the selection order.
 const getEntities = <T extends EntityType>(entities: Entity[], type: T) =>
-    entities.filter((entity): entity is EntityOfType<T> => entity.type === type)
+    inStoredOrder(
+        state.value,
+        entities.filter((entity): entity is EntityOfType<T> => entity.type === type),
+        (entity) => entity,
+    )
 
 const getSlides = (entities: Entity[]) => {
     const selectedNotes = entities.filter((entity) => entity.type === 'note')

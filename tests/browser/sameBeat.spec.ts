@@ -308,6 +308,33 @@ test.describe('moving and pasting a pair keeps both', () => {
             if (kind === 'bpm') expect(after.bpmIntegrals).toEqual([...original.bpm, ...pair])
         })
     }
+
+    // Time scales and events; same-beat BPM pairs are not valid charts.
+    for (const kind of ['timeScale', 'cameraEventJoint'] as const)
+        for (const command of ['copy', 'cut'] as const)
+            test(`${kind}: ${command} of a pair selected in reverse pastes it in order`, async ({
+                page,
+            }) => {
+                await select(page, kind, [1, 2], true)
+                await page.evaluate(async (command) => {
+                    const { appImport } = window.editorTest
+                    const { commands } = await appImport<
+                        typeof import('../../src/editor/commands')
+                    >('/src/editor/commands/index.ts')
+                    const { pasteAtPosition } = await appImport<
+                        typeof import('../../src/editor/tools/paste')
+                    >('/src/editor/tools/paste/index.ts')
+                    await commands[command].execute()
+                    await pasteAtPosition(0, 4, { ctrl: false, shift: false })
+                }, command)
+                const after = await exported(page)
+                // Cut takes the pair from beat 4; both paste it at 8, in its order.
+                const kept =
+                    command === 'cut'
+                        ? original[kind].filter((_, index) => index !== 1 && index !== 2)
+                        : original[kind]
+                expect(after[kind]).toEqual([...kept, 1, 2])
+            })
 })
 
 test('a time scale moved into a group goes after the ones already at its beat', async ({
