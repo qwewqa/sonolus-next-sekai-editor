@@ -523,7 +523,7 @@
                 "move": "Drag 1 time scale to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "markers": "Diamond markers use the Scroll transition. Hollow markers on dotted lines hide notes.",
-                "ease": "The curve beside the value shows the ease toward the next change in the group. It is faded when the speed simply jumps: Step In, the last change, or a change to the same value."
+                "ease": "The curve beside the value shows the ease toward the next change in the group. It is faded when the speed simply jumps: None, Step In, the last change, or a change to the same value."
             },
             "cameraEventTool": {
                 "title": "Camera Event Tool",
