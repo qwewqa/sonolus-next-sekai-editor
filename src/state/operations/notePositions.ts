@@ -1,6 +1,6 @@
 import type { State } from '..'
 import { attachEasedFrac, buildPreviewChart } from '../../preview/engine/chart'
-import { getStagePropsFrom } from '../../preview/engine/stage'
+import { getStageProps } from '../../preview/engine/stage'
 import type { NoteEntity } from '../entities/slides/note'
 
 export const getMaterializedNotePositions = (
@@ -24,7 +24,7 @@ export const getMaterializedNotePositions = (
         const props = (index: number) => {
             const stage = chart.stages[index]
             return stage
-                ? getStagePropsFrom(stage, compiled.targetTime)
+                ? getStageProps(stage, compiled.targetTime)
                 : { pivotLane: 0, elevation: 0 }
         }
         const head = compiled.attachHead

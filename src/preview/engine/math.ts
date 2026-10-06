@@ -127,15 +127,9 @@ export const ease = (easeType: EaseTypeValue, x: number): number =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     easeFunctions[easeType]!(x)
 
-// sekai/lib/ease.py event_progress
-export const eventProgress = (
-    easeType: EaseTypeValue,
-    t: number,
-    tA: number,
-    tB: number,
-    leftLimit: boolean,
-) =>
-    leftLimit && easeType === EaseType.inOutStep
+// sekai/lib/ease.py event_progress at the left limit
+export const eventProgress = (easeType: EaseTypeValue, t: number, tA: number, tB: number) =>
+    easeType === EaseType.inOutStep
         ? t <= (tA + tB) / 2
             ? 0
             : 1

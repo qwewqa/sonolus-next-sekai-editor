@@ -96,7 +96,8 @@ const snapDividerThicknessToScreenPixels = (context: PreviewFrameContext, quad: 
     return { bl, tl, tr, br }
 }
 
-const findEvent = (events: { time: number }[], t: number, leftLimit: boolean) => {
+// The last event before t.
+const findEvent = (events: { time: number }[], t: number) => {
     let lo = 0
     let hi = events.length - 1
     let result = -1
@@ -104,7 +105,7 @@ const findEvent = (events: { time: number }[], t: number, leftLimit: boolean) =>
         const mid = (lo + hi) >> 1
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const time = events[mid]!.time
-        if (leftLimit ? time < t : time <= t) {
+        if (time < t) {
             result = mid
             lo = mid + 1
         } else {
@@ -117,19 +118,19 @@ const findEvent = (events: { time: number }[], t: number, leftLimit: boolean) =>
 const queryEvents = <T extends { time: number; ease: EaseTypeValue }>(
     events: T[],
     t: number,
-    leftLimit: boolean,
 ): [T | undefined, T | undefined, number] => {
-    const index = findEvent(events, t, leftLimit)
+    const index = findEvent(events, t)
     const a = events[index]
     const b = events[index + 1]
 
     if (!a) return [undefined, b, 0]
     if (!b || b.time <= a.time) return [a, undefined, 0]
 
-    return [a, b, eventProgress(a.ease, t, a.time, b.time, leftLimit)]
+    return [a, b, eventProgress(a.ease, t, a.time, b.time)]
 }
 
-const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): StageProps => {
+// Play and Watch use the left limit.
+export const getStageProps = (stage: PreviewStage, t: number): StageProps => {
     const props: StageProps = {
         lane: 0,
         width: 0,
@@ -154,7 +155,7 @@ const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): Stage
         elevation: 0,
     }
 
-    const [maskA, maskB, maskProgress] = queryEvents(stage.masks, t, leftLimit)
+    const [maskA, maskB, maskProgress] = queryEvents(stage.masks, t)
     if (maskA) {
         props.lane = maskA.lane
         props.width = maskA.size
@@ -170,7 +171,7 @@ const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): Stage
         props.maskNotes = maskB.maskNotes
     }
 
-    const [pivotA, pivotB, pivotProgress] = queryEvents(stage.pivots, t, leftLimit)
+    const [pivotA, pivotB, pivotProgress] = queryEvents(stage.pivots, t)
     if (pivotA) {
         props.pivotLane = pivotA.lane
         props.division.start = {
@@ -199,7 +200,7 @@ const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): Stage
         props.yOffset = pivotB.yOffset
     }
 
-    const [styleA, styleB, styleProgress] = queryEvents(stage.styles, t, leftLimit)
+    const [styleA, styleB, styleProgress] = queryEvents(stage.styles, t)
     if (styleA) {
         props.judgeLineColor = {
             start: styleA.judgeLineColor,
@@ -278,7 +279,7 @@ const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): Stage
         props.divisionLineAlpha = styleB.divisionLineAlpha
     }
 
-    const [transformA, transformB, transformProgress] = queryEvents(stage.transforms, t, leftLimit)
+    const [transformA, transformB, transformProgress] = queryEvents(stage.transforms, t)
     if (transformA) {
         props.rotate = transformA.rotate
         props.xLaneTranslate = transformA.xLaneTranslate
@@ -303,12 +304,6 @@ const stagePropsAt = (stage: PreviewStage, t: number, leftLimit: boolean): Stage
 
     return props
 }
-
-// Play and Watch use the left limit.
-export const getStageProps = (stage: PreviewStage, t: number) => stagePropsAt(stage, t, true)
-
-// The value from t on, for editing.
-export const getStagePropsFrom = (stage: PreviewStage, t: number) => stagePropsAt(stage, t, false)
 
 export const stagePropsHasTransform = (props: StageProps) =>
     props.rotate !== 0 ||

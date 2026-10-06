@@ -619,6 +619,46 @@ test('attached notes display inherited stage plus note elevation and remain read
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('a note on a stage step shows the held pivot and elevation, as Play does', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        const pivot = {
+            ...fixtures.events.stagePivotEvents[0]!,
+            yOffset: 0,
+            eventEase: 'inStep' as const,
+        }
+        const transform = { ...fixtures.events.stageTransformEvents[0]!, xTranslation: 0 }
+        show(
+            {
+                ...fixtures.interaction,
+                isDynamicStages: true,
+                stagePivotEvents: [
+                    { ...pivot, beat: 0, pivotLane: 0 },
+                    { ...pivot, beat: 6, pivotLane: 3 },
+                ],
+                stageTransformEvents: [
+                    { ...transform, beat: 0, elevation: 0, eventEase: 'inStep' },
+                    { ...transform, beat: 6, elevation: 2 },
+                ],
+                slides: [[{ ...base, beat: 6, left: 0, size: 2, elevation: 1 }]],
+            },
+            3,
+        )
+        view.cursorTime = 3
+    })
+    await open(page)
+    const shown = await page.evaluate(() =>
+        window.elevationTest.scene.elevationNotes.value.map(({ lane, elevation }) => ({
+            lane,
+            elevation,
+        })),
+    )
+    expect(shown).toEqual([{ lane: 1, elevation: 1 }])
+})
+
 test('mobile touch dragging uses the same editor controls and cancellation', async ({
     page,
 }, testInfo) => {

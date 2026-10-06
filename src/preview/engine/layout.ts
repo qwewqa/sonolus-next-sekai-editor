@@ -173,7 +173,7 @@ export const getCameraInfo = (
     const b = cameras[index + 1]
     if (!b || b.time <= a.time) return toCameraInfo(context, a)
 
-    const p = eventProgress(a.ease, t, a.time, b.time, true)
+    const p = eventProgress(a.ease, t, a.time, b.time)
     const infoA = toCameraInfo(context, a)
     const infoB = toCameraInfo(context, b)
 

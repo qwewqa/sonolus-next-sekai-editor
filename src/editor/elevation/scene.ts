@@ -4,7 +4,7 @@ import { state } from '../../history'
 import { getPreviewState, previewEdit } from '../../preview/edit'
 import { attachEasedFrac, createPreviewChartBuilder } from '../../preview/engine/chart'
 import type { PreviewNote } from '../../preview/engine/model'
-import { getStagePropsFrom } from '../../preview/engine/stage'
+import { getStageProps } from '../../preview/engine/stage'
 import { settings } from '../../settings'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
@@ -46,13 +46,13 @@ export const getElevationStageProps = (stageId: StageId, beat: number) => {
     const index = [...current.stages.keys()].indexOf(stageId)
     const stage = current.isDynamicStages ? chart.stages[index] : undefined
     return stage
-        ? getStagePropsFrom(stage, beatToTime(current.bpms, beat))
+        ? getStageProps(stage, beatToTime(current.bpms, beat))
         : { elevation: 0, pivotLane: 0 }
 }
 export const elevationNotes = computed(() => {
     const { chart, bySource } = compiledChart.value
     const props = chart.stages.map((stage) =>
-        getStagePropsFrom(stage, beatToTime(bpms.value, elevationBeat.value)),
+        getStageProps(stage, beatToTime(bpms.value, elevationBeat.value)),
     )
     const basic = (note: PreviewNote) => ({
         lane: note.lane + (props[note.stageIndex]?.pivotLane ?? 0),

@@ -28,7 +28,6 @@ import type { PreviewStage, StageTransformEvent } from '../../src/preview/engine
 import {
     drawDynamicStage,
     getStageProps,
-    getStagePropsFrom,
     stagePropsHasTransform,
 } from '../../src/preview/engine/stage'
 import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
@@ -89,7 +88,7 @@ test('stage masks default off and switch at keyframes without interpolation', ()
     assert.equal(halfway.width, 4)
     assert.equal(halfway.maskNotes, true)
     assert.equal(getStageProps(value, 3).maskNotes, true)
-    assert.equal(getStagePropsFrom(value, 3).maskNotes, false)
+    assert.equal(getStageProps(value, 3 + 1e-9).maskNotes, false)
     assert.equal(getStageProps(value, 4).maskNotes, false)
 })
 
@@ -104,7 +103,7 @@ test('left limits use the first same-time keyframe for geometry and the previous
 
     const before = getStageProps(value, 2)
     assert.deepEqual([before.lane, before.width, before.maskNotes], [3, 4, false])
-    const after = getStagePropsFrom(value, 2)
+    const after = getStageProps(value, 2.5)
     assert.deepEqual([after.lane, after.width, after.maskNotes], [7, 2, true])
 })
 
@@ -123,7 +122,7 @@ test('stage elevation follows outgoing easing and respects same-time left limits
     assert.equal(getStageProps(value, -1).elevation, 2)
     assert.equal(getStageProps(value, 1).elevation, 3)
     assert.equal(getStageProps(value, 2).elevation, 6)
-    assert.equal(getStagePropsFrom(value, 2).elevation, 10)
+    assert.equal(getStageProps(value, 2.5).elevation, 10)
     assert.equal(stagePropsHasTransform(getStageProps(value, 1)), true)
 })
 
@@ -439,7 +438,7 @@ test('camera sizes have the engine minimum at events, not only between them', ()
     assert.equal(before.size, 0.01)
 })
 
-test('In-Out Step midpoints hold at the left limit and jump at the right limit', () => {
+test('In-Out Step midpoints hold the value before the jump', () => {
     const inOut = EaseType.inOutStep
     const value = stage({
         masks: [
@@ -483,8 +482,8 @@ test('In-Out Step midpoints hold at the left limit and jump at the right limit',
             transformEvent({ time: 4, rotate: 1, elevation: 2 }),
         ],
     })
-    const summary = (t: number, rightLimit = false) => {
-        const props = (rightLimit ? getStagePropsFrom : getStageProps)(value, t)
+    const summary = (t: number) => {
+        const props = getStageProps(value, t)
         return [
             props.lane,
             props.pivotLane,
@@ -499,7 +498,7 @@ test('In-Out Step midpoints hold at the left limit and jump at the right limit',
     const before = [0, 0, 0, 0, 0, 1, 0, 0]
     const after = [3, 5, 0.5, 1, 1, 0.5, 1, 2]
     assert.deepEqual(summary(2), before)
-    assert.deepEqual(summary(2, true), after)
+    assert.deepEqual(summary(2 + 1e-9), after)
     assert.deepEqual(summary(1.9), before)
     assert.deepEqual(summary(2.1), after)
 
