@@ -391,3 +391,13 @@ for (const locale of ['en', 'fr', 'ja', 'tr']) {
         await page.keyboard.press('Escape')
     })
 }
+
+test('wheeling past the end of the list leaves the dialog in place', async ({ page }) => {
+    const dialog = page.getByRole('dialog')
+    const box = (await dialog.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    for (let i = 0; i < 40; i++) await page.mouse.wheel(0, 2000)
+    await expect
+        .poll(() => dialog.evaluate((element) => [element.scrollTop, element.scrollHeight]))
+        .toEqual([0, await dialog.evaluate((element) => element.clientHeight)])
+})

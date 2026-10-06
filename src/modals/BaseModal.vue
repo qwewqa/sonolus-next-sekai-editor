@@ -41,7 +41,7 @@ defineEmits<{
         </button>
     </div>
 
-    <div v-scroll-edges class="flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
+    <div v-scroll-edges class="relative flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
         <slot />
     </div>
 </template>
