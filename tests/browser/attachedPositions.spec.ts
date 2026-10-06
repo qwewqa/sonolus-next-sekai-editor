@@ -65,3 +65,22 @@ test('edits without BPM changes keep attached note objects', async ({ page }) =>
         }),
     ).toBe(true)
 })
+
+test('BPM edits after a slide leave its attached notes alone', async ({ page }) => {
+    expect(
+        await page.evaluate(async () => {
+            const { history } = window.editorTest
+            const { createTransaction } = await import('/src/state/transaction.ts')
+            const { addBpm } = await import('/src/state/mutations/bpm.ts')
+            const find = () =>
+                [...window.editorTest.history.state.value.store.slides.note.values()]
+                    .flat()
+                    .find((entity) => entity.isAttached)
+            const before = find()
+            const transaction = createTransaction(history.state.value)
+            addBpm(transaction, { beat: 10, bpm: 120 })
+            history.pushState(() => 'add bpm', transaction.commit([]))
+            return find() === before
+        }),
+    ).toBe(true)
+})

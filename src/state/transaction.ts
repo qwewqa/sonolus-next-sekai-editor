@@ -3,7 +3,8 @@ import { addToGroups, type GroupId, type Groups } from '../chart/groups'
 import { settings } from '../settings'
 import type { Entity } from './entities'
 import type { SlideId } from './entities/slides'
-import { calculateBpms, type BpmIntegral } from './integrals/bpms'
+import type { SlideInfos } from './entities/slides/hiddenTicks'
+import { beatToTime, calculateBpms, type BpmIntegral } from './integrals/bpms'
 import { rebuildSlide } from './mutations/slides'
 
 export type Transaction = ReturnType<typeof createTransaction>
@@ -56,9 +57,31 @@ export const createTransaction = (
         commit(selectedEntities: Entity[]): State {
             if (bpms) {
                 bpms = calculateBpms(bpms)
-                // Attached notes sit at their time fraction, which BPM changes move.
-                for (const [slideId, notes] of this.store.slides.note) {
-                    if (!notes.some((note) => note.isAttached)) continue
+                // Attached notes sit at their time fraction, which BPM changes may move.
+                const newBpms = bpms
+                const fraction = (
+                    bpms: BpmIntegral[],
+                    { note, attachHead, attachTail }: SlideInfos[number],
+                ) => {
+                    const head = beatToTime(bpms, attachHead.beat)
+                    return (
+                        (beatToTime(bpms, note.beat) - head) /
+                        (beatToTime(bpms, attachTail.beat) - head)
+                    )
+                }
+                for (const [slideId, infos] of state.store.slides.info) {
+                    if (dirtySlideIds.has(slideId)) continue
+                    if (
+                        !infos.some(
+                            (info) =>
+                                info.note !== info.attachHead &&
+                                info.note !== info.attachTail &&
+                                !Object.is(fraction(state.bpms, info), fraction(newBpms, info)),
+                        )
+                    )
+                        continue
+                    const notes = this.store.slides.note.get(slideId)
+                    if (!notes) continue
                     // Rebuilding sorts and replaces in place; keep the source state intact.
                     this.store.slides.note.set(slideId, [...notes])
                     dirtySlideIds.add(slideId)
