@@ -2,10 +2,12 @@ import type { Store } from '..'
 import type { Chart } from '../../../chart'
 import { createSlideId } from '../../entities/slides'
 import { toNoteEntity } from '../../entities/slides/note'
+import { createBpms } from '../../integrals/bpms'
 import { rebuildSlide } from '../../mutations/slides'
 import { addToStoreGrid } from '../grid'
 
 export const createStoreSlides = (store: Store, chart: Chart) => {
+    const bpms = createBpms(chart)
     for (const slide of chart.slides) {
         const slideId = createSlideId()
 
@@ -22,6 +24,6 @@ export const createStoreSlides = (store: Store, chart: Chart) => {
             }
         }
 
-        rebuildSlide(store, slideId, [])
+        rebuildSlide(store, slideId, [], bpms)
     }
 }

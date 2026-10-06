@@ -1,13 +1,19 @@
 import { ease } from '../../../ease'
-import { lerp, unlerp } from '../../../utils/math'
+import { clamp, lerp, unlerp } from '../../../utils/math'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
 import { toConnectorEntity, type ConnectorEntity } from '../../entities/slides/connector'
 import { toNoteEntity, type NoteEntity } from '../../entities/slides/note'
+import { beatToTime, type BpmIntegral } from '../../integrals/bpms'
 import type { Store } from '../../store'
 import { addToStoreGrid, removeFromStoreGrid } from '../../store/grid'
 
-export const rebuildSlide = (store: Store, slideId: SlideId, selectedEntities: Entity[]) => {
+export const rebuildSlide = (
+    store: Store,
+    slideId: SlideId,
+    selectedEntities: Entity[],
+    bpms: BpmIntegral[],
+) => {
     store.slides.info.delete(slideId)
 
     const connectors = store.slides.connector.get(slideId)
@@ -124,16 +130,23 @@ export const rebuildSlide = (store: Store, slideId: SlideId, selectedEntities: E
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const tail = notes[rawInfo.attachTail]!
 
+        // By time, as the engine places them (get_attach_frac).
+        const tHead = beatToTime(bpms, head.beat)
+        const tTail = beatToTime(bpms, tail.beat)
         const x = ease(
             head.connectorEase,
-            head.beat === tail.beat ? 0.5 : unlerp(head.beat, tail.beat, rawInfo.note.beat),
+            Math.abs(tTail - tHead) < 1e-6
+                ? 0.5
+                : clamp(unlerp(tHead, tTail, beatToTime(bpms, rawInfo.note.beat))),
         )
 
         // Overshooting eases may shrink a note past zero width; keep its center.
         const size = lerp(head.size, tail.size, x)
+        const left = lerp(head.left, tail.left, x) + Math.min(size, 0) / 2
+        if (left === rawInfo.note.left && Math.max(size, 0) === rawInfo.note.size) continue
         const note = toNoteEntity(rawInfo.note.slideId, {
             ...rawInfo.note,
-            left: lerp(head.left, tail.left, x) + Math.min(size, 0) / 2,
+            left,
             size: Math.max(size, 0),
         })
 

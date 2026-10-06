@@ -54,10 +54,19 @@ export const createTransaction = (
         },
 
         commit(selectedEntities: Entity[]): State {
-            if (bpms) bpms = calculateBpms(bpms)
+            if (bpms) {
+                bpms = calculateBpms(bpms)
+                // Attached notes sit at their time fraction, which BPM changes move.
+                for (const [slideId, notes] of this.store.slides.note) {
+                    if (!notes.some((note) => note.isAttached)) continue
+                    // Rebuilding sorts and replaces in place; keep the source state intact.
+                    this.store.slides.note.set(slideId, [...notes])
+                    dirtySlideIds.add(slideId)
+                }
+            }
 
             for (const slideId of dirtySlideIds) {
-                rebuildSlide(this.store, slideId, selectedEntities)
+                rebuildSlide(this.store, slideId, selectedEntities, bpms ?? state.bpms)
             }
 
             return {
