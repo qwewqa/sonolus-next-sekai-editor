@@ -246,11 +246,11 @@ test('picking a brush keeps agreeing values and the agreeing half of eases', () 
     const aggregate = aggregateValues(notes, () => () => true)
     assert.deepEqual(pickBrush(aggregate, false), {
         noteType: 'default',
-        connectorEase: 'mode:in',
+        connectorEase: 'type:in',
     })
     assert.deepEqual(pickBrush(aggregate, true), {
         noteType: 'default',
-        connectorEase: 'mode:in',
+        connectorEase: 'type:in',
         cameraSize: 4,
     })
 })
@@ -301,15 +301,19 @@ const editableTypes = [
     'stageTransformEventJoint',
 ] as const
 
-// Every name a field renders: its label, and an ease's mode.
+// Every name a field renders: its label, or an ease's type and function.
 const renderedLabels = (field: PropertyField, t: Messages, qualified: boolean) => {
-    const label = fieldLabel(field, t, qualified)
-    if (!field.ease) return [label]
+    if (!field.ease) return [fieldLabel(field, t, qualified)]
     const form = t.modals.form[field.key as 'timeScaleEase'] as {
-        mode: string
-        qualifiedMode?: string
+        type: string
+        function: string
+        qualifiedType?: string
+        qualifiedFunction?: string
     }
-    return [label, (qualified && form.qualifiedMode) || form.mode]
+    return [
+        (qualified && form.qualifiedType) || form.type,
+        (qualified && form.qualifiedFunction) || form.function,
+    ]
 }
 
 // Blocks of one kind, plus General, as Selection lays out the selection.

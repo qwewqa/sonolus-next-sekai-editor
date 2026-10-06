@@ -1,4 +1,5 @@
 import type { StageId } from '../../chart/stages'
+import { isNoneEase } from '../../ease'
 import { easeGlyphPoints } from '../../easeGlyph'
 import type { Entity, EntityType } from '../../state/entities'
 import type { EventConnectionEntity } from '../../state/entities/events/connections'
@@ -203,7 +204,7 @@ const drawEaseGlyph = (
     const left = direction > 0 ? x : x - width
     const top = y - height / 2
     ctx.save()
-    if (entity.timeScaleEase === 'inStep' || next === null || next?.timeScale === entity.timeScale)
+    if (isNoneEase(entity.timeScaleEase) || next === null || next?.timeScale === entity.timeScale)
         ctx.globalAlpha *= INSTANT_ALPHA
     ctx.strokeStyle = color
     ctx.lineWidth = Math.max(stroke, 1 / scale)

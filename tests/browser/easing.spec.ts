@@ -72,78 +72,126 @@ test.describe('ease fields', () => {
         await expect(panel(page)).toBeVisible()
     })
 
-    test('easing and mode change independently, and linear has no mode', async ({ page }) => {
+    test('type and function change independently, and None and Linear have no function', async ({
+        page,
+    }) => {
         await showSlides(page, ['outSine'])
-        const family = field(page, 'Ease')
-        const mode = field(page, 'Ease Mode')
-        await expect.poll(() => selected(family)).toBe('Sine')
-        await expect.poll(() => selected(mode)).toBe('Out')
+        const type = field(page, 'Ease Type')
+        const name = field(page, 'Ease Function')
+        await expect.poll(() => selected(type)).toBe('Out')
+        await expect.poll(() => selected(name)).toBe('Sine')
 
-        await family.selectOption({ label: 'Cubic' })
+        await name.selectOption({ label: 'Cubic' })
         expect(await heads(page)).toEqual(['outCubic'])
-        await mode.selectOption({ label: 'In-Out' })
+        await type.selectOption({ label: 'In-Out' })
         expect(await heads(page)).toEqual(['inOutCubic'])
 
-        await family.selectOption({ label: 'Linear' })
+        await type.selectOption({ label: 'Linear' })
         expect(await heads(page)).toEqual(['linear'])
-        await expect(mode).toBeDisabled()
-        await expect.poll(() => selected(mode)).toBe('—')
+        await expect(name).toBeDisabled()
+        await expect.poll(() => selected(name)).toBe('—')
 
-        await family.selectOption({ label: 'Step' })
+        // A mode after Linear or None starts from Quad.
+        await type.selectOption({ label: 'Out' })
+        expect(await heads(page)).toEqual(['outQuad'])
+        await expect(name).toBeEnabled()
+
+        await type.selectOption({ label: 'None' })
+        expect(await heads(page)).toEqual(['none'])
+        await expect(name).toBeDisabled()
+        await expect.poll(() => selected(name)).toBe('—')
+
+        // In Step stays apart from None.
+        await type.selectOption({ label: 'In' })
+        await name.selectOption({ label: 'Step' })
         expect(await heads(page)).toEqual(['inStep'])
-        await expect(mode).toBeEnabled()
+        await expect.poll(() => selected(type)).toBe('In')
+        await expect.poll(() => selected(name)).toBe('Step')
     })
 
-    test('multiple selections keep each mode or family when only the other changes', async ({
+    test('multiple selections keep each type or function when only the other changes', async ({
         page,
     }) => {
         await showSlides(page, ['outSine', 'inQuad', 'outInQuad'])
-        const family = field(page, 'Ease')
-        const mode = field(page, 'Ease Mode')
-        await expect.poll(() => selected(family)).toBe('Mixed')
-        await expect.poll(() => selected(mode)).toBe('Mixed')
+        const type = field(page, 'Ease Type')
+        const name = field(page, 'Ease Function')
+        await expect.poll(() => selected(type)).toBe('Mixed')
+        await expect.poll(() => selected(name)).toBe('Mixed')
 
         // Mixed options carry counts, so they are chosen by value.
-        await family.selectOption('elastic')
+        await name.selectOption('elastic')
         expect(await heads(page)).toEqual(['outElastic', 'inElastic', 'outInElastic'])
-        await expect.poll(() => selected(family)).toBe('Elastic')
-        await expect.poll(() => selected(mode)).toBe('Mixed')
+        await expect.poll(() => selected(name)).toBe('Elastic')
+        await expect.poll(() => selected(type)).toBe('Mixed')
 
-        await mode.selectOption('out')
+        await type.selectOption('out')
         expect(await heads(page)).toEqual(['outElastic', 'outElastic', 'outElastic'])
     })
 
-    test('a shared mode survives a family change across linear connectors', async ({ page }) => {
-        await showSlides(page, ['outSine', 'linear', 'outQuad'])
-        const family = field(page, 'Ease')
-        const mode = field(page, 'Ease Mode')
-        await expect.poll(() => selected(family)).toBe('Mixed')
-        await expect.poll(() => selected(mode)).toBe('Out')
-        await mode.selectOption({ label: 'Out-In' })
-        expect(await heads(page)).toEqual(['outInSine', 'linear', 'outInQuad'])
-        await family.selectOption('circ')
-        expect(await heads(page)).toEqual(['outInCirc', 'outInCirc', 'outInCirc'])
+    test('a type alone gives None and Linear Quad, a function alone skips them', async ({
+        page,
+    }) => {
+        await showSlides(page, ['outSine', 'linear', 'none', 'inCubic'])
+        const type = field(page, 'Ease Type')
+        const name = field(page, 'Ease Function')
+        await expect.poll(() => selected(type)).toBe('Mixed')
+        await expect.poll(() => selected(name)).toBe('Mixed')
+        await name.selectOption('circ')
+        expect(await heads(page)).toEqual(['outCirc', 'linear', 'none', 'inCirc'])
+        await expect.poll(() => selected(name)).toBe('Circ')
+
+        await showSlides(page, ['outSine', 'linear', 'none', 'inCubic'])
+        await type.selectOption('outIn')
+        expect(await heads(page)).toEqual(['outInSine', 'outInQuad', 'outInQuad', 'outInCubic'])
     })
 
-    test('the easing selector shows the curve of a complete ease', async ({ page }) => {
+    test('a shared function survives a type change across None and Linear', async ({ page }) => {
+        await showSlides(page, ['outSine', 'linear', 'none', 'inSine'])
+        const type = field(page, 'Ease Type')
+        const name = field(page, 'Ease Function')
+        await expect.poll(() => selected(type)).toBe('Mixed')
+        await expect.poll(() => selected(name)).toBe('Sine')
+        await type.selectOption('outIn')
+        expect(await heads(page)).toEqual(['outInSine', 'outInSine', 'outInSine', 'outInSine'])
+    })
+
+    test('the function is off while every selected ease is None or Linear', async ({ page }) => {
+        await showSlides(page, ['none', 'linear', 'none'])
+        const type = field(page, 'Ease Type')
+        const name = field(page, 'Ease Function')
+        await expect.poll(() => selected(type)).toBe('Mixed')
+        await expect(name).toBeDisabled()
+        await expect.poll(() => selected(name)).toBe('—')
+    })
+
+    test('the type selector shows the curve of a complete ease', async ({ page }) => {
         const icon = panel(page)
             .locator('label')
-            .filter({ has: page.getByText('Ease', { exact: true }) })
+            .filter({ has: page.getByText('Ease Type', { exact: true }) })
             .locator('.form-field-select-lead path')
         await showSlides(page, ['outSine'])
         await expect(icon).toHaveAttribute('d', easeGlyphPathD('outSine', false, 2, 2, 12, 12))
+        // Only the type select carries the glyph.
+        await expect(
+            panel(page)
+                .locator('label')
+                .filter({ has: page.getByText('Ease Function', { exact: true }) })
+                .locator('.form-field-select-lead path'),
+        ).toHaveCount(0)
 
-        await field(page, 'Ease Mode').selectOption({ label: 'In-Out' })
+        await field(page, 'Ease Type').selectOption({ label: 'In-Out' })
         await expect(icon).toHaveAttribute('d', easeGlyphPathD('inOutSine', false, 2, 2, 12, 12))
-        await field(page, 'Ease').selectOption({ label: 'Linear' })
+        await field(page, 'Ease Type').selectOption({ label: 'Linear' })
         await expect(icon).toHaveAttribute('d', 'M 2 14 L 14 2')
+        await field(page, 'Ease Type').selectOption({ label: 'None' })
+        await expect(icon).toHaveAttribute('d', easeGlyphPathD('inStep', false, 2, 2, 12, 12))
 
         // A mixed half leaves no curve to show.
         await showSlides(page, ['outSine', 'inQuad'])
         await expect(icon).toHaveCount(0)
     })
 
-    test('time scales offer step first and no overshooting eases', async ({ page }) => {
+    test('time scales list Step last and no overshooting functions', async ({ page }) => {
         await page.evaluate(async () => {
             const { fixtures, show, history, store, nextTick } = window.editorTest
             show(fixtures.events)
@@ -155,13 +203,23 @@ test.describe('ease fields', () => {
             })
             await nextTick()
         })
-        const family = field(page, 'Ease')
-        await expect(family).toBeVisible()
-        const labels = await family.locator('option:not([hidden])').allTextContents()
-        // Options in use while mixed end in their counts.
-        expect(labels.map((label) => label.trim().replace(/ · \d+$/, ''))).toEqual([
-            'Step',
+        const labels = async (label: string) => {
+            const select = field(page, label)
+            await expect(select).toBeVisible()
+            // Options in use while mixed end in their counts.
+            return (await select.locator('option:not([hidden])').allTextContents()).map((text) =>
+                text.trim().replace(/ · \d+$/, ''),
+            )
+        }
+        expect(await labels('Ease Type')).toEqual([
+            'None',
             'Linear',
+            'In',
+            'Out',
+            'In-Out',
+            'Out-In',
+        ])
+        expect(await labels('Ease Function')).toEqual([
             'Sine',
             'Quad',
             'Cubic',
@@ -169,11 +227,12 @@ test.describe('ease fields', () => {
             'Quint',
             'Expo',
             'Circ',
+            'Step',
         ])
     })
 
-    test('brushes can set only the easing or only the mode', async ({ page }) => {
-        await showSlides(page, ['outSine', 'inQuad'])
+    test('brushes can set only the type or only the function', async ({ page }) => {
+        await showSlides(page, ['outSine', 'inQuad', 'none', 'linear'])
         const result = await page.evaluate(async () => {
             // Live module URLs, so state-owning modules are not imported twice.
             const appImport = <T>(pathname: string): Promise<T> =>
@@ -188,22 +247,27 @@ test.describe('ease fields', () => {
             )
             const { history } = window.editorTest
             const heads = () =>
-                history.state.value.selectedEntities.flatMap((entity) =>
-                    entity.type === 'note' ? [entity.connectorEase] : [],
-                )
-            brush.brushProperties.value = { connectorEase: 'family:back' }
+                history.state.value.selectedEntities
+                    .flatMap((entity) =>
+                        entity.type === 'note'
+                            ? [[entity.beat, entity.connectorEase] as const]
+                            : [],
+                    )
+                    .sort((a, b) => a[0] - b[0])
+                    .map(([, ease]) => ease)
+            brush.brushProperties.value = { connectorEase: 'function:back' }
             brush.applyBrushToEntities(history.state.value.selectedEntities)
-            const family = heads()
-            brush.brushProperties.value = { connectorEase: 'mode:inOut' }
+            const name = heads()
+            brush.brushProperties.value = { connectorEase: 'type:inOut' }
             brush.applyBrushToEntities(history.state.value.selectedEntities)
-            return { family, mode: heads() }
+            return { name, type: heads() }
         })
-        expect(result.family.sort()).toEqual(['inBack', 'outBack'])
-        expect(result.mode).toEqual(['inOutBack', 'inOutBack'])
+        expect(result.name).toEqual(['outBack', 'inBack', 'none', 'linear'])
+        expect(result.type).toEqual(['inOutBack', 'inOutBack', 'inOutQuad', 'inOutQuad'])
     })
 })
 
-test('every ease round trips through level data, and IN_STEP reads as a step in', async ({
+test('every ease round trips through level data, None as NONE and In Step as IN_STEP', async ({
     page,
 }) => {
     await page.goto('/')
@@ -327,9 +391,6 @@ test('every ease round trips through level data, and IN_STEP reads as a step in'
             event: parsed.cameraEvents.map((event) => event.eventEase),
             timeScale: parsed.timeScales.map((timeScale) => timeScale.timeScaleEase),
         }
-        for (const name of ['connectorEase', 'ease', '#TIMESCALE_EASE'])
-            for (const data of values(entities, name)) if (data.value === 0) data.value = 38
-        const legacy = parseLevelDataChart(entities)
         const rejected = [30, 37, 42].map((value) => {
             const copy = structuredClone(entities)
 
@@ -346,11 +407,6 @@ test('every ease round trips through level data, and IN_STEP reads as a step in'
             timeScaleEases,
             written,
             read,
-            legacy: {
-                connector: legacy.slides.map((slide) => slide[0]?.connectorEase),
-                event: legacy.cameraEvents.map((event) => event.eventEase),
-                timeScale: legacy.timeScales.map((timeScale) => timeScale.timeScaleEase),
-            },
             rejected,
         }
     })
@@ -358,14 +414,13 @@ test('every ease round trips through level data, and IN_STEP reads as a step in'
     const sorted = <T>(values: T[]) => [...values].sort()
     const range = (from: number, to: number) =>
         Array.from({ length: to - from + 1 }, (_, index) => from + index)
-    // In steps are written as NONE.
-    expect(sorted(result.written.connector)).toEqual(sorted([...range(0, 37), ...range(39, 41)]))
-    expect(sorted(result.written.event)).toEqual(sorted([...range(0, 37), ...range(39, 41)]))
-    expect(sorted(result.written.timeScale)).toEqual(sorted([...range(0, 29), ...range(39, 41)]))
+    // Every value is written, NONE for None and IN_STEP for In Step.
+    expect(sorted(result.written.connector)).toEqual(sorted(range(0, 41)))
+    expect(sorted(result.written.event)).toEqual(sorted(range(0, 41)))
+    expect(sorted(result.written.timeScale)).toEqual(sorted([...range(0, 29), ...range(38, 41)]))
     expect(sorted(result.read.connector)).toEqual(sorted(result.eases))
     expect(sorted(result.read.event)).toEqual(sorted(result.eases))
     expect(sorted(result.read.timeScale)).toEqual(sorted(result.timeScaleEases))
-    expect(result.legacy).toEqual(result.read)
     expect(result.rejected).toEqual([true, true, true])
 })
 

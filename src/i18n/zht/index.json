@@ -1005,6 +1005,7 @@
         "label": "金色滑條"
       },
       "ease": {
+        "none": "無",
         "linear": "線性",
         "sine": "正弦",
         "quad": "二次",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "緩動",
         "qualified": "連接線緩動",
-        "mode": "緩動模式"
+        "type": "緩動類型",
+        "function": "緩動函數"
       },
       "connectorIsFake": {
         "label": "假滑條"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "緩動",
         "qualified": "事件緩動",
-        "mode": "緩動模式",
-        "qualifiedMode": "事件緩動模式"
+        "type": "緩動類型",
+        "function": "緩動函數",
+        "qualifiedType": "事件緩動類型",
+        "qualifiedFunction": "事件緩動函數"
       },
       "file": {
         "select": "選擇檔案…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "緩動",
         "qualified": "時間倍率緩動",
-        "mode": "緩動模式"
+        "type": "緩動類型",
+        "function": "緩動函數"
       },
       "timeScaleTransition": {
         "label": "過渡",

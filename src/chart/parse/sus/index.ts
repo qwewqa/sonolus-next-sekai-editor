@@ -108,7 +108,7 @@ export const parseSusChart = (sus: Sus) => {
             editorLane: -6,
             timeScale: timeScaleChange.timeScale,
             skip: 0,
-            timeScaleEase: 'inStep',
+            timeScaleEase: 'none',
             timeScaleTransition: 'timeScale',
             hideNotes: false,
         })

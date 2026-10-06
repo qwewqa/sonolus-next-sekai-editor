@@ -162,8 +162,8 @@ test.describe('roomy panel', () => {
             }, beats)
 
         await select([2, 3, 4])
-        await expect(shown('Ease')).toHaveText('Quad')
-        await expect(shown('Ease Mode')).toHaveText('In')
+        await expect(shown('Ease Type')).toHaveText('In')
+        await expect(shown('Ease Function')).toHaveText('Quad')
         await expect(shown('Layer')).toHaveText('Top')
         await expect(shown('Flick Direction')).toHaveText('None')
         const listed = panel(page).getByRole('combobox', { name: 'Note Type', exact: true })
@@ -174,8 +174,8 @@ test.describe('roomy panel', () => {
 
         // Values that genuinely differ are still mixed.
         await select([2, 6])
-        await expect(shown('Ease')).toHaveText('Quad')
-        await expect(shown('Ease Mode')).toHaveText('Mixed')
+        await expect(shown('Ease Type')).toHaveText('Mixed')
+        await expect(shown('Ease Function')).toHaveText('Quad')
     })
 
     test('a typed value commits when the presentation switches', async ({ page }) => {

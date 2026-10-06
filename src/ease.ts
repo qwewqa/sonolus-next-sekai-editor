@@ -1,7 +1,14 @@
-// Step first, as the usual change.
-export const easeFamilies = [
-    'step',
-    'linear',
+export const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
+
+export type EaseMode = (typeof easeModes)[number]
+
+/** An ease's first half: None and Linear stand alone, the modes take a function. */
+export const easeTypes = ['none', 'linear', ...easeModes] as const
+
+export type EaseType = (typeof easeTypes)[number]
+
+// Sonolus' order, with Step last.
+export const easeFunctionNames = [
     'sine',
     'quad',
     'cubic',
@@ -11,30 +18,26 @@ export const easeFamilies = [
     'circ',
     'back',
     'elastic',
+    'step',
 ] as const
 
-export type EaseFamily = (typeof easeFamilies)[number]
+export type EaseFunctionName = (typeof easeFunctionNames)[number]
 
-export const timeScaleEaseFamilies = easeFamilies.filter(
-    (family) => family !== 'back' && family !== 'elastic',
+export const timeScaleEaseFunctionNames = easeFunctionNames.filter(
+    (name) => name !== 'back' && name !== 'elastic',
 )
 
-export const easeModes = ['in', 'out', 'inOut', 'outIn'] as const
-
-export type EaseMode = (typeof easeModes)[number]
-
-type CurveFamily = Exclude<EaseFamily, 'linear'>
-
-export type Ease = 'linear' | `${EaseMode}${Capitalize<CurveFamily>}`
+export type Ease = 'none' | 'linear' | `${EaseMode}${Capitalize<EaseFunctionName>}`
 
 export type TimeScaleEase = Exclude<Ease, `${EaseMode}${'Back' | 'Elastic'}`>
 
-export type EaseFamilyOf<E extends Ease> = E extends 'linear'
-    ? 'linear'
-    : { [F in CurveFamily]: E extends `${EaseMode}${Capitalize<F>}` ? F : never }[CurveFamily]
+export type EaseFunctionOf<E extends Ease> = {
+    [F in EaseFunctionName]: E extends `${EaseMode}${Capitalize<F>}` ? F : never
+}[EaseFunctionName]
 
 // Partial edits keep the other half of each edited entity's ease.
-export type EaseEdit<E extends Ease = Ease> = E | `family:${EaseFamilyOf<E>}` | `mode:${EaseMode}`
+export type EaseEdit<E extends Ease = Ease> =
+    E | `type:${EaseMode}` | `function:${EaseFunctionOf<E>}`
 
 export type WithEaseEdits<T> = {
     [K in keyof T]: Exclude<T[K], undefined> extends Ease
@@ -42,44 +45,53 @@ export type WithEaseEdits<T> = {
         : T[K]
 }
 
-export const composeEase = (family: EaseFamily, mode: EaseMode): Ease =>
-    family === 'linear'
-        ? 'linear'
-        : (`${mode}${(family[0]?.toUpperCase() ?? '') + family.slice(1)}` as Ease)
+const isMode = (type: EaseType | undefined): type is EaseMode =>
+    type !== undefined && type !== 'none' && type !== 'linear'
 
-const parts = new Map<Ease, [CurveFamily, EaseMode]>()
-for (const family of easeFamilies) {
-    if (family === 'linear') continue
-    for (const mode of easeModes) parts.set(composeEase(family, mode), [family, mode])
+// A mode without a function takes Quad.
+export const composeEase = (type: EaseType, name: EaseFunctionName = 'quad'): Ease =>
+    isMode(type) ? (`${type}${(name[0]?.toUpperCase() ?? '') + name.slice(1)}` as Ease) : type
+
+const parts = new Map<Ease, [EaseMode, EaseFunctionName]>()
+for (const name of easeFunctionNames) {
+    for (const mode of easeModes) parts.set(composeEase(mode, name), [mode, name])
 }
 
-export const eases: Ease[] = ['linear', ...parts.keys()]
+export const eases: Ease[] = ['none', 'linear', ...parts.keys()]
 
 export const easeEdits: EaseEdit[] = [
     ...eases,
-    ...easeFamilies.map((family) => `family:${family}` as const),
-    ...easeModes.map((mode) => `mode:${mode}` as const),
+    ...easeModes.map((mode) => `type:${mode}` as const),
+    ...easeFunctionNames.map((name) => `function:${name}` as const),
 ]
 
-export const easeFamily = (ease: Ease): EaseFamily => parts.get(ease)?.[0] ?? 'linear'
+export const easeTypeOf = (ease: Ease): EaseType => parts.get(ease)?.[0] ?? (ease as EaseType)
 
-export const easeMode = (ease: Ease): EaseMode | undefined => parts.get(ease)?.[1]
+export const easeFunctionOf = (ease: Ease): EaseFunctionName | undefined => parts.get(ease)?.[1]
 
-export const isStepEase = (ease: Ease) => easeFamily(ease) === 'step'
+export const easeMode = (ease: Ease): EaseMode | undefined => parts.get(ease)?.[0]
 
+/** None or In Step, which the engine treats alike: the value holds until the next joint. */
+export const isNoneEase = (ease: Ease) => ease === 'none' || ease === 'inStep'
+
+export const isStepEase = (ease: Ease) => ease === 'none' || easeFunctionOf(ease) === 'step'
+
+// None plays as the step it equals; Out Step flips back to None, the usual change.
 export const complementEase = <E extends Ease>(ease: E): E => {
+    if (ease === 'none') return 'outStep' as E
+    if (ease === 'outStep') return 'none' as E
     const mode = easeMode(ease)
     return mode === 'in' || mode === 'out'
-        ? (composeEase(easeFamily(ease), mode === 'in' ? 'out' : 'in') as E)
+        ? (composeEase(mode === 'in' ? 'out' : 'in', easeFunctionOf(ease)) as E)
         : ease
 }
 
 export const easeOvershoot = (ease: Ease) => {
-    const family = easeFamily(ease)
-    return family === 'elastic' ? 0.374 : family === 'back' ? 0.101 : 0
+    const name = easeFunctionOf(ease)
+    return name === 'elastic' ? 0.374 : name === 'back' ? 0.101 : 0
 }
 
-const levelDataFamilies = [
+const levelDataFunctionNames = [
     'quad',
     'sine',
     'cubic',
@@ -93,19 +105,14 @@ const levelDataFamilies = [
 ] as const
 
 export const easeValues = Object.fromEntries([
+    ['none', 0],
     ['linear', 1],
-    ...levelDataFamilies.flatMap((family, i) =>
-        easeModes.map((mode, j) => [composeEase(family, mode), 2 + i * 4 + j]),
+    ...levelDataFunctionNames.flatMap((name, i) =>
+        easeModes.map((mode, j) => [composeEase(mode, name), 2 + i * 4 + j]),
     ),
 ]) as Record<Ease, number>
 
-// NONE, which v2.14 engines also accept.
-export const easeLevelDataValue = (ease: Ease) => (ease === 'inStep' ? 0 : easeValues[ease])
-
-const easesByValue = new Map<number, Ease>([
-    [0, 'inStep'],
-    ...eases.map((ease) => [easeValues[ease], ease] as const),
-])
+const easesByValue = new Map<number, Ease>(eases.map((ease) => [easeValues[ease], ease] as const))
 
 export const easeLevelDataValues = [...easesByValue.keys()].sort((a, b) => a - b)
 
@@ -126,7 +133,7 @@ const c4 = (2 * Math.PI) / 3
 const c5 = (2 * Math.PI) / 4.5
 
 // Literal transcriptions of sonolus.script.easing, so results match the engine bit for bit.
-const curves: Record<Exclude<CurveFamily, 'step'>, Record<EaseMode, (x: number) => number>> = {
+const curves: Record<Exclude<EaseFunctionName, 'step'>, Record<EaseMode, (x: number) => number>> = {
     quad: {
         in: (x) => x ** 2,
         out: (x) => 1 - (1 - x) ** 2,
@@ -229,12 +236,13 @@ const steps: Record<EaseMode, (x: number) => number> = {
 const clamp01 = (x: number) => Math.min(Math.max(x, 0), 1)
 
 const createEaseFunction = (ease: Ease): ((x: number) => number) => {
-    const family = easeFamily(ease)
+    if (ease === 'none') return steps.in
     const mode = easeMode(ease)
-    if (family === 'linear' || !mode) return clamp01
-    if (family === 'step') return steps[mode]
+    const name = easeFunctionOf(ease)
+    if (!mode || !name) return clamp01
+    if (name === 'step') return steps[mode]
 
-    const f = curves[family][mode]
+    const f = curves[name][mode]
     return (x) => f(clamp01(x))
 }
 
@@ -245,12 +253,12 @@ export const ease = (type: Ease, x: number) =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     easeFunctions.get(type)!(x)
 
-export const easeFunction = (type: Ease) =>
+export const easeEvaluator = (type: Ease) =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     easeFunctions.get(type)!
 
-// Integrals from 0 of each family's in curve.
-const inIntegrals: Record<EaseFamilyOf<TimeScaleEase>, (y: number) => number> = {
+// Integrals from 0 of each function's in curve, and linear's.
+const inIntegrals: Record<EaseFunctionOf<TimeScaleEase> | 'linear', (y: number) => number> = {
     linear: (y) => (y * y) / 2,
     sine: (y) => y - (2 / Math.PI) * Math.sin((Math.PI * y) / 2),
     quad: (y) => y ** 3 / 3,
@@ -271,12 +279,13 @@ const stepIntegrals: Record<EaseMode, (u: number) => number> = {
 
 /** The integral of an ease from 0 to u, for u in [0, 1]. */
 export const easeIntegral = (type: TimeScaleEase, u: number) => {
-    const family = easeFamily(type) as EaseFamilyOf<TimeScaleEase>
+    if (type === 'none') return stepIntegrals.in(u)
     const mode = easeMode(type)
-    if (family === 'linear' || !mode) return inIntegrals.linear(u)
-    if (family === 'step') return stepIntegrals[mode](u)
+    const name = easeFunctionOf(type) as EaseFunctionOf<TimeScaleEase> | undefined
+    if (!mode || !name) return inIntegrals.linear(u)
+    if (name === 'step') return stepIntegrals[mode](u)
 
-    const integral = inIntegrals[family]
+    const integral = inIntegrals[name]
     const whole = integral(1)
     switch (mode) {
         case 'in':
@@ -292,104 +301,108 @@ export const easeIntegral = (type: TimeScaleEase, u: number) => {
     }
 }
 
-const familyEdit = (edit: string) =>
-    edit.startsWith('family:') ? (edit.slice(7) as EaseFamily) : undefined
+const typeEdit = (edit: string) =>
+    edit.startsWith('type:') ? (edit.slice(5) as EaseMode) : undefined
 
-const modeEdit = (edit: string) =>
-    edit.startsWith('mode:') ? (edit.slice(5) as EaseMode) : undefined
+const functionEdit = (edit: string) =>
+    edit.startsWith('function:') ? (edit.slice(9) as EaseFunctionName) : undefined
 
+/** Applies an edit; a Type alone gives None and Linear Quad, a Function alone skips them. */
 export const applyEaseEdit = <E extends Ease>(
     edit: EaseEdit<NoInfer<E>> | undefined,
     ease: E,
 ): E => {
     if (edit === undefined) return ease
 
-    const family = familyEdit(edit)
-    if (family) return composeEase(family, easeMode(ease) ?? 'in') as E
+    const type = typeEdit(edit)
+    if (type) return composeEase(type, easeFunctionOf(ease)) as E
 
-    const mode = modeEdit(edit)
-    if (mode) return composeEase(easeFamily(ease), mode) as E
+    const name = functionEdit(edit)
+    if (name) {
+        const mode = easeMode(ease)
+        return mode ? (composeEase(mode, name) as E) : ease
+    }
 
     return edit as E
 }
 
-/** The family and mode an edit sets, or undefined for the halves it leaves unchanged. */
+/** The type and function an edit sets, or undefined for the halves it leaves unchanged. */
 export const easeEditParts = (edit: EaseEdit | undefined) => {
-    if (edit === undefined) return { family: undefined, mode: undefined }
+    if (edit === undefined) return { type: undefined, name: undefined }
 
-    const family = familyEdit(edit)
-    const mode = modeEdit(edit)
-    if (family || mode) return { family, mode }
+    const type = typeEdit(edit)
+    const name = functionEdit(edit)
+    if (type || name) return { type, name }
 
-    return { family: easeFamily(edit as Ease), mode: easeMode(edit as Ease) }
+    return { type: easeTypeOf(edit as Ease), name: easeFunctionOf(edit as Ease) }
 }
 
-const toEaseEdit = (family: EaseFamily | undefined, mode: EaseMode | undefined) =>
-    family === 'linear'
-        ? 'linear'
-        : family && mode
-          ? composeEase(family, mode)
-          : family
-            ? (`family:${family}` as const)
-            : mode
-              ? (`mode:${mode}` as const)
-              : undefined
+const toEaseEdit = (type: EaseType | undefined, name: EaseFunctionName | undefined) =>
+    type && (!isMode(type) || name)
+        ? composeEase(type, name)
+        : type
+          ? (`type:${type}` as const)
+          : name
+            ? (`function:${name}` as const)
+            : undefined
 
 /** Combines eases into one edit, leaving out the halves they disagree on. */
 export const mergeEases = <E extends Ease>(values: Iterable<E>): EaseEdit<E> | undefined => {
-    let family: EaseFamily | undefined
-    let mode: EaseMode | undefined
+    let type: EaseType | undefined
+    let name: EaseFunctionName | undefined
     let first = true
-    let mixedFamily = false
-    let mixedMode = false
+    let mixedType = false
+    let mixedName = false
     for (const value of values) {
-        const valueFamily = easeFamily(value)
-        const valueMode = easeMode(value)
+        const valueType = easeTypeOf(value)
         if (first) {
-            family = valueFamily
+            type = valueType
             first = false
-        } else if (family !== valueFamily) {
-            mixedFamily = true
+        } else if (type !== valueType) {
+            mixedType = true
         }
-        // Linear has no mode, so it takes any other value's mode.
-        if (!valueMode) continue
-        if (mode === undefined) {
-            mode = valueMode
-        } else if (mode !== valueMode) {
-            mixedMode = true
+        // None and Linear have no function, so they take any other value's.
+        const valueName = easeFunctionOf(value)
+        if (!valueName) continue
+        if (name === undefined) {
+            name = valueName
+        } else if (name !== valueName) {
+            mixedName = true
         }
     }
     if (first) return
-    if (!mixedFamily && family === 'linear') return 'linear' as E
-    return toEaseEdit(mixedFamily ? undefined : family, mixedMode ? undefined : mode) as
+    return toEaseEdit(mixedType ? undefined : type, mixedName ? undefined : name) as
         EaseEdit<E> | undefined
 }
 
-export const setEaseEditFamily = <E extends Ease>(
+/** Sets an edit's type; a mode after None or Linear starts from Quad. */
+export const setEaseEditType = <E extends Ease>(
     edit: EaseEdit<E> | undefined,
-    family: EaseFamilyOf<E> | undefined,
+    type: EaseType | undefined,
 ): EaseEdit<E> | undefined => {
-    const { family: previous, mode } = easeEditParts(edit)
-    return toEaseEdit(family, previous === 'linear' && family ? 'in' : mode) as
-        EaseEdit<E> | undefined
+    const { type: previous, name } = easeEditParts(edit)
+    const standalone = previous !== undefined && !isMode(previous)
+    return toEaseEdit(type, standalone && isMode(type) ? 'quad' : name) as EaseEdit<E> | undefined
 }
 
-export const setEaseEditMode = <E extends Ease>(
+export const setEaseEditFunction = <E extends Ease>(
     edit: EaseEdit<E> | undefined,
-    mode: EaseMode | undefined,
+    name: EaseFunctionOf<E> | undefined,
 ): EaseEdit<E> | undefined => {
-    const { family } = easeEditParts(edit)
-    return toEaseEdit(family, mode) as EaseEdit<E> | undefined
+    const { type } = easeEditParts(edit)
+    // None and Linear have no function to set.
+    if (type !== undefined && !isMode(type)) return edit
+    return toEaseEdit(type, name) as EaseEdit<E> | undefined
 }
 
-/** Steps through the modes of an ease's family, and linear. */
+/** None, Linear, then each mode of the current function (Quad from None or Linear). */
 export const cycleEase = <E extends Ease>(ease: E): E => {
+    if (ease === 'none') return 'linear' as E
     const mode = easeMode(ease)
-    const family = easeFamily(ease)
-    if (!mode) return composeEase(family === 'linear' ? 'quad' : family, 'in') as E
+    if (!mode) return composeEase('in', 'quad') as E
 
     const next = easeModes[easeModes.indexOf(mode) + 1]
-    return (next ? composeEase(family, next) : 'linear') as E
+    return (next ? composeEase(next, easeFunctionOf(ease)) : 'none') as E
 }
 
 /**

@@ -1,8 +1,8 @@
 import {
     ease,
-    easeFamily,
     easeMode,
     easeOvershoot,
+    isStepEase,
     sampleEase,
     type Ease,
     type EaseMode,
@@ -46,12 +46,11 @@ export const easeGlyphPoints = (type: Ease, decreasing = false): readonly [numbe
     let points = cache.get(key)
     if (points) return points
 
-    const mode = easeMode(type)
+    // None holds like an in step.
     const overshoot = easeOvershoot(type)
-    const samples: [number, number][] =
-        easeFamily(type) === 'step' && mode
-            ? steps[mode]
-            : sampleEase(type, 0, 1, 0.01).map((t) => [t, ease(type, t)])
+    const samples: [number, number][] = isStepEase(type)
+        ? steps[easeMode(type) ?? 'in']
+        : sampleEase(type, 0, 1, 0.01).map((t) => [t, ease(type, t)])
     points = samples.map(([t, value]) => {
         const x = (value + overshoot) / (1 + 2 * overshoot)
         return [decreasing ? 1 - x : x, 1 - t]

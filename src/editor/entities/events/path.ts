@@ -15,6 +15,7 @@ const exactPaths: Partial<Record<EventEase, PathD>> = {
     outInQuad: (xMin, xMax, yMin, yMax) =>
         `M ${xMin} ${yMin} Q ${lerp(xMin, xMax, 0.5)} ${lerp(yMin, yMax, 0.25)} ${lerp(xMin, xMax, 0.5)} ${lerp(yMin, yMax, 0.5)} Q ${lerp(xMin, xMax, 0.5)} ${lerp(yMin, yMax, 0.75)} ${xMax} ${yMax}`,
     // Steps hold their interior value, so the jump shows as a gap.
+    none: (xMin, _xMax, yMin, yMax) => `M ${xMin} ${yMin} V ${yMax}`,
     inStep: (xMin, _xMax, yMin, yMax) => `M ${xMin} ${yMin} V ${yMax}`,
     outStep: (_xMin, xMax, yMin, yMax) => `M ${xMax} ${yMin} V ${yMax}`,
     inOutStep: (xMin, xMax, yMin, yMax) =>

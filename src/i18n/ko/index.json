@@ -1005,6 +1005,7 @@
         "label": "크리티컬 슬라이드"
       },
       "ease": {
+        "none": "없음",
         "linear": "선형",
         "sine": "사인",
         "quad": "2차",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "이징",
         "qualified": "커넥터 이징",
-        "mode": "이징 모드"
+        "type": "이징 유형",
+        "function": "이징 함수"
       },
       "connectorIsFake": {
         "label": "페이크 슬라이드"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "이징",
         "qualified": "이벤트 이징",
-        "mode": "이징 모드",
-        "qualifiedMode": "이벤트 이징 모드"
+        "type": "이징 유형",
+        "function": "이징 함수",
+        "qualifiedType": "이벤트 이징 유형",
+        "qualifiedFunction": "이벤트 이징 함수"
       },
       "file": {
         "select": "파일 선택…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "이징",
         "qualified": "시간 배율 이징",
-        "mode": "이징 모드"
+        "type": "이징 유형",
+        "function": "이징 함수"
       },
       "timeScaleTransition": {
         "label": "전환",

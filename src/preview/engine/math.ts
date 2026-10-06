@@ -1,4 +1,4 @@
-import { easeFromValue, easeFunction, easeLevelDataValues } from '../../ease'
+import { easeEvaluator, easeFromValue, easeLevelDataValues } from '../../ease'
 
 export type Vec = {
     x: number
@@ -121,7 +121,7 @@ export const EaseType = {
 
 export type EaseTypeValue = (typeof EaseType)[keyof typeof EaseType]
 
-const easeFunctions = easeLevelDataValues.map((value) => easeFunction(easeFromValue(value)))
+const easeFunctions = easeLevelDataValues.map((value) => easeEvaluator(easeFromValue(value)))
 
 export const ease = (easeType: EaseTypeValue, x: number): number =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

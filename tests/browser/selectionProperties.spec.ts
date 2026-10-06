@@ -141,12 +141,12 @@ test.describe('mixed values', () => {
         await expect(control(page, 'Note Color')).toBeFocused()
     })
 
-    test('ease halves count easings and modes separately', async ({ page }) => {
-        await expect(control(page, 'Ease').locator('option:checked')).toHaveText('Quad')
-        const mode = selection(page)
+    test('ease halves count types and functions separately', async ({ page }) => {
+        await expect(control(page, 'Ease Function').locator('option:checked')).toHaveText('Quad')
+        const type = selection(page)
             .locator('.form-field')
-            .filter({ has: page.getByText('Ease Mode', { exact: true }) })
-        await expect(mode.locator('.form-field-mixed-value')).toHaveText([
+            .filter({ has: page.getByText('Ease Type', { exact: true }) })
+        await expect(type.locator('.form-field-mixed-value')).toHaveText([
             '2 of 5',
             'In 1',
             'Out 1',
@@ -321,7 +321,7 @@ test.describe('connector fields', () => {
             [{ beat: 2, connectorEase: 'outQuad', connectorStyle: 'red' }, { beat: 3 }],
         ])
         await header(page).click()
-        // The easing agrees though the modes differ; differing values are left out.
+        // The function agrees though the types differ; differing values are left out.
         await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
             'Slide · Quad',
         )
@@ -339,6 +339,21 @@ test.describe('connector fields', () => {
         ])
         await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
             '4 values differ',
+        )
+        // A Linear connector has no function to agree on.
+        await showSlides(page, [
+            [{ beat: 0, connectorEase: 'linear' }, { beat: 1 }],
+            [{ beat: 2, connectorEase: 'outQuad' }, { beat: 3 }],
+        ])
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            'Slide · Default · Top',
+        )
+        await showSlides(page, [
+            [{ beat: 0, connectorEase: 'inSine' }, { beat: 1 }],
+            [{ beat: 2, connectorEase: 'inQuad' }, { beat: 3 }],
+        ])
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            'Slide · Default · In · Top',
         )
     })
 
@@ -536,14 +551,14 @@ test('kind blocks use short labels; General names what several kinds share', asy
             .filter({ has: page.locator('.properties-block-header h3', { hasText: name }) })
     const labels = (name: RegExp) => block(name).locator('.form-field-text').allTextContents()
     expect(await labels(/^Time Scales/)).toEqual(
-        expect.arrayContaining(['Editor Lane', 'Ease', 'Ease Mode', 'Transition']),
+        expect.arrayContaining(['Editor Lane', 'Ease Type', 'Ease Function', 'Transition']),
     )
     expect(await labels(/^Camera Events/)).toEqual(
-        expect.arrayContaining(['Shift Lane', 'Zoom', 'Rotation', 'Ease']),
+        expect.arrayContaining(['Shift Lane', 'Zoom', 'Rotation', 'Ease Type']),
     )
     // Editor Lane and the event ease also edit every kind having them at once.
     expect(await labels(/^General/)).toEqual(
-        expect.arrayContaining(['Editor Lane', 'Event Ease', 'Event Ease Mode']),
+        expect.arrayContaining(['Editor Lane', 'Event Ease Type', 'Event Ease Function']),
     )
     for (const name of [/^Time Scales/, /^Camera Events/, /^General/]) {
         const list = await labels(name)
@@ -551,7 +566,7 @@ test('kind blocks use short labels; General names what several kinds share', asy
     }
     // An edit in a kind's block reaches only that kind.
     await block(/^Camera Events/)
-        .getByRole('combobox', { name: 'Ease', exact: true })
+        .getByRole('combobox', { name: 'Ease Type', exact: true })
         .selectOption('linear')
     const eases = await page.evaluate(() =>
         [...window.editorTest.store.getAllEntities()]
@@ -561,7 +576,7 @@ test('kind blocks use short labels; General names what several kinds share', asy
     expect(eases).toEqual(expect.arrayContaining(['inQuad']))
 })
 
-test('ease modes list linear eases apart and narrow to them', async ({ page }) => {
+test('ease functions list linear eases apart and narrow to them', async ({ page }) => {
     await page.evaluate(async () => {
         const { fixtures, show, history, store, nextTick } = window.editorTest
         show(fixtures.connectors)
@@ -573,11 +588,11 @@ test('ease modes list linear eases apart and narrow to them', async ({ page }) =
         })
         await nextTick()
     })
-    const mode = selection(page)
+    const name = selection(page)
         .locator('.form-field')
-        .filter({ has: page.getByText('Ease Mode', { exact: true }) })
+        .filter({ has: page.getByText('Ease Function', { exact: true }) })
         .first()
-    await expect(mode.locator('.form-field-mixed-value').last()).toHaveText('Linear 5')
-    await mode.getByRole('button', { name: 'Select only Linear (5)' }).click()
+    await expect(name.locator('.form-field-mixed-value').last()).toHaveText('Linear 5')
+    await name.getByRole('button', { name: 'Select only Linear (5)' }).click()
     expect(await selectedCount(page)).toBe(5)
 })

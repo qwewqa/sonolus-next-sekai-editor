@@ -1005,6 +1005,7 @@
         "label": "关键长按音符"
       },
       "ease": {
+        "none": "无",
         "linear": "线性",
         "sine": "正弦",
         "quad": "二次",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "缓动",
         "qualified": "连接缓动",
-        "mode": "缓动模式"
+        "type": "缓动类型",
+        "function": "缓动函数"
       },
       "connectorIsFake": {
         "label": "假长按音符"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "缓动",
         "qualified": "事件缓动",
-        "mode": "缓动模式",
-        "qualifiedMode": "事件缓动模式"
+        "type": "缓动类型",
+        "function": "缓动函数",
+        "qualifiedType": "事件缓动类型",
+        "qualifiedFunction": "事件缓动函数"
       },
       "file": {
         "select": "选择文件…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "缓动",
         "qualified": "时间尺度缓动",
-        "mode": "缓动模式"
+        "type": "缓动类型",
+        "function": "缓动函数"
       },
       "timeScaleTransition": {
         "label": "过渡",

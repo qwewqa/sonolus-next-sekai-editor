@@ -361,6 +361,7 @@ test('step connectors hold their interior lane and in-out steps split at the att
         return fills[0]!.path.commands
     }
     assert.deepEqual(rects('inStep'), [['R', 0, -4, 2, 4]])
+    assert.deepEqual(rects('none'), rects('inStep'))
     assert.deepEqual(rects('outStep'), [['R', 4, -4, 4, 4]])
     assert.deepEqual(rects('outInStep'), [['R', 2, -4, 3, 4]])
     assert.deepEqual(rects('inOutStep'), [

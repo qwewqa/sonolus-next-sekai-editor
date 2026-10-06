@@ -5,17 +5,20 @@ import {
     complementEase,
     cycleEase,
     ease,
-    easeFamilies,
     easeFromValue,
+    easeFunctionNames,
     easeIntegral,
     easeLevelDataValues,
     eases,
+    easeTypes,
     easeValues,
+    isNoneEase,
+    isStepEase,
     mergeEases,
     sampleEase,
-    setEaseEditFamily,
-    setEaseEditMode,
-    timeScaleEaseFamilies,
+    setEaseEditFunction,
+    setEaseEditType,
+    timeScaleEaseFunctionNames,
     timeScaleEaseLevelDataValues,
     type Ease,
     type TimeScaleEase,
@@ -94,8 +97,10 @@ const reference: Partial<Record<Ease, (x: number) => number>> = {
 
 const samples = [0, 0.01, 0.1, 0.25, 0.3, 0.49, 0.5, 0.51, 0.7, 0.75, 0.9, 0.99, 1]
 
+const isCurve = (type: Ease) => type !== 'linear' && !isStepEase(type)
+
 test('curved eases match the Sonolus native formulas exactly and clamp their input', () => {
-    const curved = eases.filter((type) => type !== 'linear' && !type.endsWith('Step'))
+    const curved = eases.filter(isCurve)
     assert.equal(curved.length, 36)
     for (const type of curved) {
         const expected = reference[type]
@@ -111,25 +116,31 @@ test('curved eases match the Sonolus native formulas exactly and clamp their inp
     assert.equal(ease('linear', 2), 1)
 })
 
-test('steps take their interior value at both endpoints', () => {
+test('steps take their interior value at both endpoints, and None holds like an in step', () => {
     const values = (type: Ease) => [-0.1, 0, 0.25, 0.5, 0.75, 1, 1.1].map((x) => ease(type, x))
     assert.deepEqual(values('inStep'), [0, 0, 0, 0, 0, 0, 1])
+    assert.deepEqual(values('none'), values('inStep'))
     assert.deepEqual(values('outStep'), [0, 1, 1, 1, 1, 1, 1])
     assert.deepEqual(values('inOutStep'), [0, 0, 0, 1, 1, 1, 1])
     assert.deepEqual(values('outInStep'), [0, 0.5, 0.5, 0.5, 0.5, 0.5, 1])
+    assert.ok(isStepEase('none') && isNoneEase('none') && isNoneEase('inStep'))
+    assert.ok(!isNoneEase('outStep') && !isNoneEase('linear'))
+    for (const u of [0, 0.3, 1]) assert.equal(easeIntegral('none', u), easeIntegral('inStep', u))
 })
 
-test('complements reverse time within a family', () => {
+test('complements reverse time within a function, None flipping as the step it equals', () => {
     assert.equal(complementEase('inSine'), 'outSine')
     assert.equal(complementEase('outElastic'), 'inElastic')
     assert.equal(complementEase('inOutCirc'), 'inOutCirc')
     assert.equal(complementEase('outInBack'), 'outInBack')
+    assert.equal(complementEase('none'), 'outStep')
     assert.equal(complementEase('inStep'), 'outStep')
-    assert.equal(complementEase('outStep'), 'inStep')
+    // Flipping None twice restores it.
+    assert.equal(complementEase('outStep'), 'none')
     assert.equal(complementEase('inOutStep'), 'inOutStep')
     assert.equal(complementEase('outInStep'), 'outInStep')
     assert.equal(complementEase('linear'), 'linear')
-    for (const type of eases.filter((type) => !type.endsWith('Step'))) {
+    for (const type of eases.filter((type) => !isStepEase(type))) {
         for (const x of samples) {
             // Native out-in expo and elastic are discontinuous at their midpoint.
             if (x === 0.5 && (type === 'outInExpo' || type === 'outInElastic')) continue
@@ -141,22 +152,25 @@ test('complements reverse time within a family', () => {
     }
 })
 
-test('level data values follow the shared encoding', () => {
+test('level data values follow the shared encoding, None as NONE and In Step as IN_STEP', () => {
     assert.deepEqual(
         easeLevelDataValues,
         Array.from({ length: 42 }, (_, value) => value),
     )
-    assert.equal(easeFromValue(0), 'inStep')
+    assert.equal(easeValues.none, 0)
+    assert.equal(easeFromValue(0), 'none')
     assert.equal(easeValues.inStep, 38)
+    assert.equal(easeFromValue(38), 'inStep')
     assert.equal(easeValues.linear, 1)
-    const families = ['Quad', 'Sine', 'Cubic', 'Quart', 'Quint', 'Expo', 'Circ', 'Back', 'Elastic']
-    for (const [family, name] of [...families, 'Step'].entries()) {
+    const names = ['Quad', 'Sine', 'Cubic', 'Quart', 'Quint', 'Expo', 'Circ', 'Back', 'Elastic']
+    for (const [index, name] of [...names, 'Step'].entries()) {
         for (const [mode, prefix] of ['in', 'out', 'inOut', 'outIn'].entries()) {
-            const value = 2 + family * 4 + mode
+            const value = 2 + index * 4 + mode
             assert.equal(easeValues[`${prefix}${name}` as Ease], value)
             assert.equal(easeFromValue(value), `${prefix}${name}`)
         }
     }
+    for (const type of eases) assert.equal(easeFromValue(easeValues[type]), type)
     assert.deepEqual(timeScaleEaseLevelDataValues, [
         ...Array.from({ length: 30 }, (_, value) => value),
         38,
@@ -184,68 +198,98 @@ test('ease integrals match numeric integration', () => {
     }
 })
 
-test('partial ease edits keep the other half of each value', () => {
-    assert.equal(applyEaseEdit<Ease>('family:sine', 'outQuad'), 'outSine')
-    assert.equal(applyEaseEdit<Ease>('family:sine', 'linear'), 'inSine')
-    assert.equal(applyEaseEdit<Ease>('family:linear', 'outQuad'), 'linear')
-    assert.equal(applyEaseEdit<Ease>('mode:outIn', 'inCirc'), 'outInCirc')
-    assert.equal(applyEaseEdit<Ease>('mode:outIn', 'linear'), 'linear')
-    assert.equal(applyEaseEdit<Ease>('inOutStep', 'linear'), 'inOutStep')
+test('a Type alone gives None and Linear Quad, a Function alone leaves them unchanged', () => {
+    assert.equal(applyEaseEdit<Ease>('type:out', 'inSine'), 'outSine')
+    assert.equal(applyEaseEdit<Ease>('type:out', 'none'), 'outQuad')
+    assert.equal(applyEaseEdit<Ease>('type:inOut', 'linear'), 'inOutQuad')
+    assert.equal(applyEaseEdit<Ease>('type:in', 'outStep'), 'inStep')
+    assert.equal(applyEaseEdit<Ease>('function:sine', 'outQuad'), 'outSine')
+    assert.equal(applyEaseEdit<Ease>('function:step', 'inQuad'), 'inStep')
+    assert.equal(applyEaseEdit<Ease>('function:sine', 'linear'), 'linear')
+    assert.equal(applyEaseEdit<Ease>('function:sine', 'none'), 'none')
+    assert.equal(applyEaseEdit<Ease>('none', 'outQuad'), 'none')
+    assert.equal(applyEaseEdit<Ease>('inStep', 'none'), 'inStep')
     assert.equal(applyEaseEdit<Ease>(undefined, 'outExpo'), 'outExpo')
-
-    assert.equal(mergeEases<Ease>([]), undefined)
-    assert.equal(mergeEases<Ease>(['inSine', 'inSine']), 'inSine')
-    assert.equal(mergeEases<Ease>(['inSine', 'outSine']), 'family:sine')
-    assert.equal(mergeEases<Ease>(['inSine', 'inQuad']), 'mode:in')
-    assert.equal(mergeEases<Ease>(['linear', 'outQuad', 'outBack']), 'mode:out')
-    assert.equal(mergeEases<Ease>(['linear', 'linear']), 'linear')
-    assert.equal(mergeEases<Ease>(['linear', 'inSine']), 'mode:in')
-    assert.equal(mergeEases<Ease>(['inSine', 'outQuad']), undefined)
-
-    assert.equal(setEaseEditFamily<Ease>('outQuad', 'sine'), 'outSine')
-    assert.equal(setEaseEditFamily<Ease>('family:quad', 'sine'), 'family:sine')
-    assert.equal(setEaseEditFamily<Ease>('mode:out', 'sine'), 'outSine')
-    assert.equal(setEaseEditFamily<Ease>(undefined, 'sine'), 'family:sine')
-    assert.equal(setEaseEditFamily<Ease>('linear', 'sine'), 'inSine')
-    assert.equal(setEaseEditFamily<Ease>('outQuad', 'linear'), 'linear')
-    assert.equal(setEaseEditFamily<Ease>('outQuad', undefined), 'mode:out')
-    assert.equal(setEaseEditFamily<Ease>('family:quad', undefined), undefined)
-    assert.equal(setEaseEditMode<Ease>('outQuad', 'inOut'), 'inOutQuad')
-    assert.equal(setEaseEditMode<Ease>('family:quad', 'inOut'), 'inOutQuad')
-    assert.equal(setEaseEditMode<Ease>('mode:out', 'in'), 'mode:in')
-    assert.equal(setEaseEditMode<Ease>(undefined, 'in'), 'mode:in')
-    assert.equal(setEaseEditMode<Ease>('outQuad', undefined), 'family:quad')
-    assert.equal(setEaseEditMode<Ease>('mode:out', undefined), undefined)
 })
 
-test('every ease list puts Step first, time scales leaving out overshooting families', () => {
-    assert.equal(easeFamilies[0], 'step')
+test('merged eases keep the halves they agree on, None and Linear taking any function', () => {
+    assert.equal(mergeEases<Ease>([]), undefined)
+    assert.equal(mergeEases<Ease>(['inSine', 'inSine']), 'inSine')
+    assert.equal(mergeEases<Ease>(['inSine', 'outSine']), 'function:sine')
+    assert.equal(mergeEases<Ease>(['inSine', 'inQuad']), 'type:in')
+    assert.equal(mergeEases<Ease>(['none', 'none']), 'none')
+    assert.equal(mergeEases<Ease>(['linear', 'linear']), 'linear')
+    assert.equal(mergeEases<Ease>(['none', 'linear']), undefined)
+    assert.equal(mergeEases<Ease>(['none', 'inStep']), 'function:step')
+    assert.equal(mergeEases<Ease>(['linear', 'inSine', 'outSine']), 'function:sine')
+    assert.equal(mergeEases<Ease>(['linear', 'outQuad', 'outBack']), undefined)
+    assert.equal(mergeEases<Ease>(['inSine', 'outQuad']), undefined)
+})
+
+test('setting a Type or Function keeps the other half, a mode after None or Linear taking Quad', () => {
+    assert.equal(setEaseEditType<Ease>('outSine', 'in'), 'inSine')
+    assert.equal(setEaseEditType<Ease>('none', 'in'), 'inQuad')
+    assert.equal(setEaseEditType<Ease>('linear', 'outIn'), 'outInQuad')
+    assert.equal(setEaseEditType<Ease>('outSine', 'none'), 'none')
+    assert.equal(setEaseEditType<Ease>('outSine', 'linear'), 'linear')
+    assert.equal(setEaseEditType<Ease>('function:sine', 'out'), 'outSine')
+    assert.equal(setEaseEditType<Ease>(undefined, 'out'), 'type:out')
+    assert.equal(setEaseEditType<Ease>('type:in', 'out'), 'type:out')
+    assert.equal(setEaseEditType<Ease>('outSine', undefined), 'function:sine')
+    assert.equal(setEaseEditType<Ease>('none', undefined), undefined)
+    assert.equal(setEaseEditFunction<Ease>('outQuad', 'step'), 'outStep')
+    assert.equal(setEaseEditFunction<Ease>('type:out', 'sine'), 'outSine')
+    assert.equal(setEaseEditFunction<Ease>(undefined, 'sine'), 'function:sine')
+    assert.equal(setEaseEditFunction<Ease>('function:quad', 'sine'), 'function:sine')
+    assert.equal(setEaseEditFunction<Ease>('outQuad', undefined), 'type:out')
+    assert.equal(setEaseEditFunction<Ease>('function:quad', undefined), undefined)
+    // None and Linear have no function to set.
+    assert.equal(setEaseEditFunction<Ease>('none', 'sine'), 'none')
+    assert.equal(setEaseEditFunction<Ease>('linear', 'sine'), 'linear')
+})
+
+test('Type lists None and Linear first; Function lists Step last, time scales without overshoot', () => {
+    assert.deepEqual(easeTypes, ['none', 'linear', 'in', 'out', 'inOut', 'outIn'])
+    assert.deepEqual(easeFunctionNames, [
+        'sine',
+        'quad',
+        'cubic',
+        'quart',
+        'quint',
+        'expo',
+        'circ',
+        'back',
+        'elastic',
+        'step',
+    ])
     assert.deepEqual(
-        timeScaleEaseFamilies,
-        easeFamilies.filter((family) => family !== 'back' && family !== 'elastic'),
+        timeScaleEaseFunctionNames,
+        easeFunctionNames.filter((name) => name !== 'back' && name !== 'elastic'),
     )
 })
 
-test('quick edits cycle through the modes of the current family, then linear', () => {
+test('quick edits cycle None, Linear, then the modes of the current function', () => {
     const cycle = (start: Ease, count: number) => {
         const values = [start]
         while (values.length < count) values.push(cycleEase(values.at(-1) ?? start))
         return values
     }
-    assert.deepEqual(cycle('linear', 6), [
+    assert.deepEqual(cycle('none', 8), [
+        'none',
         'linear',
         'inQuad',
         'outQuad',
         'inOutQuad',
         'outInQuad',
+        'none',
         'linear',
     ])
-    assert.deepEqual(cycle('outSine', 5), ['outSine', 'inOutSine', 'outInSine', 'linear', 'inQuad'])
-    assert.deepEqual(cycle('inStep', 5), ['inStep', 'outStep', 'inOutStep', 'outInStep', 'linear'])
+    assert.deepEqual(cycle('outSine', 5), ['outSine', 'inOutSine', 'outInSine', 'none', 'linear'])
+    assert.deepEqual(cycle('inStep', 5), ['inStep', 'outStep', 'inOutStep', 'outInStep', 'none'])
 })
 
 test('ease samples follow every curve within the tolerance', () => {
-    for (const type of eases.filter((type) => type !== 'linear' && !type.endsWith('Step'))) {
+    for (const type of eases.filter(isCurve)) {
         for (const [from, to] of [
             [0, 1],
             [0.2, 0.9],

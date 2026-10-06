@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { easeFamilies, type EaseEdit } from '../../ease'
+import { easeFunctionNames, type EaseEdit } from '../../ease'
 import { i18n } from '../../i18n'
 import EaseField from './EaseField.vue'
 
@@ -9,9 +9,9 @@ const modelValue = defineModel<EaseEdit | undefined>({ required: true })
 <template>
     <EaseField
         v-model="modelValue"
-        :label="i18n.modals.form.eventEase.label"
-        :mode-label="i18n.modals.form.eventEase.mode"
-        :families="easeFamilies"
+        :type-label="i18n.modals.form.eventEase.type"
+        :function-label="i18n.modals.form.eventEase.function"
+        :functions="easeFunctionNames"
         optional
     />
 </template>

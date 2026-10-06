@@ -1005,6 +1005,7 @@
                 "label": "Slide Critical"
             },
             "ease": {
+                "none": "None",
                 "linear": "Linear",
                 "sine": "Sine",
                 "quad": "Quad",
@@ -1024,7 +1025,8 @@
             "connectorEase": {
                 "label": "Ease",
                 "qualified": "Connector Ease",
-                "mode": "Ease Mode"
+                "type": "Ease Type",
+                "function": "Ease Function"
             },
             "connectorIsFake": {
                 "label": "Slide Fake"
@@ -1090,8 +1092,10 @@
             "eventEase": {
                 "label": "Ease",
                 "qualified": "Event Ease",
-                "mode": "Ease Mode",
-                "qualifiedMode": "Event Ease Mode"
+                "type": "Ease Type",
+                "function": "Ease Function",
+                "qualifiedType": "Event Ease Type",
+                "qualifiedFunction": "Event Ease Function"
             },
             "file": {
                 "select": "Select File…"
@@ -1243,7 +1247,8 @@
             "timeScaleEase": {
                 "label": "Ease",
                 "qualified": "Time Scale Ease",
-                "mode": "Ease Mode"
+                "type": "Ease Type",
+                "function": "Ease Function"
             },
             "timeScaleTransition": {
                 "label": "Transition",

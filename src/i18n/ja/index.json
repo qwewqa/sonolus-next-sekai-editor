@@ -1005,6 +1005,7 @@
         "label": "スライドクリティカル"
       },
       "ease": {
+        "none": "なし",
         "linear": "直線",
         "sine": "サイン",
         "quad": "2次",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "加減速",
         "qualified": "接続の加減速",
-        "mode": "加減速モード"
+        "type": "加減速タイプ",
+        "function": "加減速関数"
       },
       "connectorIsFake": {
         "label": "スライドフェイク"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "加減速",
         "qualified": "イベントの加減速",
-        "mode": "加減速モード",
-        "qualifiedMode": "イベントの加減速モード"
+        "type": "加減速タイプ",
+        "function": "加減速関数",
+        "qualifiedType": "イベントの加減速タイプ",
+        "qualifiedFunction": "イベントの加減速関数"
       },
       "file": {
         "select": "ファイルを選択してください…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "ハイスピード変化",
         "qualified": "ハイスピード変化",
-        "mode": "ハイスピード変化モード"
+        "type": "ハイスピード変化タイプ",
+        "function": "ハイスピード変化関数"
       },
       "timeScaleTransition": {
         "label": "遷移方式",

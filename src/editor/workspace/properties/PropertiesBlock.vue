@@ -10,7 +10,7 @@ import {
     useTemplateRef,
     type WritableComputedRef,
 } from 'vue'
-import { easeFamily, easeMode, eases, type Ease } from '../../../ease'
+import { easeEditParts, easeFunctionOf, easeTypeOf, eases, type Ease } from '../../../ease'
 import { i18n } from '../../../i18n'
 import type { FieldUsage } from '../../../modals/form/fieldUsage'
 import { settings } from '../../../settings'
@@ -60,9 +60,11 @@ const models = Object.fromEntries(
     ]),
 ) as Record<PropertyKey, WritableComputedRef<unknown>>
 
-// An ease counts for both its easing and its mode option.
+// An ease counts for both its type and its function option.
 const easeMatches = (value: unknown, option: unknown) =>
-    value === option || easeFamily(value as Ease) === option || easeMode(value as Ease) === option
+    value === option ||
+    easeTypeOf(value as Ease) === option ||
+    easeFunctionOf(value as Ease) === option
 
 const usageOf = (field: PropertyField): FieldUsage => ({
     usage: props.aggregate.usage.get(field.key),
@@ -97,9 +99,12 @@ const connectorSummary = computed(() => {
         if (field.ease) {
             if (eases.includes(value as Ease))
                 return [field.valueLabel?.(i18n.value, value as never)]
-            // Agreeing on the easing alone still names it.
-            const family = typeof value === 'string' && value.startsWith('family:')
-            return family ? [i18n.value.modals.form.ease[value.slice(7) as 'quad']] : []
+            // Agreeing on one half alone still names it; None and Linear have no function.
+            const { type, name } = easeEditParts(value as Ease | undefined)
+            const values = props.aggregate.usage.get(field.key)?.values.keys() ?? []
+            const named = name && [...values].every((ease) => easeFunctionOf(ease as Ease))
+            const half = type ?? (named ? name : undefined)
+            return half ? [i18n.value.modals.form.ease[half]] : []
         }
         return value !== undefined && field.valueLabel
             ? [field.valueLabel(i18n.value, value as never)]

@@ -1,4 +1,4 @@
-import { easeFamily, easeMode, mergeEases, type Ease } from '../../../ease'
+import { easeFunctionOf, easeMode, easeTypeOf, mergeEases, type Ease } from '../../../ease'
 import type { i18n } from '../../../i18n'
 import type { EntityType } from '../../../state/entities'
 import type { EditableObject } from '../../../state/operations/editable'
@@ -94,8 +94,10 @@ const eventJoints: EntityType[] = [
 
 export const easeLabel = (t: Localization, ease: Ease) => {
     const mode = easeMode(ease)
-    const family = t.modals.form.ease[easeFamily(ease)]
-    return mode ? `${family} ${t.modals.form.ease[mode]}` : family
+    const name = easeFunctionOf(ease)
+    return mode && name
+        ? `${t.modals.form.ease[name]} ${t.modals.form.ease[mode]}`
+        : t.modals.form.ease[easeTypeOf(ease)]
 }
 
 const styleLabel = (t: Localization, style: string) =>
@@ -233,7 +235,7 @@ const fields: PropertyField[] = [
         show: type('timeScale'),
         valueLabel: easeLabel,
         ease: true,
-        brush: { initial: 'inStep' },
+        brush: { initial: 'none' },
     },
     {
         key: 'timeScaleTransition',

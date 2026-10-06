@@ -559,10 +559,20 @@ test('time-scale eases show their curve toward the next change in the group', ()
     canvas.strokes = []
     drawEvent(context, { ...entities[4]!, beat: 10 }, false)
     assert.equal(canvas.strokes[2]?.alpha, 0.7)
+
+    // None draws and fades as the in step it equals, even toward a different value.
+    const drawn = (timeScaleEase: TimeScaleEntity['timeScaleEase']) => {
+        canvas.strokes = []
+        drawEvent(context, { ...entities[1]!, timeScaleEase } as TimeScaleEntity, false)
+        return canvas.strokes[2]
+    }
+    assert.equal(drawn('none')?.alpha, 0.7)
+    assert.deepEqual(drawn('none'), drawn('inStep'))
 })
 
 test('event paths draw steps as held values and sample other curves', () => {
     assert.equal(getPathD(0, 2, 0, -4, 'inStep'), 'M 0 0 V -4')
+    assert.equal(getPathD(0, 2, 0, -4, 'none'), 'M 0 0 V -4')
     assert.equal(getPathD(0, 2, 0, -4, 'outStep'), 'M 2 0 V -4')
     assert.equal(getPathD(0, 2, 0, -4, 'inOutStep'), 'M 0 0 V -2 M 2 -2 V -4')
     assert.equal(getPathD(0, 2, 0, -4, 'outInStep'), 'M 1 0 V -4')

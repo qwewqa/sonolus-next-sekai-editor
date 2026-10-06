@@ -56,6 +56,11 @@ test('step glyphs jump where their values change', () => {
     ])
 })
 
+test('None glyphs draw as the in step it equals', () => {
+    assert.deepEqual(easeGlyphPoints('none'), easeGlyphPoints('inStep'))
+    assert.deepEqual(easeGlyphPoints('none', true), easeGlyphPoints('inStep', true))
+})
+
 test('decreasing ease glyphs mirror the increasing ones', () => {
     for (const type of eases) {
         assert.deepEqual(

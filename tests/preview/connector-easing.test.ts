@@ -157,3 +157,9 @@ test('in-out steps between attached notes split only when they span the jump', (
     assert.ok(connectorInterpFrac(EaseType.outBack, 0, 1, 0.5, 0.5) > 1)
     assert.ok(connectorInterpFrac(EaseType.inElastic, 0, 1, 0.9, 0.9) < 0)
 })
+
+test('NONE evaluates as IN_STEP, the editor None its ease', () => {
+    assert.equal(easeFromValue(EaseType.none), 'none')
+    for (const x of [-0.5, 0, 0.3, 0.5, 1, 1.5])
+        assert.equal(ease(EaseType.none, x), ease(EaseType.inStep, x))
+})

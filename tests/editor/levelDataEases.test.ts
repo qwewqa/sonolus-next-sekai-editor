@@ -7,7 +7,6 @@ import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleEase } from '../../src/chart/timeScale'
 import {
     easeFromValue,
-    easeLevelDataValue,
     eases,
     easeValues,
     timeScaleEaseLevelDataValues,
@@ -148,25 +147,27 @@ const easeData = (entities: ReturnType<typeof serialize>) =>
         ),
     )
 
-test('in steps export as NONE', () => {
-    const data = easeData(serialize(chart('inStep')))
+test('None exports as NONE and In Step as IN_STEP', () => {
     // 2 connectors, 5 events and a time scale.
-    assert.equal(data.length, 8)
-    assert.deepEqual(new Set(data.map((d) => d.value)), new Set([0]))
+    for (const [ease, value] of [
+        ['none', 0],
+        ['inStep', 38],
+    ] as const) {
+        const data = easeData(serialize(chart(ease)))
+        assert.equal(data.length, 8)
+        assert.deepEqual(new Set(data.map((d) => d.value)), new Set([value]), ease)
+    }
 })
 
-test('NONE and IN_STEP both import as in steps', () => {
-    assert.equal(easeFromValue(0), 'inStep')
+test('NONE imports as None and IN_STEP as In Step', () => {
+    assert.equal(easeFromValue(0), 'none')
     assert.equal(easeFromValue(38), 'inStep')
     assert.ok(timeScaleEaseLevelDataValues.includes(0))
     assert.ok(timeScaleEaseLevelDataValues.includes(38))
 })
 
-test('other eases keep their engine values', () => {
-    for (const ease of eases.filter((ease) => ease !== 'inStep')) {
-        assert.equal(easeLevelDataValue(ease), easeValues[ease], ease)
-        assert.equal(easeFromValue(easeLevelDataValue(ease)), ease)
-    }
+test('every ease keeps its engine value', () => {
+    for (const ease of eases) assert.equal(easeFromValue(easeValues[ease]), ease)
     for (const [ease, value] of [
         ['linear', 1],
         ['outInCirc', 29],

@@ -1005,6 +1005,7 @@
         "label": "Kritik Kaydırma"
       },
       "ease": {
+        "none": "Hiçbiri",
         "linear": "Doğrusal",
         "sine": "Sinüs",
         "quad": "Karesel",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "Yumuşatma",
         "qualified": "Bağlayıcı Yumuşatma",
-        "mode": "Yumuşatma Modu"
+        "type": "Yumuşatma Türü",
+        "function": "Yumuşatma Fonksiyonu"
       },
       "connectorIsFake": {
         "label": "Sahte Kaydırma"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "Yumuşatma",
         "qualified": "Olay Yumuşatması",
-        "mode": "Yumuşatma Modu",
-        "qualifiedMode": "Olay Yumuşatma Modu"
+        "type": "Yumuşatma Türü",
+        "function": "Yumuşatma Fonksiyonu",
+        "qualifiedType": "Olay Yumuşatma Türü",
+        "qualifiedFunction": "Olay Yumuşatma Fonksiyonu"
       },
       "file": {
         "select": "Dosya Seç…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "Yumuşatma",
         "qualified": "Zaman Ölçeği Yumuşatması",
-        "mode": "Yumuşatma Modu"
+        "type": "Yumuşatma Türü",
+        "function": "Yumuşatma Fonksiyonu"
       },
       "timeScaleTransition": {
         "label": "Geçiş",

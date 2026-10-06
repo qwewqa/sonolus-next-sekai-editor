@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { easeFromValue, easeFunction, timeScaleEaseLevelDataValues } from '../../src/ease'
+import { easeEvaluator, easeFromValue, timeScaleEaseLevelDataValues } from '../../src/ease'
 import {
     createTimescaleGroup,
     hideNotesAt,
@@ -310,7 +310,7 @@ test('eased integrals recover finite results after overflowing speed arithmetic'
 test('eased speeds integrate exactly and additively for every time scale ease', () => {
     const values = timeScaleEaseLevelDataValues as TimescaleEase[]
     for (const ease of values) {
-        const easeFn = easeFunction(easeFromValue(ease))
+        const easeFn = easeEvaluator(easeFromValue(ease))
         for (const [v0, v1] of [
             [1, 5],
             [5, 1],

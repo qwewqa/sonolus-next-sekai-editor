@@ -1005,6 +1005,7 @@
         "label": "Slide Critique"
       },
       "ease": {
+        "none": "Aucune",
         "linear": "Linéaire",
         "sine": "Sinusoïdale",
         "quad": "Quadratique",
@@ -1024,7 +1025,8 @@
       "connectorEase": {
         "label": "Interpolation",
         "qualified": "Interpolation du connecteur",
-        "mode": "Mode d’interpolation"
+        "type": "Type d’interpolation",
+        "function": "Fonction d’interpolation"
       },
       "connectorIsFake": {
         "label": "Slide factice"
@@ -1090,8 +1092,10 @@
       "eventEase": {
         "label": "Interpolation",
         "qualified": "Interpolation de l’événement",
-        "mode": "Mode d’interpolation",
-        "qualifiedMode": "Mode d’interpolation de l’événement"
+        "type": "Type d’interpolation",
+        "function": "Fonction d’interpolation",
+        "qualifiedType": "Type d’interpolation de l’événement",
+        "qualifiedFunction": "Fonction d’interpolation de l’événement"
       },
       "file": {
         "select": "Sélectionner le Fichier…"
@@ -1243,7 +1247,8 @@
       "timeScaleEase": {
         "label": "Interpolation",
         "qualified": "Interpolation de l’échelle de temps",
-        "mode": "Mode d’interpolation"
+        "type": "Type d’interpolation",
+        "function": "Fonction d’interpolation"
       },
       "timeScaleTransition": {
         "label": "Transition",

@@ -1,4 +1,4 @@
-import { ease, easeMode, isStepEase, sampleEase, type Ease } from '../../ease'
+import { ease, easeMode, isNoneEase, isStepEase, sampleEase, type Ease } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
 import { clamp, lerp, remap, unlerp } from '../../utils/math'
@@ -186,7 +186,7 @@ const appendAttachedPiece = (
     const tail = edgeAt(fTail)
     const pinned = (f: number) => (f <= 0 ? 0 : f >= 1 ? 1 : ease(connectorEase, f))
     const interpFrac = (f: number, fallback: number) =>
-        connectorEase === 'inStep'
+        isNoneEase(connectorEase)
             ? 0
             : safeUnlerp(pinned(fHead), pinned(fTail), ease(connectorEase, f), fallback)
     const at = (interp: number) => {
