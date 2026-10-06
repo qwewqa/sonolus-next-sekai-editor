@@ -51,6 +51,7 @@ import {
     isNoneEase,
     lerp,
     remapClamped,
+    safeUnlerpClamped,
     transformQuadAffine,
     unlerpClamped,
     type Quad,
@@ -531,23 +532,11 @@ export const renderPreviewFrame = (
         let headEndpoint: ConnectorEndpoint
         let headNoteAlpha: number
         if (hasReached(head.targetTime) && !connector.throughJudgeLine) {
-            const headVisualProgress =
-                1 -
-                remapClamped(
-                    head.targetTime,
-                    tail.targetTime,
-                    visualYOffset(head),
-                    visualYOffset(tail),
-                    now,
-                )
-            headNoteAlpha = remapClamped(
-                head.targetTime,
-                tail.targetTime,
-                visualNoteAlpha(head),
-                tailNoteAlpha,
-                now,
-            )
-            if (isNoneEase(connector.ease)) {
+            const headFrac = safeUnlerpClamped(head.targetTime, tail.targetTime, now)
+            const headVisualProgress = 1 - lerp(visualYOffset(head), visualYOffset(tail), headFrac)
+            headNoteAlpha = lerp(visualNoteAlpha(head), tailNoteAlpha, headFrac)
+            // At the head's own time, steps would otherwise apply their held value twice.
+            if (isNoneEase(connector.ease) || headFrac <= 0) {
                 headEndpoint = {
                     lane: visualLane(head),
                     size: head.size,
@@ -558,19 +547,13 @@ export const renderPreviewFrame = (
                     mask: visualMaskAt(head, now),
                 }
             } else {
-                const currentEaseFrac = remapClamped(
-                    head.targetTime,
-                    tail.targetTime,
-                    headEaseFrac(head),
-                    tailEaseFrac(tail),
-                    now,
-                )
+                const currentEaseFrac = lerp(headEaseFrac(head), tailEaseFrac(tail), headFrac)
                 const headInterpFrac = connectorInterpFrac(
                     connector.ease,
                     headEaseFrac(head),
                     tailEaseFrac(tail),
                     currentEaseFrac,
-                    unlerpClamped(head.targetTime, tail.targetTime, now),
+                    headFrac,
                 )
                 headEndpoint = {
                     lane: lerp(visualLane(head), visualLane(tail), headInterpFrac),

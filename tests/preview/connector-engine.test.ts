@@ -40,7 +40,7 @@ const anchor = (beat: number, lane: number, connectorEase: Ease): NoteObject => 
     connectorPresentation: 'default',
 })
 
-const guideQuads = (ease: Ease) => {
+const guideQuads = (ease: Ease, now = 0.7) => {
     const chart: Chart = {
         initialLife: 1000,
         isDynamicStages: false,
@@ -75,7 +75,7 @@ const guideQuads = (ease: Ease) => {
         dispose() {},
     }
     const preview = buildPreviewChart(createState(chart, 0), 6)
-    renderPreviewFrame(renderer, skin, preview, 0.7, 1920, 1080, 1920, 1080, 6, false)
+    renderPreviewFrame(renderer, skin, preview, now, 1920, 1080, 1920, 1080, 6, false)
     return quads
 }
 
@@ -99,4 +99,12 @@ test('connectors split into the same segments as the engine', () => {
         assert.equal(quads.length, count, ease)
         assert.ok(Math.abs(coordinateSum(quads) - sum) < 1e-6, `${ease}: ${coordinateSum(quads)}`)
     }
+})
+
+test("step connectors hold their value at the head's own time", () => {
+    const [quad, ...rest] = guideQuads('outInStep', 1)
+    assert.equal(rest.length, 0)
+    const expected = [-0.1166, -0.5824, -0.0314, 0.6412, 0.0314, 0.6412, 0.1166, -0.5824]
+    const actual = [quad!.bl, quad!.tl, quad!.tr, quad!.br].flatMap(({ x, y }) => [x, y])
+    for (const [i, value] of actual.entries()) assert.ok(Math.abs(value - expected[i]!) < 1e-4)
 })
