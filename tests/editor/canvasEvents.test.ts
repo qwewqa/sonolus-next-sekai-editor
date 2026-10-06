@@ -7,7 +7,7 @@ import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import { drawGrid } from '../../src/editor/canvas/grid'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
-import { getPathD } from '../../src/editor/entities/events/path'
+import { getPathD, getRangePathDs } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
@@ -571,6 +571,45 @@ test('event paths draw steps as held values and sample other curves', () => {
     const xs = sampled.filter((_, index) => index % 3 === 1).map(Number)
     assert.ok(Math.min(...xs) < -0.15)
     assert.ok(Math.abs(xs.at(-1)! - 2) < 1e-12)
+})
+
+test('overshooting mask connections keep the engine minimum width instead of crossing', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'Path2D')
+    class TestPath {
+        constructor(readonly d: string) {}
+    }
+    Object.defineProperty(globalThis, 'Path2D', { configurable: true, value: TestPath })
+    try {
+        const { context, canvas } = makeContext()
+        // Closing to its center with OUT_BACK, the mask width would overshoot below 0.
+        drawEvent(
+            context,
+            {
+                type: 'stageMaskEventConnection' as const,
+                beat: 2,
+                min: { ...mask(2), eventEase: 'outBack' },
+                max: { ...mask(4), maskLeft: 0, maskSize: 0 },
+            },
+            false,
+        )
+        const [left, right] = canvas.strokes.map(({ path }) =>
+            (path as TestPath).d
+                .split(' ')
+                .filter((_, index) => index % 3 === 1)
+                .map(Number),
+        )
+        assert.equal(left!.length, right!.length)
+        for (const [index, x] of left!.entries()) assert.ok(x <= right![index]! + 1e-12)
+        assert.ok(left!.some((x, index) => x === right![index]))
+    } finally {
+        if (original) Object.defineProperty(globalThis, 'Path2D', original)
+        else Reflect.deleteProperty(globalThis, 'Path2D')
+    }
+    // Ranges that cannot reach the minimum keep their exact paths.
+    assert.deepEqual(getRangePathDs([-3, 3], [-1, 1], 0, -4, 'inBack', 0.02), [
+        getPathD(-3, -1, 0, -4, 'inBack'),
+        getPathD(3, 1, 0, -4, 'inBack'),
+    ])
 })
 
 test('a same-beat pair draws one label in the order it plays', () => {

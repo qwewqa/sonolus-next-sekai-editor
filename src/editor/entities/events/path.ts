@@ -1,5 +1,5 @@
 import type { EventEase } from '../../../chart/events'
-import { ease, sampleEase } from '../../../ease'
+import { ease, easeOvershoot, sampleEase } from '../../../ease'
 import { lerp } from '../../../utils/math'
 
 type PathD = (xMin: number, xMax: number, yMin: number, yMax: number) => string
@@ -38,3 +38,40 @@ export const getPathD = (
         .join(' ')
 
 const CURVE_TOLERANCE = 0.01
+
+/**
+ * Paths of a range's two edges, with its width floored at `minWidth` about its center
+ * as the engine does for overshooting masks and cameras.
+ */
+export const getRangePathDs = (
+    [leftMin, rightMin]: [number, number],
+    [leftMax, rightMax]: [number, number],
+    yMin: number,
+    yMax: number,
+    eventEase: EventEase,
+    minWidth: number,
+): [string, string] => {
+    const widthAt = (q: number) => lerp(rightMin - leftMin, rightMax - leftMax, q)
+    const overshoot = easeOvershoot(eventEase)
+    if (Math.min(widthAt(-overshoot), widthAt(1 + overshoot)) >= minWidth)
+        return [
+            getPathD(leftMin, leftMax, yMin, yMax, eventEase),
+            getPathD(rightMin, rightMax, yMin, yMax, eventEase),
+        ]
+    const span = Math.max(Math.abs(leftMax - leftMin), Math.abs(rightMax - rightMin))
+    const points = sampleEase(
+        eventEase,
+        0,
+        1,
+        CURVE_TOLERANCE / Math.max(span, CURVE_TOLERANCE),
+    ).map((p) => {
+        const q = ease(eventEase, p)
+        const center = lerp((leftMin + rightMin) / 2, (leftMax + rightMax) / 2, q)
+        const half = Math.max(minWidth, widthAt(q)) / 2
+        return { left: center - half, right: center + half, y: lerp(yMin, yMax, p) }
+    })
+    return [
+        points.map(({ left, y }, index) => `${index ? 'L' : 'M'} ${left} ${y}`).join(' '),
+        points.map(({ right, y }, index) => `${index ? 'L' : 'M'} ${right} ${y}`).join(' '),
+    ]
+}

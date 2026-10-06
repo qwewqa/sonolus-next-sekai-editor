@@ -9,7 +9,7 @@ import { beatToTime } from '../../state/integrals/bpms'
 import type { StoreGrid } from '../../state/store/grid'
 import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
-import { getPathD } from '../entities/events/path'
+import { getPathD, getRangePathDs } from '../entities/events/path'
 import type { ScopeLookup } from '../scopeRules'
 import { drawText, measureText } from './text'
 import type { CanvasBounds, EditorDrawContext } from './types'
@@ -39,6 +39,14 @@ const jointXs = (entity: EventJointEntity): number[] => {
             return [entity.xTranslation]
     }
 }
+
+// The engine's minimum camera and mask widths, in editor lanes.
+const rangeMinWidth = (entity: EventJointEntity) =>
+    entity.type === 'cameraEventJoint'
+        ? 0.02
+        : entity.type === 'stageMaskEventJoint'
+          ? 0
+          : undefined
 
 const eventColor = (entity: EventJointEntity) => {
     switch (entity.type) {
@@ -222,13 +230,26 @@ const drawConnection = (context: EditorDrawContext, entity: EventConnectionEntit
         const maxXs = jointXs(entity.max)
         const yMin = beatToTime(state.bpms, entity.min.beat) * ups
         const yMax = beatToTime(state.bpms, entity.max.beat) * ups
+        const minWidth = rangeMinWidth(entity.min)
         cached = {
             bpms: state.bpms,
             ups,
-            paths: minXs.map(
-                (x, index) =>
-                    new Path2D(getPathD(x, maxXs[index] ?? x, yMin, yMax, entity.min.eventEase)),
-            ),
+            paths:
+                minWidth === undefined
+                    ? minXs.map(
+                          (x, index) =>
+                              new Path2D(
+                                  getPathD(x, maxXs[index] ?? x, yMin, yMax, entity.min.eventEase),
+                              ),
+                      )
+                    : getRangePathDs(
+                          minXs as [number, number],
+                          maxXs as [number, number],
+                          yMin,
+                          yMax,
+                          entity.min.eventEase,
+                          minWidth,
+                      ).map((d) => new Path2D(d)),
         }
         connectionPaths.set(entity, cached)
     }
