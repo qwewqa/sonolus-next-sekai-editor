@@ -658,7 +658,8 @@ test('an unchanged brush ease half fits its select at the default dock', async (
             (locale) => (window.editorTest.settings.locale = locale as never),
             locale,
         )
-        const select = page.locator('#properties-section-tool select').nth(2)
+        // The ease's function half, after its type.
+        const select = page.locator('#properties-section-tool select').nth(1)
         await expect(select).toBeVisible()
         const fit = await select.evaluate((element: HTMLSelectElement) => {
             const style = getComputedStyle(element)

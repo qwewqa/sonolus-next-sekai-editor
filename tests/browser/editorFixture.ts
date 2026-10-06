@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import type { Chart } from '../../src/chart'
 import type { GroupId } from '../../src/chart/groups'
 import type { NoteObject } from '../../src/chart/note'
@@ -357,4 +358,10 @@ export const installEditorFixture = async () => {
     view.division = 4
     view.snapping = 'absolute'
     await nextTick()
+}
+
+/** Adds a property to the brush through its Add Property menu. */
+export const addBrushProperty = async (scope: Locator, key: string) => {
+    await scope.getByRole('button', { name: 'Add Property', exact: true }).click()
+    await scope.page().locator(`[role="menu"] [data-menu-key="${key}"]`).click()
 }

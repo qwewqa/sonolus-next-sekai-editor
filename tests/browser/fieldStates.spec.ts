@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { installCanvasCounters, installEditorFixture } from './editorFixture'
+import { addBrushProperty, installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
 
@@ -157,9 +157,8 @@ test('brush, creation presets and View never show a blank field', async ({ page 
     for (const shortcut of ['b', 'a', 's', 'f']) {
         await page.keyboard.press(shortcut)
         if (shortcut === 'b') {
-            const add = panel(page).getByRole('combobox', { name: 'Add Property' })
             for (const key of ['connectorEase', 'timeScaleTransition', 'size', 'groupId'])
-                await add.selectOption(key)
+                await addBrushProperty(panel(page), key)
         }
         await expectNoBlank(page, `tool ${shortcut}`)
     }

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import type { NoteObject } from '../../src/chart/note'
-import { installCanvasCounters, installEditorFixture } from './editorFixture'
+import { addBrushProperty, installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
 const selection = (page: Page) => panel(page).locator('#properties-section-selection')
@@ -432,28 +432,65 @@ test.describe('brush', () => {
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
 
         // Added properties start from the selection's value when it agrees.
-        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('isCritical')
+        await addBrushProperty(tool(page), 'isCritical')
         const row = tool(page).locator('[data-brush-key="isCritical"]')
         await expect(row.locator('select')).toBeFocused()
         await expect(row.locator('option:checked')).toHaveText('Enabled')
         await expect(tool(page).locator('.brush-group h3')).toHaveText(['Note'])
         // A set property leaves the menu.
-        await expect(
-            tool(page)
-                .getByRole('combobox', { name: 'Add Property' })
-                .locator('option[value="isCritical"]'),
-        ).toHaveCount(0)
+        await tool(page).getByRole('button', { name: 'Add Property', exact: true }).click()
+        await expect(page.getByRole('menu').locator('[data-menu-key="sfx"]')).toHaveCount(1)
+        await expect(page.getByRole('menu').locator('[data-menu-key="isCritical"]')).toHaveCount(0)
+        await page.keyboard.press('Escape')
 
         // Removing by keyboard moves on to the next row, then to Add Property.
-        await tool(page).getByRole('combobox', { name: 'Add Property' }).selectOption('sfx')
+        await addBrushProperty(tool(page), 'sfx')
         await row.getByRole('button', { name: 'Remove Critical' }).focus()
         await page.keyboard.press('Enter')
         await expect(tool(page).locator('[data-brush-key="sfx"] select')).toBeFocused()
         await tool(page).getByRole('button', { name: 'Remove SFX' }).focus()
         await page.keyboard.press('Enter')
-        await expect(tool(page).getByRole('combobox', { name: 'Add Property' })).toBeFocused()
+        await expect(tool(page).getByRole('button', { name: 'Add Property' })).toBeFocused()
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
         await expect(tool(page).locator('.brush-group')).toHaveCount(0)
+    })
+
+    test('Add Property opens a list the keyboard browses before choosing', async ({ page }) => {
+        const add = tool(page).getByRole('button', { name: 'Add Property', exact: true })
+        await expect(add).toHaveAttribute('aria-haspopup', 'menu')
+        await add.focus()
+        await page.keyboard.press('ArrowDown')
+        const menu = page.getByRole('menu', { name: 'Add Property' })
+        await expect(menu).toBeVisible()
+        await expect(add).toHaveAttribute('aria-expanded', 'true')
+        // Grouped by kind, each group named by its heading.
+        await expect(menu.getByRole('group', { name: 'Note', exact: true })).toBeVisible()
+        const items = menu.getByRole('menuitem')
+        await expect(items.first()).toBeFocused()
+        await page.keyboard.press('ArrowDown')
+        await page.keyboard.press('ArrowDown')
+        await page.keyboard.press('ArrowUp')
+        await expect(items.nth(1)).toBeFocused()
+        // Browsing adds nothing.
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
+        const key = await items.nth(1).getAttribute('data-menu-key')
+        await page.keyboard.press('Enter')
+        await expect(menu).toHaveCount(0)
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(1)
+        await expect(
+            tool(page).locator(`[data-brush-key="${key}"]`).locator('input, select').first(),
+        ).toBeFocused()
+
+        // Escape closes the list and returns to the button, adding nothing.
+        await add.focus()
+        await page.keyboard.press('Enter')
+        await expect(menu).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(menu).toHaveCount(0)
+        await expect(add).toBeFocused()
+        await expect(add).toHaveAttribute('aria-expanded', 'false')
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(1)
+        await expect(tool(page)).toBeVisible()
     })
 
     test('picks agreeing values from the selection and clears them', async ({ page }) => {
@@ -469,9 +506,10 @@ test.describe('brush', () => {
     })
 
     test('never offers the stage without dynamic stages', async ({ page }) => {
-        const add = tool(page).getByRole('combobox', { name: 'Add Property' })
-        await expect(add.locator('option[value="groupId"]')).toHaveCount(1)
-        await expect(add.locator('option[value="stageId"]')).toHaveCount(0)
+        await tool(page).getByRole('button', { name: 'Add Property', exact: true }).click()
+        await expect(page.getByRole('menu').locator('[data-menu-key="groupId"]')).toHaveCount(1)
+        await expect(page.getByRole('menu').locator('[data-menu-key="stageId"]')).toHaveCount(0)
+        await page.keyboard.press('Escape')
         await tool(page).getByRole('button', { name: 'Pick from Selection' }).click()
         await expect(tool(page).locator('[data-brush-key="groupId"]')).toHaveCount(1)
         await expect(tool(page).locator('[data-brush-key="stageId"]')).toHaveCount(0)
@@ -503,13 +541,12 @@ test.describe('unset values', () => {
         page,
     }) => {
         await page.keyboard.press('b')
-        const add = tool(page).getByRole('combobox', { name: 'Add Property' })
-        await add.selectOption('noteType')
+        await addBrushProperty(tool(page), 'noteType')
         const noteType = tool(page).locator('[data-brush-key="noteType"] select')
         await expect(noteType.locator('option:not([hidden])').first()).toHaveText('Default')
         await expect(noteType.locator('option', { hasText: 'Unchanged' })).toHaveCount(0)
         // Either half of an ease may stay Unchanged while the other is set.
-        await add.selectOption('connectorEase')
+        await addBrushProperty(tool(page), 'connectorEase')
         await expect(
             tool(page)
                 .locator('[data-brush-key="connectorEase"] select')

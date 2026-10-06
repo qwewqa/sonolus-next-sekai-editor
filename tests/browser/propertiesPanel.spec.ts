@@ -540,7 +540,7 @@ for (const locale of ['ja', 'fr']) {
                 panel(page).evaluate((panel) => {
                     const box = (selector: string) =>
                         panel.querySelector(selector)!.getBoundingClientRect().toJSON() as DOMRect
-                    const add = panel.querySelector('.brush-add select')!
+                    const add = panel.querySelector('.brush-add span')!
                     return {
                         add: box('.brush-add'),
                         pick: box('.brush-pick'),

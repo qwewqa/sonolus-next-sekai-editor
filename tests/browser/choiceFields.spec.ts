@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { installCanvasCounters, installEditorFixture } from './editorFixture'
+import { addBrushProperty, installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
 const transition = (page: Page) => panel(page).getByRole('radiogroup', { name: /^Transition/ })
@@ -94,9 +94,7 @@ test.describe('roomy panel', () => {
             label: 'Brush',
         })
         const tool = panel(page).getByRole('region', { name: 'Tool' })
-        await tool
-            .getByRole('combobox', { name: 'Add Property' })
-            .selectOption('timeScaleTransition')
+        await addBrushProperty(tool, 'timeScaleTransition')
         const group = tool.getByRole('radiogroup', { name: /^Transition/ })
         // Removing is the row's button; the choice lists values only.
         await expect(group.getByRole('radio')).toHaveCount(2)
@@ -200,7 +198,7 @@ test('clearing a brush number reverts it and keeps the row', async ({ page }) =>
         label: 'Brush',
     })
     const tool = panel(page).getByRole('region', { name: 'Tool' })
-    await tool.getByRole('combobox', { name: 'Add Property' }).selectOption('timeScale')
+    await addBrushProperty(tool, 'timeScale')
     const field = tool.getByRole('spinbutton', { name: 'Time Scale', exact: true })
     await field.fill('3')
     await field.press('Enter')

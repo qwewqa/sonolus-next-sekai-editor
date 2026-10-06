@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, provide, useTemplateRef } from 'vue'
+import { computed, nextTick, provide, shallowRef, useTemplateRef } from 'vue'
 import { brushProperties } from '.'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { defaultGroupId } from '../../../history/groups'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { defaultStageId } from '../../../history/stages'
 import { i18n } from '../../../i18n'
+import { modals } from '../../../modals'
 import { emptyLabelKey, unsetChoiceKey } from '../../../modals/form/emptyLabel'
 import { isEditableEntity } from '../../../state/operations/editable'
 import { interpolate, interpolateRaw } from '../../../utils/interpolate'
@@ -14,6 +15,7 @@ import { aggregateEntities } from '../../utils/properties'
 import { view } from '../../view'
 import CloseIcon from '../../workspace/CloseIcon.vue'
 import AddIcon from '../../workspace/manager/icons/AddIcon.vue'
+import ManagerMenu, { type ManagerMenuItem } from '../../workspace/manager/ManagerMenu.vue'
 import { optionalFieldComponents } from '../../workspace/properties/fieldComponents'
 import {
     brushFields,
@@ -41,6 +43,7 @@ const createModel = (key: BrushKey) =>
 const models = Object.fromEntries(brushFields.map((field) => [field.key, createModel(field.key)]))
 
 const root = useTemplateRef<HTMLElement>('root')
+const addButton = useTemplateRef<HTMLButtonElement>('addButton')
 
 const available = (field: PropertyField) => isBrushAvailable(field, isDynamicStages.value)
 
@@ -77,10 +80,35 @@ const initialValue = (field: PropertyField & { key: BrushKey }) => {
     return fromView[field.key]?.() ?? field.brush?.initial
 }
 
-const add = async (event: Event) => {
-    const select = event.currentTarget as HTMLSelectElement
-    const field = brushFields.find((field) => field.key === select.value)
-    select.value = ''
+// Add Property opens a menu of the properties not in the brush, under their kinds.
+const addMenu = shallowRef<{ modals: number }>()
+const addItems = computed((): ManagerMenuItem[] => {
+    const items: ManagerMenuItem[] = []
+    for (const { kind, fields } of menu.value)
+        for (const field of fields)
+            items.push({
+                key: field.key,
+                label: field.label(i18n.value),
+                group: i18n.value.tools.brush.kinds[kind],
+            })
+    return items
+})
+
+const toggleAddMenu = () => {
+    addMenu.value = addMenu.value ? undefined : { modals: modals.length }
+}
+
+const closeAddMenu = (restoreFocus: boolean) => {
+    const current = addMenu.value
+    if (!current) return
+    addMenu.value = undefined
+    // Never take focus from a dialog that opened meanwhile.
+    if (restoreFocus && modals.length <= current.modals) addButton.value?.focus()
+}
+
+const add = async (key: string) => {
+    addMenu.value = undefined
+    const field = brushFields.find((field) => field.key === key)
     if (!field) return
     brushProperties.value = { ...brushProperties.value, [field.key]: initialValue(field) }
     await nextTick()
@@ -102,7 +130,7 @@ const remove = async (key: BrushKey, event: MouseEvent) => {
     await nextTick()
     const target = next?.isConnected
         ? next.querySelector<HTMLElement>('input, select')
-        : root.value?.querySelector<HTMLElement>('.brush-add select')
+        : addButton.value
     target?.focus()
 }
 
@@ -126,36 +154,29 @@ const clear = () => {
         <div class="flex flex-wrap gap-2">
             <!-- A menu of the properties not in the brush, grouped by kind, on its own row
             so its label fits; Pick and Clear share the next. -->
-            <label
-                class="brush-add relative flex min-w-0 basis-full items-center rounded-full bg-button shadow-md transition-colors focus-within:ring-2 focus-within:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+            <button
+                ref="addButton"
+                type="button"
+                class="brush-add flex min-w-0 basis-full items-center gap-2.5 rounded-full py-1 pl-3 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
+                :class="addMenu ? 'bg-accent text-on-accent' : 'bg-button'"
+                :title="i18n.tools.brush.add"
+                aria-haspopup="menu"
+                :aria-expanded="addMenu ? 'true' : 'false'"
+                :disabled="!addItems.length"
+                @click="toggleAddMenu"
+                @keydown.down.prevent.stop="addMenu ??= { modals: modals.length }"
             >
-                <AddIcon
-                    class="pointer-events-none absolute left-3 size-3.5 fill-current"
-                    aria-hidden="true"
-                />
-                <select
-                    class="w-full min-w-0 cursor-pointer appearance-none truncate rounded-full bg-transparent py-1 pl-8 pr-4 focus:outline-none [@media(pointer:coarse)]:py-2"
-                    :aria-label="i18n.tools.brush.add"
-                    @change="add"
-                >
-                    <option value="" disabled selected hidden>{{ i18n.tools.brush.add }}</option>
-                    <optgroup
-                        v-for="{ kind, fields } in menu"
-                        :key="kind"
-                        :label="i18n.tools.brush.kinds[kind]"
-                        class="text-fg"
-                    >
-                        <option
-                            v-for="field in fields"
-                            :key="field.key"
-                            :value="field.key"
-                            class="text-fg"
-                        >
-                            {{ field.label(i18n) }}
-                        </option>
-                    </optgroup>
-                </select>
-            </label>
+                <AddIcon class="size-3.5 shrink-0 fill-current" aria-hidden="true" />
+                <span class="min-w-0 truncate">{{ i18n.tools.brush.add }}</span>
+            </button>
+            <ManagerMenu
+                v-if="addMenu && addButton"
+                :anchor="addButton"
+                :label="i18n.tools.brush.add"
+                :items="addItems"
+                @select="add"
+                @close="closeAddMenu"
+            />
             <button
                 type="button"
                 class="brush-pick min-w-0 flex-[1_0_auto] truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"

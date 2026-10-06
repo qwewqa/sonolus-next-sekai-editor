@@ -5,6 +5,7 @@ import {
     onMounted,
     onUnmounted,
     ref,
+    useId,
     useTemplateRef,
     type Component,
 } from 'vue'
@@ -23,6 +24,8 @@ export type ManagerMenuItem = {
     destructive?: boolean
     /** Starts a new section of related items. */
     separated?: boolean
+    /** Items sharing a group sit under its heading. */
+    group?: string
 }
 
 const props = defineProps<{
@@ -47,6 +50,24 @@ const emit = defineEmits<{
 }>()
 
 const menu = useTemplateRef<HTMLDivElement>('menu')
+const headingId = useId()
+
+// Grouped menus without icons or checks need no glyph column.
+const glyphless = computed(() =>
+    props.items.every(
+        (item) => item.group !== undefined && !item.icon && item.checked === undefined,
+    ),
+)
+
+// Runs of items sharing a group; ungrouped runs render as plain items.
+const sections = computed(() =>
+    props.items.reduce<{ group?: string; items: ManagerMenuItem[] }[]>((sections, item) => {
+        const last = sections.at(-1)
+        if (last && last.group === item.group) last.items.push(item)
+        else sections.push({ group: item.group, items: [item] })
+        return sections
+    }, []),
+)
 const scroller = useTemplateRef<HTMLDivElement>('scroller')
 
 // A modal dialog renders in the top layer, so a menu opened from inside one
@@ -229,42 +250,70 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                 role="none"
                 class="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-1"
             >
-                <template v-for="item in items" :key="item.key">
+                <template v-for="(section, index) in sections" :key="index">
                     <div
-                        v-if="item.separated || item.destructive"
+                        v-if="section.group !== undefined && index > 0"
                         role="separator"
                         class="mx-2 my-1 shrink-0 border-t border-fg/15"
                     />
-                    <button
-                        type="button"
-                        :role="item.checked === undefined ? 'menuitem' : 'menuitemradio'"
-                        :aria-checked="item.checked"
-                        tabindex="-1"
-                        class="manager-menu-item flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg enabled:focus-visible:bg-button enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:bg-button [@media(pointer:coarse)]:min-h-11"
-                        :class="{ 'text-danger': item.destructive }"
-                        :disabled="item.disabled"
-                        @click="onSelect($event, item)"
+                    <div
+                        :role="section.group === undefined ? 'none' : 'group'"
+                        :aria-labelledby="
+                            section.group === undefined ? undefined : `${headingId}-${index}`
+                        "
+                        :class="section.group === undefined ? 'contents' : 'flex shrink-0 flex-col'"
                     >
-                        <component
-                            :is="item.icon"
-                            v-if="item.icon"
-                            class="size-4 shrink-0 fill-current"
+                        <div
+                            v-if="section.group !== undefined"
+                            :id="`${headingId}-${index}`"
                             aria-hidden="true"
-                        />
-                        <svg
-                            v-else-if="item.checked"
-                            class="size-4 shrink-0 fill-current"
-                            viewBox="0 0 448 512"
-                            aria-hidden="true"
+                            class="manager-menu-heading shrink-0 px-3 pb-1 pt-2 text-xs font-bold text-fg/80"
                         >
-                            <!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc. -->
-                            <path
-                                d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"
+                            {{ section.group }}
+                        </div>
+                        <template v-for="item in section.items" :key="item.key">
+                            <div
+                                v-if="item.separated || item.destructive"
+                                role="separator"
+                                class="mx-2 my-1 shrink-0 border-t border-fg/15"
                             />
-                        </svg>
-                        <span v-else class="size-4 shrink-0" aria-hidden="true" />
-                        <span class="flex-1">{{ item.label }}</span>
-                    </button>
+                            <button
+                                type="button"
+                                :role="item.checked === undefined ? 'menuitem' : 'menuitemradio'"
+                                :aria-checked="item.checked"
+                                tabindex="-1"
+                                class="manager-menu-item flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg enabled:focus-visible:bg-button enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:bg-button [@media(pointer:coarse)]:min-h-11"
+                                :class="{ 'text-danger': item.destructive }"
+                                :disabled="item.disabled"
+                                :data-menu-key="item.key"
+                                @click="onSelect($event, item)"
+                            >
+                                <component
+                                    :is="item.icon"
+                                    v-if="item.icon"
+                                    class="size-4 shrink-0 fill-current"
+                                    aria-hidden="true"
+                                />
+                                <svg
+                                    v-else-if="item.checked"
+                                    class="size-4 shrink-0 fill-current"
+                                    viewBox="0 0 448 512"
+                                    aria-hidden="true"
+                                >
+                                    <!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc. -->
+                                    <path
+                                        d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"
+                                    />
+                                </svg>
+                                <span
+                                    v-else-if="!glyphless"
+                                    class="size-4 shrink-0"
+                                    aria-hidden="true"
+                                />
+                                <span class="flex-1">{{ item.label }}</span>
+                            </button>
+                        </template>
+                    </div>
                 </template>
             </div>
         </div>
