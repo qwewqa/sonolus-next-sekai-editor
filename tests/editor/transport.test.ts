@@ -12,7 +12,11 @@ const fixture = (t: TestContext) => {
         scrollingY: undefined,
     })
     const settings = { playFollow: false, playFollowPosition: 25, pps: 100 }
-    const clock = { now: 10, audio: undefined as number | undefined }
+    const clock = {
+        now: 10,
+        audio: undefined as number | undefined,
+        display: undefined as number | undefined,
+    }
     const starts: { time: number; speed: number; delay?: number }[] = []
     const auditions: number[] = []
     let stopped = 0
@@ -31,6 +35,7 @@ const fixture = (t: TestContext) => {
                 clock.audio = undefined
             },
             getTime: () => clock.audio,
+            getDisplayTime: () => clock.display ?? clock.audio,
             audition: (time) => auditions.push(time),
             stopAudition: () => auditionsStopped++,
         },
@@ -141,6 +146,20 @@ test('play and pause discard queued auditions and pause captures the audio clock
     transport.audition(14)
     await nextTick()
     assert.deepEqual(auditions, [14])
+})
+
+test('frames draw the smoothed position while pause and speed changes use the audio clock', async (t) => {
+    const { transport, view, clock, starts } = fixture(t)
+    transport.play(3)
+    clock.audio = 4
+    clock.display = 4.02
+    transport.update()
+    assert.equal(view.cursorTime, 4.02)
+    transport.changeSpeed(1)
+    assert.deepEqual(starts.at(-1), { time: 4, speed: 1.5, delay: 0 })
+    transport.pause()
+    await nextTick()
+    assert.equal(view.cursorTime, 4)
 })
 
 test('stepping during playback preserves the displayed position while speed changes use audio time', async (t) => {

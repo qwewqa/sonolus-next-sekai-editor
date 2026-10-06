@@ -6,6 +6,8 @@ type TransportDependencies = {
         start(time: number, speed: number, delay?: number): void
         stop(): void
         getTime(): number | undefined
+        /** Smoothed for drawing. */
+        getDisplayTime(): number | undefined
         audition(time: number): void
         stopAudition(): void
     }
@@ -63,7 +65,7 @@ export const createTransport = ({
 
     const update = () => {
         if (!playback) return
-        const cursorTime = audio.getTime()
+        const cursorTime = audio.getDisplayTime()
         if (cursorTime === undefined) {
             playback = undefined
             return

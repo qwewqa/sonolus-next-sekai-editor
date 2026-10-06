@@ -10,6 +10,7 @@ import normalTapUrl from './assets/se_live_perfect.mp3?url'
 import normalTraceUrl from './assets/se_live_trace.mp3?url'
 import criticalTraceUrl from './assets/se_live_trace_critical.mp3?url'
 import type { GroupId } from './chart/groups'
+import { createDisplayClock } from './displayClock'
 import { bgm } from './history/bgm'
 import { bpms } from './history/bpms'
 import { cullEntities, store } from './history/store'
@@ -353,6 +354,25 @@ export const getPlayerTime = () => {
         Math.max(0, context.currentTime - state.value.contextTime) * state.value.speed +
         state.value.bgmTime
     )
+}
+
+// Drawing only; pausing and scheduling read the audio clock.
+const displayClock = createDisplayClock()
+let displayClockState: typeof state.value
+
+export const getPlayerDisplayTime = () => {
+    const current = state.value
+    if (!current) return
+    if (displayClockState !== current) {
+        displayClockState = current
+        displayClock.reset()
+    }
+    const audioTime = displayClock.read(
+        context.currentTime,
+        performance.now() / 1000,
+        context.state === 'running',
+    )
+    return Math.max(0, audioTime - current.contextTime) * current.speed + current.bgmTime
 }
 
 export const loadBgm = (data: ArrayBuffer) => context.decodeAudioData(data)

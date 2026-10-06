@@ -3,6 +3,7 @@ import { i18n } from '../i18n'
 import {
     startPlayer as _startPlayer,
     stopPlayer as _stopPlayer,
+    getPlayerDisplayTime,
     getPlayerTime,
     previewPlayer,
     stopPreviewPlayer,
@@ -25,6 +26,7 @@ const transport = createTransport({
             _stopPlayer()
         },
         getTime: () => getPlayerTime(),
+        getDisplayTime: () => getPlayerDisplayTime(),
         audition: (time) => {
             previewPlayer(time)
         },

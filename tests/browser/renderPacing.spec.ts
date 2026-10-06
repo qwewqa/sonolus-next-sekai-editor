@@ -81,6 +81,30 @@ test('playback redraws the editor and the preview on every clock frame', async (
     expect(result.preview / result.ticks).toBeGreaterThan(0.9)
 })
 
+test('playback moves the cursor by the time each frame took', async ({ page }) => {
+    const residuals = await page.evaluate(async () => {
+        window.editorTest.view.cursorTime = 1
+        window.pacing.startOrStopPlayer()
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        const rows: [number, number][] = []
+        await new Promise<void>((resolve) => {
+            const frame = () => {
+                rows.push([performance.now() / 1000, window.editorTest.view.cursorTime])
+                if (rows.length < 60) requestAnimationFrame(frame)
+                else resolve()
+            }
+            requestAnimationFrame(frame)
+        })
+        window.pacing.startOrStopPlayer()
+        return rows
+            .slice(1)
+            .map(([at, cursor], i) => Math.abs(at - rows[i]![0] - (cursor - rows[i]![1])))
+            .sort((a, b) => a - b)
+    })
+    // Audio clocks advance in 10 and 20 ms blocks against 16.7 ms frames.
+    expect(residuals[Math.floor(residuals.length / 2)]).toBeLessThan(0.002)
+})
+
 test('dragging a dock edge scales the preview buffers and reallocates them once on release', async ({
     page,
 }) => {
