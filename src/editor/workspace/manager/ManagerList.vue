@@ -1551,7 +1551,8 @@ const folderEyeLabel = (item: FolderItem) =>
                 :class="{
                     'manager-entries-dragging': drag?.started,
                     'manager-entries-scrolled': scrolled,
-                    'manager-entries-more': (stickyAdd || selecting) && hiddenBelow,
+                    'manager-entries-more':
+                        (stickyAdd || selecting) && hiddenBelow && !drag?.started,
                     'manager-entries-floating': stickyAdd || selecting,
                 }"
                 :style="{ paddingRight: gutterPadding }"
@@ -1837,7 +1838,7 @@ const folderEyeLabel = (item: FolderItem) =>
     top: 0;
 }
 
-/* Out of the way of a row being dragged over it. */
+/* Out of the way of a row being dragged over it, which the fade then spares too. */
 .manager-footer-floating {
     transition: opacity 150ms;
 }

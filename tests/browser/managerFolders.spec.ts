@@ -579,6 +579,10 @@ test('a drag stops scrolling at the last row', async ({ page }) => {
         await page.mouse.move(part.x + 60 + (step % 2), bounds.y + bounds.height - 10)
     await page.waitForTimeout(300)
     expect(await list.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(end)
+    // The held row stays in sight: the fade toward the hidden Add is off.
+    expect(await list.evaluate((element) => getComputedStyle(element).maskImage)).not.toContain(
+        '100% - 24px',
+    )
     await expect(nameButton(panel(page), 'Part 20')).toBeInViewport()
     await page.mouse.up()
     expect((await tree(page)).endsWith('Part 20 Part 1')).toBe(true)
