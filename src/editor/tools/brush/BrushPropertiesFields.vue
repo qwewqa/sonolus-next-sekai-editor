@@ -124,9 +124,10 @@ const clear = () => {
 <template>
     <div ref="root" class="contents">
         <div class="flex flex-wrap gap-2">
-            <!-- A menu of the properties not in the brush, grouped by kind. -->
+            <!-- A menu of the properties not in the brush, grouped by kind, on its own row
+            so its label fits; Pick and Clear share the next. -->
             <label
-                class="brush-add relative flex min-w-0 flex-1 basis-36 items-center rounded-full bg-button shadow-md transition-colors focus-within:ring-2 focus-within:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+                class="brush-add relative flex min-w-0 basis-full items-center rounded-full bg-button shadow-md transition-colors focus-within:ring-2 focus-within:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
             >
                 <AddIcon
                     class="pointer-events-none absolute left-3 size-3.5 fill-current"

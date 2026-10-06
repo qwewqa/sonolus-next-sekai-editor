@@ -496,3 +496,39 @@ test('controls get 10rem less the label gap at the default dock', async ({ page 
     expect(widths.length).toBeGreaterThan(10)
     expect(Math.min(...widths)).toBeGreaterThanOrEqual(148)
 })
+
+for (const locale of ['ja', 'fr']) {
+    test(`${locale} brush buttons fit, with Add Property on its own row`, async ({ page }) => {
+        await open(page, { locale, propertiesCollapsed: ['selection'], propertiesSection: 'tool' })
+        await selectNoteAt(page, 3)
+        await page.keyboard.press('b')
+        await page.evaluate(async () => {
+            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+            brushProperties.value = { size: 2 }
+        })
+        for (const viewport of [
+            { width: 1600, height: 1000 },
+            { width: 390, height: 844 },
+        ]) {
+            await page.setViewportSize(viewport)
+            const measure = () =>
+                panel(page).evaluate((panel) => {
+                    const box = (selector: string) =>
+                        panel.querySelector(selector)!.getBoundingClientRect().toJSON() as DOMRect
+                    const add = panel.querySelector('.brush-add select')!
+                    return {
+                        add: box('.brush-add'),
+                        pick: box('.brush-pick'),
+                        clear: box('.brush-clear'),
+                        addFits: add.scrollWidth <= add.clientWidth,
+                    }
+                })
+            await expect.poll(async () => (await measure()).pick.width).toBeGreaterThan(0)
+            const layout = await measure()
+            expect(layout.addFits).toBe(true)
+            expect(layout.pick.top).toBeGreaterThan(layout.add.bottom)
+            // Clear never wraps onto a line of its own.
+            expect(Math.abs(layout.clear.top - layout.pick.top)).toBeLessThan(1)
+        }
+    })
+}
