@@ -177,9 +177,16 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         let alpha = 0
                         let xSum = 0
                         let ySum = 0
+                        let halo = 0
                         for (let y = 0; y < canvas.height; y++) {
                             for (let x = 0; x < canvas.width; x++) {
-                                const value = pixels[(y * canvas.width + x) * 4 + 3]!
+                                // Coloured ink only: the halo around labels is dark.
+                                const i = (y * canvas.width + x) * 4
+                                const value =
+                                    (pixels[i + 3]! *
+                                        Math.max(pixels[i]!, pixels[i + 1]!, pixels[i + 2]!)) /
+                                    255
+                                if (pixels[i + 3]! >= 16 && value < 4) halo++
                                 alpha += value
                                 xSum += x * value
                                 ySum += y * value
@@ -190,7 +197,16 @@ for (const pixelRatio of [1, 1.25, 2]) {
                                 bottom = Math.max(bottom, y)
                             }
                         }
-                        return { left, right, top, bottom, x: xSum / alpha, y: ySum / alpha, alpha }
+                        return {
+                            left,
+                            right,
+                            top,
+                            bottom,
+                            x: xSum / alpha,
+                            y: ySum / alpha,
+                            alpha,
+                            halo,
+                        }
                     }
                     results.push({
                         name: item.name,
@@ -213,6 +229,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                 ).toBeLessThanOrEqual(1)
             }
             expect(actual.alpha, `${name}: visible text`).toBeGreaterThan(0)
+            expect(actual.halo, `${name}: dark halo around the text`).toBeGreaterThan(0)
             for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
                 expect(
                     Math.abs(actual[edge] - reference[edge]),

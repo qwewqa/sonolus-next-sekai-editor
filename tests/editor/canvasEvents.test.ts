@@ -108,6 +108,8 @@ class RecordingCanvas {
         return { width: text.length * 0.6 * parseFloat(this.font) }
     }
 
+    strokeText() {}
+
     fillText(text: string, x: number, y: number) {
         const [sx, sy, tx, ty] = this.transform
         this.labels.push({

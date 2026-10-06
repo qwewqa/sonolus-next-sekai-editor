@@ -86,7 +86,12 @@ for (const pixelRatio of [1, 1.25, 2]) {
                 const ink = { left: Infinity, right: -1, top: Infinity, bottom: -1, alpha: 0 }
                 for (let y = Math.floor(y0); y < Math.ceil(y1); y++) {
                     for (let x = Math.floor(x0); x < Math.ceil(x1); x++) {
-                        const value = pixels[(y * ctx.canvas.width + x) * 4 + 3]!
+                        // Coloured ink only: label halos are dark.
+                        const i = (y * ctx.canvas.width + x) * 4
+                        const value =
+                            (pixels[i + 3]! *
+                                Math.max(pixels[i]!, pixels[i + 1]!, pixels[i + 2]!)) /
+                            255
                         ink.alpha += value
                         if (value < 64) continue
                         ink.left = Math.min(ink.left, x)
