@@ -17,7 +17,13 @@ export type FieldUsage = {
 }
 
 /** A value in use by part of a mixed selection. */
-export type MixedValue = { label: string; count: number; narrow?: () => void }
+export type MixedValue = {
+    label: string
+    count: number
+    narrow?: () => void
+    /** The option it counts, when it is one. */
+    option?: unknown
+}
 
 export const fieldUsageKey: InjectionKey<Ref<FieldUsage | undefined>> = Symbol('field usage')
 
@@ -62,7 +68,14 @@ export const mixedOptions = (
     return options.flatMap(([label, option], index) => {
         const count = counts[index] ?? 0
         return count
-            ? [{ label, count, narrow: () => field.narrow?.((value) => matches(value, option)) }]
+            ? [
+                  {
+                      label,
+                      count,
+                      narrow: () => field.narrow?.((value) => matches(value, option)),
+                      option,
+                  },
+              ]
             : []
     })
 }

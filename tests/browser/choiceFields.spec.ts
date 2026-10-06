@@ -160,3 +160,36 @@ test.describe('phone panel', () => {
         expect(await transitions(page)).toEqual(['scroll', 'scroll', 'scroll', 'scroll'])
     })
 })
+
+test('equal names in a mixed select keep their own counts', async ({ page }) => {
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, settings, nextTick } = window.editorTest
+        settings.showSidebar = true
+        const base = fixtures.interaction.slides[0]![0]!
+        // Two groups named alike, as a duplicated folder leaves them.
+        const groups = new Map(
+            [...fixtures.interaction.groups.keys()].map((id) => [id, { name: 'Twin' }]),
+        )
+        const [first, second] = [...groups.keys()]
+        show({
+            ...fixtures.interaction,
+            groups,
+            slides: [
+                [{ ...base, beat: 1, groupId: first! }],
+                [{ ...base, beat: 2, groupId: second! }],
+                [{ ...base, beat: 3, groupId: second! }],
+            ],
+        })
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note',
+            ),
+        })
+        await nextTick()
+    })
+    const select = panel(page).getByRole('combobox', { name: 'Group', exact: true })
+    await expect(select.locator('option:not([hidden])')).toHaveText(['Twin · 1', 'Twin · 2'])
+})

@@ -40,10 +40,11 @@ const mixed = computed(() =>
         : [],
 )
 const counts = computed(
-    () => new Map(mixed.value.map(({ label, count }) => [label, count] as const)),
+    // By option, so options with equal names keep their own counts.
+    () => new Map(mixed.value.map(({ option, count }) => [option, count] as const)),
 )
-const optionText = (name: string) => {
-    const count = counts.value.get(name)
+const optionText = (name: string, value: T) => {
+    const count = counts.value.get(value)
     return count ? `${name} · ${count}` : name
 }
 </script>
@@ -91,7 +92,7 @@ const optionText = (name: string) => {
                             class="text-fg"
                             :value
                         >
-                            {{ optionText(name) }}
+                            {{ optionText(name, value) }}
                         </option>
                     </optgroup>
                     <template v-else>
@@ -101,7 +102,7 @@ const optionText = (name: string) => {
                             class="text-fg"
                             :value
                         >
-                            {{ optionText(name) }}
+                            {{ optionText(name, value) }}
                         </option>
                     </template>
                 </template>
