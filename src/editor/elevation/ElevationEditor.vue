@@ -813,21 +813,18 @@ watchEffect(() => {
         const labelBaseline = (digits.actualBoundingBoxAscent - digits.actualBoundingBoxDescent) / 2
         for (let i = Math.ceil(min * division); i <= Math.floor(max * division); i++) {
             const y = layout.yAt(i / division)
+            const label = i % division === 0 ? `${i / division}` : undefined
             ctx.strokeStyle = i === 0 ? '#ffffff80' : i % division === 0 ? '#ffffff40' : '#ffffff0d'
             ctx.beginPath()
             ctx.moveTo(38, y)
+            // Inside the grid, the line breaks around its label.
+            if (label !== undefined && axisLabelLeft !== undefined) {
+                ctx.lineTo(axisLabelLeft - 3, y)
+                ctx.moveTo(axisLabelLeft + ctx.measureText(label).width + 3, y)
+            }
             ctx.lineTo(layout.width, y)
             ctx.stroke()
-            if (i % division === 0) {
-                const label = `${i / division}`
-                // Inside the grid, a halo keeps the label off its line.
-                if (axisLabelLeft !== undefined) {
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
-                    ctx.lineWidth = 3
-                    ctx.lineJoin = 'round'
-                    ctx.strokeText(label, axisLabelLeft, y + labelBaseline)
-                    ctx.lineWidth = 1
-                }
+            if (label !== undefined) {
                 ctx.fillStyle = '#ffffff80'
                 ctx.fillText(label, axisLabelLeft ?? 28, y + labelBaseline)
             }
