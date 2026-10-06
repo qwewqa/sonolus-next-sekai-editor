@@ -4,6 +4,7 @@ import { i18n } from '../../../i18n'
 import BaseModal from '../../../modals/BaseModal.vue'
 import BaseField from '../../../modals/form/BaseField.vue'
 import { modals } from '../../../modals'
+import { isComposingKey } from '../../../utils/composition'
 import { getScaleLabels } from './labels'
 import {
     scalingSession,
@@ -46,7 +47,7 @@ const onKeydown = (event: KeyboardEvent) => {
     if (
         event.key !== 'Enter' ||
         event.defaultPrevented ||
-        event.isComposing ||
+        isComposingKey(event) ||
         event.repeat ||
         event.ctrlKey ||
         event.altKey ||

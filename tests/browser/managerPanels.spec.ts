@@ -581,6 +581,35 @@ test('a rename keeps the typed name while its row and list update', async ({ pag
     expect((await groupState(page)).names).toEqual(['Default', 'Typed more', 'Third'])
 })
 
+test('a rename leaves Enter and Escape to an IME conversion', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group', 'Third'])
+    const panel = await openGroups(page)
+    const input = panel.locator('.manager-rename')
+    await nameButton(panel, 'Other group').focus()
+    await page.keyboard.press('F2')
+    await page.keyboard.type('グループ')
+    const outside = await input.evaluate((element) => {
+        let reached = 0
+        window.addEventListener('keydown', () => reached++)
+        const press = (key: string, init: KeyboardEventInit, keyCode?: number) => {
+            const event = new KeyboardEvent('keydown', { key, bubbles: true, ...init })
+            if (keyCode !== undefined)
+                Object.defineProperty(event, 'keyCode', { get: () => keyCode })
+            element.dispatchEvent(event)
+        }
+        press('Enter', { isComposing: true })
+        // Chrome's first IME keydown has keyCode 229 without isComposing.
+        press('Escape', {}, 229)
+        press('Enter', {}, 229)
+        return reached
+    })
+    expect(outside).toBe(0)
+    await expect(input).toBeFocused()
+    await expect(input).toHaveValue('グループ')
+    await page.keyboard.press('Enter')
+    expect((await groupState(page)).names).toEqual(['Default', 'グループ', 'Third'])
+})
+
 test('alt-clicking an eye shows only that entry and toggles back', async ({ page }) => {
     await seedGroups(page, ['Default', 'Other group', 'Third'])
     const panel = await openGroups(page)

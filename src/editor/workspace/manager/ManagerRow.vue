@@ -27,6 +27,7 @@ import UncheckedIcon from './icons/UncheckedIcon.vue'
 import VisibleIcon from './icons/VisibleIcon.vue'
 import type { ManagerRowAction, SelectModifiers } from './model'
 import { settings } from '../../../settings'
+import { isComposingKey } from '../../../utils/composition'
 
 const props = defineProps<{
     name: string
@@ -321,6 +322,11 @@ const endRename = (value: string | undefined, keyboard: boolean) => {
 }
 
 const onRenameKeydown = (event: KeyboardEvent) => {
+    // During IME composition, Enter and Escape confirm or cancel the conversion.
+    if (isComposingKey(event)) {
+        if (event.key === 'Enter' || event.key === 'Escape') event.stopPropagation()
+        return
+    }
     if (event.key === 'Enter') {
         event.preventDefault()
         endRename((event.currentTarget as HTMLInputElement).value, true)
