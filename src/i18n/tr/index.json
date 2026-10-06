@@ -629,7 +629,7 @@
       "showStageName": "Sahne Adını Göster",
       "showOtherStages": "Diğer Sahneleri Göster",
       "showOtherObjects": "Diğer Nesneleri Göster",
-      "deselectSwitchesToSelect": "İki kez seçimi kaldırınca Seçim aracına geç",
+      "deselectSwitchesToSelect": "İki Kez Seçimi Kaldırınca Seçim Aracına Geç",
       "beatDisplay": {
         "title": "Vuruş Gösterimi",
         "beat": "Vuruş",
@@ -675,8 +675,8 @@
       },
       "noteSpeed": "Nota Hızı",
       "renderScale": "Çizim Ölçeği",
-      "showEffects": "Efektleri göster",
-      "showTime": "Zamanı göster",
+      "showEffects": "Efektleri Göster",
+      "showTime": "Zamanı Göster",
       "highlightSelection": "Seçimi Vurgula",
       "showHitboxes": "İsabet Kutularını Göster",
       "antialias": "Kenar Yumuşatma",
@@ -695,7 +695,7 @@
       }
     },
     "toolbar": {
-      "title": "Araç çubuğu",
+      "title": "Araç Çubuğu",
       "add": "Araç ekle",
       "modal": {
         "title": "Araç Seç"
@@ -705,7 +705,7 @@
       "title": "Dokunma",
       "quickScrollZone": "Hızlı Kaydırma Alanı (%)",
       "scrollInertia": "Kaydırma Ataleti",
-      "longPressContextMenu": "Bağlam menüsü için uzun bas"
+      "longPressContextMenu": "Bağlam Menüsü İçin Uzun Bas"
     },
     "panels": {
       "title": "Paneller"
@@ -749,7 +749,7 @@
   },
   "tools": {
     "elevation": {
-      "title": "Yükseklik editörü"
+      "title": "Yükseklik Editörü"
     },
     "bpm": {
       "title": "BPM",
@@ -1215,7 +1215,7 @@
         "label": "Dönme Merkezi Şeridi"
       },
       "preset": {
-        "label": "Ön ayar"
+        "label": "Ön Ayar"
       },
       "rightBorderStyle": {
         "label": "Kenarlık Stili (Sağ)"

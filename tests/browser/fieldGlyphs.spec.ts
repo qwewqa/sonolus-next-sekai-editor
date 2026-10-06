@@ -381,7 +381,7 @@ test('a value glyph gives way only when that lets the value fit', async ({ page 
             )
         }
     }
-    // French "Haut à Gauche" (Up Left) fits only without its arrow.
+    // French "Haut à gauche" (Up Left) fits only without its arrow.
     expect(gaveWay).toBeGreaterThan(0)
 })
 

@@ -37,7 +37,7 @@
       "title": "Pinceau",
       "switched": "Outil Pinceau activé",
       "modal": {
-        "title": "Propriétés du Pinceau"
+        "title": "Propriétés du pinceau"
       }
     },
     "copy": {
@@ -84,7 +84,7 @@
       "custom": {
         "title": "Passer à la division personnalisée",
         "modal": {
-          "title": "Division Personnalisée",
+          "title": "Division personnalisée",
           "division": "Division"
         }
       }
@@ -221,7 +221,7 @@
       },
       "switched": "Outil Note #{0} activé",
       "modal": {
-        "title": "Propriétés des Notes par défaut"
+        "title": "Propriétés des notes par défaut"
       }
     },
     "noteSizes": {
@@ -277,22 +277,22 @@
     },
     "scrolls": {
       "scrollLeft": {
-        "title": "Défiler vers la Gauche"
+        "title": "Défiler vers la gauche"
       },
       "scrollRight": {
-        "title": "Défiler vers la Droite"
+        "title": "Défiler vers la droite"
       },
       "scrollDown": {
-        "title": "Défiler vers le Bas"
+        "title": "Défiler vers le bas"
       },
       "scrollUp": {
-        "title": "Défiler vers le Haut"
+        "title": "Défiler vers le haut"
       },
       "scrollPageDown": {
-        "title": "Défiler la Page vers le Bas"
+        "title": "Défiler la page vers le bas"
       },
       "scrollPageUp": {
-        "title": "Défiler la Page vers le Haut"
+        "title": "Défiler la page vers le haut"
       }
     },
     "select": {
@@ -309,7 +309,7 @@
       },
       "switched": "Outil Slide #{0} activé",
       "modal": {
-        "title": "Propriétés des Slides par Défaut"
+        "title": "Propriétés des slides par défaut"
       }
     },
     "snapping": {
@@ -403,7 +403,7 @@
     },
     "timeScale": {
       "title": "Échelle de temps",
-      "switched": "Outil Échelle de Temps activé"
+      "switched": "Outil Échelle de temps activé"
     },
     "events": {
       "title": "{0}",
@@ -420,7 +420,7 @@
     "modal": {
       "title": "Aide",
       "touchscreen": {
-        "title": "Écran Tactile",
+        "title": "Écran tactile",
         "tap": "Appuyez avec un doigt pour utiliser l’outil actuel.",
         "drag": "Glissez d’un seul doigt pour utiliser l’outil actuel.",
         "quickScroll": "Glissez un doigt dans la zone de défilement rapide pour faire défiler.",
@@ -515,7 +515,7 @@
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection."
       },
       "timeScaleTool": {
-        "title": "Outil Échelle de Temps",
+        "title": "Outil Échelle de temps",
         "select": "Appuyez sur des échelles de temps pour en sélectionner 1.",
         "edit": "Appuyez sur 1 échelle de temps pour la modifier.",
         "add": "Appuyez sur une zone vide pour ajouter.",
@@ -605,8 +605,8 @@
       "title": "Éditeur",
       "locale": "Langue",
       "elevationSideBySide": "Éditeur d’élévation côte à côte",
-      "autoSave": "Sauvegarde Automatique",
-      "autoSaveDelay": "Délai de la Sauvegarde Automatique (s)",
+      "autoSave": "Sauvegarde automatique",
+      "autoSaveDelay": "Délai de la sauvegarde automatique (s)",
       "waveformVisualization": {
         "title": "Visualisation de la forme d’onde",
         "off": "Désactivée",
@@ -638,29 +638,29 @@
       }
     },
     "keyboardShortcuts": {
-      "title": "Raccourcis Clavier"
+      "title": "Raccourcis clavier"
     },
     "mouse": {
       "title": "Souris",
       "secondaryTool": {
-        "title": "Outil Secondaire",
+        "title": "Outil secondaire",
         "eraser": "Gomme",
         "select": "Sélectionner",
         "selectContextMenu": "Sélection + menu contextuel"
       },
-      "smoothScrolling": "Défilement Fluide"
+      "smoothScrolling": "Défilement fluide"
     },
     "play": {
       "title": "Lecture",
-      "bgmVolume": "Volume de la Musique (%)",
-      "sfxVolume": "Volume des Effets Sonores (%)",
+      "bgmVolume": "Volume de la musique (%)",
+      "sfxVolume": "Volume des effets sonores (%)",
       "startPosition": {
         "title": "Position de départ",
         "view": "Vue",
         "cursor": "Curseur"
       },
       "follow": "Suivre",
-      "followPosition": "Suivre la Position (%)",
+      "followPosition": "Suivre la position (%)",
       "previewDuration": "Durée de l’aperçu (ms)"
     },
     "preview": {
@@ -770,7 +770,7 @@
       "brushing": "Peinture de {0} objet|Peinture de {0} objets",
       "brushed": "{0} objet peint|{0} objets peints",
       "sidebar": {
-        "title": "Propriétés du Pinceau"
+        "title": "Propriétés du pinceau"
       },
       "add": "Ajouter une propriété",
       "pick": "Copier depuis la sélection",
@@ -812,10 +812,10 @@
       "moved": "{0} note déplacée|{0} notes déplacées",
       "selected": "{0} note sélectionnée|{0} notes sélectionnées",
       "modal": {
-        "title": "Propriétés de Note"
+        "title": "Propriétés de note"
       },
       "sidebar": {
-        "title": "Propriétés de Note par défaut"
+        "title": "Propriétés de note par défaut"
       }
     },
     "offset": {
@@ -847,10 +847,10 @@
       "moved": "{0} note déplacée|{0} notes déplacées",
       "selected": "{0} note sélectionnée|{0} notes sélectionnées",
       "modal": {
-        "title": "Propriétés de Note"
+        "title": "Propriétés de note"
       },
       "sidebar": {
-        "title": "Propriétés de Slide par Défaut"
+        "title": "Propriétés de slide par défaut"
       }
     },
     "timeScale": {
@@ -863,7 +863,7 @@
       "replaced": "{0} échelle de temps remplacée|{0} échelles de temps remplacées",
       "selected": "{0} échelle de temps sélectionnée|{0} échelles de temps sélectionnées",
       "modal": {
-        "title": "Propriétés de l'Échelle de Temps"
+        "title": "Propriétés de l'échelle de temps"
       }
     },
     "events": {
@@ -885,7 +885,7 @@
   "utilities": {
     "title": "Utilitaires",
     "coverEditor": {
-      "title": "Éditeur de la Couverture",
+      "title": "Éditeur de la couverture",
       "cover": "Couverture",
       "size": "Taille",
       "generate": "Générer",
@@ -894,7 +894,7 @@
       "generating": "Génération de la couverture…"
     },
     "previewEditor": {
-      "title": "Éditeur de l'Aperçu",
+      "title": "Éditeur de l'aperçu",
       "bgm": "Musique",
       "start": "Début",
       "end": "Fin",
@@ -917,7 +917,7 @@
   "history": {
     "initialize": "Initialiser",
     "autoSave": {
-      "title": "Sauvegarde Automatique",
+      "title": "Sauvegarde automatique",
       "importing": "Restauration du niveau…",
       "failed": "La sauvegarde automatique n’a pas pu enregistrer vos dernières modifications. Le stockage du navigateur est peut-être plein ou indisponible. Sauvegardez votre partition dans un fichier avant de fermer cet onglet.",
       "paused": "La sauvegarde automatique est suspendue dans cet onglet. L’éditeur essaiera de restaurer la partition non sauvegardée de votre dernière session à la prochaine ouverture.",
@@ -1007,7 +1007,7 @@
         "center": "Centre"
       },
       "connectorActiveIsCritical": {
-        "label": "Slide Critique"
+        "label": "Slide critique"
       },
       "ease": {
         "none": "Aucune",
@@ -1037,7 +1037,7 @@
         "label": "Slide factice"
       },
       "connectorGuideAlpha": {
-        "label": "Opacité du Guide"
+        "label": "Opacité du guide"
       },
       "colors": {
         "neutral": "Neutre",
@@ -1069,7 +1069,7 @@
       },
       "connectorType": {
         "label": "Type",
-        "qualified": "Type de Connecteur",
+        "qualified": "Type de connecteur",
         "active": "Slide",
         "guide": "Guide",
         "damage": "Dégâts"
@@ -1103,17 +1103,17 @@
         "qualifiedFunction": "Fonction d’interp. de l’événement"
       },
       "file": {
-        "select": "Sélectionner le Fichier…"
+        "select": "Sélectionner le fichier…"
       },
       "flickDirection": {
-        "label": "Direction du Flick",
+        "label": "Direction du flick",
         "none": "Aucune",
         "up": "Haut",
-        "upLeft": "Haut à Gauche",
-        "upRight": "Haut à Droite",
+        "upLeft": "Haut à gauche",
+        "upRight": "Haut à droite",
         "down": "Bas",
-        "downLeft": "Bas à Gauche",
-        "downRight": "Bas à Droite"
+        "downLeft": "Bas à gauche",
+        "downRight": "Bas à droite"
       },
       "generateSimLines": {
         "label": "Générer les lignes de simultanéité",
@@ -1131,7 +1131,7 @@
       },
       "isConnectorSeparator": {
         "label": "Séparateur",
-        "qualified": "Séparateur de Connecteur"
+        "qualified": "Séparateur de connecteur"
       },
       "isCritical": {
         "label": "Critique"
@@ -1180,7 +1180,7 @@
         "label": "Style de bordure (gauche)"
       },
       "key": {
-        "input": "Touche de Saisie",
+        "input": "Touche de saisie",
         "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
         "clear": "Cliquez à nouveau pour supprimer ce raccourci",
         "unassigned": "Non attribué",
@@ -1203,7 +1203,7 @@
         "label": "Opacité des notes"
       },
       "noteType": {
-        "label": "Type de Note",
+        "label": "Type de note",
         "default": "Par défaut",
         "trace": "Trace",
         "anchor": "Ancre",
@@ -1247,7 +1247,7 @@
         "label": "Scène"
       },
       "timeScale": {
-        "label": "Échelle de Temps"
+        "label": "Échelle de temps"
       },
       "timeScaleEase": {
         "label": "Interpolation",
