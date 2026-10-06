@@ -12,6 +12,12 @@ export default defineConfig({
     projects: [
         { name: 'firefox', use: { browserName: 'firefox' } },
         { name: 'webkit', use: { browserName: 'webkit' } },
+        // Firefox-specific keyboard defaults such as quick find and Backspace.
+        {
+            name: 'firefox-chrome',
+            testMatch: ['editorChrome.spec.ts', 'shortcuts.spec.ts'],
+            use: { browserName: 'firefox' },
+        },
         {
             name: 'firefox-production',
             testDir: './tests/production',
