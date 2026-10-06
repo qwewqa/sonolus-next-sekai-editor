@@ -771,6 +771,8 @@ const stopDragListeners = () => {
     window.removeEventListener('pointercancel', onDragCancel)
     window.removeEventListener('keydown', onDragKeydown, true)
     clearTimeout(expandTimer)
+    cancelAnimationFrame(scrollFrame)
+    scrollFrame = 0
 }
 
 // Holding a dragged entry over a collapsed folder opens it.
@@ -816,17 +818,38 @@ const onDragMove = (event: PointerEvent) => {
         closeMenu(false)
     }
     event.preventDefault()
+    pointerY = event.clientY
+    follow()
+    if (!scrollFrame) edgeScroll()
+}
 
-    // Scroll the list while the pointer rests near its edges.
-    const bounds = container.getBoundingClientRect()
-    if (event.clientY < bounds.top + 24) container.scrollTop -= 8
-    else if (event.clientY > bounds.bottom - 24) container.scrollTop += 8
-
-    const offset = event.clientY - current.startY + container.scrollTop - current.startScroll
+/** Moves the held block to the pointer and finds its drop target. */
+const follow = () => {
+    const current = drag.value
+    const container = list.value
+    if (!current || !container) return
+    const offset = pointerY - current.startY + container.scrollTop - current.startScroll
     const next = { ...current, offset, started: true }
     next.target = targetOf(next)
     drag.value = next
     scheduleExpand('into' in next.target ? next.target.into : undefined)
+}
+
+// Scroll the list while the pointer rests near its edges.
+let pointerY = 0
+let scrollFrame = 0
+
+const edgeScroll = () => {
+    scrollFrame = 0
+    const container = list.value
+    if (!drag.value?.started || !container) return
+    const bounds = container.getBoundingClientRect()
+    const step = pointerY < bounds.top + 24 ? -8 : pointerY > bounds.bottom - 24 ? 8 : 0
+    const before = container.scrollTop
+    container.scrollTop += step
+    if (container.scrollTop === before) return
+    follow()
+    scrollFrame = requestAnimationFrame(edgeScroll)
 }
 
 // A drag ends with a click on whatever is under the pointer; swallow it so

@@ -540,6 +540,28 @@ test('dragging joins, reorders and leaves folders', async ({ page }) => {
     expect(await tree(page)).toBe('[Verse: Bass Fill Outro] Default Lead')
 })
 
+test('a drag held still near the list edge keeps scrolling', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 600 })
+    await seedGroups(page, [
+        ['Default'],
+        ...Array.from({ length: 30 }, (_, i): [string] => [`Part ${i + 1}`]),
+    ])
+    const list = panel(page).locator('.manager-entries')
+    const bounds = (await list.boundingBox())!
+    const part = (await nameButton(panel(page), 'Part 1').boundingBox())!
+    await page.mouse.move(part.x + 60, part.y + part.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(part.x + 60, bounds.y + bounds.height - 10, { steps: 10 })
+    const before = await list.evaluate((element) => element.scrollTop)
+    await expect
+        .poll(() => list.evaluate((element) => element.scrollTop))
+        .toBeGreaterThan(before + 200)
+    await page.mouse.up()
+    // It landed among the rows scrolled into view, not where the pointer first stopped.
+    const order = await tree(page)
+    expect(order.indexOf('Part 1 ')).toBeGreaterThan(order.indexOf('Part 20 '))
+})
+
 test('a held row takes the indent of where it would land', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']])
     const left = async (name: string) => (await nameButton(panel(page), name).boundingBox())!.x
