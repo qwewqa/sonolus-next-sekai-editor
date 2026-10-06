@@ -233,3 +233,57 @@ test('wide text icons keep clear of their names in the shortcut list and flyouts
     await expect(item).toBeVisible()
     expect(await gap(item, 'Toggle BPM Visibility')).toBeGreaterThanOrEqual(6)
 })
+
+test('command names line up in one icon column that text glyphs fit', async ({ page }) => {
+    await open(page)
+    // Every drawn glyph, text included, stays inside its 20px column.
+    const columns = (selector: string) =>
+        page.locator(selector).evaluateAll((columns) =>
+            columns
+                .filter((column) => column.getClientRects().length)
+                .map((column) => {
+                    const box = column.getBoundingClientRect()
+                    const drawn = [...column.querySelectorAll('*')].flatMap((element) => {
+                        const range = document.createRange()
+                        range.selectNodeContents(element)
+                        return [element.getBoundingClientRect(), range.getBoundingClientRect()]
+                    })
+                    const name = column.nextElementSibling!.getBoundingClientRect().left
+                    return {
+                        width: Math.round(box.width),
+                        overflow: drawn.some(
+                            (rect) =>
+                                rect.width > 0 &&
+                                (rect.left < box.left - 0.5 || rect.right > box.right + 0.5),
+                        ),
+                        name: Math.round(name),
+                    }
+                }),
+        )
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    await expect(page.locator('dialog[open] [data-icon-column]').first()).toBeVisible()
+    const list = await columns('dialog[open] [data-icon-column]')
+    expect(new Set(list.map(({ width }) => width))).toEqual(new Set([20]))
+    expect(list.filter(({ overflow }) => overflow)).toEqual([])
+    expect(new Set(list.map(({ name }) => name)).size).toBe(1)
+    await page.keyboard.press('Escape')
+
+    // Flyouts on a phone share the column; the toolbar's own buttons keep the
+    // glyphs' full size.
+    await page.setViewportSize({ width: 390, height: 844 })
+    const shown = page.locator('[data-editor-toolbar] > div > div > button')
+    const bpm = shown.and(page.getByTitle('BPM', { exact: true }))
+    expect(
+        await bpm.evaluate(
+            (button) => getComputedStyle(button.querySelector('span span')!).fontSize,
+        ),
+    ).toBe('12px')
+    await bpm.hover()
+    await expect(page.locator('[data-editor-toolbar] [data-icon-column]').first()).toBeVisible()
+    const flyout = await columns('[data-editor-toolbar] [data-icon-column]')
+    expect(flyout.filter(({ overflow }) => overflow)).toEqual([])
+    expect(new Set(flyout.map(({ name }) => name)).size).toBe(1)
+})

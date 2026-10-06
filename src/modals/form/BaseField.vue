@@ -374,13 +374,14 @@ watchEffect(
     gap: 0.25rem;
 }
 
-/* A command's icon before its name, as in the keyboard shortcut list. */
+/* A command's icon before its name, as in the keyboard shortcut list; icons
+   share one 20px column (text glyphs fit it), so names line up. */
 .form-field-icon {
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    min-width: 1rem;
+    width: 1.25rem;
     margin-right: 0.5rem;
     vertical-align: middle;
 }

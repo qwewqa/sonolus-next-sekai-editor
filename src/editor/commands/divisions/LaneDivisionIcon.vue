@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import FitText from '../FitText.vue'
+
 defineProps<{ title: string }>()
 </script>
 
 <template>
-    <div
-        aria-hidden="true"
-        class="relative flex items-center justify-center whitespace-nowrap text-xs"
-    >
+    <div aria-hidden="true" class="relative flex items-center justify-center whitespace-nowrap">
         <svg
             class="absolute -top-1 h-1.5 w-4"
             viewBox="0 0 24 8"
@@ -19,6 +18,6 @@ defineProps<{ title: string }>()
                 stroke-width="1.5"
             />
         </svg>
-        <span>{{ title }}</span>
+        <FitText :text="title" :natural="12" :room="20" :sizes="[11, 10]" />
     </div>
 </template>

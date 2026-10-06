@@ -37,10 +37,18 @@ const shortcut = computed(() =>
         :title
         :aria-pressed="pressed"
     >
-        <!-- Beside a label, wide icons such as text chips keep their width. -->
+        <!-- Beside a label, icons share a 20px column so names line up. -->
+        <span v-if="showLabel" class="flex w-5 shrink-0 justify-center" data-icon-column>
+            <component
+                :is="commands[name].icon.is"
+                class="h-4 w-auto min-w-4"
+                v-bind="commands[name].icon.props"
+            />
+        </span>
         <component
             :is="commands[name].icon.is"
-            :class="showLabel ? 'h-4 w-auto min-w-4' : 'size-4'"
+            v-else
+            class="size-4"
             v-bind="commands[name].icon.props"
         />
         <template v-if="showLabel">

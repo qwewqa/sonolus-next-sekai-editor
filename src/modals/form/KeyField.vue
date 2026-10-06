@@ -62,7 +62,9 @@ const onBlur = () => {
 <template>
     <BaseField :label>
         <template v-if="$slots.icon" #icon>
-            <span class="form-field-icon" aria-hidden="true"><slot name="icon" /></span>
+            <span class="form-field-icon" aria-hidden="true" data-icon-column
+                ><slot name="icon"
+            /></span>
         </template>
         <button
             class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
