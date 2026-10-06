@@ -91,3 +91,24 @@ test('settings and keybind resets are independent and remove saved overrides', a
     ).toBeNull()
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
+
+test('shortcut capture takes keys when a click does not focus the button', async ({ page }) => {
+    const save = page
+        .getByRole('dialog')
+        .locator('label')
+        .filter({ has: page.getByText('Save', { exact: true }) })
+        .getByRole('button')
+    // Safari and WebKit don't focus a clicked button.
+    await save.dispatchEvent('click')
+    await expect(save).toHaveText('Press a key or click again to clear')
+    await page.keyboard.press('l')
+    await expect(save).toHaveText('l')
+    expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.save)).toBe('l')
+
+    // Pressing it again to clear must not move focus first, which WebKit does.
+    await save.click()
+    const focusMayMove = await save.evaluate((button) =>
+        button.dispatchEvent(new MouseEvent('mousedown', { cancelable: true })),
+    )
+    expect(focusMayMove).toBe(false)
+})

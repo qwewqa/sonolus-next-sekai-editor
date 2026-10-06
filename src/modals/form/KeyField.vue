@@ -12,9 +12,16 @@ const modelValue = defineModel<string | undefined>({ required: true })
 
 const isActive = ref(false)
 
-const onClick = () => {
+const onClick = (event: MouseEvent) => {
     if (isActive.value) modelValue.value = undefined
     isActive.value = !isActive.value
+    // Safari doesn't focus clicked buttons, so keys would never reach this one.
+    if (isActive.value) (event.currentTarget as HTMLElement).focus()
+}
+
+// Safari moves focus off a pressed button, which would end capture before the click.
+const onMouseDown = (event: MouseEvent) => {
+    if (isActive.value) event.preventDefault()
 }
 
 const onKeyDown = (event: KeyboardEvent) => {
@@ -46,6 +53,7 @@ const onBlur = () => {
             }"
             type="button"
             :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
+            @mousedown="onMouseDown"
             @click="onClick"
             @keydown="onKeyDown"
             @blur="onBlur"
