@@ -842,6 +842,17 @@ const refOf = (row: RowInfo | undefined): FolderTreeRef<T> | undefined =>
         ? { type: 'entry', id: row.key.id }
         : { type: 'folder', id: row.key.id })
 
+/** Where a dragged entry lands. */
+const entryPlace = (current: Drag): EntryPlace<T> => {
+    const { target } = current
+    if ('into' in target) return { folder: target.into }
+    const next = remaining(current)[target.gap]
+    // Before a member: into its folder there. Otherwise loose, before the row.
+    return next?.folder !== undefined && next.key.type === 'entry'
+        ? { folder: next.folder, before: next.key.id }
+        : { before: refOf(next) }
+}
+
 const onDragEnd = (event: PointerEvent) => {
     const current = drag.value
     if (current?.pointerId !== event.pointerId) return
@@ -862,18 +873,7 @@ const onDragEnd = (event: PointerEvent) => {
         folders.value.placeFolder(key.id, refOf(next))
         return
     }
-    let place: EntryPlace<T>
-    if ('into' in target) {
-        place = { folder: target.into }
-    } else {
-        const next = remaining(current)[target.gap]
-        // Before a member: into its folder there. Otherwise loose, before the row.
-        place =
-            next?.folder !== undefined && next.key.type === 'entry'
-                ? { folder: next.folder, before: next.key.id }
-                : { before: refOf(next) }
-    }
-    folders.value.placeEntry(key.id, place)
+    folders.value.placeEntry(key.id, entryPlace(current))
 }
 
 const onDragCancel = () => {
@@ -901,6 +901,12 @@ const isDragged = (key: RowKey) => !!drag.value?.started && drag.value.dragged.h
 const isDroppingInto = computed(() => {
     const target = drag.value?.started ? drag.value.target : undefined
     return !!target && 'into' in target
+})
+/** A held entry between rows takes the indent of where it lands. */
+const heldIndented = computed(() => {
+    const current = drag.value
+    if (!current?.started || current.key.type !== 'entry' || 'into' in current.target) return
+    return entryPlace(current).folder !== undefined
 })
 const isDropTarget = (id: FolderId) => {
     const target = drag.value?.started ? drag.value.target : undefined
@@ -1392,7 +1398,9 @@ const entryProps = (id: T, name: string) => ({
     dragLabel: label(i18n.value.workspace.manager.drag, name),
     dragging: isDragged({ type: 'entry', id }),
     noGrip: !hasGrip.value,
-    indented: folderOfEntry.value.has(id),
+    indented:
+        (isDragged({ type: 'entry', id }) ? heldIndented.value : undefined) ??
+        folderOfEntry.value.has(id),
     ...selectingProps(selected.value.has(id), name),
 })
 
@@ -1528,6 +1536,7 @@ const folderEyeLabel = (item: FolderItem) =>
                         :class="{
                             'manager-dragged relative z-20': isDragged(item),
                             'manager-dragged-over': isDragged(item) && isDroppingInto,
+                            'manager-dragged-in': isDragged(item) && heldIndented,
                         }"
                         :style="rowStyle(item)"
                     >
@@ -1615,6 +1624,8 @@ const folderEyeLabel = (item: FolderItem) =>
                                     'manager-dragged z-20': isDragged({ type: 'entry', id }),
                                     'manager-dragged-over':
                                         isDragged({ type: 'entry', id }) && isDroppingInto,
+                                    'manager-dragged-in':
+                                        isDragged({ type: 'entry', id }) && heldIndented,
                                 }"
                                 :style="rowStyle({ type: 'entry', id })"
                             >
@@ -1813,7 +1824,7 @@ const folderEyeLabel = (item: FolderItem) =>
  * stretch, bridging the gap above it, so the line follows rows that glide
  * aside during a drag.
  */
-.manager-members {
+.manager-entries {
     --guide-x: calc(0.125rem + 2.25rem + 0.5rem + 0.375rem - 1px);
 }
 
@@ -1852,8 +1863,16 @@ const folderEyeLabel = (item: FolderItem) =>
     display: none;
 }
 
+/* A held row landing in a folder marks the line inside its pill, as the target does. */
+.manager-entries li.manager-dragged-in::after {
+    content: '';
+    display: block;
+    left: var(--guide-x);
+    @apply pointer-events-none absolute inset-y-2 w-0.5 rounded-full bg-fg/30;
+}
+
 @media (pointer: coarse) {
-    .manager-members {
+    .manager-entries {
         --guide-x: calc(0.125rem + 2.75rem + 0.625rem + 0.375rem - 1px);
     }
 }

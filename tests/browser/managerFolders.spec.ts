@@ -540,6 +540,37 @@ test('dragging joins, reorders and leaves folders', async ({ page }) => {
     expect(await tree(page)).toBe('[Verse: Bass Fill Outro] Default Lead')
 })
 
+test('a held row takes the indent of where it would land', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']])
+    const left = async (name: string) => (await nameButton(panel(page), name).boundingBox())!.x
+    const loose = await left('Default')
+    const member = await left('Fill')
+    const hold = async (name: string, y: number) => {
+        const box = (await nameButton(panel(page), name).boundingBox())!
+        await page.mouse.move(box.x + 60, box.y + box.height / 2)
+        await page.mouse.down()
+        await page.mouse.move(box.x + 60, y, { steps: 10 })
+    }
+    const marked = () =>
+        panel(page)
+            .locator('li.manager-dragged')
+            .evaluate((element) => getComputedStyle(element, '::after').content)
+
+    // A loose row between members indents, with the folder's line through its pill.
+    await hold('Bass', (await nameButton(panel(page), 'Fill').boundingBox())!.y + 2)
+    expect(await left('Bass')).toBe(member)
+    expect(await marked()).not.toBe('none')
+    await page.mouse.up()
+    expect(await tree(page)).toBe('Default [Verse: Lead Bass Fill] Outro')
+
+    // A member below the folder's last member outdents: it would land loose.
+    await hold('Lead', (await nameButton(panel(page), 'Outro').boundingBox())!.y + 4)
+    expect(await left('Lead')).toBe(loose)
+    expect(await marked()).toBe('none')
+    await page.mouse.up()
+    expect(await tree(page)).toBe('Default [Verse: Bass Fill] Lead Outro')
+})
+
 test('a collapsed folder held over opens and keeps the dragged row under the pointer', async ({
     page,
 }) => {
