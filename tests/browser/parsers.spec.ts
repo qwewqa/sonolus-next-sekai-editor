@@ -58,3 +58,47 @@ test('acyclic event chains can be parsed repeatedly and preserve order', async (
 
     expect(result).toEqual({ first: ['a', 'b', 'c'], second: ['b', 'c'] })
 })
+
+for (const names of [['a'], ['a', 'b']]) {
+    test(`slide imports reject a ${names.length}-node cycle`, async ({ page }) => {
+        await page.goto('/')
+        const result = await page.evaluate(async (names) => {
+            const { parseLevelDataChart } = await import('/src/chart/parse/levelData/index.ts')
+            const note = (name: string, beat: number, next: string) => ({
+                name,
+                archetype: 'NormalTapNote',
+                data: [
+                    { name: '#TIMESCALE_GROUP', ref: 'g' },
+                    { name: '#BEAT', value: beat },
+                    { name: 'lane', value: 0 },
+                    { name: 'size', value: 1 },
+                    { name: 'direction', value: 0 },
+                    { name: 'isAttached', value: 0 },
+                    { name: 'connectorEase', value: 1 },
+                    { name: 'segmentKind', value: 1 },
+                    { name: 'segmentAlpha', value: 1 },
+                    { name: 'next', ref: next },
+                ],
+            })
+            try {
+                const chart = parseLevelDataChart([
+                    { archetype: 'Initialization', data: [] },
+                    {
+                        archetype: '#BPM_CHANGE',
+                        data: [
+                            { name: '#BEAT', value: 0 },
+                            { name: '#BPM', value: 120 },
+                        ],
+                    },
+                    { name: 'g', archetype: '#TIMESCALE_GROUP', data: [] },
+                    ...names.map((name, i) => note(name, i + 1, names[(i + 1) % names.length]!)),
+                ])
+                return `${chart.slides.flat().length} notes`
+            } catch (error) {
+                return String(error)
+            }
+        }, names)
+
+        expect(result).toContain(`Invalid level: cyclic slide ref "a"`)
+    })
+}

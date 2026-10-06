@@ -52,6 +52,8 @@ export const parseSlidesToChart = ({
         if (nextName === undefined) continue
 
         const nextSlide = slides.get(nextName)
+        // Each note has one next, so reaching its own slide again is a loop.
+        if (nextSlide === slide) throw new Error(`Invalid level: cyclic slide ref "${nextName}"`)
         if (nextSlide) {
             slide.push(...nextSlide)
 
