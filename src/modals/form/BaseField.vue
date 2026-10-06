@@ -4,6 +4,7 @@ import {
     nextTick,
     onBeforeUnmount,
     onMounted,
+    onUpdated,
     ref,
     useId,
     useSlots,
@@ -86,8 +87,10 @@ const fitLabel = () => {
     fieldRoot.value?.classList.remove('form-field-value-stacked')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
-    const select = row.value?.querySelector('select')
-    if (stackLongValues && select && valueOverflows(select))
+    const control = row.value?.querySelector<HTMLSelectElement | HTMLButtonElement>(
+        ':scope > select, :scope > button, :scope > .form-field-select > select',
+    )
+    if (stackLongValues && control && valueOverflows(control))
         fieldRoot.value?.classList.add('form-field-value-stacked')
 }
 const refitLabel = () => {
@@ -101,6 +104,10 @@ onMounted(() => {
 })
 
 watch(() => props.label, fitLabel, { flush: 'post' })
+// A value can change without a change event, as a shortcut's capture prompt does.
+onUpdated(() => {
+    if (stackLongValues) refitLabel()
+})
 
 onBeforeUnmount(() => {
     if (row.value) unobserveWidth(row.value)
@@ -625,6 +632,11 @@ watchEffect(
 
 .form-field.form-field-value-stacked .form-field-label {
     width: auto;
+}
+
+/* Even the full row may be too narrow for a prompt, which then wraps. */
+.form-field.form-field-value-stacked .form-field-row > button {
+    white-space: normal;
 }
 
 /* A label that would otherwise clamp keeps the control to 9rem. */

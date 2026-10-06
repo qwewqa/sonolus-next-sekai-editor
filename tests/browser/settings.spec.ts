@@ -362,3 +362,32 @@ for (const locale of ['fr', 'tr', 'en']) {
         expect(stacked).toBeLessThan(6)
     })
 }
+
+for (const locale of ['en', 'fr', 'ja', 'tr']) {
+    test(`${locale} the capture prompt shows in full on a phone`, async ({ page }) => {
+        await page.setViewportSize({ width: 375, height: 812 })
+        await page.evaluate(
+            (locale) => (window.editorTest.settings.locale = locale as never),
+            locale,
+        )
+        const save = page
+            .getByRole('dialog')
+            .locator('.form-field')
+            .filter({ has: page.locator('[data-icon-column]') })
+            .first()
+            .getByRole('button')
+        await save.scrollIntoViewIfNeeded()
+        await save.click()
+        await expect
+            .poll(() =>
+                save.evaluate(
+                    (button) =>
+                        button.scrollWidth <= button.clientWidth &&
+                        button.scrollHeight <= button.clientHeight,
+                ),
+            )
+            .toBe(true)
+        // It returns beside its name once capture ends.
+        await page.keyboard.press('Escape')
+    })
+}
