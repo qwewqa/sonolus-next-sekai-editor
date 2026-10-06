@@ -92,14 +92,14 @@ const reference: Partial<Record<Ease, (x: number) => number>> = {
 
 const samples = [0, 0.01, 0.1, 0.25, 0.3, 0.49, 0.5, 0.51, 0.7, 0.75, 0.9, 0.99, 1]
 
-test('curved eases match the Sonolus native formulas and clamp their input', () => {
+test('curved eases match the Sonolus native formulas exactly and clamp their input', () => {
     const curved = eases.filter((type) => type !== 'linear' && !type.endsWith('Step'))
     assert.equal(curved.length, 36)
     for (const type of curved) {
         const expected = reference[type]
         assert.ok(expected, type)
         for (const x of samples) {
-            assert.ok(Math.abs(ease(type, x) - expected(x)) < 1e-12, `${type}(${x})`)
+            assert.equal(ease(type, x), expected(x), `${type}(${x})`)
         }
         assert.equal(ease(type, -0.5), ease(type, 0), type)
         assert.equal(ease(type, 1.5), ease(type, 1), type)

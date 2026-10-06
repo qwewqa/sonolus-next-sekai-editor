@@ -128,42 +128,97 @@ const c3 = c1 + 1
 const c4 = (2 * Math.PI) / 3
 const c5 = (2 * Math.PI) / 4.5
 
-const ins: Record<Exclude<CurveFamily, 'step'>, (x: number) => number> = {
-    sine: (x) => 1 - Math.cos((x * Math.PI) / 2),
-    quad: (x) => x * x,
-    cubic: (x) => x ** 3,
-    quart: (x) => x ** 4,
-    quint: (x) => x ** 5,
-    expo: (x) => (x === 0 ? 0 : 2 ** (10 * x - 10)),
-    circ: (x) => 1 - Math.sqrt(1 - x * x),
-    back: (x) => c3 * x ** 3 - c1 * x ** 2,
-    elastic: (x) =>
-        x === 0 || x === 1 ? x : -(2 ** (10 * x - 10)) * Math.sin((x * 10 - 10.75) * c4),
-}
-
-const inOuts: Partial<Record<CurveFamily, (x: number) => number>> = {
-    back: (x) =>
-        x < 0.5
-            ? ((2 * x) ** 2 * ((c2 + 1) * 2 * x - c2)) / 2
-            : ((2 * x - 2) ** 2 * ((c2 + 1) * (2 * x - 2) + c2) + 2) / 2,
-    elastic: (x) =>
-        x === 0 || x === 1
-            ? x
-            : x < 0.5
-              ? -(2 ** (20 * x - 10) * Math.sin((20 * x - 11.125) * c5)) / 2
-              : (2 ** (-20 * x + 10) * Math.sin((20 * x - 11.125) * c5)) / 2 + 1,
-}
-
-// The native forms only special-case the endpoints, not the midpoint.
-const outIns: Partial<Record<CurveFamily, (x: number) => number>> = {
-    expo: (x) =>
-        x === 0 || x === 1 ? x : x < 0.5 ? (1 - 2 ** (-20 * x)) / 2 : 2 ** (20 * x - 20) / 2 + 0.5,
-    elastic: (x) =>
-        x === 0 || x === 1
-            ? x
-            : x < 0.5
-              ? (2 ** (-20 * x) * Math.sin((20 * x - 0.75) * c4)) / 2 + 0.5
-              : -(2 ** (20 * x - 20) * Math.sin((20 * x - 20.75) * c4)) / 2 + 0.5,
+// Literal transcriptions of sonolus.script.easing, so results match the engine bit for bit.
+const curves: Record<Exclude<CurveFamily, 'step'>, Record<EaseMode, (x: number) => number>> = {
+    quad: {
+        in: (x) => x ** 2,
+        out: (x) => 1 - (1 - x) ** 2,
+        inOut: (x) => (x < 0.5 ? 2 * x ** 2 : 1 - (-2 * x + 2) ** 2 / 2),
+        outIn: (x) => (x < 0.5 ? (1 - (1 - 2 * x) ** 2) / 2 : (2 * x - 1) ** 2 / 2 + 0.5),
+    },
+    sine: {
+        in: (x) => 1 - Math.cos((x * Math.PI) / 2),
+        out: (x) => Math.sin((x * Math.PI) / 2),
+        inOut: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
+        outIn: (x) => (x < 0.5 ? Math.sin(Math.PI * x) / 2 : 1 - Math.sin(Math.PI * x) / 2),
+    },
+    cubic: {
+        in: (x) => x ** 3,
+        out: (x) => 1 - (1 - x) ** 3,
+        inOut: (x) => (x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2),
+        outIn: (x) => (x < 0.5 ? (1 - (1 - 2 * x) ** 3) / 2 : (2 * x - 1) ** 3 / 2 + 0.5),
+    },
+    quart: {
+        in: (x) => x ** 4,
+        out: (x) => 1 - (1 - x) ** 4,
+        inOut: (x) => (x < 0.5 ? 8 * x ** 4 : 1 - (-2 * x + 2) ** 4 / 2),
+        outIn: (x) => (x < 0.5 ? (1 - (1 - 2 * x) ** 4) / 2 : (2 * x - 1) ** 4 / 2 + 0.5),
+    },
+    quint: {
+        in: (x) => x ** 5,
+        out: (x) => 1 - (1 - x) ** 5,
+        inOut: (x) => (x < 0.5 ? 16 * x ** 5 : 1 - (-2 * x + 2) ** 5 / 2),
+        outIn: (x) => (x < 0.5 ? (1 - (1 - 2 * x) ** 5) / 2 : (2 * x - 1) ** 5 / 2 + 0.5),
+    },
+    expo: {
+        in: (x) => (x === 0 ? 0 : 2 ** (10 * x - 10)),
+        out: (x) => (x === 1 ? 1 : 1 - 2 ** (-10 * x)),
+        inOut: (x) =>
+            x === 0 || x === 1
+                ? x
+                : x < 0.5
+                  ? 2 ** (20 * x - 10) / 2
+                  : (2 - 2 ** (-20 * x + 10)) / 2,
+        outIn: (x) =>
+            x === 0 || x === 1
+                ? x
+                : x < 0.5
+                  ? (1 - 2 ** (-20 * x)) / 2
+                  : 2 ** (20 * x - 20) / 2 + 0.5,
+    },
+    circ: {
+        in: (x) => 1 - Math.sqrt(1 - x ** 2),
+        out: (x) => Math.sqrt(1 - (x - 1) ** 2),
+        inOut: (x) =>
+            x < 0.5
+                ? (1 - Math.sqrt(1 - (2 * x) ** 2)) / 2
+                : (Math.sqrt(1 - (2 * x - 2) ** 2) + 1) / 2,
+        outIn: (x) =>
+            x < 0.5
+                ? Math.sqrt(1 - (2 * x - 1) ** 2) / 2
+                : (1 - Math.sqrt(1 - (2 * x - 1) ** 2)) / 2 + 0.5,
+    },
+    back: {
+        in: (x) => c3 * x ** 3 - c1 * x ** 2,
+        out: (x) => 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2,
+        inOut: (x) =>
+            x < 0.5
+                ? ((2 * x) ** 2 * ((c2 + 1) * 2 * x - c2)) / 2
+                : ((2 * x - 2) ** 2 * ((c2 + 1) * (2 * x - 2) + c2) + 2) / 2,
+        outIn: (x) =>
+            x < 0.5
+                ? (1 + c3 * (2 * x - 1) ** 3 + c1 * (2 * x - 1) ** 2) / 2
+                : (c3 * (2 * x - 1) ** 3 - c1 * (2 * x - 1) ** 2) / 2 + 0.5,
+    },
+    elastic: {
+        in: (x) =>
+            x === 0 || x === 1 ? x : -(2 ** (10 * x - 10)) * Math.sin((x * 10 - 10.75) * c4),
+        out: (x) => (x === 0 || x === 1 ? x : 2 ** (-10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1),
+        inOut: (x) =>
+            x === 0 || x === 1
+                ? x
+                : x < 0.5
+                  ? -(2 ** (20 * x - 10) * Math.sin((20 * x - 11.125) * c5)) / 2
+                  : (2 ** (-20 * x + 10) * Math.sin((20 * x - 11.125) * c5)) / 2 + 1,
+        outIn: (x) =>
+            x < 0.5
+                ? x === 0
+                    ? 0
+                    : (2 ** (-20 * x) * Math.sin((20 * x - 0.75) * c4)) / 2 + 0.5
+                : x === 1
+                  ? 1
+                  : -(2 ** (10 * (2 * x - 1) - 10) * Math.sin((20 * x - 20.75) * c4)) / 2 + 0.5,
+    },
 }
 
 // Steps take the value inside the interval at both endpoints.
@@ -182,25 +237,7 @@ const createEaseFunction = (ease: Ease): ((x: number) => number) => {
     if (family === 'linear' || !mode) return clamp01
     if (family === 'step') return steps[mode]
 
-    const inEase = ins[family]
-    const outEase = (x: number) => 1 - inEase(1 - x)
-    let f: (x: number) => number
-    switch (mode) {
-        case 'in':
-            f = inEase
-            break
-        case 'out':
-            f = outEase
-            break
-        case 'inOut':
-            f = inOuts[family] ?? ((x) => (x < 0.5 ? inEase(2 * x) / 2 : 1 - inEase(2 - 2 * x) / 2))
-            break
-        case 'outIn':
-            f =
-                outIns[family] ??
-                ((x) => (x < 0.5 ? outEase(2 * x) / 2 : 0.5 + inEase(2 * x - 1) / 2))
-            break
-    }
+    const f = curves[family][mode]
     return (x) => f(clamp01(x))
 }
 
