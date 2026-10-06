@@ -182,3 +182,44 @@ test('flyout hints show named keys readably and punctuation as large as letters'
     expect(punctuation.size).toBeGreaterThan(letter.size)
     expect(punctuation.weight).toBeGreaterThanOrEqual(700)
 })
+
+test('Escape on a tool dialog returns focus to the tool that opened it, or to the chart', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        settings.toolbar = [['select'], ['brush']]
+    })
+    // In use already, so running it again opens its dialog.
+    await page.evaluate(async () => {
+        const { toolName } = await window.editorTest.appImport<
+            typeof import('../../src/editor/tools/state')
+        >('/src/editor/tools/state.ts')
+        toolName.value = 'brush'
+    })
+    const dialog = page.locator('.editor-tool-modal')
+    const brush = shown(page).and(page.getByTitle('Brush', { exact: true }))
+    await brush.focus()
+    await page.keyboard.press('Enter')
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(shown(page).and(page.getByTitle('Brush', { exact: true }))).toBeFocused()
+
+    // Opened from the chart, it returns there.
+    await page.mouse.click(700, 300)
+    await page.keyboard.press('b')
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    expect(
+        await page.evaluate(
+            () =>
+                document.activeElement?.getAttribute('tabindex') === '-1' &&
+                !!document.activeElement.querySelector('canvas.editor-chart') &&
+                !document.activeElement.querySelector('[data-workspace-dock]'),
+        ),
+    ).toBe(true)
+})

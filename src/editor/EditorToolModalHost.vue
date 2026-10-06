@@ -23,6 +23,29 @@ const current = computed(() => matching.value.at(-1))
 const label = ref('')
 provide(modalTitleKey, label)
 
+// Main tools of the pane's toolbar, which a dialog unmounts and Escape brings back.
+const toolButtons = (pane: Element | null | undefined) => [
+    ...(pane?.querySelectorAll<HTMLElement>('[data-editor-toolbar] > div > div > button') ?? []),
+]
+
+// A tool the keyboard used to open the dialog; pointer clicks leave tools unfocused.
+let opener: { pane: Element; index: number } | undefined
+
+// Read before any render unmounts the toolbar.
+watch(
+    current,
+    (modal) => {
+        if (!modal) return
+        const active = document.activeElement
+        const pane = active?.closest('[data-editor-toolbar]')?.parentElement
+        // A dialog replacing another keeps its opener.
+        if (pane && active instanceof HTMLElement)
+            opener = { pane, index: toolButtons(pane).indexOf(active) }
+        else if (!panel.value?.contains(active)) opener = undefined
+    },
+    { flush: 'sync' },
+)
+
 watch(current, async (modal) => {
     if (!modal) return
     await nextTick()
@@ -38,7 +61,17 @@ const onKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || !modal || modals.at(-1) !== modal) return
     event.preventDefault()
     event.stopImmediatePropagation()
+    const pane = panel.value?.parentElement
+    const hadFocus = !!panel.value?.contains(document.activeElement)
+    const index = opener && opener.pane === pane ? opener.index : -1
     closeModal(modal)
+    if (!hadFocus || !(pane instanceof HTMLElement)) return
+    // Focus goes back to the tool that opened it, or else to the chart.
+    void nextTick(() => {
+        if (current.value || !pane.isConnected) return
+        const target = toolButtons(pane)[index] ?? pane
+        target.focus({ preventScroll: true })
+    })
 }
 
 onMounted(() => {
