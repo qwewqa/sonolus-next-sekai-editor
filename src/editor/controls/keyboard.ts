@@ -53,6 +53,8 @@ const onKeydown = (event: KeyboardEvent) => {
         void commands[name].execute()
     }
     if (!isShortcut || keepsDefault(event)) return
+    // Selected page text keeps its native copy, as before chords were blocked.
+    if (editingOnly && getSelection()?.isCollapsed === false) return
 
     // Handled plain keys skip browser defaults such as Firefox quick find and
     // WebKit Backspace navigation, and handled editing chords skip theirs.

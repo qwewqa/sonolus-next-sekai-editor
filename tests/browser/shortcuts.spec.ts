@@ -70,6 +70,20 @@ test.describe('chords', () => {
         })
     }
 
+    test('Ctrl+C keeps copying selected page text', async ({ context, page }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+        await page.evaluate(async () => {
+            await navigator.clipboard.writeText('before')
+            const text = document.body.appendChild(document.createElement('p'))
+            text.textContent = 'Note Speed'
+            getSelection()?.selectAllChildren(text)
+        })
+        await page.keyboard.press('Control+c')
+        await expect
+            .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+            .toBe('Note Speed')
+    })
+
     test('a rebound undo key undoes with Ctrl too', async ({ page }) => {
         await page.evaluate(() => {
             const { settings } = window.editorTest
