@@ -253,7 +253,8 @@ test('connectors between elevations draw their segments at changing depths', () 
             },
         }),
     )
-    assert.ok(draws.length >= 32)
+    // The engine splits connectors between different transforms into 20 segments.
+    assert.equal(draws.length, 20)
     assert.ok(draws.at(-1)!.z[1]! - draws[0]!.z[1]! > 0.9)
 })
 

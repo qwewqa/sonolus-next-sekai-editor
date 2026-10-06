@@ -1,0 +1,102 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import type { Chart } from '../../src/chart'
+import type { GroupId } from '../../src/chart/groups'
+import type { NoteObject } from '../../src/chart/note'
+import type { StageId } from '../../src/chart/stages'
+import type { Ease } from '../../src/ease'
+import { buildPreviewChart } from '../../src/preview/engine/chart'
+import type { Quad } from '../../src/preview/engine/math'
+import { renderPreviewFrame } from '../../src/preview/engine/render'
+import type { PreviewRenderer } from '../../src/preview/gl'
+import { resolveSkin, type Sprite } from '../../src/preview/skin'
+import { createState } from '../../src/state'
+
+const groupId = 1 as GroupId
+const stageId = 1 as StageId
+
+const anchor = (beat: number, lane: number, connectorEase: Ease): NoteObject => ({
+    groupId,
+    stageId,
+    beat,
+    noteType: 'anchor',
+    isAttached: false,
+    left: lane - 0.5,
+    size: 1,
+    isCritical: false,
+    flickDirection: 'none',
+    isFake: false,
+    noteStyle: 'default',
+    connectorStyle: 'green',
+    sfx: 'default',
+    isConnectorSeparator: false,
+    connectorType: 'guide',
+    connectorEase,
+    connectorIsFake: false,
+    connectorActiveIsCritical: false,
+    connectorGuideAlpha: 1,
+    connectorLayer: 'top',
+    connectorIsPassThrough: false,
+    connectorPresentation: 'default',
+})
+
+const guideQuads = (ease: Ease) => {
+    const chart: Chart = {
+        initialLife: 1000,
+        isDynamicStages: false,
+        bpms: [{ beat: 0, bpm: 60 }],
+        groups: new Map([[groupId, { name: 'Default' }]]),
+        stages: new Map([
+            [
+                stageId,
+                { name: 'Stage', isFromStart: true, isUntilEnd: true, generateSimLines: 'global' },
+            ],
+        ]),
+        cameraEvents: [],
+        stageMaskEvents: [],
+        stagePivotEvents: [],
+        stageStyleEvents: [],
+        stageTransformEvents: [],
+        timeScales: [],
+        slides: [[anchor(1, -3, ease), anchor(2, 3, 'linear')]],
+    }
+    const guide: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+    const skin = resolveSkin((name) => (name === 'Sekai Guide Green' ? guide : undefined))
+    const quads: Quad[] = []
+    const renderer: PreviewRenderer = {
+        maxViewportSize: { width: 1920, height: 1080 },
+        setTexture() {},
+        begin() {},
+        draw(sprite, quad, _z, alpha) {
+            if (sprite === guide && alpha > 0) quads.push(quad)
+        },
+        flush() {},
+        isContextLost: () => false,
+        dispose() {},
+    }
+    const preview = buildPreviewChart(createState(chart, 0), 6)
+    renderPreviewFrame(renderer, skin, preview, 0.7, 1920, 1080, 1920, 1080, 6, false)
+    return quads
+}
+
+const coordinateSum = (quads: Quad[]) =>
+    quads.reduce(
+        (sum, { bl, tl, tr, br }) => sum + bl.x + bl.y + tl.x + tl.y + tr.x + tr.y + br.x + br.y,
+        0,
+    )
+
+test('connectors split into the same segments as the engine', () => {
+    // Watch mode draws at note speed 6, from the packaged engine callbacks.
+    for (const [ease, count, sum] of [
+        ['inQuad', 11, 14.114541189],
+        ['outCirc', 27, 3.447804943],
+        ['inOutBack', 32, 47.795279385],
+        ['outElastic', 35, 77.015405547],
+        ['inOutStep', 2, 2.834125739],
+        ['outInStep', 1, 1.50055448],
+    ] as const) {
+        const quads = guideQuads(ease)
+        assert.equal(quads.length, count, ease)
+        assert.ok(Math.abs(coordinateSum(quads) - sum) < 1e-6, `${ease}: ${coordinateSum(quads)}`)
+    }
+})

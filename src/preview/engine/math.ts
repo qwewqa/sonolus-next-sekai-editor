@@ -137,6 +137,9 @@ export const easeOvershoot = (easeType: EaseTypeValue) =>
 export const isNoneEase = (easeType: EaseTypeValue) =>
     easeType === EaseType.none || easeType === EaseType.inStep
 
+export const isStepEase = (easeType: EaseTypeValue) =>
+    easeType === EaseType.none || easeType >= EaseType.inStep
+
 // Steps hold their interior value inside the connector, not at its endpoints.
 export const pinnedEase = (easeType: EaseTypeValue, x: number) =>
     x <= 0 ? 0 : x >= 1 ? 1 : ease(easeType, x)
