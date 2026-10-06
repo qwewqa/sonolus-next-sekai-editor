@@ -1,5 +1,5 @@
 import { approach, tiltWidthFactor, type PreviewLayout } from './layout'
-import { EaseType, clamp, ease, lerp, safeUnlerp, type EaseTypeValue } from './math'
+import { EaseType, clamp, ease, isStepEase, lerp, safeUnlerp, type EaseTypeValue } from './math'
 
 // sekai/lib/connector.py connector_curve_detail and circular_connector_fracs.
 
@@ -100,7 +100,7 @@ export const connectorCurveDetail = (
     endTravel: number,
 ) => {
     if (
-        !(easeType >= EaseType.linear && easeType < EaseType.inStep) ||
+        isStepEase(easeType) ||
         (leftChange === 0 && rightChange === 0) ||
         Math.abs(tailEased - headEased) < 1e-6 ||
         Math.min(startTravel, endTravel) <= 0
