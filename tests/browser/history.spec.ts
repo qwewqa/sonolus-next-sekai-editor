@@ -600,6 +600,17 @@ for (const { label, stored, file } of [
             }))
         expect(await stores()).toEqual({ recovery: null, aside: stored })
 
+        // A later edit writes its own recovery and leaves the set-aside one alone.
+        await dialog.getByRole('button', { name: 'OK' }).click()
+        await expect(dialog).toHaveCount(0)
+        await page.evaluate(installEditorFixture)
+        await editNamedChart(page)
+        await expect.poll(async () => (await stores()).recovery).not.toBeNull()
+        expect((await stores()).aside).toBe(stored)
+
+        // Offered again on the next start; downloading it removes the stored copy.
+        await page.reload()
+        await expect(dialog).toContainText('is still set aside')
         const downloading = page.waitForEvent('download')
         await dialog.getByRole('button', { name: 'Download' }).click()
         const download = await downloading
@@ -607,16 +618,68 @@ for (const { label, stored, file } of [
         const bytes = readFileSync((await download.path())!)
         if (file.gzip) expect(JSON.parse(gunzipSync(bytes).toString())).toEqual(futureLevel)
         else expect(bytes.toString()).toBe(stored)
-        await dialog.getByRole('button', { name: 'OK' }).click()
         await expect(dialog).toHaveCount(0)
-
-        // A later edit writes its own recovery and leaves the set-aside one alone.
-        await page.evaluate(installEditorFixture)
-        await editNamedChart(page)
-        await expect.poll(async () => (await stores()).recovery).not.toBeNull()
-        expect((await stores()).aside).toBe(stored)
+        expect((await stores()).aside).toBeNull()
     })
 }
+
+const unreadableStores = (page: Page) =>
+    page.evaluate(() => ({
+        recovery: localStorage.getItem('sonolus-next-sekai-editor.autoSave.levelData'),
+        aside: localStorage.getItem('sonolus-next-sekai-editor.autoSave.unreadable'),
+    }))
+
+test('discarding a set-aside recovery removes it', async ({ page }) => {
+    await page.evaluate(() => {
+        localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', '{"damaged')
+    })
+    await page.reload()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('is still set aside')
+    await dialog.getByRole('button', { name: 'Discard' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await unreadableStores(page)).toEqual({ recovery: null, aside: null })
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await expect(dialog).toHaveCount(0)
+})
+
+test('a second unreadable recovery waits behind the set-aside one', async ({ page }) => {
+    const earlier = '{"earlier'
+    const later = '{"later'
+    await page.evaluate(
+        ({ earlier, later }) => {
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', earlier)
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', later)
+        },
+        { earlier, later },
+    )
+    await page.reload()
+    const dialog = page.getByRole('dialog')
+    // The earlier one first, kept.
+    await expect(dialog).toContainText('is still set aside')
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    // Then the later one, which stays in place without replacing it.
+    await expect(dialog).toContainText('could not be restored')
+    await expect(dialog).toContainText('An earlier chart that could not be restored')
+    expect(await unreadableStores(page)).toEqual({ recovery: later, aside: earlier })
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    await expect(dialog).toHaveCount(0)
+
+    // Auto save is paused, so an edit leaves both alone.
+    await page.evaluate(installEditorFixture)
+    await editNamedChart(page)
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+    await page.waitForTimeout(200)
+    expect(await unreadableStores(page)).toEqual({ recovery: later, aside: earlier })
+
+    // Discarding the earlier one makes room: the later one is set aside.
+    await page.reload()
+    await expect(dialog).toContainText('is still set aside')
+    await dialog.getByRole('button', { name: 'Discard' }).click()
+    await expect(dialog).toContainText('It has been set aside')
+    expect(await unreadableStores(page)).toEqual({ recovery: null, aside: later })
+})
 
 test('an unreadable recovery that cannot be set aside pauses auto save instead', async ({
     page,

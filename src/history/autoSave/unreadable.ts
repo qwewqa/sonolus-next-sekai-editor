@@ -1,17 +1,31 @@
-import { storageRemove, storageSetText } from '../../storage'
+import { storageGetText, storageRemove, storageSetText } from '../../storage'
 
 /** Where a recovery this version cannot open is set aside, so new changes never replace it. */
 export const unreadableRecoveryKey = 'autoSave.unreadable'
 
-/** Sets the stored recovery aside; false when storage refused the copy. */
-export const setRecoveryAside = (text: string) => {
+/**
+ * Where an unreadable recovery is kept: set aside, in place when storage refused the copy,
+ * waiting in place behind an earlier one, or the earlier one offered again.
+ */
+export type UnreadableRecovery = 'aside' | 'inPlace' | 'waiting' | 'earlier'
+
+/** Sets the stored recovery aside, never over an earlier one. */
+export const setRecoveryAside = (text: string): Exclude<UnreadableRecovery, 'earlier'> => {
+    if (storageGetText(unreadableRecoveryKey) !== undefined) return 'waiting'
     try {
         storageSetText(unreadableRecoveryKey, text)
     } catch {
-        return false
+        return 'inPlace'
     }
     storageRemove('autoSave.levelData')
-    return true
+    return 'aside'
+}
+
+/** Removes a recovery the user downloaded or discarded. */
+export const removeRecovery = (kept: UnreadableRecovery) => {
+    storageRemove(
+        kept === 'aside' || kept === 'earlier' ? unreadableRecoveryKey : 'autoSave.levelData',
+    )
 }
 
 /**

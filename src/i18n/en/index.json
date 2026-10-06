@@ -927,9 +927,13 @@
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab.",
             "unreadable": {
                 "message": "The unsaved chart from your last session could not be restored. It may come from a newer version of the editor, or it was stored incompletely.",
-                "setAside": "It has been set aside, so your new changes will not replace it. Download it to keep a copy.",
-                "keptInPlace": "Auto save is paused in this tab, so your new changes will not replace it. Download it to keep a copy.",
-                "download": "Download"
+                "setAside": "It has been set aside, so your new changes will not replace it. It will be offered again until you download or discard it.",
+                "keptInPlace": "Auto save is paused in this tab, so your new changes will not replace it. Download it to keep a copy, or discard it.",
+                "waiting": "An earlier chart that could not be restored is still set aside, so this one stays where it is and auto save is paused in this tab until you download or discard it.",
+                "earlier": "An unsaved chart that could not be restored in an earlier session is still set aside.",
+                "earlierHint": "Download it to keep a copy, or discard it. Choose OK to be asked again next time.",
+                "download": "Download",
+                "discard": "Discard"
             }
         },
         "changes": {

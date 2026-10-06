@@ -927,9 +927,13 @@
       "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin.",
       "unreadable": {
         "message": "Son oturumunuzdaki kaydedilmemiş harita geri yüklenemedi. Editörün daha yeni bir sürümünden gelmiş ya da eksik saklanmış olabilir.",
-        "setAside": "Bir kenara ayrıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Bir kopyasını saklamak için indirin.",
-        "keptInPlace": "Bu sekmede otomatik kaydetme duraklatıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Bir kopyasını saklamak için indirin.",
-        "download": "İndir"
+        "setAside": "Bir kenara ayrıldı; yeni değişiklikleriniz onun yerine geçmeyecek. İndirene ya da silene kadar size yeniden sunulacak.",
+        "keptInPlace": "Bu sekmede otomatik kaydetme duraklatıldı; yeni değişiklikleriniz onun yerine geçmeyecek. Bir kopyasını saklamak için indirin ya da silin.",
+        "waiting": "Daha önce geri yüklenemeyen bir harita hâlâ bir kenarda duruyor; bu yüzden bu harita yerinde kalıyor ve siz onu indirene ya da silene kadar bu sekmede otomatik kaydetme duraklatıldı.",
+        "earlier": "Önceki bir oturumda geri yüklenemeyen kaydedilmemiş bir harita hâlâ bir kenarda duruyor.",
+        "earlierHint": "Bir kopyasını saklamak için indirin ya da silin. Bir dahaki sefere yeniden sorulması için Tamam’ı seçin.",
+        "download": "İndir",
+        "discard": "Sil"
       }
     },
     "changes": {

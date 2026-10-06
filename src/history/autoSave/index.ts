@@ -16,7 +16,12 @@ import { timeout } from '../../utils/promise'
 import { filename } from '../filename'
 import { parseAutoSave } from './parse'
 import { serializeAutoSave } from './serialize'
-import { setRecoveryAside } from './unreadable'
+import {
+    removeRecovery,
+    setRecoveryAside,
+    unreadableRecoveryKey,
+    type UnreadableRecovery,
+} from './unreadable'
 import UnreadableRecoveryModal from './UnreadableRecoveryModal.vue'
 
 let errorReported = false
@@ -107,8 +112,16 @@ export const useAutoSave = () => {
             document.removeEventListener('visibilitychange', onVisibilityChange)
         })
 
-    if (data) {
-        void showModal(LoadingModal, {
+    /** Offers an unreadable recovery; true once it is downloaded or discarded. */
+    const offerUnreadable = async (text: string, kept: UnreadableRecovery) => {
+        if (!(await showModal(UnreadableRecoveryModal, { text, kept }))) return false
+        removeRecovery(kept)
+        return true
+    }
+
+    const restore = async (data: string) => {
+        let unreadable = undefined as UnreadableRecovery | undefined
+        await showModal(LoadingModal, {
             title: () => i18n.value.history.autoSave.title,
             async *task(signal: AbortSignal) {
                 let keptInPlace = false
@@ -128,8 +141,8 @@ export const useAutoSave = () => {
                     } catch (error) {
                         console.error('Failed to restore chart recovery:', error)
                         // Never let the next edit replace a recovery this version cannot open.
-                        keptInPlace = !setRecoveryAside(data)
-                        void showModal(UnreadableRecoveryModal, { text: data, keptInPlace })
+                        unreadable = setRecoveryAside(data)
+                        keptInPlace = unreadable !== 'aside'
                         return
                     }
 
@@ -141,7 +154,18 @@ export const useAutoSave = () => {
                 }
             },
         })
+        // Once a recovery kept in place is handled, auto save resumes.
+        if (unreadable && (await offerUnreadable(data, unreadable)) && unreadable !== 'aside')
+            restoring = false
     }
+
+    // One dialog at a time: the earlier set-aside recovery first, then this one.
+    const aside = storageGetText(unreadableRecoveryKey)
+    if (aside !== undefined || data)
+        void (async () => {
+            if (aside !== undefined) await offerUnreadable(aside, 'earlier')
+            if (data) await restore(data)
+        })()
 }
 
 export const resetAutoSave = () => {

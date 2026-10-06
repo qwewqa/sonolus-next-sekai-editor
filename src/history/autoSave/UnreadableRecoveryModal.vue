@@ -1,36 +1,45 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
+import { computed } from 'vue'
 import { i18n } from '../../i18n'
 import BaseModal from '../../modals/BaseModal.vue'
-import { toRecoveryFile } from './unreadable'
+import { toRecoveryFile, type UnreadableRecovery } from './unreadable'
 
 const props = defineProps<{
     text: string
-    /** Storage refused the copy, so auto save stays off for this tab. */
-    keptInPlace: boolean
+    kept: UnreadableRecovery
 }>()
 
-defineEmits<{
-    close: []
+const emit = defineEmits<{
+    /** Download or Discard removes the stored copy; closing otherwise keeps it. */
+    close: [result?: 'download' | 'discard']
 }>()
+
+const paragraphs = computed(() => {
+    const strings = i18n.value.history.autoSave.unreadable
+    switch (props.kept) {
+        case 'aside':
+            return [strings.message, strings.setAside]
+        case 'inPlace':
+            return [strings.message, strings.keptInPlace]
+        case 'waiting':
+            return [strings.message, strings.waiting]
+        case 'earlier':
+            return [strings.earlier, strings.earlierHint]
+    }
+})
 
 const download = () => {
     const { blob, name } = toRecoveryFile(props.text)
     saveAs(blob, name)
+    emit('close', 'download')
 }
 </script>
 
 <template>
     <BaseModal :title="i18n.history.autoSave.title" @close="$emit('close')">
         <div class="flex flex-col gap-2">
-            <p>{{ i18n.history.autoSave.unreadable.message }}</p>
-            <p>
-                {{
-                    keptInPlace
-                        ? i18n.history.autoSave.unreadable.keptInPlace
-                        : i18n.history.autoSave.unreadable.setAside
-                }}
-            </p>
+            <p v-for="(paragraph, index) in paragraphs" :key="index">{{ paragraph }}</p>
         </div>
 
         <div class="flex flex-wrap justify-end gap-2">
@@ -40,6 +49,13 @@ const download = () => {
                 @click="download"
             >
                 {{ i18n.history.autoSave.unreadable.download }}
+            </button>
+            <button
+                type="button"
+                class="h-9 min-w-24 max-w-full truncate rounded-full bg-button px-4 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
+                @click="$emit('close', 'discard')"
+            >
+                {{ i18n.history.autoSave.unreadable.discard }}
             </button>
             <button
                 type="button"
