@@ -289,3 +289,62 @@ test.describe('moving and pasting a pair keeps both', () => {
         })
     }
 })
+
+test('a time scale moved into a group goes after the ones already at its beat', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { show, fixtures, history, store, nextTick, appImport } = window.editorTest
+        const timeScale = (groupId: number, value: number) => ({
+            ...fixtures.events.timeScales[0]!,
+            groupId: groupId as never,
+            beat: 4,
+            timeScale: value,
+        })
+        // The other group's time scale is stored first.
+        show({
+            ...fixtures.events,
+            timeScales: [timeScale(2, 5), timeScale(1, 1), timeScale(1, 2)],
+        })
+        await nextTick()
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'timeScale' && entity.groupId === (2 as never),
+            ),
+        })
+        const { moveSelectionTo } = await appImport<
+            typeof import('../../src/editor/workspace/manager/objects')
+        >('/src/editor/workspace/manager/objects.ts')
+        await moveSelectionTo('groupId', 1)
+    })
+    expect((await exported(page)).timeScale).toEqual([1, 2, 5])
+})
+
+test('a sideways drag keeps a time-scale pair and its order', async ({ page }) => {
+    await showPairs(page)
+    await select(page, 'timeScale', [1, 2])
+    const { from, to } = await page.evaluate(() => ({
+        from: window.editorTest.point(8, 4),
+        to: window.editorTest.point(6, 4),
+    }))
+    await page.evaluate(async () => {
+        const { toolName } = await window.editorTest.appImport<
+            typeof import('../../src/editor/tools/state')
+        >('/src/editor/tools/state.ts')
+        toolName.value = 'select'
+    })
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move((from.x + to.x) / 2, from.y, { steps: 4 })
+    await page.mouse.move(to.x, to.y, { steps: 4 })
+    await page.mouse.up()
+    const lanes = await page.evaluate(() =>
+        [...window.editorTest.store.getAllEntities()]
+            .filter((entity) => entity.type === 'timeScale' && entity.beat === 4)
+            .map((entity) => (entity as unknown as { editorLane: number }).editorLane),
+    )
+    expect(lanes).toHaveLength(2)
+    expect(lanes[0]).not.toBe(8)
+    expect((await exported(page)).timeScale).toEqual(original.timeScale)
+})

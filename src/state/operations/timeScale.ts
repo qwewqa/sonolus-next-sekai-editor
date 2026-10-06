@@ -20,8 +20,9 @@ export const editSelectedTimeScale = (
         timeScaleTransition: object.timeScaleTransition ?? entity.timeScaleTransition,
         hideNotes: object.hideNotes ?? entity.hideNotes,
     }
-    // Same-beat time scales keep their order.
-    if (edited.beat === entity.beat) return replaceTimeScale(transaction, entity, edited)
+    // Same-beat time scales of a group keep their order.
+    if (edited.beat === entity.beat && edited.groupId === entity.groupId)
+        return replaceTimeScale(transaction, entity, edited)
 
     removeTimeScale(transaction, entity)
     return addTimeScale(transaction, edited)
