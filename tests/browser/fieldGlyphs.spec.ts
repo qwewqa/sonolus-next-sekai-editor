@@ -1,6 +1,18 @@
 import { expect, test, type Page } from '@playwright/test'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
+const runtimeErrors = new WeakMap<Page, string[]>()
+
+test.beforeEach(({ page }) => {
+    const errors: string[] = []
+    runtimeErrors.set(page, errors)
+    page.on('pageerror', (error) => errors.push(error.message))
+})
+
+test.afterEach(({ page }) => {
+    expect(runtimeErrors.get(page)).toEqual([])
+})
+
 const panel = (page: Page) => page.locator('#workspace-panel-properties')
 const field = (page: Page, label: string) =>
     panel(page)
@@ -24,8 +36,8 @@ const open = async (page: Page, settings: Record<string, unknown> = {}) => {
         Object.assign(a!, { noteStyle: 'purple', flickDirection: 'upLeft', connectorStyle: 'red' })
         Object.assign(b!, { noteStyle: 'red', flickDirection: 'none', connectorStyle: 'black' })
         Object.assign(c!, { noteStyle: 'default', flickDirection: 'downRight' })
-        // A value from a newer engine that no option names.
-        Object.assign(d!, { noteStyle: 'pink', flickDirection: 'sideways' })
+        // Values no option names, far off screen so only the panel shows them.
+        Object.assign(d!, { beat: 1000, noteStyle: 'pink', flickDirection: 'sideways' })
         // Each head gets a tail, so connector fields show.
         chart.slides = chart.slides.map(([head]) => [head!, { ...head!, beat: head!.beat + 1 }])
         chart.timeScales = structuredClone(fixtures.events.timeScales)
