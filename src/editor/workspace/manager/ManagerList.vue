@@ -465,8 +465,8 @@ const selectionCount = computed(() =>
     label(i18n.value.workspace.manager.selecting, `${selectedIds.value.length}`),
 )
 
-// The selection bar drops its visibility button, then the count's label, when
-// the label doesn't fit.
+// The selection bar shortens its count to the number, then drops its visibility
+// button (still in More); without the button, the label returns if it fits.
 const bar = useTemplateRef<HTMLElement>('bar')
 const barLabel = shallowRef(true)
 const barVisibility = shallowRef(true)
@@ -482,6 +482,7 @@ const measureBar = () => {
     const style = getComputedStyle(count)
     barContext.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const text = Math.ceil(barContext.measureText(selectionCount.value).width)
+    const number = Math.ceil(barContext.measureText(`${selectedIds.value.length}`).width)
     const barStyle = getComputedStyle(element)
     const button = round.getBoundingClientRect().width + parseFloat(barStyle.columnGap)
     // Beside Move, Delete and More, less the Done button's own chrome.
@@ -492,8 +493,8 @@ const measureBar = () => {
         (done.getBoundingClientRect().width - count.clientWidth) -
         parseFloat(style.paddingLeft) -
         3 * button
-    barLabel.value = text <= room
-    barVisibility.value = text + button <= room
+    barVisibility.value = number + button <= room
+    barLabel.value = text + (barVisibility.value ? button : 0) <= room
 }
 watch([bar, width, isCoarse, selectionCount], measureBar, { flush: 'post' })
 onMounted(() => void document.fonts.ready.then(measureBar))
@@ -1756,6 +1757,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     </span>
                     <span
                         class="manager-selection-count truncate pl-1 tabular-nums"
+                        :title="barLabel ? undefined : selectionCount"
                         aria-hidden="true"
                         >{{ barLabel ? selectionCount : selectedIds.length }}</span
                     >

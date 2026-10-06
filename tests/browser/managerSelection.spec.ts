@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 const runtimeErrors = new WeakMap<Page, string[]>()
@@ -594,19 +595,28 @@ test('a long band count widens its column and the name gives way', async ({ page
     expect(gaps.mode).toBeGreaterThanOrEqual(4)
 })
 
-for (const [device, viewport, mobile] of [
-    ['desktop', { width: 1600, height: 1000 }, false],
-    ['phone', { width: 375, height: 812 }, true],
+// The count gives up its words before the bar gives up its visibility button.
+for (const [device, viewport, mobile, dock] of [
+    ['desktop', { width: 1600, height: 1000 }, false, undefined],
+    ['336px dock', { width: 1600, height: 1000 }, false, 336],
+    ['260px dock', { width: 1600, height: 1000 }, false, 260],
+    ['phone', { width: 375, height: 812 }, true, undefined],
 ] as const) {
     test.describe(`${device} selection bar`, () => {
         test.use({ viewport, isMobile: mobile, hasTouch: mobile })
 
         for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
-            test(`${locale} shows its count in full`, async ({ page }) => {
+            test(`${locale} shortens its count before dropping the visibility button`, async ({
+                page,
+            }) => {
                 await seedGroups(page, seed)
                 await page.evaluate(
-                    (locale) => (window.editorTest.settings.locale = locale as never),
-                    locale,
+                    ({ locale, dock }) => {
+                        const { settings } = window.editorTest
+                        settings.locale = locale as never
+                        if (dock !== undefined) settings.leftDockWidth = dock
+                    },
+                    { locale, dock },
                 )
                 const list = panel(page)
                 const bar = list.locator('.manager-selection-bar')
@@ -620,7 +630,7 @@ for (const [device, viewport, mobile] of [
                         await nameButton(list, name).click({ modifiers: ['ControlOrMeta'] })
                     }
                 }
-                const count = bar.locator('.manager-selection-done > span').last()
+                const count = bar.locator('.manager-selection-count')
                 await expect(count).toContainText('3')
                 await expect
                     .poll(() => count.evaluate((span) => span.scrollWidth <= span.clientWidth))
@@ -630,11 +640,34 @@ for (const [device, viewport, mobile] of [
                     const box = (await button.boundingBox())!
                     expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width)
                 }
-                // English keeps its words and the visibility button at the default dock.
-                if (locale === 'en' && !mobile) {
-                    await expect(count).toHaveText('3 Selected')
-                    await expect(bar.locator('.manager-bulk-visibility')).toBeVisible()
+                // Labels that fit beside the visibility button keep their words; the
+                // rest show the number, titled in full, and keep the button.
+                const full = (await bar.locator('[role="status"]').textContent())!
+                const worded = dock === 260 ? ['tr'] : ['en', 'ko', 'tr']
+                if (worded.includes(locale)) {
+                    await expect(count).toHaveText(full)
+                    await expect(count).not.toHaveAttribute('title')
+                } else {
+                    await expect(count).toHaveText('3')
+                    await expect(count).toHaveAttribute('title', full)
                 }
+                const visibility = bar.locator('.manager-bulk-visibility')
+                if (dock !== 260) {
+                    await expect(visibility).toBeVisible()
+                    return
+                }
+                // Too narrow even for the number beside it: the action stays in More.
+                await expect(visibility).toHaveCount(0)
+                await bar.locator('.manager-bulk-more').click()
+                const messages = JSON.parse(
+                    readFileSync(
+                        new URL(`../../src/i18n/${locale}/index.json`, import.meta.url),
+                        'utf8',
+                    ),
+                ) as { workspace: { manager: { hideSelected: string } } }
+                await expect(page.getByRole('menuitem').first()).toContainText(
+                    messages.workspace.manager.hideSelected,
+                )
             })
         }
     })
