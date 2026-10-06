@@ -792,7 +792,18 @@ const scheduleExpand = (folder: FolderId | undefined) => {
         // Rows moved; measure again without the transforms in place.
         const shift = translations.value
         const rows = measureRows(container, (key) => shift.get(key) ?? 0)
-        drag.value = { ...current, rows }
+        // A held row below the folder moved down with it; keep it under the pointer.
+        const topOf = (list: RowInfo[]) =>
+            list.find((row) => sameKey(row.key, current.key))?.top ?? 0
+        const moved = topOf(rows) - topOf(current.rows)
+        const next = {
+            ...current,
+            rows,
+            startY: current.startY + moved,
+            offset: current.offset - moved,
+        }
+        next.target = targetOf(next)
+        drag.value = next
     }, expandDelay)
 }
 

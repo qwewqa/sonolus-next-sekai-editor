@@ -540,6 +540,29 @@ test('dragging joins, reorders and leaves folders', async ({ page }) => {
     expect(await tree(page)).toBe('[Verse: Bass Fill Outro] Default Lead')
 })
 
+test('a collapsed folder held over opens and keeps the dragged row under the pointer', async ({
+    page,
+}) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']])
+    const verse = folderRow(page, 'Verse')
+    await verse.locator('.manager-name').click()
+    await expect(verse.locator('.manager-name')).toHaveAttribute('aria-expanded', 'false')
+    const bass = (await nameButton(panel(page), 'Bass').boundingBox())!
+    const head = (await verse.boundingBox())!
+    const x = bass.x + 60
+    const y = head.y + head.height / 2
+    await page.mouse.move(x, bass.y + bass.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(x, y, { steps: 10 })
+    await expect(verse.locator('.manager-name')).toHaveAttribute('aria-expanded', 'true')
+    await expect(verse).toHaveClass(/manager-row-drop/)
+    // The members opened above the held row; it stays where the pointer is.
+    const held = (await entryRow(page, 'Bass').boundingBox())!
+    expect(Math.abs(held.y + held.height / 2 - y)).toBeLessThan(4)
+    await page.mouse.up()
+    expect(await tree(page)).toBe('Default [Verse: Lead Fill Bass] Outro')
+})
+
 test('ungrouping keeps members; deleting a folder confirms and removes them', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro', 'Ending']])
     const menu = page.getByRole('menu')
