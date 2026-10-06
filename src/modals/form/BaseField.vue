@@ -442,7 +442,7 @@ watchEffect(
     }
 }
 
-/* Tinted pills read as actions; coverage is outlined, apart from the values. */
+/* Tinted pills read as actions; coverage is muted text, apart from the values. */
 .form-field-mixed-value {
     border-radius: 9999px;
     padding: 0.125rem 0.5rem;
@@ -453,8 +453,7 @@ watchEffect(
 
 .form-field-coverage-chip {
     background-color: transparent;
-    box-shadow: inset 0 0 0 1px rgb(68 68 102 / 0.35);
-    color: rgb(68 68 102 / 0.9);
+    color: rgb(68 68 102 / 0.8);
 }
 
 /* Fingers get a real target. */
