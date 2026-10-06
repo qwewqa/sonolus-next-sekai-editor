@@ -218,3 +218,62 @@ test('slide heads interpolate between the sizes of the connector around them', (
     ])
     for (const [i, value] of actual.entries()) assert.ok(Math.abs(value - expected[i]!) < 1e-4)
 })
+
+test("a passed head's crossed masks reach each segment uncollapsed, as the engine draws them", () => {
+    const narrowId = 2 as StageId
+    const chart: Chart = {
+        initialLife: 1000,
+        isDynamicStages: true,
+        bpms: [{ beat: 0, bpm: 60 }],
+        groups: new Map([[groupId, { name: 'Default' }]]),
+        stages: new Map(
+            [stageId, narrowId].map((id) => [
+                id,
+                { name: 'Stage', isFromStart: true, isUntilEnd: true, generateSimLines: 'global' },
+            ]),
+        ),
+        cameraEvents: [],
+        // A wide stage and a narrow one, both masking notes.
+        stageMaskEvents: [
+            {
+                stageId,
+                beat: 0,
+                maskLeft: -6,
+                maskSize: 12,
+                isMaskNotes: true,
+                eventEase: 'linear',
+            },
+            {
+                stageId: narrowId,
+                beat: 0,
+                maskLeft: 4.475,
+                maskSize: 0.05,
+                isMaskNotes: true,
+                eventEase: 'linear',
+            },
+        ],
+        stagePivotEvents: [],
+        stageStyleEvents: [],
+        stageTransformEvents: [],
+        timeScales: [],
+        slides: [[anchor(1, -3, 'outBack'), { ...anchor(3, 4.5, 'linear'), stageId: narrowId }]],
+    }
+    const guide: Sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+    const skin = resolveSkin((name) => (name === 'Sekai Guide Green' ? guide : undefined))
+    const quads: Quad[] = []
+    const renderer: PreviewRenderer = {
+        maxViewportSize: { width: 1920, height: 1080 },
+        setTexture() {},
+        begin() {},
+        draw(sprite, quad, _z, alpha) {
+            if (sprite === guide && alpha > 0) quads.push(quad)
+        },
+        flush() {},
+        isContextLost: () => false,
+        dispose() {},
+    }
+    const preview = buildPreviewChart(createState(chart, 0), 6)
+    renderPreviewFrame(renderer, skin, preview, 2, 1920, 1080, 1920, 1080, 6, false)
+    // Collapsing the head's limits first drew 14 here.
+    assert.equal(quads.length, 3)
+})

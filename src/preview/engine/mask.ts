@@ -32,6 +32,16 @@ export const interpolateVisualMasks = (
           }
         : noVisualMask
 
+/** A passed connector head's mask: a raw lerp, keeping the head's stage; segments collapse it later. */
+export const passedHeadMask = (head: VisualMask, tail: VisualMask, frac: number): VisualMask =>
+    head.enabled && tail.enabled
+        ? {
+              ...head,
+              left: lerp(head.left, tail.left, frac),
+              right: lerp(head.right, tail.right, frac),
+          }
+        : head
+
 export const maskedNoteExtents = (lane: number, rawSize: number, mask: VisualMask) => {
     const size = Math.max(0, rawSize)
     if (!mask.enabled) return { lane, size }

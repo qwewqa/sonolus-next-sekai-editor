@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { maskedConnectorExtentsByLimits } from '../../src/preview/engine/connector'
-import { interpolateVisualMasks, maskedNoteExtents } from '../../src/preview/engine/mask'
+import {
+    interpolateVisualMasks,
+    maskedNoteExtents,
+    passedHeadMask,
+} from '../../src/preview/engine/mask'
 
 // Engine v2.15.1: crossed mask limits collapse to their midpoint (e01839a, c828653).
 
@@ -48,4 +52,18 @@ test('a connector masked by crossed limits keeps its tip at their midpoint', () 
         size: 0.75,
         maskedSize: 0.75,
     })
+})
+
+test("a passed head's mask lerps without collapsing, as the engine's connector does", () => {
+    const head = { enabled: true, left: -2, right: 2, stageIndex: 1 }
+    const tail = { enabled: true, left: 4, right: -4, stageIndex: 2 }
+    // Crossed limits stay crossed; each drawn segment collapses its own.
+    assert.deepEqual(passedHeadMask(head, tail, 0.75), {
+        enabled: true,
+        left: 2.5,
+        right: -2.5,
+        stageIndex: 1,
+    })
+    // Without both masks, the head keeps its own.
+    assert.deepEqual(passedHeadMask(head, { ...tail, enabled: false }, 0.75), head)
 })

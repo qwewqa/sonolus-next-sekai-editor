@@ -44,7 +44,13 @@ import {
     type StageScreenTransform,
     type StageTransform,
 } from './layout'
-import { interpolateVisualMasks, maskedNoteExtents, noVisualMask, type VisualMask } from './mask'
+import {
+    interpolateVisualMasks,
+    maskedNoteExtents,
+    noVisualMask,
+    passedHeadMask,
+    type VisualMask,
+} from './mask'
 import {
     connectorFractions,
     connectorInterpFrac,
@@ -571,7 +577,7 @@ export const renderPreviewFrame = (
                         visualStageTransform(tail),
                         headInterpFrac,
                     ),
-                    mask: interpolateVisualMasks(
+                    mask: passedHeadMask(
                         visualMaskAt(head, now),
                         visualMaskAt(tail, now),
                         headInterpFrac,
