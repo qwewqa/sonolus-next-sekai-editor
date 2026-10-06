@@ -530,3 +530,78 @@ test('tapping a selected time scale toggles hiding notes and keeps its ease', as
     await tap()
     expect(await timeScale()).toEqual(['outCubic', false])
 })
+
+// Engines before v2.15 accept only NONE (0) among steps for time scales.
+test('placed and imported time scales are None and write NONE', async ({ page }) => {
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(async () => {
+        const { fixtures, show, appImport } = window.editorTest
+        show({ ...fixtures.interaction, slides: [], timeScales: [] }, 2)
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        await commands.timeScale.execute()
+    })
+    const point = await page.evaluate(() => window.editorTest.point(2, 4))
+    await page.mouse.click(point.x, point.y)
+    const result = await page.evaluate(async () => {
+        const { store, appImport } = window.editorTest
+        const placed = [...store.getAllEntities()].flatMap((entity) =>
+            entity.type === 'timeScale' ? [entity.timeScaleEase] : [],
+        )
+        const { parseUscChart } = await appImport<typeof import('../../src/chart/parse/usc')>(
+            '/src/chart/parse/usc/index.ts',
+        )
+        const { parseSusChart } = await appImport<typeof import('../../src/chart/parse/sus')>(
+            '/src/chart/parse/sus/index.ts',
+        )
+        const { serializeToLevelDataEntities } = await appImport<
+            typeof import('../../src/levelData/entities/serialize')
+        >('/src/levelData/entities/serialize/index.ts')
+        const { createState } =
+            await appImport<typeof import('../../src/state')>('/src/state/index.ts')
+        const charts = [
+            parseUscChart([
+                { type: 'bpm', beat: 0, bpm: 120 },
+                { type: 'timeScaleGroup', changes: [{ beat: 1, timeScale: 2 }] },
+            ] as never),
+            parseSusChart({
+                offset: 0,
+                ticksPerBeat: 480,
+                timeScaleChanges: [{ tick: 480, timeScale: 2 }],
+                bpmChanges: [{ tick: 0, bpm: 120 }],
+                tapNotes: [],
+                directionalNotes: [],
+                slides: [],
+            } as never),
+        ]
+        return {
+            placed,
+            imported: charts.map((chart) => {
+                const state = createState(chart, 0)
+                return {
+                    eases: chart.timeScales.map((timeScale) => timeScale.timeScaleEase),
+                    values: serializeToLevelDataEntities(
+                        state.initialLife,
+                        state.isDynamicStages,
+                        state.store,
+                        state.groups,
+                        state.stages,
+                    ).flatMap((entity) =>
+                        entity.data.flatMap((data) =>
+                            data.name === '#TIMESCALE_EASE' && 'value' in data ? [data.value] : [],
+                        ),
+                    ),
+                }
+            }),
+        }
+    })
+    expect(result.placed).toEqual(['none'])
+    expect(result.imported).toEqual([
+        { eases: ['none'], values: [0] },
+        { eases: ['none'], values: [0] },
+    ])
+})

@@ -397,3 +397,7 @@ test('fields of several kinds close the selection under General', () => {
     const lane = propertyField.get('left')!
     assert.equal(fieldLabel(lane, t, true), fieldLabel(lane, t, false))
 })
+
+test('a brushed time scale ease starts from None, which writes NONE', () => {
+    assert.equal(propertyField.get('timeScaleEase')?.brush?.initial, 'none')
+})
