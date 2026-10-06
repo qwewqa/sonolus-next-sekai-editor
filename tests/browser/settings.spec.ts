@@ -163,7 +163,7 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
     const save = shortcutButton(page, 'Save')
     await save.click()
     await save.dispatchEvent('keydown', { key: 'w', ctrlKey: true, cancelable: true })
-    await expect(save).toHaveText('Ctrl+W belongs to the browser; press another key')
+    await expect(save).toHaveText('Ctrl+W is reserved by the browser or system. Press another key.')
     expect(await savedShortcut(page, 'save')).toBe('p')
     // Ctrl+H reaches pages off Apple devices, so it can be bound.
     await page.keyboard.press('Control+h')
@@ -182,9 +182,11 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
 test('shared and browser-claiming bindings are named under their rows', async ({ page }) => {
     // Default plain keys that also answer to the browser's Ctrl chords.
     await expect(shortcutField(page, 'Manage Stages')).toContainText(
-        "Replaces the browser's reload",
+        "Replaces the browser's reload shortcut",
     )
-    await expect(shortcutField(page, 'Select')).toContainText("Replaces the browser's find")
+    await expect(shortcutField(page, 'Select')).toContainText(
+        "Replaces the browser's find shortcut",
+    )
     // The browser keeps zooming with Ctrl+=.
     await expect(shortcutField(page, 'Zoom In Y')).not.toContainText('Replaces')
     await expect(shortcutField(page, 'Save')).not.toContainText('Replaces')
@@ -199,7 +201,9 @@ test('shared and browser-claiming bindings are named under their rows', async ({
     await shortcutButton(page, 'Save').click()
     await page.keyboard.press('Control+r')
     await expect(shortcutField(page, 'Slide')).not.toContainText('Also runs')
-    await expect(shortcutField(page, 'Save')).toContainText("Replaces the browser's reload")
+    await expect(shortcutField(page, 'Save')).toContainText(
+        "Replaces the browser's reload shortcut",
+    )
     await expect(shortcutField(page, 'Manage Stages')).not.toContainText('Replaces')
 })
 
@@ -222,7 +226,7 @@ test.describe('on Apple devices', () => {
         const save = shortcutButton(page, 'Save')
         await save.click()
         await save.dispatchEvent('keydown', { key: 'h', metaKey: true, cancelable: true })
-        await expect(save).toHaveText('⌘H belongs to the browser; press another key')
+        await expect(save).toHaveText('⌘H is reserved by the browser or system. Press another key.')
         await page.keyboard.press('Meta+Shift+KeyS')
         await expect(save).toHaveText('⇧⌘S')
         expect(await savedShortcut(page, 'save')).toBe('Mod+Shift+s')

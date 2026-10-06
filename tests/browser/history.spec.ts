@@ -590,8 +590,10 @@ for (const { label, stored, file } of [
         }, stored)
         await page.reload()
         const dialog = page.getByRole('dialog')
-        await expect(dialog).toContainText('could not be restored')
-        await expect(dialog).toContainText('your new changes will not replace it')
+        await expect(dialog).toContainText(
+            'could not restore the unsaved chart from your last session',
+        )
+        await expect(dialog).toContainText('New changes will not replace this saved chart')
         await expect(dialog).not.toContainText('Error')
         const stores = () =>
             page.evaluate(() => ({
@@ -611,8 +613,8 @@ for (const { label, stored, file } of [
         // Offered again on the next start. Browsers never confirm a download saved,
         // so downloading keeps the stored copy; only Discard removes it.
         await page.reload()
-        await expect(dialog).toContainText('is still set aside')
-        await expect(dialog).toContainText('until you discard it')
+        await expect(dialog).toContainText('still cannot restore')
+        await expect(dialog).toContainText('The editor will try again the next time it starts')
         const downloading = page.waitForEvent('download')
         await dialog.getByRole('button', { name: 'Download' }).click()
         const download = await downloading
@@ -620,9 +622,7 @@ for (const { label, stored, file } of [
         const bytes = readFileSync((await download.path())!)
         if (file.gzip) expect(JSON.parse(gunzipSync(bytes).toString())).toEqual(futureLevel)
         else expect(bytes.toString()).toBe(stored)
-        await expect(dialog.getByRole('status')).toHaveText(
-            'A copy was downloaded. The chart is still kept until you discard it.',
-        )
+        await expect(dialog.getByRole('status')).toHaveText('Download started.')
         expect((await stores()).aside).toBe(stored)
         await dialog.getByRole('button', { name: 'OK' }).click()
         await expect(dialog).toHaveCount(0)
@@ -648,7 +648,7 @@ test('discarding a set-aside recovery removes it', async ({ page }) => {
     })
     await page.reload()
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('is still set aside')
+    await expect(dialog).toContainText('still cannot restore')
     await dialog.getByRole('button', { name: 'Discard' }).click()
     await expect(dialog).toHaveCount(0)
     expect(await unreadableStores(page)).toEqual({ recovery: null, aside: null })
@@ -670,11 +670,11 @@ test('a second unreadable recovery waits behind the set-aside one', async ({ pag
     await page.reload()
     const dialog = page.getByRole('dialog')
     // The earlier one first, kept.
-    await expect(dialog).toContainText('is still set aside')
+    await expect(dialog).toContainText('still cannot restore')
     await dialog.getByRole('button', { name: 'OK' }).click()
     // Then the later one, which stays in place without replacing it.
-    await expect(dialog).toContainText('could not be restored')
-    await expect(dialog).toContainText('An earlier chart that could not be restored')
+    await expect(dialog).toContainText('could not restore the unsaved chart from your last session')
+    await expect(dialog).toContainText('An earlier chart is also saved')
     expect(await unreadableStores(page)).toEqual({ recovery: later, aside: earlier })
     await dialog.getByRole('button', { name: 'OK' }).click()
     await expect(dialog).toHaveCount(0)
@@ -688,9 +688,9 @@ test('a second unreadable recovery waits behind the set-aside one', async ({ pag
 
     // Discarding the earlier one makes room: the later one is set aside.
     await page.reload()
-    await expect(dialog).toContainText('is still set aside')
+    await expect(dialog).toContainText('still cannot restore')
     await dialog.getByRole('button', { name: 'Discard' }).click()
-    await expect(dialog).toContainText('It has been set aside')
+    await expect(dialog).toContainText('New changes will not replace this saved chart')
     expect(await unreadableStores(page)).toEqual({ recovery: null, aside: later })
 })
 
@@ -763,7 +763,7 @@ test('a set-aside recovery that now opens asks before replacing the last session
     const last = readableRecovery('last-chart', 90)
     await reloadWith(page, { recovery: last, aside: earlier })
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('can now be restored')
+    await expect(dialog).toContainText('can now restore an unsaved chart')
     // Cancel keeps both, the last session open.
     await dialog.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).toHaveCount(0)
@@ -784,8 +784,8 @@ test('a set-aside recovery that now opens trades places with one that does not',
     const last = JSON.stringify(futureLevel)
     await reloadWith(page, { recovery: last, aside: earlier })
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('could not be restored')
-    await expect(dialog).toContainText('It has been set aside')
+    await expect(dialog).toContainText('could not restore the unsaved chart from your last session')
+    await expect(dialog).toContainText('New changes will not replace this saved chart')
     expect(await unreadableStores(page)).toEqual({ recovery: earlier, aside: last })
     await dialog.getByRole('button', { name: 'OK' }).click()
     expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
@@ -803,7 +803,7 @@ test('closing the loading dialog before a recovery opens keeps the recovery', as
     })
     await reloadWith(page, { recovery: stored })
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('Importing level')
+    await expect(dialog).toContainText('Restoring level')
     await dialog.getByRole('button', { name: 'Close' }).click()
     await expect(dialog).toHaveCount(0)
 
@@ -846,6 +846,7 @@ test('an unreadable recovery that cannot be set aside pauses auto save instead',
     await page.reload()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toContainText('Auto save is paused in this tab')
+    await expect(dialog).not.toContainText('An earlier chart is also saved')
     await dialog.getByRole('button', { name: 'OK' }).click()
 
     await page.evaluate(installEditorFixture)

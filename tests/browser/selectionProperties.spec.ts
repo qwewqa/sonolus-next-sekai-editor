@@ -186,7 +186,7 @@ test.describe('mixed values', () => {
         await expect(type.locator('.form-field-coverage-chip')).toHaveCount(0)
         // The chip narrows to the objects the field covers.
         await attached
-            .getByRole('button', { name: 'Select only the objects it applies to (1 of 5)' })
+            .getByRole('button', { name: 'Select only objects this property applies to (1 of 5)' })
             .click()
         expect(await selectedCount(page)).toBe(1)
     })

@@ -421,8 +421,8 @@
             "title": "Help",
             "touchscreen": {
                 "title": "Touchscreen",
-                "tap": "One-finger tap to tap.",
-                "drag": "One-finger drag to drag.",
+                "tap": "One-finger tap to use the current tool.",
+                "drag": "One-finger drag to use the current tool.",
                 "quickScroll": "One-finger drag in the quick scroll zone to scroll.",
                 "deselect": "Two-finger tap to deselect.",
                 "scrollY": "Two-finger pan vertically to scroll.",
@@ -454,7 +454,7 @@
                 "move": "Drag objects to move multiple objects.",
                 "selectMultiple": "Drag empty space to select multiple objects.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related notes."
+                "shift": "Hold Shift to include other notes in the same slide."
             },
             "eraserTool": {
                 "title": "Eraser Tool",
@@ -468,7 +468,7 @@
                 "brush": "Tap objects to brush.",
                 "deselect": "Tap empty space to deselect all objects.",
                 "brushMultiple": "Drag to brush multiple objects.",
-                "shift": "Use Shift key to operate on all related notes."
+                "shift": "Hold Shift to include other notes in the same slide."
             },
             "pasteTool": {
                 "title": "Paste Tool",
@@ -482,7 +482,7 @@
                 "add": "Tap empty space to add.",
                 "move": "Drag 1 note to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related notes.",
+                "shift": "Hold Shift to include other notes in the same slide.",
                 "properties": "Switch to Note Tool again to change preset or default properties."
             },
             "slideTool": {
@@ -493,7 +493,7 @@
                 "connect": "Tap empty space with 1 note selected to connect.",
                 "move": "Drag 1 note to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
-                "shift": "Use Shift key to operate on all related notes.",
+                "shift": "Hold Shift to include other notes in the same slide.",
                 "properties": "Switch to Slide Tool again to change preset or default properties."
             },
             "splitSlide": {
@@ -503,8 +503,8 @@
             },
             "generateSlideNotesTool": {
                 "title": "Generate Slide Notes Tool",
-                "generate": "Tap or drag to select 1 note to generate notes for the entire slide.",
-                "generateMultiple": "Tap or drag to select 2 notes to generate notes between them.",
+                "generate": "Tap or drag to select 1 note and generate notes for its entire slide.",
+                "generateMultiple": "Tap or drag to select 2 or more notes and generate notes between them.",
                 "deselect": "Tap empty space to deselect all objects."
             },
             "bpmTool": {
@@ -523,7 +523,7 @@
                 "move": "Drag 1 time scale to move.",
                 "ctrl": "Use Ctrl key to add objects to selection.",
                 "markers": "Diamond markers use the Scroll transition. Hollow markers on dotted lines hide notes.",
-                "ease": "The curve beside the value shows the ease toward the next change in the group. It is faded when the speed simply jumps: None, Step In, the last change, or a change to the same value."
+                "ease": "The curve shows easing to the next change in the group."
             },
             "cameraEventTool": {
                 "title": "Camera Event Tool",
@@ -921,19 +921,19 @@
         "initialize": "Initialize",
         "autoSave": {
             "title": "Auto Save",
-            "importing": "Importing level…",
+            "importing": "Restoring level…",
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab.",
             "unreadable": {
-                "message": "The unsaved chart from your last session could not be restored. It may come from a newer version of the editor, or it was stored incompletely.",
-                "setAside": "It has been set aside, so your new changes will not replace it. It is kept, and offered again whenever the editor starts, until you discard it. Download saves a copy as a file.",
-                "keptInPlace": "Auto save is paused in this tab, so your new changes will not replace it. It is kept until you discard it. Download saves a copy as a file.",
-                "waiting": "An earlier chart that could not be restored is still set aside, so this one stays where it is, and auto save is paused in this tab until you discard it. Download saves a copy as a file.",
-                "earlier": "An unsaved chart that could not be restored in an earlier session is still set aside.",
-                "earlierHint": "It is kept, and offered again whenever the editor starts, until you discard it. Download saves a copy as a file.",
+                "message": "The editor could not restore the unsaved chart from your last session. It may need a newer editor version, or the saved data may be damaged.",
+                "setAside": "New changes will not replace this saved chart. The editor will try again the next time it starts.",
+                "keptInPlace": "Auto save is paused in this tab until you discard the copy from your last session.",
+                "waiting": "An earlier chart is also saved in the editor. Auto save is paused in this tab until you discard the copy from your last session.",
+                "earlier": "The editor still cannot restore an unsaved chart from an earlier session.",
+                "earlierHint": "The editor will try again the next time it starts.",
                 "download": "Download",
-                "downloaded": "A copy was downloaded. The chart is still kept until you discard it.",
+                "downloaded": "Download started.",
                 "discard": "Discard",
-                "restorable": "An unsaved chart that could not be restored in an earlier session can now be restored. Restoring it replaces the chart just restored from your last session, with its unsaved changes. Cancel keeps it set aside for next time.",
+                "restorable": "The editor can now restore an unsaved chart from an earlier session. Restore replaces the current chart, including its unsaved changes.",
                 "restore": "Restore",
                 "restored": "Restored the unsaved chart from an earlier session"
             }
@@ -1183,11 +1183,11 @@
                 "press": "Press a key or click again to clear",
                 "clear": "Click again to remove this shortcut",
                 "unassigned": "Unassigned",
-                "reserved": "{0} belongs to the browser; press another key",
+                "reserved": "{0} is reserved by the browser or system. Press another key.",
                 "altGraph": "{0} types characters on many keyboards; press another key",
                 "alsoRuns": "Also runs {0}",
-                "browserReload": "Replaces the browser's reload",
-                "browserFind": "Replaces the browser's find"
+                "browserReload": "Replaces the browser's reload shortcut",
+                "browserFind": "Replaces the browser's find shortcut"
             },
             "maskLeft": {
                 "label": "Mask Lane"
@@ -1296,7 +1296,7 @@
             },
             "unknown": "Unknown ({0})",
             "coverageChip": "{0} of {1}",
-            "selectCovered": "Select only the objects it applies to ({0} of {1})"
+            "selectCovered": "Select only objects this property applies to ({0} of {1})"
         },
         "confirm": {
             "delete": "Delete",
@@ -1433,13 +1433,13 @@
             "showAll": "Show All Groups",
             "hideAll": "Hide All Groups",
             "add": "Add Group",
-            "movedSelectedInto": "Moved selected groups ({0}) to {1} folder",
-            "movedSelectedOut": "Moved selected groups ({0}) out of folders",
-            "deletedSelected": "Deleted selected groups ({0})",
+            "movedSelectedInto": "Moved {0} group to {1} folder|Moved {0} groups to {1} folder",
+            "movedSelectedOut": "Moved {0} group out of folders|Moved {0} groups out of folders",
+            "deletedSelected": "Deleted {0} group|Deleted {0} groups",
             "deleteSelectedTitle": "Delete Groups",
             "deleteSelectedMessage": "Delete the selected groups ({0}) and their objects ({1})?",
             "duplicated": "Duplicated {0} group",
-            "duplicatedSelected": "Duplicated selected groups ({0})"
+            "duplicatedSelected": "Duplicated {0} group|Duplicated {0} groups"
         },
         "stages": {
             "deleteFolder": "Delete Folder and Stages…",
@@ -1452,13 +1452,13 @@
             "add": "Add Stage",
             "disabled": "Dynamic stages are off for this level.",
             "enable": "Enable Dynamic Stages",
-            "movedSelectedInto": "Moved selected stages ({0}) to {1} folder",
-            "movedSelectedOut": "Moved selected stages ({0}) out of folders",
-            "deletedSelected": "Deleted selected stages ({0})",
+            "movedSelectedInto": "Moved {0} stage to {1} folder|Moved {0} stages to {1} folder",
+            "movedSelectedOut": "Moved {0} stage out of folders|Moved {0} stages out of folders",
+            "deletedSelected": "Deleted {0} stage|Deleted {0} stages",
             "deleteSelectedTitle": "Delete Stages",
             "deleteSelectedMessage": "Delete the selected stages ({0}) and their objects ({1})?",
             "duplicated": "Duplicated {0} stage",
-            "duplicatedSelected": "Duplicated selected stages ({0})"
+            "duplicatedSelected": "Duplicated {0} stage|Duplicated {0} stages"
         },
         "properties": {
             "sections": "Properties Sections",
