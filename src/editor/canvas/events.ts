@@ -281,23 +281,35 @@ export const drawEvent = (
             break
         }
         case 'timeScale': {
+            const stack = stackOf(state.store.grid.timeScale, entity, ({ groupId }) => groupId)
+            // A same-beat jump shares one marker on its first change's lane.
+            const lead = stack?.[0] ?? entity
+            if (lead !== entity && lead.editorLane === entity.editorLane) break
+            const members =
+                lead === entity
+                    ? (stack ?? [entity]).filter(
+                          ({ editorLane }) => editorLane === entity.editorLane,
+                      )
+                    : [entity]
             const x = entity.editorLane
             const y = beatToTime(state.bpms, entity.beat) * ups
-            const isScroll = entity.timeScaleTransition === 'scroll'
+            const isScroll = members.some(
+                ({ timeScaleTransition }) => timeScaleTransition === 'scroll',
+            )
+            const hideNotes = members.some(({ hideNotes }) => hideNotes)
             // Hollow markers keep the line out of their interior.
-            const gap = entity.hideNotes ? (isScroll ? DIAMOND_RADIUS : 0.1) : 0
+            const gap = hideNotes ? (isScroll ? DIAMOND_RADIUS : 0.1) : 0
             ctx.strokeStyle = '#ff0'
             ctx.globalAlpha *= 0.5
-            if (entity.hideNotes) ctx.setLineDash([2 / context.scale, 2 / context.scale])
+            if (hideNotes) ctx.setLineDash([2 / context.scale, 2 / context.scale])
             ctx.lineDashOffset = 0
             if (x - gap > Math.min(x, -6)) line(ctx, Math.min(x, -6), y, x - gap, y)
             if (x + gap < Math.max(x, 6)) line(ctx, x + gap, y, Math.max(x, 6), y)
             ctx.globalAlpha *= 2
             ctx.setLineDash([])
-            timeScaleMarker(ctx, x, y, isScroll, entity.hideNotes)
+            timeScaleMarker(ctx, x, y, isScroll, hideNotes)
             // A same-beat jump reads as one label, in the order it plays.
-            const stack = stackOf(state.store.grid.timeScale, entity, ({ groupId }) => groupId)
-            if (stack && stack[0] !== entity) break
+            if (lead !== entity) break
             const text = (stack ?? [entity])
                 .map(({ timeScale, skip }) => formatTimeScale(timeScale, skip))
                 .join('→')

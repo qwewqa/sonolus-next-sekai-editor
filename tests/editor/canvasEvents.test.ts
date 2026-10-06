@@ -662,3 +662,39 @@ test('a BPM label takes the place of beat labels near enough to overlap', () => 
     assert.deepEqual(draw(-1), ['9', '11', '12'])
     assert.deepEqual(draw(-10), ['9', '10', '11', '12'])
 })
+
+test('a same-beat stack shares one marker showing every change on its lane', () => {
+    const timeScale = (
+        editorLane: number,
+        timeScaleTransition: 'timeScale' | 'scroll',
+        hideNotes: boolean,
+    ): TimeScaleObject => ({
+        groupId,
+        beat: 2,
+        editorLane,
+        timeScale: 1,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition,
+        hideNotes,
+    })
+    const { context, canvas } = makeContext({
+        timeScales: [timeScale(0, 'timeScale', true), timeScale(0, 'scroll', false)],
+    })
+    for (const entities of context.state.store.grid.timeScale.values())
+        for (const entity of entities) drawEvent(context, entity, false)
+    const markers = canvas.strokes.filter(({ path }) =>
+        (path as unknown[][]).some(([command]) => command === 'Z' || command === 'arc'),
+    )
+    // One hollow diamond on dashed lines.
+    assert.deepEqual(
+        markers.map(({ path, color }) => [(path as unknown[][]).length, color]),
+        [[5, '#ff0']],
+    )
+    assert.ok(
+        canvas.strokes
+            .filter(({ color }) => color === '#ff0')
+            .slice(0, 2)
+            .every(({ dash }) => dash.length),
+    )
+})
