@@ -562,6 +562,28 @@ test('a drag held still near the list edge keeps scrolling', async ({ page }) =>
     expect(order.indexOf('Part 1 ')).toBeGreaterThan(order.indexOf('Part 20 '))
 })
 
+test('a drag stops scrolling at the last row', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 600 })
+    await seedGroups(page, [
+        ['Default'],
+        ...Array.from({ length: 20 }, (_, i): [string] => [`Part ${i + 1}`]),
+    ])
+    const list = panel(page).locator('.manager-entries')
+    const end = await list.evaluate((element) => element.scrollHeight - element.clientHeight)
+    const bounds = (await list.boundingBox())!
+    const part = (await nameButton(panel(page), 'Part 1').boundingBox())!
+    await page.mouse.move(part.x + 60, part.y + part.height / 2)
+    await page.mouse.down()
+    // Moving on at the edge carries the held row past the rows; the list stops there.
+    for (let step = 0; step < 120; step++)
+        await page.mouse.move(part.x + 60 + (step % 2), bounds.y + bounds.height - 10)
+    await page.waitForTimeout(300)
+    expect(await list.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(end)
+    await expect(nameButton(panel(page), 'Part 20')).toBeInViewport()
+    await page.mouse.up()
+    expect((await tree(page)).endsWith('Part 20 Part 1')).toBe(true)
+})
+
 test('a held row takes the indent of where it would land', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro'], ['Bass']])
     const left = async (name: string) => (await nameButton(panel(page), name).boundingBox())!.x

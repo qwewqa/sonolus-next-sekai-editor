@@ -603,6 +603,8 @@ type Drag = {
     pointerId: number
     startY: number
     startScroll: number
+    /** The furthest the rows scroll; the held row's offset must not extend it. */
+    scrollLimit: number
     /** Rows in list content coordinates, untransformed, when last measured. */
     rows: RowInfo[]
     /** The dragged rows: the entry, or the folder with its shown members. */
@@ -742,6 +744,7 @@ const onDragStart = (key: RowKey, event: PointerEvent) => {
         pointerId: event.pointerId,
         startY: event.clientY,
         startScroll: container.scrollTop,
+        scrollLimit: container.scrollHeight - container.clientHeight,
         rows,
         dragged,
         gap: rowGap,
@@ -798,11 +801,13 @@ const scheduleExpand = (folder: FolderId | undefined) => {
         const topOf = (list: RowInfo[]) =>
             list.find((row) => sameKey(row.key, current.key))?.top ?? 0
         const moved = topOf(rows) - topOf(current.rows)
+        const bottom = (list: RowInfo[]) => Math.max(...list.map((row) => row.top + row.height))
         const next = {
             ...current,
             rows,
             startY: current.startY + moved,
             offset: current.offset - moved,
+            scrollLimit: current.scrollLimit + bottom(rows) - bottom(current.rows),
         }
         next.target = targetOf(next)
         drag.value = next
@@ -842,11 +847,12 @@ let scrollFrame = 0
 const edgeScroll = () => {
     scrollFrame = 0
     const container = list.value
-    if (!drag.value?.started || !container) return
+    const current = drag.value
+    if (!current?.started || !container) return
     const bounds = container.getBoundingClientRect()
     const step = pointerY < bounds.top + 24 ? -8 : pointerY > bounds.bottom - 24 ? 8 : 0
     const before = container.scrollTop
-    container.scrollTop += step
+    container.scrollTop = Math.max(0, Math.min(before + step, current.scrollLimit))
     if (container.scrollTop === before) return
     follow()
     scrollFrame = requestAnimationFrame(edgeScroll)
