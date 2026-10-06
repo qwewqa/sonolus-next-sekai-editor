@@ -109,6 +109,37 @@ test.describe('ease fields', () => {
         await expect.poll(() => selected(name)).toBe('Step')
     })
 
+    test('None and Linear stand apart from the function values they are not part of', async ({
+        page,
+    }) => {
+        await showSlides(page, ['outSine', 'inQuad', 'none', 'linear', 'linear'])
+        const row = panel(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Ease Function', { exact: true }) })
+            .getByRole('toolbar')
+        await expect(row).toBeVisible()
+        const chips = await row.evaluate((row) =>
+            [...row.children].map((child) =>
+                child.matches('.form-field-mixed-divider')
+                    ? '|'
+                    : `${child.textContent!.replace(/s+/g, ' ').trim()}${
+                          child.matches('.form-field-apart-chip') ? '*' : ''
+                      }`,
+            ),
+        )
+        // Coverage counts only the eases with a function; the rest follow a divider.
+        expect(chips).toEqual(['2 of 5', 'Sine 1', 'Quad 1', '|', 'None 1*', 'Linear 2*'])
+        // They still narrow the selection.
+        await row.getByRole('button', { name: /Linear/ }).click()
+        expect(
+            await page.evaluate(() =>
+                window.editorTest.history.state.value.selectedEntities.map(
+                    (entity) => entity.type === 'note' && entity.connectorEase,
+                ),
+            ),
+        ).toEqual(['linear', 'linear'])
+    })
+
     test('multiple selections keep each type or function when only the other changes', async ({
         page,
     }) => {
