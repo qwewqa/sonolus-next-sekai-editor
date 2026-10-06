@@ -71,7 +71,8 @@ export type FolderStrings = {
 /** Folder editing for one collection; every change is one undoable step. */
 export type FolderOps<K> = ReturnType<typeof createFolderOps<K, FolderMember & { name: string }>>
 
-export const createFolderOps = <K, V extends FolderMember & { name: string }>(config: {
+// A declaration, so groups and stages can build their ops while this module is still loading.
+export function createFolderOps<K, V extends FolderMember & { name: string }>(config: {
     entries: () => ReadonlyMap<K, V>
     folders: () => Folders
     /** The state with these entries and folders. */
@@ -85,7 +86,7 @@ export const createFolderOps = <K, V extends FolderMember & { name: string }>(co
     duplicateObjects: (state: State, copies: ReadonlyMap<K, K>) => State
     owner: OwnerKey
     strings: () => FolderStrings
-}) => {
+}) {
     const tree = () => buildFolderTree(config.entries(), config.folders())
 
     const nameOf = (id: K) => config.entries().get(id)?.name ?? ''
