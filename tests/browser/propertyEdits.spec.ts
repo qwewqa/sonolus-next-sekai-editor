@@ -413,3 +413,39 @@ for (const tick of [false, true])
         expect(result).toEqual({ preview: [0, 4], commit: [0, 4] })
         expect(errors).toEqual([])
     })
+
+test('an edit looks up the changed objects in linear time', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { fixtures, show, history, appImport } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        const count = 2000
+        show(
+            {
+                ...fixtures.interaction,
+                slides: Array.from({ length: count }, (_, beat) => [
+                    { ...base, beat, isAttached: false, isCritical: false },
+                ]),
+            },
+            1,
+        )
+        const { planEdit } = await appImport<
+            typeof import('../../src/state/operations/properties/plan')
+        >('/src/state/operations/properties/plan.ts')
+        const state = history.state.value
+        const selected = [...state.store.slides.note.values()].flat()
+        // Counts the elements every Array#includes scans.
+        const includes = Array.prototype.includes
+        let scanned = 0
+        Array.prototype.includes = function (this: unknown[], ...args) {
+            scanned += this.length
+            return includes.apply(this, args as never)
+        }
+        try {
+            const { changed } = planEdit(state, selected, { isCritical: true })
+            return { changed: changed.length, linear: scanned < count * 20, scanned }
+        } finally {
+            Array.prototype.includes = includes
+        }
+    })
+    expect(result).toMatchObject({ changed: 2000, linear: true })
+})

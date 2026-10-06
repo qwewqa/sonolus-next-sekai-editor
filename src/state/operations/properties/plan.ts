@@ -78,8 +78,9 @@ export const planEdit = (
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(
         (entity) => entity.beat === 0,
     )
+    const changes = new Set(changed)
     const results = selected.flatMap((entity) => {
-        if (!changed.includes(entity)) return [entity]
+        if (!changes.has(entity)) return [entity]
         if (entity === lone && entity.type === 'bpm') return editBpm(transaction, entity, object)
         if (entity === lone && entity.type === 'timeScale')
             return editTimeScale(transaction, entity, object)
