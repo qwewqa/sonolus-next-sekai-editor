@@ -10,7 +10,7 @@ import { emptyLabelKey, unsetChoiceKey } from '../../../modals/form/emptyLabel'
 import { isEditableEntity } from '../../../state/operations/editable'
 import { interpolate, interpolateRaw } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { aggregateEntities, useProperties } from '../../utils/properties'
+import { aggregateEntities } from '../../utils/properties'
 import { view } from '../../view'
 import CloseIcon from '../../workspace/CloseIcon.vue'
 import AddIcon from '../../workspace/manager/icons/AddIcon.vue'
@@ -29,7 +29,15 @@ provide(emptyLabelKey, () => i18n.value.modals.form.unset.unchanged)
 // Rows leave the brush through their remove button.
 provide(unsetChoiceKey, false)
 
-const createModel = useProperties(brushProperties)
+// A blank entry is rejected and reverts; rows leave only through their remove button.
+const createModel = (key: BrushKey) =>
+    computed({
+        get: () => brushProperties.value[key],
+        set: (value) => {
+            if (value !== undefined)
+                brushProperties.value = { ...brushProperties.value, [key]: value }
+        },
+    })
 const models = Object.fromEntries(brushFields.map((field) => [field.key, createModel(field.key)]))
 
 const root = useTemplateRef<HTMLElement>('root')

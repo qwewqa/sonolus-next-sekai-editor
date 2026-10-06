@@ -193,3 +193,20 @@ test('equal names in a mixed select keep their own counts', async ({ page }) => 
     const select = panel(page).getByRole('combobox', { name: 'Group', exact: true })
     await expect(select.locator('option:not([hidden])')).toHaveText(['Twin · 1', 'Twin · 2'])
 })
+
+test('clearing a brush number reverts it and keeps the row', async ({ page }) => {
+    await open(page, { rightDockWidth: 560 })
+    await panel(page).getByRole('combobox', { name: 'Tool', exact: true }).selectOption({
+        label: 'Brush',
+    })
+    const tool = panel(page).getByRole('region', { name: 'Tool' })
+    await tool.getByRole('combobox', { name: 'Add Property' }).selectOption('timeScale')
+    const field = tool.getByRole('spinbutton', { name: 'Time Scale', exact: true })
+    await field.fill('3')
+    await field.press('Enter')
+    await field.fill('')
+    await field.press('Tab')
+    // A blank entry is rejected and reverts; only the remove button removes the row.
+    await expect(field).toHaveValue('3')
+    await expect(tool.getByRole('button', { name: 'Remove Time Scale', exact: true })).toBeVisible()
+})
