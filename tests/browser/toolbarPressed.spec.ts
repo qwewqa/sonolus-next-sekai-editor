@@ -37,7 +37,12 @@ test('the toolbar shows the tool in use as pressed', async ({ page }) => {
     const select = shown(page).and(page.getByTitle('Select', { exact: true }))
     await expect(select).toHaveAttribute('aria-pressed', 'true')
     await expect(select).toHaveClass(/bg-accent/)
-    await expect(shown(page).and(page.getByTitle('Undo', { exact: true }))).toHaveAttribute(
+    // Plain actions are not toggles; modes not in use are.
+    for (const title of ['Undo', 'Open', 'Help'])
+        await expect(shown(page).and(page.getByTitle(title, { exact: true }))).not.toHaveAttribute(
+            'aria-pressed',
+        )
+    await expect(shown(page).and(page.getByTitle('Event', { exact: true }))).toHaveAttribute(
         'aria-pressed',
         'false',
     )

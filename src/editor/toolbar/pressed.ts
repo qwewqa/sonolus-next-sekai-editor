@@ -17,8 +17,8 @@ const presetIndices = {
     slide: defaultSlidePropertiesPresetIndex,
 }
 
-/** Whether a command's tool or mode is the one in use, shown as pressed. */
-export const isCommandPressed = (name: CommandName) => {
+/** Whether a tool or mode is in use; undefined for plain actions, which are not toggles. */
+export const isCommandPressed = (name: CommandName): boolean | undefined => {
     if (name === 'elevation') return isElevationEditorOpen.value
     if (name === 'event') return eventTools.includes(toolName.value)
 
@@ -28,5 +28,5 @@ export const isCommandPressed = (name: CommandName) => {
         return toolName.value === tool && presetIndices[tool].value === Number(preset[2])
     }
 
-    return name in tools && toolName.value === name
+    return name in tools ? toolName.value === name : undefined
 }
