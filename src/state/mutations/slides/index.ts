@@ -1,5 +1,5 @@
 import { ease } from '../../../ease'
-import { clamp, lerp, unlerp } from '../../../utils/math'
+import { clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
 import { toConnectorEntity, type ConnectorEntity } from '../../entities/slides/connector'
@@ -143,7 +143,12 @@ export const rebuildSlide = (
         // Overshooting eases may shrink a note past zero width; keep its center.
         const size = lerp(head.size, tail.size, x)
         const left = lerp(head.left, tail.left, x) + Math.min(size, 0) / 2
-        if (left === rawInfo.note.left && Math.max(size, 0) === rawInfo.note.size) continue
+        // Noise from a BPM edit keeps the note, and its identity.
+        if (
+            nearlyEqual(left, rawInfo.note.left) &&
+            nearlyEqual(Math.max(size, 0), rawInfo.note.size)
+        )
+            continue
         const note = toNoteEntity(rawInfo.note.slideId, {
             ...rawInfo.note,
             left,

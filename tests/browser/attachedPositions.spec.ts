@@ -116,3 +116,45 @@ for (const command of ['copy', 'cut'] as const)
             left: command === 'cut' ? 0 : 3,
         })
     })
+
+test('a BPM edit leaves attached notes it does not move alone', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { fixtures, show, history } = window.editorTest
+        const { createTransaction } = await import('/src/state/transaction.ts')
+        const { editSelectedBpm } = await import('/src/state/operations/bpm.ts')
+        const base = fixtures.interaction.slides[0]![0]!
+        const note = (beat: number, left: number, isAttached = false) => ({
+            ...base,
+            beat,
+            left,
+            size: 2,
+            isAttached,
+        })
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 2, bpm: 90 },
+                ],
+                slides: Array.from({ length: 200 }, (_, index) => [
+                    note(index * 4, -3),
+                    note(index * 4 + 1.5, 0, true),
+                    note(index * 4 + 3, 3),
+                ]),
+            },
+            1,
+        )
+        const source = history.state.value
+        const attached = (state: typeof source) =>
+            [...state.store.slides.note.values()].flat().filter((entity) => entity.isAttached)
+        const bpm = [...source.store.grid.bpm.get(2)!].find((entity) => entity.beat === 2)!
+        const transaction = createTransaction(source)
+        editSelectedBpm(transaction, bpm, { bpm: 91 })
+        const before = attached(source)
+        const after = attached(transaction.commit([]))
+        // Only the first slide spans the change.
+        return after.flatMap((entity, index) => (entity === before[index] ? [] : [index]))
+    })
+    expect(result).toEqual([0])
+})

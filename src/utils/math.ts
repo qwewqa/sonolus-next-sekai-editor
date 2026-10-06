@@ -19,3 +19,7 @@ export const alignNear = (value: number, division = 1) => {
     const aligned = align(value, division)
     return Math.abs(value - aligned) * division < 1e-6 ? aligned : value
 }
+
+/** Equal up to floating-point noise; NaN equals NaN. */
+export const nearlyEqual = (a: number, b: number, epsilon = 1e-9) =>
+    Object.is(a, b) || Math.abs(a - b) <= epsilon

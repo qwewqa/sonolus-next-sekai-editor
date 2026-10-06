@@ -1,6 +1,7 @@
 import type { State } from '.'
 import { addToGroups, type GroupId, type Groups } from '../chart/groups'
 import { settings } from '../settings'
+import { nearlyEqual } from '../utils/math'
 import type { Entity } from './entities'
 import type { SlideId } from './entities/slides'
 import type { SlideInfos } from './entities/slides/hiddenTicks'
@@ -76,7 +77,7 @@ export const createTransaction = (
                             (info) =>
                                 info.note !== info.attachHead &&
                                 info.note !== info.attachTail &&
-                                !Object.is(fraction(state.bpms, info), fraction(newBpms, info)),
+                                !nearlyEqual(fraction(state.bpms, info), fraction(newBpms, info)),
                         )
                     )
                         continue
