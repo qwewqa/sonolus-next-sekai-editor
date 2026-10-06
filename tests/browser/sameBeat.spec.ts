@@ -13,9 +13,9 @@ test.beforeEach(async ({ page, context }) => {
 
 type Kind = 'timeScale' | 'bpm' | 'cameraEventJoint' | 'stageMaskEventJoint'
 
-/** A pair of each kind at beat 4, with a neighbour before and after. */
-const showPairs = (page: Page) =>
-    page.evaluate(async () => {
+/** A pair of each kind at beat 4, with a neighbour before and after, and an optional 9. */
+const showPairs = (page: Page, extra?: number) =>
+    page.evaluate(async (extra) => {
         const { show, fixtures, nextTick } = window.editorTest
         const timeScale = (beat: number, value: number) => ({
             groupId: fixtures.events.timeScales[0]!.groupId,
@@ -48,8 +48,20 @@ const showPairs = (page: Page) =>
                     { beat: 4, bpm: 180 },
                     { beat: 6, bpm: 200 },
                 ],
-                timeScales: [timeScale(2, 0.5), timeScale(4, 1), timeScale(4, 2), timeScale(6, 3)],
-                cameraEvents: [camera(2, 0.5), camera(4, 1), camera(4, 2), camera(6, 3)],
+                timeScales: [
+                    timeScale(2, 0.5),
+                    timeScale(4, 1),
+                    timeScale(4, 2),
+                    timeScale(6, 3),
+                    ...(extra === undefined ? [] : [timeScale(extra, 9)]),
+                ],
+                cameraEvents: [
+                    camera(2, 0.5),
+                    camera(4, 1),
+                    camera(4, 2),
+                    camera(6, 3),
+                    ...(extra === undefined ? [] : [camera(extra, 9)]),
+                ],
                 stageMaskEvents: [mask(2, 5), mask(4, 1), mask(4, 2), mask(6, 3)],
                 stagePivotEvents: [],
                 stageStyleEvents: [],
@@ -59,7 +71,7 @@ const showPairs = (page: Page) =>
             3,
         )
         await nextTick()
-    })
+    }, extra)
 
 /** Each kind's values in the order the exported level plays them. */
 const exported = (page: Page) =>
@@ -389,12 +401,12 @@ test.describe('flipping, scaling and nudging a pair keeps both', () => {
         )
 
     for (const kind of ['timeScale', 'bpm', 'cameraEventJoint', 'stageMaskEventJoint'] as const) {
-        // Flipped, each pair keeps its stored order at its mirrored beat.
+        // Flipped, each pair mirrors its order at its mirrored beat, as the jump runs back.
         const flipped = {
-            timeScale: [3, 1, 2, 0.5],
-            bpm: [120, 200, 120, 180],
-            cameraEventJoint: [3, 1, 2, 0.5],
-            stageMaskEventJoint: [1.5, 0.5, 1, 2.5],
+            timeScale: [3, 2, 1, 0.5],
+            bpm: [120, 200, 180, 120],
+            cameraEventJoint: [3, 2, 1, 0.5],
+            stageMaskEventJoint: [1.5, 1, 0.5, 2.5],
         }[kind]
 
         test(`${kind}: flip vertically`, async ({ page }) => {
@@ -419,7 +431,7 @@ const transformChosen = (
     page: Page,
     operation: 'scale' | 'translate' | 'flipVertical',
     axis: 'beat' | 'width',
-    choose: { kinds: string[]; beats: number[]; firstOfPair?: boolean },
+    choose: { kinds: string[]; beats: number[]; firstOfPair?: boolean; except?: number },
 ) =>
     page.evaluate(
         async ({ operation, axis, choose }) => {
@@ -438,6 +450,8 @@ const transformChosen = (
                 (entity) =>
                     choose.kinds.includes(entity.type) &&
                     choose.beats.includes(entity.beat) &&
+                    (entity as unknown as Record<string, number>).timeScale !== choose.except &&
+                    (entity as unknown as Record<string, number>).cameraZoom !== choose.except &&
                     !(
                         choose.firstOfPair &&
                         entity.beat === 4 &&
@@ -469,3 +483,32 @@ test('scaling the width of one of a pair keeps the pair in order', async ({ page
     expect(after.timeScale).toEqual(original.timeScale)
     expect(after.cameraEventJoint).toEqual(original.cameraEventJoint)
 })
+
+for (const [operation, extra] of [
+    ['scale', 10],
+    ['translate', 7],
+    ['flipVertical', 2],
+] as const) {
+    test(`${operation}: selected pairs stay, unselected objects at a destination are replaced`, async ({
+        page,
+    }) => {
+        await showPairs(page, extra)
+        await transformChosen(page, operation, 'beat', {
+            kinds: ['bpm', 'timeScale', 'cameraEventJoint', 'stageMaskEventJoint'],
+            beats: [2, 4, 6],
+            except: 9,
+        })
+        // The unselected 9 sits where the last (or, flipped, the first) object lands.
+        expect(await exported(page)).toEqual(
+            operation === 'flipVertical'
+                ? {
+                      timeScale: [3, 2, 1, 0.5],
+                      bpm: [120, 200, 180, 120],
+                      bpmIntegrals: [120, 200, 180, 120],
+                      cameraEventJoint: [3, 2, 1, 0.5],
+                      stageMaskEventJoint: [1.5, 1, 0.5, 2.5],
+                  }
+                : original,
+        )
+    })
+}

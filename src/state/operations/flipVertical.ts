@@ -78,8 +78,8 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
     // Remove the entire selection first. Sequential moves can otherwise delete
     // each other's destination, particularly when swapping BPMs and events.
     for (const entity of entities) remove(transaction, entity)
-    // A same-beat pair lands in its stored order and stays a pair.
-    const ordered = inStoredOrder(source, entities, (entity) => entity)
+    // A same-beat pair stays a pair, its order mirrored as the jump now runs back.
+    const ordered = inStoredOrder(source, entities, (entity) => entity, true)
     const placed = new Map<Entity, number>()
     const flipped: Entity[] = []
     for (const entity of ordered) {
