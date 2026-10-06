@@ -21,6 +21,44 @@ export const setRecoveryAside = (text: string): Exclude<UnreadableRecovery, 'ear
     return 'aside'
 }
 
+/**
+ * Moves a set-aside recovery that now opens back to the recovery slot. An
+ * unreadable recovery there takes its place aside; the result says where that
+ * one is kept.
+ */
+export const restoreAside = (
+    text: string,
+    unreadable?: string,
+): Exclude<UnreadableRecovery, 'earlier' | 'waiting'> | undefined => {
+    if (unreadable === undefined) {
+        try {
+            storageSetText('autoSave.levelData', text)
+        } catch {
+            // Still set aside, so it is tried again next time.
+            return
+        }
+        storageRemove(unreadableRecoveryKey)
+        return
+    }
+    try {
+        storageSetText(unreadableRecoveryKey, unreadable)
+    } catch {
+        return 'inPlace'
+    }
+    try {
+        storageSetText('autoSave.levelData', text)
+    } catch {
+        // The unreadable one is still in place; put this one back aside.
+        try {
+            storageSetText(unreadableRecoveryKey, text)
+        } catch {
+            // Lost only from storage: it is open in the editor.
+        }
+        return 'inPlace'
+    }
+    return 'aside'
+}
+
 /** Removes a recovery the user discarded. */
 export const removeRecovery = (kept: UnreadableRecovery) => {
     storageRemove(

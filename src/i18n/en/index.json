@@ -932,7 +932,10 @@
                 "earlierHint": "It is kept, and offered again whenever the editor starts, until you discard it. Download saves a copy as a file.",
                 "download": "Download",
                 "downloaded": "A copy was downloaded. The chart is still kept until you discard it.",
-                "discard": "Discard"
+                "discard": "Discard",
+                "restorable": "An unsaved chart that could not be restored in an earlier session can now be restored. Restoring it replaces the chart just restored from your last session, with its unsaved changes. Cancel keeps it set aside for next time.",
+                "restore": "Restore",
+                "restored": "Restored the unsaved chart from an earlier session"
             }
         },
         "changes": {

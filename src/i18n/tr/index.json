@@ -932,7 +932,10 @@
         "earlierHint": "Silene kadar saklanır ve editör her açıldığında size yeniden sunulur. İndir, bir kopyasını dosya olarak kaydeder.",
         "download": "İndir",
         "downloaded": "Bir kopyası indirildi. Harita, siz silene kadar saklanmaya devam eder.",
-        "discard": "Sil"
+        "discard": "Sil",
+        "restorable": "Önceki bir oturumda geri yüklenemeyen kaydedilmemiş bir harita artık geri yüklenebilir. Geri yüklemek, son oturumunuzdan az önce geri yüklenen haritanın ve kaydedilmemiş değişikliklerinin yerini alır. İptal Et, onu bir dahaki sefere kadar bir kenarda tutar.",
+        "restore": "Geri Yükle",
+        "restored": "Önceki bir oturumdaki kaydedilmemiş harita geri yüklendi"
       }
     },
     "changes": {

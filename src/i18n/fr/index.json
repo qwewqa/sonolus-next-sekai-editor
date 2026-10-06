@@ -932,7 +932,10 @@
         "earlierHint": "Elle est conservée, et vous sera proposée à chaque démarrage de l’éditeur, jusqu’à ce que vous la supprimiez. Télécharger en enregistre une copie dans un fichier.",
         "download": "Télécharger",
         "downloaded": "Une copie a été téléchargée. La partition reste conservée jusqu’à ce que vous la supprimiez.",
-        "discard": "Supprimer"
+        "discard": "Supprimer",
+        "restorable": "Une partition non sauvegardée qui n’a pas pu être restaurée lors d’une session précédente peut maintenant l’être. La restaurer remplace la partition qui vient d’être restaurée depuis votre dernière session, avec ses modifications non sauvegardées. Annuler la garde de côté pour la prochaine fois.",
+        "restore": "Restaurer",
+        "restored": "Partition non sauvegardée d’une session précédente restaurée"
       }
     },
     "changes": {

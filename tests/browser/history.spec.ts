@@ -694,6 +694,103 @@ test('a second unreadable recovery waits behind the set-aside one', async ({ pag
     expect(await unreadableStores(page)).toEqual({ recovery: null, aside: later })
 })
 
+/** A recovery this build opens, as Save writes it: one BPM change, named. */
+const readableRecovery = (filename: string, bpm: number) =>
+    JSON.stringify({
+        version: 1,
+        filename,
+        levelData: gzipSync(
+            JSON.stringify({
+                bgmOffset: 0,
+                entities: [
+                    { archetype: 'Initialization', data: [] },
+                    {
+                        archetype: '#BPM_CHANGE',
+                        data: [
+                            { name: '#BEAT', value: 0 },
+                            { name: '#BPM', value: bpm },
+                        ],
+                    },
+                ],
+            }),
+        ).toString('base64'),
+    })
+
+/** The open chart's name and first tempo. */
+const openChart = (page: Page) =>
+    page.evaluate(async () => {
+        // The live module, without the fixture's chart.
+        const pathname = '/src/history/index.ts'
+        const url =
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => entry.name)
+                .find((name) => new URL(name).pathname === pathname) ?? pathname
+        const { state } = (await import(url)) as typeof import('../../src/history')
+        return { filename: state.value.filename, bpm: Math.round(60 / state.value.bpms[0]!.s) }
+    })
+
+/** Reloads with these recoveries stored and auto save on, after this tab's last save. */
+const reloadWith = async (page: Page, stored: { recovery?: string; aside?: string }) => {
+    await page.evaluate((stored) => {
+        // After the editor's own flush, so it cannot touch them.
+        addEventListener('pagehide', () => {
+            const prefix = 'sonolus-next-sekai-editor.'
+            // A restored recovery stays stored only while auto save is on.
+            localStorage.setItem(`${prefix}autoSave`, 'true')
+            if (stored.recovery)
+                localStorage.setItem(`${prefix}autoSave.levelData`, stored.recovery)
+            if (stored.aside) localStorage.setItem(`${prefix}autoSave.unreadable`, stored.aside)
+        })
+    }, stored)
+    await page.reload()
+}
+
+test('a set-aside recovery this build can open is restored and moved back', async ({ page }) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    await reloadWith(page, { aside: earlier })
+    await expect(page.getByText('Restored the unsaved chart from an earlier session')).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+    // Kept as the normal recovery now, so the slot aside is free.
+    expect(await unreadableStores(page)).toEqual({ recovery: earlier, aside: null })
+})
+
+test('a set-aside recovery that now opens asks before replacing the last session', async ({
+    page,
+}) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    const last = readableRecovery('last-chart', 90)
+    await reloadWith(page, { recovery: last, aside: earlier })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('can now be restored')
+    // Cancel keeps both, the last session open.
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'last-chart', bpm: 90 })
+    expect(await unreadableStores(page)).toEqual({ recovery: last, aside: earlier })
+
+    await page.reload()
+    await dialog.getByRole('button', { name: 'Restore' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+    expect(await unreadableStores(page)).toEqual({ recovery: earlier, aside: null })
+})
+
+test('a set-aside recovery that now opens trades places with one that does not', async ({
+    page,
+}) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    const last = JSON.stringify(futureLevel)
+    await reloadWith(page, { recovery: last, aside: earlier })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('could not be restored')
+    await expect(dialog).toContainText('It has been set aside')
+    expect(await unreadableStores(page)).toEqual({ recovery: earlier, aside: last })
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+})
+
 test('an unreadable recovery that cannot be set aside pauses auto save instead', async ({
     page,
 }) => {

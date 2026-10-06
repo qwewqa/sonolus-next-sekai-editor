@@ -1,11 +1,14 @@
 import { getCurrentScope, onScopeDispose, watch } from 'vue'
 import { isDirty, resetState, state } from '..'
+import type { Chart } from '../../chart'
 import { parseLevelDataChart } from '../../chart/parse/levelData'
 import { validateChart } from '../../chart/validate'
+import { notify } from '../../editor/notification'
 import { i18n } from '../../i18n'
 import { serializeEditorMetadata } from '../../levelData/editorMetadata'
 import { serializeToLevelData } from '../../levelData/serialize'
 import { showModal } from '../../modals'
+import ConfirmModal from '../../modals/ConfirmModal.vue'
 import InfoModal from '../../modals/InfoModal.vue'
 import LoadingModal from '../../modals/LoadingModal.vue'
 import { settings } from '../../settings'
@@ -18,6 +21,7 @@ import { parseAutoSave } from './parse'
 import { serializeAutoSave } from './serialize'
 import {
     removeRecovery,
+    restoreAside,
     setRecoveryAside,
     unreadableRecoveryKey,
     type UnreadableRecovery,
@@ -32,7 +36,9 @@ export const useAutoSave = () => {
     let changed = false
     // Read as text so damaged JSON still counts as a recovery to keep.
     const data = storageGetText('autoSave.levelData')
-    let restoring = !!data
+    const initialAside = storageGetText(unreadableRecoveryKey)
+    // Auto save waits until both are handled, so it never writes over either.
+    let restoring = data !== undefined || initialAside !== undefined
 
     const flush = () => {
         clearTimeout(id)
@@ -119,53 +125,83 @@ export const useAutoSave = () => {
         return true
     }
 
-    const restore = async (data: string) => {
-        let unreadable = undefined as UnreadableRecovery | undefined
+    const restore = async (data: string | undefined, aside: string | undefined) => {
+        const loaded: { primary?: ParsedRecovery; earlier?: ParsedRecovery; done: boolean } = {
+            done: false,
+        }
         await showModal(LoadingModal, {
             title: () => i18n.value.history.autoSave.title,
             async *task(signal: AbortSignal) {
-                let keptInPlace = false
-                try {
-                    yield () => i18n.value.history.autoSave.importing
-                    await timeout(50)
-                    signal.throwIfAborted()
-
-                    let chart, parsed
-                    try {
-                        parsed = parseAutoSave(JSON.parse(data))
-                        chart = parseLevelDataChart(
-                            parsed.levelData.entities,
-                            parsed.defaultGuideColors,
-                        )
-                        validateChart(chart)
-                    } catch (error) {
-                        console.error('Failed to restore chart recovery:', error)
-                        // Never let the next edit replace a recovery this version cannot open.
-                        unreadable = setRecoveryAside(data)
-                        keptInPlace = unreadable !== 'aside'
-                        return
-                    }
-
-                    resetState(true, chart, parsed.levelData.bgmOffset, parsed.filename)
-                    savedState = state.value
-                } finally {
-                    // Without a copy aside, auto save stays off so it cannot overwrite it.
-                    restoring = keptInPlace
-                }
+                yield () => i18n.value.history.autoSave.importing
+                await timeout(50)
+                signal.throwIfAborted()
+                if (data !== undefined) loaded.primary = parseRecovery(data)
+                // A newer build may open what an older one set aside.
+                if (aside !== undefined) loaded.earlier = parseRecovery(aside)
+                loaded.done = true
             },
         })
-        // Once a recovery kept in place is handled, auto save resumes.
-        if (unreadable && (await offerUnreadable(data, unreadable)) && unreadable !== 'aside')
+        // Closed before it finished.
+        if (!loaded.done) {
             restoring = false
+            return
+        }
+        const { primary, earlier } = loaded
+
+        // One dialog at a time: an earlier recovery still unreadable first, as discarding it makes room.
+        if (aside !== undefined && !earlier) await offerUnreadable(aside, 'earlier')
+
+        if (primary) {
+            resetState(true, primary.chart, primary.offset, primary.filename)
+            savedState = state.value
+        }
+
+        let unreadable: UnreadableRecovery | undefined
+        if (aside !== undefined && earlier) {
+            // Restoring it must not silently replace a recovery just restored.
+            if (
+                !isDirty.value ||
+                (await showModal(ConfirmModal, {
+                    title: () => i18n.value.history.autoSave.title,
+                    message: () => i18n.value.history.autoSave.unreadable.restorable,
+                    confirm: () => i18n.value.history.autoSave.unreadable.restore,
+                }))
+            ) {
+                resetState(true, earlier.chart, earlier.offset, earlier.filename)
+                savedState = state.value
+                notify(() => i18n.value.history.autoSave.unreadable.restored)
+                unreadable = restoreAside(aside, primary || data === undefined ? undefined : data)
+            }
+        }
+
+        if (data === undefined || primary) {
+            restoring = false
+            return
+        }
+        // Never let the next edit replace a recovery this version cannot open.
+        unreadable ??= setRecoveryAside(data)
+        // Without a copy aside, auto save stays off so it cannot overwrite it.
+        restoring = unreadable !== 'aside'
+        // Once a recovery kept in place is handled, auto save resumes.
+        if ((await offerUnreadable(data, unreadable)) && unreadable !== 'aside') restoring = false
     }
 
-    // One dialog at a time: the earlier set-aside recovery first, then this one.
-    const aside = storageGetText(unreadableRecoveryKey)
-    if (aside !== undefined || data)
-        void (async () => {
-            if (aside !== undefined) await offerUnreadable(aside, 'earlier')
-            if (data) await restore(data)
-        })()
+    if (data !== undefined || initialAside !== undefined) void restore(data, initialAside)
+}
+
+type ParsedRecovery = { chart: Chart; offset: number; filename?: string }
+
+/** A stored recovery as a chart, the same way whichever slot it is in; undefined when it cannot open. */
+const parseRecovery = (text: string): ParsedRecovery | undefined => {
+    try {
+        const parsed = parseAutoSave(JSON.parse(text))
+        const chart = parseLevelDataChart(parsed.levelData.entities, parsed.defaultGuideColors)
+        validateChart(chart)
+        return { chart, offset: parsed.levelData.bgmOffset, filename: parsed.filename }
+    } catch (error) {
+        console.error('Failed to restore chart recovery:', error)
+        return
+    }
 }
 
 export const resetAutoSave = () => {
