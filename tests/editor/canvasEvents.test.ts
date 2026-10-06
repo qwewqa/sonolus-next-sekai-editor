@@ -771,3 +771,31 @@ test('a time scale draws its line and its marker and label as separate parts', (
     assert.deepEqual(draw('marker'), { lines: 1, markers: 1, labels: ['2x'] })
     assert.deepEqual(draw(), { lines: 2, markers: 1, labels: ['2x'] })
 })
+
+test('any highlighted change of a same-beat stack shows its group name', () => {
+    const timeScale = (value: number): TimeScaleObject => ({
+        groupId: 2 as GroupId,
+        beat: 2,
+        editorLane: -6,
+        timeScale: value,
+        skip: 0,
+        timeScaleEase: 'inStep',
+        timeScaleTransition: 'timeScale',
+        hideNotes: false,
+    })
+    const { context, canvas } = makeContext({
+        groups: new Map([[2 as GroupId, { name: 'B' }]]),
+        timeScales: [timeScale(1), timeScale(2)],
+    })
+    const [first, second] = [...context.state.store.grid.timeScale.values()].flatMap((entities) => [
+        ...entities,
+    ])
+    // Only the second change is selected; the first draws the shared label.
+    context.isHighlighted = (entity) => entity === second
+    drawEvent(context, first!, false)
+    drawEvent(context, second!, true)
+    assert.deepEqual(
+        canvas.labels.map(({ text }) => text),
+        ['1x→2x', 'B'],
+    )
+})

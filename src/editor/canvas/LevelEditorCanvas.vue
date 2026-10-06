@@ -143,6 +143,7 @@ watchEffect(
         if (!canvas || !inputs.width || !inputs.height) return
         const entities = drawSteps.value
         const hovered = inputs.recentlyActive ? undefined : hoveredSet.value
+        const selected = selectedEntitySet.value
         const visibilities = view.visibilities
         // Captured here: the frame callback runs untracked.
         const scope = scopeLookup.value
@@ -168,7 +169,11 @@ watchEffect(
                 inputs.bounds,
             )
             if (!ctx) return
-            const context = { ...inputs, ctx }
+            const context = {
+                ...inputs,
+                ctx,
+                isHighlighted: (entity: Entity) => selected.has(entity) || !!hovered?.has(entity),
+            }
             waveform.draw(context, currentWaveform, offset, currentTimes)
             drawGrid(
                 context,

@@ -369,7 +369,9 @@ export const drawEvent = (
             if (
                 context.showGroupName &&
                 entity.groupId !== context.defaultGroupId &&
-                (highlighted || context.recentlyActive)
+                (highlighted ||
+                    context.recentlyActive ||
+                    !!stack?.some((member) => context.isHighlighted?.(member)))
             ) {
                 // Opposite the label, unless it turned inward for want of room there.
                 const side = direction === (x > 0 ? 1 : -1) ? -direction : direction

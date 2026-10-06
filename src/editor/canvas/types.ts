@@ -1,5 +1,6 @@
 import type { GroupId } from '../../chart/groups'
 import type { State } from '../../state'
+import type { Entity } from '../../state/entities'
 
 export type CanvasBounds = {
     l: number
@@ -26,4 +27,6 @@ export type EditorDrawContext = {
     fontFamily: string
     fontMiddle: number
     figureMiddle: number
+    /** Whether another object is selected or hovered, for labels that stand for several. */
+    isHighlighted?: (entity: Entity) => boolean
 }
