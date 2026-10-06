@@ -342,7 +342,7 @@ test('visible command shortcuts act once while the menu has focus', async ({ pag
     const menu = page.getByRole('menu')
     await expect(
         menu.getByRole('menuitem', { name: 'Flip Horizontally', exact: true }),
-    ).toContainText('u')
+    ).toContainText('U')
     await page.keyboard.press('u')
     await expect(menu).toHaveCount(0)
     expect(

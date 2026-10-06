@@ -25,10 +25,10 @@ test('shortcut capture preserves the old binding until replaced or cleared', asy
     await expect(save).toHaveText('Press a key or click again to clear')
     expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.save)).toBe('p')
     await dialog.getByRole('button', { name: 'Reset Settings', exact: true }).focus()
-    await expect(save).toHaveText('p')
+    await expect(save).toHaveText('P')
     await save.click()
     await save.press('l')
-    await expect(save).toHaveText('l')
+    await expect(save).toHaveText('L')
     await save.click()
     await save.click()
     await expect(save).toHaveText('Unassigned')
@@ -47,7 +47,7 @@ test('shortcut capture preserves the old binding until replaced or cleared', asy
     await save.press('Tab')
     await expect(save).toHaveText('Unassigned')
     await dialog.getByRole('button', { name: 'Reset Shortcuts', exact: true }).click()
-    await expect(save).toHaveText('p')
+    await expect(save).toHaveText('P')
 })
 
 test('settings and keybind resets are independent and remove saved overrides', async ({ page }) => {
@@ -102,7 +102,7 @@ test('shortcut capture takes keys when a click does not focus the button', async
     await save.dispatchEvent('click')
     await expect(save).toHaveText('Press a key or click again to clear')
     await page.keyboard.press('l')
-    await expect(save).toHaveText('l')
+    await expect(save).toHaveText('L')
     expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.save)).toBe('l')
 
     // Pressing it again to clear must not move focus first, which WebKit does.
@@ -148,7 +148,7 @@ test('shortcut capture waits past modifiers and records the chord they make', as
         ['Control+Space', 'Mod+ ', 'Ctrl+Space'],
         // Shift alone stays part of the character, as before.
         ['Shift+KeyU', 'U', 'Shift+U'],
-        ['p', 'p', 'p'],
+        ['p', 'p', 'P'],
     ] as const) {
         await save.click()
         await page.keyboard.press(key)

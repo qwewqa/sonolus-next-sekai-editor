@@ -181,7 +181,11 @@ export const formatBinding = (binding: string | undefined, apple: boolean) => {
     if (binding === undefined || binding === '') return binding
     const chord = parseChord(binding)
     if (!chord) {
-        return binding === ' ' ? 'Space' : /^[A-Z]$/.test(binding) ? `Shift+${binding}` : binding
+        // Letters show as on the keycap; Shift is named, so a capital is never ambiguous.
+        if (binding === ' ') return 'Space'
+        const upper = binding.toUpperCase()
+        if (!isLetter(binding) || upper.length !== 1) return binding
+        return binding === upper ? `Shift+${binding}` : upper
     }
     const key =
         chord.key === ' ' ? 'Space' : isLetter(chord.key) ? chord.key.toUpperCase() : chord.key
