@@ -37,7 +37,8 @@ export const createTransport = ({
     onSpeedChange,
 }: TransportDependencies) => {
     let speed = 1
-    let playback: { returnTime: number } | undefined
+    // floor: the frame shown before a speed change, which the display holds until it passes.
+    let playback: { returnTime: number; floor?: number } | undefined
     let scrub: 'smooth' | 'locked' | undefined
     let followScroll: typeof view.scrollingY
     let pendingAudition: { time: number; source: 'cursor' | 'note' | 'transport' } | undefined
@@ -65,10 +66,14 @@ export const createTransport = ({
 
     const update = () => {
         if (!playback) return
-        const cursorTime = audio.getDisplayTime()
+        let cursorTime = audio.getDisplayTime()
         if (cursorTime === undefined) {
             playback = undefined
             return
+        }
+        if (playback.floor !== undefined) {
+            if (cursorTime < playback.floor) cursorTime = playback.floor
+            else playback.floor = undefined
         }
         view.cursorTime = cursorTime
         if (settings.playFollow) view.time = followTime(cursorTime)
@@ -183,7 +188,11 @@ export const createTransport = ({
         const newSpeed = speeds[speeds.indexOf(speed) + direction] ?? speed
         if (newSpeed === speed) return
         speed = newSpeed
-        if (playback) audio.start(audio.getTime() ?? view.cursorTime, speed, 0)
+        if (playback) {
+            // Audio restarts at its own clock, which the shown frame may lead.
+            audio.start(audio.getTime() ?? view.cursorTime, speed, 0)
+            playback.floor = view.cursorTime
+        }
         onSpeedChange(speed)
     }
 

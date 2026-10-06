@@ -280,3 +280,24 @@ test('locked scrub follows immediately and invalid input preserves state', async
     assert.equal(view.cursorTime, 5)
     assert.deepEqual(auditions, [5])
 })
+
+test('a speed change never moves the drawn position back', async (t) => {
+    const { transport, view, clock } = fixture(t)
+    transport.play(3)
+    clock.audio = 4
+    clock.display = 4.02
+    transport.update()
+    // The new playback starts at the audio clock, behind the shown frame.
+    transport.changeSpeed(1)
+    clock.display = 4.005
+    transport.update()
+    assert.equal(view.cursorTime, 4.02)
+    clock.display = 4.03
+    transport.update()
+    assert.equal(view.cursorTime, 4.03)
+    // Once past, it follows the clock again, and pause still reads the audio clock.
+    clock.audio = 4.01
+    transport.pause()
+    await nextTick()
+    assert.equal(view.cursorTime, 4.01)
+})
