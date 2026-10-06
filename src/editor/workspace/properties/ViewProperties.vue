@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { i18n } from '../../../i18n'
 import OptionalGroupField from '../../../modals/form/OptionalGroupField.vue'
@@ -12,6 +12,10 @@ import { groupScope, stageScope } from '../../scope'
 import { toolName, tools } from '../../tools'
 import { view } from '../../view'
 import SizeField from '../../../modals/form/SizeField.vue'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
+
+// Long values, such as event tool names, go below their label, as in Settings.
+provide(stackLongValuesKey, true)
 
 // A cancelled dialog or declined prompt leaves the value; the select shows it again.
 const tool = computed({

@@ -6,7 +6,7 @@ import { useLeadFit } from './leadFit'
 import { resyncSelect } from './resync'
 import { i18n } from '../../i18n'
 import { useEmptyLabel, useUnsetChoice } from './emptyLabel'
-import { isUnknownValue } from './fieldUsage'
+import { isUnknownValue, optionName } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
 const props = defineProps<{
@@ -34,6 +34,21 @@ const unknown = computed(() =>
     ),
 )
 
+const emptyText = computed(
+    () => props.emptyLabel ?? injectedEmptyLabel?.() ?? i18n.value.modals.form.notSet,
+)
+// The shown value, also on hover where it truncates.
+const shown = computed(() =>
+    modelValue.value === undefined
+        ? emptyText.value
+        : unknown.value
+          ? unknownLabel(modelValue.value)
+          : optionName(
+                modelValue.value,
+                allSections.value.flatMap((section) => section.options),
+            ),
+)
+
 const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
 </script>
 
@@ -59,6 +74,7 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
             <select
                 v-model.lazy="modelValue"
                 :disabled
+                :title="shown"
                 :class="{ 'text-fg/80': modelValue === undefined }"
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 @change="resyncSelect($event, () => modelValue)"
@@ -71,11 +87,11 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                     :hidden="!unsetChoice"
                     class="text-fg"
                 >
-                    {{ emptyLabel ?? injectedEmptyLabel?.() ?? i18n.modals.form.notSet }}
+                    {{ emptyText }}
                 </option>
                 <!-- A value no option names; shown, never listed or committed. -->
                 <option v-if="unknown" :value="modelValue" disabled hidden>
-                    {{ unknownLabel(modelValue) }}
+                    {{ shown }}
                 </option>
                 <template v-for="(section, index) in allSections" :key="index">
                     <optgroup

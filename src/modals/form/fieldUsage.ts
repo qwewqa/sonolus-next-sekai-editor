@@ -36,6 +36,10 @@ const matcher = ({ map, matches }: FieldUsage) =>
 export const isUnknownValue = (value: unknown, options: readonly (readonly [string, unknown])[]) =>
     value !== undefined && !options.some(([, option]) => option === value)
 
+/** The name of the option holding a value. */
+export const optionName = (value: unknown, options: readonly (readonly [string, unknown])[]) =>
+    options.find(([, option]) => option === value)?.[0]
+
 /** No selected object holds a value, as for a BPM change without a meter. */
 export const isUnset = (field: FieldUsage | undefined) => field?.usage?.values.size === 0
 

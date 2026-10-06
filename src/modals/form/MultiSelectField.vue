@@ -5,7 +5,7 @@ import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
 import { useLeadFit } from './leadFit'
 import { resyncSelect } from './resync'
-import { isUnknownValue, isUnset, mixedOptions, useFieldUsage } from './fieldUsage'
+import { isUnknownValue, isUnset, mixedOptions, optionName, useFieldUsage } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
 const props = defineProps<{
@@ -49,6 +49,20 @@ const optionText = (name: string, value: T) => {
     return count ? `${name} · ${count}` : name
 }
 
+const emptyText = computed(
+    () =>
+        props.emptyLabel ??
+        (isUnset(field?.value) ? i18n.value.modals.form.notSet : i18n.value.modals.form.mixed),
+)
+// The shown value, also on hover where it truncates.
+const shown = computed(() => {
+    if (modelValue.value === undefined) return emptyText.value
+    if (unknown.value) return unknownLabel(modelValue.value)
+    const options = allSections.value.flatMap((section) => section.options)
+    const name = optionName(modelValue.value, options)
+    return name === undefined ? undefined : optionText(name, modelValue.value)
+})
+
 const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
 </script>
 
@@ -73,20 +87,18 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
             <select
                 v-model.lazy="modelValue"
                 :disabled
+                :title="shown"
                 :class="{ 'text-fg/80': modelValue === undefined }"
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 @change="resyncSelect($event, () => modelValue)"
             >
                 <!-- The value while objects disagree; never listed or committed. -->
                 <option v-if="modelValue === undefined" :value="undefined" disabled hidden>
-                    {{
-                        emptyLabel ??
-                        (isUnset(field) ? i18n.modals.form.notSet : i18n.modals.form.mixed)
-                    }}
+                    {{ emptyText }}
                 </option>
                 <!-- A value no option names; shown, never listed or committed. -->
                 <option v-if="unknown" :value="modelValue" disabled hidden>
-                    {{ unknownLabel(modelValue) }}
+                    {{ shown }}
                 </option>
                 <template v-for="(section, index) in allSections" :key="index">
                     <optgroup

@@ -589,3 +589,104 @@ test('a kind heading never wraps its count onto a line alone', async ({ page }) 
         )
     expect(lone).toEqual([])
 })
+
+test('a View value too long beside its label goes below it, as in Settings', async ({ page }) => {
+    await open(page, { locale: 'fr' })
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.events, 3))
+    const field = (label: string) =>
+        panel(page)
+            .locator('#properties-section-view .form-field')
+            .filter({ has: page.locator('.form-field-text').getByText(label, { exact: true }) })
+    const switchTool = (name: string) =>
+        page.evaluate(async (name) => {
+            const { appImport, nextTick } = window.editorTest
+            const tools = await appImport<typeof import('../../src/editor/tools')>(
+                '/src/editor/tools/index.ts',
+            )
+            tools.switchToolTo(name as never)
+            await nextTick()
+        }, name)
+    const stacked = /form-field-value-stacked/
+
+    await expect(field('Outil')).not.toHaveClass(stacked)
+    await expect(field('Groupe actuel')).toHaveClass(stacked)
+    // A tool change from elsewhere refits the row.
+    await switchTool('stageStyleEvent')
+    await expect(field('Outil')).toHaveClass(stacked)
+    await switchTool('select')
+    await expect(field('Outil')).not.toHaveClass(stacked)
+
+    // A change while View is collapsed shows correctly once it expands.
+    await header(page, 'Vue').click()
+    await expect(field('Outil')).toHaveCount(0)
+    await switchTool('stageStyleEvent')
+    await header(page, 'Vue').click()
+    await expect(field('Outil')).toHaveClass(stacked)
+})
+
+test('selects show their value on hover', async ({ page }) => {
+    await open(page)
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.notes, 3))
+    const mismatched = () =>
+        page.locator('select:not(.brush-add select)').evaluateAll((selects) =>
+            (selects as HTMLSelectElement[])
+                .filter((select) => select.getClientRects().length)
+                .flatMap((select) => {
+                    const text = select.selectedOptions[0]?.textContent.trim() ?? ''
+                    return select.title === text ? [] : [`${text} != ${select.title}`]
+                }),
+        )
+    const count = () =>
+        page
+            .locator('select')
+            .evaluateAll(
+                (selects) => selects.filter((select) => select.getClientRects().length).length,
+            )
+
+    // All Groups/Stages and a selection whose values differ.
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note',
+            ),
+        })
+        await nextTick()
+    })
+    await expect(panel(page).getByRole('combobox').first()).toBeVisible()
+    expect(await count()).toBeGreaterThan(5)
+    expect(await panel(page).locator('select[title="Mixed"]').count()).toBeGreaterThan(0)
+    await expect(panel(page).locator('select[title="All Groups"]')).toHaveCount(1)
+    expect(await mismatched()).toEqual([])
+
+    await page.evaluate(() => (window.editorTest.settings.locale = 'fr'))
+    await expect(panel(page).locator('select[title="Tous les groupes"]')).toHaveCount(1)
+    expect(await mismatched()).toEqual([])
+
+    // A pick that is turned down shows the held value again.
+    const division = panel(page).getByRole('combobox', { name: 'Division', exact: true })
+    await division.selectOption({ label: '1/n' })
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'Fermer' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(division).toHaveAttribute('title', '1/4')
+    expect(await mismatched()).toEqual([])
+
+    // The preview panel's selects too.
+    await page.evaluate(() =>
+        Object.assign(window.editorTest.settings, {
+            showPreview: true,
+            leftDockCollapsed: false,
+            previewPosition: 'left',
+            previewControls: 'expanded',
+        }),
+    )
+    await expect(page.locator('select[aria-labelledby$="-transport"]')).toBeVisible()
+    expect(await mismatched()).toEqual([])
+
+    // And the elevation editor's.
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-select select')).toHaveAttribute('title', /./)
+    expect(await mismatched()).toEqual([])
+})

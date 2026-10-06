@@ -2,6 +2,7 @@
 import { computed, nextTick, useId, useTemplateRef, watch, type StyleValue } from 'vue'
 import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
+import { optionName } from '../modals/form/fieldUsage'
 import { resyncInput } from '../modals/form/resync'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
@@ -416,6 +417,12 @@ const onPlacementChange = () => {
                         <select
                             v-model="settings.previewTransportPosition"
                             :aria-labelledby="`${id}-transport`"
+                            :title="
+                                optionName(
+                                    settings.previewTransportPosition,
+                                    previewTransportOptions,
+                                )
+                            "
                             class="preview-field cursor-pointer appearance-none pr-9 hover:shadow-accent focus-visible:ring-2 active:bg-accent active:text-on-accent"
                         >
                             <option
@@ -445,6 +452,7 @@ const onPlacementChange = () => {
                             ref="placement"
                             v-model="settings.previewPosition"
                             :aria-labelledby="`${id}-placement`"
+                            :title="optionName(settings.previewPosition, panelPositionOptions)"
                             class="preview-field cursor-pointer appearance-none pr-9 hover:shadow-accent focus-visible:ring-2 active:bg-accent active:text-on-accent"
                             @change="onPlacementChange"
                         >

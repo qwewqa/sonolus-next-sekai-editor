@@ -3,7 +3,7 @@ import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import { computed } from 'vue'
 import BaseField from './BaseField.vue'
 import { resyncSelect } from './resync'
-import { isUnknownValue } from './fieldUsage'
+import { isUnknownValue, optionName } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
 const props = defineProps<{
@@ -14,6 +14,10 @@ const props = defineProps<{
 
 const modelValue = defineModel<T>({ required: true })
 const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
+// The shown value, also on hover where it truncates.
+const shown = computed(() =>
+    unknown.value ? unknownLabel(modelValue.value) : optionName(modelValue.value, props.options),
+)
 </script>
 
 <template>
@@ -22,13 +26,14 @@ const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
             <select
                 v-model.lazy="modelValue"
                 :disabled
+                :title="shown"
                 class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 required
                 @change="resyncSelect($event, () => modelValue)"
             >
                 <!-- A value no option names; shown, never listed or committed. -->
                 <option v-if="unknown" :value="modelValue" disabled hidden>
-                    {{ unknownLabel(modelValue) }}
+                    {{ shown }}
                 </option>
                 <option v-for="([name, value], index) in options" :key="index" :value>
                     {{ name }}
