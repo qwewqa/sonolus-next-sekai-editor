@@ -642,6 +642,13 @@ const unreadableStores = (page: Page) =>
         aside: localStorage.getItem('sonolus-next-sekai-editor.autoSave.unreadable'),
     }))
 
+/** Hides the page, which flushes auto save at once unless it is paused. */
+const hidePage = (page: Page) =>
+    page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+        document.dispatchEvent(new Event('visibilitychange'))
+    })
+
 test('discarding a set-aside recovery removes it', async ({ page }) => {
     await page.evaluate(() => {
         localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', '{"damaged')
@@ -682,7 +689,7 @@ test('a second unreadable recovery waits behind the set-aside one', async ({ pag
     // Auto save is paused, so an edit leaves both alone.
     await page.evaluate(installEditorFixture)
     await editNamedChart(page)
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+    await hidePage(page)
     await page.waitForTimeout(200)
     expect(await unreadableStores(page)).toEqual({ recovery: later, aside: earlier })
 
@@ -825,8 +832,8 @@ test('closing the loading dialog before a recovery opens keeps the recovery', as
                 .find((name) => new URL(name).pathname === pathname) ?? pathname
         const { replaceState, state } = (await import(url)) as typeof import('../../src/history')
         replaceState({ ...state.value, selectedEntities: [] })
-        document.dispatchEvent(new Event('visibilitychange'))
     })
+    await hidePage(page)
     await page.waitForTimeout(200)
     expect(await unreadableStores(page)).toEqual({ recovery: stored, aside: null })
 
@@ -877,7 +884,7 @@ test('an unreadable recovery that cannot be set aside pauses auto save instead',
 
     await page.evaluate(installEditorFixture)
     await editNamedChart(page)
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+    await hidePage(page)
     await page.waitForTimeout(200)
     expect(
         await page.evaluate(() =>
