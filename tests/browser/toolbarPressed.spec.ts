@@ -113,6 +113,21 @@ test('groups with flyouts say so and name the open one', async ({ page }) => {
     await expect(group).not.toHaveAttribute('aria-controls')
 })
 
+test('choosing a flyout member by keyboard keeps focus on the group', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['eraser', 'select']]
+    })
+    const group = shown(page).and(page.getByTitle('Select', { exact: true }))
+    await group.focus()
+    await page.keyboard.press('Enter')
+    await expect(group).toHaveAttribute('aria-expanded', 'true')
+    await page.keyboard.press('Tab')
+    await expect(toolbar(page).locator(':scope > div > div > div button').first()).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(group).toHaveCount(0)
+    await expect(shown(page).and(page.getByTitle('Eraser', { exact: true }))).toBeFocused()
+})
+
 test('a tool dialog keeps the members chosen in each group', async ({ page }) => {
     await page.evaluate(() => {
         const { settings } = window.editorTest

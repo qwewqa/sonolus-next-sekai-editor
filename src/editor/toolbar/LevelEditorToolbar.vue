@@ -151,6 +151,8 @@ const onClickMain = (event: MouseEvent, index: number, name: CommandName) => {
 
 const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     blurPointerClick(event)
+    // The flyout closes under a keyboard choice, so focus returns to its tool first.
+    if (event.detail === 0) groups.value[index]?.querySelector('button')?.focus()
     void commands[name].execute()
 
     activeIndex.value = -1
