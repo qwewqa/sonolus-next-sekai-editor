@@ -24,7 +24,8 @@ const toP = (event: MouseEvent) => ({
     x: event.clientX,
     y: event.clientY,
     modifiers: {
-        ctrl: event.ctrlKey,
+        // Cmd plays Ctrl's part on Apple platforms, where Ctrl+click is a right click.
+        ctrl: event.ctrlKey || event.metaKey,
         shift: event.shiftKey,
     },
 })

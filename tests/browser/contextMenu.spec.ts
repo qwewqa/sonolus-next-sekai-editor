@@ -162,6 +162,16 @@ test('empty right clicks deselect first and only open a menu without a selection
     await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toHaveCount(0)
 })
 
+test('Cmd toggles clicked objects in and out of the selection, as Ctrl does', async ({ page }) => {
+    await click(page, -3, 3, 'left')
+    await page.keyboard.down('Meta')
+    await click(page, 1, 5, 'left')
+    expect((await snapshot(page)).selected).toHaveLength(2)
+    await click(page, 1, 5, 'left')
+    await page.keyboard.up('Meta')
+    expect((await snapshot(page)).selected).toHaveLength(1)
+})
+
 test('modified right clicks and right drags select without opening a menu', async ({ page }) => {
     await click(page, -3, 3, 'left')
     await page.keyboard.down('Control')

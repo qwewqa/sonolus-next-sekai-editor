@@ -61,7 +61,7 @@ const toPs = (event: TouchEvent) =>
         x: touch.clientX,
         y: touch.clientY,
         modifiers: {
-            ctrl: event.ctrlKey,
+            ctrl: event.ctrlKey || event.metaKey,
             shift: event.shiftKey,
         },
     }))
