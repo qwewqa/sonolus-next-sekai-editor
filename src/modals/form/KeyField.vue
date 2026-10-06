@@ -5,10 +5,11 @@ import {
     bindingOf,
     formatShortcut,
     formatBinding,
-    isAltGraphLetter,
+    isAltGraphAlphanumeric,
     isApplePlatform,
     isReservedChord,
 } from '../../editor/controls/bindings'
+import { isComposingKey } from '../../utils/composition'
 import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 
@@ -62,9 +63,13 @@ const modifierKeys = new Set([
     'SymbolLock',
 ])
 
+// IME and dead keys only start a character; capture waits for a real key.
+const isPartialKey = (event: KeyboardEvent) =>
+    isComposingKey(event) || ['Process', 'Dead', 'Unidentified'].includes(event.key)
+
 const onKeyDown = (event: KeyboardEvent) => {
     if (!isActive.value) return
-    if (event.key === 'Tab' || modifierKeys.has(event.key) || event.isComposing) return
+    if (event.key === 'Tab' || modifierKeys.has(event.key) || isPartialKey(event)) return
 
     event.preventDefault()
     event.stopPropagation()
@@ -77,8 +82,8 @@ const onKeyDown = (event: KeyboardEvent) => {
         refusedAs.value = 'reserved'
         return
     }
-    // Recorded, it would be the bare letter; say so rather than store that.
-    if (isAltGraphLetter(event, apple)) {
+    // Recorded, it would be the bare key; say so rather than store that.
+    if (isAltGraphAlphanumeric(event, apple)) {
         refused.value = formatBinding(`Mod+Alt+${event.key.toLowerCase()}`, apple)
         refusedAs.value = 'altGraph'
         return

@@ -177,6 +177,37 @@ test('shortcut capture refuses chords the browser keeps and waits for another ke
         'Ctrl+Alt+K types characters on many keyboards. Press another key.',
     )
     expect(await savedShortcut(page, 'save')).toBe('Mod+h')
+
+    // So does Ctrl+Alt+digit.
+    await save.dispatchEvent('keydown', { key: '1', ctrlKey: true, altKey: true })
+    await expect(save).toHaveText(
+        'Ctrl+Alt+1 types characters on many keyboards. Press another key.',
+    )
+    expect(await savedShortcut(page, 'save')).toBe('Mod+h')
+})
+
+test('shortcut capture waits past IME and dead keys and ignores Caps Lock', async ({ page }) => {
+    const save = shortcutButton(page, 'Save')
+    await save.click()
+    for (const key of ['Process', 'Dead', 'Unidentified'])
+        await save.dispatchEvent('keydown', { key, cancelable: true })
+    // Chrome's first IME keydown can carry a plain key with keyCode 229.
+    await save.evaluate((button) => {
+        const event = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true })
+        Object.defineProperty(event, 'keyCode', { get: () => 229 })
+        button.dispatchEvent(event)
+    })
+    await expect(save).toHaveText('Press a key or click again to clear')
+    expect(await savedShortcut(page, 'save')).toBe('p')
+
+    // Caps Lock reports an uppercase letter without Shift.
+    await save.dispatchEvent('keydown', { key: 'A', cancelable: true })
+    await expect(save).toHaveText('a')
+    expect(await savedShortcut(page, 'save')).toBe('a')
+    await save.click()
+    await save.dispatchEvent('keydown', { key: 'a', shiftKey: true, cancelable: true })
+    await expect(save).toHaveText('Shift+A')
+    expect(await savedShortcut(page, 'save')).toBe('A')
 })
 
 test('shared and browser-claiming bindings are named under their rows', async ({ page }) => {

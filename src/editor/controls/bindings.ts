@@ -24,6 +24,10 @@ export const isCharacter = (key: string) => key.length === 1 && key !== ' '
 
 const isLetter = (key: string) => isCharacter(key) && key.toLowerCase() !== key.toUpperCase()
 
+// A letter's case is Shift's alone, whatever Caps Lock or the platform report.
+const plainKey = ({ key, shiftKey }: KeyInput) =>
+    isLetter(key) ? (shiftKey ? key.toUpperCase() : key.toLowerCase()) : key
+
 const prefixes = [
     ['mod', 'Mod+'],
     ['alt', 'Alt+'],
@@ -48,15 +52,15 @@ const isAltGraph = (input: KeyInput) =>
     !!input.getModifierState?.('AltGraph') || (input.ctrlKey && input.altKey)
 
 /**
- * Ctrl+Alt+letter outside Apple platforms: read as AltGr, so it can be neither
- * recorded nor matched as a chord.
+ * Ctrl+Alt+letter or digit outside Apple platforms: read as AltGr, so it can be
+ * neither recorded nor matched as a chord.
  */
-export const isAltGraphLetter = (input: KeyInput, apple: boolean) =>
+export const isAltGraphAlphanumeric = (input: KeyInput, apple: boolean) =>
     !apple &&
     input.ctrlKey &&
     input.altKey &&
     !input.getModifierState?.('AltGraph') &&
-    isLetter(input.key)
+    (isLetter(input.key) || /^[0-9]$/.test(input.key))
 
 /** Ctrl or Cmd held as a command modifier, not as part of AltGr. */
 export const isCommandChord = (input: KeyInput) =>
@@ -66,11 +70,11 @@ export const isCommandChord = (input: KeyInput) =>
 export const bindingOf = (input: KeyInput, apple: boolean) => {
     const { key } = input
     const character = isCharacter(key)
-    if (character && isAltGraph(input)) return key
+    if (character && isAltGraph(input)) return plainKey(input)
     const mod = input.ctrlKey || input.metaKey
     // Option types characters on Apple keyboards, as AltGr does elsewhere.
     const alt = input.altKey && !(apple && character)
-    if (!mod && !alt && (character || !input.shiftKey)) return key
+    if (!mod && !alt && (character || !input.shiftKey)) return plainKey(input)
     const letter = isLetter(key)
     return stringifyChord({
         mod,
@@ -110,12 +114,7 @@ export const matchBindings = <N extends string>(
             .map(([name]) => name)
         if (names.length) return { names, exact: true }
     }
-    // A letter's case is Shift's alone, whatever Caps Lock or the platform report.
-    const key = isLetter(input.key)
-        ? input.shiftKey
-            ? input.key.toUpperCase()
-            : input.key.toLowerCase()
-        : input.key
+    const key = plainKey(input)
     const names = entries
         .filter(([, value]) => value === key && !parseChord(value))
         .map(([name]) => name)

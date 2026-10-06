@@ -5,7 +5,7 @@ import {
     blocksDefault,
     browserShortcutOf,
     formatBinding,
-    isAltGraphLetter,
+    isAltGraphAlphanumeric,
     isReservedChord,
     matchBindings,
     normalizeBinding,
@@ -35,6 +35,10 @@ test('a key press records its chord, keeping characters typed with Shift or AltG
     const cases: [KeyInput, string, boolean?][] = [
         [press('s'), 's'],
         [press('U', 's'), 'U'],
+        // A letter's case is Shift's alone, whatever Caps Lock reports.
+        [press('A'), 'a'],
+        [press('a', 's'), 'A'],
+        [press('Ą', 'cag'), 'ą'],
         [press('!', 's'), '!'],
         [press('ArrowUp'), 'ArrowUp'],
         [press(' '), ' '],
@@ -131,17 +135,21 @@ test('duplicate bindings all run', () => {
     ])
 })
 
-test('Ctrl+Alt+letter is refused outside Apple platforms, never recorded bare', () => {
-    // It records as the bare letter, so capture refuses it instead.
+test('Ctrl+Alt+letter or digit is refused outside Apple platforms, never recorded bare', () => {
+    // It records as the bare key, so capture refuses it instead.
     assert.equal(bindingOf(press('k', 'ca'), false), 'k')
-    assert.equal(isAltGraphLetter(press('k', 'ca'), false), true)
-    assert.equal(isAltGraphLetter(press('K', 'cas'), false), true)
-    // A real AltGr letter, Option on Apple, and other keys record as they are.
-    assert.equal(isAltGraphLetter(press('ą', 'cag'), false), false)
-    assert.equal(isAltGraphLetter(press('k', 'ca'), true), false)
-    assert.equal(isAltGraphLetter(press('[', 'ca'), false), false)
-    assert.equal(isAltGraphLetter(press('F2', 'ca'), false), false)
-    assert.equal(isAltGraphLetter(press('k', 'c'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('k', 'ca'), false), true)
+    assert.equal(isAltGraphAlphanumeric(press('K', 'cas'), false), true)
+    assert.equal(bindingOf(press('1', 'ca'), false), '1')
+    assert.equal(isAltGraphAlphanumeric(press('1', 'ca'), false), true)
+    // A real AltGr key, Option on Apple, symbols AltGr types and other keys record as they are.
+    assert.equal(isAltGraphAlphanumeric(press('ą', 'cag'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('1', 'cag'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('k', 'ca'), true), false)
+    assert.equal(isAltGraphAlphanumeric(press('[', 'ca'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('F2', 'ca'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('k', 'c'), false), false)
+    assert.equal(isAltGraphAlphanumeric(press('1', 'c'), false), false)
 })
 
 test('the browser keeps its reserved chords, per platform', () => {
