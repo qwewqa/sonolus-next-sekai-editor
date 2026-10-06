@@ -133,12 +133,24 @@ test.describe('time scale transition', () => {
         await expect(segments(page).getByRole('radio', { name: 'Scroll' })).toBeChecked()
     })
 
-    test('the default dock keeps every name in full without the marker', async ({ page }) => {
+    test('the default dock keeps every name in full, with its marker', async ({ page }) => {
         await open(page)
+        await select(page, 'timeScale', [1])
+        const control = field(page, transition).locator('select')
+        await expect(control).toBeVisible()
+        await expect(lead(page, transition)).toHaveCount(1)
+        expect(await control.evaluate((select) => select.scrollWidth <= select.clientWidth)).toBe(
+            true,
+        )
+    })
+
+    test('a dock too narrow for the marker keeps every name in full without it', async ({
+        page,
+    }) => {
+        await open(page, { rightDockWidth: 300 })
         await select(page, 'timeScale', [1])
         await expect(field(page, transition).locator('select')).toBeVisible()
         await expect(lead(page, transition)).toHaveCount(0)
-        expect(await selectPadding(page, transition)).toBe('16px')
     })
 
     test('a phone keeps the segments and drops the markers first', async ({ page }) => {
@@ -323,51 +335,52 @@ for (const width of [336, 260]) {
 
 test('a value glyph gives way only when that lets the value fit', async ({ page }) => {
     await open(page)
-    const shown = (label: string) =>
-        lead(page, label).evaluate((lead) => getComputedStyle(lead).display !== 'none')
-    const fits = (label: string) =>
-        field(page, label)
-            .locator('select')
-            .evaluate((select) => select.scrollWidth <= select.clientWidth)
-    // The default note colour, "デフォルト", fits only without its swatch.
-    await page.evaluate(() => (window.editorTest.settings.locale = 'ja'))
-    await page.evaluate(async () => {
-        const { history, store, nextTick } = window.editorTest
-        history.replaceState({
-            ...history.state.value,
-            selectedEntities: [...store.getAllEntities()].filter(
-                (e) => e.type === 'note' && e.beat === 7,
-            ),
-        })
-        await nextTick()
-    })
-    await expect.poll(() => shown('ノーツの色')).toBe(false)
-    expect(await fits('ノーツの色')).toBe(true)
-    // Up Left in French truncates either way, so its arrow stays.
-    await page.evaluate(() => (window.editorTest.settings.locale = 'fr'))
-    await page.evaluate(async () => {
-        const { history, store, nextTick } = window.editorTest
-        history.replaceState({
-            ...history.state.value,
-            selectedEntities: [...store.getAllEntities()].filter(
-                (e) => e.type === 'note' && e.beat === 3,
-            ),
-        })
-        await nextTick()
-    })
-    await expect.poll(() => shown('Direction du Flick')).toBe(true)
-    // With room, the swatch returns.
-    await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 560))
-    await page.evaluate(() => (window.editorTest.settings.locale = 'ja'))
-    await page.evaluate(async () => {
-        const { history, store, nextTick } = window.editorTest
-        history.replaceState({
-            ...history.state.value,
-            selectedEntities: [...store.getAllEntities()].filter(
-                (e) => e.type === 'note' && e.beat === 7,
-            ),
-        })
-        await nextTick()
-    })
-    await expect.poll(() => shown('ノーツの色')).toBe(true)
+    // Every select with a glyph: hidden only if the value then fits, kept if it
+    // truncates either way.
+    const check = () =>
+        panel(page)
+            .locator('.form-field-select:has(.form-field-select-lead)')
+            .evaluateAll((wrappers) => {
+                const context = document.createElement('canvas').getContext('2d')!
+                return wrappers
+                    .filter((wrapper) => wrapper.getClientRects().length)
+                    .map((wrapper) => {
+                        const select = wrapper.querySelector('select')!
+                        const lead = wrapper.querySelector('.form-field-select-lead')!
+                        const style = getComputedStyle(select)
+                        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+                        const value = select.selectedOptions[0]!.textContent.trim()
+                        const need = context.measureText(value).width
+                        const room = select.clientWidth - parseFloat(style.paddingRight)
+                        return {
+                            value,
+                            shown: getComputedStyle(lead).display !== 'none',
+                            fitsWith: need <= room - 30 + 0.5,
+                            fitsWithout: need <= room - 16 + 0.5,
+                        }
+                    })
+            })
+    let gaveWay = 0
+    for (const locale of ['en', 'fr', 'ja', 'tr']) {
+        await page.evaluate(async (locale) => {
+            const { settings, history, store, nextTick } = window.editorTest
+            settings.locale = locale as never
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (e) => e.type === 'note' && e.beat === 3,
+                ),
+            })
+            await nextTick()
+        }, locale)
+        await page.waitForTimeout(100)
+        for (const glyph of await check()) {
+            if (!glyph.shown) gaveWay++
+            expect(glyph.shown, `${locale} ${glyph.value}`).toBe(
+                glyph.fitsWith || !glyph.fitsWithout,
+            )
+        }
+    }
+    // French "Haut à Gauche" (Up Left) fits only without its arrow.
+    expect(gaveWay).toBeGreaterThan(0)
 })

@@ -13,6 +13,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
+import { observeWidth, unobserveWidth } from './widthObserver'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
 
 const props = defineProps<{
@@ -66,38 +67,35 @@ const description = computed(() =>
         .join('. '),
 )
 
-// A glyph before the label gives way before the label would clamp.
+// A label that would clamp first drops its glyph, then takes back the room the
+// control's 10rem minimum claims; one observer serves every field.
 const slots = useSlots()
 const labelRow = useTemplateRef<HTMLElement>('labelRow')
-let observer: ResizeObserver | undefined
-let width = 0
 let frame = 0
 
-const fitIcon = () => {
+const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
+const fitLabel = () => {
     const element = labelRow.value
     const text = element?.querySelector<HTMLElement>('.form-field-text')
-    if (!slots.icon || !element || !text) return
-    element.classList.remove('form-field-iconless')
-    if (text.scrollHeight > text.clientHeight + 1) element.classList.add('form-field-iconless')
+    if (!element || !text) return
+    element.classList.remove('form-field-iconless', 'form-field-label-roomy')
+    if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
+    if (clamped(text)) element.classList.add('form-field-label-roomy')
+}
+const refitLabel = () => {
+    cancelAnimationFrame(frame)
+    frame = requestAnimationFrame(fitLabel)
 }
 
 onMounted(() => {
-    if (!slots.icon || !labelRow.value) return
-    fitIcon()
-    // Refits after the frame, so hiding the icon never re-enters the observer.
-    observer = new ResizeObserver(([entry]) => {
-        if (!entry || entry.contentRect.width === width) return
-        width = entry.contentRect.width
-        cancelAnimationFrame(frame)
-        frame = requestAnimationFrame(fitIcon)
-    })
-    observer.observe(labelRow.value)
+    fitLabel()
+    if (row.value) observeWidth(row.value, refitLabel)
 })
 
-watch(() => props.label, fitIcon, { flush: 'post' })
+watch(() => props.label, fitLabel, { flush: 'post' })
 
 onBeforeUnmount(() => {
-    observer?.disconnect()
+    if (row.value) unobserveWidth(row.value)
     cancelAnimationFrame(frame)
 })
 
@@ -414,7 +412,7 @@ watchEffect(
         display: grid;
         grid-template-columns:
             minmax(0, 1fr) auto
-            calc(100% - min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem)) - 0.75rem);
+            calc(100% - min(max(calc(45% - 0.375rem), 11rem), calc(100% - 10rem)) - 0.75rem);
         align-items: center;
     }
 
@@ -518,8 +516,8 @@ watchEffect(
         flex: none;
         align-items: center;
         /* About half the row, but long labels such as "Connector Pass Through"
-           may take up to 11rem while the control keeps about 8.25rem. */
-        width: min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem));
+           may take up to 11rem while the control keeps about 9.25rem for values. */
+        width: min(max(calc(45% - 0.375rem), 11rem), calc(100% - 10rem));
         min-height: 2rem;
     }
 
@@ -568,6 +566,13 @@ watchEffect(
     /* Too narrow for the leading icon; the value keeps the room. */
     .form-field-select-lead {
         display: none;
+    }
+}
+
+/* A label that would otherwise clamp keeps the control to 9rem. */
+@container (min-width: 19rem) and (max-width: 31.99rem) {
+    .form-field-label.form-field-label-roomy {
+        width: min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem));
     }
 }
 

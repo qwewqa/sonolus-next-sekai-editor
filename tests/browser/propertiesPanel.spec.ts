@@ -474,3 +474,25 @@ for (const width of [336, 260]) {
         }
     })
 }
+
+test('controls get 10rem less the label gap at the default dock', async ({ page }) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { history, store, nextTick, show, fixtures } = window.editorTest
+        show(fixtures.events)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()],
+        })
+        await nextTick()
+    })
+    const widths = await panel(page)
+        .locator('#properties-section-selection .form-field-row > :not(.form-field-label)')
+        .evaluateAll((controls) =>
+            controls
+                .filter((control) => control.getClientRects().length)
+                .map((control) => Math.round(control.getBoundingClientRect().width)),
+        )
+    expect(widths.length).toBeGreaterThan(10)
+    expect(Math.min(...widths)).toBeGreaterThanOrEqual(148)
+})

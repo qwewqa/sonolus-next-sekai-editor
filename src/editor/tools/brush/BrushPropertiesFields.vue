@@ -252,7 +252,7 @@ const clear = () => {
 @container (min-width: 19rem) {
     .brush-remove,
     .brush-row :deep(.form-field-label) {
-        --label-w: min(max(calc(45cqw - 0.375rem), 11rem), calc(100cqw - 9rem));
+        --label-w: min(max(calc(45cqw - 0.375rem), 11rem), calc(100cqw - 10rem));
     }
 }
 
