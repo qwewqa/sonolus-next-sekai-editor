@@ -1,11 +1,9 @@
 import { onMounted, onUnmounted } from 'vue'
 import { modals } from '../../modals'
 import { settings } from '../../settings'
-import { commands, type CommandName } from '../commands'
+import { commands } from '../commands'
 import { isInWorkspaceDock } from '../workspace'
-
-/** Commands that also run with Ctrl or Cmd, as in every editor. */
-const editingCommands: readonly CommandName[] = ['undo', 'redo', 'cut', 'copy', 'paste']
+import { isApplePlatform, isCharacter, isCommandChord, matchBindings } from './bindings'
 
 const isTextEntry = (target: EventTarget | null) =>
     target instanceof HTMLTextAreaElement ||
@@ -25,46 +23,32 @@ const keepsDefault = (event: KeyboardEvent) => {
     )
 }
 
-// Ctrl+Alt is AltGr on many layouts, which types characters such as [ and ].
-const isCommandChord = (event: KeyboardEvent) =>
-    (event.ctrlKey || event.metaKey) && !event.altKey && !event.getModifierState('AltGraph')
-
-const isCharacter = (key: string) => key.length === 1 && key !== ' '
+const isApple = isApplePlatform()
 
 const onKeydown = (event: KeyboardEvent) => {
     if (modals.length) return
 
-    // Ctrl or Cmd with a character runs only the editing commands.
-    const editingOnly = isCommandChord(event) && isCharacter(event.key)
-    // In docks, fields keep their keys; other controls pass only unclaimed editing chords.
+    const commandChord = isCommandChord(event) && isCharacter(event.key)
+    // In docks, fields keep their keys; other controls pass only unclaimed Ctrl or Cmd chords.
     if (isInWorkspaceDock(document.activeElement)) {
-        if (!editingOnly || event.defaultPrevented || isTextEntry(document.activeElement)) return
+        if (!commandChord || event.defaultPrevented || isTextEntry(document.activeElement)) return
     }
 
-    let isShortcut = false
-    for (const [name, key] of Object.entries(settings.keyboardShortcuts) as [
-        CommandName,
-        string | undefined,
-    ][]) {
-        if (key !== event.key) continue
-        if (editingOnly && !editingCommands.includes(name)) continue
-
-        isShortcut = true
-        void commands[name].execute()
-    }
-    if (!isShortcut || keepsDefault(event)) return
-    // Selected page text keeps its native copy and cut, as before chords were blocked.
-    const { copy, cut } = settings.keyboardShortcuts
+    const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
+    for (const name of names) void commands[name].execute()
+    if (!names.length || keepsDefault(event)) return
+    // Selected page text keeps its native copy and cut.
     if (
-        editingOnly &&
-        (event.key === copy || event.key === cut) &&
+        isCommandChord(event) &&
+        names.some((name) => name === 'copy' || name === 'cut') &&
         getSelection()?.isCollapsed === false
     )
         return
 
-    // Handled plain keys skip browser defaults such as Firefox quick find and
-    // WebKit Backspace navigation, and handled editing chords skip theirs.
-    if (editingOnly || (!event.ctrlKey && !event.altKey && !event.metaKey)) event.preventDefault()
+    // Handled keys skip browser defaults such as Firefox quick find, WebKit Backspace
+    // navigation and Ctrl+S saving the page; Alt and AltGr keep theirs unless bound.
+    if (exact || isCommandChord(event) || (!event.ctrlKey && !event.altKey && !event.metaKey))
+        event.preventDefault()
 }
 
 export const useKeyboardControl = () => {

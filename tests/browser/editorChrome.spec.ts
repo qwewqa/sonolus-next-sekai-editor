@@ -104,13 +104,13 @@ test.describe('shortcuts', () => {
         await page.mouse.click(400, 300)
         await logDefaults(page)
         for (const key of ['/', "'", 'Backspace', 'l', 'Control+s']) await page.keyboard.press(key)
-        // Unbound keys and browser combinations keep their defaults.
+        // Unbound keys keep their defaults; Ctrl+S runs the Slide tool instead of saving the page.
         expect(await keyLog(page)).toEqual([
             '/:true',
             "':true",
             'Backspace:true',
             'l:false',
-            'Control+s:false',
+            'Control+s:true',
         ])
 
         // A field outside docks and dialogs still receives its characters.

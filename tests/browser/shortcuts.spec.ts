@@ -102,18 +102,55 @@ test.describe('chords', () => {
     for (const [chord, tool] of [
         ['Control+s', 'slide'],
         ['Meta+b', 'brush'],
-        ['Control+Shift+A', 'note'],
     ] as const) {
-        test(`${chord} leaves the ${tool} tool to its plain key and keeps the browser default`, async ({
+        test(`${chord} runs the ${tool} tool's plain key and keeps the browser's action out`, async ({
             page,
         }) => {
             await logDefaults(page)
             await setTool(page, 'select')
             await page.keyboard.press(chord)
-            expect(await toolName(page)).toBe('select')
-            expect(await lastDefault(page)).toBe(false)
+            expect(await toolName(page)).toBe(tool)
+            expect(await lastDefault(page)).toBe(true)
         })
     }
+
+    test('Ctrl+Shift+A matches no plain a and keeps the browser default', async ({ page }) => {
+        await logDefaults(page)
+        await setTool(page, 'select')
+        await page.keyboard.press('Control+Shift+A')
+        expect(await toolName(page)).toBe('select')
+        expect(await lastDefault(page)).toBe(false)
+    })
+
+    test('a chord binding wins over the plain key it shares', async ({ page }) => {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = {
+                ...settings.keyboardShortcuts,
+                bpm: 'Mod+s',
+                timeScale: 'Alt+s',
+                eraser: 'Shift+ArrowUp',
+            }
+        })
+        await logDefaults(page)
+        await setTool(page, 'select')
+        for (const [chord, tool, prevented] of [
+            ['Control+s', 'bpm', true],
+            ['Meta+s', 'bpm', true],
+            ['s', 'slide', true],
+            ['Alt+s', 'timeScale', true],
+            // Shift makes the key S, which nothing is bound to.
+            ['Control+Shift+S', 'timeScale', false],
+        ] as const) {
+            await page.keyboard.press(chord)
+            expect(await toolName(page), chord).toBe(tool)
+            expect(await lastDefault(page), chord).toBe(prevented)
+        }
+
+        await page.keyboard.press('Shift+ArrowUp')
+        expect(await toolName(page)).toBe('eraser')
+        expect(await lastDefault(page)).toBe(true)
+    })
 
     test('Alt, AltGr and named keys with Ctrl keep running their bindings', async ({ page }) => {
         await setTool(page, 'select')
@@ -182,5 +219,24 @@ test.describe('dock', () => {
         await page.keyboard.type('3')
         await page.keyboard.press('Control+z')
         expect(await isEdited(page)).toBe(true)
+        await setTool(page, 'select')
+        await page.keyboard.press('Control+s')
+        expect(await toolName(page)).toBe('select')
+    })
+
+    test('a toggle passes Ctrl chords for any binding but keeps plain keys', async ({ page }) => {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.keyboardShortcuts = { ...settings.keyboardShortcuts, bpm: 'Mod+Shift+b' }
+        })
+        await setTool(page, 'select')
+        await control(page, 'Critical').focus()
+        await page.keyboard.press('s')
+        expect(await toolName(page)).toBe('select')
+        await page.keyboard.press('Control+s')
+        expect(await toolName(page)).toBe('slide')
+        await page.keyboard.press('Control+Shift+B')
+        expect(await toolName(page)).toBe('bpm')
+        await expect(control(page, 'Critical')).toBeFocused()
     })
 })
