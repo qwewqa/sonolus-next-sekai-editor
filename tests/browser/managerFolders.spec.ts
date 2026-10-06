@@ -402,6 +402,16 @@ test('folders show their members indented, collapse without an edit, and count o
     await expect(entryRow(page, 'Lead')).toHaveClass(/manager-row-current/)
 })
 
+test('an empty folder controls no member list', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse']], ['Empty'])
+    const empty = folderRow(page, 'Empty').locator('.manager-name')
+    await expect(empty).toHaveAttribute('aria-expanded', 'true')
+    await expect(empty).not.toHaveAttribute('aria-controls')
+    const verse = folderRow(page, 'Verse').locator('.manager-name')
+    const id = await verse.getAttribute('aria-controls')
+    await expect(page.locator(`[id="${id}"]`)).toHaveCount(1)
+})
+
 test('the folder eye hides or shows all members, shows partial state and solos', async ({
     page,
 }) => {

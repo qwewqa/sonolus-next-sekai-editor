@@ -1608,7 +1608,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                 :description="targetDescription(item)"
                                 folder
                                 :expanded="isFolderExpanded(item.id)"
-                                :controls="membersId(item.id)"
+                                :controls="item.members.length ? membersId(item.id) : undefined"
                                 :shown="shownMembers(item).length > 0 || !item.members.length"
                                 :partial="
                                     shownMembers(item).length > 0 &&
