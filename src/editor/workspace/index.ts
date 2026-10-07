@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 import { settings } from '../../settings'
+import { oneRowToolbarWidth, toolbarGroups } from '../toolbar/layout'
 import {
     carryAcrossShape,
     coarseRailSize,
@@ -123,6 +124,15 @@ const toggleState = computed((): WorkspaceToggleState => ({
     },
 }))
 
+// The main editor's toolbar, which side docks' defaults leave room for.
+const toolbarWidth = computed(() =>
+    oneRowToolbarWidth(
+        toolbarGroups(settings.toolbar).length,
+        rootFontSize.value,
+        isCoarsePointer.value,
+    ),
+)
+
 const layoutOf = (state: WorkspaceToggleState) =>
     computeWorkspaceLayout({
         ...workspaceSize.value,
@@ -140,6 +150,7 @@ const layoutOf = (state: WorkspaceToggleState) =>
         coarse: isCoarsePointer.value,
         previewOverlay: settings.previewTransportPosition === 'overlay',
         rootFontSize: rootFontSize.value,
+        toolbarWidth: toolbarWidth.value,
     })
 
 export const workspaceLayout = computed(() => layoutOf(toggleState.value))

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { oneRowToolbarWidth } from '../../src/editor/toolbar/layout'
 import {
     carryAcrossShape,
+    coarseRailSize,
     computeWorkspaceLayout,
     defaultDockSize,
     distribute,
@@ -19,6 +21,9 @@ import {
     type WorkspaceToggleState,
 } from '../../src/editor/workspace/layout'
 
+// The default toolbar shows 18 tools.
+const defaultTools = 18
+
 const input = (overrides: Partial<WorkspaceLayoutInput> = {}): WorkspaceLayoutInput => ({
     width: 1600,
     height: 1000,
@@ -28,6 +33,7 @@ const input = (overrides: Partial<WorkspaceLayoutInput> = {}): WorkspaceLayoutIn
     sizes: { left: 0, right: 0, top: 0 },
     weights: {},
     previewAspectRatio: 16 / 9,
+    toolbarWidth: oneRowToolbarWidth(defaultTools, 16, false),
     ...overrides,
 })
 
@@ -248,22 +254,54 @@ test('hiding one side dock never resizes the other', () => {
     assert.equal(rightOnly.docks.right?.size, both.docks.right?.size)
 })
 
-test('side docks default to 24rem, at most a quarter of the width but never below 260', () => {
-    const side = (width: number, rem?: number) => defaultDockSize('left', width, 1000, rem)
-    assert.equal(side(1280), 320)
+test('the toolbar needs room for its tools and the padding around them', () => {
+    // 18 tools fill the 36rem row, inside the smallest padding.
+    assert.equal(oneRowToolbarWidth(18, 16, false), 18 * 32 + 24)
+    assert.equal(oneRowToolbarWidth(18, 16, true), 18 * 32 + 24)
+    assert.equal(oneRowToolbarWidth(18, 20, false), 18 * 32 + 30)
+    // Beyond the row width the padding grows to its largest before the room does.
+    assert.equal(oneRowToolbarWidth(19, 16, false), 19 * 32 + 256)
+    assert.equal(oneRowToolbarWidth(19, 16, true), 19 * 32 + 24)
+})
+
+test('side docks default to 24rem, leaving the toolbar one row between both, never below 260', () => {
+    const side = (width: number, rem?: number, rail = railSize, coarse = false) =>
+        defaultDockSize('left', width, 1000, {
+            rem,
+            rail,
+            toolbar: oneRowToolbarWidth(defaultTools, rem ?? 16, coarse),
+        })
+    assert.equal(side(1280), 304)
+    assert.equal(side(1366), 347)
+    assert.equal(side(1440), 384)
+    assert.equal(side(1439), 383)
     assert.equal(side(1600), 384)
     assert.equal(side(1920), 384)
-    assert.equal(side(2560), 384)
-    // Larger text widens the default up to the quarter cap.
+    // Both docks at the default leave the toolbar exactly its row.
+    for (const width of [1280, 1366, 1400])
+        assert.ok(
+            width - 2 * railSize - 2 * side(width) >= oneRowToolbarWidth(defaultTools, 16, false),
+        )
+    // Touch rails are wider.
+    assert.equal(side(1280, 16, coarseRailSize, true), 296)
+    // The root font size scales the aim and the toolbar's padding.
     assert.equal(side(1920, 20), 480)
-    assert.equal(side(1600, 20), 400)
+    assert.equal(side(1600, 20), 461)
     assert.equal(side(1600, 12), 288)
+    // Small text narrows the toolbar's row, so its padding grows first.
+    assert.equal(side(1280, 12), 260)
     // Narrow windows and small text keep the floor.
+    assert.equal(side(1191), 260)
     assert.equal(side(900), 260)
     assert.equal(side(390), 260)
     assert.equal(side(1920, 8), 260)
+    // Without a toolbar only the rails limit it.
+    assert.equal(defaultDockSize('left', 800, 1000), 364)
     // The top dock follows the height alone.
-    assert.equal(defaultDockSize('top', 1600, 1000, 20), defaultDockSize('top', 1600, 1000))
+    assert.equal(
+        defaultDockSize('top', 1600, 1000, { rem: 20, toolbar: 900 }),
+        defaultDockSize('top', 1600, 1000),
+    )
 })
 
 test('unsized side docks use the default, scaled by the root font size', () => {
@@ -278,9 +316,10 @@ test('unsized side docks use the default, scaled by the root font size', () => {
     assert.deepEqual(sizes(computeWorkspaceLayout(base)), [384, 384, 384])
     assert.deepEqual(
         sizes(computeWorkspaceLayout({ ...base, width: 1280, height: 800 })),
-        [320, 320, 320],
+        [304, 304, 304],
     )
-    assert.deepEqual(sizes(computeWorkspaceLayout({ ...base, rootFontSize: 18 })), [400, 400, 400])
+    const large = { rootFontSize: 18, toolbarWidth: oneRowToolbarWidth(defaultTools, 18, false) }
+    assert.deepEqual(sizes(computeWorkspaceLayout({ ...base, ...large })), [432, 432, 432])
     // Stored sizes still win.
     const stored = computeWorkspaceLayout({ ...base, sizes: { left: 300, right: 336, top: 0 } })
     assert.deepEqual(sizes(stored), [300, 336, 384])

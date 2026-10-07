@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { oneRowToolbarWidth } from '../../src/editor/toolbar/layout'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 import { resource } from './previewResourceFixture'
 
@@ -508,5 +509,59 @@ test.describe('tablets', () => {
         await expect.poll(() => shownTabs(page)).toEqual(['preview', 'properties'])
         await page.setViewportSize({ width: 820, height: 1180 })
         await expect.poll(() => shownTabs(page)).toEqual(['preview', 'properties'])
+    })
+})
+
+const toolRows = (page: Page) =>
+    page
+        .locator('[data-editor-toolbar] > div > div > button')
+        .evaluateAll(
+            (tools) =>
+                new Set(tools.map((tool) => Math.round(tool.getBoundingClientRect().top))).size,
+        )
+
+const dockWidth = async (page: Page, side: 'left' | 'right') =>
+    Math.round((await dock(page, side).locator('.workspace-dock-body').boundingBox())!.width)
+
+test.describe('default side docks', () => {
+    for (const [width, height, size] of [
+        [1280, 800, 304],
+        [1366, 768, 347],
+        [1440, 900, 384],
+        [1600, 1000, 384],
+    ] as const) {
+        test(`leave the toolbar one row at ${width}x${height}`, async ({ page }) => {
+            await page.setViewportSize({ width, height })
+            await setSettings(page, {
+                showPreview: true,
+                showSidebar: true,
+                leftDockWidth: 0,
+                rightDockWidth: 0,
+            })
+            await settle(page)
+            expect(await dockWidth(page, 'left')).toBe(size)
+            expect(await dockWidth(page, 'right')).toBe(size)
+            await expect.poll(() => toolRows(page)).toBe(1)
+        })
+    }
+
+    test('assume the toolbar width it really needs for one row', async ({ page }) => {
+        const count = await page.locator('[data-editor-toolbar] > div > div > button').count()
+        const need = oneRowToolbarWidth(count, 16, false)
+        const editor = page.locator('[data-editor-toolbar]')
+        for (const [room, rows] of [
+            [need, 1],
+            [need - 1, 2],
+        ] as const) {
+            await setSettings(page, {
+                showPreview: true,
+                showSidebar: true,
+                rightDockWidth: 384,
+                leftDockWidth: 1600 - 2 * 36 - 384 - room,
+            })
+            await settle(page)
+            expect(Math.round((await editor.boundingBox())!.width)).toBe(room)
+            await expect.poll(() => toolRows(page)).toBe(rows)
+        }
     })
 })

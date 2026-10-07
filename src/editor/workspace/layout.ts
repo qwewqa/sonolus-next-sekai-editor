@@ -62,6 +62,8 @@ export type WorkspaceLayoutInput = {
     previewOverlay?: boolean
     /** Root font size in pixels, which scales the default side dock width. */
     rootFontSize?: number
+    /** Narrowest editor that keeps the floating toolbar on one row. */
+    toolbarWidth?: number
 }
 
 export type DockTile = {
@@ -134,15 +136,29 @@ const editorMinWidth = (width: number) => Math.min(320, Math.round(width * 0.4))
 const editorMinHeight = (height: number) =>
     Math.min(240, Math.max(Math.round(height * 0.4), Math.min(200, Math.round(height * 0.55))))
 
+export type DefaultDockRoom = {
+    /** Root font size in pixels. */
+    rem?: number
+    rail?: number
+    /** Narrowest editor that keeps the floating toolbar on one row. */
+    toolbar?: number
+}
+
 /**
  * Default dock sizes. A side dock's default never depends on the other side,
  * so showing or hiding one dock does not resize its neighbor. Side docks aim for
- * 24rem, at most a quarter of the width but never below 260.
+ * 24rem, but never below 260, and as if both sides were shown they leave the
+ * editor room for the toolbar on one row.
  */
-export const defaultDockSize = (side: DockSide, width: number, height: number, rem = 16) =>
+export const defaultDockSize = (
+    side: DockSide,
+    width: number,
+    height: number,
+    { rem = 16, rail = railSize, toolbar = 0 }: DefaultDockRoom = {},
+) =>
     side === 'top'
         ? Math.round(clamp(height * 0.38, 180, 420))
-        : Math.round(Math.max(260, Math.min(24 * rem, width * 0.25)))
+        : Math.floor(Math.max(260, Math.min(24 * rem, (width - 2 * rail - toolbar) / 2)))
 
 /**
  * Distributes `length` between tiles by weight while honoring each tile's
@@ -280,6 +296,7 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     }
 
     const rail = input.railSize ?? railSize
+    const room = { rem: input.rootFontSize, rail, toolbar: input.toolbarWidth }
     const has = (side: DockSide) => panelIds.some((id) => sides[id] === side)
     const hasBody = (side: DockSide) =>
         !input.collapsed?.[side] && panelIds.some((id) => sides[id] === side && input.open[id])
@@ -310,8 +327,7 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     if (overlay) {
         const max = Math.max(minSideBody, width - rails - 48)
         for (const side of inline) {
-            const preferred =
-                input.sizes[side] || defaultDockSize(side, width, height, input.rootFontSize)
+            const preferred = input.sizes[side] || defaultDockSize(side, width, height, room)
             sideSizes[side] = { value: clamp(preferred, minSideBody, max), min: minSideBody, max }
         }
     } else {
@@ -319,10 +335,7 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
         // and let each grow only into room the other is not using, so dragging
         // one side never squeezes the other.
         const preferred = inline.map((side) =>
-            Math.max(
-                minSideBody,
-                input.sizes[side] || defaultDockSize(side, width, height, input.rootFontSize),
-            ),
+            Math.max(minSideBody, input.sizes[side] || defaultDockSize(side, width, height, room)),
         )
         const total = preferred.reduce((sum, value) => sum + value, 0)
         const excess = total - inline.length * minSideBody
@@ -344,7 +357,7 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     const docks: Partial<Record<DockSide, DockLayout>> = {}
     for (const side of ['left', 'right'] as const) {
         if (!has(side)) continue
-        const fallback = defaultDockSize(side, width, height, input.rootFontSize)
+        const fallback = defaultDockSize(side, width, height, room)
         const size = sideSizes[side] ?? { value: 0, min: minSideBody, max: maxSideTotal }
         docks[side] = layoutDock(
             side,

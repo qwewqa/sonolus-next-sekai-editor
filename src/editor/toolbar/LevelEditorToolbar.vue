@@ -23,18 +23,19 @@ import { isDragging } from '../controls/gestures/recognizers/drag'
 import { isCoarsePointer } from '../workspace'
 import { vScrollEdges } from '../../directives/scrollEdges'
 import LevelEditorToolbarTool from './LevelEditorToolbarTool.vue'
+import {
+    maxCoarseToolSize,
+    maxShortCoarseToolSize,
+    minToolSize,
+    shortPaneHeight,
+    toolbarGroups,
+    toolbarPadding,
+} from './layout'
 import { isCommandPressed } from './pressed'
 
 const props = defineProps<{ available?: CommandName[] }>()
 
-const toolbar = computed<CommandName[][]>(() => [
-    ...settings.toolbar
-        .map((group) =>
-            props.available ? group.filter((name) => props.available?.includes(name)) : group,
-        )
-        .filter((group) => group.length),
-    ['fullscreen', 'settings', 'openContextMenu', 'help'],
-])
+const toolbar = computed<CommandName[][]>(() => toolbarGroups(settings.toolbar, props.available))
 
 const activeNames = ref<CommandName[]>([])
 
@@ -81,15 +82,7 @@ const flyoutAttributes = (index: number) =>
           }
         : {}
 
-// Tools wrap into as few rows as the smallest size allows, balanced so no
-// row is left with a few orphans. On touch they then grow, up to 40px, into
-// the room those rows leave (36px in short panes, such as a phone held
-// sideways, where height is scarce), and a row may be wider to fit them;
-// mouse pointers keep 32px in rows up to 36rem.
-const minToolSize = 32
-const maxCoarseToolSize = 40
-const maxShortCoarseToolSize = 36
-const shortPaneHeight = 480
+// Sizes and rows follow ./layout, which side docks' defaults leave room for.
 const root = useTemplateRef<HTMLDivElement>('root')
 const room = ref(0)
 const short = ref(false)
@@ -227,7 +220,7 @@ onBeforeUnmount(() => {
         data-editor-toolbar
         class="pointer-events-none absolute flex size-full items-end justify-center pb-6"
         :style="{
-            paddingInline: `clamp(0.75rem, calc((100% - ${isCoarsePointer ? 45 : 36}rem) / 2), 8rem)`,
+            paddingInline: toolbarPadding(isCoarsePointer),
             '--tool-size': `${toolRows.size}px`,
         }"
     >
