@@ -6,7 +6,6 @@ import { groups } from '../../../history/groups'
 import { initialLife } from '../../../history/initialLife'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { stages } from '../../../history/stages'
-import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { serializeEditorMetadata } from '../../../levelData/editorMetadata'
 import { serializeToLevelDataEntities } from '../../../levelData/entities/serialize'
@@ -27,7 +26,7 @@ import { interpolate } from '../../../utils/interpolate'
 import { editorNavigation } from '../../navigation'
 import { notify } from '../../notification'
 import { view, xToLane, yToValidBeat } from '../../view'
-import { clipboardSource } from '../copy'
+import { clipboardSource, getSlides } from '../copy'
 import CutIcon from './CutIcon.vue'
 
 export const cut: Command = {
@@ -119,18 +118,6 @@ const getEntities = <T extends EntityType>(entities: Entity[], type: T) =>
         entities.filter((entity): entity is EntityOfType<T> => entity.type === type),
         (entity) => entity,
     )
-
-const getSlides = (entities: Entity[]) => {
-    const selectedNotes = entities.filter((entity) => entity.type === 'note')
-    const selectedNotesSet = new Set(selectedNotes)
-
-    return [...new Set(selectedNotes.map((note) => note.slideId))].map((slideId) => {
-        const notes = store.value.slides.note.get(slideId)
-        if (!notes) throw new Error('Unexpected notes not found')
-
-        return notes.filter((note) => selectedNotesSet.has(note))
-    })
-}
 
 const canRemoves: {
     [T in Entity as T['type']]: ((entity: T) => boolean) | undefined
