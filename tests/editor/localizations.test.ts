@@ -147,6 +147,12 @@ test('the version line is translated where the script differs from English', () 
         assert.doesNotMatch(read(locale)['notification.title']!, /Version/, locale)
 })
 
+test('shortcut refusal notes end in a full stop, as in English', () => {
+    for (const locale of ['en', 'fr', 'tr', 'zhs', 'zht'])
+        for (const key of ['modals.form.key.reserved', 'modals.form.key.altGraph'])
+            assert.match(read(locale)[key]!, /[.。]$/, `${locale} ${key}`)
+})
+
 test('event tool names start with a capital where the script has case', () => {
     for (const locale of readdirSync(directory, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())

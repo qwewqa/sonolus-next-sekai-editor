@@ -1184,8 +1184,8 @@
         "pressCancel": "Bir tuşa basın veya Esc ile iptal edin",
         "clear": "Bu kısayolu temizlemek için tekrar tıklayın",
         "unassigned": "Atanmamış",
-        "reserved": "{0} tarayıcıya veya sisteme ayrılmıştır; başka bir tuşa basın",
-        "altGraph": "{0} birçok klavyede karakter yazmak için kullanılır; başka bir tuşa basın",
+        "reserved": "{0} tarayıcıya veya sisteme ayrılmıştır; başka bir tuşa basın.",
+        "altGraph": "{0} birçok klavyede karakter yazmak için kullanılır; başka bir tuşa basın.",
         "alsoRuns": "{0} komutunu da çalıştırır",
         "browserReload": "Tarayıcının yenileme kısayolunun yerine geçer",
         "browserFind": "Tarayıcının bulma kısayolunun yerine geçer"

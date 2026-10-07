@@ -1184,8 +1184,8 @@
         "pressCancel": "按一个键，或按 Esc 取消",
         "clear": "再次点击以清除此快捷键",
         "unassigned": "未设置",
-        "reserved": "{0} 由浏览器或系统保留，请按其他键",
-        "altGraph": "{0} 在许多键盘上用于输入字符，请按其他键",
+        "reserved": "{0} 由浏览器或系统保留，请按其他键。",
+        "altGraph": "{0} 在许多键盘上用于输入字符，请按其他键。",
         "alsoRuns": "同时执行{0}",
         "browserReload": "将取代浏览器的刷新快捷键",
         "browserFind": "将取代浏览器的查找快捷键"

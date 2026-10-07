@@ -1184,8 +1184,8 @@
         "pressCancel": "Appuyez sur une touche ou sur Échap pour annuler",
         "clear": "Cliquez à nouveau pour effacer ce raccourci",
         "unassigned": "Non attribué",
-        "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche",
-        "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche",
+        "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche.",
+        "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche.",
         "alsoRuns": "Exécute aussi {0}",
         "browserReload": "Remplace le raccourci d’actualisation du navigateur",
         "browserFind": "Remplace le raccourci de recherche du navigateur"
