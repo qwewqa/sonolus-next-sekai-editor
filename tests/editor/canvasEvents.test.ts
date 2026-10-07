@@ -906,11 +906,13 @@ test('a floored range draws a step as held values with a gap at the jump', () =>
     )
 })
 
-test('names yield to names placed before them and to other objects’ event dots', () => {
+test('names all draw after every object, selected and hovered ones last', () => {
     const pivot = (beat: number, pivotLane: number) =>
         ({ type: 'stagePivotEventJoint', stageId, beat, pivotLane }) as StagePivotEventJointEntity
     const place = (draws: [DrawnEvent, boolean][]) => {
         const { context, canvas } = makeContext()
+        // Recently active, unhighlighted objects show their names too.
+        context.recentlyActive = true
         context.names = createNameLayer()
         for (const [entity, highlighted] of draws) drawEvent(context, entity, highlighted)
         // Nothing is drawn until the frame places its names.
@@ -918,8 +920,7 @@ test('names yield to names placed before them and to other objects’ event dots
         placeNames(context, context.names)
         return canvas.labels.map(({ text, x, y }) => [text, x, y])
     }
-    // 'Stage A' is 1.68 lanes wide. Its own dot does not hide it, but its name hides
-    // another's at lane 1.2 just above it...
+    // 'Stage A' is 1.68 lanes wide, so these two names overlap; both draw.
     const a = pivot(2, 0)
     const b = pivot(2.02, 1.2)
     assert.deepEqual(
@@ -927,23 +928,31 @@ test('names yield to names placed before them and to other objects’ event dots
             [a, true],
             [b, true],
         ]),
-        [['Stage A', 0, -9.9]],
+        [
+            ['Stage A', 0, -9.9],
+            ['Stage A', 1.2, -10],
+        ],
     )
-    // ...unless that one is selected or hovered.
+    // A highlighted name draws after a plain one, on top.
     assert.deepEqual(
         place([
-            [a, false],
-            [b, true],
+            [a, true],
+            [b, false],
         ]),
-        [['Stage A', 1.2, -10]],
+        [
+            ['Stage A', 1.2, -10],
+            ['Stage A', 0, -9.9],
+        ],
     )
-    // A mask's name between its ends yields to a pivot's dot under it.
+    // A mask's name between its ends still draws over a pivot's dot.
     assert.deepEqual(
         place([
             [mask(6), true],
             [pivot(6, 0.5), true],
         ]),
-        [['Stage A', 0.5, -29.9]],
+        [
+            ['Stage A', 0, -29.9],
+            ['Stage A', 0.5, -29.9],
+        ],
     )
-    assert.deepEqual(place([[mask(6), true]]), [['Stage A', 0, -29.9]])
 })

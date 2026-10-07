@@ -1761,7 +1761,7 @@ test('header controls take keys as dock controls do', async ({ page }) => {
     await expect(page.locator('.elevation-editor')).toHaveCount(0)
 })
 
-test('names draw after every row and skip overlaps, selected rows first', async ({
+test('names draw after every row, overlapping, with selected rows on top', async ({
     page,
 }, testInfo) => {
     await page.evaluate(() => {
@@ -1819,35 +1819,37 @@ test('names draw after every row and skip overlaps, selected rows first', async 
             Object.assign(prototype, { drawImage, fill, fillText })
             return drawn
         }, selectIndex)
-    const names = (drawn: string[]) => drawn.filter((entry) => entry !== 'body')
+    // Names in the order they first draw, checked to follow every body.
+    const names = (drawn: string[]) => {
+        const first = drawn.findIndex((entry) => entry !== 'body')
+        expect(drawn.lastIndexOf('body')).toBeLessThan(first)
+        return [...new Set(drawn.slice(first))]
+    }
     const plain = await draws()
     await page.locator('.elevation-canvas').screenshot({
         path: testInfo.outputPath('elevation-names.png'),
         style: '.notification { visibility: hidden }',
     })
-    // One of the two overlapping names, after both bodies.
-    expect(new Set(names(plain))).toEqual(new Set(['Center']))
-    expect(plain.lastIndexOf('body')).toBeLessThan(plain.indexOf('Center'))
-    // A selected row's name wins.
+    // Both overlapping names, after both bodies.
+    expect(names(plain)).toEqual(['Center', 'Side stage'])
+    // A selected row's name draws last, on top.
     const stageNames = await page.evaluate(() =>
         window.elevationTest.scene.elevationLayout.value.rows.map(
             (row) => window.editorTest.history.state.value.stages.get(row.note.stageId)?.name,
         ),
     )
-    const selected = await draws(stageNames.indexOf('Side stage'))
+    const selected = await draws(stageNames.indexOf('Center'))
     await page.locator('.elevation-canvas').screenshot({
         path: testInfo.outputPath('elevation-names-selected.png'),
         style: '.notification { visibility: hidden }',
     })
-    expect(new Set(names(selected))).toEqual(new Set(['Side stage']))
-    expect(selected.lastIndexOf('body')).toBeLessThan(selected.indexOf('Side stage'))
-    // With Name Contrast, the name still draws once, last, split over its own body.
+    expect(names(selected)).toEqual(['Side stage', 'Center'])
+    // So with Name Contrast, split over their own bodies.
     await page.evaluate(() => (window.editorTest.settings.nameContrast = true))
-    const contrast = await draws(stageNames.indexOf('Side stage'))
+    const contrast = await draws(stageNames.indexOf('Center'))
     await page.locator('.elevation-canvas').screenshot({
         path: testInfo.outputPath('elevation-names-contrast.png'),
         style: '.notification { visibility: hidden }',
     })
-    expect(new Set(names(contrast))).toEqual(new Set(['Side stage']))
-    expect(contrast.lastIndexOf('body')).toBeLessThan(contrast.indexOf('Side stage'))
+    expect(names(contrast)).toEqual(['Side stage', 'Center'])
 })

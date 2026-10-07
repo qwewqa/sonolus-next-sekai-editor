@@ -258,44 +258,46 @@ test('without name contrast, names draw once in their own colours', (t) => {
     ])
 })
 
-for (const nameContrast of [true, false])
-    test(`names are measured once per font and zoom, and again after a font loads (contrast ${nameContrast ? 'on' : 'off'})`, () => {
-        const { context } = recordingContext(nameContrast)
-        let measured = 0
-        const measureText = context.ctx.measureText.bind(context.ctx)
-        Object.defineProperty(context.ctx, 'measureText', {
-            value: (text: string) => {
-                measured++
-                return measureText(text)
-            },
-        })
-        const owner = { type: 'note' } as Entity
-        const frame = (scale: number) => {
-            const layer = createNameLayer()
-            for (const [index, text] of ['Stage', 'Group', 'Stage'].entries())
-                layer.names.push({
-                    owner,
-                    highlighted: false,
-                    text,
-                    x: index * 10,
-                    y: 0,
-                    color: '#f6f',
-                    size: 0.4,
-                    align: 'center',
-                    alpha: 1,
-                })
-            placeNames({ ...context, scale }, layer)
-        }
-        clearNameWidths()
-        frame(10)
-        frame(10)
-        assert.equal(measured, 2)
-        frame(20)
-        assert.equal(measured, 4)
-        clearNameWidths()
-        frame(20)
-        assert.equal(measured, 6)
+test('names are measured once per font and zoom, and again after a font loads', () => {
+    const { context } = recordingContext()
+    let measured = 0
+    const measureText = context.ctx.measureText.bind(context.ctx)
+    Object.defineProperty(context.ctx, 'measureText', {
+        value: (text: string) => {
+            measured++
+            return measureText(text)
+        },
     })
+    const owner = { type: 'note' } as Entity
+    const frame = (scale: number, nameContrast = true) => {
+        const layer = createNameLayer()
+        for (const [index, text] of ['Stage', 'Group', 'Stage'].entries())
+            layer.names.push({
+                owner,
+                highlighted: false,
+                text,
+                x: index * 10,
+                y: 0,
+                color: '#f6f',
+                size: 0.4,
+                align: 'center',
+                alpha: 1,
+            })
+        placeNames({ ...context, scale, nameContrast }, layer)
+    }
+    clearNameWidths()
+    frame(10)
+    frame(10)
+    assert.equal(measured, 2)
+    frame(20)
+    assert.equal(measured, 4)
+    clearNameWidths()
+    frame(20)
+    assert.equal(measured, 6)
+    // Without contrast, names draw whole and need no width.
+    frame(30, false)
+    assert.equal(measured, 6)
+})
 
 test('canvases at different fonts and zooms keep their measured names', () => {
     const { context } = recordingContext()

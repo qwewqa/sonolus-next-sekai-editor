@@ -12,7 +12,7 @@ import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD, getRangePathDs } from '../entities/events/path'
 import type { ScopeLookup } from '../scopeRules'
-import { drawName, markDot, stageNameColor } from './names'
+import { drawName, stageNameColor } from './names'
 import { drawText, measureText } from './text'
 import type { CanvasBounds, EditorDrawContext } from './types'
 
@@ -361,7 +361,6 @@ export const drawEvent = (
             }
             if (part === 'line') break
             timeScaleMarker(ctx, x, y, isScroll, hideNotes)
-            markDot(context, entity, x, y, isScroll ? DIAMOND_RADIUS : 0.1)
             // A same-beat jump reads as one label, in the order it plays.
             const label = timeScaleLabel(context, entity)
             if (!label) break
@@ -428,13 +427,11 @@ export const drawEvent = (
                 ctx.beginPath()
                 ctx.arc(target, y, 0.1, 0, 2 * Math.PI)
                 ctx.fill()
-                markDot(context, entity, target, y, 0.1)
             }
             ctx.globalAlpha *= 2
             ctx.strokeStyle = '#fff'
             for (const x of xs) {
                 marker(ctx, x, y)
-                markDot(context, entity, x, y, 0.1)
             }
             // Same-beat joints of one track draw as one; say how many there are.
             const stack = stackOf(
