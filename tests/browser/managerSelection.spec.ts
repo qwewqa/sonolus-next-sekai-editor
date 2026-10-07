@@ -1307,3 +1307,25 @@ test('a selected folder that regains a member by undo is no longer selected', as
     await expect(verse).toHaveAttribute('aria-checked', 'mixed')
     await expect(bar).toContainText('1 Selected')
 })
+
+test('Hide, Show Only and Move to Folder are disabled with only empty folders selected', async ({
+    page,
+}) => {
+    await seedGroups(page, seed, ['Spare'])
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    await row(list, 'Spare')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await expect(bar).toContainText('1 Selected')
+    // Nothing would be hidden or moved; the folder still duplicates and deletes.
+    await expect(bar.getByRole('button', { name: 'Hide Selected' })).toBeDisabled()
+    await expect(bar.getByRole('button', { name: 'Move to Folder…' })).toBeDisabled()
+    await expect(bar.getByRole('button', { name: 'Delete Selected…' })).toBeEnabled()
+    await bar.getByRole('button', { name: 'More Actions for Selection' }).click()
+    const menu = page.getByRole('menu')
+    for (const name of ['Hide Selected', 'Show Only Selected', 'Move to Folder…'])
+        await expect(menu.getByRole('menuitem', { name })).toBeDisabled()
+    for (const name of ['Duplicate Selected', 'Delete Selected…'])
+        await expect(menu.getByRole('menuitem', { name })).toBeEnabled()
+})
