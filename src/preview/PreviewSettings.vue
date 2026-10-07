@@ -8,7 +8,8 @@ import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
 import { resyncInput, revertOnEscape } from '../modals/form/resync'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
-import { workspaceDockAttribute } from '../editor/workspace'
+import { getPanelPosition, setPanelPosition, workspaceDockAttribute } from '../editor/workspace'
+import type { PanelPosition } from '../editor/workspace/layout'
 import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './options'
@@ -241,6 +242,12 @@ const numberField = (
     })
 const noteSpeedField = numberField('previewNoteSpeed', previewNoteSpeed)
 const renderScaleField = numberField('previewRenderScale', previewRenderScale)
+const positionField = computed({
+    get: () => getPanelPosition('preview'),
+    set: (position: PanelPosition) => {
+        setPanelPosition('preview', position)
+    },
+})
 
 const onNumberKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Enter') (event.currentTarget as HTMLInputElement).blur()
@@ -537,7 +544,7 @@ const onPlacementChange = () => {
                     <span class="preview-setting-control group relative">
                         <select
                             ref="placement"
-                            v-model="settings.previewPosition"
+                            v-model="positionField"
                             :aria-labelledby="`${id}-placement`"
                             :title="optionName(settings.previewPosition, panelPositionOptions)"
                             class="preview-field cursor-pointer appearance-none pr-9 hover:shadow-accent focus-visible:ring-2 active:bg-accent active:text-on-accent"

@@ -213,6 +213,44 @@ test('moving a panel saves the panels the default showed', async ({ page }) => {
     expect(await stored(page)).toMatchObject({ showGroups: true, showStages: false })
 })
 
+test('a position change in Settings saves the panels the default showed', async ({ page }) => {
+    await boot(page, { width: 1280, height: 800 })
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    await page.keyboard.press(',')
+    const position = page
+        .getByRole('dialog')
+        .locator('label')
+        .filter({ has: page.getByText('Properties', { exact: true }) })
+        .getByRole('combobox')
+    await position.selectOption('left')
+    await page.keyboard.press('Escape')
+    await expect(tab(page, 'left', 'Properties')).toBeVisible()
+    const saved = await stored(page)
+    expect(saved).toMatchObject({ showGroups: true, showStages: true })
+    await page.keyboard.press(',')
+    await position.selectOption('auto')
+    await page.keyboard.press('Escape')
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    expect(await stored(page)).toEqual(saved)
+})
+
+test('a position change in Preview Settings saves the panels the default showed', async ({
+    page,
+}) => {
+    await boot(page, { width: 1280, height: 600 })
+    await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
+    await page.getByRole('button', { name: 'Show Preview Settings', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Position', exact: true }).selectOption('right')
+    await expect(tab(page, 'right', 'Preview')).toBeVisible()
+    for (const name of ['Groups', 'Stages'])
+        await expect(tab(page, 'left', name)).toHaveAttribute('aria-selected', 'false')
+    const saved = await stored(page)
+    expect(saved).toMatchObject({ showGroups: false, showStages: false })
+    await page.getByRole('combobox', { name: 'Position', exact: true }).selectOption('auto')
+    await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
+    expect(await stored(page)).toEqual(saved)
+})
+
 test('Reset Settings brings back the default', async ({ page }) => {
     await boot(
         page,

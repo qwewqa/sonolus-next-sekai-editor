@@ -88,6 +88,9 @@ export const autoShape = shallowRef(workspaceSize.value)
 export const getPanelPosition = (id: PanelId): PanelPosition => settings[positionKeys[id]]
 
 export const setPanelPosition = (id: PanelId, position: PanelPosition) => {
+    if (getPanelPosition(id) === position) return
+    // As with a dock move, the panels the default showed stay as they were.
+    if (!isResettingSettings()) keepDefaults()
     settings[positionKeys[id]] = position
 }
 
