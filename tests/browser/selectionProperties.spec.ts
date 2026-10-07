@@ -494,6 +494,39 @@ test.describe('brush', () => {
         await expect(tool(page)).toBeVisible()
     })
 
+    test('Add Property finds items by their first letters and opens upward to the last', async ({
+        page,
+    }) => {
+        const add = tool(page).getByRole('button', { name: 'Add Property', exact: true })
+        const menu = page.getByRole('menu', { name: 'Add Property' })
+        const items = menu.getByRole('menuitem')
+        const focusedLabel = () => page.evaluate(() => document.activeElement?.textContent.trim())
+        await add.focus()
+        await page.keyboard.press('ArrowUp')
+        await expect(menu).toBeVisible()
+        await expect(items.last()).toBeFocused()
+        await page.keyboard.press('Escape')
+
+        await page.keyboard.press('ArrowDown')
+        await expect(items.first()).toHaveText('Group')
+        // Repeating a letter cycles through its matches, wrapping.
+        for (const label of ['Note Type', 'Note Color', 'Note Type']) {
+            await page.keyboard.press('n')
+            await expect.poll(focusedLabel).toBe(label)
+            // Past the prefix timeout, so each press is a fresh letter.
+            await page.waitForTimeout(600)
+        }
+        // Typed quickly, letters build a prefix.
+        await page.keyboard.type('sk')
+        await expect.poll(focusedLabel).toBe('Skip (beats)')
+        await page.waitForTimeout(600)
+        await page.keyboard.type('sli')
+        await expect.poll(focusedLabel).toBe('Slide Fake')
+        // Typing adds nothing.
+        await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
+        await expect(menu).toBeVisible()
+    })
+
     test('picks agreeing values from the selection and clears them', async ({ page }) => {
         await tool(page).getByRole('button', { name: 'Pick from Selection' }).click()
         await expect(tool(page).locator('[data-brush-key="isCritical"] option:checked')).toHaveText(

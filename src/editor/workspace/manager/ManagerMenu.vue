@@ -10,6 +10,7 @@ import {
     type Component,
 } from 'vue'
 import { vScrollEdges } from '../../../directives/scrollEdges'
+import { createTypeAhead, isTypeAheadKey } from '../../../utils/typeAhead'
 import { workspaceDockAttribute } from '..'
 
 export type ManagerMenuItem = {
@@ -42,6 +43,8 @@ const props = defineProps<{
      * than below or above it: for anchors in a vertical rail at a screen edge.
      */
     beside?: 'left' | 'right'
+    /** Opened by ArrowUp: the last item takes focus. */
+    focusLast?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -151,7 +154,11 @@ onMounted(async () => {
     // Hidden elements cannot take focus, so wait for the placed menu to show.
     await nextTick()
     if (!active) return
-    buttons()[0]?.focus({ preventScroll: true, ...(props.touch && { focusVisible: false }) })
+    const list = buttons()
+    ;(props.focusLast ? list.at(-1) : list[0])?.focus({
+        preventScroll: true,
+        ...(props.touch && { focusVisible: false }),
+    })
 
     window.addEventListener('pointerdown', onOutside, true)
     window.addEventListener('scroll', onScroll, true)
@@ -193,8 +200,20 @@ const onScroll = (event: Event) => {
     emit('close', false)
 }
 
+const typeAhead = createTypeAhead()
+
 const onKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
+    // Letters and digits move to the next item starting with what was typed.
+    if (isTypeAheadKey(event)) {
+        const list = buttons()
+        const labels = list.map(
+            (button) =>
+                props.items.find((item) => item.key === button.dataset.menuKey)?.label ?? '',
+        )
+        const current = list.findIndex((button) => button === document.activeElement)
+        const next = typeAhead(event.key, labels, current)
+        if (next !== undefined) list[next]?.focus()
+    } else if (event.key === 'Escape') {
         // Also keeps a surrounding dialog open.
         event.preventDefault()
         emit('close', true)

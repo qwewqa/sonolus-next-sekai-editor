@@ -81,7 +81,7 @@ const initialValue = (field: PropertyField & { key: BrushKey }) => {
 }
 
 // Add Property opens a menu of the properties not in the brush, under their kinds.
-const addMenu = shallowRef<{ modals: number }>()
+const addMenu = shallowRef<{ modals: number; last?: boolean }>()
 const addItems = computed((): ManagerMenuItem[] => {
     const items: ManagerMenuItem[] = []
     for (const { kind, fields } of menu.value)
@@ -167,6 +167,7 @@ const clear = () => {
                 :disabled="!addItems.length"
                 @click="toggleAddMenu"
                 @keydown.down.prevent.stop="addMenu ??= { modals: modals.length }"
+                @keydown.up.prevent.stop="addMenu ??= { modals: modals.length, last: true }"
             >
                 <AddIcon class="size-3.5 shrink-0 fill-current" aria-hidden="true" />
                 <span class="min-w-0 truncate">{{ i18n.tools.brush.add }}</span>
@@ -176,6 +177,7 @@ const clear = () => {
                 :anchor="addButton"
                 :label="i18n.tools.brush.add"
                 :items="addItems"
+                :focus-last="addMenu.last"
                 @select="add"
                 @close="closeAddMenu"
             />
