@@ -4,6 +4,7 @@ import { settings } from '../../settings'
 import { formatShortcut, isPunctuationShortcut } from '../controls/bindings'
 import { commands, type CommandName } from '../commands'
 import { isCoarsePointer } from '../workspace'
+import { pressedIconProps } from './pressed'
 
 const props = withDefaults(
     defineProps<{
@@ -16,6 +17,12 @@ const props = withDefaults(
 )
 
 const title = computed(() => commands[props.name].title())
+// A pressed Custom member shows the value in use.
+const iconProps = computed(
+    () =>
+        (props.pressed ? pressedIconProps(props.name) : undefined) ??
+        commands[props.name].icon.props,
+)
 
 // Tools float over the dark canvas (accent focus ring) and also sit in the light
 // Settings dialog (fg ring). Labelled flyout items get a 44px target on touch,
@@ -42,18 +49,9 @@ const shortcut = computed(() =>
     >
         <!-- Beside a label, icons share a 20px column so names line up. -->
         <span v-if="showLabel" class="flex w-5 shrink-0 justify-center" data-icon-column>
-            <component
-                :is="commands[name].icon.is"
-                class="h-4 w-auto min-w-4"
-                v-bind="commands[name].icon.props"
-            />
+            <component :is="commands[name].icon.is" class="h-4 w-auto min-w-4" v-bind="iconProps" />
         </span>
-        <component
-            :is="commands[name].icon.is"
-            v-else
-            class="size-4"
-            v-bind="commands[name].icon.props"
-        />
+        <component :is="commands[name].icon.is" v-else class="size-4" v-bind="iconProps" />
         <template v-if="showLabel">
             <span class="ml-2 flex-grow text-left text-sm">{{ title }}</span>
             <span

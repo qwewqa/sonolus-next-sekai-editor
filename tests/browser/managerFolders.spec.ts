@@ -1027,7 +1027,9 @@ test.describe('touch', () => {
         expect(parts.nameWidth).toBeGreaterThan(parts.folderWidth)
         expect(parts.countInside).toBe(true)
         expect(parts.countWidth).toBeGreaterThan(0)
-        await expect(page.getByText('1/4', { exact: true })).toBeInViewport()
+        // The status bar's division, not the toolbar's.
+        const bar = chip.locator('..')
+        await expect(bar.getByText('1/4', { exact: true })).toBeInViewport()
     })
 
     test('double taps on a chevron or across controls never rename', async ({ page }) => {

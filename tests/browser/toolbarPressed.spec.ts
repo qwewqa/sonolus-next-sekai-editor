@@ -25,6 +25,9 @@ const pressedTitles = (page: Page) =>
             .map((button) => button.getAttribute('title')),
     )
 
+// The division and lane groups show their values in use.
+const values = ['1/4 Division', '1/1 Lane Division', 'No Lane Limit']
+
 const run = (page: Page, name: string) =>
     page.evaluate(async (name) => {
         const { commands } = await import('/src/editor/commands/index.ts')
@@ -33,7 +36,7 @@ const run = (page: Page, name: string) =>
     }, name)
 
 test('the toolbar shows the tool in use as pressed', async ({ page }) => {
-    await expect.poll(() => pressedTitles(page)).toEqual(['Select'])
+    await expect.poll(() => pressedTitles(page)).toEqual(['Select', ...values])
     const select = shown(page).and(page.getByTitle('Select', { exact: true }))
     await expect(select).toHaveAttribute('aria-pressed', 'true')
     await expect(select).toHaveClass(/bg-accent/)
@@ -49,10 +52,10 @@ test('the toolbar shows the tool in use as pressed', async ({ page }) => {
 
     // A shortcut switches tools; the group shows the tool now in use.
     await page.keyboard.press('g')
-    await expect.poll(() => pressedTitles(page)).toEqual(['Eraser'])
+    await expect.poll(() => pressedTitles(page)).toEqual(['Eraser', ...values])
     await expect(shown(page).and(page.getByTitle('Select', { exact: true }))).toHaveCount(0)
     await page.keyboard.press('f')
-    await expect.poll(() => pressedTitles(page)).toEqual(['Select'])
+    await expect.poll(() => pressedTitles(page)).toEqual(['Select', ...values])
 
     // The elevation editor is a mode beside the tool.
     await run(page, 'elevation')
@@ -60,12 +63,12 @@ test('the toolbar shows the tool in use as pressed', async ({ page }) => {
         .poll(() => pressedTitles(page))
         .toEqual(expect.arrayContaining(['Elevation Editor']))
     await run(page, 'elevation')
-    await expect.poll(() => pressedTitles(page)).toEqual(['Select'])
+    await expect.poll(() => pressedTitles(page)).toEqual(['Select', ...values])
 })
 
 test('note presets are pressed only for the preset in use', async ({ page }) => {
     await run(page, 'note2')
-    await expect.poll(() => pressedTitles(page)).toEqual(['Note'])
+    await expect.poll(() => pressedTitles(page)).toEqual(['Note', ...values])
 
     // The flyout lists the generic note tool and the preset in use as pressed.
     await shown(page)
@@ -353,4 +356,90 @@ test('Escape in a tool setting field reverts typing first, then closes the dialo
     await expect(field).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
+})
+
+test('division and lane groups show the value in use on their face', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['divisionCustom', 'division8', 'division4', 'division1'],
+            ['laneDivisionCustom', 'laneDivision2', 'laneDivision1'],
+            ['laneLimitCustom', 'laneLimitSix', 'laneLimitNone'],
+            ['redo', 'undo'],
+        ]
+    })
+    const face = (index: number) => shown(page).nth(index)
+    const expectFace = async (index: number, title: string, text?: string) => {
+        await expect(face(index)).toHaveAttribute('title', title)
+        await expect(face(index)).toHaveAttribute('aria-pressed', 'true')
+        if (text) await expect(face(index)).toHaveText(text)
+    }
+    await expectFace(0, '1/4 Division', '1/4')
+    await expectFace(1, '1/1 Lane Division')
+    await expectFace(2, 'No Lane Limit')
+
+    // A shortcut switches the division, and the face follows.
+    await page.keyboard.press('8')
+    await expectFace(0, '1/8 Division', '1/8')
+
+    // A custom division shows its value on the custom button.
+    await page.keyboard.press('`')
+    await page.getByRole('spinbutton', { name: 'Division', exact: true }).fill('7')
+    await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expectFace(0, 'Custom Division', '1/7')
+    await face(0).hover()
+    const custom = toolbar(page).locator(':scope > div > div > div button').first()
+    await expect(custom).toHaveAttribute('title', 'Custom Division')
+    await expect(custom).toHaveAttribute('aria-pressed', 'true')
+    await expect(custom).toContainText('1/7')
+    await page.keyboard.press('Escape')
+
+    // Cancelling the custom dialog keeps the face on the value in use.
+    await page.keyboard.press('4')
+    await expectFace(0, '1/4 Division', '1/4')
+    await face(0).hover()
+    await toolbar(page).getByTitle('Custom Division', { exact: true }).click()
+    await expect(page.getByRole('spinbutton', { name: 'Division', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('spinbutton', { name: 'Division', exact: true })).toHaveCount(0)
+    await expectFace(0, '1/4 Division', '1/4')
+
+    // Lane divisions and lane limits behave the same.
+    await run(page, 'laneDivision2')
+    await expectFace(1, '1/2 Lane Division')
+    await page.evaluate(() => (window.editorTest.view.laneDivision = 5))
+    await expectFace(1, 'Custom Lane Division', '1/5')
+    await run(page, 'laneLimitSix')
+    await expectFace(2, 'Limit to ±6 Lanes')
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 12))
+    await expectFace(2, 'Custom Lane Limit', '12')
+    // Values too long for the face show the placeholder.
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 2.5))
+    await expectFace(2, 'Custom Lane Limit', 'n')
+    await page.evaluate(() => (window.editorTest.view.laneDivision = 128))
+    await expectFace(1, 'Custom Lane Division', '1/n')
+    // Unpressed, the custom buttons show their placeholder.
+    await run(page, 'laneLimitNone')
+    await face(2).hover()
+    await expect(
+        toolbar(page).getByTitle('Custom Lane Limit', { exact: true }).locator('text'),
+    ).toHaveText('n')
+    await page.keyboard.press('Escape')
+
+    // A tool that switches once its command resolves still takes the face.
+    await page.evaluate(() => {
+        const { settings, history } = window.editorTest
+        history.replaceState({ ...history.state.value, isDynamicStages: true })
+        settings.toolbar = [['cameraEvent', 'event'], ...settings.toolbar.slice(1)]
+    })
+    await expect(face(0)).toHaveAttribute('title', 'Event')
+    await face(0).hover()
+    await toolbar(page).getByTitle('Camera Event', { exact: true }).click()
+    await expect(face(0)).toHaveAttribute('title', 'Camera Event')
+    await expect(face(0)).toHaveAttribute('aria-pressed', 'true')
+
+    // Groups of plain actions still show the last one used.
+    await face(3).hover()
+    await toolbar(page).getByTitle('Redo', { exact: true }).click()
+    await expect(face(3)).toHaveAttribute('title', 'Redo')
+    await expect(face(3)).not.toHaveAttribute('aria-pressed')
 })

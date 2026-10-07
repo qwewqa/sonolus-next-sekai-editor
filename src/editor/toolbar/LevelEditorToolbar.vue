@@ -145,10 +145,16 @@ const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     blurPointerClick(event)
     // The flyout closes under a keyboard choice, so focus returns to its tool first.
     if (event.detail === 0) groups.value[index]?.querySelector('button')?.focus()
-    void commands[name].execute()
+    const done = commands[name].execute()
 
     activeIndex.value = -1
-    activeNames.value[index] = name
+    // A toggle takes the face once in use; one a dialog cancels leaves it on the one in use.
+    const show = () => {
+        if (isCommandPressed(name) !== false && toolbar.value[index]?.includes(name))
+            activeNames.value[index] = name
+    }
+    if (isCommandPressed(name) === false) void Promise.resolve(done).then(show)
+    else show()
 }
 
 const onOverBackdrop = (event: PointerEvent) => {

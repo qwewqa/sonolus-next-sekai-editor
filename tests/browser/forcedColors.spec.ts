@@ -217,7 +217,7 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
     }
     const toolbar = page.locator('[data-editor-toolbar]')
     // Select is in use; the division and lane groups show their current values.
-    await expectTools(toolbar.locator(':scope > div > div > button'), 1)
+    await expectTools(toolbar.locator(':scope > div > div > button'), 4)
     const select = toolbar.getByTitle('Select', { exact: true })
     await expect.poll(() => fills(select, 'path')).toEqual([selectedText])
 
