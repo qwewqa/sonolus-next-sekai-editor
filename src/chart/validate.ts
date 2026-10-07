@@ -18,6 +18,6 @@ export const validateChart = (chart: Chart) => {
     ]
     if (objects.some(({ beat }) => beat < 0)) throw new Error('Invalid level: negative beat')
     if (notes.some(({ size }) => size < 0)) throw new Error('Invalid level: negative note size')
-    if (chart.bpms.some(({ bpm }) => !(bpm > 0)))
-        throw new Error('Invalid level: zero or negative BPM')
+    if (chart.bpms.some(({ bpm }) => !(bpm > 0 && Number.isFinite(bpm))))
+        throw new Error('Invalid level: BPM must be positive and finite')
 }
