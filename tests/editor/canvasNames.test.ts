@@ -42,7 +42,7 @@ const installGlobal = (t: TestContext, name: string, value: unknown) => {
 }
 
 // Records each fillText with its colour and the clips in force.
-const recordingContext = () => {
+const recordingContext = (nameContrast = true) => {
     const texts: { text: string; color: string; clips: string[] }[] = []
     const stack: string[][] = []
     let clips: string[] = []
@@ -77,6 +77,7 @@ const recordingContext = () => {
         pixelRatio: 1,
         fontFamily: 'sans-serif',
         fontMiddle: 0.25,
+        nameContrast,
     } as unknown as EditorDrawContext
     return { context, texts }
 }
@@ -161,9 +162,9 @@ test('a name splits only over its own note body and slide connectors, later fill
     ])
 })
 
-test('a note gives its names one fill for its whole body, in the colours under them', (t) => {
+const noteScene = (t: TestContext, nameContrast = true) => {
     installGlobal(t, 'Path2D', TestPath)
-    const { context } = recordingContext()
+    const { context, texts } = recordingContext(nameContrast)
     installGlobal(t, 'document', {
         createElement: () => ({ width: 0, height: 0, getContext: () => context.ctx }),
     })
@@ -195,7 +196,11 @@ test('a note gives its names one fill for its whole body, in the colours under t
             stageId: 2,
             ...properties,
         }) as NoteEntity
-    const renderer = createNoteRenderer()
+    return { context, texts, note, renderer: createNoteRenderer() }
+}
+
+test('a note gives its names one fill for its whole body, in the colours under them', (t) => {
+    const { context, note, renderer } = noteScene(t)
     const fills = (entity: NoteEntity, highlighted = true, opacity = 1) => {
         const names = createNameLayer()
         renderer.draw({ ...context, names }, entity, highlighted, opacity)
@@ -219,40 +224,75 @@ test('a note gives its names one fill for its whole body, in the colours under t
     assert.deepEqual(fills(note({}), false), [])
 })
 
-test('names are measured once per font and zoom, and again after a font loads', () => {
-    const { context } = recordingContext()
-    let measured = 0
-    const measureText = context.ctx.measureText.bind(context.ctx)
-    Object.defineProperty(context.ctx, 'measureText', {
-        value: (text: string) => {
-            measured++
-            return measureText(text)
-        },
-    })
+test('without name contrast, names draw once in their own colours', (t) => {
+    const { context, texts, note, renderer } = noteScene(t, false)
+    // Notes mark no fills, whether names are collected or drawn at once.
+    const names = createNameLayer()
+    renderer.draw({ ...context, names }, note({}), true, 1)
+    assert.deepEqual(names.fills, [])
+    placeNames(context, names)
+    renderer.draw(context, note({ noteType: 'trace', beat: 4 }), true, 1)
+    // Fills already collected are ignored.
+    const layer = createNameLayer()
     const owner = { type: 'note' } as Entity
-    const frame = (scale: number) => {
-        const layer = createNameLayer()
-        for (const [index, text] of ['Stage', 'Group', 'Stage'].entries())
-            layer.names.push({
-                owner,
-                highlighted: false,
-                text,
-                x: index * 10,
-                y: 0,
-                color: '#f6f',
-                size: 0.4,
-                align: 'center',
-                alpha: 1,
-            })
-        placeNames({ ...context, scale }, layer)
-    }
-    clearNameWidths()
-    frame(10)
-    frame(10)
-    assert.equal(measured, 2)
-    frame(20)
-    assert.equal(measured, 4)
-    clearNameWidths()
-    frame(20)
-    assert.equal(measured, 6)
+    layer.fills.push(
+        fill(undefined, -10, 10, 6, blendOverChart('#7fffd3', 0.8)).fill,
+        fill(owner, -1, 1, 1, '#dafdf1').fill,
+    )
+    layer.names.push({
+        owner,
+        highlighted: false,
+        text: 'Group',
+        x: 0,
+        y: 0,
+        color: '#0aa',
+        size: 0.4,
+        align: 'center',
+        alpha: 1,
+    })
+    placeNames(context, layer)
+    assert.deepEqual(texts, [
+        { text: 'Side stage', color: '#f6f', clips: [] },
+        { text: 'Side stage', color: '#f6f', clips: [] },
+        { text: 'Group', color: '#0aa', clips: [] },
+    ])
 })
+
+for (const nameContrast of [true, false])
+    test(`names are measured once per font and zoom, and again after a font loads (contrast ${nameContrast ? 'on' : 'off'})`, () => {
+        const { context } = recordingContext(nameContrast)
+        let measured = 0
+        const measureText = context.ctx.measureText.bind(context.ctx)
+        Object.defineProperty(context.ctx, 'measureText', {
+            value: (text: string) => {
+                measured++
+                return measureText(text)
+            },
+        })
+        const owner = { type: 'note' } as Entity
+        const frame = (scale: number) => {
+            const layer = createNameLayer()
+            for (const [index, text] of ['Stage', 'Group', 'Stage'].entries())
+                layer.names.push({
+                    owner,
+                    highlighted: false,
+                    text,
+                    x: index * 10,
+                    y: 0,
+                    color: '#f6f',
+                    size: 0.4,
+                    align: 'center',
+                    alpha: 1,
+                })
+            placeNames({ ...context, scale }, layer)
+        }
+        clearNameWidths()
+        frame(10)
+        frame(10)
+        assert.equal(measured, 2)
+        frame(20)
+        assert.equal(measured, 4)
+        clearNameWidths()
+        frame(20)
+        assert.equal(measured, 6)
+    })

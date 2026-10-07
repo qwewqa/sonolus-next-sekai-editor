@@ -580,3 +580,63 @@ test('a punctuation shortcut reads larger and bold, as in the toolbar', async ({
     // The row keeps its height.
     expect(punctuation.height).toBe(letter.height)
 })
+
+test('Name Contrast on Notes is off by default, persists and recolours names', async ({ page }) => {
+    const key = 'sonolus-next-sekai-editor.nameContrast'
+    const toggle = page
+        .getByRole('dialog')
+        .locator('label')
+        .filter({ has: page.getByText('Name Contrast on Notes', { exact: true }) })
+        .getByRole('button')
+    // Colours of each stage and group name drawn on the chart in the next frames.
+    const nameColors = () =>
+        page.evaluate(async () => {
+            const { show, fixtures, history } = window.editorTest
+            const drawn: Record<string, string[]> = {}
+            const fillText = CanvasRenderingContext2D.prototype.fillText
+            CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+                if (
+                    this.canvas instanceof HTMLCanvasElement &&
+                    this.canvas.classList.contains('editor-chart') &&
+                    (text === 'Center' || text === 'Other group')
+                )
+                    (drawn[text] ??= []).push(String(this.fillStyle))
+                return fillText.call(this, text, ...args)
+            }
+            show(fixtures.connectors, 8)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+            })
+            await new Promise<void>((resolve) =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+            )
+            CanvasRenderingContext2D.prototype.fillText = fillText
+            return Object.fromEntries(
+                Object.entries(drawn).map(([text, colors]) => [text, [...new Set(colors)]]),
+            )
+        })
+
+    await expect(toggle).toHaveValue('Disabled')
+    expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
+    // Off, names keep their plain colours over note bodies and connectors.
+    expect(await nameColors()).toEqual({ Center: ['#ff66ff'], 'Other group': ['#00aaaa'] })
+
+    await toggle.click()
+    await expect(toggle).toHaveValue('Enabled')
+    expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe('true')
+    const on = await nameColors()
+    expect(on.Center).toEqual(expect.arrayContaining(['#ff66ff', '#aa00aa']))
+    expect(on['Other group']).toEqual(expect.arrayContaining(['#00aaaa', '#005555']))
+
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    expect(await page.evaluate(() => window.editorTest.settings.nameContrast)).toBe(true)
+    await page.keyboard.press(',')
+    await expect(toggle).toHaveValue('Enabled')
+    await toggle.click()
+    await expect(toggle).toHaveValue('Disabled')
+    expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
+    expect(await nameColors()).toEqual({ Center: ['#ff66ff'], 'Other group': ['#00aaaa'] })
+})

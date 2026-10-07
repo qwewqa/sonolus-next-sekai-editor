@@ -428,7 +428,9 @@ export const createNoteRenderer = () => {
                 // Side by side, the names keep 0.1 lane each from the middle.
                 const gap = stage && group ? NAME_GAP : 0
                 const fill =
-                    stage || group ? bodyFill(entity, type, x, y, ctx.globalAlpha) : undefined
+                    context.nameContrast && (stage || group)
+                        ? bodyFill(entity, type, x, y, ctx.globalAlpha)
+                        : undefined
                 if (fill) markFill(context, fill)
                 const body = fill ? [fill] : []
                 if (stage) {

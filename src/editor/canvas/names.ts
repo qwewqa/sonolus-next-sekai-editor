@@ -178,6 +178,10 @@ export const placeNames = (context: EditorDrawContext, { names, dots, fills }: N
         if (dots.some((dot) => dot.owner !== name.owner && overlaps(box, dot))) continue
         placed.push(box)
         ctx.globalAlpha = name.alpha
+        if (!context.nameContrast) {
+            drawText(context, name.text, name.x, name.y, name.color, name.size, name.align)
+            continue
+        }
         drawSplitName(
             context,
             name,

@@ -136,6 +136,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         defaultGroupId: group,
                         showStageName: false,
                         showGroupName: false,
+                        nameContrast: false,
                         recentlyActive: false,
                         fontFamily,
                         fontMiddle: measureTextMiddle(fontFamily, document.body),

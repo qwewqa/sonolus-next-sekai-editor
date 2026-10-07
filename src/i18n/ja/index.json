@@ -627,6 +627,7 @@
       "showOtherGroups": "他のグループを表示",
       "showStageName": "ステージ名を表示",
       "showOtherStages": "他のステージを表示",
+      "nameContrast": "ノーツ上の名前のコントラスト",
       "showOtherObjects": "他のオブジェクトを表示",
       "deselectSwitchesToSelect": "2回選択解除で選択ツールに切り替え",
       "beatDisplay": {

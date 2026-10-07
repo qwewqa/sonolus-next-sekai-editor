@@ -788,6 +788,7 @@ watchEffect(() => {
     const labels = i18n.value.elevation
     const showGroupName = settings.showGroupName
     const showStageName = settings.showStageName
+    const nameContrast = settings.nameContrast
     // Axis labels move right of any left badges, which would cover them.
     const leftBadges = offscreenGroups.value.filter(({ side }) => side === 'left')
     const axisLabelLeft = leftBadges.length
@@ -872,6 +873,7 @@ watchEffect(() => {
             defaultGroupId: defaultGroupId.value,
             showGroupName,
             showStageName,
+            nameContrast,
             recentlyActive: true,
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,

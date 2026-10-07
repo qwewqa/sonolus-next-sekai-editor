@@ -525,7 +525,7 @@ export const createConnectorRenderer = () => {
                 ctx.fillStyle = graphic.gradient
             }
             ctx.fill(graphic.path)
-            if (context.names) {
+            if (context.names && context.nameContrast) {
                 const { box, path, color, headAlpha, tailAlpha, yHead, yTail } = graphic
                 markFill(context, {
                     box,

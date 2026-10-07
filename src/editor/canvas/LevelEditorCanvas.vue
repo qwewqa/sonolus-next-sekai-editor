@@ -112,6 +112,7 @@ const contextInputs = computed(() => ({
     defaultGroupId: defaultGroupId.value,
     showStageName: settings.showStageName,
     showGroupName: settings.showGroupName,
+    nameContrast: settings.nameContrast,
     recentlyActive: isViewRecentlyActive.value,
     fontFamily: fontFamily.value,
     fontMiddle: fontMiddle.value,

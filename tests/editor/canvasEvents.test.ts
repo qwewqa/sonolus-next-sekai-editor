@@ -164,6 +164,7 @@ const makeContext = (overrides: Partial<Chart> = {}) => {
         defaultGroupId: groupId,
         showStageName: true,
         showGroupName: true,
+        nameContrast: false,
         recentlyActive: false,
         fontFamily: 'sans-serif',
         fontMiddle: 0.25,

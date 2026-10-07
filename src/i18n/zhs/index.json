@@ -627,6 +627,7 @@
       "showOtherGroups": "显示其他群组",
       "showStageName": "显示舞台名称",
       "showOtherStages": "显示其他舞台",
+      "nameContrast": "音符上的名称对比度",
       "showOtherObjects": "显示其他对象",
       "deselectSwitchesToSelect": "连续取消选择切换到选择工具",
       "beatDisplay": {

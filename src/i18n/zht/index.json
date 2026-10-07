@@ -627,6 +627,7 @@
       "showOtherGroups": "顯示其他圖層",
       "showStageName": "顯示舞台名稱",
       "showOtherStages": "顯示其他舞台",
+      "nameContrast": "音符上的名稱對比度",
       "showOtherObjects": "顯示其他物件",
       "deselectSwitchesToSelect": "連續取消選取切換到選取工具",
       "beatDisplay": {

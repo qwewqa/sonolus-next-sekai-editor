@@ -27,6 +27,8 @@ export type EditorDrawContext = {
     defaultGroupId: GroupId | undefined
     showStageName: boolean
     showGroupName: boolean
+    /** Whether names take a contrasting colour over their note body and slide connectors. */
+    nameContrast: boolean
     recentlyActive: boolean
     fontFamily: string
     fontMiddle: number

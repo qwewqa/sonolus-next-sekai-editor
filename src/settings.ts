@@ -247,6 +247,8 @@ const settingsProperties = {
 
     showOtherStages: Type.Boolean({ default: true }),
 
+    nameContrast: Type.Boolean(),
+
     showOtherObjects: Type.Boolean({ default: true }),
 
     deselectSwitchesToSelect: Type.Boolean({ default: true }),
