@@ -109,6 +109,19 @@ test('status bar scope names start with a capital where the script has case', ()
     }
 })
 
+test('group and stage names stand apart from the noun after them', () => {
+    for (const locale of ['ja', 'ko', 'zhs', 'zht']) {
+        const messages = read(locale)
+        for (const key of ['statusBar.group.one', 'statusBar.stage.one']) {
+            // Names such as "Verse" or Korean "기본" (Default) don't run into the noun or take 번 ("number").
+            assert.match(messages[key]!, /^\{0\} \S/, `${locale} ${key}`)
+            assert.doesNotMatch(messages[key]!, /번/, `${locale} ${key}`)
+        }
+    }
+    for (const [key, text] of Object.entries(read('ko')))
+        assert.doesNotMatch(text, /\{\d+\}번/, `ko ${key}`)
+})
+
 test('event tool names start with a capital where the script has case', () => {
     for (const locale of readdirSync(directory, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
