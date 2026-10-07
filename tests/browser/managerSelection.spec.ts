@@ -279,7 +279,7 @@ test('a range from an entry in a collapsed folder starts at the folder', async (
     expect(await checked(list)).toEqual(['Bass', 'Drums'])
     await expect(bar).toContainText('5 Selected')
     await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'true')
-    await bar.getByRole('button', { name: 'Stop Selecting' }).click()
+    await bar.locator('.manager-selection-done').click()
 
     // From the target the folder stands in for.
     await verse.locator('.manager-name').click()
@@ -727,7 +727,7 @@ for (const [device, viewport] of [
                 expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width)
             }
 
-            await bar.getByRole('button', { name: 'Stop Selecting' }).tap()
+            await bar.locator('.manager-selection-done').tap()
             await expect(bar).toHaveCount(0)
             await nameButton(list, 'Default').tap()
             expect((await state(page)).focus).toBe('Default')
@@ -1059,7 +1059,7 @@ test('Move to Folder leaves entries already in the folder in place', async ({ pa
     await undo(page)
 
     // A row's own folder is a no-op too.
-    await bar.getByRole('button', { name: 'Stop Selecting' }).click()
+    await bar.locator('.manager-selection-done').click()
     await row(list, 'Lead').getByRole('button', { name: 'More Actions for Lead' }).click()
     await menu.getByRole('menuitem', { name: 'Move to Folder…' }).click()
     await menu.getByRole('menuitemradio', { name: 'Verse', checked: true }).click()
@@ -1170,4 +1170,36 @@ test('Shift+Home and Shift+Up onto the band range to the first row', async ({ pa
     await page.keyboard.press('Shift+ArrowUp')
     expect(await checked(list)).toEqual(['Default', 'Other'])
     await expect(nameButton(list, 'Default')).toBeFocused()
+})
+
+test("the selection bar's menu buttons show when open, and Done is named by its count", async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    await nameButton(list, 'Default').click({ modifiers: ['ControlOrMeta'] })
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    const done = bar.getByRole('button', { name: '2 Selected' })
+    await expect(done).toHaveAccessibleDescription('Stop Selecting')
+
+    const move = bar.locator('.manager-bulk-move')
+    const more = bar.locator('.manager-bulk-more')
+    await expect(move).toHaveAttribute('aria-expanded', 'false')
+    await expect(more).toHaveAttribute('aria-expanded', 'false')
+    await move.click()
+    await expect(move).toHaveAttribute('aria-expanded', 'true')
+    await expect(more).toHaveAttribute('aria-expanded', 'false')
+    await page.keyboard.press('Escape')
+    await expect(move).toHaveAttribute('aria-expanded', 'false')
+    // More's own Move to Folder… keeps More the one open.
+    await more.click()
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
+    await page.getByRole('menuitem', { name: 'Move to Folder…' }).click()
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
+    await expect(move).toHaveAttribute('aria-expanded', 'false')
+    await page.keyboard.press('Escape')
+    await expect(more).toHaveAttribute('aria-expanded', 'false')
+    await done.click()
+    await expect(bar).toHaveCount(0)
 })

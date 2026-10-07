@@ -1378,6 +1378,10 @@ const onMenu = (key: RowKey, anchor: HTMLElement, touch = false) => {
     else menu.value = { key, anchor, modals: modals.length, mode: 'main', touch }
 }
 
+/** Whether the selection's menu is open from the bar button with this class. */
+const bulkMenuFrom = (name: string) =>
+    menu.value?.key.type === 'selection' && menu.value.anchor.classList.contains(name)
+
 const openBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders', touch = false) => {
     menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode, touch }
 }
@@ -1940,7 +1944,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 <button
                     type="button"
                     class="manager-selection-done pointer-events-auto flex min-w-0 items-center rounded-full bg-button p-0.5 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
-                    :aria-label="i18n.workspace.manager.stopSelecting"
+                    :aria-label="selectionCount"
                     :title="i18n.workspace.manager.stopSelecting"
                     @click="onDone"
                 >
@@ -1987,6 +1991,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     :aria-label="i18n.workspace.folders.moveTo"
                     :title="i18n.workspace.folders.moveTo"
                     aria-haspopup="menu"
+                    :aria-expanded="bulkMenuFrom('manager-bulk-move') ? 'true' : 'false'"
                     @click="onBulkMenu($event.currentTarget as HTMLElement, 'folders')"
                 >
                     <FolderIcon class="manager-new-folder-icon" aria-hidden="true" />
@@ -2007,6 +2012,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     :aria-label="i18n.workspace.manager.selectionActions"
                     :title="i18n.workspace.manager.selectionActions"
                     aria-haspopup="menu"
+                    :aria-expanded="bulkMenuFrom('manager-bulk-more') ? 'true' : 'false'"
                     @click="onBulkMenu($event.currentTarget as HTMLElement, 'main')"
                 >
                     <MoreIcon class="manager-new-folder-icon" aria-hidden="true" />
