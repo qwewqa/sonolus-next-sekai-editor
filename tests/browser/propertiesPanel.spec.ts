@@ -888,3 +888,28 @@ for (const width of [260, 336])
         }
         expect(stacked).toBeGreaterThan(0)
     })
+
+for (const width of [260, 336, 480])
+    test(`only the brush field that owns remove keeps clear of it at a ${width}px dock`, async ({
+        page,
+    }) => {
+        await open(page, {
+            rightDockWidth: width,
+            propertiesCollapsed: ['selection'],
+            propertiesSection: 'tool',
+        })
+        await page.keyboard.press('b')
+        await page.evaluate(async () => {
+            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+            const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+            const field = brushFields.find((field) => field.key === 'connectorEase')!
+            brushProperties.value = { connectorEase: field.brush!.initial as never }
+        })
+        const row = panel(page).locator('[data-brush-key="connectorEase"]')
+        await expect(row.locator('.form-field')).toHaveCount(2)
+        const paddings = await row
+            .locator('.form-field-label')
+            .evaluateAll((labels) => labels.map((label) => getComputedStyle(label).paddingRight))
+        expect(paddings[0]).not.toBe('0px')
+        expect(paddings[1]).toBe('0px')
+    })

@@ -276,6 +276,11 @@ const clear = () => {
     .brush-row :deep(.form-field-label) {
         padding-right: var(--remove-room);
     }
+
+    /* Only the first field's label shares its line with remove. */
+    .brush-row :deep(.form-field + .form-field .form-field-label) {
+        padding-right: 0;
+    }
 }
 
 @container (min-width: 19rem) {
@@ -301,7 +306,7 @@ const clear = () => {
 
 /* A value stacked below its label leaves the label the line, with remove at its end. */
 @container (min-width: 13.5rem) {
-    .brush-row:has(> .form-field-value-stacked) .brush-remove {
+    .brush-row:has(> .form-field-value-stacked:first-child) .brush-remove {
         --label-w: 100cqw;
         inset-block: auto;
         top: calc(1rem - var(--remove-size) / 2);
@@ -325,6 +330,10 @@ const clear = () => {
 
     .brush-row :deep(.form-field-label) {
         padding-right: var(--remove-room);
+    }
+
+    .brush-row :deep(.form-field + .form-field .form-field-label) {
+        padding-right: 0;
     }
 }
 </style>
