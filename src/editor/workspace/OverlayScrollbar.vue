@@ -103,9 +103,23 @@ const nearEdge = (event: PointerEvent) => {
     )
 }
 
+const control = 'button, a, input, select, textarea, label, [role="button"], [tabindex]'
+
+// Whether a control lies under the pointer, looking past the thumb.
+const overControl = (event: PointerEvent) =>
+    !!document
+        .elementsFromPoint(event.clientX, event.clientY)
+        .find((element) => !strip.value?.contains(element))
+        ?.closest(control)
+
 const onPointerMove = (event: PointerEvent) => {
-    // A press that started elsewhere, such as selecting text, passes over it.
-    const near = overflowing.value && nearEdge(event) && (hovered.value || !event.buttons)
+    // A press that started elsewhere, such as selecting text, passes over it,
+    // and a control beneath keeps its clicks.
+    const near =
+        overflowing.value &&
+        nearEdge(event) &&
+        (hovered.value || !event.buttons) &&
+        !overControl(event)
     if (near === hovered.value) return
     hovered.value = near
     if (near) {
@@ -151,15 +165,13 @@ const onThumbUp = (event: PointerEvent) => {
     scheduleHide()
 }
 
-const control = 'button, a, input, select, textarea, label, [role="button"], [tabindex]'
-
 // A click on the hovered track pages toward it, as a native track does, unless
 // it lands on a control beneath.
 const onTrackDown = (event: PointerEvent) => {
     const element = props.target
     if (!element || event.button !== 0 || !hovered.value || !nearEdge(event)) return
     const target = event.target instanceof Element ? event.target : null
-    if (target?.closest('.overlay-scrollbar-thumb') || target?.closest(control)) return
+    if (target?.closest('.overlay-scrollbar-thumb') || overControl(event)) return
     event.preventDefault()
     event.stopPropagation()
     const y = event.clientY - element.getBoundingClientRect().top
