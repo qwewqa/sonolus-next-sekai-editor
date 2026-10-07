@@ -16,6 +16,9 @@ export const alignAttached = (value: number) => alignNear(value, 6400)
 const attachFraction = (bpms: BpmIntegral[], head: number, tail: number, beat: number) => {
     let i = bisect(bpms, 'x', head)
     while (bpms[i]?.x === head) i++
+    // Entries repeating the tempo in effect don't change it.
+    const s = bpms[i - 1]?.s
+    while ((bpms[i]?.x ?? Infinity) < tail && bpms[i]?.s === s) i++
     if ((bpms[i]?.x ?? Infinity) >= tail)
         return head === tail ? 0.5 : clamp(unlerp(head, tail, beat))
 
