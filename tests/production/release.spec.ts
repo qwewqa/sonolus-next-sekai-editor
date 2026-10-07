@@ -31,6 +31,20 @@ const showPreviewSettings = async (page: Page) => {
     }).toPass()
 }
 
+test('Preview Settings open by themselves at first load where they fit', async ({ page }) => {
+    await page.addInitScript(() => {
+        // With Groups and Stages closed, the Preview panel has room for the form.
+        localStorage.setItem('sonolus-next-sekai-editor.showGroups', 'false')
+        localStorage.setItem('sonolus-next-sekai-editor.showStages', 'false')
+    })
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await expect(page.locator('.preview-controls')).toBeVisible()
+    await expect(
+        page.getByRole('button', { name: 'Preview Settings', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'true')
+})
+
 test('release assets, preview, chart editing and FFT audio work in the production bundle', async ({
     page,
 }, testInfo) => {
@@ -104,7 +118,8 @@ test('release assets, preview, chart editing and FFT audio work in the productio
 
     await test.step('load actual release packages and deployed metadata', async () => {
         await expect(page.locator('canvas.editor-chart')).toBeVisible()
-        await expect(page.locator('.preview-controls')).toBeVisible()
+        // Groups and Stages, open by default, leave too little room for the form to open itself.
+        await showPreviewSettings(page)
         await expect(page.locator('.preview-controls input[type="number"]').first()).toHaveValue(
             '10',
         )
@@ -161,11 +176,23 @@ test('release assets, preview, chart editing and FFT audio work in the productio
     })
 
     await test.step('use preview transport at a mobile viewport size', async () => {
+        // A form the user opened stays open over the editor, so close it as a user would.
+        await page.getByRole('button', { name: 'Minimize Preview Settings', exact: true }).click()
         await page.setViewportSize({ width: 390, height: 844 })
         // Short previews reveal the playback strip on tap; taller ones keep it below.
         const show = page.getByRole('button', { name: 'Show Playback Controls', exact: true })
-        const overlay = await show.isVisible()
-        if (overlay) await show.click()
+        let overlay = false
+        // The strip only settles into place a few frames after the resize.
+        await expect(async () => {
+            await page.waitForTimeout(250)
+            if (await show.isVisible()) {
+                await show.click()
+                overlay = true
+            }
+            await expect(
+                page.getByRole('button', { name: 'Forward 1 ms', exact: true }),
+            ).toBeVisible({ timeout: 1000 })
+        }).toPass()
         const position = page.locator('[aria-label="Preview Time"]:visible')
         await expect(position).toHaveCount(1)
         await expect(position).toHaveText('00:00.000')
