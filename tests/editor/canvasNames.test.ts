@@ -17,18 +17,21 @@ import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import type { Entity } from '../../src/state/entities'
 import type { NoteEntity } from '../../src/state/entities/slides/note'
 
-// Paths name themselves; a clip-out path names the path it carves.
+// Paths name themselves, or the paths added to them; a clip-out path names the path it carves.
 class TestPath {
     static count = 0
     id = `p${TestPath.count++}`
-    added?: TestPath
+    added: TestPath[] = []
     rect() {}
     roundRect() {}
     moveTo() {}
     lineTo() {}
     closePath() {}
     addPath(path: TestPath) {
-        this.added = path
+        this.added.push(path)
+    }
+    get name() {
+        return this.added.length ? this.added.map(({ id }) => id).join('+') : this.id
     }
 }
 
@@ -57,7 +60,7 @@ const recordingContext = (nameContrast = true) => {
                     return () => (clips = stack.pop() ?? [])
                 case 'clip':
                     return (path: TestPath, rule?: string) =>
-                        clips.push(rule === 'evenodd' ? `out:${path.added?.id}` : `in:${path.id}`)
+                        clips.push(`${rule === 'evenodd' ? 'out' : 'in'}:${path.name}`)
                 // Every glyph is 0.5 em wide.
                 case 'measureText':
                     return (text: string) => ({
@@ -224,6 +227,19 @@ test('a note gives its names one fill for its whole body, in the colours under t
     assert.deepEqual(fills(note({}), false), [])
 })
 
+test('a name over a trace darkens over both its box and its diamond', (t) => {
+    const { context, texts, note, renderer } = noteScene(t)
+    const names = createNameLayer()
+    renderer.draw({ ...context, names }, note({ noteType: 'trace' }), true, 1)
+    const [box, diamond] = (names.fills[0]?.shapes() ?? []) as unknown as TestPath[]
+    assert.ok(box && diamond)
+    placeNames(context, names)
+    assert.deepEqual(texts, [
+        { text: 'Side stage', color: '#f6f', clips: [`out:${box.id}`, `out:${diamond.id}`] },
+        { text: 'Side stage', color: '#808', clips: [`in:${box.id}+${diamond.id}`] },
+    ])
+})
+
 test('without name contrast, names draw once in their own colours', (t) => {
     const { context, texts, note, renderer } = noteScene(t, false)
     // Notes mark no fills, whether names are collected or drawn at once.
@@ -340,4 +356,9 @@ test('canvases at different fonts and zooms keep their measured names', () => {
     assert.equal(measured, 7)
     frame('system-ui', 37.5)
     assert.equal(measured, 8)
+    // A font alone measures anew.
+    clearNameWidths()
+    frame('system-ui', 40)
+    frame('serif', 40)
+    assert.equal(measured, 10)
 })
