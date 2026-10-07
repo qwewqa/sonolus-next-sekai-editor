@@ -271,10 +271,12 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
             aria-hidden="true"
             @mousedown.prevent
         />
+        <!-- Focusable, so a press between items keeps focus and keys in the menu. -->
         <div
             ref="menu"
             :[workspaceDockAttribute]="'menu'"
             role="menu"
+            tabindex="-1"
             :aria-label="label"
             class="manager-menu popup-surface popup-sheet fixed z-50"
             :class="{ invisible: !placement }"

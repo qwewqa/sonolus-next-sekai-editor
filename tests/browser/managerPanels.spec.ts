@@ -1470,3 +1470,62 @@ test.describe('menus on a touch tablet', () => {
         await expect.poll(selected).toBe(0)
     })
 })
+
+/** Counts keys that reach the page past whatever has focus. */
+const trackPageKeys = (page: Page) =>
+    page.evaluate(() => {
+        const keys: string[] = []
+        Object.assign(window, { pageKeys: keys })
+        addEventListener('keydown', (event) => keys.push(event.key))
+    })
+
+const pageKeys = (page: Page) =>
+    page.evaluate(() => (window as unknown as { pageKeys: string[] }).pageKeys.splice(0))
+
+test('a press on a menu padding, separator or disabled item keeps focus in the menu', async ({
+    page,
+}) => {
+    await seedGroups(page, ['Default', 'Other group', 'Third'])
+    const panel = await openGroups(page)
+    // An undo step a leaked Ctrl+Z would take back.
+    await panel.getByRole('button', { name: 'Add Group', exact: true }).click()
+    await expect(panel.locator('.manager-entry')).toHaveCount(4)
+    await page.keyboard.press('Escape')
+    await trackPageKeys(page)
+    const more = panel.getByRole('button', { name: 'More Actions for Default' })
+    const menu = page.getByRole('menu')
+    const spots = {
+        padding: async () => {
+            const box = (await menu.boundingBox())!
+            return { x: box.x + 2, y: box.y + 2 }
+        },
+        separator: async () => {
+            const box = (await menu.locator('.popup-separator').first().boundingBox())!
+            return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+        },
+        disabled: async () => {
+            const box = (await menu.getByRole('menuitem', { name: 'Move Group Up' }).boundingBox())!
+            return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+        },
+    }
+    for (const [name, spot] of Object.entries(spots)) {
+        await more.click()
+        await expect(menu).toBeVisible()
+        const { x, y } = await spot()
+        await page.mouse.click(x, y)
+        await expect(menu, name).toBeVisible()
+        expect(await menu.evaluate((menu) => menu.contains(document.activeElement)), name).toBe(
+            true,
+        )
+        // Shortcuts and chords stay with the menu.
+        await page.keyboard.press('g')
+        await page.keyboard.press('Control+z')
+        expect(await pageKeys(page), name).toEqual([])
+        await expect(panel.locator('.manager-entry')).toHaveCount(4)
+        await page.keyboard.press('ArrowDown')
+        await expect(menu.locator('[role="menuitem"]:enabled').first()).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(menu, name).toHaveCount(0)
+        await expect(more).toBeFocused()
+    }
+})

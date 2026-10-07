@@ -130,6 +130,18 @@ test('a click on the tab closes its menu and still toggles it', async ({ page })
     await expect(properties).toHaveAttribute('aria-selected', 'false')
 })
 
+test('a press on the menu padding keeps focus in the menu', async ({ page }) => {
+    const properties = tab(page, 'Properties')
+    await properties.click({ button: 'right' })
+    const box = (await menu(page).boundingBox())!
+    await page.mouse.click(box.x + 2, box.y + 2)
+    await expect(menu(page)).toBeVisible()
+    expect(await menu(page).evaluate((menu) => menu.contains(document.activeElement))).toBe(true)
+    await page.keyboard.press('Escape')
+    await expect(menu(page)).toHaveCount(0)
+    await expect(properties).toBeFocused()
+})
+
 test('Shift+F10 and the menu key open the menu from the keyboard', async ({ page }) => {
     const properties = tab(page, 'Properties')
     await properties.focus()

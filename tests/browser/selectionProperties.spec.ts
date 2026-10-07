@@ -427,6 +427,21 @@ test.describe('brush', () => {
         await expect(tool(page).getByText('Brush Properties')).toBeVisible()
     })
 
+    test('a press on an Add Property heading keeps focus in the menu', async ({ page }) => {
+        const add = tool(page).getByRole('button', { name: 'Add Property', exact: true })
+        await add.click()
+        const menu = page.getByRole('menu')
+        await menu.locator('.manager-menu-heading').first().click()
+        await expect(menu).toBeVisible()
+        expect(await menu.evaluate((menu) => menu.contains(document.activeElement))).toBe(true)
+        // The tool shortcut stays with the menu.
+        await page.keyboard.press('g')
+        await expect(tool(page).getByText('Brush Properties')).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(menu).toHaveCount(0)
+        await expect(add).toBeFocused()
+    })
+
     test('starts empty and lists only the properties it sets', async ({ page }) => {
         await expect(tool(page).locator('.brush-group')).toHaveCount(0)
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
