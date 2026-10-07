@@ -407,14 +407,17 @@ test('damage connectors are checked through hidden damage ticks only', () => {
             [2.25, 2, 0, true],
         ],
     )
-    // No connector hitbox: only the ticks, green and fully opaque, through their target.
+    // No connector hitbox: only the ticks, green and fully opaque, until their target.
     const draws = render(source, 2, { leftLimit: false })
     assert.equal(bounds(draws).length, 0)
     const green = bounds(draws, 'green')
-    // The damage tick at 2 is still checked at 2; the one at 2.25 has begun.
-    assert.equal(green.length, 12)
+    // As in Watch, the damage tick at 2 has despawned at 2; the one at 2.25 has begun.
+    assert.equal(green.length, 6)
     assert.ok(green.every(({ a }) => a === 1))
-    // Both follow the slide at the current time, on the segment from 1.75.
+    // A paused frame at 2 shows the instant before: only the tick at 2.
+    assert.equal(bounds(render(source, 2, { leftLimit: true }), 'green').length, 6)
+    assert.equal(bounds(render(source, 2 - 1e-3, { leftLimit: false }), 'green').length, 6)
+    // It follows the slide at the current time, on the segment from 1.75.
     const live = computeSlideInputBounds(
         createGeometryContext(source, viewport, 2),
         EaseType.linear,
@@ -423,7 +426,6 @@ test('damage connectors are checked through hidden damage ticks only', () => {
         0,
     )
     toLine(green, live)
-    toLine(green.slice(6), live)
 })
 
 // Reassemble the quad whose outline the six bounds lines were drawn from.

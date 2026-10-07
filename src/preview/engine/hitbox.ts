@@ -245,10 +245,6 @@ const hasConnectorHitbox = (connector: PreviewConnector) =>
     (connector.kind === ConnectorKind.activeNormal ||
         connector.kind === ConnectorKind.activeCritical)
 
-// Damage ticks stay checked through their target; everything else is judged
-// on time by the autoplay and disappears then.
-const endIsInclusive = (hitbox: HitboxNote) => !!hitbox.damageTick
-
 export type HitboxIndex = {
     notes: TimeIndex<HitboxNote>
     connectors: TimeIndex<PreviewConnector>
@@ -272,11 +268,11 @@ export const getHitboxIndex = (chart: PreviewChart) => {
             for (const tick of getHiddenTickHitboxes(chain)) notes.push(tick)
         }
         index = {
+            // Watch despawns scored notes, damage ticks included, at their target.
             notes: createTimeIndex(
                 notes,
                 (hitbox) => hitbox.drawStart,
-                // Admit the inclusive end of damage ticks; visibility is exact below.
-                (hitbox) => hitbox.target + (endIsInclusive(hitbox) ? 1e-6 : 0),
+                (hitbox) => hitbox.target,
             ),
             connectors: createTimeIndex(
                 chart.connectors.filter(hasConnectorHitbox),
@@ -764,8 +760,7 @@ export const drawHitboxes = (
     }
 
     for (const { item: hitbox } of queryTimeIndex(index.notes, now, now, leftLimit)) {
-        if (!isVisible(hitbox.drawStart, hitbox.target, endIsInclusive(hitbox), now, leftLimit))
-            continue
+        if (!isVisible(hitbox.drawStart, hitbox.target, false, now, leftLimit)) continue
 
         const { kind } = hitbox.note
         if (hitbox.damageTick) {
