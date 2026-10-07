@@ -625,6 +625,22 @@ test('stages select, move into a new folder and delete in one step each', async 
     expect(await stageTree()).toEqual(['Center', 'Side stage', 'Third'])
 })
 
+test('deleting every stage leaves the default stage a new chart starts with', async ({ page }) => {
+    await page.evaluate(() => {
+        const { history, settings, fixtures } = window.editorTest
+        history.resetState(false, { ...fixtures.events, isDynamicStages: true }, 0, 'stages.json')
+        settings.showStages = true
+    })
+    const list = page.locator('#workspace-panel-stages')
+    await list.getByRole('button', { name: 'Select Multiple' }).click()
+    await list.locator('.manager-all .manager-check').click()
+    await list.getByRole('button', { name: 'Delete Selected…' }).click()
+    await page.locator('dialog').getByRole('button', { name: 'Delete' }).click()
+    expect(
+        await page.evaluate(() => [...window.editorTest.history.state.value.stages.values()]),
+    ).toEqual([{ name: '#1', isFromStart: true, isUntilEnd: true, generateSimLines: 'global' }])
+})
+
 test('the selection bar fits the narrowest dock', async ({ page }) => {
     await seedGroups(page, seed)
     await page.evaluate(() => {

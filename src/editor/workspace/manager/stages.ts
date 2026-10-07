@@ -1,5 +1,10 @@
 import type { FolderId } from '../../../chart/folders'
-import { addToStages, type StageId, type Stages } from '../../../chart/stages'
+import {
+    addDefaultStageToStages,
+    addToStages,
+    type StageId,
+    type Stages,
+} from '../../../chart/stages'
 import { pushState, state } from '../../../history'
 import { stageFolders, stages } from '../../../history/stages'
 import { getAllEntities } from '../../../history/store'
@@ -121,7 +126,7 @@ const removeStages = (stageIds: ReadonlySet<StageId>) => {
 
     newState.stages = new Map(newState.stages)
     for (const stageId of stageIds) newState.stages.delete(stageId)
-    if (!newState.stages.size) addToStages(newState.stages)
+    if (!newState.stages.size) addDefaultStageToStages(newState.stages)
 
     return newState
 }
