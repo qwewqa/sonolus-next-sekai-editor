@@ -334,7 +334,7 @@ test('preview generation is unavailable until End follows Start and the fades fi
     await expect(dialog.getByRole('alert')).toHaveCount(0)
 
     // A click straight from the field commits it first and generates nothing.
-    await field('End').fill('0')
+    await field('End (s)').fill('0')
     await generate.click()
     await expect(generate).toBeDisabled()
     await expect(page.getByRole('dialog')).toHaveCount(1)
@@ -344,13 +344,13 @@ test('preview generation is unavailable until End follows Start and the fades fi
     })
     await expect(dialog.getByRole('alert')).toHaveText('End must be after Start')
 
-    await field('End').fill('1.5')
-    await field('End').press('Tab')
+    await field('End (s)').fill('1.5')
+    await field('End (s)').press('Tab')
     await expect(generate).toBeDisabled()
     await expect(dialog.getByRole('alert')).toHaveText('Fades must fit between Start and End')
 
-    await field('Fade End').fill('0.5')
-    await field('Fade End').press('Tab')
+    await field('Fade End (s)').fill('0.5')
+    await field('Fade End (s)').press('Tab')
     await expect(generate).toBeEnabled()
     await expect(dialog.getByRole('alert')).toHaveCount(0)
 })
