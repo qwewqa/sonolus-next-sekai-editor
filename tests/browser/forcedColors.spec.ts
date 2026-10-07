@@ -66,6 +66,20 @@ test('Selection chips show keyboard focus', async ({ page }) => {
     })
 })
 
+// Preview Settings mount hidden and inert, open a frame later, and can close again while the
+// panel settles; open them explicitly once settled, so focus checks find them live.
+const showPreviewSettings = async (page: Page) => {
+    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    const toggle = page.locator('.preview-settings-toggle')
+    const form = page.locator('.preview-controls')
+    await expect(async () => {
+        await page.waitForTimeout(250)
+        if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+        await expect(form).toBeVisible({ timeout: 1000 })
+        await expect(form).not.toHaveAttribute('inert', { timeout: 0 })
+    }).toPass()
+}
+
 const expectSegments = async (group: Locator) => {
     const page = group.page()
     const checked = group.locator('label:has(input:checked)')
@@ -86,12 +100,12 @@ const expectSegments = async (group: Locator) => {
 
 test('segmented controls show the checked choice and keyboard focus', async ({ page }) => {
     await expectSegments(panel(page).getByRole('radiogroup', { name: 'Snapping', exact: true }))
-    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    await showPreviewSettings(page)
     await expectSegments(page.getByRole('radiogroup', { name: 'Aspect ratio' }))
 })
 
 test('Preview Settings on/off fields show keyboard focus', async ({ page }) => {
-    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    await showPreviewSettings(page)
     const input = page.getByRole('switch', { name: 'Show Hitboxes', exact: true })
     const field = input.locator('+ .preview-field')
     // The resting edge.
