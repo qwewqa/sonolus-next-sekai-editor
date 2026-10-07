@@ -1852,6 +1852,23 @@ test('a preview setting value that would truncate goes below its label', async (
     await settle(page)
     await expect(row).toHaveClass(/preview-setting-stacked/)
     expect(await row.boundingBox()).toEqual(box)
+
+    // A wider dock unstacks it and a narrower one stacks it again.
+    const dock = (width: number) =>
+        page.evaluate((width) => (window.editorTest.settings.leftDockWidth = width), width)
+    const width = await page.evaluate(() => window.editorTest.settings.leftDockWidth)
+    await dock(600)
+    await expect(row).not.toHaveClass(/preview-setting-stacked/)
+    await dock(width)
+    await expect(row).toHaveClass(/preview-setting-stacked/)
+    // Labels are measured again too: Japanese ones take room only while narrow.
+    const body = page.locator('.preview-controls .preview-controls-roomy')
+    await page.evaluate(() => (window.editorTest.settings.locale = 'ja'))
+    await expect(body).toHaveCount(1)
+    await dock(600)
+    await expect(body).toHaveCount(0)
+    await dock(width)
+    await expect(body).toHaveCount(1)
 })
 
 test('preview options share persisted settings with the main options menu', async ({ page }) => {
