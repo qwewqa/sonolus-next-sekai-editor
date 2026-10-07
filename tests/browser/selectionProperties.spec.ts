@@ -434,7 +434,8 @@ test.describe('brush', () => {
         // Added properties start from the selection's value when it agrees.
         await addBrushProperty(tool(page), 'isCritical')
         const row = tool(page).locator('[data-brush-key="isCritical"]')
-        await expect(row.locator('select')).toBeFocused()
+        // A pointer choice leaves focus alone; Enter moves to the field.
+        await expect(row.locator('select')).not.toBeFocused()
         await expect(row.locator('option:checked')).toHaveText('Enabled')
         await expect(tool(page).locator('.brush-group h3')).toHaveText(['Note'])
         // A set property leaves the menu.
@@ -721,4 +722,22 @@ test('the selection dialog follows the selection', async ({ page }) => {
 
     await select([])
     await expect(dialog).toHaveCount(0)
+})
+
+test.describe('brush on a phone', () => {
+    test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+
+    test('a tapped property joins the brush without focusing its field', async ({ page }) => {
+        await page.evaluate(() => (window.editorTest.settings.propertiesPosition = 'disabled'))
+        // The second press opens the tool's dialog.
+        await page.keyboard.press('b')
+        await page.keyboard.press('b')
+        const dialog = page.locator('.editor-tool-modal')
+        await expect(dialog.getByText('Brush Properties')).toBeVisible()
+        await dialog.getByRole('button', { name: 'Add Property', exact: true }).tap()
+        await page.getByRole('menu').locator('[data-menu-key="size"]').tap()
+        const size = dialog.locator('[data-brush-key="size"] input')
+        await expect(size).toBeVisible()
+        await expect(size).not.toBeFocused()
+    })
 })

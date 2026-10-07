@@ -106,11 +106,13 @@ const closeAddMenu = (restoreFocus: boolean) => {
     if (restoreFocus && modals.length <= current.modals) addButton.value?.focus()
 }
 
-const add = async (key: string) => {
+const add = async (key: string, keyboard: boolean) => {
     addMenu.value = undefined
     const field = brushFields.find((field) => field.key === key)
     if (!field) return
     brushProperties.value = { ...brushProperties.value, [field.key]: initialValue(field) }
+    // Only a keyboard choice moves on to the field; a tap must not summon the on-screen keyboard.
+    if (!keyboard) return
     await nextTick()
     root.value
         ?.querySelector<HTMLElement>(`[data-brush-key="${field.key}"] :is(input, select)`)
