@@ -18,7 +18,7 @@ import {
     isPunctuationShortcut,
     matchBindings,
 } from './controls/bindings'
-import DeleteIcon from './commands/reset/ResetIcon.vue'
+import { canDeleteSelection } from './commands/deleteSelection'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
 import { pasteAtContextPosition } from './contextMenuPaste'
@@ -30,11 +30,10 @@ import { editorNavigation } from './navigation'
 import { notify } from './notification'
 import { isEntityInScope, scopeLookup } from './scope'
 import { toolName } from './tools'
-import { canRemove, remove } from './tools/eraser'
 import { hitAllEntitiesAtPoint, modifyEntities } from './tools/utils'
 import { view, yToValidBeat } from './view'
 
-type ActionName = CommandName | 'delete' | 'selectSlideNotes' | 'editElevations' | 'editProperties'
+type ActionName = CommandName | 'selectSlideNotes' | 'editElevations' | 'editProperties'
 type Action = {
     name: ActionName
     title: string
@@ -44,9 +43,7 @@ type Action = {
 
 const menu = useTemplateRef<HTMLDivElement>('menu')
 const position = ref({ left: 0, top: 0 })
-const canDelete = computed(() =>
-    selectedEntities.value.some((entity) => isEditableEntity(entity) && canRemove(entity)),
-)
+const canDelete = computed(canDeleteSelection)
 let returnFocus: HTMLElement | null = null
 // A menu opened by pointer focuses itself, so no item starts out highlighted;
 // one opened from the keyboard focuses its first item.
@@ -102,7 +99,7 @@ const actions = computed(() => {
     if (canEditSelectionProperties.value) editors.push('editProperties')
     if (canEditElevations) editors.push('editElevations')
     if (editors.length) groups.push(editors)
-    if (canDelete.value) groups.push(['delete'])
+    if (canDelete.value) groups.push(['deleteSelection'])
     return groups.map((names) =>
         names.map((name): Action => {
             if (name === 'editProperties')
@@ -124,13 +121,6 @@ const actions = computed(() => {
                     name,
                     title: i18n.value.contextMenu.selectSlideNotes,
                     icon: { is: SelectSlideNotesIcon },
-                    shortcut: undefined,
-                }
-            if (name === 'delete')
-                return {
-                    name,
-                    title: i18n.value.contextMenu.delete,
-                    icon: { is: DeleteIcon },
                     shortcut: undefined,
                 }
             return {
@@ -167,7 +157,6 @@ const execute = (name: ActionName) => {
             )
         }
     } else if (name === 'editProperties') editSelectionProperties()
-    else if (name === 'delete') remove(selectedEntities.value)
     else if (name === 'selectSlideNotes') {
         const targets = modifyEntities(selectedEntities.value, { ctrl: false, shift: true })
         replaceState({
@@ -315,7 +304,7 @@ onUnmounted(() => {
                             role="menuitem"
                             tabindex="-1"
                             class="popup-item"
-                            :class="{ 'text-danger': name === 'delete' }"
+                            :class="{ 'text-danger': name === 'deleteSelection' }"
                             @click="execute(name)"
                         >
                             <component

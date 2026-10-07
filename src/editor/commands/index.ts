@@ -6,6 +6,7 @@ import { combineNotes } from './combineNotes'
 import { openContextMenu } from './contextMenu'
 import { copy } from './copy'
 import { cut } from './cut'
+import { deleteSelection } from './deleteSelection'
 import { deselect } from './deselect'
 import { division } from './divisions'
 import { divisionCustom, laneDivisionCustom } from './divisions/custom'
@@ -122,6 +123,7 @@ export const commands = {
     cut,
     copy,
     paste,
+    deleteSelection,
     undo,
     redo,
     increaseNoteSize,

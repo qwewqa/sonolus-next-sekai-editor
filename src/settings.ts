@@ -414,6 +414,7 @@ const settingsProperties = {
                 cut: 'x',
                 copy: 'c',
                 paste: 'v',
+                deleteSelection: 'Delete',
                 undo: 'z',
                 redo: 'y',
                 note: 'a',

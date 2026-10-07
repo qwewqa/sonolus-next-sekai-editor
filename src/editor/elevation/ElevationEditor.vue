@@ -117,6 +117,7 @@ const availableCommands: CommandName[] = [
     'paste',
     'cut',
     'copy',
+    'deleteSelection',
     'undo',
     'redo',
     'flip',
