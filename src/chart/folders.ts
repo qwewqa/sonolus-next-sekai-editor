@@ -464,15 +464,17 @@ export const insertCopiesInTree = <K>(
 }
 
 /** The default name for a new group, stage or folder: "#" and one past the highest "#n". */
-export const numberedName = (names: Iterable<string>) =>
-    `#${
-        Math.max(
-            0,
-            ...[...names]
-                .map((name) => (name.startsWith('#') ? +name.slice(1) : 0))
-                .filter(Number.isInteger),
-        ) + 1
-    }`
+export const numberedName = (names: Iterable<string>) => {
+    // BigInt keeps huge numbers exact.
+    let highest = BigInt(0)
+    for (const name of names) {
+        const digits = /^#(\d+)$/.exec(name)?.[1]
+        if (digits === undefined) continue
+        const value = BigInt(digits)
+        if (value > highest) highest = value
+    }
+    return `#${highest + BigInt(1)}`
+}
 
 /**
  * A copy's name, unused among `taken`: numbered names ("#3") take the next
