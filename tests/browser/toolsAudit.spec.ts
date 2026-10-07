@@ -421,37 +421,42 @@ for (const [device, viewport] of [
     test.describe(`touch on a ${device}`, () => {
         test.use({ viewport, hasTouch: true, isMobile: true })
 
-        const touch = (page: Page, type: string, at: { x: number; y: number }) =>
-            page.evaluate(
-                ({ type, at }) => {
-                    const target = document.querySelector('.editor')!
+        // Each batch dispatches in one round-trip, so load can't stretch a tap into a long
+        // press or leave a swipe resting in the auto-scroll edge between moves.
+        const touches = async (page: Page, events: { type: string; x: number; y: number }[]) => {
+            await page.evaluate((events) => {
+                const target = document.querySelector('.editor')!
+                for (const { type, x, y } of events) {
                     const changedTouches = [
-                        new Touch({ identifier: 1, target, clientX: at.x, clientY: at.y }),
+                        new Touch({ identifier: 1, target, clientX: x, clientY: y }),
                     ]
                     target.dispatchEvent(
                         new TouchEvent(type, { changedTouches, bubbles: true, cancelable: true }),
                     )
-                },
-                { type, at },
-            )
+                }
+            }, events)
+        }
         const tap = async (page: Page, lane: number, beat: number) => {
             const at = await point(page, lane, beat)
-            await touch(page, 'touchstart', at)
-            await touch(page, 'touchend', at)
+            await touches(page, [
+                { type: 'touchstart', ...at },
+                { type: 'touchend', ...at },
+            ])
             await settle(page)
         }
         const swipe = async (page: Page, from: [number, number], to: [number, number]) => {
             const start = await point(page, ...from)
             const end = await point(page, ...to)
-            await touch(page, 'touchstart', start)
-            for (let i = 1; i <= 5; i++) {
-                await touch(page, 'touchmove', {
+            await touches(page, [
+                { type: 'touchstart', ...start },
+                ...[1, 2, 3, 4, 5].map((i) => ({
+                    type: 'touchmove',
                     x: start.x + ((end.x - start.x) * i) / 5,
                     y: start.y + ((end.y - start.y) * i) / 5,
-                })
-            }
+                })),
+            ])
             await settle(page)
-            await touch(page, 'touchend', end)
+            await touches(page, [{ type: 'touchend', ...end }])
             await settle(page)
         }
 
