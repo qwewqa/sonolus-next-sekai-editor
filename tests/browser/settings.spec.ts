@@ -581,12 +581,12 @@ test('a punctuation shortcut reads larger and bold, as in the toolbar', async ({
     expect(punctuation.height).toBe(letter.height)
 })
 
-test('Name Contrast on Notes is off by default, persists and recolours names', async ({ page }) => {
+test('Name Contrast is off by default, persists and recolours names', async ({ page }) => {
     const key = 'sonolus-next-sekai-editor.nameContrast'
     const toggle = page
         .getByRole('dialog')
         .locator('label')
-        .filter({ has: page.getByText('Name Contrast on Notes', { exact: true }) })
+        .filter({ has: page.getByText('Name Contrast', { exact: true }) })
         .getByRole('button')
     // Colours of each stage and group name drawn on the chart in the next frames.
     const nameColors = () =>
