@@ -43,7 +43,7 @@ import {
 import { createSlideId, type SlideId } from '../../../state/entities/slides'
 import { toNoteEntity, type NoteEntity } from '../../../state/entities/slides/note'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../../state/entities/timeScale'
-import type { BpmIntegral } from '../../../state/integrals/bpms'
+import { calculateBpms, toBpmIntegral, type BpmIntegral } from '../../../state/integrals/bpms'
 import { addBpm, removeBpm } from '../../../state/mutations/bpm'
 import { addCameraEventJoint } from '../../../state/mutations/events/camera'
 import { addStageMaskEventJoint } from '../../../state/mutations/events/stage/mask'
@@ -57,6 +57,7 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import type { StoreSlides } from '../../../state/store/slides'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { bisect } from '../../../utils/ordered'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
@@ -202,6 +203,7 @@ let ghost:
     | {
           slides: NoteObject[][]
           bpms: BpmIntegral[]
+          pastedBpms: BpmObject[]
           entities: Entity[]
           infos: StoreSlides['info']
       }
@@ -223,6 +225,29 @@ const isSameSlides = (a: NoteObject[][], b: NoteObject[][]) =>
         )
     })
 
+// Each pasted BPM replaces the first unpasted one at its beat and follows any left there.
+const toGhostBpms = (bpms: BpmIntegral[], pasted: BpmObject[]) => {
+    if (!pasted.length) return bpms
+    const added = new Set<BpmIntegral>()
+    const integrals = [...bpms]
+    for (const object of pasted) {
+        const overlap = integrals.findIndex(
+            (integral) => integral.x === object.beat && !added.has(integral),
+        )
+        if (overlap >= 0) integrals.splice(overlap, 1)
+        let index = bisect(integrals, 'x', object.beat)
+        while (integrals[index]?.x === object.beat) index++
+        const integral = toBpmIntegral(object)
+        added.add(integral)
+        integrals.splice(index, 0, integral)
+    }
+    return calculateBpms(integrals)
+}
+
+const isSameBpms = (a: BpmObject[], b: BpmObject[]) =>
+    a.length === b.length &&
+    a.every((bpm, i) => bpm.beat === b[i]?.beat && bpm.bpm === b[i].bpm && bpm.meter === b[i].meter)
+
 // Slides land whole: their connectors and attached ticks as a paste places them.
 const showGhost = (
     entities: Entity[],
@@ -234,8 +259,10 @@ const showGhost = (
 ) => {
     const creating: Entity[] = []
     const slides = new Map<SlideId, NoteObject[]>()
+    const pastedBpms: BpmObject[] = []
     for (const entity of entities) {
         const beat = entity.beat + beatOffset
+        if (entity.type === 'bpm') pastedBpms.push(toMovedBpmObject(entity, beat))
         if (entity.type === 'note') {
             const object = toMovedNoteObject(entity, startLane, lane, beat, flip)
             const slide = slides.get(entity.slideId)
@@ -255,14 +282,23 @@ const showGhost = (
         if (result) creating.push(result)
     }
 
-    // Rebuilt only when a note moves to another snapped place or the tempo changes.
+    // Rebuilt only when a note moves to another snapped place or the tempo changes,
+    // the paste's own BPMs included, which land first.
     const { bpms } = state.value
     const objects = [...slides.values()]
-    if (ghost?.bpms !== bpms || !isSameSlides(ghost.slides, objects)) {
-        const { slides: built } = createStore({ ...emptyChart(), slides: objects }, bpms)
+    if (
+        ghost?.bpms !== bpms ||
+        !isSameBpms(ghost.pastedBpms, pastedBpms) ||
+        !isSameSlides(ghost.slides, objects)
+    ) {
+        const { slides: built } = createStore(
+            { ...emptyChart(), slides: objects },
+            toGhostBpms(bpms, pastedBpms),
+        )
         ghost = {
             slides: objects,
             bpms,
+            pastedBpms,
             entities: [...[...built.connector.values()].flat(), ...[...built.note.values()].flat()],
             infos: built.info,
         }

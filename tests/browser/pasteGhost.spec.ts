@@ -136,3 +136,50 @@ test('a dragged ghost follows the drag and the beat 0 shift', async ({ page }) =
     await page.mouse.up()
     expect(await landed(page)).toEqual(shown.notes.map(({ beat, left }) => ({ beat, left })))
 })
+
+test('a pasted BPM change times the ghost as the paste does', async ({ page }) => {
+    await page.evaluate(() => {
+        const { show, fixtures, history, store } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 3.5, bpm: 30 },
+                    { beat: 5, bpm: 120 },
+                ],
+                slides: [
+                    [
+                        { ...base, beat: 2, left: -4, size: 2 },
+                        { ...base, beat: 3, left: -2, size: 2 },
+                        { ...base, beat: 4, isAttached: true },
+                        { ...base, beat: 6, left: 2, size: 2, flickDirection: 'up' },
+                    ],
+                ],
+            },
+            2,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) =>
+                    entity.type === 'note' || (entity.type === 'bpm' && entity.beat === 3.5),
+            ),
+        })
+    })
+    const hover = await point(page, -3, 2)
+    await page.mouse.move(hover.x, hover.y)
+    await settle(page)
+    await page.keyboard.press('c')
+    await page.keyboard.press('v')
+    const target = await point(page, -3, 5)
+    await page.mouse.move(target.x, target.y)
+    await settle(page)
+    const shown = await ghost(page)
+    await page.mouse.click(target.x, target.y)
+    const pasted = await landed(page)
+    expect(pasted.map(({ beat }) => beat)).toEqual(shown.notes.map(({ beat }) => beat))
+    // The attached tick lands by the pasted tempo, not the chart's.
+    for (const [i, note] of pasted.entries()) expect(shown.notes[i]!.left).toBeCloseTo(note.left, 6)
+})
