@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type Ref } from 'vue'
 import BaseField from './BaseField.vue'
-import { resyncInput } from './resync'
+import { resyncInput, revertOnEscape } from './resync'
 
 defineProps<{
     label: string
@@ -29,6 +29,7 @@ const onFocus = (event: FocusEvent) => {
             required
             @focus="onFocus"
             @change="resyncInput($event, () => modelValue)"
+            @keydown.esc="revertOnEscape($event, modelValue)"
         />
     </BaseField>
 </template>

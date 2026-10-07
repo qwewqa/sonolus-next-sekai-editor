@@ -274,3 +274,83 @@ test('a tool dialog closed by its button or a tool switch returns focus it held'
     await expect(dialog).toHaveCount(0)
     await expect(page.locator('#elsewhere')).toBeFocused()
 })
+
+test('Escape in a tool dialog field reverts an uncommitted edit, else closes the dialog', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { settings, appImport } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        const { toolName } = await appImport<typeof import('../../src/editor/tools/state')>(
+            '/src/editor/tools/state.ts',
+        )
+        toolName.value = 'bpm'
+    })
+    const dialog = page.locator('.editor-tool-modal')
+    const field = dialog
+        .locator('label')
+        .filter({ has: page.getByText('BPM', { exact: true }) })
+        .locator('input')
+    const bpms = () =>
+        page.evaluate(() =>
+            [...window.editorTest.store.getAllEntities()].flatMap((entity) =>
+                entity.type === 'bpm' && entity.beat === 2 ? [entity.bpm] : [],
+            ),
+        )
+    const point = await page.evaluate(() => window.editorTest.point(0, 2))
+    await page.mouse.click(point.x, point.y)
+    await expect(dialog).toBeVisible()
+    const initial = await bpms()
+    expect(initial).toHaveLength(1)
+
+    // Uncommitted typing: Escape reverts it and keeps the dialog.
+    await field.fill('200')
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
+    await expect(field).toHaveValue(`${initial[0]}`)
+    expect(await bpms()).toEqual(initial)
+
+    // Committed: Escape closes the dialog and returns focus to the chart.
+    await field.fill('200')
+    await page.keyboard.press('Enter')
+    expect(await bpms()).toEqual([200])
+    await expect(field).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    expect(await bpms()).toEqual([200])
+    expect(
+        await page.evaluate(
+            () =>
+                document.activeElement?.getAttribute('tabindex') === '-1' &&
+                !!document.activeElement.querySelector('canvas.editor-chart'),
+        ),
+    ).toBe(true)
+})
+
+test('Escape in a tool setting field reverts typing first, then closes the dialog', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { settings, appImport } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        const { toolName } = await appImport<typeof import('../../src/editor/tools/state')>(
+            '/src/editor/tools/state.ts',
+        )
+        toolName.value = 'note'
+    })
+    await page.mouse.click(700, 300)
+    await page.keyboard.press('a')
+    const dialog = page.locator('.editor-tool-modal')
+    await expect(dialog).toBeVisible()
+    const field = dialog
+        .locator('label')
+        .filter({ has: page.getByText('Guide Alpha', { exact: true }) })
+        .locator('input')
+    await field.fill('0.5')
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
+    await expect(field).toHaveValue('')
+    await expect(field).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+})

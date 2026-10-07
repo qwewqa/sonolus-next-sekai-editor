@@ -85,6 +85,14 @@ const cancel = async () => {
     reset()
 }
 
+// Escape reverts an uncommitted edit; otherwise it reaches the dialog or panel.
+const onEscape = (event: KeyboardEvent) => {
+    if (!dirty) return
+    event.stopPropagation()
+    event.preventDefault()
+    void cancel()
+}
+
 const onFocus = (event: FocusEvent) => {
     ;(event.currentTarget as HTMLInputElement | null)?.select()
 }
@@ -115,7 +123,7 @@ const onFocus = (event: FocusEvent) => {
             @input="onInput"
             @change="onChange"
             @blur="onChange"
-            @keydown.esc.stop.prevent="cancel"
+            @keydown.esc="onEscape"
         />
     </BaseField>
 </template>

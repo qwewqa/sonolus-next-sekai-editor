@@ -13,7 +13,7 @@ import {
 } from '../offscreenIndicators'
 import { groupOffscreenNotes, offscreenBadgeHitWidth } from '../offscreenNotes'
 import { modals } from '../../modals'
-import { resyncInput } from '../../modals/form/resync'
+import { resyncInput, revertOnEscape } from '../../modals/form/resync'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
 import type { State } from '../../state'
@@ -79,6 +79,7 @@ import SelectValue from '../../modals/form/SelectValue.vue'
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const container = useTemplateRef<HTMLElement>('container')
 const header = useTemplateRef<HTMLDivElement>('header')
+const beatInput = useTemplateRef<HTMLInputElement>('beatInput')
 const headerHeight = ref(80)
 // Header controls follow the workspace chrome language: compact dark icon
 // buttons whose hit area grows to 36px (fine) or 44px (coarse), and white
@@ -686,6 +687,8 @@ const onKeydown = (event: KeyboardEvent) => {
     if (modals.length || event.defaultPrevented) return
     if (editorNavigation.value !== navigation) return
     if (event.key !== 'Escape') return
+    // The Beat field reverts uncommitted typing first.
+    if (event.target === beatInput.value && beatInput.value?.value !== `${beatField.value}`) return
     if (event.target instanceof Element && event.target.closest('[role=separator]')) return
     // Workspace panels, their rails and menus handle their own Escape.
     if (isInWorkspaceDock(event.target instanceof Element ? event.target : null)) return
@@ -1085,6 +1088,7 @@ onUnmounted(() => {
                         <label class="elevation-beat-field"
                             ><span class="elevation-label">{{ i18n.elevation.beat }}</span
                             ><input
+                                ref="beatInput"
                                 v-model.lazy="beatField"
                                 :class="headerField"
                                 class="focus:ring-2"
@@ -1093,6 +1097,7 @@ onUnmounted(() => {
                                 :step="1 / view.division"
                                 :aria-label="i18n.elevation.beat"
                                 @change="resyncInput($event, () => `${beatField}`)"
+                                @keydown.esc="revertOnEscape($event, `${beatField}`)"
                         /></label>
                         <button
                             type="button"

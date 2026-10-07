@@ -295,6 +295,22 @@ test('the Beat field keeps typing through re-renders and restores invalid values
     await expect(beat).toHaveValue('9')
 })
 
+test('Escape in the Beat field reverts typing first, then closes elevation mode', async ({
+    page,
+}) => {
+    await open(page)
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await expect(beat).toHaveValue('7')
+    await beat.fill('9')
+    await page.keyboard.press('Escape')
+    await expect(beat).toHaveValue('7')
+    await expect(beat).toBeFocused()
+    await expect(page.locator('.elevation-editor')).toBeVisible()
+    expect((await rows(page)).map((row) => row.beat)).toEqual([6])
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.elevation-editor')).toHaveCount(0)
+})
+
 test('the header fields keep their edge at rest in high contrast', async ({ page }) => {
     // High contrast drops their shadow; the transparent outline is painted instead.
     await page.emulateMedia({ forcedColors: 'active' })

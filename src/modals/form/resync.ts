@@ -31,3 +31,12 @@ export const resyncInput = async (event: Event, text: () => string) => {
     await nextTick()
     if (input.value !== text()) input.value = text()
 }
+
+/** Escape reverts typed text the input hasn't committed; otherwise it passes on. */
+export const revertOnEscape = (event: KeyboardEvent, text: string) => {
+    const input = event.currentTarget as HTMLInputElement
+    if (event.isComposing || input.value === text) return
+    event.stopPropagation()
+    event.preventDefault()
+    input.value = text
+}

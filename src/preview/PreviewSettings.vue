@@ -5,7 +5,7 @@ import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
 import { valueOverflows, wordOverflows } from '../modals/form/fieldLayout'
 import { optionName } from '../modals/form/fieldUsage'
 import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
-import { resyncInput } from '../modals/form/resync'
+import { resyncInput, revertOnEscape } from '../modals/form/resync'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { workspaceDockAttribute } from '../editor/workspace'
@@ -366,6 +366,7 @@ const onPlacementChange = () => {
                             :max="previewNoteSpeed.max"
                             :step="previewNoteSpeed.step"
                             @change="resyncInput($event, () => `${settings.previewNoteSpeed}`)"
+                            @keydown.esc="revertOnEscape($event, `${settings.previewNoteSpeed}`)"
                             @keydown="onNumberKeydown"
                         />
                     </span>
@@ -453,6 +454,7 @@ const onPlacementChange = () => {
                             :max="previewRenderScale.max"
                             :step="previewRenderScale.step"
                             @change="resyncInput($event, () => `${settings.previewRenderScale}`)"
+                            @keydown.esc="revertOnEscape($event, `${settings.previewRenderScale}`)"
                             @keydown="onNumberKeydown"
                         />
                     </span>
