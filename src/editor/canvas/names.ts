@@ -69,7 +69,10 @@ const drawSplitName = (
     }
     const over = (box.r > box.l ? fills : [])
         .filter((fill) => overlaps(fill.box, box))
-        .map((fill) => ({ fill, color: nameColorOn(name.color, fill.colorsAt(name.y)) }))
+        .map((fill) => ({
+            fill,
+            color: nameColorOn(name.color, fill.colorsAt(name.y), !fill.owner),
+        }))
     if (over.every(({ color }) => color === name.color)) {
         draw(name.color)
         return

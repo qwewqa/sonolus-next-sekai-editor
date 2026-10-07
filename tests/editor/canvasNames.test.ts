@@ -92,19 +92,42 @@ const fill = (owner: Entity | undefined, l: number, r: number, b: number, color:
     return { fill, id: path.id }
 }
 
-test('names keep their colour on the chart background and change it on fills they would not read on', () => {
+test('names keep their colour on the chart background and darken on light note bodies', () => {
     assert.equal(nameColorOn('#f6f', [CHART_BACKGROUND]), '#f6f')
     assert.equal(nameColorOn('#0aa', [CHART_BACKGROUND]), '#0aa')
     // The dark pair on a light note body, darker steps where it falls short.
     assert.equal(nameColorOn('#f6f', ['#dafdf1']), '#a0a')
     assert.equal(nameColorOn('#0aa', ['#dafdf1']), '#077')
     assert.equal(nameColorOn('#f6f', ['#aabfff']), '#808')
-    // Lighter steps on dark fills; a fill no worse than the background changes nothing.
-    assert.equal(nameColorOn('#f6f', ['#a50acc']), '#fdf')
-    assert.equal(nameColorOn('#f6f', ['#222222']), '#f6f')
-    for (const fill of ['#dafdf1', '#aabfff', '#a50acc', blendOverChart('#7fffd3', 0.8)]) {
+    assert.equal(nameColorOn('#f6f', ['#999999']), '#404')
+    for (const fill of ['#dafdf1', '#aabfff', '#999999', '#fed983']) {
         for (const color of ['#f6f', '#0aa'])
             assert.ok(contrast(nameColorOn(color, [fill]), fill) >= 4.5, `${color} on ${fill}`)
+    }
+    // Dark bodies keep the name's own colour.
+    assert.equal(nameColorOn('#f6f', ['#a50acc']), '#f6f')
+    assert.equal(nameColorOn('#0aa', ['#555555']), '#0aa')
+    assert.equal(nameColorOn('#f6f', ['#222222']), '#f6f')
+})
+
+test('over connectors, names darken at most two steps and keep their hue', () => {
+    const steps = { '#f6f': ['#f6f', '#a0a', '#808'], '#0aa': ['#0aa', '#077', '#055'] }
+    // The first step reading as well as on the background...
+    const active = blendOverChart('#7fffd3', 0.8)
+    assert.equal(nameColorOn('#f6f', [active], true), '#808')
+    assert.equal(nameColorOn('#0aa', [active], true), '#055')
+    const critical = blendOverChart('#fbffdc', 0.8)
+    assert.equal(nameColorOn('#f6f', [critical], true), '#a0a')
+    // ...or the best of them, never darker or lighter.
+    const guide = blendOverChart('#73d69d', 0.5)
+    assert.equal(nameColorOn('#f6f', [guide], true), '#808')
+    const damage = blendOverChart('#c764c7', 0.8)
+    assert.equal(nameColorOn('#f6f', [damage], true), '#808')
+    const black = blendOverChart('#000000', 0.5)
+    assert.equal(nameColorOn('#f6f', [black], true), '#f6f')
+    for (const fill of [active, critical, guide, damage, black, '#ffffff', '#6970bf']) {
+        for (const [color, allowed] of Object.entries(steps))
+            assert.ok(allowed.includes(nameColorOn(color, [fill], true)), `${color} on ${fill}`)
     }
 })
 
