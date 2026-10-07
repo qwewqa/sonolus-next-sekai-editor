@@ -669,3 +669,50 @@ test.describe('saved shortcuts', () => {
         )
     })
 })
+
+test('held toggle keys act once while held movement keys repeat', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+        const { view, appImport, settings, nextTick } = window.editorTest
+        // Pressing a tool's key again with the sidebar shown cycles its presets.
+        settings.showSidebar = true
+        await nextTick()
+        const { isPlaying } = await appImport<typeof import('../../src/player')>('/src/player.ts')
+        const { defaultNotePropertiesPresetIndex } = await appImport<
+            typeof import('../../src/editor/tools/note')
+        >('/src/editor/tools/note/index.ts')
+        const hold = (key: string) => {
+            for (const repeat of [false, true, true, true])
+                dispatchEvent(new KeyboardEvent('keydown', { key, repeat, bubbles: true }))
+        }
+        hold(' ')
+        const playing = isPlaying.value
+        dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+        const snapping = view.snapping
+        hold('i')
+        hold('a')
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        let scrolls = 0
+        const scroll = commands.scrollUp.execute
+        commands.scrollUp.execute = () => {
+            scrolls++
+        }
+        hold('ArrowUp')
+        commands.scrollUp.execute = scroll
+        return {
+            playing,
+            stopped: !isPlaying.value,
+            snapped: view.snapping !== snapping,
+            preset: defaultNotePropertiesPresetIndex.value,
+            scrolls,
+        }
+    })
+    expect(result).toEqual({
+        playing: true,
+        stopped: true,
+        snapped: true,
+        preset: 0,
+        scrolls: 4,
+    })
+})

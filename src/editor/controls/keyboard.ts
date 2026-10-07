@@ -2,7 +2,7 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import { selectedEntities } from '../../history/selectedEntities'
 import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
 import { settings } from '../../settings'
-import { commands } from '../commands'
+import { commands, type CommandName } from '../commands'
 import { takesDockKeys } from '../workspace'
 import {
     blocksDefault,
@@ -52,6 +52,44 @@ const isInToolDialog = (element: Element | null) => !!element?.closest('[data-to
 const movesFocus = (element: Element, key: string) =>
     /^(Arrow|Home$|End$)/.test(key) && element.matches('input[type="radio"], [role="toolbar"] *')
 
+// Commands that toggle or cycle state act once per press, not on key repeat.
+const ignoresRepeat = new Set<CommandName>([
+    'play',
+    'stop',
+    'toggleBgmVolume',
+    'toggleSfxVolume',
+    'snapping',
+    'laneSnapping',
+    'cycleVisibilities',
+    'noteVisibility',
+    'bpmVisibility',
+    'timeScaleVisibility',
+    'cameraEventVisibility',
+    'stageMaskEventVisibility',
+    'stagePivotEventVisibility',
+    'stageStyleEventVisibility',
+    'stageTransformEventVisibility',
+    'fullscreen',
+    // Pressed again, tools cycle their presets or kinds, or open their dialog.
+    'note',
+    'note0',
+    'note1',
+    'note2',
+    'note3',
+    'slide',
+    'slide0',
+    'slide1',
+    'slide2',
+    'slide3',
+    'slide4',
+    'event',
+    'cameraEvent',
+    'stageMaskEvent',
+    'stagePivotEvent',
+    'stageStyleEvent',
+    'stageTransformEvent',
+])
+
 const onKeydown = (event: KeyboardEvent) => {
     if (isBlockingModalOpen.value || pressesButton(event)) return
     // An open tool dialog takes Escape.
@@ -78,7 +116,10 @@ const onKeydown = (event: KeyboardEvent) => {
         String(getSelection() ?? '').trim() !== ''
     )
         return
-    for (const name of names) void commands[name].execute()
+    for (const name of names) {
+        if (event.repeat && ignoresRepeat.has(name)) continue
+        void commands[name].execute()
+    }
     if (!names.length) return
     // A command chord has no native use outside text entry, so selects and toggles drop it.
     if (keepsDefault(event) && !(isCommandChord(event) && !isTextEntry(event.target))) return
