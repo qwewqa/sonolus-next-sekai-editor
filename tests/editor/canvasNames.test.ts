@@ -1,0 +1,192 @@
+import assert from 'node:assert/strict'
+import test, { type TestContext } from 'node:test'
+import {
+    blendOverChart,
+    CHART_BACKGROUND,
+    contrast,
+    nameColorOn,
+} from '../../src/editor/canvas/nameColors'
+import { createNameLayer, placeNames, type NameFill } from '../../src/editor/canvas/names'
+import { createNoteRenderer } from '../../src/editor/canvas/notes'
+import type { EditorDrawContext } from '../../src/editor/canvas/types'
+import type { Entity } from '../../src/state/entities'
+import type { NoteEntity } from '../../src/state/entities/slides/note'
+
+// Paths name themselves; a clip-out path names the path it carves.
+class TestPath {
+    static count = 0
+    id = `p${TestPath.count++}`
+    added?: TestPath
+    rect() {}
+    roundRect() {}
+    moveTo() {}
+    lineTo() {}
+    closePath() {}
+    addPath(path: TestPath) {
+        this.added = path
+    }
+}
+
+const installGlobal = (t: TestContext, name: string, value: unknown) => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, name)
+    Object.defineProperty(globalThis, name, { configurable: true, value })
+    t.after(() => {
+        if (original) Object.defineProperty(globalThis, name, original)
+        else Reflect.deleteProperty(globalThis, name)
+    })
+}
+
+// Records each fillText with its colour and the clips in force.
+const recordingContext = () => {
+    const texts: { text: string; color: string; clips: string[] }[] = []
+    const stack: string[][] = []
+    let clips: string[] = []
+    const target: Record<string, unknown> = { globalAlpha: 1, font: '10px sans-serif' }
+    const ctx = new Proxy(target, {
+        get(target, property) {
+            if (property in target) return Reflect.get(target, property)
+            switch (property) {
+                case 'save':
+                    return () => stack.push([...clips])
+                case 'restore':
+                    return () => (clips = stack.pop() ?? [])
+                case 'clip':
+                    return (path: TestPath, rule?: string) =>
+                        clips.push(rule === 'evenodd' ? `out:${path.added?.id}` : `in:${path.id}`)
+                // Every glyph is 0.5 em wide.
+                case 'measureText':
+                    return (text: string) => ({
+                        width: text.length * 0.5 * parseFloat(target.font as string),
+                    })
+                case 'fillText':
+                    return (text: string) =>
+                        texts.push({ text, color: target.fillStyle as string, clips: [...clips] })
+                default:
+                    return () => {}
+            }
+        },
+    }) as unknown as CanvasRenderingContext2D
+    const context = {
+        ctx,
+        scale: 10,
+        pixelRatio: 1,
+        fontFamily: 'sans-serif',
+        fontMiddle: 0.25,
+    } as unknown as EditorDrawContext
+    return { context, texts }
+}
+
+const fill = (owner: Entity | undefined, l: number, r: number, b: number, color: string) => {
+    const path = new TestPath()
+    const fill: NameFill = {
+        owner,
+        box: { l, r, t: -1, b },
+        path: () => path as unknown as Path2D,
+        colorsAt: () => [color],
+    }
+    return { fill, id: path.id }
+}
+
+test('names keep their colour on the chart background and change it on fills they would not read on', () => {
+    assert.equal(nameColorOn('#f6f', [CHART_BACKGROUND]), '#f6f')
+    assert.equal(nameColorOn('#0aa', [CHART_BACKGROUND]), '#0aa')
+    // The dark pair on a light note body, darker steps where it falls short.
+    assert.equal(nameColorOn('#f6f', ['#dafdf1']), '#a0a')
+    assert.equal(nameColorOn('#0aa', ['#dafdf1']), '#077')
+    assert.equal(nameColorOn('#f6f', ['#aabfff']), '#808')
+    // Lighter steps on dark fills; a fill no worse than the background changes nothing.
+    assert.equal(nameColorOn('#f6f', ['#a50acc']), '#fdf')
+    assert.equal(nameColorOn('#f6f', ['#222222']), '#f6f')
+    for (const fill of ['#dafdf1', '#aabfff', '#a50acc', blendOverChart('#7fffd3', 0.8)]) {
+        for (const color of ['#f6f', '#0aa'])
+            assert.ok(contrast(nameColorOn(color, [fill]), fill) >= 4.5, `${color} on ${fill}`)
+    }
+})
+
+test('a name splits only over its own note body and slide connectors, later fills on top', (t) => {
+    installGlobal(t, 'Path2D', TestPath)
+    const { context, texts } = recordingContext()
+    const a = { type: 'note' } as Entity
+    const b = { type: 'note' } as Entity
+    const joint = { type: 'stagePivotEventJoint' } as Entity
+    const connector = fill(undefined, -10, 10, 6, blendOverChart('#7fffd3', 0.8))
+    const own = fill(a, -1, 1, 1, '#dafdf1')
+    const other = fill(b, -1, 1, 1, '#dafdf1')
+    const layer = createNameLayer()
+    layer.fills.push(connector.fill, own.fill, other.fill)
+    const name = { highlighted: false, size: 0.4, align: 'center' as const, alpha: 1, x: 0 }
+    layer.names.push(
+        { ...name, owner: a, text: 'Stage', y: 0, color: '#f6f' },
+        // Over the connector only, then on the plain background.
+        { ...name, owner: joint, text: 'Group', y: 5, color: '#0aa' },
+        { ...name, owner: joint, text: 'Far', y: 20, color: '#f6f' },
+    )
+    placeNames(context, layer)
+    assert.deepEqual(texts, [
+        // Outside both fills in its own colour, never carving out another note's body.
+        { text: 'Stage', color: '#f6f', clips: [`out:${connector.id}`, `out:${own.id}`] },
+        { text: 'Stage', color: '#808', clips: [`in:${connector.id}`, `out:${own.id}`] },
+        { text: 'Stage', color: '#a0a', clips: [`in:${own.id}`] },
+        { text: 'Group', color: '#0aa', clips: [`out:${connector.id}`] },
+        { text: 'Group', color: '#055', clips: [`in:${connector.id}`] },
+        { text: 'Far', color: '#f6f', clips: [] },
+    ])
+})
+
+test('a note gives its names one fill for its whole body, in the colours under them', (t) => {
+    installGlobal(t, 'Path2D', TestPath)
+    const { context } = recordingContext()
+    installGlobal(t, 'document', {
+        createElement: () => ({ width: 0, height: 0, getContext: () => context.ctx }),
+    })
+    Object.assign(context, {
+        ups: -2,
+        recentlyActive: false,
+        showStageName: true,
+        showGroupName: false,
+        state: {
+            bpms: [{ x: 0, y: 0, s: 0.5 }],
+            store: { slides: { info: new Map() } },
+            isDynamicStages: true,
+            stages: new Map([[2, { name: 'Side stage' }]]),
+        },
+    })
+    const note = (properties: Partial<NoteEntity>) =>
+        ({
+            type: 'note',
+            beat: 0,
+            noteType: 'default',
+            connectorType: 'active',
+            isConnectorSeparator: false,
+            size: 2,
+            left: 1,
+            noteStyle: 'default',
+            flickDirection: 'none',
+            isCritical: false,
+            isFake: false,
+            stageId: 2,
+            ...properties,
+        }) as NoteEntity
+    const renderer = createNoteRenderer()
+    const fills = (entity: NoteEntity, highlighted = true, opacity = 1) => {
+        const names = createNameLayer()
+        renderer.draw({ ...context, names }, entity, highlighted, opacity)
+        return names.fills.map(({ owner, box, colorsAt }) => ({
+            own: owner === entity,
+            box: Object.values(box).map((v) => Math.round(v * 100) / 100),
+            colors: colorsAt(0),
+        }))
+    }
+    // A single note's inner body, across its whole outline.
+    assert.deepEqual(fills(note({})), [{ own: true, box: [1, 3, -0.3, 0.3], colors: ['#e6edff'] }])
+    // A trace's box and diamond, and a dimmed note's colours as seen.
+    assert.deepEqual(fills(note({ noteType: 'trace' })), [
+        { own: true, box: [1, 3, -0.3, 0.15], colors: ['#5fefc2', '#abfbe3'] },
+    ])
+    assert.deepEqual(fills(note({ noteType: 'damage', size: 0 }), true, 0.5), [
+        { own: true, box: [0.9, 1.1, -0.15, 0.15], colors: [blendOverChart('#a50acc', 0.5)] },
+    ])
+    // Anchors have no body, and notes without names add nothing.
+    assert.deepEqual(fills(note({ noteType: 'anchor' })), [])
+    assert.deepEqual(fills(note({}), false), [])
+})

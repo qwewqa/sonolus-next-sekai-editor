@@ -1,9 +1,19 @@
-import { ease, easeMode, isNoneEase, isStepEase, sampleEase, type Ease } from '../../ease'
+import {
+    ease,
+    easeMode,
+    easeOvershoot,
+    isNoneEase,
+    isStepEase,
+    sampleEase,
+    type Ease,
+} from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
 import { clamp, lerp, remap, unlerp } from '../../utils/math'
 import { isConnectorVisible } from '../entities/visibility'
 import { connectorColors } from '../utils/connectorColors'
+import { blendOverChart } from './nameColors'
+import { markFill } from './names'
 import type { EditorDrawContext } from './types'
 
 type Edge = { time: number; left: number; size: number }
@@ -33,6 +43,8 @@ type ConnectorGraphic = {
     gradient?: CanvasGradient
     yHead: number
     yTail: number
+    /** Bounds of the drawn body, for names over it. */
+    box: { l: number; r: number; t: number; b: number }
 }
 
 const rgba = (color: string, alpha: number) =>
@@ -442,9 +454,24 @@ const createGraphic = (
         for (const region of regions) appendCross(fakeMarker, region)
     }
 
+    // Overshooting eases may swing past both ends.
+    const margin =
+        easeOvershoot(attachHead.connectorEase) *
+        Math.max(
+            Math.abs(last.left - first.left),
+            Math.abs(last.left + last.size - first.left - first.size),
+        )
+    const box = {
+        l: Math.min(first.left, last.left) - margin,
+        r: Math.max(first.left + first.size, last.left + last.size) + margin,
+        t: Math.min(yHead, yTail),
+        b: Math.max(yHead, yTail),
+    }
+
     return {
         bpms,
         ups,
+        box,
         path,
         edges,
         edgeColor: colors.edge,
@@ -498,6 +525,25 @@ export const createConnectorRenderer = () => {
                 ctx.fillStyle = graphic.gradient
             }
             ctx.fill(graphic.path)
+            if (context.names) {
+                const { box, path, color, headAlpha, tailAlpha, yHead, yTail } = graphic
+                markFill(context, {
+                    box,
+                    path: () => path,
+                    colorsAt: (y) => [
+                        blendOverChart(
+                            color,
+                            opacity *
+                                clamp(
+                                    // Guides fade along their length, as their gradient does.
+                                    headAlpha === tailAlpha
+                                        ? headAlpha
+                                        : remap(yHead, yTail, headAlpha, tailAlpha, y),
+                                ),
+                        ),
+                    ],
+                })
+            }
 
             // Only the two sides are outlined: segment boundaries and compound
             // easing midpoints must not acquire horizontal seams. Cap the width

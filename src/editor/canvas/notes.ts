@@ -4,7 +4,8 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slides/semantics'
 import { beatToTime } from '../../state/integrals/bpms'
 import { noteStyleColors } from '../../utils/colors'
-import { drawName } from './names'
+import { blendOverChart } from './nameColors'
+import { drawName, markFill, type NameFill } from './names'
 import type { EditorDrawContext } from './types'
 
 // Lanes between a note's stage and group names and its middle.
@@ -116,6 +117,18 @@ const roundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: num
     ctx.closePath()
 }
 
+const artworkColors = (entity: NoteEntity, type: NoteVisualType) => {
+    const { isCritical, flickDirection } = entity
+    const palette = entity.noteStyle !== 'default' ? noteStyleColors[entity.noteStyle] : undefined
+    const color = isCritical ? 'yellow' : flickDirection !== 'none' ? 'red' : 'green'
+    return {
+        body: palette ?? colors[type === 'single' && color === 'green' ? 'cyan' : color],
+        flat: palette?.[2] ?? (type === 'damage' ? '#a50acc' : traceColors[color]),
+        diamond: palette?.[1] ?? diamondColors[type === 'tick' && !isCritical ? 'green' : color],
+        arrow: palette?.[2] ?? (isCritical ? '#ffc633' : '#ec7cb4'),
+    }
+}
+
 const drawArtwork = (
     ctx: CanvasRenderingContext2D,
     entity: NoteEntity,
@@ -123,9 +136,8 @@ const drawArtwork = (
     outline: boolean,
     scale: number,
 ) => {
-    const { size, isCritical, flickDirection } = entity
-    const palette = entity.noteStyle !== 'default' ? noteStyleColors[entity.noteStyle] : undefined
-    const color = isCritical ? 'yellow' : flickDirection !== 'none' ? 'red' : 'green'
+    const { size, flickDirection } = entity
+    const fills = artworkColors(entity, type)
     const x = size > 0 ? 0 : -0.1
     const w = size > 0 ? size : 0.2
     ctx.lineWidth = 2 / scale
@@ -138,7 +150,7 @@ const drawArtwork = (
         // A zero-width tick has no diamond; show the placeholder in its colour.
         if (type === 'tick' && size <= 0) {
             roundedRect(ctx, x, 0.15, w, 0.3)
-            ctx.fillStyle = palette?.[1] ?? diamondColors[isCritical ? color : 'green']
+            ctx.fillStyle = fills.diamond
             ctx.fill()
         }
         if (outline) {
@@ -148,11 +160,10 @@ const drawArtwork = (
         }
     } else if (type === 'damage' || type === 'trace') {
         roundedRect(ctx, x, 0.15, w, 0.3)
-        ctx.fillStyle = palette?.[2] ?? (type === 'damage' ? '#a50acc' : traceColors[color])
+        ctx.fillStyle = fills.flat
         ctx.fill()
     } else {
-        const [outer, inner, dot] =
-            palette ?? colors[type === 'single' && color === 'green' ? 'cyan' : color]
+        const [outer, inner, dot] = fills.body
         roundedRect(ctx, x, 0, w, 0.6)
         ctx.fillStyle = outer
         ctx.fill()
@@ -170,8 +181,7 @@ const drawArtwork = (
     ctx.translate(size / 2, 0.3)
     if ((type === 'tick' || type === 'trace') && size > 0) {
         polygon(ctx, diamondPoints)
-        ctx.fillStyle =
-            palette?.[1] ?? diamondColors[type === 'tick' && !isCritical ? 'green' : color]
+        ctx.fillStyle = fills.diamond
         ctx.fill()
         polygon(ctx, diamondHighlightPoints)
         ctx.fillStyle = '#fff'
@@ -179,7 +189,7 @@ const drawArtwork = (
     }
     if (type !== 'anchor' && type !== 'tick' && type !== 'damage' && flickDirection !== 'none') {
         polygon(ctx, flickArrowPoints[flickDirection])
-        ctx.fillStyle = palette?.[2] ?? (isCritical ? '#ffc633' : '#ec7cb4')
+        ctx.fillStyle = fills.arrow
         ctx.fill()
         ctx.strokeStyle = '#fff'
         ctx.stroke()
@@ -200,6 +210,78 @@ const drawArtwork = (
         ctx.moveTo(left, bottom)
         ctx.lineTo(right, top)
         ctx.stroke()
+    }
+}
+
+// A note's body as one fill, so a name takes one colour over all of it.
+const bodyFill = (
+    entity: NoteEntity,
+    type: NoteVisualType,
+    x: number,
+    y: number,
+    alpha: number,
+): NameFill | undefined => {
+    if (type === 'anchor') return
+    const { size } = entity
+    const colors = artworkColors(entity, type)
+    const flat = type === 'tick' || type === 'damage' || type === 'trace'
+    // Sized ticks are only their diamond; sized traces add one to their box.
+    const diamond = (type === 'tick' || type === 'trace') && size > 0
+    const rect =
+        type === 'tick' && size > 0
+            ? undefined
+            : {
+                  l: x + (size > 0 ? 0 : -0.1),
+                  t: y + (flat ? 0.15 : 0),
+                  w: size > 0 ? size : 0.2,
+                  h: flat ? 0.3 : 0.6,
+              }
+    const fills = (
+        type === 'tick'
+            ? [colors.diamond]
+            : type === 'damage'
+              ? [colors.flat]
+              : type === 'trace'
+                ? diamond
+                    ? [colors.flat, colors.diamond]
+                    : [colors.flat]
+                : // A name lies on the inner body, crossing only the rim at its ends.
+                  [colors.body[size > 0 ? 1 : 0]]
+    ).map((color) => blendOverChart(color, alpha))
+    const cx = x + size / 2
+    const cy = y + 0.3
+    const boxes = [
+        ...(rect ? [{ l: rect.l, r: rect.l + rect.w, t: rect.t, b: rect.t + rect.h }] : []),
+        ...(diamond ? [{ l: cx - 0.3, r: cx + 0.3, t: cy - 0.3, b: cy + 0.15 }] : []),
+    ]
+    let path: Path2D | undefined
+    return {
+        owner: entity,
+        box: {
+            l: Math.min(...boxes.map(({ l }) => l)),
+            r: Math.max(...boxes.map(({ r }) => r)),
+            t: Math.min(...boxes.map(({ t }) => t)),
+            b: Math.max(...boxes.map(({ b }) => b)),
+        },
+        path: () => {
+            if (path) return path
+            path = new Path2D()
+            if (rect) {
+                const { l, t, w, h } = rect
+                const radii = { x: Math.min(0.1, w / 2), y: Math.min(0.1, h / 2) }
+                if (typeof path.roundRect === 'function') path.roundRect(l, t, w, h, radii)
+                else path.rect(l, t, w, h)
+            }
+            if (diamond) {
+                for (const [index, [px, py]] of diamondPoints.entries()) {
+                    if (index) path.lineTo(cx + px, cy + py)
+                    else path.moveTo(cx + px, cy + py)
+                }
+                path.closePath()
+            }
+            return path
+        },
+        colorsAt: () => fills,
     }
 }
 
@@ -345,6 +427,10 @@ export const createNoteRenderer = () => {
                     state.groups.get(entity.groupId)?.name
                 // Side by side, the names keep 0.1 lane each from the middle.
                 const gap = stage && group ? NAME_GAP : 0
+                const fill =
+                    stage || group ? bodyFill(entity, type, x, y, ctx.globalAlpha) : undefined
+                if (fill) markFill(context, fill)
+                const body = fill ? [fill] : []
                 if (stage) {
                     drawName(
                         context,
@@ -356,6 +442,7 @@ export const createNoteRenderer = () => {
                         '#f6f',
                         0.4,
                         group ? 'end' : 'center',
+                        body,
                     )
                 }
                 if (group) {
@@ -369,6 +456,7 @@ export const createNoteRenderer = () => {
                         '#0aa',
                         0.4,
                         stage ? 'start' : 'center',
+                        body,
                     )
                 }
             }
