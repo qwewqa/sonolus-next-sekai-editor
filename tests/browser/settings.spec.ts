@@ -459,6 +459,17 @@ test('unassigned shortcuts are muted like other placeholder text', async ({ page
     })
     // /50 fell to about 2.5:1 contrast.
     expect(alpha).toBeCloseTo(0.8, 2)
+    // Italic tells it from a bound key, as colour alone barely does.
+    const fontStyle = (button: typeof unassigned) =>
+        button.evaluate((element) => getComputedStyle(element).fontStyle)
+    expect(await fontStyle(unassigned)).toBe('italic')
+    const bound = page
+        .getByRole('dialog')
+        .locator('.form-field')
+        .filter({ has: page.getByText('Cut', { exact: true }) })
+        .getByRole('button')
+    await expect(bound).toHaveText('X')
+    expect(await fontStyle(bound)).toBe('normal')
 })
 
 for (const width of [1600, 375]) {
