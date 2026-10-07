@@ -365,6 +365,78 @@ test('a closed step reaches the page after its key, as a system one does', async
     await expect(select).toBeFocused()
 })
 
+// A bare select counting its changes; it can hide an option without disabling it.
+const addSelect = (page: Page, options: string) =>
+    page.evaluate((options) => {
+        const select = document.createElement('select')
+        select.id = 'probe'
+        select.innerHTML = options
+        ;(window as unknown as { changes: number }).changes = 0
+        select.addEventListener(
+            'change',
+            () => (window as unknown as { changes: number }).changes++,
+        )
+        document.body.append(select)
+        select.focus()
+    }, options)
+const changes = (page: Page) =>
+    page.evaluate(() => (window as unknown as { changes: number }).changes)
+
+test('a closed step skips hidden options, as a system one does', async ({ page }) => {
+    await boot(page, sidebar)
+    await addSelect(page, '<option hidden>x</option><option selected>a</option><option>b</option>')
+    const select = page.locator('#probe')
+    expect(await appearance(select)).toBe('base-select')
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowDown')
+    await expect(select).toHaveValue('b')
+    await page.keyboard.press('Home')
+    await expect(select).toHaveValue('a')
+    // Nothing before the first shown option.
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowDown')
+    await expect(select).toHaveValue('b')
+})
+
+test('Home and End on the end value fire no change', async ({ page }) => {
+    await boot(page, sidebar)
+    await addSelect(page, '<option selected>a</option><option>b</option>')
+    const select = page.locator('#probe')
+    await page.keyboard.press('Home')
+    await page.keyboard.press('End')
+    await expect(select).toHaveValue('b')
+    await page.keyboard.press('End')
+    await page.keyboard.press('Home')
+    await expect(select).toHaveValue('a')
+    // A later step settles the earlier ones.
+    await page.keyboard.press('Home')
+    await page.keyboard.press('ArrowDown')
+    await expect(select).toHaveValue('b')
+    expect(await changes(page)).toBe(3)
+})
+
+test('a key click right after a press that closed a list still lands', async ({ page }) => {
+    await boot(page, sidebar)
+    await selectNotes(page, [0])
+    const select = field(panel(page), 'Note Color')
+    await select.click()
+    expect(await isOpen(select)).toBe(true)
+    const point = await page.evaluate(() => window.editorTest.point(5.5, 1))
+    await page.mouse.click(point.x, point.y)
+    expect(await isOpen(select)).toBe(false)
+    // Within the swallowed press's trail.
+    await page.evaluate(() => {
+        const button = document.createElement('button')
+        button.id = 'probe'
+        ;(window as unknown as { clicks: number }).clicks = 0
+        button.addEventListener('click', () => (window as unknown as { clicks: number }).clicks++)
+        document.body.append(button)
+        button.focus()
+    })
+    await page.keyboard.press('Space')
+    expect(await page.evaluate(() => (window as unknown as { clicks: number }).clicks)).toBe(1)
+})
+
 test('Apple platforms open the list on arrows, as their system selects do', async ({ page }) => {
     await page.addInitScript(() => {
         Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' })
