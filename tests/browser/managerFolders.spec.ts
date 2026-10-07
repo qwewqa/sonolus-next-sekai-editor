@@ -795,6 +795,61 @@ test('undoing an ungroup or a delete brings a collapsed folder back collapsed', 
     await expect(verse).toHaveAttribute('aria-expanded', 'false')
 })
 
+test('undoing a delete brings hidden groups and stages back hidden', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro']])
+    const scope = (action?: 'group' | 'stage') =>
+        page.evaluate(async (action) => {
+            const { appImport, history, nextTick } = window.editorTest
+            const { groupScope, stageScope } =
+                await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+            if (action === 'group') {
+                const { deleteGroup } = await appImport<
+                    typeof import('../../src/editor/workspace/manager/groups')
+                >('/src/editor/workspace/manager/groups.ts')
+                deleteGroup(1003 as never)
+            } else if (action === 'stage') {
+                const { deleteStage } = await appImport<
+                    typeof import('../../src/editor/workspace/manager/stages')
+                >('/src/editor/workspace/manager/stages.ts')
+                deleteStage(2 as never)
+            }
+            await nextTick()
+            const { groups, stages } = history.state.value
+            const of = <T>(ids: Map<T, unknown>, id: T, visibility: (id: T) => string) =>
+                ids.has(id) ? visibility(id) : 'deleted'
+            return [
+                of(groups, 2 as never, groupScope.visibility),
+                of(groups, 1003 as never, groupScope.visibility),
+                of(stages, 2 as never, stageScope.visibility),
+            ]
+        }, action)
+    await page.evaluate(async () => {
+        const { appImport } = window.editorTest
+        const { groupScope, stageScope } =
+            await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+        groupScope.setSomeShown([2, 1003] as never[], false)
+        stageScope.setShown(2 as never, false)
+    })
+    expect(await scope()).toEqual(['hidden', 'hidden', 'hidden'])
+
+    // A folder deleted as a unit.
+    const menu = page.getByRole('menu')
+    await folderRow(page, 'Verse').getByRole('button', { name: 'More Actions for Verse' }).click()
+    await menu.getByRole('menuitem', { name: 'Delete Folder and Groups…' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
+    expect(await scope()).toEqual(['deleted', 'hidden', 'hidden'])
+    await undo(page)
+    expect(await scope()).toEqual(['hidden', 'hidden', 'hidden'])
+
+    // A single group, then a stage.
+    expect(await scope('group')).toEqual(['hidden', 'deleted', 'hidden'])
+    await undo(page)
+    expect(await scope()).toEqual(['hidden', 'hidden', 'hidden'])
+    expect(await scope('stage')).toEqual(['hidden', 'hidden', 'deleted'])
+    await undo(page)
+    expect(await scope()).toEqual(['hidden', 'hidden', 'hidden'])
+})
+
 test('New Folder adds and names a folder at the end', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead']])
     await panel(page).getByRole('button', { name: 'New Folder', exact: true }).click()

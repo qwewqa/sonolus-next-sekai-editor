@@ -144,12 +144,10 @@ const createScope = <T>(options: {
             options.setOverrides(followShowOthers(options.getOverrides(), options.showOthers()))
         },
 
-        /** Drops overrides for entries that no longer exist. */
-        prune() {
-            const ids = new Set(options.isEnabled() ? options.ids() : [])
-            const overrides = options.getOverrides()
-            if ([...overrides.keys()].every((id) => ids.has(id))) return
-            options.setOverrides(new Map([...overrides].filter(([id]) => ids.has(id))))
+        /** Drops every override while the entries are disabled. */
+        pruneDisabled() {
+            if (options.isEnabled() || !options.getOverrides().size) return
+            options.setOverrides(new Map())
         },
     }
 }

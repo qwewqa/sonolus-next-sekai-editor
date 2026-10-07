@@ -280,17 +280,17 @@ test('placing a time scale into a hidden group reveals it before replacing', asy
     expect(result).toEqual({ visibility: 'full', timeScales: [[1, 6]] })
 })
 
-test('stale visibility entries are pruned when groups or stages disappear', async ({ page }) => {
+test('removed groups keep their visibility entries until a reset', async ({ page }) => {
     await setGroupShown(page, 2, false)
     await setStageShown(page, 2, false)
-    expect(
-        await page.evaluate(() => [
+    const sizes = () =>
+        page.evaluate(() => [
             window.editorTest.view.groupVisibility.size,
             window.editorTest.view.stageVisibility.size,
-        ]),
-    ).toEqual([1, 1])
+        ])
+    expect(await sizes()).toEqual([1, 1])
 
-    // Removing group 2 drops its entry; disabling dynamic stages drops stage entries.
+    // Removing group 2 keeps its entry for an undo; disabling dynamic stages drops stage entries.
     await page.evaluate(() => {
         const { history } = window.editorTest
         const current = history.state.value
@@ -301,12 +301,15 @@ test('stale visibility entries are pruned when groups or stages disappear', asyn
         })
     })
     await settle(page)
-    expect(
-        await page.evaluate(() => [
-            window.editorTest.view.groupVisibility.size,
-            window.editorTest.view.stageVisibility.size,
-        ]),
-    ).toEqual([0, 0])
+    expect(await sizes()).toEqual([1, 0])
+
+    // A new chart starts clean.
+    await page.evaluate(() => {
+        const { show, fixtures } = window.editorTest
+        show(fixtures.interaction, 3)
+    })
+    await settle(page)
+    expect(await sizes()).toEqual([0, 0])
 })
 
 test('the elevation editor follows the same filters and cancels drags when they change', async ({

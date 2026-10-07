@@ -129,20 +129,12 @@ watch([groups, () => view.groupId], () => {
     view.groupId = undefined
 })
 
-// Visibility overrides are view state: drop entries for groups and stages that
-// no longer exist after deletion, undo/redo, history replacement or loading a
-// chart, and every stage entry while dynamic stages are disabled.
-watch(
-    groups,
-    () => {
-        groupScope.prune()
-    },
-    { immediate: true },
-)
+// Overrides of removed groups and stages stay, so an undo restores them; a reset
+// clears them all. Stage overrides are dropped while dynamic stages are disabled.
 watch(
     [stages, isDynamicStages],
     () => {
-        stageScope.prune()
+        stageScope.pruneDisabled()
     },
     { immediate: true },
 )
