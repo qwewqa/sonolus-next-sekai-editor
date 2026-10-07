@@ -37,6 +37,7 @@ import { ownedCounts, type OwnerKey } from './objects'
 /**
  * Collapsed folders. Collapsing is a view choice, never an edit: it stays out
  * of history and the file, and a new chart starts with every folder open.
+ * Removed folders stay listed, so an undo brings them back as they were.
  */
 export const collapsedFolders = shallowReactive(new Set<FolderId>())
 
@@ -330,7 +331,6 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
             const name = folderName(id)
             const folders: Folders = new Map(config.folders())
             folders.delete(id)
-            collapsedFolders.delete(id)
             commit(
                 ungroupInTree(tree(), id),
                 interpolate(() => i18n.value.workspace.folders.ungrouped, name),

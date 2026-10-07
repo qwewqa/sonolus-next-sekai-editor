@@ -774,6 +774,27 @@ test('ungrouping keeps members; deleting a folder confirms and removes them', as
     expect(await tree(page)).toBe('Default [Verse: Lead Fill] [Ending: Outro]')
 })
 
+test('undoing an ungroup or a delete brings a collapsed folder back collapsed', async ({
+    page,
+}) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse']])
+    const menu = page.getByRole('menu')
+    const verse = nameButton(panel(page), 'Verse')
+    await verse.click()
+    await expect(verse).toHaveAttribute('aria-expanded', 'false')
+    await folderRow(page, 'Verse').getByRole('button', { name: 'More Actions for Verse' }).click()
+    await menu.getByRole('menuitem', { name: 'Ungroup' }).click()
+    await undo(page)
+    expect(await tree(page)).toBe('Default [Verse: Lead Fill]')
+    await expect(verse).toHaveAttribute('aria-expanded', 'false')
+
+    await folderRow(page, 'Verse').getByRole('button', { name: 'More Actions for Verse' }).click()
+    await menu.getByRole('menuitem', { name: 'Delete Folder and Groups…' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
+    await undo(page)
+    await expect(verse).toHaveAttribute('aria-expanded', 'false')
+})
+
 test('New Folder adds and names a folder at the end', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead']])
     await panel(page).getByRole('button', { name: 'New Folder', exact: true }).click()
