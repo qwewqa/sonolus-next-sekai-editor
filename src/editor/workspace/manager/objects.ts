@@ -26,14 +26,14 @@ const ownedTypes = {
 
 type OwnedEntity<K extends OwnerKey> = Extract<Entity, { type: (typeof ownedTypes)[K][number] }>
 
-/** Every editable object that the given key assigns to an owner, once each. */
+/** Every object the key assigns to an owner, once each, until the callback returns true. */
 const walkOwned = <K extends OwnerKey>(
     source: Store,
     key: K,
-    callback: (entity: OwnedEntity<K>) => void,
+    callback: (entity: OwnedEntity<K>) => unknown,
 ) => {
     for (const notes of source.slides.note.values()) {
-        for (const note of notes) callback(note as OwnedEntity<K>)
+        for (const note of notes) if (callback(note as OwnedEntity<K>)) return true
     }
     for (const type of ownedTypes[key]) {
         if (type === 'note') continue
@@ -43,10 +43,11 @@ const walkOwned = <K extends OwnerKey>(
             for (const entity of entities) {
                 if (seen.has(entity)) continue
                 seen.add(entity)
-                callback(entity as OwnedEntity<K>)
+                if (callback(entity as OwnedEntity<K>)) return true
             }
         }
     }
+    return false
 }
 
 const ownerOf = (entity: Entity, key: OwnerKey): number | undefined =>
@@ -76,21 +77,26 @@ const stageCounts = computed(() => countOwned(store.value, 'stageId'))
 export const ownedCounts = (key: OwnerKey): ReadonlyMap<number, number> =>
     key === 'groupId' ? groupCounts.value : stageCounts.value
 
+/** Whether an object is the owner's and currently visible in the editor. */
+const isVisibleOwned = (key: OwnerKey, owners: Owners) => {
+    const scope = scopeLookup.value
+    return (entity: Entity) =>
+        isOwnedBy(ownerOf(entity, key), owners) && entityScopeVisibility(entity, scope) !== 'hidden'
+}
+
 /** The owner's objects that are currently visible in the editor. */
 const visibleOwned = (key: OwnerKey, owners: Owners) => {
-    const scope = scopeLookup.value
+    const isVisible = isVisibleOwned(key, owners)
     const entities: Entity[] = []
     walkOwned(store.value, key, (entity) => {
-        if (!isOwnedBy(ownerOf(entity, key), owners)) return
-        if (entityScopeVisibility(entity, scope) === 'hidden') return
-        entities.push(entity)
+        if (isVisible(entity)) entities.push(entity)
     })
     return entities
 }
 
 /** Whether Select Objects would select anything. */
 export const hasVisibleOwned = (key: OwnerKey, owners: Owners) =>
-    visibleOwned(key, owners).length > 0
+    walkOwned(store.value, key, isVisibleOwned(key, owners))
 
 /**
  * Selects the owner's objects that are currently visible in the editor. The
