@@ -349,8 +349,8 @@ test('preview generation is unavailable until End follows Start and the fades fi
     await expect(generate).toBeDisabled()
     await expect(dialog.getByRole('alert')).toHaveText('Fades must fit between Start and End')
 
-    await field('Fade End (s)').fill('0.5')
-    await field('Fade End (s)').press('Tab')
+    await field('Fade Out (s)').fill('0.5')
+    await field('Fade Out (s)').press('Tab')
     await expect(generate).toBeEnabled()
     await expect(dialog.getByRole('alert')).toHaveCount(0)
 })
