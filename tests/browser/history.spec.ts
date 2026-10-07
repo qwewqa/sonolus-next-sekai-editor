@@ -186,6 +186,86 @@ test('undo to clean clears recovery, redo recreates it, and a clean reset clears
     await expect.poll(() => recovery(page)).toBeUndefined()
 })
 
+for (const how of ['undoes an edit it never saved', 'undoes a saved edit', 'turns auto save off'])
+    test(`a tab that ${how} leaves another tab's recovery in place`, async ({ page, context }) => {
+        // The other tab loads its chart before this one writes a recovery.
+        const other = await context.newPage()
+        await other.goto('/')
+        await expect(other.locator('canvas.editor-chart')).toBeVisible()
+        await other.evaluate(installEditorFixture)
+        await other.evaluate(
+            (delay) => {
+                const { history, fixtures, settings } = window.editorTest
+                history.resetState(false, fixtures.interaction, 0, 'other-chart')
+                settings.autoSaveDelay = delay
+                settings.autoSave = true
+            },
+            how === 'undoes an edit it never saved' ? 5 : 0,
+        )
+        await editNamedChart(page)
+        await expect.poll(() => recovery(page)).toMatchObject({ filename: 'named-chart' })
+
+        await other.evaluate(async () => {
+            const { history, store } = window.editorTest
+            const { editSelectedEditableEntities } =
+                await import('/src/editor/sidebars/default/index.ts')
+            const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
+            history.replaceState({ ...history.state.value, selectedEntities: [note] })
+            editSelectedEditableEntities({ size: 4 })
+        })
+        if (how !== 'undoes an edit it never saved')
+            await expect.poll(() => recovery(page)).toMatchObject({ filename: 'other-chart' })
+        await other.evaluate((off) => {
+            const { history, settings } = window.editorTest
+            if (off) settings.autoSave = false
+            else history.undoState()
+        }, how === 'turns auto save off')
+        await other.waitForTimeout(200)
+        await expect.poll(() => recovery(page)).toMatchObject({ filename: 'named-chart' })
+
+        // This tab's chart comes back in a new tab after it closes.
+        await page.close()
+        const reopened = await context.newPage()
+        await reopened.goto('/')
+        await expect
+            .poll(() =>
+                reopened.evaluate(async () => {
+                    const { state } = await import('/src/history/index.ts')
+                    const { getAllEntities } = await import('/src/history/store.ts')
+                    return {
+                        filename: state.value.filename,
+                        size: [...getAllEntities()]
+                            .filter((entity) => entity.type === 'note')
+                            .find((entity) => entity.beat === 3)?.size,
+                    }
+                }),
+            )
+            .toEqual({ filename: 'named-chart', size: 3 })
+    })
+
+test("hiding a tab writes its recovery back over another tab's", async ({ page, context }) => {
+    await editNamedChart(page)
+    await expect.poll(() => recovery(page)).toMatchObject({ filename: 'named-chart' })
+    const other = await context.newPage()
+    await other.goto('/')
+    await expect(other.locator('canvas.editor-chart')).toBeVisible()
+    await other.evaluate(installEditorFixture)
+    await other.evaluate(async () => {
+        const { history, fixtures, settings, store } = window.editorTest
+        const { editSelectedEditableEntities } =
+            await import('/src/editor/sidebars/default/index.ts')
+        history.resetState(false, fixtures.interaction, 0, 'other-chart')
+        settings.autoSaveDelay = 0
+        settings.autoSave = true
+        const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
+        history.replaceState({ ...history.state.value, selectedEntities: [note] })
+        editSelectedEditableEntities({ size: 4 })
+    })
+    await expect.poll(() => recovery(page)).toMatchObject({ filename: 'other-chart' })
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')))
+    expect(await recovery(page)).toMatchObject({ filename: 'named-chart' })
+})
+
 test('restored autosave retains its filename and warns before close until reset clean', async ({
     page,
 }) => {

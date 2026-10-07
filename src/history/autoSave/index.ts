@@ -13,7 +13,7 @@ import LoadingModal from '../../modals/LoadingModal.vue'
 import { settings } from '../../settings'
 import type { State } from '../../state'
 import { hasSameChartData } from '../../state/data'
-import { storageGetText, storageRemove, storageSet } from '../../storage'
+import { storageGetText, storageKey, storageRemove, storageSetText } from '../../storage'
 import { timeout } from '../../utils/promise'
 import { filename } from '../filename'
 import { parseAutoSave } from './parse'
@@ -30,12 +30,16 @@ import UnreadableRecoveryModal from './UnreadableRecoveryModal.vue'
 
 let errorReported = false
 
+const key = 'autoSave.levelData'
+
 export const useAutoSave = () => {
     let id: number | undefined
     let savedState: State | undefined
-    let changed = false
+    // The recovery this tab wrote or restored; tabs share the one slot.
+    let written: string | undefined
+    const adopt = () => (written = storageGetText(key))
     // Read as text so damaged JSON still counts as a recovery to keep.
-    const data = storageGetText('autoSave.levelData')
+    const data = storageGetText(key)
     const initialAside = storageGetText(unreadableRecoveryKey)
     // Auto save waits until both are handled, so it never writes over either.
     let restoring = data !== undefined || initialAside !== undefined
@@ -47,10 +51,10 @@ export const useAutoSave = () => {
         const current = state.value
         try {
             if (!settings.autoSave || !isDirty.value) {
-                // A fresh, untouched tab must not erase another tab's recovery.
-                if (changed) storageRemove('autoSave.levelData')
+                // Only this tab's own recovery goes, never another tab's.
+                if (written !== undefined && storageGetText(key) === written) storageRemove(key)
                 savedState = undefined
-                changed = false
+                written = undefined
                 return
             }
             if (
@@ -58,7 +62,9 @@ export const useAutoSave = () => {
                 hasSameChartData(savedState, current) &&
                 savedState.initialLife === current.initialLife &&
                 savedState.bgm.offset === current.bgm.offset &&
-                (savedState.filename ?? savedState.bgm.filename) === filename.value
+                (savedState.filename ?? savedState.bgm.filename) === filename.value &&
+                // Written again when another tab removed or replaced it.
+                storageGetText(key) === written
             )
                 return
 
@@ -71,16 +77,17 @@ export const useAutoSave = () => {
                 current.stages,
                 { groups: current.groupFolders, stages: current.stageFolders },
             )
-            // setItem is atomic: a failed write leaves the previous recovery intact.
-            storageSet(
-                'autoSave.levelData',
+            const text = JSON.stringify(
                 serializeAutoSave(
                     levelData,
                     filename.value,
                     serializeEditorMetadata(levelData.entities, current.store),
                 ),
             )
+            // setItem is atomic: a failed write leaves the previous recovery intact.
+            storageSetText(key, text)
             savedState = current
+            written = text
             errorReported = false
         } catch (error) {
             console.error('Failed to save chart recovery:', error)
@@ -96,7 +103,6 @@ export const useAutoSave = () => {
     const stop = watch(
         () => [settings.autoSave, isDirty.value, state.value] as const,
         () => {
-            changed = true
             clearTimeout(id)
             if (!settings.autoSave || !isDirty.value) flush()
             else id = window.setTimeout(flush, settings.autoSaveDelay * 1000)
@@ -106,6 +112,12 @@ export const useAutoSave = () => {
     const onVisibilityChange = () => {
         if (document.visibilityState === 'hidden') flush()
     }
+    // Another tab removed this tab's recovery: write it back. Replacements wait, so tabs never trade writes.
+    const onStorage = (event: StorageEvent) => {
+        if (event.key === storageKey(key) && event.newValue === null && written !== undefined)
+            flush()
+    }
+    window.addEventListener('storage', onStorage)
     window.addEventListener('beforeunload', flush)
     window.addEventListener('pagehide', flush)
     document.addEventListener('visibilitychange', onVisibilityChange)
@@ -115,6 +127,7 @@ export const useAutoSave = () => {
             stop()
             window.removeEventListener('beforeunload', flush)
             window.removeEventListener('pagehide', flush)
+            window.removeEventListener('storage', onStorage)
             document.removeEventListener('visibilitychange', onVisibilityChange)
         })
 
@@ -160,6 +173,7 @@ export const useAutoSave = () => {
         if (primary) {
             resetState(true, primary.chart, primary.offset, primary.filename)
             savedState = state.value
+            adopt()
         }
 
         let unreadable: UnreadableRecovery | undefined
@@ -172,6 +186,8 @@ export const useAutoSave = () => {
                 savedState = state.value
                 notify(() => i18n.value.history.autoSave.unreadable.restored)
                 unreadable = restoreAside(aside, primary || data === undefined ? undefined : data)
+                // The slot may still hold the other recovery if the move failed.
+                adopt()
             }
         }
 
