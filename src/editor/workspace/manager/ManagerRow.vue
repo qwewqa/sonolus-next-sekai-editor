@@ -39,6 +39,8 @@ const props = defineProps<{
     /** Dims the name, as for hidden entries; band rows keep full-strength text. */
     muted: boolean
     eyeLabel: string
+    /** An eye with nothing to show or hide, e.g. an empty folder's. */
+    eyeDisabled?: boolean
     /** Tooltip for the eye, e.g. with a modifier hint. */
     eyeTitle?: string
     /** The band row of a list, titled in bold like other panel bands. */
@@ -387,7 +389,7 @@ const onRenameBlur = (event: FocusEvent) => {
             v-else
             type="button"
             class="manager-eye manager-icon-button"
-            :disabled
+            :disabled="disabled || eyeDisabled"
             :aria-label="eyeLabel"
             :title="eyeTitle ?? eyeLabel"
             @click="onToggle"

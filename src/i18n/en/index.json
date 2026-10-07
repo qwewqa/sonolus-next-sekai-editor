@@ -1385,6 +1385,7 @@
             "none": "No Folder",
             "expand": "Expand {0}",
             "collapse": "Collapse {0}",
+            "empty": "{0} folder is empty",
             "moveUp": "Move Folder Up",
             "moveDown": "Move Folder Down",
             "ungroup": "Ungroup",

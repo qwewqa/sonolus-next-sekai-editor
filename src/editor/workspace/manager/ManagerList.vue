@@ -1694,9 +1694,11 @@ ${description}`
 
 const folderEyeLabel = (item: FolderItem) =>
     label(
-        shownMembers(item).length < item.members.length || !item.members.length
-            ? i18n.value.workspace.manager.show
-            : i18n.value.workspace.manager.hide,
+        !item.members.length
+            ? i18n.value.workspace.folders.empty
+            : shownMembers(item).length < item.members.length
+              ? i18n.value.workspace.manager.show
+              : i18n.value.workspace.manager.hide,
         folderName(item.id),
     )
 </script>
@@ -1795,7 +1797,12 @@ const folderEyeLabel = (item: FolderItem) =>
                                 "
                                 :muted="item.members.length > 0 && !shownMembers(item).length"
                                 :eye-label="folderEyeLabel(item)"
-                                :eye-title="`${folderEyeLabel(item)}\n${i18n.workspace.manager.soloHint}`"
+                                :eye-title="
+                                    item.members.length
+                                        ? `${folderEyeLabel(item)}\n${i18n.workspace.manager.soloHint}`
+                                        : folderEyeLabel(item)
+                                "
+                                :eye-disabled="!item.members.length"
                                 :meta="`${folderCount(item)}`"
                                 :meta-title="
                                     label(i18n.workspace.manager.objects, `${folderCount(item)}`)

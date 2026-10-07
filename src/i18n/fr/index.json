@@ -1385,6 +1385,7 @@
       "none": "Aucun dossier",
       "expand": "Développer {0}",
       "collapse": "Réduire {0}",
+      "empty": "Le dossier {0} est vide",
       "moveUp": "Monter le dossier",
       "moveDown": "Descendre le dossier",
       "ungroup": "Dissoudre le dossier",

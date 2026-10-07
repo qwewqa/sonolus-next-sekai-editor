@@ -1385,6 +1385,7 @@
       "none": "無資料夾",
       "expand": "展開 {0}",
       "collapse": "收合 {0}",
+      "empty": "{0} 資料夾為空",
       "moveUp": "上移資料夾",
       "moveDown": "下移資料夾",
       "ungroup": "解散資料夾",

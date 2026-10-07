@@ -387,6 +387,14 @@ test('a right-click on a folder while selecting adds the folder before its menu'
     await expect(list.locator('.manager-selection-bar')).toContainText('4 Selected')
 })
 
+test("an empty folder's eye is disabled and says it is empty", async ({ page }) => {
+    await seedGroups(page, seed, ['Spare'])
+    const eye = row(panel(page), 'Spare').locator('.manager-eye')
+    await expect(eye).toBeDisabled()
+    await expect(eye).toHaveAccessibleName('Spare folder is empty')
+    await expect(row(panel(page), 'Verse').locator('.manager-eye')).toBeEnabled()
+})
+
 test('the dialog fallback selects and deletes folders as the panel does', async ({ page }) => {
     await seedGroups(page, seed, ['Spare'])
     await page.evaluate(() => {

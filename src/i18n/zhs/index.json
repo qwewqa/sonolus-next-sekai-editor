@@ -1385,6 +1385,7 @@
       "none": "无文件夹",
       "expand": "展开 {0}",
       "collapse": "折叠 {0}",
+      "empty": "{0} 文件夹为空",
       "moveUp": "上移文件夹",
       "moveDown": "下移文件夹",
       "ungroup": "解散文件夹",
