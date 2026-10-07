@@ -253,12 +253,19 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
 
 <template>
     <Teleport :to="container">
+        <!-- Phones show the menu as a sheet over a dimmed backdrop, as the context menu.
+        The mouse events a long press ends with leave focus in the menu. -->
+        <div
+            class="manager-menu-backdrop fixed inset-0 z-40 bg-black/30 sm:hidden"
+            aria-hidden="true"
+            @mousedown.prevent
+        />
         <div
             ref="menu"
             :[workspaceDockAttribute]="'menu'"
             role="menu"
             :aria-label="label"
-            class="manager-menu popup-surface fixed z-50"
+            class="manager-menu popup-surface popup-sheet fixed z-50"
             :class="{ invisible: !placement }"
             :style="{
                 left: `${placement?.left ?? 0}px`,

@@ -201,21 +201,26 @@ for (const [device, options] of Object.entries(viewports)) {
             expect(box.x).toBeGreaterThanOrEqual(0)
             expect(box.y + box.height).toBeLessThanOrEqual(size.height)
             expect(box.x + box.width).toBeLessThanOrEqual(size.width)
-            // Opens below when it fits there, otherwise above.
-            if (anchor.y + anchor.height + box.height + 12 > size.height)
+            // Phones show a sheet along the bottom; otherwise it opens below when it
+            // fits there, else above.
+            if (device === 'phone') expect(box.y + box.height).toBe(size.height - 8)
+            else if (anchor.y + anchor.height + box.height + 12 > size.height)
                 expect(box.y + box.height).toBeLessThanOrEqual(anchor.y + 1)
             else expect(box.y).toBeGreaterThanOrEqual(anchor.y + anchor.height - 1)
             await expect(menu.getByRole('menuitem', { name: 'Move Group Down' })).toBeDisabled()
             await expect(menu.getByRole('menuitem', { name: 'Move Group Up' })).toBeEnabled()
 
-            // The anchor toggles the menu closed.
-            await press(more)
+            // The anchor toggles the menu closed; a phone's sheet and backdrop cover it.
+            if (device === 'phone') await page.touchscreen.tap(size.width / 2, 20)
+            else await press(more)
             await expect(menu).toHaveCount(0)
 
-            // An outside press closes it.
+            // An outside press closes it; on a phone it lands on the backdrop.
             await press(more)
             await expect(menu).toBeVisible()
-            await press(panel.locator('.manager-all .manager-name'))
+            const all = panel.locator('.manager-all .manager-name')
+            if (device === 'phone') await all.tap({ force: true })
+            else await press(all)
             await expect(menu).toHaveCount(0)
 
             // Choosing an item runs it and closes the menu.
@@ -1339,4 +1344,40 @@ test('a press outside an action menu only closes it', async ({ page }) => {
     await expect(menu).toHaveCount(0)
     await page.mouse.click(point.x, point.y)
     expect(await selected()).toBe(0)
+})
+
+test.describe('menus on a phone', () => {
+    test.use(viewports.phone)
+
+    test('an action menu is a sheet over a backdrop that only closes it', async ({ page }) => {
+        await seedGroups(page, ['Default', 'Other group'])
+        const panel = await openGroups(page)
+        const menu = page.getByRole('menu')
+        const more = panel.getByRole('button', { name: 'More Actions for Other group' })
+        await more.tap()
+        await expect(menu).toBeVisible()
+        // Along the bottom, 8px in, as the context menu's sheet.
+        const box = (await menu.boundingBox())!
+        expect(box.x).toBe(8)
+        expect(box.x + box.width).toBe(390 - 8)
+        expect(box.y + box.height).toBe(844 - 8)
+        const rows = await menu
+            .getByRole('menuitem')
+            .evaluateAll((items) => items.map((item) => item.getBoundingClientRect().height))
+        expect(rows.every((height) => height >= 44)).toBe(true)
+        const backdrop = page.locator('.manager-menu-backdrop')
+        await expect(backdrop).toBeVisible()
+
+        // A tap on the backdrop only closes the menu.
+        const before = await groupState(page)
+        await page.touchscreen.tap(195, 40)
+        await expect(menu).toHaveCount(0)
+        await expect(backdrop).toHaveCount(0)
+        expect(await groupState(page)).toEqual(before)
+
+        // Its items still work by touch.
+        await more.tap()
+        await menu.getByRole('menuitem', { name: 'Rename', exact: true }).tap()
+        await expect(panel.locator('.manager-rename')).toBeVisible()
+    })
 })
