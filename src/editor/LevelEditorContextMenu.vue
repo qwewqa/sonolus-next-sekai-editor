@@ -22,7 +22,7 @@ import { canDeleteSelection } from './commands/deleteSelection'
 import { closeContextMenu, contextMenu } from './contextMenu'
 import SelectSlideNotesIcon from './contextMenu/SelectSlideNotesIcon.vue'
 import { pasteAtContextPosition } from './contextMenuPaste'
-import { canEditSelectionProperties, editSelectionProperties } from './editSelectionProperties'
+import { canEditSelectionProperties, focusSelectionProperties } from './editSelectionProperties'
 import { openElevationEditor } from './elevation/state'
 import PropertiesIcon from './commands/properties/PropertiesIcon.vue'
 import { isCoarsePointer } from './workspace'
@@ -142,7 +142,8 @@ const dismiss = (restoreFocus = false) => {
     if (restoreFocus) returnFocus?.focus({ preventScroll: true })
 }
 
-const execute = (name: ActionName) => {
+// A click has a detail; keys activate with none.
+const execute = (name: ActionName, byKeyboard = true) => {
     const point = contextMenu.value
     dismiss(true)
     if (name === 'editElevations') {
@@ -156,7 +157,8 @@ const execute = (name: ActionName) => {
                     yToValidBeat(point.y),
             )
         }
-    } else if (name === 'editProperties') editSelectionProperties()
+    } else if (name === 'editProperties')
+        void focusSelectionProperties(byKeyboard || !isCoarsePointer.value)
     else if (name === 'selectSlideNotes') {
         const targets = modifyEntities(selectedEntities.value, { ctrl: false, shift: true })
         replaceState({
@@ -305,7 +307,7 @@ onUnmounted(() => {
                             tabindex="-1"
                             class="popup-item"
                             :class="{ 'text-danger': name === 'deleteSelection' }"
-                            @click="execute(name)"
+                            @click="execute(name, $event.detail === 0)"
                         >
                             <component
                                 :is="icon.is"

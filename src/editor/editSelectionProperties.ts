@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { selectedEntities } from '../history/selectedEntities'
 import { isEditableEntity } from '../state/operations/editable'
 import { isSidebarVisible, revealPropertiesSection } from './sidebars'
@@ -25,4 +25,24 @@ export const editSelectionProperties = () => {
     void showToolModal(SelectionPropertiesModal, {
         kind: kinds.size === 1 ? kind : undefined,
     })
+}
+
+/**
+ * Also moves focus into the shown panel's Selection section: its first field,
+ * or its heading so a tap never summons the on-screen keyboard.
+ */
+export const focusSelectionProperties = async (toField: boolean) => {
+    editSelectionProperties()
+    if (!isSidebarVisible.value) return
+    await nextTick()
+    const body = document.getElementById('properties-section-selection')
+    if (!body) return
+    const target =
+        (toField
+            ? body.querySelector<HTMLElement>(
+                  'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+              )
+            : null) ?? body.querySelector<HTMLElement>('.properties-block h3')
+    target?.scrollIntoView({ block: 'nearest' })
+    target?.focus({ preventScroll: true })
 }
