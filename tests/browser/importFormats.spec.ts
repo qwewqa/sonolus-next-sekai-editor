@@ -220,6 +220,31 @@ for (const [label, content] of [
         await expect(page.getByRole('dialog')).not.toContainText('Error')
     })
 
+// Level data refuses these, so the editor could not reopen its own file.
+const single = usc.usc.objects[2]!
+for (const [label, objects, message] of [
+    ['a negative note beat', [{ ...single, beat: -5 }], 'Invalid level: negative beat'],
+    [
+        'a negative time scale beat',
+        [{ type: 'timeScaleGroup', changes: [{ beat: -1, timeScale: 2 }] }],
+        'Invalid level: negative beat',
+    ],
+    ['a negative BPM beat', [{ type: 'bpm', beat: -2, bpm: 90 }], 'Invalid level: negative beat'],
+    ['a negative note size', [{ ...single, size: -3 }], 'Invalid level: negative note size'],
+] as const)
+    test(`a USC with ${label} is refused`, async ({ page }) => {
+        const chart = { ...usc, usc: { ...usc.usc, objects: [...usc.usc.objects, ...objects] } }
+        await open(page, 'chart.usc', Buffer.from(JSON.stringify(chart)))
+        await expect(page.getByRole('dialog')).toContainText(message)
+        expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+    })
+
+test('a SUS with a negative beat is refused', async ({ page }) => {
+    await open(page, 'chart.sus', Buffer.from(`${sus}\n#TIL00: "0'-480:2"`))
+    await expect(page.getByRole('dialog')).toContainText('Invalid level: negative beat')
+    expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+})
+
 test("a USC 'none' direction flicks up, as the engine reads it", async ({ page }) => {
     const single = (beat: number, direction?: string) => ({
         type: 'single',
