@@ -67,6 +67,11 @@ export type FolderStrings = {
     /** Duplicating an entry ({0}: its name), or several ({0}: their count). */
     duplicated: string
     duplicatedSelected: string
+    /** Duplicating selected folders ({0}: their count) and entries ({1}: all copied). */
+    duplicatedSelectedFolders: string
+    /** Deleting selected entries ({0}: their count), or folders ({0}) and entries ({1}). */
+    deletedSelected: string
+    deletedSelectedFolders: string
 }
 
 /** Folder editing for one collection; every change is one undoable step. */
@@ -113,19 +118,25 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
         }
     }
 
-    /** Copies entries with their objects in one step; a folder copy's members keep their names. */
+    /**
+     * Copies entries and folders with their objects in one step. Copies of the
+     * copied folders' members go in the folder copies and keep their names.
+     */
     const duplicateIn = (
         ids: readonly K[],
         message: (copies: ReadonlyMap<K, K>) => () => string,
-        folder?: { source: FolderId; copy: FolderId; folders: Folders },
+        folderCopies: ReadonlyMap<FolderId, FolderId> = new Map(),
+        folders: Folders = config.folders(),
     ) => {
         const entries = new Map(config.entries())
         const taken = new Set([...entries.values()].map(({ name }) => name))
+        const kept = new Set([...folderCopies.keys()].flatMap(members))
         const copies = new Map<K, K>()
-        for (const id of ids) {
+        for (const id of entriesInTreeOrder(tree())) {
+            if (!kept.has(id) && !ids.includes(id)) continue
             const value = entries.get(id)
             if (!value) continue
-            const name = folder
+            const name = kept.has(id)
                 ? value.name
                 : copyName(value.name, taken, i18n.value.workspace.manager.copyName)
             taken.add(name)
@@ -135,12 +146,21 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
             config.withData(state.value, entries, config.folders()),
             copies,
         )
-        commit(
-            insertCopiesInTree(tree(), copies, folder),
-            message(copies),
-            folder?.folders ?? config.folders(),
-            base,
-        )
+        commit(insertCopiesInTree(tree(), copies, folderCopies), message(copies), folders, base)
+        return copies
+    }
+
+    /** Adds copies of folders to the map, named as copies, returning them by source. */
+    const copyFolders = (folders: Folders, ids: readonly FolderId[]) => {
+        const names = new Set([...folders.values()].map(({ name }) => name))
+        const copies = new Map<FolderId, FolderId>()
+        for (const id of ids) {
+            const folder = folders.get(id)
+            if (!folder) continue
+            const name = copyName(folder.name, names, i18n.value.workspace.manager.copyName)
+            names.add(name)
+            copies.set(id, addToFolders(folders, name))
+        }
         return copies
     }
 
@@ -310,20 +330,50 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
 
         /** Duplicates a folder with its members and their objects; returns the copy. */
         duplicateFolder(id: FolderId) {
-            const folder = config.folders().get(id)
-            if (!folder) return
+            const name = folderName(id)
             const folders: Folders = new Map(config.folders())
-            const names = new Set([...folders.values()].map(({ name }) => name))
-            const copy = addToFolders(
-                folders,
-                copyName(folder.name, names, i18n.value.workspace.manager.copyName),
-            )
+            const copies = copyFolders(folders, [id])
+            const copy = copies.get(id)
+            if (copy === undefined) return
             duplicateIn(
-                members(id),
-                () => interpolate(() => i18n.value.workspace.folders.duplicated, folder.name),
-                { source: id, copy, folders },
+                [],
+                () => interpolate(() => i18n.value.workspace.folders.duplicated, name),
+                copies,
+                folders,
             )
             return copy
+        },
+
+        /**
+         * Duplicates entries and whole folders as one step, each copy after its
+         * source; returns the entry copies in order and the folder copies.
+         */
+        duplicateMany(ids: readonly K[], folderIds: readonly FolderId[]) {
+            const folders: Folders = new Map(config.folders())
+            const folderCopies = copyFolders(folders, folderIds)
+            const sources = entriesInTreeOrder(tree()).filter((id) => ids.includes(id))
+            if (!sources.length && !folderCopies.size) return { entries: [], folders: [] }
+            const [only] = folderCopies.keys()
+            const message = (copies: ReadonlyMap<K, K>) =>
+                !folderCopies.size && copies.size === 1
+                    ? interpolate(() => config.strings().duplicated, nameOf(sources[0] as K))
+                    : !folderCopies.size
+                      ? interpolate(() => config.strings().duplicatedSelected, `${copies.size}`)
+                      : !sources.length && folderCopies.size === 1 && only !== undefined
+                        ? interpolate(
+                              () => i18n.value.workspace.folders.duplicated,
+                              folderName(only),
+                          )
+                        : interpolate(
+                              () => config.strings().duplicatedSelectedFolders,
+                              `${folderCopies.size}`,
+                              `${copies.size}`,
+                          )
+            const copies = new Set(duplicateIn(sources, message, folderCopies, folders).values())
+            return {
+                entries: entriesInTreeOrder(tree()).filter((id) => copies.has(id)),
+                folders: [...folderCopies.values()],
+            }
         },
 
         /** Removes a folder, keeping its members where they are. */
@@ -394,6 +444,37 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
         /** Drops deleted entries from the tree, keeping folders in place. */
         commitRemoval(ids: ReadonlySet<K>, base: State, message: () => string) {
             commit(removeEntriesFromTree(tree(), ids), message, config.folders(), base)
+        },
+
+        /**
+         * Deletes entries with their objects, and folders, as one step, keeping
+         * at least one entry. A deleted folder's members are among the entries.
+         */
+        removeMany(entryIds: ReadonlySet<K>, folderIds: ReadonlySet<FolderId> = new Set()) {
+            const ids = new Set([...entryIds].filter((id) => config.entries().has(id)))
+            const gone = new Set([...folderIds].filter((id) => config.folders().has(id)))
+            if (!ids.size && !gone.size) return
+            const [only] = gone
+            const name = only === undefined ? '' : folderName(only)
+            const message = !gone.size
+                ? interpolate(() => config.strings().deletedSelected, `${ids.size}`)
+                : gone.size === 1 && only !== undefined && members(only).length === ids.size
+                  ? interpolate(() => i18n.value.workspace.folders.deleted, name)
+                  : interpolate(
+                        () => config.strings().deletedSelectedFolders,
+                        `${gone.size}`,
+                        `${ids.size}`,
+                    )
+            const folders: Folders = new Map(config.folders())
+            for (const id of gone) folders.delete(id)
+            commit(
+                removeEntriesFromTree(tree(), ids).filter(
+                    (item) => item.type !== 'folder' || !gone.has(item.id),
+                ),
+                message,
+                folders,
+                ids.size ? config.removeEntries(ids) : state.value,
+            )
         },
     }
 }

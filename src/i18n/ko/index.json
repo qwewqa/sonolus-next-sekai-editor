@@ -1438,10 +1438,13 @@
       "movedSelectedInto": "선택한 그룹 {0}개를 {1} 폴더로 이동함",
       "movedSelectedOut": "선택한 그룹 {0}개를 폴더에서 꺼냄",
       "deletedSelected": "선택한 그룹 {0}개 삭제됨",
+      "deletedSelectedFolders": "선택한 폴더 {0}개와 그룹 {1}개 삭제됨",
       "deleteSelectedTitle": "그룹 삭제",
       "deleteSelectedMessage": "선택한 그룹 {0}개와 오브젝트 {1}개를 삭제할까요?",
+      "deleteSelectedFoldersMessage": "선택한 폴더 {0}개와 그룹 {1}개, 오브젝트 {2}개를 삭제할까요?",
       "duplicated": "{0} 그룹 복제됨",
-      "duplicatedSelected": "선택한 그룹 {0}개 복제됨"
+      "duplicatedSelected": "선택한 그룹 {0}개 복제됨",
+      "duplicatedSelectedFolders": "선택한 폴더 {0}개와 그룹 {1}개 복제됨"
     },
     "stages": {
       "deleteFolder": "폴더와 스테이지 삭제…",
@@ -1457,10 +1460,13 @@
       "movedSelectedInto": "선택한 스테이지 {0}개를 {1} 폴더로 이동함",
       "movedSelectedOut": "선택한 스테이지 {0}개를 폴더에서 꺼냄",
       "deletedSelected": "선택한 스테이지 {0}개 삭제됨",
+      "deletedSelectedFolders": "선택한 폴더 {0}개와 스테이지 {1}개 삭제됨",
       "deleteSelectedTitle": "스테이지 삭제",
       "deleteSelectedMessage": "선택한 스테이지 {0}개와 오브젝트 {1}개를 삭제할까요?",
+      "deleteSelectedFoldersMessage": "선택한 폴더 {0}개와 스테이지 {1}개, 오브젝트 {2}개를 삭제할까요?",
       "duplicated": "{0} 스테이지 복제됨",
-      "duplicatedSelected": "선택한 스테이지 {0}개 복제됨"
+      "duplicatedSelected": "선택한 스테이지 {0}개 복제됨",
+      "duplicatedSelectedFolders": "선택한 폴더 {0}개와 스테이지 {1}개 복제됨"
     },
     "properties": {
       "sections": "속성 섹션",

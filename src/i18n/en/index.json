@@ -1438,10 +1438,13 @@
             "movedSelectedInto": "Moved {0} group to {1} folder|Moved {0} groups to {1} folder",
             "movedSelectedOut": "Moved {0} group out of folders|Moved {0} groups out of folders",
             "deletedSelected": "Deleted {0} group|Deleted {0} groups",
+            "deletedSelectedFolders": "Deleted selected folders ({0}) and groups ({1})",
             "deleteSelectedTitle": "Delete Groups",
             "deleteSelectedMessage": "Delete the selected groups ({0}) and their objects ({1})?",
+            "deleteSelectedFoldersMessage": "Delete the selected folders ({0}), groups ({1}) and their objects ({2})?",
             "duplicated": "Duplicated {0} group",
-            "duplicatedSelected": "Duplicated {0} group|Duplicated {0} groups"
+            "duplicatedSelected": "Duplicated {0} group|Duplicated {0} groups",
+            "duplicatedSelectedFolders": "Duplicated selected folders ({0}) and groups ({1})"
         },
         "stages": {
             "deleteFolder": "Delete Folder and Stages…",
@@ -1457,10 +1460,13 @@
             "movedSelectedInto": "Moved {0} stage to {1} folder|Moved {0} stages to {1} folder",
             "movedSelectedOut": "Moved {0} stage out of folders|Moved {0} stages out of folders",
             "deletedSelected": "Deleted {0} stage|Deleted {0} stages",
+            "deletedSelectedFolders": "Deleted selected folders ({0}) and stages ({1})",
             "deleteSelectedTitle": "Delete Stages",
             "deleteSelectedMessage": "Delete the selected stages ({0}) and their objects ({1})?",
+            "deleteSelectedFoldersMessage": "Delete the selected folders ({0}), stages ({1}) and their objects ({2})?",
             "duplicated": "Duplicated {0} stage",
-            "duplicatedSelected": "Duplicated {0} stage|Duplicated {0} stages"
+            "duplicatedSelected": "Duplicated {0} stage|Duplicated {0} stages",
+            "duplicatedSelectedFolders": "Duplicated selected folders ({0}) and stages ({1})"
         },
         "properties": {
             "sections": "Properties Sections",

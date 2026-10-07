@@ -37,6 +37,8 @@ export type ManagerStrings = {
     deleteSelectedTitle: string
     /** {0}: the number of entries, {1}: of their objects. */
     deleteSelectedMessage: string
+    /** {0}: the number of folders, {1}: of entries, {2}: of their objects. */
+    deleteSelectedFoldersMessage: string
 }
 
 /** Everything a manager list needs to present and edit one collection. */
@@ -56,8 +58,8 @@ export type ManagerModel<T> = {
     /** Renames an entry; blank or unchanged names change nothing. */
     rename: (id: T, name: string) => void
     remove: (id: T) => void
-    /** Deletes several entries as one step. */
-    removeMany: (ids: ReadonlySet<T>) => void
+    /** Deletes several entries, and folders holding only those, as one step. */
+    removeMany: (ids: ReadonlySet<T>, folders?: ReadonlySet<FolderId>) => void
     openProperties: (id: T) => void
     /** The object field that assigns notes and events to entries. */
     owner: OwnerKey

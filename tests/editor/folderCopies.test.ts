@@ -79,7 +79,7 @@ test('a folder copy follows its folder, holding its members’ copies in order',
             [2, 102],
             [4, 104],
         ]),
-        { source: f(10), copy: f(12) },
+        new Map([[f(10), f(12)]]),
     )
     assert.deepEqual(next, [
         { type: 'entry', id: 1 },
@@ -89,8 +89,32 @@ test('a folder copy follows its folder, holding its members’ copies in order',
         { type: 'folder', id: f(11), members: [] },
     ])
 
-    const empty = insertCopiesInTree(tree, new Map(), { source: f(11), copy: f(13) })
+    const empty = insertCopiesInTree(tree, new Map(), new Map([[f(11), f(13)]]))
     assert.deepEqual(empty.slice(-2), [
+        { type: 'folder', id: f(11), members: [] },
+        { type: 'folder', id: f(13), members: [] },
+    ])
+
+    // Several folders and loose entries in one step.
+    const both = insertCopiesInTree(
+        tree,
+        new Map([
+            [2, 102],
+            [3, 103],
+            [4, 104],
+            [5, 105],
+        ]),
+        new Map([
+            [f(10), f(12)],
+            [f(11), f(13)],
+        ]),
+    )
+    assert.deepEqual(both, [
+        { type: 'entry', id: 1 },
+        { type: 'folder', id: f(10), members: [2, 3, 4] },
+        { type: 'folder', id: f(12), members: [102, 103, 104] },
+        { type: 'entry', id: 5 },
+        { type: 'entry', id: 105 },
         { type: 'folder', id: f(11), members: [] },
         { type: 'folder', id: f(13), members: [] },
     ])

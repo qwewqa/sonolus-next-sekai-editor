@@ -354,7 +354,7 @@ const onRenameBlur = (event: FocusEvent) => {
         ref="row"
         class="manager-row"
         :class="{
-            'manager-row-selected': selecting && checked === true && !heading && !folder,
+            'manager-row-selected': selecting && checked === true && !heading,
             'manager-row-current': current,
             'manager-row-dragging': dragging,
             'manager-row-heading': heading,

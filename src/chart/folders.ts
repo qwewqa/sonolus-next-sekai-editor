@@ -429,13 +429,13 @@ export const folderSections = <K, V extends FolderMember & { name: string }>(
 }
 
 /**
- * Places copies right after their sources, in the same folder; with `folder`,
- * its copy follows it, holding the copies of its members in order.
+ * Places copies right after their sources, in the same folder; each folder in
+ * `folders` is followed by its copy, holding the copies of its members in order.
  */
 export const insertCopiesInTree = <K>(
     tree: readonly FolderTreeItem<K>[],
     copies: ReadonlyMap<K, K>,
-    folder?: { source: FolderId; copy: FolderId },
+    folders: ReadonlyMap<FolderId, FolderId> = new Map(),
 ): FolderTreeItem<K>[] => {
     const withCopies = (ids: readonly K[]) =>
         ids.flatMap((id) => {
@@ -447,14 +447,15 @@ export const insertCopiesInTree = <K>(
             const copy = copies.get(item.id)
             return copy === undefined ? [item] : [item, { type: 'entry', id: copy }]
         }
-        if (folder?.source !== item.id) return [{ ...item, members: withCopies(item.members) }]
+        const folder = folders.get(item.id)
+        if (folder === undefined) return [{ ...item, members: withCopies(item.members) }]
         const members = item.members.flatMap((id) => {
             const copy = copies.get(id)
             return copy === undefined ? [] : [copy]
         })
         return [
             { ...item, members: [...item.members] },
-            { type: 'folder', id: folder.copy, members },
+            { type: 'folder', id: folder, members },
         ]
     })
 }

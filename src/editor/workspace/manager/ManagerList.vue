@@ -141,10 +141,8 @@ const revealRow = (row: HTMLElement) => {
     else if (rect.bottom > bottom) container.scrollTop += rect.bottom - bottom
 }
 
-const entryOfRow = (element: Element | null | undefined) => {
-    const key = parseRowKey(element?.closest<HTMLElement>('[data-row]')?.dataset.row)
-    return key?.type === 'entry' ? key.id : undefined
-}
+const keyOfRow = (element: Element | null | undefined) =>
+    parseRowKey(element?.closest<HTMLElement>('[data-row]')?.dataset.row)
 
 /** Escape and Delete while selecting. */
 const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => {
@@ -167,7 +165,7 @@ const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => 
 /**
  * Up and Down step between the rows' names, from the band's row down, and Home
  * and End reach the ends, as in a tree; Tab still visits every control. With
- * Shift they select the entries passed.
+ * Shift they select the rows passed.
  */
 const onKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement
@@ -182,7 +180,7 @@ const onKeydown = (event: KeyboardEvent) => {
         target.classList.contains('manager-name')
     ) {
         event.preventDefault()
-        setSelection(allIds.value, anchor)
+        setSelection(allIds.value, allFolderIds.value, anchor)
         return
     }
     if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
@@ -202,13 +200,14 @@ const onKeydown = (event: KeyboardEvent) => {
     const row = next.closest<HTMLElement>('[data-row]')
     if (row) revealRow(row)
     if (!event.shiftKey) return
-    const to = entryOfRow(next)
-    const start = entryOfRow(target) ?? to
-    if ((!selecting.value || anchor === undefined) && start !== undefined) {
-        setSelection(selecting.value ? selected.value : [], start)
+    const to = keyOfRow(next)
+    const start = keyOfRow(target) ?? to
+    if ((!selecting.value || anchor === undefined) && start) {
+        if (selecting.value) setSelection(selected.value, selectedFolders.value, start)
+        else setSelection([], [], start)
         selectRange(start)
     }
-    if (to !== undefined) selectRange(to)
+    if (to) selectRange(to)
 }
 
 // Inline actions need room beside a useful share of the name. With a mouse
@@ -348,15 +347,22 @@ const onToggleFolder = (item: FolderItem, soloed: boolean) => {
     else scope.value.setSomeShown(item.members, shownMembers(item).length < item.members.length)
 }
 
-// Selecting entries for bulk actions: view state of this list only.
+// Selecting entries and folders for bulk actions: view state of this list only.
+// A selected folder is a unit with all its members, so deselecting any member
+// deselects it; selecting every member leaves it out.
 
 const selecting = shallowRef(false)
 const selected = shallowRef<ReadonlySet<T>>(new Set())
+const selectedFolders = shallowRef<ReadonlySet<FolderId>>(new Set())
 /** Where ranges start, and the selection they add to. */
-let anchor: T | undefined
-let rangeBase: ReadonlySet<T> = new Set()
+let anchor: RowKey | undefined
+let rangeBase: { entries: ReadonlySet<T>; folders: ReadonlySet<FolderId> } = {
+    entries: new Set(),
+    folders: new Set(),
+}
 
 const allIds = computed(() => entriesInTreeOrder(tree.value))
+const allFolderIds = computed(() => [...folderItems.value.keys()])
 /** Entries on screen, in order: members of collapsed folders are left out. */
 const visibleIds = computed(() =>
     tree.value.flatMap((item) =>
@@ -364,109 +370,189 @@ const visibleIds = computed(() =>
     ),
 )
 const selectedIds = computed(() => allIds.value.filter((id) => selected.value.has(id)))
+const selectedFolderIds = computed(() =>
+    allFolderIds.value.filter((id) => selectedFolders.value.has(id)),
+)
+/** Selected entries outside selected folders: those that move between folders. */
+const looseSelectedIds = computed(() =>
+    selectedIds.value.filter((id) => {
+        const folder = folderOfEntry.value.get(id)
+        return folder === undefined || !selectedFolders.value.has(folder)
+    }),
+)
+const selectionSize = computed(() => selectedIds.value.length + selectedFolderIds.value.length)
 
-const setSelection = (ids: Iterable<T>, from?: T) => {
+/** The folders that are units of these entries: every member among them. */
+const unitsOf = (ids: Iterable<FolderId>, entries: ReadonlySet<T>) =>
+    new Set(
+        [...ids].filter(
+            (id) =>
+                folderItems.value.get(id)?.members.every((member) => entries.has(member)) ?? false,
+        ),
+    )
+
+const setSelection = (ids: Iterable<T>, folderIds: Iterable<FolderId> = [], from?: RowKey) => {
     selecting.value = true
     selected.value = new Set(ids)
+    selectedFolders.value = unitsOf(folderIds, selected.value)
     anchor = from
-    rangeBase = selected.value
+    rangeBase = { entries: selected.value, folders: selectedFolders.value }
 }
 
-const startSelecting = (ids: readonly T[] = []) => {
+const startSelecting = (ids: readonly T[] = [], folderIds: readonly FolderId[] = []) => {
     closeMenu(false)
     renaming.value = undefined
-    setSelection(ids, ids.at(-1))
+    const folder = folderIds.at(-1)
+    const id = ids.at(-1)
+    setSelection(
+        ids,
+        folderIds,
+        folder !== undefined
+            ? { type: 'folder', id: folder }
+            : id === undefined
+              ? undefined
+              : { type: 'entry', id },
+    )
 }
 
 const stopSelecting = () => {
     closeMenu(false)
     selecting.value = false
     selected.value = new Set()
+    selectedFolders.value = new Set()
     anchor = undefined
-    rangeBase = new Set()
+    rangeBase = { entries: new Set(), folders: new Set() }
 }
 
 const toggleSelected = (id: T) => {
     const next = new Set(selected.value)
     if (!next.delete(id)) next.add(id)
-    setSelection(next, id)
+    setSelection(next, selectedFolders.value, { type: 'entry', id })
 }
 
-/** Each entry's row on screen; members of a collapsed folder share its row. */
+/** Selects a folder with its members, or deselects them all. */
+const toggleFolder = (item: FolderItem) => {
+    const add = !selectedFolders.value.has(item.id)
+    const next = new Set(selected.value)
+    const folders = new Set(selectedFolders.value)
+    for (const id of item.members) {
+        if (add) next.add(id)
+        else next.delete(id)
+    }
+    if (add) folders.add(item.id)
+    else folders.delete(item.id)
+    setSelection(next, folders, { type: 'folder', id: item.id })
+}
+
+/** Each row's place on screen; members of a collapsed folder share its row. */
 const rowPlaces = computed(() => {
-    const places = new Map<T, number>()
+    const places = new Map<string, number>()
     let place = 0
     for (const item of tree.value) {
         if (item.type === 'entry') {
-            places.set(item.id, place++)
+            places.set(rowKey(item), place++)
             continue
         }
         const row = place++
+        places.set(rowKey(item), row)
         const open = isFolderExpanded(item.id)
-        for (const id of item.members) places.set(id, open ? place++ : row)
+        for (const id of item.members)
+            places.set(rowKey({ type: 'entry', id }), open ? place++ : row)
     }
     return places
 })
 
-/** Adds the visible entries from the anchor to this one; a new range replaces the last. */
-const selectRange = (id: T) => {
-    const start = anchor ?? focused.value ?? id
-    const from = rowPlaces.value.get(start)
-    const to = rowPlaces.value.get(id)
+const placeOf = (key: RowKey) => rowPlaces.value.get(rowKey(key))
+
+/**
+ * Adds the rows from the anchor to this one, a new range replacing the last.
+ * A folder joins when its row and its shown members all lie in the range.
+ */
+const selectRange = (key: RowKey) => {
+    const target = focused.value
+    const start = anchor ?? (target === undefined ? key : { type: 'entry', id: target })
+    const from = placeOf(start)
+    const to = placeOf(key)
     if (from === undefined || to === undefined) {
-        toggleSelected(id)
+        const item = key.type === 'folder' ? folderItems.value.get(key.id) : undefined
+        if (key.type === 'entry') toggleSelected(key.id)
+        else if (item) toggleFolder(item)
         return
     }
     const low = Math.min(from, to)
     const high = Math.max(from, to)
+    const within = (place: number | undefined) =>
+        place !== undefined && place >= low && place <= high
+    const folders = [...folderItems.value.values()].filter((item) => {
+        const last = item.members.at(-1)
+        return (
+            within(placeOf(item)) &&
+            within(last === undefined ? placeOf(item) : placeOf({ type: 'entry', id: last }))
+        )
+    })
     selecting.value = true
     anchor = start
     selected.value = new Set([
-        ...rangeBase,
-        ...visibleIds.value.filter((other) => {
-            const place = rowPlaces.value.get(other) ?? -1
-            return place >= low && place <= high
-        }),
+        ...rangeBase.entries,
+        ...visibleIds.value.filter((id) => within(placeOf({ type: 'entry', id }))),
+        // A collapsed folder brings its members along.
+        ...folders.flatMap((item) => item.members),
     ])
+    selectedFolders.value = unitsOf(
+        [...rangeBase.folders, ...folders.map((item) => item.id)],
+        selected.value,
+    )
 }
 
-const checkedOf = (ids: readonly T[]) => {
-    const count = ids.filter((id) => selected.value.has(id)).length
-    return count === 0 ? false : count === ids.length ? true : ('mixed' as const)
+/** A folder's check: its own selection, or mixed while only members are. */
+const folderChecked = (item: FolderItem) =>
+    selectedFolders.value.has(item.id)
+        ? true
+        : item.members.some((id) => selected.value.has(id))
+          ? ('mixed' as const)
+          : false
+
+const allChecked = computed(() =>
+    selectionSize.value === 0
+        ? false
+        : selectionSize.value === allIds.value.length + allFolderIds.value.length
+          ? true
+          : ('mixed' as const),
+)
+
+/** Selects every entry and folder, or none when all already are. */
+const toggleAll = () => {
+    if (allChecked.value === true) setSelection([], [], anchor)
+    else setSelection(allIds.value, allFolderIds.value, anchor)
 }
 
-/** Selects all of these, or none when all already are. */
-const toggleMany = (ids: readonly T[]) => {
-    const all = checkedOf(ids) === true
-    const next = new Set(selected.value)
-    for (const id of ids) {
-        if (all) next.delete(id)
-        else next.add(id)
-    }
-    setSelection(next, anchor)
-}
-
-// Entries that disappear, e.g. after an undo, leave the selection.
-watch(allIds, (ids) => {
-    if (![...selected.value].some((id) => !ids.includes(id))) return
-    selected.value = new Set(ids.filter((id) => selected.value.has(id)))
-    rangeBase = new Set([...rangeBase].filter((id) => selected.value.has(id)))
-    if (anchor !== undefined && !ids.includes(anchor)) anchor = undefined
+// Rows that disappear, e.g. after an undo, leave the selection, and folders
+// that gain unselected members stop being units.
+watch(tree, () => {
+    const ids = new Set(allIds.value)
+    const entries = new Set([...selected.value].filter((id) => ids.has(id)))
+    const folders = unitsOf(selectedFolders.value, entries)
+    if (entries.size === selected.value.size && folders.size === selectedFolders.value.size) return
+    selected.value = entries
+    selectedFolders.value = folders
+    const base = new Set([...rangeBase.entries].filter((id) => ids.has(id)))
+    rangeBase = { entries: base, folders: unitsOf(rangeBase.folders, base) }
+    if (anchor && !exists(anchor)) anchor = undefined
 })
 
 const onEntrySelect = (id: T, { range, toggle }: SelectModifiers) => {
-    if (range) selectRange(id)
+    if (range) selectRange({ type: 'entry', id })
     else if (toggle || selecting.value) toggleSelected(id)
     else onSelect(id)
 }
 
 const onFolderSelect = (item: FolderItem, { toggle }: SelectModifiers) => {
-    if (toggle) toggleMany(item.members)
+    if (toggle) toggleFolder(item)
     else void onExpand(item.id, !isFolderExpanded(item.id))
 }
 
 const onBandSelect = () => {
-    if (selecting.value) toggleMany(allIds.value)
+    if (selecting.value) toggleAll()
     else onSelectAll()
 }
 
@@ -484,7 +570,7 @@ const onBulkVisibility = () => {
 }
 
 const selectionCount = computed(() =>
-    label(i18n.value.workspace.manager.selecting, `${selectedIds.value.length}`),
+    label(i18n.value.workspace.manager.selecting, `${selectionSize.value}`),
 )
 
 // The selection bar shortens its count to the number, then drops its visibility
@@ -504,7 +590,7 @@ const measureBar = () => {
     const style = getComputedStyle(count)
     barContext.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const text = Math.ceil(barContext.measureText(selectionCount.value).width)
-    const number = Math.ceil(barContext.measureText(`${selectedIds.value.length}`).width)
+    const number = Math.ceil(barContext.measureText(`${selectionSize.value}`).width)
     const barStyle = getComputedStyle(element)
     const button = round.getBoundingClientRect().width + parseFloat(barStyle.columnGap)
     // Beside Move, Delete and More, less the Done button's own chrome.
@@ -526,30 +612,43 @@ const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.is
 /** Deletes the selection; keyboard focus moves to the row taking the first deleted row's place. */
 const onBulkDelete = async (keyboard = false) => {
     const ids = new Set(selectedIds.value)
-    if (!ids.size) return
+    const folderIds = new Set(selectedFolderIds.value)
+    if (!ids.size && !folderIds.size) return
     const objects = [...ids].reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
-    const confirmed = await showModal(ConfirmModal, {
-        title: () => strings.value.deleteSelectedTitle,
-        message: () => label(strings.value.deleteSelectedMessage, `${ids.size}`, `${objects}`),
-        confirm: () => i18n.value.modals.confirm.delete,
-        destructive: true,
-    })
+    // Empty folders go without asking, as from their own menus.
+    const confirmed =
+        !ids.size ||
+        (await showModal(ConfirmModal, {
+            title: () => strings.value.deleteSelectedTitle,
+            message: () =>
+                folderIds.size
+                    ? label(
+                          strings.value.deleteSelectedFoldersMessage,
+                          `${folderIds.size}`,
+                          `${ids.size}`,
+                          `${objects}`,
+                      )
+                    : label(strings.value.deleteSelectedMessage, `${ids.size}`, `${objects}`),
+            confirm: () => i18n.value.modals.confirm.delete,
+            destructive: true,
+        }))
     if (!confirmed) return
     const index = [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])].findIndex(
         (element) => {
-            const id = entryOfRow(element)
-            return id !== undefined && ids.has(id)
+            const key = keyOfRow(element)
+            return key?.type === 'entry' ? ids.has(key.id) : !!key && folderIds.has(key.id)
         },
     )
-    props.model.removeMany(ids)
+    props.model.removeMany(ids, folderIds)
     stopSelecting()
     if (!keyboard) return
     await nextTick()
     if (!root.value?.contains(document.activeElement)) focusAfterDelete(index, '.manager-name')
 }
 
+/** Moves the selected entries outside selected folders; folders stay put. */
 const onBulkFolder = async (choice: string) => {
-    const ids = new Set(selectedIds.value)
+    const ids = new Set(looseSelectedIds.value)
     if (!ids.size) return
     if (choice === 'new') {
         stopSelecting()
@@ -558,7 +657,7 @@ const onBulkFolder = async (choice: string) => {
     }
     folders.value.placeEntries(ids, choice === 'none' ? undefined : (Number(choice) as FolderId))
     await nextTick()
-    const first = selectedIds.value[0]
+    const first = looseSelectedIds.value[0]
     if (first !== undefined) reveal({ type: 'entry', id: first })
 }
 
@@ -1154,19 +1253,19 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
 const bulkMenuItems = (): ManagerMenuItem[] => {
     const manager = i18n.value.workspace.manager
     const ids = selectedIds.value
-    const none = !ids.length
+    const none = !selectionSize.value
     return [
         {
             key: 'visibility',
             label: bulkHidden.value ? manager.showSelected : manager.hideSelected,
             icon: bulkHidden.value ? VisibleIcon : HiddenIcon,
-            disabled: none,
+            disabled: !ids.length,
         },
         {
             key: 'solo',
             label: isOnlyShown(ids) ? strings.value.showAll : manager.soloSelected,
             icon: VisibleIcon,
-            disabled: none,
+            disabled: !ids.length,
         },
         {
             key: 'select',
@@ -1178,11 +1277,11 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
             key: 'moveToFolder',
             label: i18n.value.workspace.folders.moveTo,
             icon: FolderIcon,
-            disabled: none,
+            disabled: !looseSelectedIds.value.length,
             separated: true,
         },
         { key: 'duplicate', label: manager.duplicateSelected, icon: CopyIcon, disabled: none },
-        checkedOf(allIds.value) === true
+        allChecked.value === true
             ? { key: 'selectNone', label: manager.selectNone, icon: SelectMultipleIcon }
             : { key: 'selectAll', label: manager.selectAll, icon: SelectMultipleIcon },
         {
@@ -1197,7 +1296,7 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
 
 /** Folders for the selection, checked when all of it is in one already. */
 const bulkFolderItems = (): ManagerMenuItem[] => {
-    const holders = new Set(selectedIds.value.map((id) => folderOfEntry.value.get(id)))
+    const holders = new Set(looseSelectedIds.value.map((id) => folderOfEntry.value.get(id)))
     const only = holders.size === 1 ? { folder: [...holders][0] } : undefined
     return [
         {
@@ -1257,9 +1356,15 @@ const onBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders', touch = false
 }
 
 /** A row's own menu while selecting acts on the selection, joined by that row. */
-const onRowBulkMenu = (id: T | undefined, anchor: HTMLElement, touch: boolean) => {
-    if (id !== undefined && !selected.value.has(id)) setSelection([...selected.value, id], id)
-    onBulkMenu(anchor, 'main', touch)
+const onRowBulkMenu = (key: RowKey, button: HTMLElement, touch: boolean) => {
+    if (key.type === 'entry') {
+        if (!selected.value.has(key.id))
+            setSelection([...selected.value, key.id], selectedFolders.value, key)
+    } else if (!selectedFolders.value.has(key.id)) {
+        const item = folderItems.value.get(key.id)
+        if (item) toggleFolder(item)
+    }
+    onBulkMenu(button, 'main', touch)
 }
 
 function closeMenu(restoreFocus: boolean) {
@@ -1325,17 +1430,23 @@ const runBulk = async (action: string, keyboard: boolean) => {
             selectOwned(props.model.owner, new Set(selectedIds.value))
             return
         case 'duplicate': {
-            // The copies become the selection, ready to move together.
-            const copies = folders.value.duplicate(new Set(selectedIds.value))
-            const [first] = copies
-            if (first === undefined) return
-            setSelection(copies, copies.at(-1))
+            // The copies become the selection, ready to move together; a
+            // selected folder is copied whole.
+            const copies = folders.value.duplicateMany(
+                looseSelectedIds.value,
+                selectedFolderIds.value,
+            )
+            const [folder] = copies.folders
+            const [entry] = copies.entries
+            if (folder === undefined && entry === undefined) return
+            setSelection(copies.entries, copies.folders)
             await nextTick()
-            reveal({ type: 'entry', id: first })
+            if (folder !== undefined) reveal({ type: 'folder', id: folder })
+            else if (entry !== undefined) reveal({ type: 'entry', id: entry })
             return
         }
         case 'selectAll':
-            setSelection(allIds.value, anchor)
+            setSelection(allIds.value, allFolderIds.value, anchor)
             return
         case 'selectNone':
             setSelection([])
@@ -1361,9 +1472,8 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
             startRename(key)
             return
         case 'selectMultiple':
-            startSelecting(
-                key.type === 'entry' ? [key.id] : (folderItems.value.get(key.id)?.members ?? []),
-            )
+            if (key.type === 'entry') startSelecting([key.id])
+            else startSelecting(folderItems.value.get(key.id)?.members ?? [], [key.id])
             return
         case 'properties':
             if (key.type === 'entry') props.model.openProperties(key.id)
@@ -1525,14 +1635,14 @@ const entryHandlers = (id: T) => {
             onToggle(id, soloed)
         },
         check: (range: boolean) => {
-            if (range) selectRange(id)
+            if (range) selectRange(key)
             else toggleSelected(id)
         },
         action: (action: string, button: HTMLElement, keyboard: boolean) => {
             onInlineAction(id, action, button, keyboard)
         },
         menu: (anchor: HTMLElement, touch: boolean) => {
-            if (selecting.value) onRowBulkMenu(id, anchor, touch)
+            if (selecting.value) onRowBulkMenu(key, anchor, touch)
             else onMenu(key, anchor, touch)
         },
         renameStart: () => {
@@ -1618,11 +1728,11 @@ const folderEyeLabel = (item: FolderItem) =>
                 :mode-label="i18n.workspace.manager.selectMultiple"
                 :mode-active="selecting"
                 :selecting
-                :checked="checkedOf(allIds)"
+                :checked="allChecked"
                 :check-label="i18n.workspace.manager.selectAll"
                 @select="onBandSelect"
                 @toggle="onToggleAll"
-                @check="toggleMany(allIds)"
+                @check="toggleAll"
                 @mode="onMode"
             />
         </div>
@@ -1702,16 +1812,14 @@ const folderEyeLabel = (item: FolderItem) =>
                                 :dragging="isDragged(item)"
                                 :drop-target="isDropTarget(item.id)"
                                 :no-grip="!hasGrip"
-                                v-bind="
-                                    selectingProps(checkedOf(item.members), folderName(item.id))
-                                "
+                                v-bind="selectingProps(folderChecked(item), folderName(item.id))"
                                 @select="onFolderSelect(item, $event)"
                                 @toggle="onToggleFolder(item, $event)"
-                                @check="toggleMany(item.members)"
+                                @check="toggleFolder(item)"
                                 @menu="
                                     (anchor, touch) =>
                                         selecting
-                                            ? onRowBulkMenu(undefined, anchor, touch)
+                                            ? onRowBulkMenu(item, anchor, touch)
                                             : onMenu(item, anchor, touch)
                                 "
                                 @rename-start="startRename(item)"
@@ -1795,7 +1903,7 @@ const folderEyeLabel = (item: FolderItem) =>
                         class="manager-selection-count truncate pl-1 tabular-nums"
                         :title="barLabel ? undefined : selectionCount"
                         aria-hidden="true"
-                        >{{ barLabel ? selectionCount : selectedIds.length }}</span
+                        >{{ barLabel ? selectionCount : selectionSize }}</span
                     >
                 </button>
                 <span class="sr-only" role="status">{{ selectionCount }}</span>
@@ -1825,7 +1933,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 <button
                     type="button"
                     class="manager-round manager-bulk-move"
-                    :disabled="!selectedIds.length"
+                    :disabled="!looseSelectedIds.length"
                     :aria-label="i18n.workspace.folders.moveTo"
                     :title="i18n.workspace.folders.moveTo"
                     aria-haspopup="menu"
@@ -1836,7 +1944,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 <button
                     type="button"
                     class="manager-round manager-bulk-delete"
-                    :disabled="!selectedIds.length"
+                    :disabled="!selectionSize"
                     :aria-label="i18n.workspace.manager.deleteSelected"
                     :title="i18n.workspace.manager.deleteSelected"
                     @click="onBulkDelete($event.detail === 0)"

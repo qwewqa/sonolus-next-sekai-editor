@@ -1438,10 +1438,13 @@
       "movedSelectedInto": "選択した{0}個のグループを{1}フォルダーに移動しました",
       "movedSelectedOut": "選択した{0}個のグループをフォルダーから出しました",
       "deletedSelected": "選択した{0}個のグループを削除しました",
+      "deletedSelectedFolders": "選択した{0}個のフォルダーと{1}個のグループを削除しました",
       "deleteSelectedTitle": "グループを削除",
       "deleteSelectedMessage": "選択した{0}個のグループと、その{1}個のオブジェクトを削除しますか？",
+      "deleteSelectedFoldersMessage": "選択した{0}個のフォルダーと{1}個のグループ、その{2}個のオブジェクトを削除しますか？",
       "duplicated": "{0} グループを複製しました",
-      "duplicatedSelected": "選択した{0}個のグループを複製しました"
+      "duplicatedSelected": "選択した{0}個のグループを複製しました",
+      "duplicatedSelectedFolders": "選択した{0}個のフォルダーと{1}個のグループを複製しました"
     },
     "stages": {
       "deleteFolder": "フォルダーとステージを削除…",
@@ -1457,10 +1460,13 @@
       "movedSelectedInto": "選択した{0}個のステージを{1}フォルダーに移動しました",
       "movedSelectedOut": "選択した{0}個のステージをフォルダーから出しました",
       "deletedSelected": "選択した{0}個のステージを削除しました",
+      "deletedSelectedFolders": "選択した{0}個のフォルダーと{1}個のステージを削除しました",
       "deleteSelectedTitle": "ステージを削除",
       "deleteSelectedMessage": "選択した{0}個のステージと、その{1}個のオブジェクトを削除しますか？",
+      "deleteSelectedFoldersMessage": "選択した{0}個のフォルダーと{1}個のステージ、その{2}個のオブジェクトを削除しますか？",
       "duplicated": "{0} ステージを複製しました",
-      "duplicatedSelected": "選択した{0}個のステージを複製しました"
+      "duplicatedSelected": "選択した{0}個のステージを複製しました",
+      "duplicatedSelectedFolders": "選択した{0}個のフォルダーと{1}個のステージを複製しました"
     },
     "properties": {
       "sections": "プロパティのセクション",

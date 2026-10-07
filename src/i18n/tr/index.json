@@ -1438,10 +1438,13 @@
       "movedSelectedInto": "Seçilen gruplar ({0}) {1} klasörüne taşındı",
       "movedSelectedOut": "Seçilen gruplar ({0}) klasörlerden çıkarıldı",
       "deletedSelected": "Seçilen gruplar ({0}) silindi",
+      "deletedSelectedFolders": "Seçilen klasörler ({0}) ve gruplar ({1}) silindi",
       "deleteSelectedTitle": "Grupları sil",
       "deleteSelectedMessage": "Seçilen gruplar ({0}) ve nesneleri ({1}) silinsin mi?",
+      "deleteSelectedFoldersMessage": "Seçilen klasörler ({0}), gruplar ({1}) ve nesneleri ({2}) silinsin mi?",
       "duplicated": "{0} grubu çoğaltıldı",
-      "duplicatedSelected": "Seçilen gruplar ({0}) çoğaltıldı"
+      "duplicatedSelected": "Seçilen gruplar ({0}) çoğaltıldı",
+      "duplicatedSelectedFolders": "Seçilen klasörler ({0}) ve gruplar ({1}) çoğaltıldı"
     },
     "stages": {
       "deleteFolder": "Klasörü ve sahneleri sil…",
@@ -1457,10 +1460,13 @@
       "movedSelectedInto": "Seçilen sahneler ({0}) {1} klasörüne taşındı",
       "movedSelectedOut": "Seçilen sahneler ({0}) klasörlerden çıkarıldı",
       "deletedSelected": "Seçilen sahneler ({0}) silindi",
+      "deletedSelectedFolders": "Seçilen klasörler ({0}) ve sahneler ({1}) silindi",
       "deleteSelectedTitle": "Sahneleri sil",
       "deleteSelectedMessage": "Seçilen sahneler ({0}) ve nesneleri ({1}) silinsin mi?",
+      "deleteSelectedFoldersMessage": "Seçilen klasörler ({0}), sahneler ({1}) ve nesneleri ({2}) silinsin mi?",
       "duplicated": "{0} sahnesi çoğaltıldı",
-      "duplicatedSelected": "Seçilen sahneler ({0}) çoğaltıldı"
+      "duplicatedSelected": "Seçilen sahneler ({0}) çoğaltıldı",
+      "duplicatedSelectedFolders": "Seçilen klasörler ({0}) ve sahneler ({1}) çoğaltıldı"
     },
     "properties": {
       "sections": "Özellik bölümleri",

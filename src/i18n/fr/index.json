@@ -1438,10 +1438,13 @@
       "movedSelectedInto": "Groupe sélectionné ({0}) déplacé dans le dossier {1}|Groupes sélectionnés ({0}) déplacés dans le dossier {1}",
       "movedSelectedOut": "Groupe sélectionné ({0}) sorti des dossiers|Groupes sélectionnés ({0}) sortis des dossiers",
       "deletedSelected": "Groupe sélectionné ({0}) supprimé|Groupes sélectionnés ({0}) supprimés",
+      "deletedSelectedFolders": "Dossiers ({0}) et groupes ({1}) sélectionnés supprimés",
       "deleteSelectedTitle": "Supprimer les groupes",
       "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?",
+      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les groupes ({1}) et leurs objets ({2}) ?",
       "duplicated": "Groupe {0} dupliqué",
-      "duplicatedSelected": "Groupe sélectionné ({0}) dupliqué|Groupes sélectionnés ({0}) dupliqués"
+      "duplicatedSelected": "Groupe sélectionné ({0}) dupliqué|Groupes sélectionnés ({0}) dupliqués",
+      "duplicatedSelectedFolders": "Dossiers ({0}) et groupes ({1}) sélectionnés dupliqués"
     },
     "stages": {
       "deleteFolder": "Supprimer le dossier et ses scènes…",
@@ -1457,10 +1460,13 @@
       "movedSelectedInto": "Scène sélectionnée ({0}) déplacée dans le dossier {1}|Scènes sélectionnées ({0}) déplacées dans le dossier {1}",
       "movedSelectedOut": "Scène sélectionnée ({0}) sortie des dossiers|Scènes sélectionnées ({0}) sorties des dossiers",
       "deletedSelected": "Scène sélectionnée ({0}) supprimée|Scènes sélectionnées ({0}) supprimées",
+      "deletedSelectedFolders": "Dossiers ({0}) et scènes ({1}) sélectionnés supprimés",
       "deleteSelectedTitle": "Supprimer les scènes",
       "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?",
+      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les scènes ({1}) et leurs objets ({2}) ?",
       "duplicated": "Scène {0} dupliquée",
-      "duplicatedSelected": "Scène sélectionnée ({0}) dupliquée|Scènes sélectionnées ({0}) dupliquées"
+      "duplicatedSelected": "Scène sélectionnée ({0}) dupliquée|Scènes sélectionnées ({0}) dupliquées",
+      "duplicatedSelectedFolders": "Dossiers ({0}) et scènes ({1}) sélectionnés dupliqués"
     },
     "properties": {
       "sections": "Sections des propriétés",

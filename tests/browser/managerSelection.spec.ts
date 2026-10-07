@@ -20,10 +20,13 @@ test.afterEach(async ({ page }) => {
 
 type Seed = [name: string, folder?: string][]
 
-/** Loads the notes fixture with these groups, in folders by name; the first two own the notes. */
-const seedGroups = (page: Page, groups: Seed) =>
+/**
+ * Loads the notes fixture with these groups, in folders by name; the first two
+ * own the notes. Empty folders go at the end.
+ */
+const seedGroups = (page: Page, groups: Seed, emptyFolders: string[] = []) =>
     page.evaluate(
-        ({ groups }) => {
+        ({ groups, emptyFolders }) => {
             const { history, view, fixtures, settings } = window.editorTest
             const chart = structuredClone(fixtures.notes)
             chart.isDynamicStages = true
@@ -39,8 +42,12 @@ const seedGroups = (page: Page, groups: Seed) =>
                     folder === undefined ? { name } : { name, folderId: folderOf(folder) as never },
                 ]),
             )
+            for (const name of emptyFolders) folderOf(name)
             chart.groupFolders = new Map(
-                [...folderIds].map(([name, id]) => [id as never, { name, index: 0 }]),
+                [...folderIds].map(([name, id]) => [
+                    id as never,
+                    { name, index: emptyFolders.includes(name) ? Infinity : 0 },
+                ]),
             )
             history.resetState(false, chart, 0, 'selection.json')
             view.groupId = undefined
@@ -49,7 +56,7 @@ const seedGroups = (page: Page, groups: Seed) =>
             view.stageVisibility = new Map()
             settings.showGroups = true
         },
-        { groups },
+        { groups, emptyFolders },
     )
 
 /** The groups as a compact tree: `name` or `[Folder: a b]`. */
@@ -190,40 +197,68 @@ test('Ctrl-click and Shift-click select without changing the target; a plain cli
     expect(await historyLength(page)).toBe(0)
 })
 
-test('ranges skip collapsed folders; folder and band checks select their entries', async ({
+test('ranges take in the folders they span; folder and band checks select folders whole', async ({
     page,
 }) => {
     await seedGroups(page, seed)
     const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const verse = row(list, 'Verse').locator('.manager-check')
     await row(list, 'Verse').locator('.manager-name').click()
     await expect(row(list, 'Verse').locator('.manager-name')).toHaveAttribute(
         'aria-expanded',
         'false',
     )
+    // A collapsed folder in a range comes whole, with its members.
     await nameButton(list, 'Other').click({ modifiers: ['ControlOrMeta'] })
     await nameButton(list, 'Drums').click({ modifiers: ['Shift'] })
-    await row(list, 'Verse').locator('.manager-name').click()
-    expect(await checked(list)).toEqual(['Other', 'Bass', 'Drums'])
-
-    const verse = row(list, 'Verse').locator('.manager-check')
-    await expect(verse).toHaveAttribute('aria-checked', 'false')
-    await verse.click()
-    expect(await checked(list)).toEqual(['Other', 'Lead', 'Fill', 'Bass', 'Drums'])
     await expect(verse).toHaveAttribute('aria-checked', 'true')
-    await nameButton(list, 'Lead').click()
-    await expect(verse).toHaveAttribute('aria-checked', 'mixed')
+    await row(list, 'Verse').locator('.manager-name').click()
+    expect(await checked(list)).toEqual(['Other', 'Lead', 'Fill', 'Bass', 'Drums'])
+    await expect(bar).toContainText('6 Selected')
     // The folder's name still opens and closes it.
     await expect(row(list, 'Verse').locator('.manager-name')).toHaveAttribute(
         'aria-expanded',
         'true',
     )
 
+    // Deselecting a member deselects the folder; checking it again leaves the folder out.
+    await nameButton(list, 'Lead').click()
+    await expect(verse).toHaveAttribute('aria-checked', 'mixed')
+    await expect(bar).toContainText('4 Selected')
+    await nameButton(list, 'Lead').click()
+    await expect(verse).toHaveAttribute('aria-checked', 'mixed')
+    await expect(bar).toContainText('5 Selected')
+    // The folder's check selects and deselects it with its members.
+    await verse.click()
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    await expect(bar).toContainText('6 Selected')
+    await verse.click()
+    await expect(verse).toHaveAttribute('aria-checked', 'false')
+    expect(await checked(list)).toEqual(['Other', 'Bass', 'Drums'])
+    // So does Ctrl+click on its name.
+    await row(list, 'Verse')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    await row(list, 'Verse')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await expect(verse).toHaveAttribute('aria-checked', 'false')
+
     const all = list.locator('.manager-all .manager-check')
     await expect(all).toHaveAttribute('aria-checked', 'mixed')
     await all.click()
+    await expect(all).toHaveAttribute('aria-checked', 'true')
     expect(await checked(list)).toHaveLength(7)
+    await expect(row(list, 'Outro').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'true',
+    )
+    await expect(bar).toContainText('9 Selected')
     await list.locator('.manager-all .manager-name').click()
     expect(await checked(list)).toEqual([])
+    await expect(bar).toContainText('0 Selected')
     // The band's Select button stops selecting too.
     const mode = list.getByRole('button', { name: 'Select Multiple' })
     await expect(mode).toHaveAttribute('aria-pressed', 'true')
@@ -242,8 +277,8 @@ test('a range from an entry in a collapsed folder starts at the folder', async (
     await verse.locator('.manager-name').click()
     await nameButton(list, 'Drums').click({ modifiers: ['Shift'] })
     expect(await checked(list)).toEqual(['Bass', 'Drums'])
-    await expect(bar).toContainText('3 Selected')
-    await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'mixed')
+    await expect(bar).toContainText('5 Selected')
+    await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'true')
     await bar.getByRole('button', { name: 'Stop Selecting' }).click()
 
     // From the target the folder stands in for.
@@ -252,8 +287,129 @@ test('a range from an entry in a collapsed folder starts at the folder', async (
     await verse.locator('.manager-name').click()
     await nameButton(list, 'Default').click({ modifiers: ['Shift'] })
     expect(await checked(list)).toEqual(['Default', 'Other'])
-    await expect(bar).toContainText('2 Selected')
+    await expect(bar).toContainText('5 Selected')
     expect((await state(page)).focus).toBe('Lead')
+})
+
+test('checked folders delete with their members, empty ones too, and undo restores them', async ({
+    page,
+}) => {
+    await seedGroups(page, seed, ['Spare'])
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const dialog = page.locator('dialog')
+    const before = 'Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad] [Spare:]'
+    expect(await tree(page)).toBe(before)
+    await row(list, 'Verse').locator('.manager-name').click()
+    await list.getByRole('button', { name: 'Select Multiple' }).click()
+    // An empty folder is checkable, and counts.
+    const spare = row(list, 'Spare').locator('.manager-check')
+    await expect(spare).toBeEnabled()
+    await spare.click()
+    await expect(spare).toHaveAttribute('aria-checked', 'true')
+    await row(list, 'Verse').locator('.manager-check').click()
+    await nameButton(list, 'Default').click()
+    await expect(bar).toContainText('5 Selected')
+
+    await bar.getByRole('button', { name: 'Delete Selected…' }).click()
+    await expect(dialog).toContainText(
+        'Delete the selected folders (2), groups (3) and their objects (21)?',
+    )
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click()
+    expect(await tree(page)).toBe('Other Bass Drums [Outro: Pad]')
+    await expect(bar).toHaveCount(0)
+    await expect(page.getByText('Deleted selected folders (2) and groups (3)')).toBeVisible()
+    expect(await historyLength(page)).toBe(1)
+    await undo(page)
+    expect(await tree(page)).toBe(before)
+    // Collapsed as it was.
+    await expect(row(list, 'Verse').locator('.manager-name')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+    )
+
+    // Empty folders alone go without a prompt.
+    await list.getByRole('button', { name: 'Select Multiple' }).click()
+    await spare.click()
+    await expect(bar).toContainText('1 Selected')
+    await bar.getByRole('button', { name: 'Delete Selected…' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+    await undo(page)
+    expect(await tree(page)).toBe(before)
+})
+
+test('Move to Folder moves the entries outside checked folders; folders stay put', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const move = bar.getByRole('button', { name: 'Move to Folder…' })
+    await row(list, 'Verse')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await expect(move).toBeDisabled()
+    await nameButton(list, 'Bass').click()
+    await move.click()
+    await page.getByRole('menu').getByRole('menuitemradio', { name: 'Outro' }).click()
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Drums [Outro: Pad Bass]')
+    await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'true',
+    )
+
+    // Visibility and Select Objects act on the members.
+    await nameButton(list, 'Default').click()
+    await bar.getByRole('button', { name: 'Hide Selected' }).click()
+    expect((await state(page)).hidden).toEqual(['Default', 'Lead', 'Fill', 'Bass'])
+    await bar.getByRole('button', { name: 'More Actions for Selection' }).click()
+    await page.getByRole('menuitem', { name: 'Show Selected' }).click()
+    await bar.getByRole('button', { name: 'More Actions for Selection' }).click()
+    await page.getByRole('menuitem', { name: 'Select Objects' }).click()
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(21)
+})
+
+test('a right-click on a folder while selecting adds the folder before its menu', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    await row(list, 'Verse').locator('.manager-name').click({ button: 'right' })
+    await expect(page.getByRole('menu')).toHaveAccessibleName('More Actions for Selection')
+    await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'true',
+    )
+    await expect(list.locator('.manager-selection-bar')).toContainText('4 Selected')
+})
+
+test('the dialog fallback selects and deletes folders as the panel does', async ({ page }) => {
+    await seedGroups(page, seed, ['Spare'])
+    await page.evaluate(() => {
+        window.editorTest.settings.groupsPosition = 'disabled'
+    })
+    await page.keyboard.press('e')
+    const manager = page.locator('dialog')
+    await row(manager, 'Outro')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await row(manager, 'Spare').locator('.manager-check').click()
+    await expect(manager.locator('.manager-selection-bar')).toContainText('3 Selected')
+    await manager.getByRole('button', { name: 'Delete Selected…' }).click()
+    await expect(manager.last()).toContainText(
+        'Delete the selected folders (2), groups (1) and their objects (0)?',
+    )
+    await manager.last().getByRole('button', { name: 'Delete', exact: true }).click()
+    await expect(manager).toHaveCount(1)
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums')
+    await undo(page)
+    expect(await tree(page)).toBe(
+        'Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad] [Spare:]',
+    )
 })
 
 test('the selection moves to a folder, out of folders and into a new folder in one step each', async ({
@@ -357,12 +513,19 @@ test('the keyboard extends, selects all, deletes and stops selecting', async ({ 
     await nameButton(list, 'Other').focus()
     await page.keyboard.press('Shift+ArrowDown')
     await page.keyboard.press('Shift+ArrowDown')
-    // Passing the folder's row selects nothing more.
+    // A folder's row joins once the range covers its members too.
+    const verse = row(list, 'Verse').locator('.manager-check')
     expect(await checked(list)).toEqual(['Other', 'Lead'])
+    await expect(verse).toHaveAttribute('aria-checked', 'mixed')
     await expect(nameButton(list, 'Lead')).toBeFocused()
+    await page.keyboard.press('Shift+ArrowDown')
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    await expect(list.locator('.manager-selection-bar')).toContainText('4 Selected')
+    await page.keyboard.press('Shift+ArrowUp')
     await page.keyboard.press('Shift+ArrowUp')
     await page.keyboard.press('Shift+ArrowUp')
     expect(await checked(list)).toEqual(['Other'])
+    await expect(verse).toHaveAttribute('aria-checked', 'false')
     // Space toggles the focused name.
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('ArrowDown')
@@ -372,9 +535,12 @@ test('the keyboard extends, selects all, deletes and stops selecting', async ({ 
 
     await page.keyboard.press('ControlOrMeta+a')
     expect(await checked(list)).toHaveLength(7)
+    await expect(list.locator('.manager-selection-bar')).toContainText('9 Selected')
     await page.keyboard.press('Delete')
     const dialog = page.locator('dialog')
-    await expect(dialog).toContainText('Delete the selected groups (7)')
+    await expect(dialog).toContainText(
+        'Delete the selected folders (2), groups (7) and their objects (42)?',
+    )
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
 
@@ -548,6 +714,16 @@ for (const [device, viewport] of [
             await longPress(nameButton(list, 'Default'))
             await page.getByRole('menuitem', { name: 'Select Multiple' }).tap()
             expect(await checked(list)).toEqual(['Default'])
+            // A folder joins whole.
+            await longPress(row(list, 'Verse').locator('.manager-name'))
+            await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
+                'aria-checked',
+                'true',
+            )
+            await expect(list.locator('.manager-selection-bar')).toContainText('4 Selected')
+            await page.keyboard.press('Escape')
+            await row(list, 'Verse').locator('.manager-check').tap()
+            await expect(list.locator('.manager-selection-bar')).toContainText('1 Selected')
 
             await longPress(nameButton(list, 'Other'))
             const menu = page.getByRole('menu')

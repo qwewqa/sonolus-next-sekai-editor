@@ -428,18 +428,46 @@ test('a folder duplicates after itself with copies of its members, keeping their
     )
 })
 
-test('a whole folder checked with other entries duplicates entries, not the folder', async ({
-    page,
-}) => {
+test('a checked folder duplicates whole beside other entries, in one step', async ({ page }) => {
     await seed(page)
     const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
     await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
     await row(list, 'Verse').locator('.manager-check').click()
     expect(await checked(list)).toEqual(['Lead', 'Fill', 'Bass'])
-    await list.locator('.manager-selection-bar .manager-bulk-more').click()
+    await expect(bar).toContainText('4 Selected')
+    await bar.locator('.manager-bulk-more').click()
+    await page.getByRole('menuitem', { name: 'Duplicate Selected' }).click()
+    // As from the folder's menu: the folder takes a copy name, its members keep theirs.
+    expect(await tree(page)).toBe(
+        'Default Other [Verse: Lead Fill] [Verse (2): Lead Fill] Bass Bass (2) Drums [Outro: Pad]',
+    )
+    expect(await historyLength(page)).toBe(1)
+    // The copies are the selection, the folder copy as a whole.
+    await expect(row(list, 'Verse (2)').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'true',
+    )
+    await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'false',
+    )
+    await expect(bar).toContainText('4 Selected')
+    await undo(page)
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+    await expect(bar).toContainText('0 Selected')
+
+    // A folder with only some members checked copies those members alone.
+    await row(list, 'Verse').locator('.manager-check').click()
+    await nameButton(list, 'Fill').click()
+    await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
+        'aria-checked',
+        'mixed',
+    )
+    await bar.locator('.manager-bulk-more').click()
     await page.getByRole('menuitem', { name: 'Duplicate Selected' }).click()
     expect(await tree(page)).toBe(
-        'Default Other [Verse: Lead Lead (2) Fill Fill (2)] Bass Bass (2) Drums [Outro: Pad]',
+        'Default Other [Verse: Lead Lead (2) Fill] Bass Drums [Outro: Pad]',
     )
 })
 
