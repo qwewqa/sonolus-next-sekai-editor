@@ -2,12 +2,14 @@ import { defineConfig } from '@playwright/test'
 
 // Parallel local runs can each choose a free development server port.
 const port = process.env.PLAYWRIGHT_PORT ?? '5210'
+const timingSpecs = ['renderPacing.spec.ts']
 
 export default defineConfig({
     testDir: './tests/browser',
     testMatch: '**/*.spec.ts',
-    fullyParallel: false,
-    workers: 1,
+    fullyParallel: true,
+    // More workers don't help: the dev server is the limit. Concurrent runs should pass --workers.
+    workers: '25%',
     forbidOnly: !!process.env.CI,
     timeout: 30_000,
     reporter: 'list',
@@ -25,6 +27,12 @@ export default defineConfig({
             args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
         },
     },
+    projects: [
+        { name: 'chromium', testIgnore: timingSpecs },
+        // Measures real frame timing, so it runs alone after the parallel batch;
+        // add --no-deps to run it by itself.
+        { name: 'timing', testMatch: timingSpecs, dependencies: ['chromium'], workers: 1 },
+    ],
     webServer: {
         command: `npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
         url: `http://127.0.0.1:${port}`,
