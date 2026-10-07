@@ -19,7 +19,8 @@ const title = computed(() => commands[props.name].title())
 
 // Tools float over the dark canvas (accent focus ring) and also sit in the light
 // Settings dialog (fg ring). Labelled flyout items get a 44px target on touch,
-// and drop the shortcut hints there, as the context menu does.
+// and drop the shortcut hints there, as the context menu does. High contrast
+// leaves SVG fills alone, so monochrome icons take ButtonText.
 const shortcut = computed(() =>
     isCoarsePointer.value ? undefined : formatShortcut(settings.keyboardShortcuts[props.name]),
 )
@@ -27,7 +28,7 @@ const shortcut = computed(() =>
 
 <template>
     <button
-        class="flex items-center rounded-full p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
+        class="flex items-center rounded-full p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent forced-colors:fill-[ButtonText] [dialog_&]:focus-visible:ring-fg"
         :class="[
             pressed
                 ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:outline forced-colors:outline-2 forced-colors:outline-offset-2 forced-colors:outline-[color:CanvasText]'

@@ -35,8 +35,10 @@ const type = computed(() => {
 <template>
     <svg viewBox="-0.55 -0.55 1.1 1.1" :style="noteStyleVariables(properties.noteStyle)">
         <component :is="iconComponents[type]" :properties />
+        <!-- Stays dark on the note's light body in high contrast. -->
         <text
             v-if="index !== undefined"
+            class="forced-colors:fill-on-accent"
             x="0"
             y="0"
             font-size="0.5"

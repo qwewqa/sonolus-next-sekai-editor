@@ -184,3 +184,44 @@ test('the toolbar marks the tool in use', async ({ page }) => {
     expect(await outline(pressed)).toMatchObject({ style: 'solid', width: '2px' })
     expect((await outline(unpressed)).style).toBe('none')
 })
+
+const systemColor = (page: Page, name: string) =>
+    page.evaluate((name) => {
+        const probe = document.createElement('span')
+        probe.style.color = name
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    }, name)
+
+const fills = (locator: Locator, selector: string) =>
+    locator.evaluate(
+        (element, selector) =>
+            [...element.querySelectorAll(selector)].map((shape) => getComputedStyle(shape).fill),
+        selector,
+    )
+
+test('monochrome tool icons take the button text color', async ({ page }) => {
+    // High contrast leaves SVG fills alone, so dark icons would vanish on black.
+    // Fills transition, so they settle after the scheme changes.
+    await page.emulateMedia({ forcedColors: 'active', colorScheme: 'dark' })
+    const text = await systemColor(page, 'ButtonText')
+    const toolbar = page.locator('[data-editor-toolbar]')
+    for (const title of ['Open', 'Undo', 'Select', 'Help'])
+        await expect
+            .poll(() => fills(toolbar.getByTitle(title, { exact: true }), 'path'))
+            .toEqual([text])
+
+    // Note pictograms keep their colours, and the preset number stays dark on them.
+    await toolbar.getByTitle('Note', { exact: true }).hover()
+    const preset = toolbar.getByTitle('Note #1', { exact: true })
+    await expect(preset).toBeVisible()
+    expect(await fills(preset, 'rect')).not.toContain(text)
+    expect(await fills(preset, 'text')).toEqual(['rgb(48, 51, 77)'])
+    await page.mouse.move(0, 0)
+
+    await page.keyboard.press(',')
+    const add = page.getByRole('dialog').getByRole('button', { name: 'Add Tool' }).first()
+    await expect.poll(() => fills(add, 'path')).toEqual([text])
+})

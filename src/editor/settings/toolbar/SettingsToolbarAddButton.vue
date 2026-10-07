@@ -5,7 +5,7 @@ import { i18n } from '../../../i18n'
 <template>
     <button
         type="button"
-        class="flex size-8 items-center justify-center rounded-full shadow-md shadow-transparent transition-colors hover:bg-button hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:fill-on-accent [@media(pointer:coarse)]:size-11"
+        class="flex size-8 items-center justify-center rounded-full shadow-md shadow-transparent transition-colors hover:bg-button hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:fill-on-accent forced-colors:fill-[ButtonText] [@media(pointer:coarse)]:size-11"
         :aria-label="i18n.settings.toolbar.add"
         :title="i18n.settings.toolbar.add"
     >
