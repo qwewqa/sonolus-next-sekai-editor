@@ -48,9 +48,14 @@ let returnFocus: HTMLElement | null = null
 // A menu opened by pointer focuses itself, so no item starts out highlighted;
 // one opened from the keyboard focuses its first item.
 let pointerInput = false
+// Firefox for Android reports a plain MouseEvent click, so the last press tells touch apart.
+let lastPointerType = ''
 const onInput = (event: Event) => {
     pointerInput = event.type === 'pointerdown'
+    if (event instanceof PointerEvent) lastPointerType = event.pointerType
 }
+const isTouch = (event: MouseEvent) =>
+    (event instanceof PointerEvent ? event.pointerType : lastPointerType) === 'touch'
 
 const actions = computed(() => {
     const selection = selectedEntities.value
@@ -142,8 +147,8 @@ const dismiss = (restoreFocus = false) => {
     if (restoreFocus) returnFocus?.focus({ preventScroll: true })
 }
 
-// A click has a detail; keys activate with none.
-const execute = (name: ActionName, byKeyboard = true) => {
+// A click has a detail; keys activate with none. A finger tap focuses no field.
+const execute = (name: ActionName, byKeyboard = true, byTouch = false) => {
     const point = contextMenu.value
     dismiss(true)
     if (name === 'editElevations') {
@@ -157,8 +162,7 @@ const execute = (name: ActionName, byKeyboard = true) => {
                     yToValidBeat(point.y),
             )
         }
-    } else if (name === 'editProperties')
-        void focusSelectionProperties(byKeyboard || !isCoarsePointer.value)
+    } else if (name === 'editProperties') void focusSelectionProperties(byKeyboard || !byTouch)
     else if (name === 'selectSlideNotes') {
         const targets = modifyEntities(selectedEntities.value, { ctrl: false, shift: true })
         replaceState({
@@ -307,7 +311,7 @@ onUnmounted(() => {
                             tabindex="-1"
                             class="popup-item"
                             :class="{ 'text-danger': name === 'deleteSelection' }"
-                            @click="execute(name, $event.detail === 0)"
+                            @click="execute(name, $event.detail === 0, isTouch($event))"
                         >
                             <component
                                 :is="icon.is"

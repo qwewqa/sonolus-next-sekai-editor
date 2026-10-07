@@ -67,11 +67,38 @@ test.describe('on a touch screen', () => {
 
     test('a tap focuses the heading, so no on-screen keyboard opens', async ({ page }) => {
         expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
-        await (await openMenu(page, true)).click()
+        await (await openMenu(page, true)).tap()
         await expect(page.getByRole('menu')).toHaveCount(0)
         await expect
             .poll(() => focused(page))
             .toEqual({ tag: 'h3', inSelection: true, section: 'selection' })
         await expect(page.locator(':focus')).toBeInViewport()
     })
+
+    // A tablet with a mouse.
+    test('a mouse click still focuses the first field', async ({ page }) => {
+        await (await openMenu(page, true)).click()
+        await expectField(page)
+    })
+})
+
+// A touchscreen laptop: a fine primary pointer, tapped with a finger.
+test('a finger tap with a fine primary pointer focuses the heading', async ({ page }) => {
+    const item = await openMenu(page, true)
+    await item.evaluate((element) => {
+        element.dispatchEvent(
+            new PointerEvent('pointerdown', {
+                pointerType: 'touch',
+                bubbles: true,
+                isPrimary: true,
+            }),
+        )
+        element.dispatchEvent(
+            new PointerEvent('click', { pointerType: 'touch', bubbles: true, detail: 1 }),
+        )
+    })
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await expect
+        .poll(() => focused(page))
+        .toEqual({ tag: 'h3', inSelection: true, section: 'selection' })
 })
