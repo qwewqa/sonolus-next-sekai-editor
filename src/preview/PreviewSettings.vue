@@ -345,7 +345,7 @@ const onPlacementChange = () => {
                         <label
                             v-for="[label, value] in previewAspectRatios"
                             :key="label"
-                            class="relative min-w-0 flex-1"
+                            class="relative min-w-0 flex-1 rounded-full has-[:checked]:outline has-[:checked]:outline-1 has-[:checked]:outline-transparent"
                         >
                             <input
                                 v-model="settings.previewAspectRatio"
@@ -355,7 +355,7 @@ const onPlacementChange = () => {
                                 :value
                             />
                             <span
-                                class="flex h-9 items-center justify-center rounded-full tabular-nums transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-active:bg-accent peer-active:text-on-accent"
+                                class="flex h-9 items-center justify-center rounded-full tabular-nums transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-transparent peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-active:bg-accent peer-active:text-on-accent forced-colors:peer-focus-visible:outline-[color:Highlight]"
                             >
                                 {{ label }}
                             </span>

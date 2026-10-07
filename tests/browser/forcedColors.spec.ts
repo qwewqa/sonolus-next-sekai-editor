@@ -65,3 +65,27 @@ test('Selection chips show keyboard focus', async ({ page }) => {
         color: await highlight(page),
     })
 })
+
+const expectSegments = async (group: Locator) => {
+    const page = group.page()
+    const checked = group.locator('label:has(input:checked)')
+    const unchecked = group.locator('label:not(:has(input:checked))').first()
+    await expect(checked).toHaveCount(1)
+    expect(await outline(checked)).toMatchObject({ style: 'solid', width: '1px' })
+    expect((await outline(unchecked)).style).toBe('none')
+    // Focus outlines the segment itself, so a focused checked one shows both.
+    const radio = checked.locator('input')
+    await focus(radio)
+    expect(await outline(radio.locator('+ span'))).toEqual({
+        style: 'solid',
+        width: '2px',
+        color: await highlight(page),
+    })
+    expect(await outline(checked)).toMatchObject({ style: 'solid', width: '1px' })
+}
+
+test('segmented controls show the checked choice and keyboard focus', async ({ page }) => {
+    await expectSegments(panel(page).getByRole('radiogroup', { name: 'Snapping', exact: true }))
+    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    await expectSegments(page.getByRole('radiogroup', { name: 'Aspect ratio' }))
+})

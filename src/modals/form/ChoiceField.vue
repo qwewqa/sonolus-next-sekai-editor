@@ -60,8 +60,11 @@ const listGlyph = computed((): OptionGlyph<T> | undefined => {
     return glyph && ((value) => h(Fragment, glyph({ value }) as never))
 })
 
+// High contrast paints only the outlines: the segment's shows focus, its label's the checked one.
 const segment =
-    'flex h-7 items-center justify-center rounded-full px-2 transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-active:bg-accent peer-active:text-on-accent'
+    'flex h-7 items-center justify-center rounded-full px-2 transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-transparent peer-active:bg-accent peer-active:text-on-accent forced-colors:peer-focus-visible:outline-[color:Highlight]'
+const choice =
+    'rounded-full has-[:checked]:outline has-[:checked]:outline-1 has-[:checked]:outline-transparent'
 const input = 'peer absolute inset-0 size-full cursor-pointer opacity-0 focus-visible:outline-none'
 
 // Both names show side by side when they fit in full; otherwise a select.
@@ -159,7 +162,12 @@ watch(
             <span v-if="isMixed" :id="`${id}-mixed`" class="sr-only">{{
                 i18n.modals.form.mixed
             }}</span>
-            <label v-if="optional && unsetChoice" class="relative w-8 flex-none" :title="notSet">
+            <label
+                v-if="optional && unsetChoice"
+                class="relative w-8 flex-none"
+                :class="choice"
+                :title="notSet"
+            >
                 <input
                     v-model="modelValue"
                     :class="input"
@@ -176,6 +184,7 @@ watch(
                 v-for="([name, value], index) in options"
                 :key="index"
                 class="relative min-w-0 flex-auto"
+                :class="choice"
                 :title="name"
             >
                 <input
