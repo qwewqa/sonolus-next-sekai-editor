@@ -37,7 +37,7 @@
             border: none;
             border-radius: 0.5rem;
             outline: 1px solid theme('colors.fg / 10%');
-            background-color: theme('colors.modal');
+            background-color: theme('colors.popup');
             color: theme('colors.fg');
             font-size: 0.875rem;
             line-height: 1.25rem;
@@ -95,13 +95,13 @@
 
         @media (hover: hover) {
             html:not([data-native-lists]) select option:enabled:hover {
-                background-color: theme('colors.button');
+                background-color: theme('colors.popup-hover');
             }
         }
 
         html:not([data-native-lists]) select option:focus-visible {
             outline: 2px solid theme('colors.fg');
-            background-color: theme('colors.button');
+            background-color: theme('colors.popup-hover');
         }
 
         html:not([data-native-lists]) select option:enabled:active {

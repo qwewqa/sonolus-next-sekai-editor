@@ -18,6 +18,10 @@ module.exports = {
                 // sticky bands never show content scrolling beneath.
                 'header-hover': '#d7d7e3',
                 modal: '#e9ebef',
+                // Menus and select lists, and their row under the pointer or focus.
+                popup: '#fff',
+                // The modal grey.
+                'popup-hover': '#e9ebef',
                 preview: '#5b5c7c',
                 // Destructive actions and errors (6.47:1 on white).
                 danger: '#b91c1c',

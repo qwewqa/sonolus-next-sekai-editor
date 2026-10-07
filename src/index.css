@@ -92,7 +92,7 @@ html[data-app-inactive] *::after {
 /* Menus' shared surface; edges and focus are outlines, which high contrast keeps. */
 @layer components {
     .popup-surface {
-        @apply flex w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-modal text-sm text-fg shadow-xl outline outline-1 outline-fg/10;
+        @apply flex w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-popup text-sm text-fg shadow-xl outline outline-1 outline-fg/10;
     }
 
     .popup-scroller {
@@ -100,7 +100,7 @@ html[data-app-inactive] *::after {
     }
 
     .popup-item {
-        @apply flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fg enabled:hover:bg-button enabled:focus-visible:bg-button enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(pointer:coarse)]:min-h-11;
+        @apply flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-fg enabled:hover:bg-popup-hover enabled:focus-visible:bg-popup-hover enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(pointer:coarse)]:min-h-11;
     }
 
     .popup-heading {
