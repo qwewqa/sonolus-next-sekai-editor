@@ -553,8 +553,9 @@ watchEffect(
     }
 }
 
+/* The transparent outline is the ring high contrast paints. */
 .form-field-mixed-value:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: 0 0 0 2px #444466;
 }
 
