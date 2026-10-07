@@ -100,7 +100,7 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                 :disabled
                 :title="shown"
                 :class="{ 'text-fg/80': modelValue === undefined }"
-                class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
+                class="w-full appearance-none rounded-full bg-button px-4 py-1 shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none"
                 @change="resyncSelect($event, () => modelValue)"
             >
                 <!-- The value while objects disagree; never listed or committed. -->

@@ -138,7 +138,7 @@ const onBlur = () => {
         </template>
         <template #default="{ textId }">
             <button
-                class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
                 :class="{
                     'animate-pulse': isActive,
                     'text-fg/80': !isActive && !formatShortcut(modelValue),

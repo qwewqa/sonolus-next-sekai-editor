@@ -23,7 +23,7 @@ const shown = computed(() =>
     <BaseField :label>
         <div class="form-field-toggle group">
             <input
-                class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
                 type="button"
                 :class="{ 'text-fg/80': modelValue === undefined }"
                 :value="shown"

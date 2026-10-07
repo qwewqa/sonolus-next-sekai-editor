@@ -86,7 +86,7 @@ const headerHeight = ref(80)
 const headerIconButton =
     "relative flex size-8 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors before:absolute before:-inset-0.5 before:content-[''] hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:before:-inset-1.5"
 const headerField =
-    'elevation-field h-8 w-20 appearance-none rounded-full bg-button px-3 text-base text-fg tabular-nums shadow-md transition-colors hover:shadow-accent focus:outline-none focus:ring-accent active:bg-accent active:text-on-accent'
+    'elevation-field h-8 w-20 appearance-none rounded-full bg-button px-3 text-base text-fg tabular-nums shadow-md transition-colors hover:shadow-accent outline-none focus:ring-accent active:bg-accent active:text-on-accent'
 let navigation: EditorNavigation | undefined
 const { cursor, cursorListeners } = useCanvasCursor(() => navigation)
 const controlListeners = { ...controlsForNavigation(() => navigation), ...cursorListeners }

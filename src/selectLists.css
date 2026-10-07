@@ -184,6 +184,8 @@
                 background-color: Canvas;
                 color: transparent;
                 box-shadow: none;
+                /* The edge other fields get from high contrast. */
+                outline-color: CanvasText;
             }
 
             /* The focus outline other fields get from high contrast. */

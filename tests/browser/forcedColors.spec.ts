@@ -135,3 +135,43 @@ test('rail and Properties tabs mark the selected tab', async ({ page }) => {
     await expect(active).toBeVisible()
     expect(await background(active, '::after')).toBe(text)
 })
+
+const expectEdges = async (fields: Locator) => {
+    const page = fields.page()
+    const text = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'CanvasText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    // At rest: a dialog focuses its first field.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    const count = await fields.count()
+    expect(count).toBeGreaterThan(3)
+    for (let index = 0; index < count; index++) {
+        const field = fields.nth(index)
+        const label = await field.evaluate(
+            (element) =>
+                element.closest('.form-field')?.querySelector('.form-field-text')?.textContent,
+        )
+        expect({ label, ...(await outline(field)) }).toEqual({
+            label,
+            style: 'solid',
+            width: '2px',
+            color: text,
+        })
+    }
+}
+
+test('Properties and Settings fields keep their edge, as Preview Settings fields do', async ({
+    page,
+}) => {
+    const pills =
+        '.form-field-row input:not([type="radio"]), .form-field-row select, .form-field-row button:not(.form-field-mixed-value)'
+    await expectEdges(panel(page).locator(pills))
+    await page.keyboard.press(',')
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expectEdges(page.getByRole('dialog').locator(pills))
+})
