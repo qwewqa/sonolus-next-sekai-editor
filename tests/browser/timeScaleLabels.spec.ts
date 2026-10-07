@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 type Ink = { left: number; right: number; top: number; bottom: number; alpha: number }
 
@@ -260,3 +261,55 @@ for (const pixelRatio of [1, 1.25, 2]) {
         }
     })
 }
+
+test('a BPM label stays drawn on the chart where a time scale label reaches the beat column', async ({
+    page,
+}) => {
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    const drawn = await page.evaluate(async () => {
+        const { show, fixtures } = window.editorTest
+        const texts: string[] = []
+        const fillText = CanvasRenderingContext2D.prototype.fillText
+        CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+            if (
+                this.canvas instanceof HTMLCanvasElement &&
+                this.canvas.classList.contains('editor-chart')
+            )
+                texts.push(text)
+            return fillText.call(this, text, ...args)
+        }
+        // At lane 5, the 15x label runs past lane 6.1 into the beat column, beside the BPM change.
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 6, bpm: 90 },
+                ],
+                timeScales: [
+                    {
+                        groupId: 1 as never,
+                        beat: 6,
+                        editorLane: 5,
+                        timeScale: 15,
+                        skip: 0,
+                        timeScaleEase: 'inStep',
+                        timeScaleTransition: 'timeScale',
+                        hideNotes: false,
+                    },
+                ],
+            },
+            3,
+        )
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        )
+        CanvasRenderingContext2D.prototype.fillText = fillText
+        return texts
+    })
+    expect(drawn).toContain('15x')
+    expect(drawn).toContain('90')
+})
