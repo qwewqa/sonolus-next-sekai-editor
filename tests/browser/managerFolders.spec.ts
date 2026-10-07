@@ -1331,3 +1331,40 @@ test('a double click whose first press only closed a menu counts as one click', 
     await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
     await expect(panel(page).locator('.manager-rename')).toBeFocused()
 })
+
+for (const { device, viewport, touch } of [
+    { device: 'desktop', viewport: { width: 1600, height: 1000 }, touch: false },
+    { device: 'phone', viewport: { width: 390, height: 844 }, touch: true },
+]) {
+    test.describe(`long folder names (${device})`, () => {
+        test.use({ viewport, isMobile: touch, hasTouch: touch })
+
+        test('Move to Folder caps its width and truncates a long name', async ({ page }) => {
+            const long = `Folder ${'long'.repeat(40)}`
+            await seedGroups(page, [['Default'], ['Lead', long], ['Bass']])
+            const menu = page.getByRole('menu')
+            const more = entryRow(page, 'Bass').getByRole('button', {
+                name: 'More Actions for Bass',
+            })
+            await (touch ? more.tap() : more.click())
+            const move = menu.getByRole('menuitem', { name: 'Move to Folder…' })
+            await (touch ? move.tap() : move.click())
+            const item = menu.getByRole('menuitemradio', { name: long })
+            await expect(item).toHaveAttribute('title', long)
+            // At most 20rem, or the phone sheet's width; the name ends in an ellipsis.
+            const box = (await menu.boundingBox())!
+            if (touch) expect([box.x, box.width]).toEqual([8, viewport.width - 16])
+            else expect(box.width).toBeLessThanOrEqual(320)
+            const label = await item
+                .locator('span')
+                .last()
+                .evaluate((span) => ({
+                    overflow: getComputedStyle(span).textOverflow,
+                    truncated: span.scrollWidth > span.clientWidth,
+                    right: span.getBoundingClientRect().right,
+                }))
+            expect(label).toMatchObject({ overflow: 'ellipsis', truncated: true })
+            expect(label.right).toBeLessThanOrEqual(box.x + box.width)
+        })
+    })
+}

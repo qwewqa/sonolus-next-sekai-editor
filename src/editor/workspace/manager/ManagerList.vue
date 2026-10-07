@@ -1233,6 +1233,7 @@ const folderChoiceItems = (id: T): ManagerMenuItem[] => {
         ...[...folderItems.value.keys()].map((folder) => ({
             key: `folder:${String(folder)}`,
             label: folderName(folder),
+            title: folderName(folder),
             checked: current === folder,
         })),
         {
@@ -1346,6 +1347,7 @@ const bulkFolderItems = (): ManagerMenuItem[] => {
         ...[...folderItems.value.keys()].map((folder) => ({
             key: `folder:${String(folder)}`,
             label: folderName(folder),
+            title: folderName(folder),
             checked: only?.folder === folder,
         })),
         {

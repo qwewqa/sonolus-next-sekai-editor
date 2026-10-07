@@ -29,6 +29,8 @@ export type ManagerMenuItem = {
     separated?: boolean
     /** Items sharing a group sit under its heading. */
     group?: string
+    /** A name the user gave: truncated to the menu's width, in full as its tooltip. */
+    title?: string
 }
 
 const props = defineProps<{
@@ -284,7 +286,7 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
             role="menu"
             tabindex="-1"
             :aria-label="label"
-            class="manager-menu popup-surface popup-sheet fixed z-50"
+            class="manager-menu popup-surface popup-sheet fixed z-50 sm:max-w-[min(20rem,calc(100vw-1rem))]"
             :class="{ invisible: !placement }"
             :style="{
                 left: `${placement?.left ?? 0}px`,
@@ -333,6 +335,7 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                                 :class="{ 'text-danger': item.destructive }"
                                 :disabled="item.disabled"
                                 :data-menu-key="item.key"
+                                :title="item.title"
                                 @click="onSelect($event, item)"
                             >
                                 <component
@@ -357,7 +360,11 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                                     class="size-4 shrink-0"
                                     aria-hidden="true"
                                 />
-                                <span class="flex-1">{{ item.label }}</span>
+                                <span
+                                    class="flex-1"
+                                    :class="{ 'min-w-0 truncate': item.title !== undefined }"
+                                    >{{ item.label }}</span
+                                >
                             </button>
                         </template>
                     </div>
