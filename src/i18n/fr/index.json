@@ -902,6 +902,7 @@
       "fadeStart": "Durée du fondu d’entrée (s)",
       "fadeEnd": "Durée du fondu de sortie (s)",
       "invalidRange": "La fin doit être après le début",
+      "startPastEnd": "Le début est après la fin de l’audio",
       "invalidFades": "Les fondus doivent tenir entre le début et la fin",
       "generate": "Générer",
       "loading": "Chargement du fichier…",

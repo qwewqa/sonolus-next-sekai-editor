@@ -20,13 +20,18 @@ const end = ref(30)
 const fadeStart = ref(1)
 const fadeEnd = ref(1)
 
+// The preview stops at the end of the audio, fading out there.
+const clampedEnd = computed(() => Math.min(end.value, buffer.value?.duration ?? end.value))
+
 // Why Generate is unavailable, if it is.
 const problem = computed(() =>
-    end.value <= start.value
-        ? i18n.value.utilities.previewEditor.invalidRange
-        : fadeStart.value + fadeEnd.value > end.value - start.value
-          ? i18n.value.utilities.previewEditor.invalidFades
-          : undefined,
+    buffer.value && start.value >= buffer.value.duration
+        ? i18n.value.utilities.previewEditor.startPastEnd
+        : end.value <= start.value
+          ? i18n.value.utilities.previewEditor.invalidRange
+          : fadeStart.value + fadeEnd.value > end.value - start.value
+            ? i18n.value.utilities.previewEditor.invalidFades
+            : undefined,
 )
 
 const onSelect = (file: File) => {
@@ -68,8 +73,10 @@ const onGenerate = () => {
             const startFadeSample = Math.floor(
                 buffer.value.sampleRate * (start.value + fadeStart.value),
             )
-            const endFadeSample = Math.floor(buffer.value.sampleRate * (end.value - fadeEnd.value))
-            const endSample = Math.floor(buffer.value.sampleRate * end.value)
+            const endFadeSample = Math.floor(
+                buffer.value.sampleRate * (clampedEnd.value - fadeEnd.value),
+            )
+            const endSample = Math.floor(buffer.value.sampleRate * clampedEnd.value)
 
             let range = 1
             for (const channel of channels) {
@@ -90,11 +97,13 @@ const onGenerate = () => {
             )
             const chunkSize = 1152
             for (let i = startSample; i <= endSample; i += chunkSize) {
+                // The last chunk stops at End.
+                const chunkEnd = Math.min(i + chunkSize, endSample + 1)
                 const chunk = encoder.encodeBuffer(
                     ...(channels.map(
                         (channel) =>
                             new Int16Array(
-                                channel.slice(i, i + chunkSize).map((value, j) => {
+                                channel.slice(i, chunkEnd).map((value, j) => {
                                     if (i + j < startFadeSample) {
                                         value *= unlerp(startSample, startFadeSample, i + j)
                                     }

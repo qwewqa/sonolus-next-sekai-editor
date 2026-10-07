@@ -902,6 +902,7 @@
       "fadeStart": "淡入时长（秒）",
       "fadeEnd": "淡出时长（秒）",
       "invalidRange": "结束时间必须晚于开始时间",
+      "startPastEnd": "开始时间晚于音频的结尾",
       "invalidFades": "淡入和淡出时长之和不能超过开始到结束的时长",
       "generate": "生成",
       "loading": "正在加载文件…",

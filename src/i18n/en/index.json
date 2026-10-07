@@ -902,6 +902,7 @@
             "fadeStart": "Fade Start (s)",
             "fadeEnd": "Fade End (s)",
             "invalidRange": "End must be after Start",
+            "startPastEnd": "Start is past the end of the audio",
             "invalidFades": "Fades must fit between Start and End",
             "generate": "Generate",
             "loading": "Loading file…",

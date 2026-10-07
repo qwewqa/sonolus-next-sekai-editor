@@ -902,6 +902,7 @@
       "fadeStart": "Ses Geçişi Başlangıcı (sn)",
       "fadeEnd": "Ses Geçişi Bitişi (sn)",
       "invalidRange": "Son değeri Başlangıç değerinden büyük olmalıdır",
+      "startPastEnd": "Başlangıç değeri sesin sonundan sonra",
       "invalidFades": "Ses geçişleri Başlangıç ile Son arasına sığmalıdır",
       "generate": "Oluştur",
       "loading": "Dosya yükleniyor…",
