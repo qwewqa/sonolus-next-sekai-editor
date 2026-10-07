@@ -1346,6 +1346,26 @@ test('a press outside an action menu only closes it', async ({ page }) => {
     expect(await selected()).toBe(0)
 })
 
+test('a right press on another row in the dialog moves the menu there, as in a dock', async ({
+    page,
+}) => {
+    await seedGroups(page, ['Default', 'Other group'])
+    await page.evaluate(() => {
+        window.editorTest.settings.groupsPosition = 'disabled'
+    })
+    await page.keyboard.press('e')
+    const dialog = page.locator('dialog')
+    const menu = page.getByRole('menu')
+    await nameButton(dialog, 'Other group').click({ button: 'right' })
+    await expect(menu).toHaveAttribute('aria-label', 'More Actions for Other group')
+    await nameButton(dialog, 'Default').click({ button: 'right' })
+    await expect(menu).toHaveAttribute('aria-label', 'More Actions for Default')
+    // Elsewhere in the dialog it only closes the menu.
+    await dialog.locator('[data-modal-title]').click({ button: 'right' })
+    await expect(menu).toHaveCount(0)
+    await expect(dialog).toBeVisible()
+})
+
 test.describe('menus on a phone', () => {
     test.use(viewports.phone)
 

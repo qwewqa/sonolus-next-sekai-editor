@@ -186,8 +186,14 @@ const onOutside = (event: PointerEvent) => {
     // The anchor toggles the menu itself on click.
     if (menu.value?.contains(target) || props.anchor.contains(target)) return
     // The press only closes the menu, so closing never edits what lies under it. A
-    // right press in a dock only opens menus, so it moves the menu there instead.
-    if (event.button !== 2 || !(target instanceof Element) || !isInWorkspaceDock(target))
+    // right press in a dock or in the menu's own list only opens menus, so it
+    // moves the menu there instead.
+    const list = props.anchor.closest('.manager-list')
+    if (
+        event.button !== 2 ||
+        !(target instanceof Element) ||
+        !(isInWorkspaceDock(target) || list?.contains(target))
+    )
         swallowPress(event)
     emit('close', false)
 }
