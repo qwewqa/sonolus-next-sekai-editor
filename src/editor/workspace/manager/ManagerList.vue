@@ -160,7 +160,7 @@ const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => 
                 ?.focus({ preventScroll: true })
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault()
-        await onBulkDelete()
+        await onBulkDelete(true)
     }
 }
 
@@ -503,7 +503,8 @@ onMounted(() => void document.fonts.ready.then(measureBar))
 
 const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.isShown(id)))
 
-const onBulkDelete = async () => {
+/** Deletes the selection; keyboard focus moves to the row taking the first deleted row's place. */
+const onBulkDelete = async (keyboard = false) => {
     const ids = new Set(selectedIds.value)
     if (!ids.size) return
     const objects = [...ids].reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
@@ -514,8 +515,17 @@ const onBulkDelete = async () => {
         destructive: true,
     })
     if (!confirmed) return
+    const index = [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])].findIndex(
+        (element) => {
+            const id = entryOfRow(element)
+            return id !== undefined && ids.has(id)
+        },
+    )
     props.model.removeMany(ids)
     stopSelecting()
+    if (!keyboard) return
+    await nextTick()
+    if (!root.value?.contains(document.activeElement)) focusAfterDelete(index, '.manager-name')
 }
 
 const onBulkFolder = async (choice: string) => {
@@ -1247,11 +1257,11 @@ watch(tree, () => {
     if (key && key.type !== 'selection' && !exists(key)) closeMenu(false)
 })
 
-const focusAfterDelete = (index: number) => {
+const focusAfterDelete = (index: number, selector = '.manager-more') => {
     const rows = [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])]
     const row = rows[Math.min(index, rows.length - 1)]
     const target =
-        row?.querySelector<HTMLElement>('.manager-more') ??
+        row?.querySelector<HTMLElement>(selector) ??
         root.value?.querySelector<HTMLElement>('.manager-name')
     target?.focus({ preventScroll: true })
 }
@@ -1270,7 +1280,7 @@ const onMenuSelect = (key: string, keyboard: boolean) => {
         return
     }
     closeMenu(keyboard)
-    if (current.key.type === 'selection') void runBulk(key)
+    if (current.key.type === 'selection') void runBulk(key, keyboard)
     else void run(current.key, key, keyboard, current.anchor)
 }
 
@@ -1279,7 +1289,7 @@ const onInlineAction = (id: T, key: string, button: HTMLElement, keyboard: boole
     void run({ type: 'entry', id }, key, keyboard, button)
 }
 
-const runBulk = async (action: string) => {
+const runBulk = async (action: string, keyboard: boolean) => {
     if (action.startsWith('folder:')) {
         await onBulkFolder(action.slice('folder:'.length))
         return
@@ -1311,7 +1321,7 @@ const runBulk = async (action: string) => {
             setSelection([])
             return
         case 'delete':
-            await onBulkDelete()
+            await onBulkDelete(keyboard)
             return
     }
 }
@@ -1809,7 +1819,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     :disabled="!selectedIds.length"
                     :aria-label="i18n.workspace.manager.deleteSelected"
                     :title="i18n.workspace.manager.deleteSelected"
-                    @click="onBulkDelete"
+                    @click="onBulkDelete($event.detail === 0)"
                 >
                     <ResetIcon class="manager-new-folder-icon" aria-hidden="true" />
                 </button>

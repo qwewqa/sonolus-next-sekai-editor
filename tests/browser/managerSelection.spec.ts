@@ -361,6 +361,59 @@ test('the keyboard extends, selects all, deletes and stops selecting', async ({ 
     expect(await historyLength(page)).toBe(0)
 })
 
+test('a keyboard delete of the selection leaves focus on the row in its place', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const dialog = page.locator('dialog')
+    // By the Delete key.
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    await page.keyboard.press('Delete')
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).press('Enter')
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] [Outro: Pad]')
+    await expect(nameButton(list, 'Outro')).toBeFocused()
+    await undo(page)
+
+    // By the bar's button and by the More menu.
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    const bar = list.locator('.manager-selection-bar')
+    await bar.getByRole('button', { name: 'Delete Selected…' }).press('Enter')
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).press('Enter')
+    await expect(nameButton(list, 'Outro')).toBeFocused()
+    await undo(page)
+
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    await bar.getByRole('button', { name: 'More Actions for Selection' }).press('Enter')
+    await page.getByRole('menuitem', { name: 'Delete Selected…' }).press('Enter')
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).press('Enter')
+    await expect(nameButton(list, 'Outro')).toBeFocused()
+    await undo(page)
+
+    // A pointer delete leaves shortcuts to the editor.
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    await bar.getByRole('button', { name: 'Delete Selected…' }).click()
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await list.evaluate((element) => element.contains(document.activeElement))).toBe(false)
+
+    // In the dialog fallback, focus stays in the dialog.
+    await page.evaluate(() => {
+        window.editorTest.settings.groupsPosition = 'disabled'
+    })
+    await page.keyboard.press('e')
+    const manager = page.locator('dialog')
+    await nameButton(manager, 'Default').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    await page.keyboard.press('Delete')
+    await manager.last().getByRole('button', { name: 'Delete', exact: true }).press('Enter')
+    await expect(manager).toHaveCount(1)
+    await expect(nameButton(manager, 'Verse')).toBeFocused()
+})
+
 test('closing the delete prompt by a button returns focus to the row', async ({ page }) => {
     await seedGroups(page, seed)
     const list = panel(page)
