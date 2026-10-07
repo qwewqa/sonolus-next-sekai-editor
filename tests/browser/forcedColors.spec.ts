@@ -249,3 +249,35 @@ for (const colorScheme of ['light', 'dark'] as const)
         await expect(page.locator('.elevation-canvas')).toBeVisible()
         expect(await backdrop('.elevation-editor')).toBe(bg)
     })
+
+test('raised buttons and segment tracks keep their edge, as fields do', async ({ page }) => {
+    const text = await systemColor(page, 'CanvasText')
+    const expectEdges = async (locator: Locator) => {
+        await expect(locator.first()).toBeVisible()
+        const count = await locator.count()
+        expect(count).toBeGreaterThan(0)
+        for (let index = 0; index < count; index++)
+            expect(await outline(locator.nth(index))).toEqual({
+                style: 'solid',
+                width: '2px',
+                color: text,
+            })
+    }
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await expectEdges(panel(page).locator('.form-field-mixed-value'))
+    await expectEdges(panel(page).getByRole('radiogroup', { name: 'Snapping', exact: true }))
+
+    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    await expectEdges(page.locator('.transport-button'))
+    await expectEdges(page.locator('.preview-settings-toggle'))
+    await expectEdges(page.getByRole('radiogroup', { name: 'Aspect ratio' }))
+
+    await page.locator('.panel-tab', { hasText: 'Groups' }).click()
+    await expectEdges(page.locator('.manager-add, .manager-new-folder'))
+
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await expectEdges(dialog.getByRole('button', { name: /^(Reset Settings|Reset Shortcuts)$/ }))
+})

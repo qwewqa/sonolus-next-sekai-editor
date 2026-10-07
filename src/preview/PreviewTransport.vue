@@ -269,7 +269,7 @@ const stripStyle = computed(() => ({
 
 <style scoped>
 .transport-button {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-button text-xs shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-button text-xs shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent;
 }
 
 .transport-button.is-held {

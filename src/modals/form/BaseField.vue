@@ -517,9 +517,11 @@ watchEffect(
     padding-left: 0;
 }
 
-/* Tinted pills read as actions; coverage is muted text, apart from the values. */
+/* Tinted pills read as actions; coverage is muted text, apart from the values. High
+   contrast paints the transparent outline as their edge, and Highlight on focus. */
 .form-field-mixed-value {
     border-radius: 9999px;
+    outline: 2px solid transparent;
     padding: 0.125rem 0.5rem;
     background-color: rgb(68 68 102 / 0.08);
     transition-property: color, background-color;
@@ -553,9 +555,7 @@ watchEffect(
     }
 }
 
-/* The transparent outline is the ring high contrast paints. */
 .form-field-mixed-value:focus-visible {
-    outline: 2px solid transparent;
     box-shadow: 0 0 0 2px #444466;
 }
 

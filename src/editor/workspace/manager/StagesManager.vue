@@ -59,7 +59,7 @@ const onEnable = async (event: MouseEvent) => {
                 <p class="text-fg/80">{{ i18n.workspace.stages.disabled }}</p>
                 <button
                     type="button"
-                    class="manager-enable flex min-h-9 max-w-full items-center rounded-full bg-button px-4 py-1.5 text-center shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:min-h-11"
+                    class="manager-enable flex min-h-9 max-w-full items-center rounded-full bg-button px-4 py-1.5 text-center shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:min-h-11"
                     :title="i18n.workspace.stages.enable"
                     @click="onEnable"
                 >

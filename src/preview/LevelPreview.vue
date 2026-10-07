@@ -91,7 +91,7 @@ const isErrorDetailOpen = ref(false)
                         </details>
                         <button
                             type="button"
-                            class="h-8 rounded-full bg-button px-4 text-fg shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
+                            class="h-8 rounded-full bg-button px-4 text-fg shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-accent active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
                             @click="reload"
                         >
                             {{ i18n.preview.reload }}

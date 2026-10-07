@@ -60,7 +60,8 @@ const listGlyph = computed((): OptionGlyph<T> | undefined => {
     return glyph && ((value) => h(Fragment, glyph({ value }) as never))
 })
 
-// High contrast paints only the outlines: the segment's shows focus, its label's the checked one.
+// High contrast paints only the outlines: the track's is its edge, the segment's shows
+// focus and its label's the checked one.
 const segment =
     'flex h-7 items-center justify-center rounded-full px-2 transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-transparent peer-active:bg-accent peer-active:text-on-accent forced-colors:peer-focus-visible:outline-[color:Highlight]'
 const choice =
@@ -154,7 +155,7 @@ watch(
 <template>
     <BaseField v-if="segmented && !unknown" ref="field" :label :label-id="`${id}-label`" :mixed>
         <div
-            class="form-field-segmented flex min-w-0 rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)]"
+            class="form-field-segmented flex min-w-0 rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)] outline-none"
             :class="{ 'pointer-events-none opacity-40': disabled, 'text-fg/80': isMixed }"
             role="radiogroup"
             :aria-labelledby="isMixed ? `${id}-label ${id}-mixed` : `${id}-label`"

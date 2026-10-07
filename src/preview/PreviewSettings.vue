@@ -264,7 +264,7 @@ const onPlacementChange = () => {
         v-show="!buttonHidden"
         ref="toggle"
         type="button"
-        class="preview-settings-toggle absolute z-10 flex items-center justify-center rounded-full shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        class="preview-settings-toggle absolute z-10 flex items-center justify-center rounded-full shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent"
         :class="[
             // An occasional control over a small image: 36px, with a 40px hit
             // area on touch.
@@ -382,7 +382,7 @@ const onPlacementChange = () => {
                         i18n.settings.preview.aspectRatio
                     }}</span>
                     <span
-                        class="preview-setting-control flex rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)]"
+                        class="preview-setting-control flex rounded-full bg-fg/10 p-0.5 shadow-[inset_0_1px_2px_rgb(48_51_77/0.2)] outline-none"
                         role="radiogroup"
                         :aria-labelledby="`${id}-aspect`"
                     >

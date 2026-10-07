@@ -162,7 +162,7 @@ const clear = () => {
             <button
                 ref="addButton"
                 type="button"
-                class="brush-add flex min-w-0 basis-full items-center gap-2.5 rounded-full py-1 pl-3 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
+                class="brush-add flex min-w-0 basis-full items-center gap-2.5 rounded-full py-1 pl-3 pr-4 shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
                 :class="addMenu ? 'bg-accent text-on-accent' : 'bg-button'"
                 :title="i18n.tools.brush.add"
                 aria-haspopup="menu"
@@ -186,7 +186,7 @@ const clear = () => {
             />
             <button
                 type="button"
-                class="brush-pick min-w-0 flex-[1_0_auto] truncate rounded-full bg-button px-4 py-1 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
+                class="brush-pick min-w-0 flex-[1_0_auto] truncate rounded-full bg-button px-4 py-1 shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:shadow-accent [@media(pointer:coarse)]:py-2"
                 :disabled="!canPick"
                 @click="pick"
             >
