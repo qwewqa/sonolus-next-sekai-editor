@@ -897,6 +897,71 @@ test('a set-aside recovery that now opens trades places with one that does not',
     expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
 })
 
+test("a tab that restored an older recovery leaves another tab's newer one in place", async ({
+    page,
+    context,
+}) => {
+    const lifeOf = (tab: Page) =>
+        tab.evaluate(async () => {
+            const pathname = '/src/history/index.ts'
+            const url =
+                performance
+                    .getEntriesByType('resource')
+                    .map((entry) => entry.name)
+                    .find((name) => new URL(name).pathname === pathname) ?? pathname
+            const { state } = (await import(url)) as typeof import('../../src/history')
+            return state.value.initialLife
+        })
+    await page.evaluate(() => {
+        const { history, fixtures, settings } = window.editorTest
+        history.resetState(false, fixtures.interaction, 0, 'named-chart')
+        settings.autoSaveDelay = 0
+        settings.autoSave = true
+        history.pushState(() => 'edit', { ...history.state.value, initialLife: 999 })
+    })
+    await expect.poll(async () => (await unreadableStores(page)).recovery).not.toBeNull()
+    const older = (await unreadableStores(page)).recovery
+    await page.evaluate(() => {
+        localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', '{"damaged')
+    })
+
+    // The other tab reads the older recovery, then waits on the set-aside one.
+    const other = await context.newPage()
+    await other.goto('/')
+    const dialog = other.getByRole('dialog')
+    await expect(dialog).toContainText('still cannot restore')
+
+    // Meanwhile this tab saves a newer recovery and closes.
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.pushState(() => 'edit', { ...history.state.value, initialLife: 997 })
+    })
+    await expect.poll(async () => (await unreadableStores(page)).recovery).not.toBe(older)
+    const newer = (await unreadableStores(page)).recovery
+    await page.close()
+    expect(page.isClosed()).toBe(true)
+
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect.poll(() => lifeOf(other)).toBe(999)
+    // Neither hiding it unchanged nor going clean touches the newer one.
+    await hidePage(other)
+    await other.waitForTimeout(200)
+    expect((await unreadableStores(other)).recovery).toBe(newer)
+    await other.evaluate(async () => {
+        const pathname = '/src/history/index.ts'
+        const url =
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => entry.name)
+                .find((name) => new URL(name).pathname === pathname) ?? pathname
+        const { resetState } = (await import(url)) as typeof import('../../src/history')
+        resetState(false)
+    })
+    await other.waitForTimeout(200)
+    expect((await unreadableStores(other)).recovery).toBe(newer)
+})
+
 /** Holds the recovery loading dialog open before it parses, on the first start only. */
 const holdLoading = (page: Page) =>
     page.addInitScript(() => {

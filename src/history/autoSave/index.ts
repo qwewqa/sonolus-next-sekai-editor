@@ -37,7 +37,9 @@ export const useAutoSave = () => {
     let savedState: State | undefined
     // The recovery this tab wrote or restored; tabs share the one slot.
     let written: string | undefined
-    const adopt = () => (written = storageGetText(key))
+    // Owned only while the slot still holds what this tab restored; another tab may have written since.
+    const adopt = (restored: string | undefined) =>
+        (written = storageGetText(key) === restored ? restored : undefined)
     // Read as text so damaged JSON still counts as a recovery to keep.
     const data = storageGetText(key)
     const initialAside = storageGetText(unreadableRecoveryKey)
@@ -63,8 +65,8 @@ export const useAutoSave = () => {
                 savedState.initialLife === current.initialLife &&
                 savedState.bgm.offset === current.bgm.offset &&
                 (savedState.filename ?? savedState.bgm.filename) === filename.value &&
-                // Written again when another tab removed or replaced it.
-                storageGetText(key) === written
+                // Written again when another tab removed or replaced it; an unowned slot waits for an edit.
+                (written === undefined || storageGetText(key) === written)
             )
                 return
 
@@ -173,7 +175,7 @@ export const useAutoSave = () => {
         if (primary) {
             resetState(true, primary.chart, primary.offset, primary.filename)
             savedState = state.value
-            adopt()
+            adopt(data)
         }
 
         let unreadable: UnreadableRecovery | undefined
@@ -186,8 +188,8 @@ export const useAutoSave = () => {
                 savedState = state.value
                 notify(() => i18n.value.history.autoSave.unreadable.restored)
                 unreadable = restoreAside(aside, primary || data === undefined ? undefined : data)
-                // The slot may still hold the other recovery if the move failed.
-                adopt()
+                // A failed move leaves the one restored above, still this tab's.
+                if (storageGetText(key) !== written) adopt(aside)
             }
         }
 
