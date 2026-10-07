@@ -91,7 +91,7 @@ export const paste: Tool = {
 
         const onlyType = getOnlyEntityType(entities)
         const lane = xToLane(x)
-        const beatOffset = toPasteBeatOffset(entities, yToBeatOffset(y, data.beat))
+        const beatOffset = toPasteBeatOffset(landing(entities), yToBeatOffset(y, data.beat))
 
         showGhost(entities, onlyType, data.lane, lane, beatOffset, modifiers.shift)
     },
@@ -123,7 +123,10 @@ export const paste: Tool = {
         }
 
         const lane = xToLane(x)
-        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
+        const beatOffset = toPasteBeatOffset(
+            landing(active.entities),
+            yToBeatOffset(y, active.beat),
+        )
 
         showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
 
@@ -134,7 +137,10 @@ export const paste: Tool = {
         if (!active) return false
 
         const lane = xToLane(x)
-        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
+        const beatOffset = toPasteBeatOffset(
+            landing(active.entities),
+            yToBeatOffset(y, active.beat),
+        )
 
         showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
     },
@@ -142,24 +148,16 @@ export const paste: Tool = {
     async dragEnd(x, y, modifiers) {
         if (!active) return
 
-        if (
-            active.entities.some(
-                (entity) =>
-                    entity.type === 'cameraEventJoint' ||
-                    entity.type === 'stageMaskEventJoint' ||
-                    entity.type === 'stagePivotEventJoint' ||
-                    entity.type === 'stageStyleEventJoint' ||
-                    entity.type === 'stageTransformEventJoint',
-            )
-        ) {
-            await checkDynamicStages()
-        }
+        if (active.entities.some(isEventJoint)) await checkDynamicStages()
 
         revealPasteTargets(active.entities)
         const transaction = createTransaction(state.value)
 
         const lane = xToLane(x)
-        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
+        const beatOffset = toPasteBeatOffset(
+            landing(active.entities),
+            yToBeatOffset(y, active.beat),
+        )
 
         const selectedEntities: Entity[] = []
         for (const entity of active.entities) {
@@ -262,6 +260,7 @@ const showGhost = (
     const pastedBpms: BpmObject[] = []
     for (const entity of entities) {
         const beat = entity.beat + beatOffset
+        if (!isLanding(entity)) continue
         if (entity.type === 'bpm') pastedBpms.push(toMovedBpmObject(entity, beat))
         if (entity.type === 'note') {
             const object = toMovedNoteObject(entity, startLane, lane, beat, flip)
@@ -338,6 +337,17 @@ const revealPasteTargets = (entities: Entity[]) => {
     }
 }
 
+const isEventJoint = (entity: Entity) =>
+    entity.type === 'cameraEventJoint' ||
+    entity.type === 'stageMaskEventJoint' ||
+    entity.type === 'stagePivotEventJoint' ||
+    entity.type === 'stageStyleEventJoint' ||
+    entity.type === 'stageTransformEventJoint'
+
+// Event joints land only with dynamic stages.
+const isLanding = (entity: Entity) => isDynamicStages.value || !isEventJoint(entity)
+const landing = (entities: Entity[]) => entities.filter(isLanding)
+
 /** Shifts a paste later so its earliest object lands no earlier than beat 0. */
 export const toPasteBeatOffset = (entities: readonly { beat: number }[], beatOffset: number) =>
     entities.reduce((offset, entity) => Math.max(offset, -entity.beat), beatOffset)
@@ -361,24 +371,13 @@ export const pasteAtPosition = async (
     )
     if (!entities.length) return
 
-    if (
-        entities.some(
-            (entity) =>
-                entity.type === 'cameraEventJoint' ||
-                entity.type === 'stageMaskEventJoint' ||
-                entity.type === 'stagePivotEventJoint' ||
-                entity.type === 'stageStyleEventJoint' ||
-                entity.type === 'stageTransformEventJoint',
-        )
-    ) {
-        await checkDynamicStages()
-    }
+    if (entities.some(isEventJoint)) await checkDynamicStages()
 
     revealPasteTargets(entities)
     const transaction = createTransaction(state.value)
 
     const onlyType = getOnlyEntityType(entities)
-    const shiftedOffset = toPasteBeatOffset(entities, beatOffset)
+    const shiftedOffset = toPasteBeatOffset(landing(entities), beatOffset)
 
     const selectedEntities: Entity[] = []
     for (const entity of entities) {

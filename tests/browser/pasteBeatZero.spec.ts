@@ -205,3 +205,57 @@ test('a shifted paste keeps a same-beat time scale pair in order', async ({ page
     ])
     expect(order.notes.sort()).toEqual([2, 4])
 })
+
+test('event joints a chart without dynamic stages drops never shift the paste', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { show, fixtures, history, store } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.events,
+                cameraEvents: [{ ...fixtures.events.cameraEvents[0]!, beat: 0 }],
+                stageMaskEvents: [],
+                stagePivotEvents: [],
+                stageStyleEvents: [],
+                stageTransformEvents: [],
+                timeScales: [],
+                slides: [[{ ...base, beat: 2, left: -1, size: 2 }]],
+            },
+            1.5,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note' || entity.type === 'cameraEventJoint',
+            ),
+        })
+    })
+    const note = await point(page, 0, 2)
+    await page.mouse.move(note.x, note.y)
+    await settle(page)
+    await page.keyboard.press('c')
+    await page.evaluate(() => {
+        const { show, fixtures } = window.editorTest
+        show({ ...fixtures.interaction, slides: [] }, 1.5)
+    })
+    await page.keyboard.press('v')
+
+    // At beat 1 the camera event would land at -1, but only the note lands.
+    const target = await point(page, 0, 1)
+    await page.mouse.move(target.x, target.y)
+    await settle(page)
+    const creating = await page.evaluate(() =>
+        window.editorTest.view.entities.creating.map(({ type, beat }) => ({ type, beat })),
+    )
+    expect(creating).toEqual([{ type: 'note', beat: 1 }])
+
+    await page.mouse.click(target.x, target.y)
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect
+        .poll(async () => brief(await pastedNotes(page)).map(({ beat }) => beat))
+        .toEqual([1])
+})
