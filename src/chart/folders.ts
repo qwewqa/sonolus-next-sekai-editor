@@ -205,8 +205,9 @@ export const entriesInTreeOrder = <K>(tree: readonly FolderTreeItem<K>[]): K[] =
 
 /**
  * Moves several entries at once, keeping their order: to the end of a folder,
- * or, with no folder, out of their folders to just below each. Loose entries
- * stay put then. Returns `undefined` when the folder is missing or nothing changes.
+ * where those already in it stay put, or, with no folder, out of their folders
+ * to just below each, where loose ones stay put. Returns `undefined` when the
+ * folder is missing or nothing changes.
  */
 export const moveEntriesInTree = <K>(
     tree: readonly FolderTreeItem<K>[],
@@ -224,8 +225,10 @@ export const moveEntriesInTree = <K>(
             ]
         })
     } else {
-        const moving = entriesInTreeOrder(tree).filter((id) => ids.has(id))
-        next = removeEntriesFromTree(tree, ids)
+        const moving = entriesInTreeOrder(tree).filter(
+            (id) => ids.has(id) && folderOfEntry(tree, id)?.id !== folderId,
+        )
+        next = removeEntriesFromTree(tree, new Set(moving))
         const folder = next.find(
             (item): item is Extract<FolderTreeItem<K>, { type: 'folder' }> =>
                 item.type === 'folder' && item.id === folderId,

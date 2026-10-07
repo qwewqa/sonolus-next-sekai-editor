@@ -1576,7 +1576,10 @@ const chooseFolder = async (id: T, choice: string) => {
             before: after && ({ type: after.type, id: after.id } as FolderTreeRef<T>),
         })
     } else {
-        folders.value.placeEntry(id, { folder: Number(choice) as FolderId })
+        const folder = Number(choice) as FolderId
+        // Its own folder is already checked.
+        if (folderOfEntry.value.get(id) === folder) return
+        folders.value.placeEntry(id, { folder })
     }
     await nextTick()
     reveal({ type: 'entry', id })

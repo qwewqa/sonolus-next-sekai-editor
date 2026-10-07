@@ -1032,3 +1032,37 @@ test('a range from a row an undo removed starts from the target instead', async 
     await nameButton(list, 'Bass').click({ modifiers: ['Shift'] })
     expect(await checked(list)).toEqual(['Other', 'Lead', 'Fill', 'Bass'])
 })
+
+test('Move to Folder leaves entries already in the folder in place', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const menu = page.getByRole('menu')
+    const move = bar.getByRole('button', { name: 'Move to Folder…' })
+    const before = 'Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]'
+
+    // The checked folder, which holds the whole selection, changes nothing.
+    await nameButton(list, 'Lead').click({ modifiers: ['ControlOrMeta'] })
+    await move.click()
+    await menu.getByRole('menuitemradio', { name: 'Verse', checked: true }).click()
+    expect(await tree(page)).toBe(before)
+    expect(await historyLength(page)).toBe(0)
+    await expect(page.getByText(/^Moved /)).toHaveCount(0)
+
+    // Only newcomers join, at the end, and only they are counted.
+    await nameButton(list, 'Bass').click()
+    await move.click()
+    await menu.getByRole('menuitemradio', { name: 'Verse' }).click()
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill Bass] Drums [Outro: Pad]')
+    await expect(page.getByText('Moved 1 group to Verse folder')).toBeVisible()
+    expect(await historyLength(page)).toBe(1)
+    await undo(page)
+
+    // A row's own folder is a no-op too.
+    await bar.getByRole('button', { name: 'Stop Selecting' }).click()
+    await row(list, 'Lead').getByRole('button', { name: 'More Actions for Lead' }).click()
+    await menu.getByRole('menuitem', { name: 'Move to Folder…' }).click()
+    await menu.getByRole('menuitemradio', { name: 'Verse', checked: true }).click()
+    expect(await tree(page)).toBe(before)
+    expect(await historyLength(page)).toBe(0)
+})

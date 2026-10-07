@@ -177,3 +177,13 @@ test('several entries leave their folders to just below each', () => {
     )
     assert.equal(show(moveEntriesInTree(tree, new Set(['a', 'd']), undefined)), undefined)
 })
+
+test('entries already in the folder keep their places; only newcomers join at its end', () => {
+    const tree = buildFolderTree(
+        entries(['a'], ['b', A], ['c', A], ['d', A], ['e']),
+        folders([A, 'F']),
+    )
+    assert.equal(show(moveEntriesInTree(tree, new Set(['b']), A)), undefined)
+    assert.equal(show(moveEntriesInTree(tree, new Set(['b', 'd']), A)), undefined)
+    assert.equal(show(moveEntriesInTree(tree, new Set(['b', 'd', 'e', 'a']), A)), '[1: b c d a e]')
+})

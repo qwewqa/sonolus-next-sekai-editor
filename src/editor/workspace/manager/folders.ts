@@ -242,12 +242,12 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
             commit(next, message)
         },
 
-        /** Moves entries to a folder's end, or out of their folders, as one step. */
+        /** Moves entries to a folder's end, or out of their folders, as one step; those already there stay put. */
         placeEntries(ids: ReadonlySet<K>, folder: FolderId | undefined) {
             const before = tree()
             const next = moveEntriesInTree(before, ids, folder)
             if (!next) return
-            const count = `${[...ids].filter((id) => folderOfEntry(before, id)?.id !== folder).length || ids.size}`
+            const count = `${[...ids].filter((id) => folderOfEntry(before, id)?.id !== folder).length}`
             commit(
                 next,
                 folder === undefined
