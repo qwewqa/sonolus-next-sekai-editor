@@ -204,9 +204,15 @@ watch(presentation, () => {
 // here would loop the observers watching the scroller's children. Released,
 // the room goes, so a smaller selection leaves no blank below.
 let roomFrame = 0
+// Under a dragged thumb, the room goes on release instead.
+let roomResized = false
 const anchor = new ResizeObserver(() => {
     restore(false)
     if (heldTop !== undefined || !room) return
+    if (thumbDragging) {
+        roomResized = true
+        return
+    }
     cancelAnimationFrame(roomFrame)
     roomFrame = requestAnimationFrame(() => {
         if (heldTop === undefined) setRoom(0)
@@ -255,6 +261,8 @@ const onTab = (event: MouseEvent, section: PropertiesSection) => {
 
 const onThumbDrag = (active: boolean) => {
     thumbDragging = active
+    if (!active && roomResized && heldTop === undefined) setRoom(0)
+    roomResized = false
     trimRoom()
 }
 

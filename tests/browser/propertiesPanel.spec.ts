@@ -816,6 +816,35 @@ test('dragging the thumb after brushing keeps its size until release', async ({ 
     await expect.poll(room).toBeLessThan(held)
 })
 
+test('a Selection resize during a thumb drag keeps the room until release', async ({ page }) => {
+    await open(page)
+    await brushKeepsToolSection(page, false)
+    const scroller = panel(page).locator('.properties-scroller')
+    const room = () =>
+        scroller.evaluate((element) => (element.lastElementChild as HTMLElement).offsetHeight)
+    const held = await room()
+    expect(held).toBeGreaterThan(100)
+    const box = (await scroller.boundingBox())!
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2)
+    const thumb = panel(page).locator('.overlay-scrollbar-thumb')
+    await expect(panel(page).locator('.overlay-scrollbar-active')).toHaveCount(1)
+    const start = (await thumb.boundingBox())!
+    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2 - 21)
+    // Deselecting empties the Selection mid-drag.
+    await page.keyboard.press('Escape')
+    await expect
+        .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
+        .toBe(0)
+    for (let frame = 0; frame < 3; frame++)
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+    expect(await room()).toBe(held)
+    await page.mouse.up()
+    // Released, the room goes, as it does for a resize without a drag.
+    await expect.poll(room).toBe(0)
+})
+
 test.describe('phone sheet', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
