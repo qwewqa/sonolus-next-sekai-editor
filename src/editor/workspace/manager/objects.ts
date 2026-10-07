@@ -76,11 +76,8 @@ const stageCounts = computed(() => countOwned(store.value, 'stageId'))
 export const ownedCounts = (key: OwnerKey): ReadonlyMap<number, number> =>
     key === 'groupId' ? groupCounts.value : stageCounts.value
 
-/**
- * Selects the owner's objects that are currently visible in the editor. The
- * selection is not an edit, so it replaces the state without history.
- */
-export const selectOwned = (key: OwnerKey, owners: Owners) => {
+/** The owner's objects that are currently visible in the editor. */
+const visibleOwned = (key: OwnerKey, owners: Owners) => {
     const scope = scopeLookup.value
     const entities: Entity[] = []
     walkOwned(store.value, key, (entity) => {
@@ -88,6 +85,21 @@ export const selectOwned = (key: OwnerKey, owners: Owners) => {
         if (entityScopeVisibility(entity, scope) === 'hidden') return
         entities.push(entity)
     })
+    return entities
+}
+
+/** Whether Select Objects would select anything. */
+export const hasVisibleOwned = (key: OwnerKey, owners: Owners) =>
+    visibleOwned(key, owners).length > 0
+
+/**
+ * Selects the owner's objects that are currently visible in the editor. The
+ * selection is not an edit, so it replaces the state without history. With
+ * none visible, the selection stays.
+ */
+export const selectOwned = (key: OwnerKey, owners: Owners) => {
+    const entities = visibleOwned(key, owners)
+    if (!entities.length) return 0
     replaceState({
         ...state.value,
         selectedEntities: entities,

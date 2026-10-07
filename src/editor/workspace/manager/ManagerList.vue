@@ -43,7 +43,13 @@ import SelectMultipleIcon from './icons/SelectMultipleIcon.vue'
 import VisibleIcon from './icons/VisibleIcon.vue'
 import ManagerMenu, { type ManagerMenuItem } from './ManagerMenu.vue'
 import type { ManagerModel, ManagerRowAction, SelectModifiers } from './model'
-import { canMoveSelectionTo, moveSelectionTo, ownedCounts, selectOwned } from './objects'
+import {
+    canMoveSelectionTo,
+    hasVisibleOwned,
+    moveSelectionTo,
+    ownedCounts,
+    selectOwned,
+} from './objects'
 import ManagerRow from './ManagerRow.vue'
 
 const props = defineProps<{
@@ -1190,7 +1196,7 @@ const entryMenuItems = (id: T): ManagerMenuItem[] => {
             key: 'select',
             label: manager.select,
             icon: SelectIcon,
-            disabled: !counts.value.get(id),
+            disabled: !hasVisibleOwned(props.model.owner, id),
         },
         { key: 'selectMultiple', label: manager.selectMultiple, icon: SelectMultipleIcon },
     ]
@@ -1256,7 +1262,7 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
             key: 'select',
             label: manager.select,
             icon: SelectIcon,
-            disabled: !folderCount(item),
+            disabled: !hasVisibleOwned(props.model.owner, new Set(item.members)),
         },
         { key: 'selectMultiple', label: manager.selectMultiple, icon: SelectMultipleIcon },
         {
@@ -1304,7 +1310,7 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
             key: 'select',
             label: manager.select,
             icon: SelectIcon,
-            disabled: !ids.some((id) => counts.value.get(id)),
+            disabled: !hasVisibleOwned(props.model.owner, new Set(ids)),
         },
         {
             key: 'moveToFolder',

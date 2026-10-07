@@ -1559,3 +1559,29 @@ test('an open manager menu keeps typed characters such as quick find keys from t
     await page.keyboard.press('Enter')
     await expect(menu).toHaveCount(0)
 })
+
+test('Select Objects on a hidden group keeps the selection', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group', 'Third'])
+    const panel = await openGroups(page)
+    const selection = () =>
+        page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length)
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    await page.getByRole('menuitem', { name: 'Select Objects' }).click()
+    const selected = await selection()
+    expect(selected).toBeGreaterThan(0)
+    await entryRow(panel, 'Other group').locator('.manager-eye').click()
+
+    // Every object is hidden, so there is nothing to select.
+    await panel.getByRole('button', { name: 'More Actions for Other group' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Select Objects' })).toBeDisabled()
+    await page.keyboard.press('Escape')
+    const count = await page.evaluate(async () => {
+        const { selectOwned } = await window.editorTest.appImport<
+            typeof import('../../src/editor/workspace/manager/objects')
+        >('/src/editor/workspace/manager/objects.ts')
+        return selectOwned('groupId', 2)
+    })
+    expect(count).toBe(0)
+    expect(await selection()).toBe(selected)
+    await expect(page.getByText('Selected 0 objects')).toHaveCount(0)
+})
