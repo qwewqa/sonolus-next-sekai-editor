@@ -35,7 +35,8 @@ export const resyncInput = async (event: Event, text: () => string) => {
 /** Escape reverts typed text the input hasn't committed; otherwise it passes on. */
 export const revertOnEscape = (event: KeyboardEvent, text: string) => {
     const input = event.currentTarget as HTMLInputElement
-    if (event.isComposing || input.value === text) return
+    // Unparseable text in a number input reads as empty.
+    if (event.isComposing || (input.value === text && !input.validity.badInput)) return
     event.stopPropagation()
     event.preventDefault()
     input.value = text

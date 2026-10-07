@@ -358,6 +358,36 @@ test('Escape in a tool setting field reverts typing first, then closes the dialo
     await expect(dialog).toHaveCount(0)
 })
 
+test('Escape reverts unparseable typing in an empty number field', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { settings, appImport } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        const { toolName } = await appImport<typeof import('../../src/editor/tools/state')>(
+            '/src/editor/tools/state.ts',
+        )
+        toolName.value = 'note'
+    })
+    await page.mouse.click(700, 300)
+    await page.keyboard.press('a')
+    const dialog = page.locator('.editor-tool-modal')
+    await expect(dialog).toBeVisible()
+    const field = dialog
+        .locator('label')
+        .filter({ has: page.getByText('Guide Alpha', { exact: true }) })
+        .locator('input')
+    await field.focus()
+    // The field reads as empty while it holds text that isn't a number.
+    await page.keyboard.type('-')
+    const badInput = () => field.evaluate((input: HTMLInputElement) => input.validity.badInput)
+    expect(await badInput()).toBe(true)
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
+    expect(await badInput()).toBe(false)
+    await expect(field).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+})
+
 test('division and lane groups show the value in use on their face', async ({ page }) => {
     await page.evaluate(() => {
         window.editorTest.settings.toolbar = [
