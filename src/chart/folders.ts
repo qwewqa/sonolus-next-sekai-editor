@@ -460,21 +460,24 @@ export const insertCopiesInTree = <K>(
     })
 }
 
+/** The default name for a new group, stage or folder: "#" and one past the highest "#n". */
+export const numberedName = (names: Iterable<string>) =>
+    `#${
+        Math.max(
+            0,
+            ...[...names]
+                .map((name) => (name.startsWith('#') ? +name.slice(1) : 0))
+                .filter(Number.isInteger),
+        ) + 1
+    }`
+
 /**
  * A copy's name, unused among `taken`: numbered names ("#3") take the next
  * number as Add does; others take the template's ("{0} ({1})") lowest free
  * number from 2, bumping a number they already carry.
  */
 export const copyName = (name: string, taken: ReadonlySet<string>, template: string) => {
-    if (/^#\d+$/.test(name))
-        return `#${
-            Math.max(
-                0,
-                ...[...taken]
-                    .map((name) => (name.startsWith('#') ? +name.slice(1) : 0))
-                    .filter(Number.isInteger),
-            ) + 1
-        }`
+    if (/^#\d+$/.test(name)) return numberedName(taken)
 
     const parts = template.split(/(\{[01]\})/)
     const order = parts.filter((part) => part === '{0}' || part === '{1}')

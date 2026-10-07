@@ -1378,7 +1378,6 @@
         },
         "closePanel": "Close {0}",
         "folders": {
-            "defaultName": "Folder {0}",
             "new": "New Folder",
             "newWith": "New Folder…",
             "moveTo": "Move to Folder…",

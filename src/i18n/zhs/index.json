@@ -1378,7 +1378,6 @@
     },
     "closePanel": "关闭{0}",
     "folders": {
-      "defaultName": "文件夹 {0}",
       "new": "新建文件夹",
       "newWith": "新建文件夹…",
       "moveTo": "移至文件夹…",

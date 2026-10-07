@@ -1378,7 +1378,6 @@
     },
     "closePanel": "{0} 닫기",
     "folders": {
-      "defaultName": "폴더 {0}",
       "new": "새 폴더",
       "newWith": "새 폴더…",
       "moveTo": "폴더로 이동…",

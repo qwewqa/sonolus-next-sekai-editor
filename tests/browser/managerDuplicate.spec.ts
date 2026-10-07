@@ -424,7 +424,7 @@ test('a folder duplicates after itself with copies of its members, keeping their
         groupFolderOps.duplicateFolder(empty)
     })
     expect(await tree(page)).toBe(
-        'Default Other [Verse: Lead Fill] [Verse (2): Lead Fill] Bass Drums Pad [Folder 1:] [Folder 1 (2):]',
+        'Default Other [Verse: Lead Fill] [Verse (2): Lead Fill] Bass Drums Pad [#1:] [#2:]',
     )
 })
 

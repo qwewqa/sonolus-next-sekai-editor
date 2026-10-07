@@ -1378,7 +1378,6 @@
     },
     "closePanel": "{0} panelini kapat",
     "folders": {
-      "defaultName": "Klasör {0}",
       "new": "Yeni klasör",
       "newWith": "Yeni klasör…",
       "moveTo": "Klasöre taşı…",

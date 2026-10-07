@@ -479,7 +479,7 @@ test('groups move into and out of folders through the menu', async ({ page }) =>
 
     // Each step is one undo.
     await undo(page)
-    expect(await tree(page)).toBe('Default [Verse: Bass] Lead [Folder 1: Outro]')
+    expect(await tree(page)).toBe('Default [Verse: Bass] Lead [#1: Outro]')
     await undo(page)
     expect(await tree(page)).toBe('Default [Verse: Bass] Lead Outro')
 })
@@ -800,14 +800,20 @@ test('New Folder adds and names a folder at the end', async ({ page }) => {
     await panel(page).getByRole('button', { name: 'New Folder', exact: true }).click()
     const input = panel(page).getByRole('textbox')
     await expect(input).toBeFocused()
-    await expect(input).toHaveValue('Folder 1')
+    await expect(input).toHaveValue('#1')
     await input.press('Escape')
-    expect(await tree(page)).toBe('Default Lead [Folder 1:]')
+    await expect(page.locator('.notification')).toHaveText('Added #1 folder')
+    expect(await tree(page)).toBe('Default Lead [#1:]')
+    // Numbered like new groups and stages.
+    await panel(page).getByRole('button', { name: 'New Folder', exact: true }).click()
+    await expect(input).toHaveValue('#2')
+    await input.press('Escape')
+    expect(await tree(page)).toBe('Default Lead [#1:] [#2:]')
     // Folders rename by double click like other rows.
-    await folderRow(page, 'Folder 1').locator('.manager-name').dblclick()
+    await folderRow(page, '#1').locator('.manager-name').dblclick()
     await input.fill('Drums')
     await input.press('Enter')
-    expect(await tree(page)).toBe('Default Lead [Drums:]')
+    expect(await tree(page)).toBe('Default Lead [Drums:] [#2:]')
 })
 
 test('double clicks on a folder chevron only toggle it', async ({ page }) => {

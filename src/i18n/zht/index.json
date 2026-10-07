@@ -1378,7 +1378,6 @@
     },
     "closePanel": "關閉{0}",
     "folders": {
-      "defaultName": "資料夾 {0}",
       "new": "新增資料夾",
       "newWith": "新增資料夾…",
       "moveTo": "移至資料夾…",

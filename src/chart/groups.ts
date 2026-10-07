@@ -1,5 +1,5 @@
 import { i18n } from '../i18n'
-import type { FolderId } from './folders'
+import { numberedName, type FolderId } from './folders'
 
 export type Groups = Map<GroupId, GroupObject>
 
@@ -25,14 +25,7 @@ export const addToGroups = (
     // A blank name, e.g. from level data, gets a default like a missing one.
     if (!name?.trim()) name = undefined
     name ??= groups.size
-        ? `#${
-              Math.max(
-                  0,
-                  ...[...groups.values()]
-                      .map(({ name }) => (name.startsWith('#') ? +name.slice(1) : 0))
-                      .filter(Number.isInteger),
-              ) + 1
-          }`
+        ? numberedName([...groups.values()].map(({ name }) => name))
         : i18n.value.group.default
 
     groups.set(id, {

@@ -1378,7 +1378,6 @@
     },
     "closePanel": "{0}を閉じる",
     "folders": {
-      "defaultName": "フォルダー{0}",
       "new": "新規フォルダー",
       "newWith": "新規フォルダー…",
       "moveTo": "フォルダーへ移動…",

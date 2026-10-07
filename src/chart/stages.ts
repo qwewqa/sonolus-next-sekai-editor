@@ -1,4 +1,4 @@
-import type { FolderId } from './folders'
+import { numberedName, type FolderId } from './folders'
 
 export type Stages = Map<StageId, StageObject>
 
@@ -31,14 +31,7 @@ export const addToStages = (
     const id = i++ as StageId
     // A blank name, e.g. from level data, gets a default like a missing one.
     if (!name?.trim()) name = undefined
-    name ??= `#${
-        Math.max(
-            0,
-            ...[...stages.values()]
-                .map(({ name }) => (name.startsWith('#') ? +name.slice(1) : 0))
-                .filter(Number.isInteger),
-        ) + 1
-    }`
+    name ??= numberedName([...stages.values()].map(({ name }) => name))
 
     stages.set(id, {
         name,

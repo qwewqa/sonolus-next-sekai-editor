@@ -11,6 +11,7 @@ import {
     moveEntriesInTree,
     moveEntryInTree,
     moveFolderInTree,
+    numberedName,
     removeEntriesFromTree,
     removeFolderFromTree,
     stepEntryInTree,
@@ -109,14 +110,8 @@ export function createFolderOps<K, V extends FolderMember & { name: string }>(co
         notify(message)
     }
 
-    /** "Folder 1", "Folder 2", … skipping names in use. */
-    const newName = () => {
-        const names = new Set([...config.folders().values()].map(({ name }) => name))
-        for (let n = 1; ; n++) {
-            const name = interpolateRaw(i18n.value.workspace.folders.defaultName, `${n}`)
-            if (!names.has(name)) return name
-        }
-    }
+    /** "#1", "#2", … as new groups and stages are named. */
+    const newName = () => numberedName([...config.folders().values()].map(({ name }) => name))
 
     /**
      * Copies entries and folders with their objects in one step. Copies of the
