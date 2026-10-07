@@ -339,25 +339,58 @@ test('checked folders delete with their members, empty ones too, and undo restor
     expect(await tree(page)).toBe(before)
 })
 
-test('Move to Folder moves the entries outside checked folders; folders stay put', async ({
+test('Move to Folder moves every selected entry, emptying checked folders, in one step', async ({
     page,
 }) => {
-    await seedGroups(page, seed)
+    await seedGroups(page, seed, ['Spare'])
     const list = panel(page)
     const bar = list.locator('.manager-selection-bar')
+    const menu = page.getByRole('menu')
     const move = bar.getByRole('button', { name: 'Move to Folder…' })
-    await row(list, 'Verse')
+    const verse = row(list, 'Verse').locator('.manager-check')
+    const before = 'Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad] [Spare:]'
+    // Only an empty folder: nothing would move.
+    await row(list, 'Spare')
         .locator('.manager-name')
         .click({ modifiers: ['ControlOrMeta'] })
     await expect(move).toBeDisabled()
+    await row(list, 'Spare').locator('.manager-check').click()
+
+    // A checked folder's members go too; the folder stays, empty and still selected.
+    await row(list, 'Verse').locator('.manager-check').click()
     await nameButton(list, 'Bass').click()
     await move.click()
-    await page.getByRole('menu').getByRole('menuitemradio', { name: 'Outro' }).click()
-    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Drums [Outro: Pad Bass]')
-    await expect(row(list, 'Verse').locator('.manager-check')).toHaveAttribute(
-        'aria-checked',
-        'true',
+    await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveCount(0)
+    await menu.getByRole('menuitemradio', { name: 'Outro' }).click()
+    expect(await tree(page)).toBe(
+        'Default Other [Verse:] Drums [Outro: Pad Lead Fill Bass] [Spare:]',
     )
+    await expect(page.getByText('Moved 3 groups to Outro folder')).toBeVisible()
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    expect(await checked(list)).toEqual(['Lead', 'Fill', 'Bass'])
+    await expect(bar).toContainText('4 Selected')
+    expect(await historyLength(page)).toBe(1)
+    await undo(page)
+    expect(await tree(page)).toBe(before)
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+
+    // Into the checked folder itself, its members stay.
+    await move.click()
+    await menu.getByRole('menuitemradio', { name: 'Verse' }).click()
+    expect(await tree(page)).toBe(
+        'Default Other [Verse: Lead Fill Bass] Drums [Outro: Pad] [Spare:]',
+    )
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    await undo(page)
+
+    // Out of folders, each just below its folder.
+    await move.click()
+    await menu.getByRole('menuitemradio', { name: 'No Folder' }).click()
+    expect(await tree(page)).toBe(
+        'Default Other [Verse:] Lead Fill Bass Drums [Outro: Pad] [Spare:]',
+    )
+    await undo(page)
+    expect(await tree(page)).toBe(before)
 
     // Visibility and Select Objects act on the members.
     await nameButton(list, 'Default').click()

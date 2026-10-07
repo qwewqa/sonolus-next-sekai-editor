@@ -373,7 +373,7 @@ const selectedIds = computed(() => allIds.value.filter((id) => selected.value.ha
 const selectedFolderIds = computed(() =>
     allFolderIds.value.filter((id) => selectedFolders.value.has(id)),
 )
-/** Selected entries outside selected folders: those that move between folders. */
+/** Selected entries outside selected folders: those copied beside themselves. */
 const looseSelectedIds = computed(() =>
     selectedIds.value.filter((id) => {
         const folder = folderOfEntry.value.get(id)
@@ -646,9 +646,12 @@ const onBulkDelete = async (keyboard = false) => {
     if (!root.value?.contains(document.activeElement)) focusAfterDelete(index, '.manager-name')
 }
 
-/** Moves the selected entries outside selected folders; folders stay put. */
+/**
+ * Moves every selected entry, selected folders' members too, since folders don't
+ * nest; the folders stay put, and stay selected, emptied.
+ */
 const onBulkFolder = async (choice: string) => {
-    const ids = new Set(looseSelectedIds.value)
+    const ids = new Set(selectedIds.value)
     if (!ids.size) return
     if (choice === 'new') {
         stopSelecting()
@@ -657,7 +660,7 @@ const onBulkFolder = async (choice: string) => {
     }
     folders.value.placeEntries(ids, choice === 'none' ? undefined : (Number(choice) as FolderId))
     await nextTick()
-    const first = looseSelectedIds.value[0]
+    const first = selectedIds.value[0]
     if (first !== undefined) reveal({ type: 'entry', id: first })
 }
 
@@ -1277,7 +1280,7 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
             key: 'moveToFolder',
             label: i18n.value.workspace.folders.moveTo,
             icon: FolderIcon,
-            disabled: !looseSelectedIds.value.length,
+            disabled: !selectedIds.value.length,
             separated: true,
         },
         { key: 'duplicate', label: manager.duplicateSelected, icon: CopyIcon, disabled: none },
@@ -1296,7 +1299,7 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
 
 /** Folders for the selection, checked when all of it is in one already. */
 const bulkFolderItems = (): ManagerMenuItem[] => {
-    const holders = new Set(looseSelectedIds.value.map((id) => folderOfEntry.value.get(id)))
+    const holders = new Set(selectedIds.value.map((id) => folderOfEntry.value.get(id)))
     const only = holders.size === 1 ? { folder: [...holders][0] } : undefined
     return [
         {
@@ -1940,7 +1943,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 <button
                     type="button"
                     class="manager-round manager-bulk-move"
-                    :disabled="!looseSelectedIds.length"
+                    :disabled="!selectedIds.length"
                     :aria-label="i18n.workspace.folders.moveTo"
                     :title="i18n.workspace.folders.moveTo"
                     aria-haspopup="menu"
