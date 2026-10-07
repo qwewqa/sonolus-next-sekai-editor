@@ -8,11 +8,11 @@ test.beforeEach(async ({ page }) => {
     await page.evaluate(installEditorFixture)
 })
 
-type Options = { command: 'copy' | 'cut'; selection: 'partial' | 'whole' }
+type Options = { command: 'copy' | 'cut'; selection: 'head' | 'tail' | 'whole' }
 
 /**
  * An Out Quad slide with ticks at beats 1 and 2: copies or cuts the head and
- * ticks (or the whole slide), pastes 8 beats later, then undoes.
+ * ticks, the ticks and tail, or the whole slide, pastes 8 beats later, then undoes.
  */
 const exercise = async ({ command, selection }: Options) => {
     const { show, fixtures, history, appImport } = window.editorTest
@@ -49,15 +49,23 @@ const exercise = async ({ command, selection }: Options) => {
             .flat()
             .sort((a, b) => a.beat - b.beat)
             .map(({ beat, left, size, isAttached }) => ({ beat, left, size, isAttached }))
+    const entities = () => [...history.state.value.store.slides.note.values()].flat()
     const original = notes()
+    const originalEntities = entities()
     const slide = [...history.state.value.store.slides.note.values()][0]!
     history.replaceState({
         ...history.state.value,
-        selectedEntities: selection === 'whole' ? [...slide] : slide.slice(0, 3),
+        selectedEntities:
+            selection === 'whole'
+                ? [...slide]
+                : selection === 'head'
+                  ? slide.slice(0, 3)
+                  : slide.slice(1),
     })
 
     ;(command === 'copy' ? copy : cut).execute()
     const afterCommand = notes()
+    const afterCommandEntities = entities()
     const data = clipboard.clipboardEntry.value!.data!
     await pasteAtPosition(data.lane, 8, { ctrl: false, shift: false })
     const pasted = notes()
@@ -66,8 +74,20 @@ const exercise = async ({ command, selection }: Options) => {
 
     history.undoState()
     const afterPasteUndo = notes()
+    const pasteUndoExact = entities().every((note, i) => note === afterCommandEntities[i])
     if (command === 'cut') history.undoState()
-    return { original, afterCommand, pasted, afterPasteUndo, restored: notes() }
+    const restoredEntities = entities()
+    return {
+        original,
+        afterCommand,
+        pasted,
+        afterPasteUndo,
+        pasteUndoExact,
+        restored: notes(),
+        restoredExact:
+            restoredEntities.length === originalEntities.length &&
+            restoredEntities.every((note, i) => note === originalEntities[i]),
+    }
 }
 
 type Note = { beat: number; left: number; size: number; isAttached: boolean }
@@ -81,32 +101,51 @@ const expectNotes = (actual: Note[], expected: Note[]) => {
     expect(actual.map((note) => note.isAttached)).toEqual(expected.map((note) => note.isAttached))
 }
 
-const detached = (notes: Note[]) => notes.map((note) => ({ ...note, isAttached: false }))
+// Out Quad from lane -4 to 4: the ticks at beats 1 and 2 are drawn at left -0.5 and 2.
+const original = [
+    { beat: 0, left: -4, size: 2, isAttached: false },
+    { beat: 1, left: -0.5, size: 2, isAttached: true },
+    { beat: 2, left: 2, size: 2, isAttached: true },
+    { beat: 4, left: 4, size: 2, isAttached: false },
+]
 
-test('copying a slide head and its ticks without the tail pastes the ticks where they were drawn', async ({
+// The beat 2 tick ends the copy where it was drawn; the beat 1 tick stays attached between it and the head.
+const headCopy = [
+    { beat: 0, left: -4, size: 2, isAttached: false },
+    { beat: 1, left: 0.5, size: 2, isAttached: true },
+    { beat: 2, left: 2, size: 2, isAttached: false },
+]
+
+for (const command of ['copy', 'cut'] as const) {
+    test(`${command === 'copy' ? 'copying' : 'cutting'} a slide head and its ticks without the tail keeps the ticks attached`, async ({
+        page,
+    }) => {
+        const result = await page.evaluate(exercise, { command, selection: 'head' } as const)
+        expectNotes(result.original, original)
+        expectNotes(result.afterCommand, command === 'copy' ? original : original.slice(3))
+        expectNotes(result.pasted, headCopy)
+        expect(result.pasteUndoExact).toBe(true)
+        expect(result.restoredExact).toBe(true)
+    })
+}
+
+test('copying ticks and the tail without the head keeps the inner tick attached', async ({
     page,
 }) => {
-    const result = await page.evaluate(exercise, { command: 'copy', selection: 'partial' } as const)
-    // Out Quad from lane -4 to 4: the tick at beat 1 is drawn at left -0.5.
-    expect(result.original[1]!.left).toBeCloseTo(-0.5, 6)
-    expectNotes(result.afterCommand, result.original)
-    expectNotes(result.pasted, detached(result.original.slice(0, 3)))
-    expectNotes(result.afterPasteUndo, result.original)
-})
-
-test('cutting a slide head and its ticks without the tail pastes the ticks where they were drawn', async ({
-    page,
-}) => {
-    const result = await page.evaluate(exercise, { command: 'cut', selection: 'partial' } as const)
-    expectNotes(result.afterCommand, result.original.slice(3))
-    expectNotes(result.pasted, detached(result.original.slice(0, 3)))
-    expectNotes(result.afterPasteUndo, result.original.slice(3))
-    expectNotes(result.restored, result.original)
+    const result = await page.evaluate(exercise, { command: 'copy', selection: 'tail' } as const)
+    // The beat 1 tick starts the copy where it was drawn, now with its own linear ease.
+    expectNotes(result.pasted, [
+        { beat: 1, left: -0.5, size: 2, isAttached: false },
+        { beat: 2, left: 1, size: 2, isAttached: true },
+        { beat: 4, left: 4, size: 2, isAttached: false },
+    ])
+    expect(result.pasteUndoExact).toBe(true)
+    expect(result.restoredExact).toBe(true)
 })
 
 test('copying a whole slide keeps its ticks attached', async ({ page }) => {
     const result = await page.evaluate(exercise, { command: 'copy', selection: 'whole' } as const)
-    expect(result.original.map((note) => note.isAttached)).toEqual([false, true, true, false])
-    expectNotes(result.pasted, result.original)
-    expectNotes(result.afterPasteUndo, result.original)
+    expectNotes(result.pasted, original)
+    expect(result.pasteUndoExact).toBe(true)
+    expect(result.restoredExact).toBe(true)
 })

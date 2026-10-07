@@ -1,7 +1,6 @@
 import type { State } from '..'
 import { attachEasedFrac, buildPreviewChart } from '../../preview/engine/chart'
 import { getStageProps } from '../../preview/engine/stage'
-import type { SlideId } from '../entities/slides'
 import type { NoteEntity } from '../entities/slides/note'
 
 export const getMaterializedNotePositions = (
@@ -45,29 +44,4 @@ export const getMaterializedNotePositions = (
         })
     }
     return positions
-}
-
-/** Each slide's kept notes; a tick losing its attach head or tail detaches where drawn, as Split Slide does. */
-export const keepSlideNotes = (
-    source: State,
-    slideIds: SlideId[],
-    isKept: (note: NoteEntity) => boolean,
-) => {
-    const infos = slideIds.map((id) => source.store.slides.info.get(id) ?? [])
-    const detached = infos.flatMap((slide) =>
-        slide
-            .filter(
-                ({ note, attachHead, attachTail }) =>
-                    note.isAttached && isKept(note) && (!isKept(attachHead) || !isKept(attachTail)),
-            )
-            .map(({ note }) => note),
-    )
-    const positions = getMaterializedNotePositions(source, detached)
-    return infos.map((slide) =>
-        slide.flatMap(({ note }) => {
-            if (!isKept(note)) return []
-            const position = positions.get(note)
-            return [position ? { ...note, ...position, isAttached: false } : note]
-        }),
-    )
 }

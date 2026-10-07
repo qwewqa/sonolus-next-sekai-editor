@@ -7,11 +7,11 @@ import { groups } from '../../../history/groups'
 import { initialLife } from '../../../history/initialLife'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { stages } from '../../../history/stages'
+import { store } from '../../../history/store'
 import { i18n } from '../../../i18n'
 import { serializeEditorMetadata } from '../../../levelData/editorMetadata'
 import { serializeToLevelDataEntities } from '../../../levelData/entities/serialize'
 import type { Entity, EntityOfType, EntityType } from '../../../state/entities'
-import { keepSlideNotes } from '../../../state/operations/notePositions'
 import { inStoredOrder } from '../../../state/operations/transformSelection'
 import { createStore } from '../../../state/store/creates'
 import { interpolate } from '../../../utils/interpolate'
@@ -109,13 +109,14 @@ const getEntities = <T extends EntityType>(entities: Entity[], type: T) =>
         (entity) => entity,
     )
 
-export const getSlides = (entities: Entity[]) => {
+const getSlides = (entities: Entity[]) => {
     const selectedNotes = entities.filter((entity) => entity.type === 'note')
-    const selectedNotesSet = new Set<Entity>(selectedNotes)
+    const selectedNotesSet = new Set(selectedNotes)
 
-    return keepSlideNotes(
-        state.value,
-        [...new Set(selectedNotes.map((note) => note.slideId))],
-        (note) => selectedNotesSet.has(note),
-    )
+    return [...new Set(selectedNotes.map((note) => note.slideId))].map((slideId) => {
+        const notes = store.value.slides.note.get(slideId)
+        if (!notes) throw new Error('Unexpected notes not found')
+
+        return notes.filter((note) => selectedNotesSet.has(note))
+    })
 }

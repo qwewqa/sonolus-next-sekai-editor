@@ -482,12 +482,12 @@ for (const [key, owner] of [
     ['groups', 'Other'],
     ['stages', 'Side stage'],
 ] as const) {
-    test(`a ${key.slice(0, -1)} owning part of a slide duplicates its ticks where they are drawn`, async ({
+    test(`a ${key.slice(0, -1)} owning part of a slide duplicates its ticks attached`, async ({
         page,
     }) => {
         await seed(page)
         // An Out Quad slide whose head and ticks Other and the side stage own, but not its tail.
-        const drawn = await page.evaluate(async () => {
+        await page.evaluate(async () => {
             const { history, appImport } = window.editorTest
             const { createTransaction } = await appImport<
                 typeof import('../../src/state/transaction')
@@ -498,9 +498,6 @@ for (const [key, owner] of [
             const { createSlideId } = await appImport<
                 typeof import('../../src/state/entities/slides')
             >('/src/state/entities/slides/index.ts')
-            const { getMaterializedNotePositions } = await appImport<
-                typeof import('../../src/state/operations/notePositions')
-            >('/src/state/operations/notePositions.ts')
             const { addToGroups } =
                 await appImport<typeof import('../../src/chart/groups')>('/src/chart/groups.ts')
             const { addToStages } =
@@ -530,16 +527,10 @@ for (const [key, owner] of [
                     isConnectorSeparator: false,
                     connectorEase: 'outQuad',
                 })
-            const state = transaction.commit([])
-            history.replaceState(state)
-            const notes = state.store.slides.note.get(slideId)!
-            const positions = getMaterializedNotePositions(state, notes)
-            return notes.slice(0, 3).map((note) => ({
-                beat: note.beat,
-                left: positions.get(note)?.left ?? note.left,
-                size: positions.get(note)?.size ?? note.size,
-                isAttached: false,
-            }))
+            history.replaceState(transaction.commit([]))
+            ;(window as unknown as { notesBefore: unknown[] }).notesBefore = [
+                ...history.state.value.store.slides.note.values(),
+            ].flat()
         })
         const notesOf = (name: string) =>
             page.evaluate(
@@ -564,9 +555,13 @@ for (const [key, owner] of [
                 { key, name },
             )
 
-        // Out Quad from lane -4 to 4: the tick at beat 41 is drawn at left -0.5.
-        expect(drawn[1]!.left).toBeCloseTo(-0.5, 6)
+        // Out Quad from lane -4 to 4: the ticks at beats 41 and 42 are drawn at left -0.5 and 2.
         const source = await notesOf(owner)
+        expect(source).toEqual([
+            { beat: 40, left: -4, size: 2, isAttached: false },
+            { beat: 41, left: expect.closeTo(-0.5, 6), size: 2, isAttached: true },
+            { beat: 42, left: expect.closeTo(2, 6), size: 2, isAttached: true },
+        ])
         const list = panel(page, key)
         await (
             await openMenu(list, owner)
@@ -574,17 +569,26 @@ for (const [key, owner] of [
             .getByRole('menuitem', { name: 'Duplicate', exact: true })
             .click()
         await page.keyboard.press('Escape')
-        const copied = await notesOf(`${owner} (2)`)
-        expect(copied.map((note) => note.beat)).toEqual(drawn.map((note) => note.beat))
-        for (const [i, note] of drawn.entries()) {
-            expect(copied[i]!.left).toBeCloseTo(note.left, 6)
-            expect(copied[i]!.size).toBeCloseTo(note.size, 6)
-        }
-        expect(copied.map((note) => note.isAttached)).toEqual([false, false, false])
+        // The beat 42 tick ends the copy where it was drawn; the beat 41 tick follows it.
+        expect(await notesOf(`${owner} (2)`)).toEqual([
+            { beat: 40, left: -4, size: 2, isAttached: false },
+            { beat: 41, left: expect.closeTo(0.5, 6), size: 2, isAttached: true },
+            { beat: 42, left: expect.closeTo(2, 6), size: 2, isAttached: true },
+        ])
 
         await undo(page)
         expect(await tree(page, key)).not.toContain(`${owner} (2)`)
-        expect(await notesOf(owner)).toEqual(source)
+        expect(
+            await page.evaluate(() => {
+                const before = (window as unknown as { notesBefore: unknown[] }).notesBefore
+                const after = [
+                    ...window.editorTest.history.state.value.store.slides.note.values(),
+                ].flat()
+                return (
+                    after.length === before.length && after.every((note, i) => note === before[i])
+                )
+            }),
+        ).toBe(true)
     })
 }
 

@@ -11,7 +11,6 @@ import { addNote } from '../mutations/slides/note'
 import { addTimeScale } from '../mutations/timeScale'
 import type { StoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
-import { keepSlideNotes } from './notePositions'
 
 /** Each owner's copy, by group or stage id. */
 export type OwnerCopies =
@@ -72,12 +71,8 @@ export const duplicateOwned = (state: State, owners: OwnerCopies): State => {
 
     // A slide keeps only the notes the copied owners own.
     const copyOf = (id: number) => (owners.copies as ReadonlyMap<number, number>).get(id)
-    const slides = keepSlideNotes(
-        state,
-        [...state.store.slides.note.keys()],
-        (note) => copyOf(note[owners.key]) !== undefined,
-    )
-    for (const owned of slides) {
+    for (const notes of state.store.slides.note.values()) {
+        const owned = notes.filter((note) => copyOf(note[owners.key]) !== undefined)
         if (!owned.length) continue
         const slideId = createSlideId()
         for (const note of owned)
