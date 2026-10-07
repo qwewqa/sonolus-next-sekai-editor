@@ -175,3 +175,12 @@ test('Properties and Settings fields keep their edge, as Preview Settings fields
     await expect(page.getByRole('dialog')).toBeVisible()
     await expectEdges(page.getByRole('dialog').locator(pills))
 })
+
+test('the toolbar marks the tool in use', async ({ page }) => {
+    const tools = page.locator('[data-editor-toolbar]').locator(':scope > div > div > button')
+    const pressed = tools.and(page.locator('[aria-pressed="true"]'))
+    const unpressed = tools.and(page.locator('[aria-pressed="false"]')).first()
+    await expect(pressed).toHaveCount(1)
+    expect(await outline(pressed)).toMatchObject({ style: 'solid', width: '2px' })
+    expect((await outline(unpressed)).style).toBe('none')
+})

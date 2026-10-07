@@ -30,7 +30,7 @@ const shortcut = computed(() =>
         class="flex items-center rounded-full p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
         :class="[
             pressed
-                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button'
+                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:outline forced-colors:outline-2 forced-colors:outline-offset-2 forced-colors:outline-[color:CanvasText]'
                 : 'bg-button focus-visible:ring-accent',
             { '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3': showLabel },
         ]"
