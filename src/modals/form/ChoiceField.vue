@@ -1,6 +1,8 @@
 <script setup lang="ts" generic="const T">
 import {
     computed,
+    Fragment,
+    h,
     nextTick,
     onBeforeUnmount,
     onMounted,
@@ -14,6 +16,7 @@ import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
 import { useEmptyLabel, useUnsetChoice } from './emptyLabel'
 import { isUnknownValue, mixedOptions, useFieldUsage } from './fieldUsage'
+import type { OptionGlyph } from './optionGlyph'
 import MultiSelectField from './MultiSelectField.vue'
 import OptionalSelectField from './OptionalSelectField.vue'
 import { resyncRadios } from './resync'
@@ -50,6 +53,12 @@ const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
 const selectOptions = computed(() =>
     props.options.map(([name, value]): [string, T] => [name, value]),
 )
+
+// The select's list shows each value's mark too.
+const listGlyph = computed((): OptionGlyph<T> | undefined => {
+    const glyph = slots.glyph
+    return glyph && ((value) => h(Fragment, glyph({ value }) as never))
+})
 
 const segment =
     'flex h-7 items-center justify-center rounded-full px-2 transition-colors peer-checked:bg-button peer-checked:shadow-md peer-hover:bg-white/50 peer-checked:peer-hover:bg-button peer-focus-visible:ring-2 peer-focus-visible:ring-fg peer-active:bg-accent peer-active:text-on-accent'
@@ -196,6 +205,7 @@ watch(
         :label
         :options="selectOptions"
         :disabled
+        :option-glyph="listGlyph"
     >
         <template v-if="selectGlyph && modelValue !== undefined && !unknown" #leading>
             <slot name="glyph" :value="modelValue" />
@@ -208,6 +218,7 @@ watch(
         :label
         :options="selectOptions"
         :disabled
+        :option-glyph="listGlyph"
     >
         <template v-if="selectGlyph && modelValue !== undefined && !unknown" #leading>
             <slot name="glyph" :value="modelValue" />

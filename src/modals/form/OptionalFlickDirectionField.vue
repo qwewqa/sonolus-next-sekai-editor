@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, h } from 'vue'
 import type { FlickDirection } from '../../chart/note'
 import { i18n } from '../../i18n'
 import OptionalSelectField from './OptionalSelectField.vue'
 import { flickArrowPoints } from '../../flickArrow'
 import FlickIcon from './FlickIcon.vue'
+import type { OptionGlyph } from './optionGlyph'
 
 const modelValue = defineModel<FlickDirection | undefined>({ required: true })
 
@@ -14,6 +15,8 @@ const glyph = computed(() =>
         ? (modelValue.value as keyof typeof flickArrowPoints)
         : undefined,
 )
+const arrow: OptionGlyph<FlickDirection> = (value) =>
+    value === 'none' ? null : h(FlickIcon, { direction: value })
 </script>
 
 <template>
@@ -29,6 +32,7 @@ const glyph = computed(() =>
             [i18n.modals.form.flickDirection.downLeft, 'downLeft'],
             [i18n.modals.form.flickDirection.downRight, 'downRight'],
         ]"
+        :option-glyph="arrow"
     >
         <template v-if="glyph" #leading><FlickIcon :direction="glyph" /></template>
     </OptionalSelectField>

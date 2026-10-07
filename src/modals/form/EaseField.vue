@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="E extends Ease">
-import { computed, provide } from 'vue'
+import { computed, h, provide } from 'vue'
 import {
     composeEase,
     easeEditParts,
@@ -20,6 +20,7 @@ import { unsetChoiceKey } from './emptyLabel'
 import { useFieldUsage, type FieldUsage, type MixedValue } from './fieldUsage'
 import EaseIcon from './EaseIcon.vue'
 import MultiSelectField from './MultiSelectField.vue'
+import type { OptionGlyph } from './optionGlyph'
 import OptionalSelectField from './OptionalSelectField.vue'
 
 const props = defineProps<{
@@ -105,6 +106,19 @@ const functionUsage = computed((): FieldUsage => {
     }
 })
 
+// A list shows the curve each pick would give, and none while a pick's is unknown,
+// as a mode's while functions are mixed.
+const typeGlyph: OptionGlyph<EaseType> = (value) => {
+    // From None or Linear, a mode takes Quad.
+    const next = type.value === 'none' || type.value === 'linear' ? 'quad' : name.value
+    if (value !== 'none' && value !== 'linear' && !next) return
+    return h(EaseIcon, { ease: composeEase(value, next) })
+}
+const functionGlyph: OptionGlyph<EaseFunctionName> = (value) =>
+    type.value && type.value !== 'none' && type.value !== 'linear'
+        ? h(EaseIcon, { ease: composeEase(type.value, value) })
+        : undefined
+
 // Only a complete ease has a curve to show.
 const curve = computed(() =>
     type.value && (name.value || standalone.value)
@@ -115,7 +129,12 @@ const curve = computed(() =>
 
 <template>
     <template v-if="optional">
-        <OptionalSelectField v-model="type" :label="typeLabel" :options="typeOptions">
+        <OptionalSelectField
+            v-model="type"
+            :label="typeLabel"
+            :options="typeOptions"
+            :option-glyph="typeGlyph"
+        >
             <template v-if="curve" #leading><EaseIcon :ease="curve" /></template>
         </OptionalSelectField>
         <OptionalSelectField
@@ -123,10 +142,16 @@ const curve = computed(() =>
             :label="functionLabel"
             :options="functionOptions"
             :disabled="standalone"
+            :option-glyph="functionGlyph"
         />
     </template>
     <template v-else>
-        <MultiSelectField v-model="type" :label="typeLabel" :options="typeOptions">
+        <MultiSelectField
+            v-model="type"
+            :label="typeLabel"
+            :options="typeOptions"
+            :option-glyph="typeGlyph"
+        >
             <template v-if="curve" #leading><EaseIcon :ease="curve" /></template>
         </MultiSelectField>
         <FieldUsageProvider :usage="functionUsage">
@@ -136,6 +161,7 @@ const curve = computed(() =>
                 :options="functionOptions"
                 :disabled="standalone"
                 :empty-label="standalone ? '—' : undefined"
+                :option-glyph="functionGlyph"
             />
         </FieldUsageProvider>
     </template>

@@ -2,6 +2,7 @@
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import { computed } from 'vue'
 import BaseField from './BaseField.vue'
+import { hasGlyphColumn, OptionGlyphSlot, type OptionGlyph } from './optionGlyph'
 import { resyncSelect } from './resync'
 import SelectValue from './SelectValue.vue'
 import { isUnknownValue, optionName } from './fieldUsage'
@@ -11,6 +12,8 @@ const props = defineProps<{
     label: string
     options: (readonly [string, NoInfer<T>])[]
     disabled?: boolean
+    /** Each value's picture in the shared list. */
+    optionGlyph?: OptionGlyph<NoInfer<T>>
 }>()
 
 const modelValue = defineModel<T>({ required: true })
@@ -18,6 +21,12 @@ const unknown = computed(() => isUnknownValue(modelValue.value, props.options))
 // The shown value, also on hover where it truncates.
 const shown = computed(() =>
     unknown.value ? unknownLabel(modelValue.value) : optionName(modelValue.value, props.options),
+)
+const glyphs = computed(() =>
+    hasGlyphColumn(
+        props.optionGlyph,
+        props.options.map(([, value]) => value),
+    ),
 )
 </script>
 
@@ -37,7 +46,7 @@ const shown = computed(() =>
                     {{ shown }}
                 </option>
                 <option v-for="([name, value], index) in options" :key="index" :value>
-                    {{ name }}
+                    <OptionGlyphSlot v-if="glyphs" :glyph="optionGlyph!(value)" />{{ name }}
                 </option>
             </select>
             <SelectValue :value="shown" class="group-active:text-on-accent" />

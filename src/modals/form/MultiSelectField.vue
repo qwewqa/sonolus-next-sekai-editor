@@ -4,6 +4,7 @@ import { i18n } from '../../i18n'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
 import { useLeadFit } from './leadFit'
+import { hasGlyphColumn, OptionGlyphSlot, type OptionGlyph } from './optionGlyph'
 import { resyncSelect } from './resync'
 import SelectValue from './SelectValue.vue'
 import { isUnknownValue, isUnset, mixedOptions, optionName, useFieldUsage } from './fieldUsage'
@@ -17,6 +18,8 @@ const props = defineProps<{
     disabled?: boolean
     /** Text for the undefined value; defaults to "Mixed" (selected objects disagree). */
     emptyLabel?: string
+    /** Each value's picture in the shared list. */
+    optionGlyph?: OptionGlyph<NoInfer<T>>
 }>()
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
@@ -63,6 +66,13 @@ const shown = computed(() => {
     const name = optionName(modelValue.value, options)
     return name === undefined ? undefined : optionText(name, modelValue.value)
 })
+
+const glyphs = computed(() =>
+    hasGlyphColumn(
+        props.optionGlyph,
+        allSections.value.flatMap((section) => section.options.map(([, value]) => value)),
+    ),
+)
 
 const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
 </script>
@@ -113,7 +123,9 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                             class="text-fg"
                             :value
                         >
-                            {{ optionText(name, value) }}
+                            <OptionGlyphSlot v-if="glyphs" :glyph="optionGlyph!(value)" />{{
+                                optionText(name, value)
+                            }}
                         </option>
                     </optgroup>
                     <template v-else>
@@ -123,7 +135,9 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                             class="text-fg"
                             :value
                         >
-                            {{ optionText(name, value) }}
+                            <OptionGlyphSlot v-if="glyphs" :glyph="optionGlyph!(value)" />{{
+                                optionText(name, value)
+                            }}
                         </option>
                     </template>
                 </template>

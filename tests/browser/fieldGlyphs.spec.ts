@@ -75,8 +75,26 @@ test('color and flick fields show the current value as the canvas draws it', asy
     await expect(lead(page, 'Color').locator('circle')).toHaveAttribute('fill', '#d6737b')
     await expect(lead(page, 'Flick Direction').locator('polygon')).toHaveCount(1)
     await expect(lead(page, 'Flick Direction')).toHaveAttribute('aria-hidden', 'true')
-    // Options stay text.
-    await expect(field(page, 'Note Color').locator('option svg')).toHaveCount(0)
+    // The shared list repeats each value's picture before its name, unannounced.
+    const color = field(page, 'Note Color').locator('select')
+    await expect(
+        color.locator('option .select-option-glyph[aria-hidden="true"] circle'),
+    ).toHaveCount(9)
+    await expect(color.getByRole('option', { name: 'Purple', exact: true })).toHaveCount(1)
+    await expect(
+        color.getByRole('option', { name: 'Purple', exact: true }).locator('circle'),
+    ).toHaveAttribute('fill', '#dfaaff')
+    // None has no arrow, but keeps the column's slot.
+    const flick = field(page, 'Flick Direction').locator('select')
+    await expect(flick.locator('.select-option-glyph')).toHaveCount(7)
+    await expect(
+        flick
+            .getByRole('option', { name: 'None', exact: true })
+            .locator('.select-option-glyph svg'),
+    ).toHaveCount(0)
+    await expect(flick.locator('.select-option-glyph polygon')).toHaveCount(6)
+    // Fields R1 gives no picture list text only.
+    await expect(field(page, 'Note Type').locator('.select-option-glyph')).toHaveCount(0)
 
     // Black connectors use the styled connector base; None has no arrow.
     await select(page, 'note', [2])
@@ -151,6 +169,10 @@ test.describe('time scale transition', () => {
         await select(page, 'timeScale', [1])
         await expect(field(page, transition).locator('select')).toBeVisible()
         await expect(lead(page, transition)).toHaveCount(0)
+        // The list has the room the field lacks.
+        const options = field(page, transition).locator('select .select-option-glyph')
+        await expect(options.locator('circle')).toHaveCount(1)
+        await expect(options.locator('polygon')).toHaveCount(1)
     })
 
     test('a phone keeps the segments and drops the markers first', async ({ page }) => {
@@ -404,4 +426,51 @@ test('shortcut notes start with the name, not under its icon', async ({ page }) 
         }),
     )
     expect(Math.abs(name! - note!)).toBeLessThan(1)
+})
+
+test.describe('ease lists', () => {
+    const curves = (page: Page, label: string) =>
+        field(page, label).locator('select .select-option-glyph svg')
+    const setEases = (page: Page, eases: string[]) =>
+        page.evaluate(async (eases) => {
+            const { history } = window.editorTest
+            const chart = structuredClone(window.editorTest.fixtures.interaction)
+            chart.slides = chart.slides.map(([head], index) => [
+                { ...head!, connectorEase: (eases[index] ?? 'linear') as never },
+                { ...head!, beat: head!.beat + 1 },
+            ])
+            history.resetState(false, chart, 0, 'eases.json')
+            await window.editorTest.nextTick()
+        }, eases)
+
+    test('each row draws the curve picking it gives', async ({ page }) => {
+        await open(page)
+        await setEases(page, ['outQuad', 'outQuad'])
+        await select(page, 'note', [0])
+        // Every type, None and Linear included, over the current function.
+        await expect(curves(page, 'Ease Type')).toHaveCount(6)
+        await expect(curves(page, 'Ease Function')).toHaveCount(
+            await field(page, 'Ease Function').locator('option:not([hidden])').count(),
+        )
+        // From Linear, a mode takes Quad, so its rows still have curves.
+        await setEases(page, ['linear'])
+        await select(page, 'note', [0])
+        await expect(curves(page, 'Ease Type')).toHaveCount(6)
+        // The function list is disabled and has nothing to show.
+        await expect(curves(page, 'Ease Function')).toHaveCount(0)
+    })
+
+    test('a list whose picks are partly unknown shows no curves', async ({ page }) => {
+        await open(page)
+        await setEases(page, ['outQuad', 'inCubic'])
+        await select(page, 'note', [0, 2])
+        await expect(field(page, 'Ease Type').locator('.select-value')).toHaveText('Mixed')
+        await expect(field(page, 'Ease Function').locator('.select-value')).toHaveText('Mixed')
+        // Functions differ, so a mode's curve is unknown; None and Linear lose theirs too.
+        await expect(field(page, 'Ease Type').locator('select .select-option-glyph')).toHaveCount(0)
+        // Modes differ, so no function's curve is known.
+        await expect(
+            field(page, 'Ease Function').locator('select .select-option-glyph'),
+        ).toHaveCount(0)
+    })
 })

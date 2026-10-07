@@ -3,6 +3,7 @@ import { computed, useTemplateRef } from 'vue'
 import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
 import { useLeadFit } from './leadFit'
+import { hasGlyphColumn, OptionGlyphSlot, type OptionGlyph } from './optionGlyph'
 import { resyncSelect } from './resync'
 import SelectValue from './SelectValue.vue'
 import { i18n } from '../../i18n'
@@ -18,6 +19,8 @@ const props = defineProps<{
     disabled?: boolean
     /** Text for the unset value; defaults to the form's, such as Unchanged, or Not Set. */
     emptyLabel?: string
+    /** Each value's picture in the shared list; the unset choice has none. */
+    optionGlyph?: OptionGlyph<NoInfer<T>>
 }>()
 
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
@@ -48,6 +51,13 @@ const shown = computed(() =>
                 modelValue.value,
                 allSections.value.flatMap((section) => section.options),
             ),
+)
+
+const glyphs = computed(() =>
+    hasGlyphColumn(
+        props.optionGlyph,
+        allSections.value.flatMap((section) => section.options.map(([, value]) => value)),
+    ),
 )
 
 const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
@@ -88,7 +98,7 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                     :hidden="!unsetChoice"
                     class="text-fg"
                 >
-                    {{ emptyText }}
+                    <OptionGlyphSlot v-if="glyphs" :glyph="null" />{{ emptyText }}
                 </option>
                 <!-- A value no option names; shown, never listed or committed. -->
                 <option v-if="unknown" :value="modelValue" disabled hidden>
@@ -106,7 +116,7 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                             :value
                             class="text-fg"
                         >
-                            {{ name }}
+                            <OptionGlyphSlot v-if="glyphs" :glyph="optionGlyph!(value)" />{{ name }}
                         </option>
                     </optgroup>
                     <template v-else>
@@ -116,7 +126,7 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                             :value
                             class="text-fg"
                         >
-                            {{ name }}
+                            <OptionGlyphSlot v-if="glyphs" :glyph="optionGlyph!(value)" />{{ name }}
                         </option>
                     </template>
                 </template>
