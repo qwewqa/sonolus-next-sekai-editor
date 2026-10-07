@@ -1457,3 +1457,31 @@ test('Ctrl+Z and Ctrl+Y in the list keep focus on the row, or the row in its pla
     await expect(nameButton(list, '#1')).toHaveCount(0)
     await expect(nameButton(list, 'Pad')).toBeFocused()
 })
+
+test('Show Only and Show All keep the hidden state of deleted rows for undo', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const remove = async (name: string) => {
+        await row(list, name)
+            .getByRole('button', { name: `More Actions for ${name}` })
+            .click()
+        await page.getByRole('menuitem', { name: 'Delete Group' }).click()
+        await expect(nameButton(list, name)).toHaveCount(0)
+    }
+
+    // Hidden, deleted, then everything else but Drums hidden: undo brings Bass back hidden.
+    await row(list, 'Bass').locator('.manager-eye').click()
+    await remove('Bass')
+    await row(list, 'Drums')
+        .locator('.manager-eye')
+        .click({ modifiers: ['Alt'] })
+    await undo(page)
+    expect((await state(page)).hidden).toEqual(['Bass', 'Default', 'Other', 'Lead', 'Fill', 'Pad'])
+
+    // Show All leaves it hidden too, as it was when deleted.
+    await remove('Bass')
+    await list.locator('.manager-all .manager-eye').click()
+    await expect(list.locator('.manager-all .manager-meta')).toHaveCount(0)
+    await undo(page)
+    expect((await state(page)).hidden).toEqual(['Bass'])
+})

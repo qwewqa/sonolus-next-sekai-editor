@@ -99,10 +99,13 @@ const createScope = <T>(options: {
             options.setOverrides(overrides)
         },
 
-        /** Shows exactly these entries and hides the rest, as one change. */
+        /**
+         * Shows exactly these entries and hides the rest, as one change. Deleted
+         * entries keep their overrides, so undoing the delete restores them as they were.
+         */
         showOnly(ids: readonly T[]) {
             const shown = new Set(ids)
-            const overrides = new Map<T, ScopeOverride>()
+            const overrides = new Map(options.getOverrides())
             for (const id of options.ids()) withOverride(overrides, id, shown.has(id))
             options.setOverrides(overrides)
         },
@@ -113,9 +116,9 @@ const createScope = <T>(options: {
             options.setOverrides(withOverride(new Map(options.getOverrides()), id, true))
         },
 
-        /** Shows or hides every entry without changing the authoring target. */
+        /** Shows or hides every entry without changing the authoring target; deleted ones keep theirs. */
         setAllShown(shown: boolean) {
-            const overrides = new Map<T, ScopeOverride>()
+            const overrides = new Map(options.getOverrides())
             for (const id of options.ids()) withOverride(overrides, id, shown)
             options.setOverrides(overrides)
         },
