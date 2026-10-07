@@ -109,12 +109,12 @@ watch(
             :label="i18n.settings.editor.showOtherStages"
         />
 
-        <ToggleField v-model="settings.nameContrast" :label="i18n.settings.editor.nameContrast" />
-
         <ToggleField
             v-model="settings.showOtherObjects"
             :label="i18n.settings.editor.showOtherObjects"
         />
+
+        <ToggleField v-model="settings.nameContrast" :label="i18n.settings.editor.nameContrast" />
 
         <ToggleField
             v-model="settings.deselectSwitchesToSelect"

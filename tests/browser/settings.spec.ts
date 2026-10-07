@@ -581,6 +581,20 @@ test('a punctuation shortcut reads larger and bold, as in the toolbar', async ({
     expect(punctuation.height).toBe(letter.height)
 })
 
+test('Name Contrast follows the Show Other rows rather than splitting them', async ({ page }) => {
+    const labels = await page.getByRole('dialog').locator('.form-field-text').allTextContents()
+    const start = labels.indexOf('Show Group Name')
+    expect(labels.slice(start, start + 7)).toEqual([
+        'Show Group Name',
+        'Show Other Groups',
+        'Show Stage Name',
+        'Show Other Stages',
+        'Show Other Objects',
+        'Name Contrast',
+        'Second Deselect Switches to Select Tool',
+    ])
+})
+
 test('Name Contrast is off by default, persists and recolours names', async ({ page }) => {
     const key = 'sonolus-next-sekai-editor.nameContrast'
     const toggle = page
