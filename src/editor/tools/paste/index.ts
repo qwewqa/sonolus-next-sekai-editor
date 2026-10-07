@@ -87,12 +87,11 @@ export const paste: Tool = {
 
         const onlyType = getOnlyEntityType(entities)
         const lane = xToLane(x)
-        const beatOffset = yToBeatOffset(y, data.beat)
+        const beatOffset = toPasteBeatOffset(entities, yToBeatOffset(y, data.beat))
 
         const creating: Entity[] = []
         for (const entity of entities) {
             const beat = entity.beat + beatOffset
-            if (beat < 0) continue
 
             const result = creates[entity.type]?.(
                 onlyType,
@@ -140,12 +139,11 @@ export const paste: Tool = {
         }
 
         const lane = xToLane(x)
-        const beatOffset = yToBeatOffset(y, active.beat)
+        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
 
         const creating: Entity[] = []
         for (const entity of active.entities) {
             const beat = entity.beat + beatOffset
-            if (beat < 0) continue
 
             const result = creates[entity.type]?.(
                 active.onlyType,
@@ -172,12 +170,11 @@ export const paste: Tool = {
         if (!active) return false
 
         const lane = xToLane(x)
-        const beatOffset = yToBeatOffset(y, active.beat)
+        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
 
         const creating: Entity[] = []
         for (const entity of active.entities) {
             const beat = entity.beat + beatOffset
-            if (beat < 0) continue
 
             const result = creates[entity.type]?.(
                 active.onlyType,
@@ -218,12 +215,11 @@ export const paste: Tool = {
         const transaction = createTransaction(state.value)
 
         const lane = xToLane(x)
-        const beatOffset = yToBeatOffset(y, active.beat)
+        const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
 
         const selectedEntities: Entity[] = []
         for (const entity of active.entities) {
             const beat = entity.beat + beatOffset
-            if (beat < 0) continue
 
             const result = pastes[entity.type]?.(
                 transaction,
@@ -272,6 +268,10 @@ const revealPasteTargets = (entities: Entity[]) => {
     }
 }
 
+/** Shifts a paste later so its earliest object lands no earlier than beat 0. */
+export const toPasteBeatOffset = (entities: readonly { beat: number }[], beatOffset: number) =>
+    entities.reduce((offset, entity) => Math.max(offset, -entity.beat), beatOffset)
+
 export type PastePositionOptions = {
     notesOnly?: boolean
     mapNote?: (entity: NoteEntity, beat: number) => Partial<NoteObject>
@@ -308,11 +308,11 @@ export const pasteAtPosition = async (
     const transaction = createTransaction(state.value)
 
     const onlyType = getOnlyEntityType(entities)
+    const shiftedOffset = toPasteBeatOffset(entities, beatOffset)
 
     const selectedEntities: Entity[] = []
     for (const entity of entities) {
-        const beat = entity.beat + beatOffset
-        if (beat < 0) continue
+        const beat = entity.beat + shiftedOffset
 
         if (entity.type === 'note' && options.mapNote) {
             selectedEntities.push(

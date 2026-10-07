@@ -12,7 +12,12 @@ import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
 import { revealAuthoringTarget } from '../scope'
 import { getNotePropertiesFromSelection } from '../tools/note'
-import { getPasteNoteEntities, pasteAtPosition, toMovedNoteObject } from '../tools/paste'
+import {
+    getPasteNoteEntities,
+    pasteAtPosition,
+    toMovedNoteObject,
+    toPasteBeatOffset,
+} from '../tools/paste'
 import { getSelectedSlideId, getSlidePropertiesFromSelection } from '../tools/slide'
 import { view } from '../view'
 import { getElevationStageProps } from './scene'
@@ -106,7 +111,8 @@ const getElevationPaste = (lane: number, elevation: number, beat: number, modifi
                 destination.elevation,
         })
     }
-    return { notes, mapNote, beatOffset: beat - data.beat, startLane: data.lane }
+    const beatOffset = toPasteBeatOffset(notes, beat - data.beat)
+    return { notes, mapNote, beatOffset, startLane: data.lane }
 }
 
 export const previewElevationPaste = (
@@ -117,11 +123,9 @@ export const previewElevationPaste = (
 ) => {
     const paste = getElevationPaste(lane, elevation, beat, modifiers)
     if (!paste) return []
-    return paste.notes.flatMap((note) => {
+    return paste.notes.map((note) => {
         const destinationBeat = note.beat + paste.beatOffset
-        return destinationBeat < 0
-            ? []
-            : [toNoteEntity(note.slideId, paste.mapNote(note, destinationBeat))]
+        return toNoteEntity(note.slideId, paste.mapNote(note, destinationBeat))
     })
 }
 
