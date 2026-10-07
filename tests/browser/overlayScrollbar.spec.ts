@@ -463,3 +463,42 @@ test('a row button beneath the bar in a dock keeps its clicks', async ({ page })
     await expect(groups.locator('.manager-entry').first()).toBeVisible()
     await moreWins(page, groups)
 })
+
+test('a manager list follows forced colors turned on or off after it mounts', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' })
+    await open(page)
+    await page.evaluate(async () => {
+        const { history, fixtures, settings, nextTick } = window.editorTest
+        const chart = structuredClone(fixtures.notes)
+        chart.groups = new Map(
+            Array.from({ length: 40 }, (_, i) => [(i + 1) as never, { name: `Group ${i + 1}` }]),
+        )
+        history.resetState(false, chart, 0, 'groups.json')
+        settings.groupsPosition = 'right'
+        settings.showGroups = true
+        await nextTick()
+    })
+    const groups = page.locator('#workspace-panel-groups')
+    const list = groups.locator('.manager-entries')
+    await expect(list.locator('.manager-entry').first()).toBeVisible()
+    const inline = () => list.evaluate((element: HTMLElement) => element.style.paddingRight)
+    expect(await inline()).not.toBe('')
+
+    await page.emulateMedia({ forcedColors: 'none' })
+    await expect(list).toHaveAttribute('data-scrollable')
+    await expect.poll(inline).toBe('')
+    const box = (await list.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.wheel(0, 200)
+    await expect(bar(groups)).toHaveClass(/overlay-scrollbar-shown/)
+    const strip = (await bar(groups).boundingBox())!
+    const rights = await list
+        .locator('.manager-more')
+        .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().right))
+    for (const right of rights) expect(right).toBeLessThanOrEqual(strip.x)
+
+    // Back in forced colors, the rows give way to the native gutter again.
+    await page.emulateMedia({ forcedColors: 'active' })
+    await expect.poll(inline).not.toBe('')
+    expect(await gutter(list)).toBeGreaterThan(0)
+})

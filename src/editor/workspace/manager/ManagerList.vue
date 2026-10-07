@@ -243,12 +243,20 @@ const observer = new ResizeObserver((entries) => {
 // the styles below). The rows' own 6px inset gives way to it, so they stay as
 // centered as they can.
 const gutterPadding = shallowRef<string>()
+const measureGutter = () => {
+    const element = list.value
+    if (!element) return
+    const gutter = element.offsetWidth - element.clientWidth
+    gutterPadding.value = gutter > 0 ? `${Math.max(0, 6 - gutter)}px` : undefined
+}
+// The gutter comes and goes with forced colors.
+const forcedColors = matchMedia('(forced-colors: active)')
+forcedColors.addEventListener('change', measureGutter)
 watch(list, (element, previous) => {
     if (previous) observer.unobserve(previous)
     if (!element) return
     observer.observe(element)
-    const gutter = element.offsetWidth - element.clientWidth
-    gutterPadding.value = gutter > 0 ? `${Math.max(0, 6 - gutter)}px` : undefined
+    measureGutter()
 })
 // The Add item follows the rows; it floats in reach at the bottom of long
 // lists, unless the list is too short to show it beside at least two rows.
@@ -268,6 +276,7 @@ watch(root, (element, previous) => {
 onUnmounted(() => {
     observer.disconnect()
     coarse.removeEventListener('change', onPointerChange)
+    forcedColors.removeEventListener('change', measureGutter)
 })
 const inlineMode = computed(() =>
     width.value < (isCoarse.value ? 320 : 256)
