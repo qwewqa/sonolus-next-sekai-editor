@@ -177,13 +177,82 @@ test('Properties and Settings fields keep their edge, as Preview Settings fields
     await expectEdges(page.getByRole('dialog').locator(pills))
 })
 
-test('the toolbar marks the tool in use', async ({ page }) => {
-    const tools = page.locator('[data-editor-toolbar]').locator(':scope > div > div > button')
-    const pressed = tools.and(page.locator('[aria-pressed="true"]'))
-    const unpressed = tools.and(page.locator('[aria-pressed="false"]')).first()
-    await expect(pressed).toHaveCount(1)
-    expect(await outline(pressed)).toMatchObject({ style: 'solid', width: '2px' })
-    expect((await outline(unpressed)).style).toBe('none')
+test('toolbar tools keep their edge, and the tool in use is selected', async ({ page }) => {
+    const text = await systemColor(page, 'CanvasText')
+    const selected = await systemColor(page, 'Highlight')
+    const selectedText = await systemColor(page, 'HighlightText')
+    const looks = (locator: Locator) =>
+        locator.evaluateAll((elements) =>
+            elements.map((element) => {
+                const style = getComputedStyle(element)
+                return {
+                    title: element.getAttribute('title'),
+                    pressed: element.getAttribute('aria-pressed') === 'true',
+                    edge: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+                    background: style.backgroundColor,
+                    color: style.color,
+                    fill: style.fill,
+                }
+            }),
+        )
+    const expectTools = async (locator: Locator, pressedCount: number) => {
+        const tools = await looks(locator)
+        expect(tools.length).toBeGreaterThan(1)
+        for (const { title, pressed, edge, background, color, fill } of tools) {
+            // The edge takes the text colour.
+            expect({ title, edge }).toEqual({
+                title,
+                edge: `solid 2px ${pressed ? selectedText : text}`,
+            })
+            if (pressed)
+                expect({ title, background, color, fill }).toEqual({
+                    title,
+                    background: selected,
+                    color: selectedText,
+                    fill: selectedText,
+                })
+            else expect({ title, background }).not.toEqual({ title, background: selected })
+        }
+        expect(tools.filter(({ pressed }) => pressed)).toHaveLength(pressedCount)
+    }
+    const toolbar = page.locator('[data-editor-toolbar]')
+    // Select is in use; the division and lane groups show their current values.
+    await expectTools(toolbar.locator(':scope > div > div > button'), 1)
+    const select = toolbar.getByTitle('Select', { exact: true })
+    await expect.poll(() => fills(select, 'path')).toEqual([selectedText])
+
+    // Focus stays distinct from the selected fill and its resting edge.
+    await focus(select)
+    expect(await outline(select)).toEqual({ style: 'solid', width: '2px', color: text })
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+
+    // Pressing it keeps the selected colours, as other buttons keep theirs.
+    const box = (await select.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(300)
+    expect(
+        await select.first().evaluate((element) => getComputedStyle(element).backgroundColor),
+    ).toBe(selected)
+    await page.mouse.up()
+    await page.keyboard.press('Escape')
+
+    await select.hover()
+    await expect(toolbar.getByTitle('Eraser', { exact: true })).toBeVisible()
+    await expectTools(toolbar.locator(':scope > div > div > div button'), 1)
+    await page.keyboard.press('Escape')
+
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    const list = dialog.locator('section', { has: page.getByRole('heading', { name: 'Toolbar' }) })
+    await expectTools(list.locator('button:not([aria-label])'), 0)
+    await dialog.getByRole('button', { name: 'Add Tool' }).first().click()
+    const picker = page.getByRole('dialog', { name: 'Select Tool' })
+    await expect(picker).toBeVisible()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await expectTools(picker.locator('button[title]:not([aria-label])'), 0)
 })
 
 const systemColor = (page: Page, name: string) =>
@@ -209,7 +278,7 @@ test('monochrome tool icons take the button text color', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active', colorScheme: 'dark' })
     const text = await systemColor(page, 'ButtonText')
     const toolbar = page.locator('[data-editor-toolbar]')
-    for (const title of ['Open', 'Undo', 'Select', 'Help'])
+    for (const title of ['Open', 'Undo', 'Help'])
         await expect
             .poll(() => fills(toolbar.getByTitle(title, { exact: true }), 'path'))
             .toEqual([text])

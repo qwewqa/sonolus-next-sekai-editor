@@ -20,7 +20,9 @@ const title = computed(() => commands[props.name].title())
 // Tools float over the dark canvas (accent focus ring) and also sit in the light
 // Settings dialog (fg ring). Labelled flyout items get a 44px target on touch,
 // and drop the shortcut hints there, as the context menu does. High contrast
-// leaves SVG fills alone, so monochrome icons take ButtonText.
+// leaves SVG fills alone, so monochrome icons take ButtonText. The tool in use
+// takes the selected look, unforced so its text gets no backplate. The
+// transparent outline is the edge high contrast paints; inset, as tools sit close.
 const shortcut = computed(() =>
     isCoarsePointer.value ? undefined : formatShortcut(settings.keyboardShortcuts[props.name]),
 )
@@ -28,11 +30,11 @@ const shortcut = computed(() =>
 
 <template>
     <button
-        class="flex items-center rounded-full p-2 shadow-md transition-colors hover:shadow-accent focus-visible:outline-none focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent forced-colors:fill-[ButtonText] [dialog_&]:focus-visible:ring-fg"
+        class="flex items-center rounded-full p-2 shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
         :class="[
             pressed
-                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:outline forced-colors:outline-2 forced-colors:outline-offset-2 forced-colors:outline-[color:CanvasText]'
-                : 'bg-button focus-visible:ring-accent',
+                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:bg-[Highlight] forced-colors:fill-[HighlightText] forced-colors:text-[HighlightText] forced-colors:outline-[color:HighlightText] forced-colors:forced-color-adjust-none forced-colors:![box-shadow:none] forced-colors:focus-visible:outline-[color:CanvasText] forced-colors:active:bg-[Highlight] forced-colors:active:fill-[HighlightText] forced-colors:active:text-[HighlightText]'
+                : 'bg-button focus-visible:ring-accent forced-colors:fill-[ButtonText]',
             { '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3': showLabel },
         ]"
         :title
@@ -57,11 +59,12 @@ const shortcut = computed(() =>
             <span
                 v-if="shortcut"
                 class="ml-4"
-                :class="
+                :class="[
                     isPunctuationShortcut(shortcut)
                         ? 'text-sm font-bold leading-4'
-                        : 'text-xs text-fg/80'
-                "
+                        : 'text-xs text-fg/80',
+                    { 'forced-colors:text-[HighlightText]': pressed },
+                ]"
                 >{{ shortcut }}</span
             >
         </template>
