@@ -30,7 +30,7 @@ export default defineConfig({
     projects: [
         { name: 'chromium', testIgnore: timingSpecs },
         // Measures real frame timing, so it runs alone after the parallel batch.
-        // Any chromium failure skips it; add --no-deps to run it by itself.
+        // Any chromium failure skips it; npm run test:timing runs it by itself.
         { name: 'timing', testMatch: timingSpecs, dependencies: ['chromium'], workers: 1 },
     ],
     webServer: {

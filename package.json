@@ -6,6 +6,7 @@
   "scripts": {
     "test": "tsx --test tests/preview/*.test.ts tests/editor/*.test.ts",
     "test:browser": "playwright test",
+    "test:timing": "playwright test --project=timing --no-deps",
     "test:compatibility": "npm run build && playwright test --config playwright.compatibility.config.ts",
     "test:production": "playwright test --config playwright.production.config.ts",
     "test:release": "node --test tests/release/*.test.mjs",
