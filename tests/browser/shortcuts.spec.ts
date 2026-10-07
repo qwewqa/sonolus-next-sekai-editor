@@ -492,10 +492,11 @@ test.describe('tool dialogs', () => {
     test('undo by shortcut leaves no stale dialog preview', async ({ page }) => {
         await page.keyboard.press('Escape')
         await page.evaluate(async () => {
-            const { editSelectionProperties } = await window.editorTest.appImport<
+            // The context menu's Edit Properties action.
+            const { focusSelectionProperties } = await window.editorTest.appImport<
                 typeof import('../../src/editor/editSelectionProperties')
             >('/src/editor/editSelectionProperties.ts')
-            editSelectionProperties()
+            await focusSelectionProperties(true)
         })
         const size = dialog(page)
             .locator('label')

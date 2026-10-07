@@ -15,7 +15,7 @@ export const canEditSelectionProperties = computed(() =>
  * every command uses: the visible panel, else a dialog. The dialog names one
  * kind when only one is selected.
  */
-export const editSelectionProperties = () => {
+const editSelectionProperties = () => {
     if (isSidebarVisible.value) {
         revealPropertiesSection('selection')
         return

@@ -824,10 +824,11 @@ test('the selection dialog follows the selection', async ({ page }) => {
 
     await select(['note'])
     await page.evaluate(async () => {
-        const { editSelectionProperties } = await window.editorTest.appImport<
+        // The context menu's Edit Properties action.
+        const { focusSelectionProperties } = await window.editorTest.appImport<
             typeof import('../../src/editor/editSelectionProperties')
         >('/src/editor/editSelectionProperties.ts')
-        editSelectionProperties()
+        await focusSelectionProperties(true)
     })
     await expect(named('Note Properties')).toBeVisible()
 
@@ -869,10 +870,11 @@ test('emptying the selection returns focus the dialog held to the chart', async 
     await page.evaluate(() => (window.editorTest.settings.propertiesPosition = 'disabled'))
     await showSlides(page, [[{ beat: 0 }, { beat: 1 }]])
     await page.evaluate(async () => {
-        const { editSelectionProperties } = await window.editorTest.appImport<
+        // The context menu's Edit Properties action.
+        const { focusSelectionProperties } = await window.editorTest.appImport<
             typeof import('../../src/editor/editSelectionProperties')
         >('/src/editor/editSelectionProperties.ts')
-        editSelectionProperties()
+        await focusSelectionProperties(true)
     })
     const dialog = page.locator('.editor-tool-modal')
     await dialog.getByRole('button', { name: 'Close', exact: true }).focus()

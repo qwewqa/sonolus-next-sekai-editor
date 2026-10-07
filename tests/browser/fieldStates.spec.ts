@@ -105,10 +105,11 @@ test('the properties dialog on a phone shows no blank field and explains mixed o
     for (const selection of ['all note', 'everything', 'one note']) {
         await select(page, selection)
         await page.evaluate(async () => {
-            const { editSelectionProperties } = await window.editorTest.appImport<
+            // The context menu's Edit Properties action.
+            const { focusSelectionProperties } = await window.editorTest.appImport<
                 typeof import('../../src/editor/editSelectionProperties')
             >('/src/editor/editSelectionProperties.ts')
-            editSelectionProperties()
+            await focusSelectionProperties(true)
         })
         await expect(dialog.locator('.form-field').first()).toBeVisible()
         await expectNoBlank(page, `dialog ${selection}`, dialog)
