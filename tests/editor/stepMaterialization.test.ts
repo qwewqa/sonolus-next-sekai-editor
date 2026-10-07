@@ -65,8 +65,8 @@ const transform = (beat: number, elevation: number): StageTransformEventObject =
     eventEase: 'inStep',
 })
 
-// One beat is one second.
-const state = (slides: NoteObject[][]) => {
+// One beat is one second by default.
+const state = (slides: NoteObject[][], overrides: Partial<Chart> = {}) => {
     const chart: Chart = {
         initialLife: 1000,
         isDynamicStages: true,
@@ -89,6 +89,7 @@ const state = (slides: NoteObject[][]) => {
         stageTransformEvents: [transform(0, 0), transform(2, 2)],
         timeScales: [],
         slides,
+        ...overrides,
     }
     return createState(chart, 0)
 }
@@ -103,4 +104,22 @@ test('a note on a stage step materializes at the held pivot and elevation', () =
     const attached = allNotes(source).find((entity) => entity.isAttached)!
     // Scaling reads the same positions for its bounds.
     assert.deepEqual(getMaterializedNotePositions(source, [attached]).get(attached), held)
+})
+
+test('a note on an In-Out Step midpoint an ulp after the jump materializes at the held values', () => {
+    // At 150 BPM, beat 3 lands an ulp after the midpoint of beats 1 and 5.
+    const inOutStep = { eventEase: 'inOutStep' } as const
+    const source = state(
+        [[note(0, -3), note(3, 0, { stageId: stageA, isAttached: true }), note(6, 5)]],
+        {
+            bpms: [{ beat: 0, bpm: 150 }],
+            stagePivotEvents: [{ ...pivot(1, 0), ...inOutStep }, pivot(5, 3)],
+            stageTransformEvents: [{ ...transform(1, 0), ...inOutStep }, transform(5, 2)],
+        },
+    )
+    const attached = allNotes(source).find((entity) => entity.isAttached)!
+    const position = getMaterializedNotePositions(source, [attached]).get(attached)!
+    assert.ok(Math.abs(position.left - held.left) < 1e-9, `${position.left}`)
+    assert.equal(position.size, held.size)
+    assert.equal(position.elevation, held.elevation)
 })

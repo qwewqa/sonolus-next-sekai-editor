@@ -19,6 +19,7 @@ import {
 import {
     EaseType,
     applyAffine,
+    eventProgress,
     rotateVec,
     vec,
     type Quad,
@@ -31,6 +32,7 @@ import {
     stagePropsHasTransform,
 } from '../../src/preview/engine/stage'
 import { resolveSkin, type PreviewSkin, type Sprite } from '../../src/preview/skin'
+import { beatToTime, calculateBpms, toBpmIntegral } from '../../src/state/integrals/bpms'
 
 const stage = (overrides: Partial<PreviewStage> = {}): PreviewStage => ({
     order: 0,
@@ -522,4 +524,46 @@ test('In-Out Step midpoints hold the value before the jump at the left limit onl
     assert.equal(getCameraInfo(viewport, cameras, 2, { rightLimit: true }).rotate, 1)
     assert.equal(getCameraInfo(viewport, cameras, 2.1).rotate, 1)
     assert.equal(getCameraInfo(viewport, cameras, 4).rotate, 1)
+})
+
+// sekai/lib/ease.py in_out_step_progress: times within rounding error of the jump count as on it.
+test('In-Out Step times within rounding error of the midpoint count as on it', () => {
+    const inOut = EaseType.inOutStep
+    const bpms = calculateBpms([toBpmIntegral({ beat: 0, bpm: 150 })])
+    const times = (...beats: number[]) => beats.map((beat) => beatToTime(bpms, beat))
+
+    // At 150 BPM, beat 3 lands an ulp after the midpoint of beats 1 and 5.
+    const [tA, tB, tNote] = times(1, 5, 3) as [number, number, number]
+    assert.ok(tNote > (tA + tB) / 2)
+    const value = stage({
+        pivots: [
+            { time: tA, lane: 0, divisionSize: 1, divisionParity: 0, yOffset: 0, ease: inOut },
+            { time: tB, lane: 5, divisionSize: 1, divisionParity: 0, yOffset: 0, ease: 0 },
+        ],
+    })
+    assert.equal(getStageProps(value, tNote).pivotLane, 0)
+    assert.equal(getStageProps(value, tNote, { rightLimit: true }).pivotLane, 5)
+
+    // Beat 4.5 lands an ulp before the midpoint of beats 2 and 7; the right limit still jumps.
+    const [tC, tD, tEarly] = times(2, 7, 4.5) as [number, number, number]
+    assert.ok(tEarly < (tC + tD) / 2)
+    assert.equal(eventProgress(inOut, tEarly, tC, tD), 0)
+    assert.equal(eventProgress(inOut, tEarly, tC, tD, true), 1)
+
+    // The tolerance is the jump time, at least 1, times 2^-21.
+    const tolerance = 1000 * 2 ** -21
+    for (const rightLimit of [false, true]) {
+        const within = rightLimit ? 1 : 0
+        assert.equal(eventProgress(inOut, 1000 - tolerance / 2, 0, 2000, rightLimit), within)
+        assert.equal(eventProgress(inOut, 1000 + tolerance / 2, 0, 2000, rightLimit), within)
+        assert.equal(eventProgress(inOut, 1000 - tolerance * 2, 0, 2000, rightLimit), 0)
+        assert.equal(eventProgress(inOut, 1000 + tolerance * 2, 0, 2000, rightLimit), 1)
+    }
+
+    // An eighth of a 2^-19 span caps it at 2^-22.
+    const span = 2 ** -19
+    assert.equal(eventProgress(inOut, span / 2 + 2 ** -23, 0, span), 0)
+    assert.equal(eventProgress(inOut, span / 2 - 2 ** -23, 0, span, true), 1)
+    assert.equal(eventProgress(inOut, span / 2 + 3 * 2 ** -23, 0, span), 1)
+    assert.equal(eventProgress(inOut, span / 2 - 3 * 2 ** -23, 0, span, true), 0)
 })

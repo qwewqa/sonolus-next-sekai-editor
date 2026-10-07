@@ -134,8 +134,10 @@ export const eventProgress = (
     rightLimit = false,
 ) => {
     if (easeType !== EaseType.inOutStep) return ease(easeType, unlerpClamped(tA, tB, t))
+    // Times within rounding error of the jump count as on it.
     const jump = (tA + tB) / 2
-    return t > jump || (rightLimit && t === jump) ? 1 : 0
+    const tolerance = Math.min(Math.max(1, Math.abs(jump)) * 2 ** -21, (tB - tA) / 8)
+    return (rightLimit ? t >= jump - tolerance : t > jump + tolerance) ? 1 : 0
 }
 
 // Stage and camera queries take the left limit unless the right limit is asked for.
