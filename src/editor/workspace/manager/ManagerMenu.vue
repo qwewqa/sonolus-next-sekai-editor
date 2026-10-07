@@ -11,8 +11,9 @@ import {
 } from 'vue'
 import { vScrollEdges } from '../../../directives/scrollEdges'
 import { menuKeyIndex } from '../../../utils/menuKeys'
+import { swallowPress } from '../../../utils/swallowPress'
 import { createTypeAhead, isTypeAheadKey } from '../../../utils/typeAhead'
-import { workspaceDockAttribute } from '..'
+import { isInWorkspaceDock, workspaceDockAttribute } from '..'
 
 export type ManagerMenuItem = {
     key: string
@@ -184,6 +185,10 @@ const onOutside = (event: PointerEvent) => {
     if (!(target instanceof Node)) return
     // The anchor toggles the menu itself on click.
     if (menu.value?.contains(target) || props.anchor.contains(target)) return
+    // The press only closes the menu, so closing never edits what lies under it. A
+    // right press in a dock only opens menus, so it moves the menu there instead.
+    if (event.button !== 2 || !(target instanceof Element) || !isInWorkspaceDock(target))
+        swallowPress(event)
     emit('close', false)
 }
 

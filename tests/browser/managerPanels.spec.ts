@@ -1286,3 +1286,57 @@ test('the manager dialog settles its floating Add without a resize loop', async 
         await page.evaluate(() => (window as unknown as { loopErrors: string[] }).loopErrors),
     ).toEqual([])
 })
+
+test('a press outside an action menu only closes it', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group'])
+    const panel = await openGroups(page)
+    const menu = page.getByRole('menu')
+    const selected = () =>
+        page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length)
+    await page.evaluate(async () => {
+        const { history, store } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note',
+            ),
+        })
+        await window.editorTest.nextTick()
+    })
+    const count = await selected()
+    expect(count).toBeGreaterThan(0)
+
+    // Empty chart space would otherwise clear the selection.
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    await expect(menu).toBeVisible()
+    const point = await page.evaluate(() => window.editorTest.point(5.5, 1))
+    await page.mouse.click(point.x, point.y)
+    await expect(menu).toHaveCount(0)
+    expect(await selected()).toBe(count)
+
+    // Another row's button doesn't open its menu in the same press.
+    await panel.getByRole('button', { name: 'More Actions for Other group' }).click()
+    await expect(menu).toBeVisible()
+    const other = panel.getByRole('button', { name: 'More Actions for Default' })
+    await other.click()
+    await expect(menu).toHaveCount(0)
+    await other.click()
+    await expect(menu).toHaveAttribute('aria-label', 'More Actions for Default')
+
+    // A right press on another row moves the menu there, as on the chart.
+    await page.keyboard.press('Escape')
+    await nameButton(panel, 'Other group').click({ button: 'right' })
+    await expect(menu).toHaveAttribute('aria-label', 'More Actions for Other group')
+    await nameButton(panel, 'Default').click({ button: 'right' })
+    await expect(menu).toHaveAttribute('aria-label', 'More Actions for Default')
+    // On the chart it only closes the menu.
+    await page.mouse.click(point.x, point.y, { button: 'right' })
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await other.click()
+
+    // The menu's own button still closes it.
+    await other.click()
+    await expect(menu).toHaveCount(0)
+    await page.mouse.click(point.x, point.y)
+    expect(await selected()).toBe(0)
+})
