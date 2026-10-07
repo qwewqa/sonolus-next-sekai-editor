@@ -32,7 +32,7 @@ const notes = computed(() => {
         const binding = normalizeBinding(key)
         users.set(binding, [...(users.get(binding) ?? []), name])
     }
-    const { key: messages } = i18n.value.modals.form
+    const { key: messages, listJoin } = i18n.value.modals.form
     const browser = {
         reload: messages.browserReload,
         find: messages.browserFind,
@@ -47,7 +47,10 @@ const notes = computed(() => {
                 list.push(
                     interpolateRaw(
                         messages.alsoRuns,
-                        others.map((other) => commands[other].title()).join(', '),
+                        // Joined in the locale's punctuation, as "、" in Japanese.
+                        others
+                            .map((other) => commands[other].title())
+                            .reduce((text, title) => interpolateRaw(listJoin, text, title)),
                     ),
                 )
             // A plain key loses its Ctrl chord to a command bound to that chord exactly.
