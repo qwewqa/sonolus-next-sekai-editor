@@ -198,6 +198,7 @@ export const stageManager: ManagerModel<StageId> = {
         delete: i18n.value.commands.manageStages.modal.delete,
         deleteFolder: i18n.value.workspace.stages.deleteFolder,
         deleteSelectedTitle: i18n.value.workspace.stages.deleteSelectedTitle,
+        deleteSelectedFoldersTitle: i18n.value.workspace.stages.deleteSelectedFoldersTitle,
         deleteSelectedMessage: i18n.value.workspace.stages.deleteSelectedMessage,
         deleteSelectedFoldersMessage: i18n.value.workspace.stages.deleteSelectedFoldersMessage,
     }),

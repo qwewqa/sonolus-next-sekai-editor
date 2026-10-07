@@ -1224,3 +1224,23 @@ test('disabled manager buttons keep full strength in forced colors', async ({ pa
     await page.emulateMedia({ forcedColors: 'none' })
     expect(await opacity(move)).toBe('0.4')
 })
+
+test('Delete Selected names the folders it deletes in its title', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const dialog = page.getByRole('dialog')
+    const remove = list.getByRole('button', { name: 'Delete Selected…' })
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    await remove.click()
+    await expect(dialog).toContainText('Delete Groups')
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+    await row(list, 'Verse').locator('.manager-check').click()
+    await remove.click()
+    await expect(dialog).toContainText('Delete Folder and Groups')
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+    await row(list, 'Outro').locator('.manager-check').click()
+    await remove.click()
+    await expect(dialog).toContainText('Delete Folders and Groups')
+})

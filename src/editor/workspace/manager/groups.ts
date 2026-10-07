@@ -178,6 +178,7 @@ export const groupManager: ManagerModel<GroupId> = {
         delete: i18n.value.commands.manageGroups.modal.delete,
         deleteFolder: i18n.value.workspace.groups.deleteFolder,
         deleteSelectedTitle: i18n.value.workspace.groups.deleteSelectedTitle,
+        deleteSelectedFoldersTitle: i18n.value.workspace.groups.deleteSelectedFoldersTitle,
         deleteSelectedMessage: i18n.value.workspace.groups.deleteSelectedMessage,
         deleteSelectedFoldersMessage: i18n.value.workspace.groups.deleteSelectedFoldersMessage,
     }),

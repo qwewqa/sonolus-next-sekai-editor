@@ -646,7 +646,10 @@ const onBulkDelete = async (keyboard = false) => {
     const confirmed =
         !ids.size ||
         (await showModal(ConfirmModal, {
-            title: () => strings.value.deleteSelectedTitle,
+            title: () =>
+                folderIds.size
+                    ? label(strings.value.deleteSelectedFoldersTitle, `${folderIds.size}`)
+                    : strings.value.deleteSelectedTitle,
             message: () =>
                 folderIds.size
                     ? label(

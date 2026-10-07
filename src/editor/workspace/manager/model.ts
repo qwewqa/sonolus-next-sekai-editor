@@ -35,6 +35,8 @@ export type ManagerStrings = {
     delete: string
     deleteFolder: string
     deleteSelectedTitle: string
+    /** {0}: the number of folders. */
+    deleteSelectedFoldersTitle: string
     /** {0}: the number of entries, {1}: of their objects. */
     deleteSelectedMessage: string
     /** {0}: the number of folders, {1}: of entries, {2}: of their objects. */
