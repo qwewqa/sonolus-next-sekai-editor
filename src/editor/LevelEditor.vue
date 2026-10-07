@@ -396,8 +396,9 @@ const stageCount = computed(() =>
     color: theme('colors.white');
 }
 
+/* The transparent outline is the ring high contrast paints. */
 .status-chip:focus-visible {
-    outline: none;
+    outline: 2px solid transparent;
     box-shadow: 0 0 0 2px theme('colors.accent');
 }
 

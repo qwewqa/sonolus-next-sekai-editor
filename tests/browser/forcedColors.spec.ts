@@ -102,3 +102,13 @@ test('Preview Settings on/off fields show keyboard focus', async ({ page }) => {
     expect(focused).toEqual({ style: 'solid', width: '2px', color: await highlight(page) })
     expect(focused.color).not.toBe(edge)
 })
+
+test('status bar chips show keyboard focus', async ({ page }) => {
+    const chip = page.locator('.status-chip').first()
+    await focus(chip)
+    expect(await outline(chip)).toEqual({
+        style: 'solid',
+        width: '2px',
+        color: await highlight(page),
+    })
+})
