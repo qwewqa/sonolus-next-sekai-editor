@@ -241,6 +241,9 @@ const onKeydown = (event: KeyboardEvent) => {
         if (action) {
             event.preventDefault()
             execute(action.name)
+        } else if ((event.ctrlKey || event.metaKey) && /^[a-z]$/i.test(event.key)) {
+            // Nor do other chords reach the browser, such as Ctrl+S saving the page.
+            event.preventDefault()
         }
     }
 }

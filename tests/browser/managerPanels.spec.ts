@@ -1366,6 +1366,37 @@ test('a right press on another row in the dialog moves the menu there, as in a d
     await expect(dialog).toBeVisible()
 })
 
+test('browser chords stay held while an action menu is open', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group'])
+    const panel = await openGroups(page)
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    await page.evaluate(() => {
+        addEventListener(
+            'keydown',
+            (event) => {
+                ;(window as unknown as { lastKey: KeyboardEvent }).lastKey = event
+            },
+            true,
+        )
+    })
+    const held = () =>
+        page.evaluate(
+            () => (window as unknown as { lastKey: KeyboardEvent }).lastKey.defaultPrevented,
+        )
+    // Ctrl+S, F and P would save, find or print the page.
+    for (const key of ['Control+s', 'Control+f', 'Control+p']) {
+        await page.keyboard.press(key)
+        expect(await held()).toBe(true)
+        await expect(menu).toBeVisible()
+    }
+    expect(await canUndo(page)).toBe(false)
+    // Type-ahead still moves through the items.
+    await page.keyboard.press('d')
+    await expect(menu.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused()
+})
+
 test.describe('menus on a phone', () => {
     test.use(viewports.phone)
 

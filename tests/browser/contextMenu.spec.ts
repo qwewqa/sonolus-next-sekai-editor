@@ -397,6 +397,33 @@ test('menu shortcuts answer with Ctrl and to chord bindings, showing the chord',
     expect(await lefts()).toEqual([-2, 2])
 })
 
+test('browser chords stay held while the menu is open', async ({ page }) => {
+    await selectTwo(page)
+    await click(page, -3, 3)
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    await page.evaluate(() => {
+        addEventListener(
+            'keydown',
+            (event) => {
+                ;(window as unknown as { lastKey: KeyboardEvent }).lastKey = event
+            },
+            true,
+        )
+    })
+    const held = () =>
+        page.evaluate(
+            () => (window as unknown as { lastKey: KeyboardEvent }).lastKey.defaultPrevented,
+        )
+    // Ctrl+S, F and P would save, find or print the page.
+    for (const key of ['Control+s', 'Control+f', 'Control+p']) {
+        await page.keyboard.press(key)
+        expect(await held()).toBe(true)
+        await expect(menu).toBeVisible()
+    }
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+})
+
 test('changing view zoom or scrolling dismisses an open menu', async ({ page }) => {
     await click(page, -3, 3)
     await expect(page.getByRole('menu')).toBeVisible()

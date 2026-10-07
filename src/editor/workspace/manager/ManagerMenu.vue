@@ -215,6 +215,11 @@ const onScroll = (event: Event) => {
 const typeAhead = createTypeAhead()
 
 const onKeydown = (event: KeyboardEvent) => {
+    // An open menu holds chords from the browser, such as Ctrl+S saving the page.
+    if ((event.ctrlKey || event.metaKey) && /^[a-z]$/i.test(event.key)) {
+        event.preventDefault()
+        return
+    }
     // Letters and digits move to the next item starting with what was typed.
     if (isTypeAheadKey(event)) {
         // Also keeps Firefox's quick find closed.
