@@ -18,6 +18,7 @@ import {
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { editSelectionProperties } from '../../editSelectionProperties'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
@@ -158,7 +159,7 @@ export const timeScale: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
+            editSelectionProperties()
         }
     },
 
@@ -278,7 +279,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
+                    editSelectionProperties()
                 } else {
                     const object: TimeScaleObject = constrainLaneObject({
                         groupId: view.groupId ?? defaultGroupId.value,
@@ -301,7 +302,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
+                    editSelectionProperties()
                 }
                 break
             }
