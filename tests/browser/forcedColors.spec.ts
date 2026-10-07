@@ -89,3 +89,16 @@ test('segmented controls show the checked choice and keyboard focus', async ({ p
     await page.locator('.panel-tab', { hasText: 'Preview' }).click()
     await expectSegments(page.getByRole('radiogroup', { name: 'Aspect ratio' }))
 })
+
+test('Preview Settings on/off fields show keyboard focus', async ({ page }) => {
+    await page.locator('.panel-tab', { hasText: 'Preview' }).click()
+    const input = page.getByRole('checkbox', { name: 'Show Hitboxes', exact: true })
+    const field = input.locator('+ .preview-field')
+    // The resting edge.
+    expect(await outline(field)).toMatchObject({ style: 'solid', width: '2px' })
+    const edge = (await outline(field)).color
+    await focus(input)
+    const focused = await outline(field)
+    expect(focused).toEqual({ style: 'solid', width: '2px', color: await highlight(page) })
+    expect(focused.color).not.toBe(edge)
+})

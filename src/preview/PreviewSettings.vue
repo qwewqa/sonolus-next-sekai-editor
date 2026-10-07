@@ -321,7 +321,7 @@ const onPlacementChange = () => {
                             "
                         />
                         <span
-                            class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent"
+                            class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent forced-colors:peer-focus-visible:outline-[color:Highlight]"
                         >
                             {{
                                 settings[key]
@@ -408,7 +408,7 @@ const onPlacementChange = () => {
                             "
                         />
                         <span
-                            class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent"
+                            class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent forced-colors:peer-focus-visible:outline-[color:Highlight]"
                         >
                             {{
                                 settings.previewAntialias
@@ -530,6 +530,7 @@ const onPlacementChange = () => {
     line-height: 1.25;
 }
 
+/* High contrast paints the transparent outline as the edge, and Highlight on focus. */
 .preview-field {
     @apply block w-full truncate rounded-full bg-button px-4 py-1 text-left shadow-md outline-none ring-fg transition-colors;
 }
