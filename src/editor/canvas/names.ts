@@ -106,25 +106,27 @@ const drawSplitName = (
     }
 }
 
-// Every shown name is measured on every frame; keep widths for one font and zoom.
-const noWidths = () => ({
-    fontFamily: '',
-    scale: 0,
-    bySize: new Map<number, Map<string, number>>(),
-})
-let widths = noWidths()
+// Every shown name is measured on every frame; keep widths for each canvas's font and zoom.
+const widths = new Map<string, Map<number, Map<string, number>>>()
+const maxWidthKeys = 4
 
 /** Forgets measured names, as a loaded font changes their widths. */
 export const clearNameWidths = () => {
-    widths = noWidths()
+    widths.clear()
 }
 
 const measureName = (context: EditorDrawContext, text: string, size: number) => {
-    const { fontFamily, scale } = context
-    if (widths.fontFamily !== fontFamily || widths.scale !== scale)
-        widths = { fontFamily, scale, bySize: new Map() }
-    let bySize = widths.bySize.get(size)
-    if (!bySize) widths.bySize.set(size, (bySize = new Map<string, number>()))
+    const key = `${context.fontFamily}|${context.scale}`
+    // Most recently used last; old zooms go first.
+    const byKey = widths.get(key) ?? new Map<number, Map<string, number>>()
+    widths.delete(key)
+    widths.set(key, byKey)
+    for (const old of widths.keys()) {
+        if (widths.size <= maxWidthKeys) break
+        widths.delete(old)
+    }
+    let bySize = byKey.get(size)
+    if (!bySize) byKey.set(size, (bySize = new Map<string, number>()))
     let width = bySize.get(text)
     if (width === undefined) {
         width = measureText(context, text, size)

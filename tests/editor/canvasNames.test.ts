@@ -296,3 +296,46 @@ for (const nameContrast of [true, false])
         frame(20)
         assert.equal(measured, 6)
     })
+
+test('canvases at different fonts and zooms keep their measured names', () => {
+    const { context } = recordingContext()
+    let measured = 0
+    const measureText = context.ctx.measureText.bind(context.ctx)
+    Object.defineProperty(context.ctx, 'measureText', {
+        value: (text: string) => {
+            measured++
+            return measureText(text)
+        },
+    })
+    const owner = { type: 'note' } as Entity
+    const frame = (fontFamily: string, scale: number) => {
+        const layer = createNameLayer()
+        layer.names.push({
+            owner,
+            highlighted: false,
+            text: 'Stage',
+            x: 0,
+            y: 0,
+            color: '#f6f',
+            size: 0.4,
+            align: 'center',
+            alpha: 1,
+        })
+        placeNames({ ...context, fontFamily, scale }, layer)
+    }
+    clearNameWidths()
+    // The chart and the elevation editor drawing in turn.
+    for (let index = 0; index < 3; index++) {
+        frame('system-ui', 37.5)
+        frame('sans-serif', 50)
+    }
+    assert.equal(measured, 2)
+    // A zoom keeps the other canvas's widths, while old zooms are dropped.
+    for (const scale of [38, 39, 40, 41, 42]) {
+        frame('system-ui', scale)
+        frame('sans-serif', 50)
+    }
+    assert.equal(measured, 7)
+    frame('system-ui', 37.5)
+    assert.equal(measured, 8)
+})
