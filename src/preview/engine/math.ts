@@ -44,8 +44,6 @@ export const normalizeVecOrZero = (v: Vec): Vec => {
     return { x: v.x / m, y: v.y / m }
 }
 
-export const dotVec = (a: Vec, b: Vec) => a.x * b.x + a.y * b.y
-
 export const translateQuad = (q: Quad, offset: Vec): Quad => ({
     bl: addVec(q.bl, offset),
     tl: addVec(q.tl, offset),

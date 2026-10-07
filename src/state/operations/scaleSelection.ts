@@ -3,7 +3,7 @@ import type { Entity } from '../entities'
 import { getScaleProperties, getScaledSelectionValues, type ScaleAxis } from './scaleValues'
 import { transformSelection } from './transformSelection'
 
-export { canScaleSelection, type ScaleAxis } from './scaleValues'
+export type { ScaleAxis } from './scaleValues'
 
 export const scaleSelection = (
     source: State,

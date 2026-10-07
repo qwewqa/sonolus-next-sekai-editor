@@ -8,8 +8,6 @@ import {
 } from '../../ease'
 import { clamp, ease, isNoneEase, lerp, type EaseTypeValue } from './math'
 
-export const MIN_START_TIME = -2
-
 export type TimescaleEase = EaseTypeValue
 export type TransitionStyle = 0 | 1 // timescale | scroll
 
@@ -375,6 +373,3 @@ export const preemptTime = (noteSpeed: number, forceSpeed: number) => {
     const speed = forceSpeed > 0 ? forceSpeed : noteSpeed
     return lerp(0.35, 4, ((1 - speed / 12) / (1 - 1 / 12)) ** 1.31)
 }
-
-export const progressTo = (targetScaledTime: number, nowScaledTime: number, preempt: number) =>
-    (nowScaledTime - targetScaledTime + preempt) / preempt

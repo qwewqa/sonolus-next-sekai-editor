@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { state } from '../history'
-import { cullAllEntities, cullEntities, hitAllEntities, hitEntities } from '../history/store'
+import { cullAllEntities, hitAllEntities, hitEntities } from '../history/store'
 import { isToolModalOpen } from '../modals'
 import { getPreviewState } from '../preview/edit'
 import type { EntityType } from '../state/entities'
@@ -10,9 +10,6 @@ export const sceneState = computed(() =>
 )
 export const sceneBpms = computed(() => sceneState.value.bpms)
 export const isScenePreview = computed(() => sceneState.value !== state.value)
-
-export const cullSceneEntities = <T extends EntityType>(type: T, minKey: number, maxKey: number) =>
-    cullEntities(type, minKey, maxKey, sceneState.value.store)
 
 export const cullAllSceneEntities = (minKey: number, maxKey: number) =>
     cullAllEntities(minKey, maxKey, sceneState.value.store)

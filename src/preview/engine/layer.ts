@@ -8,7 +8,6 @@ export type Layer = {
 export const LAYER_ACTIVE_SLIDE_CONNECTOR_UNDER: Layer = { layer: 1, sublayer: 0 }
 export const LAYER_GUIDE_CONNECTOR_UNDER: Layer = { layer: 2, sublayer: 0 }
 export const LAYER_STAGE: Layer = { layer: 16, sublayer: -9 }
-export const LAYER_COVER: Layer = { layer: 16, sublayer: -8 }
 export const LAYER_SLOT_EFFECT: Layer = { layer: 16, sublayer: -7 }
 
 export const LAYER_ACTIVE_SLIDE_CONNECTOR_BOTTOM: Layer = { layer: 16, sublayer: -5 }

@@ -406,12 +406,6 @@ export const transformQuad = (context: PreviewLayout, q: Quad): Quad => ({
 export const transformedVecAt = (context: PreviewLayout, lane: number, travel = 1): Vec =>
     transformVec(context, vec(lane * tiltWidthFactor(context, travel), travel))
 
-export const preRotationVecAt = (context: PreviewLayout, lane: number, travel = 1): Vec =>
-    vec(
-        lane * tiltWidthFactor(context, travel) * context.wScale + context.xTranslate,
-        travel * context.hScale + context.t,
-    )
-
 export const perspectiveVec = (context: PreviewLayout, x: number, y: number, travel = 1): Vec =>
     transformVec(context, vec(x * tiltWidthFactor(context, y * travel), y * travel))
 

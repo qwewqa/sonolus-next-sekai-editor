@@ -1,8 +1,3 @@
-export const mod = (x: number, y: number) => {
-    const result = x % y
-    return result < 0 ? result + y : result
-}
-
 export const clamp = (value: number, min = 0, max = 1) => Math.min(Math.max(value, min), max)
 
 export const lerp = (x: number, y: number, s: number) => x + s * (y - x)

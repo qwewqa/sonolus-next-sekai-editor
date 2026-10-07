@@ -86,13 +86,9 @@ const panelOpenStates = computed(
         Object.fromEntries(panelIds.map((id) => [id, isPanelOpen(id)])) as Record<PanelId, boolean>,
 )
 
-export const getDockSize = (side: DockSide) => settings[sizeKeys[side]]
-
 export const setDockSize = (side: DockSide, size: number) => {
     settings[sizeKeys[side]] = Math.max(0, Math.round(size))
 }
-
-export const isDockCollapsed = (side: DockSide) => settings[collapsedKeys[side]]
 
 export const setDockCollapsed = (side: DockSide, collapsed: boolean) => {
     settings[collapsedKeys[side]] = collapsed

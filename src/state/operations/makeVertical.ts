@@ -4,8 +4,6 @@ import { getMakeVerticalChanges } from './makeVerticalValues'
 import { getMaterializedNotePositions } from './notePositions'
 import { transformSelection } from './transformSelection'
 
-export { canMakeVertical } from './makeVerticalValues'
-
 export const makeVertical = (source: State, selected: Entity[]): State => {
     const changes = getMakeVerticalChanges(selected, source)
     if (!changes) return source
