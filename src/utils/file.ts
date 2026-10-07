@@ -1,16 +1,22 @@
+// A detached input is otherwise collectable while its picker is open, losing the pick.
+const pickingInputs = new Set<HTMLInputElement>()
+
 export const pickFile = () =>
     new Promise<File | undefined>((resolve) => {
         const input = document.createElement('input')
         input.type = 'file'
 
         input.onchange = () => {
+            pickingInputs.delete(input)
             resolve(input.files?.[0])
         }
 
         input.oncancel = () => {
+            pickingInputs.delete(input)
             resolve(undefined)
         }
 
+        pickingInputs.add(input)
         input.click()
     })
 

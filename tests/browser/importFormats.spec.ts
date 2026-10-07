@@ -220,6 +220,34 @@ for (const [label, content] of [
         await expect(page.getByRole('dialog')).not.toContainText('Error')
     })
 
+test('a file picked after a garbage collection still opens', async ({ page }) => {
+    // Skip the native picker and hold the input weakly, so only the app keeps it alive.
+    await page.evaluate(() => {
+        HTMLInputElement.prototype.click = function () {
+            ;(window as unknown as { picking: WeakRef<HTMLInputElement> }).picking = new WeakRef(
+                this,
+            )
+        }
+    })
+    await page.keyboard.press('o')
+    await expect.poll(() => page.evaluate(() => 'picking' in window)).toBe(true)
+    const client = await page.context().newCDPSession(page)
+    await client.send('HeapProfiler.collectGarbage')
+    const picked = await page.evaluate(() => {
+        const input = (window as unknown as { picking: WeakRef<HTMLInputElement> }).picking.deref()
+        if (!input) return false
+        const data = new DataTransfer()
+        data.items.add(new File(['null'], 'chart.json'))
+        input.files = data.files
+        input.dispatchEvent(new Event('change'))
+        return true
+    })
+    expect(picked).toBe(true)
+    await expect(page.getByRole('dialog')).toContainText(
+        'Unsupported file. Open level data, a Chart Cyanvas level, or a USC or SUS chart.',
+    )
+})
+
 // Level data refuses these, so the editor could not reopen its own file.
 const invalidBpm = 'Invalid level: BPM must be positive and finite'
 const single = usc.usc.objects[2]!
