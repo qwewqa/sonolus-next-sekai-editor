@@ -183,8 +183,12 @@ const onDismiss = () => {
 const onOutside = (event: PointerEvent) => {
     const target = event.target
     if (!(target instanceof Node)) return
-    // The anchor toggles the menu itself on click.
-    if (menu.value?.contains(target) || props.anchor.contains(target)) return
+    // A button anchor toggles the menu itself on click; a row anchor doesn't.
+    if (
+        menu.value?.contains(target) ||
+        (props.anchor instanceof HTMLButtonElement && props.anchor.contains(target))
+    )
+        return
     // The press only closes the menu, so closing never edits what lies under it. A
     // right press in a dock or in the menu's own list only opens menus, so it
     // moves the menu there instead.

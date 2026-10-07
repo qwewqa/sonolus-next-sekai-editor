@@ -1115,3 +1115,42 @@ for (const host of ['dock', 'dialog'] as const)
         await expect(mode).toBeFocused()
         if (host === 'dialog') await expect(list).toBeVisible()
     })
+
+test("a row's bulk menu closes on a press on the row and never toggles on reopening", async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const menu = page.getByRole('menu')
+    const check = row(list, 'Bass').locator('.manager-check')
+    await nameButton(list, 'Default').click({ modifiers: ['ControlOrMeta'] })
+    await nameButton(list, 'Bass').click({ button: 'right' })
+    await expect(menu).toHaveAccessibleName('More Actions for Selection')
+    await expect(check).toHaveAttribute('aria-checked', 'true')
+
+    // A press on the row only closes the menu.
+    await nameButton(list, 'Bass').click()
+    await expect(menu).toHaveCount(0)
+    await expect(check).toHaveAttribute('aria-checked', 'true')
+
+    // A second right click on the row keeps it open.
+    await nameButton(list, 'Bass').click({ button: 'right' })
+    await expect(menu).toBeVisible()
+    await nameButton(list, 'Bass').click({ button: 'right' })
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+
+    // Android follows a long press with its own contextmenu.
+    await nameButton(list, 'Bass').dispatchEvent('pointerdown', {
+        pointerType: 'touch',
+        isPrimary: true,
+        pointerId: 7,
+        button: 0,
+    })
+    await expect(menu).toBeVisible()
+    await nameButton(list, 'Bass').dispatchEvent('contextmenu', { button: 0 })
+    await page.evaluate(() => window.editorTest.nextTick())
+    await expect(menu).toBeVisible()
+    await expect(check).toHaveAttribute('aria-checked', 'true')
+})

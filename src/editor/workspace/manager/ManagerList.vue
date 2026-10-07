@@ -1376,11 +1376,15 @@ const onMenu = (key: RowKey, anchor: HTMLElement, touch = false) => {
     else menu.value = { key, anchor, modals: modals.length, mode: 'main', touch }
 }
 
+const openBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders', touch = false) => {
+    menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode, touch }
+}
+
 const onBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders', touch = false) => {
     const current = menu.value
     if (current?.key.type === 'selection' && current.anchor === anchor && current.mode === mode)
         closeMenu(false)
-    else menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode, touch }
+    else openBulkMenu(anchor, mode, touch)
 }
 
 /** A row's own menu while selecting acts on the selection, joined by that row. */
@@ -1392,7 +1396,9 @@ const onRowBulkMenu = (key: RowKey, button: HTMLElement, touch: boolean) => {
         const item = folderItems.value.get(key.id)
         if (item) toggleFolder(item)
     }
-    onBulkMenu(button, 'main', touch)
+    // Opening never toggles, as on rows not selecting.
+    if (menu.value?.key.type !== 'selection' || menu.value.anchor !== button)
+        openBulkMenu(button, 'main', touch)
 }
 
 function closeMenu(restoreFocus: boolean) {
