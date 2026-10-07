@@ -190,6 +190,49 @@ const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => 
     }
 }
 
+// A key that changes the rows, e.g. Ctrl+Z, may remove or re-create the focused
+// row; focus then returns to it, or to the row now in its place.
+const rowControls = ['manager-name', 'manager-more', 'manager-check', 'manager-eye']
+let keyFocus: { key: RowKey; control: string; index: number } | undefined
+let keyFocusTimer = 0
+
+const noteKeyFocus = (target: HTMLElement) => {
+    const key = keyOfRow(target)
+    if (!key) return
+    const control = rowControls.find((name) => target.classList.contains(name)) ?? 'manager-name'
+    keyFocus = { key, control: `.${control}`, index: rowIndex(key) }
+    clearTimeout(keyFocusTimer)
+    keyFocusTimer = window.setTimeout(() => (keyFocus = undefined))
+}
+
+const focusFirst = (...elements: (HTMLElement | null | undefined)[]) =>
+    elements.some((element) => {
+        element?.focus({ preventScroll: true })
+        return !!element && document.activeElement === element
+    })
+
+watch(
+    tree,
+    () => {
+        const last = keyFocus
+        if (!last || !root.value?.isConnected) return
+        if (document.activeElement && document.activeElement !== document.body) return
+        if (exists(last.key)) {
+            focusShown(last.key, last.control)
+            if (root.value.contains(document.activeElement)) return
+        }
+        const rows = [...(list.value?.querySelectorAll<HTMLElement>('[data-row]') ?? [])]
+        const row = rows[Math.min(last.index, rows.length - 1)]
+        focusFirst(
+            row?.querySelector<HTMLElement>(last.control),
+            row?.querySelector<HTMLElement>('.manager-name'),
+            root.value.querySelector<HTMLElement>('.manager-add'),
+            root.value.querySelector<HTMLElement>('.manager-all .manager-name'),
+        )
+    },
+    { flush: 'post' },
+)
+
 /**
  * Up and Down step between the rows' names, from the band's row down, and Home
  * and End reach the ends, as in a tree; Tab still visits every control. With
@@ -198,6 +241,7 @@ const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => 
 const onKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement
     if (target instanceof HTMLInputElement) return
+    noteKeyFocus(target)
     if (selecting.value && ['Escape', 'Delete', 'Backspace'].includes(event.key)) {
         void onSelectingKeydown(event, target)
         return

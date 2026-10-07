@@ -1426,3 +1426,34 @@ for (const host of ['panel', 'dialog'] as const) {
         await expect(nameButton(list, 'Bass')).toBeFocused()
     })
 }
+
+test('Ctrl+Z and Ctrl+Y in the list keep focus on the row, or the row in its place', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await row(list, 'Bass').getByRole('button', { name: 'More Actions for Bass' }).click()
+    await page.getByRole('menuitem', { name: 'Move to Folder…' }).click()
+    await page.getByRole('menuitemradio', { name: 'Verse' }).click()
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill Bass] Drums [Outro: Pad]')
+
+    // The row moves out of its folder and back, keeping focus.
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('ControlOrMeta+z')
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+    await expect(nameButton(list, 'Bass')).toBeFocused()
+    await page.keyboard.press('ControlOrMeta+y')
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill Bass] Drums [Outro: Pad]')
+    await expect(nameButton(list, 'Bass')).toBeFocused()
+    await row(list, 'Bass').locator('.manager-eye').focus()
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(row(list, 'Bass').locator('.manager-eye')).toBeFocused()
+
+    // A row the undo removes passes focus to the row now in its place.
+    await list.getByRole('button', { name: 'Add Group', exact: true }).click()
+    await page.keyboard.press('Escape')
+    await expect(nameButton(list, '#1')).toBeFocused()
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(nameButton(list, '#1')).toHaveCount(0)
+    await expect(nameButton(list, 'Pad')).toBeFocused()
+})
