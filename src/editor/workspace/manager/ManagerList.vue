@@ -996,6 +996,8 @@ const menu = shallowRef<{
     modals: number
     /** The menu's own actions, or the folder choice for an entry. */
     mode: 'main' | 'folders'
+    /** Opened by a long press, so its first item takes no keyboard highlight. */
+    touch?: boolean
 }>()
 
 /** Common actions are one click away on panels with room for them. */
@@ -1210,22 +1212,22 @@ const menuLabel = computed(() => {
     return label(i18n.value.workspace.manager.actions, name)
 })
 
-const onMenu = (key: RowKey, anchor: HTMLElement) => {
+const onMenu = (key: RowKey, anchor: HTMLElement, touch = false) => {
     if (menu.value && sameKey(menu.value.key, key)) closeMenu(false)
-    else menu.value = { key, anchor, modals: modals.length, mode: 'main' }
+    else menu.value = { key, anchor, modals: modals.length, mode: 'main', touch }
 }
 
-const onBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders') => {
+const onBulkMenu = (anchor: HTMLElement, mode: 'main' | 'folders', touch = false) => {
     const current = menu.value
     if (current?.key.type === 'selection' && current.anchor === anchor && current.mode === mode)
         closeMenu(false)
-    else menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode }
+    else menu.value = { key: { type: 'selection' }, anchor, modals: modals.length, mode, touch }
 }
 
 /** A row's own menu while selecting acts on the selection, joined by that row. */
-const onRowBulkMenu = (id: T | undefined, anchor: HTMLElement) => {
+const onRowBulkMenu = (id: T | undefined, anchor: HTMLElement, touch: boolean) => {
     if (id !== undefined && !selected.value.has(id)) setSelection([...selected.value, id], id)
-    onBulkMenu(anchor, 'main')
+    onBulkMenu(anchor, 'main', touch)
 }
 
 function closeMenu(restoreFocus: boolean) {
@@ -1497,9 +1499,9 @@ const entryHandlers = (id: T) => {
         action: (action: string, button: HTMLElement, keyboard: boolean) => {
             onInlineAction(id, action, button, keyboard)
         },
-        menu: (anchor: HTMLElement) => {
-            if (selecting.value) onRowBulkMenu(id, anchor)
-            else onMenu(key, anchor)
+        menu: (anchor: HTMLElement, touch: boolean) => {
+            if (selecting.value) onRowBulkMenu(id, anchor, touch)
+            else onMenu(key, anchor, touch)
         },
         renameStart: () => {
             startRename(key)
@@ -1675,9 +1677,10 @@ const folderEyeLabel = (item: FolderItem) =>
                                 @toggle="onToggleFolder(item, $event)"
                                 @check="toggleMany(item.members)"
                                 @menu="
-                                    selecting
-                                        ? onRowBulkMenu(undefined, $event)
-                                        : onMenu(item, $event)
+                                    (anchor, touch) =>
+                                        selecting
+                                            ? onRowBulkMenu(undefined, anchor, touch)
+                                            : onMenu(item, anchor, touch)
                                 "
                                 @rename-start="startRename(item)"
                                 @rename-end="(value, keyboard) => endRename(item, value, keyboard)"
@@ -1839,6 +1842,7 @@ const folderEyeLabel = (item: FolderItem) =>
             v-if="menu"
             :key="`${menu.key.type === 'selection' ? 'selection' : rowKey(menu.key)}-${menu.mode}`"
             :anchor="menu.anchor"
+            :touch="menu.touch"
             :label="menuLabel"
             :items="menuItems"
             @select="onMenuSelect"

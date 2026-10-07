@@ -97,7 +97,7 @@ const emit = defineEmits<{
     check: [range: boolean]
     mode: []
     action: [key: string, button: HTMLElement, keyboard: boolean]
-    menu: [anchor: HTMLElement]
+    menu: [anchor: HTMLElement, touch: boolean]
     renameStart: []
     renameEnd: [value: string | undefined, keyboard: boolean]
     dragStart: [event: PointerEvent]
@@ -152,7 +152,7 @@ const onAction = (event: MouseEvent, key: string) => {
 }
 
 const onMenu = (event: MouseEvent) => {
-    emit('menu', event.currentTarget as HTMLElement)
+    emit('menu', event.currentTarget as HTMLElement, false)
     // An opened menu takes focus itself; a closed one leaves none behind.
     blurAfterPointer(event)
 }
@@ -163,10 +163,10 @@ const more = useTemplateRef<HTMLButtonElement>('more')
 // A right click or a long press opens the same menu as the more button, as on
 // rail tabs. Opening never toggles: Android may follow a long press with its
 // own contextmenu event.
-const openMenu = () => {
+const openMenu = (touch = false) => {
     // Rows without a more button, e.g. while selecting, anchor it themselves.
     const anchor = more.value ?? row.value
-    if (anchor && !props.menuOpen) emit('menu', anchor)
+    if (anchor && !props.menuOpen) emit('menu', anchor, touch)
 }
 
 // iOS fires no contextmenu event for a long press, so a touch held still on the
@@ -201,9 +201,15 @@ const onNameLongPressStart = (event: PointerEvent) => {
         timer: window.setTimeout(() => {
             longPress = undefined
             suppressClick = true
-            openMenu()
+            openMenu(true)
         }, longPressDelay),
     }
+}
+
+// The mouse events emulated as a long press ends would focus the name, taking
+// focus from the menu it opened.
+const onNameMousedown = (event: MouseEvent) => {
+    if (suppressClick) event.preventDefault()
 }
 
 const onNamePointermove = (event: PointerEvent) => {
@@ -234,7 +240,7 @@ const onContextMenu = (event: MouseEvent) => {
     cancelLongPress()
     if (!settings.touchLongPressContextMenu) return
     suppressClick = true
-    openMenu()
+    openMenu(true)
 }
 
 const onKeydown = (event: KeyboardEvent) => {
@@ -419,6 +425,7 @@ const onRenameBlur = (event: FocusEvent) => {
             @click="onSelect"
             @dblclick="onNameDblclick"
             @pointerdown="onNamePointerdown"
+            @mousedown="onNameMousedown"
             @pointermove="onNamePointermove"
             @pointerup="cancelLongPress"
             @pointercancel="cancelLongPress"

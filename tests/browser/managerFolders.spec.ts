@@ -1006,6 +1006,28 @@ test.describe('touch', () => {
         // The tap that ended the long press did not also collapse the folder.
         await expect(name).toHaveAttribute('aria-expanded', 'true')
     })
+
+    test('a long press focuses the menu without a keyboard highlight', async ({ page }) => {
+        await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Outro']])
+        const client = await page.context().newCDPSession(page)
+        for (const row of [folderRow(page, 'Verse'), entryRow(page, 'Outro')]) {
+            const box = (await row.locator('.manager-name').boundingBox())!
+            const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+            await client.send('Input.dispatchTouchEvent', {
+                type: 'touchStart',
+                touchPoints: [point],
+            })
+            await page.waitForTimeout(700)
+            await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+            const menu = page.getByRole('menu')
+            await expect(menu.getByRole('menuitem').first()).toBeFocused()
+            expect(
+                await page.evaluate(() => document.activeElement?.matches(':focus-visible')),
+            ).toBe(false)
+            await page.keyboard.press('Escape')
+            await expect(menu).toHaveCount(0)
+        }
+    })
 })
 
 test('stages get folders too when dynamic stages are on', async ({ page }) => {
