@@ -244,7 +244,7 @@ test.describe('mixed values', () => {
         for (const [locale, description] of [
             [
                 'fr',
-                "S'applique à 2 des 5 objets sélectionnés. Mixte : Accélération 1, Décélération 1",
+                'S’applique à 2 des 5 objets sélectionnés. Mixte : Accélération 1, Décélération 1',
             ],
             ['ja', '選択中の5個のうち2個に適用。混在：加速 1、減速 1'],
             ['zhs', '适用于所选 5 个对象中的 2 个。混合：缓入 1、缓出 1'],

@@ -30,7 +30,7 @@
         "offset": "Décalage (ms)",
         "loading": "Chargement du fichier…",
         "decoding": "Décodage audio…",
-        "generating": "Génération de forme d'onde…"
+        "generating": "Génération de forme d’onde…"
       }
     },
     "brush": {
@@ -381,20 +381,20 @@
     },
     "zooms": {
       "zoomXIn": {
-        "title": "Zoom avant sur l'axe X",
-        "zoomed": "Zoom avant sur l'axe X de 10%"
+        "title": "Zoom avant sur l’axe X",
+        "zoomed": "Zoom avant sur l’axe X de 10 %"
       },
       "zoomXOut": {
-        "title": "Zoom arrière sur l'axe X",
-        "zoomed": "Zoom arrière sur l'axe X de 10%"
+        "title": "Zoom arrière sur l’axe X",
+        "zoomed": "Zoom arrière sur l’axe X de 10 %"
       },
       "zoomYIn": {
-        "title": "Zoom avant sur l'axe Y",
-        "zoomed": "Zoom avant sur l'axe Y de 10%"
+        "title": "Zoom avant sur l’axe Y",
+        "zoomed": "Zoom avant sur l’axe Y de 10 %"
       },
       "zoomYOut": {
-        "title": "Zoom arrière sur l'axe Y",
-        "zoomed": "Zoom arrière sur l'axe Y de 10%"
+        "title": "Zoom arrière sur l’axe Y",
+        "zoomed": "Zoom arrière sur l’axe Y de 10 %"
       }
     },
     "bpm": {
@@ -427,8 +427,8 @@
         "deselect": "Appuyez avec deux doigts pour désélectionner.",
         "scrollY": "Glissez deux doigts verticalement pour faire défiler.",
         "scrollX": "Glissez deux doigts horizontalement pour faire défiler.",
-        "zoomY": "Pincez verticalement avec deux doigts pour zoomer l'axe Y.",
-        "zoomX": "Pincez horizontalement avec deux doigts pour zoomer l'axe X.",
+        "zoomY": "Pincez verticalement avec deux doigts pour zoomer l’axe Y.",
+        "zoomX": "Pincez horizontalement avec deux doigts pour zoomer l’axe X.",
         "play": "Appuyez avec trois doigts pour lancer la lecture."
       },
       "mouse": {
@@ -482,7 +482,7 @@
         "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide.",
-        "properties": "Passez à l'outil Note de nouveau pour changer le préréglage ou les propriétés par défaut."
+        "properties": "Passez à l’outil Note de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "slideTool": {
         "title": "Outil Slide",
@@ -493,7 +493,7 @@
         "move": "Glissez 1 note pour la déplacer.",
         "ctrl": "Utilisez la touche Ctrl pour ajouter des objets à la sélection.",
         "shift": "Maintenez la touche Maj pour inclure les autres notes du même slide.",
-        "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
+        "properties": "Passez à l’outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "splitSlide": {
         "split": "Coupe la connexion de chaque note sélectionnée vers la note suivante.",
@@ -697,7 +697,7 @@
       "title": "Barre d’outils",
       "add": "Ajouter un outil",
       "modal": {
-        "title": "Sélectionner l'outil"
+        "title": "Sélectionner l’outil"
       }
     },
     "touch": {
@@ -862,7 +862,7 @@
       "replaced": "{0} échelle de temps remplacée|{0} échelles de temps remplacées",
       "selected": "{0} échelle de temps sélectionnée|{0} échelles de temps sélectionnées",
       "modal": {
-        "title": "Propriétés de l'échelle de temps"
+        "title": "Propriétés de l’échelle de temps"
       }
     },
     "events": {
@@ -889,11 +889,11 @@
       "size": "Taille",
       "generate": "Générer",
       "loading": "Chargement du fichier…",
-      "decoding": "Décodage d'image…",
+      "decoding": "Décodage d’image…",
       "generating": "Génération de la couverture…"
     },
     "previewEditor": {
-      "title": "Éditeur de l'aperçu",
+      "title": "Éditeur de l’aperçu",
       "bgm": "Musique",
       "start": "Début",
       "end": "Fin",
@@ -902,7 +902,7 @@
       "generate": "Générer",
       "loading": "Chargement du fichier…",
       "decoding": "Décodage audio…",
-      "generating": "Génération de l'aperçu…"
+      "generating": "Génération de l’aperçu…"
     }
   },
   "notification": {
@@ -937,7 +937,7 @@
     },
     "changes": {
       "title": "Modifications",
-      "message": "Les modifications apportées au niveau peuvent être perdues. Continuer?"
+      "message": "Les modifications apportées au niveau peuvent être perdues. Continuer ?"
     },
     "dynamicStages": {
       "title": "Scènes dynamiques",
@@ -1288,7 +1288,7 @@
       "meter": {
         "label": "Temps par mesure"
       },
-      "coverage": "S'applique à {0} des {1} objets sélectionnés",
+      "coverage": "S’applique à {0} des {1} objets sélectionnés",
       "selectOnly": "Sélectionner seulement {1} ({0})",
       "unset": {
         "unchanged": "Inchangé",

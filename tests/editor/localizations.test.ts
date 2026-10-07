@@ -134,6 +134,14 @@ test('both flip commands name their axis', () => {
     }
 })
 
+test('French text uses one typographic style', () => {
+    for (const [key, text] of Object.entries(read('fr'))) {
+        assert.doesNotMatch(text, /'/, `fr ${key}: curly apostrophes, as most of fr`)
+        // A space before ? ! : ; and %, as "Voulez-vous les activer ?" and "10 %".
+        assert.doesNotMatch(text, /[^\s][?!:;]|\d%/, `fr ${key}`)
+    }
+})
+
 test('event tool names start with a capital where the script has case', () => {
     for (const locale of readdirSync(directory, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
