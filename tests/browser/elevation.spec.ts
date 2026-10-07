@@ -295,6 +295,29 @@ test('the Beat field keeps typing through re-renders and restores invalid values
     await expect(beat).toHaveValue('9')
 })
 
+test('the header fields keep their edge at rest in high contrast', async ({ page }) => {
+    // High contrast drops their shadow; the transparent outline is painted instead.
+    await page.emulateMedia({ forcedColors: 'active' })
+    await open(page)
+    const text = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'CanvasText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    const edges = await page.locator('.elevation-field').evaluateAll((fields) =>
+        fields.map((field) => {
+            const { outlineStyle, outlineWidth, outlineColor } = getComputedStyle(field)
+            return { style: outlineStyle, width: outlineWidth, color: outlineColor }
+        }),
+    )
+    expect(edges.length).toBeGreaterThan(1)
+    for (const edge of edges) expect(edge).toEqual({ style: 'solid', width: '2px', color: text })
+})
+
 test('opening uses the selected note beat instead of the caret beat', async ({ page }) => {
     await page.evaluate(() => {
         const { history } = window.editorTest
