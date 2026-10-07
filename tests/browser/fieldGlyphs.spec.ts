@@ -33,8 +33,19 @@ const open = async (page: Page, settings: Record<string, unknown> = {}) => {
         const { history, fixtures } = window.editorTest
         const chart = structuredClone(fixtures.interaction)
         const [a, b, c, d] = chart.slides.map((slide) => slide[0]!)
-        Object.assign(a!, { noteStyle: 'purple', flickDirection: 'upLeft', connectorStyle: 'red' })
-        Object.assign(b!, { noteStyle: 'red', flickDirection: 'none', connectorStyle: 'black' })
+        Object.assign(a!, {
+            noteStyle: 'purple',
+            flickDirection: 'upLeft',
+            connectorStyle: 'red',
+            noteType: 'trace',
+            sfx: 'criticalTap',
+        })
+        Object.assign(b!, {
+            noteStyle: 'red',
+            flickDirection: 'none',
+            connectorStyle: 'black',
+            sfx: 'none',
+        })
         Object.assign(c!, { noteStyle: 'default', flickDirection: 'downRight' })
         // Values no option names, far off screen so only the panel shows them.
         Object.assign(d!, { beat: 1000, noteStyle: 'pink', flickDirection: 'sideways' })
@@ -93,9 +104,6 @@ test('color and flick fields show the current value as the canvas draws it', asy
             .locator('.select-option-glyph svg'),
     ).toHaveCount(0)
     await expect(flick.locator('.select-option-glyph polygon')).toHaveCount(6)
-    // Fields R1 gives no picture list text only.
-    await expect(field(page, 'Note Type').locator('.select-option-glyph')).toHaveCount(0)
-
     // Black connectors use the styled connector base; None has no arrow.
     await select(page, 'note', [2])
     await expect(lead(page, 'Color').locator('circle')).toHaveAttribute('fill', '#555555')
@@ -121,6 +129,40 @@ test('color and flick fields show the current value as the canvas draws it', asy
         field(page, 'Note Color').locator('option', { hasText: 'Purple · 1' }),
     ).toHaveCount(1)
     await expect(field(page, 'Note Color').locator('.form-field-mixed-value')).toHaveCount(2)
+})
+
+test('note type and SFX fields picture the note', async ({ page }) => {
+    await open(page)
+    await select(page, 'note', [0])
+    await expect(lead(page, 'Note Type').locator('svg')).toHaveAttribute('aria-hidden', 'true')
+    await expect(lead(page, 'Note Type').locator('rect')).toHaveAttribute('fill', '#5fefc2')
+    await expect(lead(page, 'Note Type').locator('polygon')).toHaveCount(1)
+    // Critical sounds take the critical colours.
+    await expect(lead(page, 'SFX').locator('rect')).toHaveAttribute('fill', '#fed983')
+    // Every option keeps the slot; Default and None leave it empty, unannounced.
+    const type = field(page, 'Note Type').locator('select')
+    await expect(type.locator('.select-option-glyph[aria-hidden=true]')).toHaveCount(6)
+    await expect(type.locator('.select-option-glyph svg')).toHaveCount(5)
+    await expect(
+        type.getByRole('option', { name: 'Default', exact: true }).locator('svg'),
+    ).toHaveCount(0)
+    await expect(type.getByRole('option', { name: 'Force Non Tick', exact: true })).toHaveCount(1)
+    const sfx = field(page, 'SFX').locator('select')
+    await expect(sfx.locator('.select-option-glyph[aria-hidden=true]')).toHaveCount(11)
+    await expect(sfx.locator('.select-option-glyph svg')).toHaveCount(9)
+    for (const name of ['Default', 'None'])
+        await expect(sfx.getByRole('option', { name, exact: true }).locator('svg')).toHaveCount(0)
+
+    // Default and None show no glyph and no inset.
+    await select(page, 'note', [2])
+    await expect(lead(page, 'Note Type')).toHaveCount(0)
+    await expect(lead(page, 'SFX')).toHaveCount(0)
+    expect(await selectPadding(page, 'SFX')).toBe('16px')
+
+    // Mixed values show none either.
+    await select(page, 'note', [0, 2])
+    await expect(lead(page, 'Note Type')).toHaveCount(0)
+    await expect(lead(page, 'SFX')).toHaveCount(0)
 })
 
 test('tool presets show glyphs only for values that are set', async ({ page }) => {

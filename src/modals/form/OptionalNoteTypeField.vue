@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { NoteType } from '../../chart/note'
 import { i18n } from '../../i18n'
 import OptionalSelectField from './OptionalSelectField.vue'
+import { noteTypeGlyph } from './noteGlyphs'
 
 const modelValue = defineModel<NoteType | undefined>({ required: true })
+
+// Default, unset, mixed and unknown values have no picture.
+const glyph = computed(() =>
+    modelValue.value === undefined ? null : noteTypeGlyph(modelValue.value),
+)
 </script>
 
 <template>
@@ -18,5 +25,8 @@ const modelValue = defineModel<NoteType | undefined>({ required: true })
             [i18n.modals.form.noteType.forceTick, 'forceTick'],
             [i18n.modals.form.noteType.forceNonTick, 'forceNonTick'],
         ]"
-    />
+        :option-glyph="noteTypeGlyph"
+    >
+        <template v-if="glyph" #leading><component :is="glyph" /></template>
+    </OptionalSelectField>
 </template>

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import type { NoteSfx, NoteType } from '../../src/chart/note'
 import { connectorColors } from '../../src/editor/utils/connectorColors'
 import { flickArrowPoints, flickGlyphPoints } from '../../src/flickArrow'
+import { noteTypeShapes, sfxShapes } from '../../src/modals/form/noteShapes'
 import { connectorStyleColor, guideColors } from '../../src/utils/colors'
 
 const parse = (points: string) => points.split(' ').map((point) => point.split(',').map(Number))
@@ -38,4 +40,42 @@ test('connector swatches use the styled connector base color', () => {
             .body,
         connectorStyleColor('black'),
     )
+})
+
+test('every note type and SFX has a note pictogram or an empty slot', () => {
+    const typeShapes: Record<string, unknown> = noteTypeShapes
+    const soundShapes: Record<string, unknown> = sfxShapes
+    for (const value of [
+        'default',
+        'trace',
+        'anchor',
+        'damage',
+        'forceTick',
+        'forceNonTick',
+    ] satisfies NoteType[])
+        assert.notEqual(typeShapes[value], undefined, value)
+    for (const value of [
+        'default',
+        'none',
+        'normalTap',
+        'criticalTap',
+        'normalFlick',
+        'criticalFlick',
+        'normalTrace',
+        'criticalTrace',
+        'normalTick',
+        'criticalTick',
+        'damage',
+    ] satisfies NoteSfx[])
+        assert.notEqual(soundShapes[value], undefined, value)
+    // Only the values with nothing to picture take the empty slot.
+    assert.equal(noteTypeShapes.default, null)
+    assert.equal(sfxShapes.default, null)
+    assert.equal(sfxShapes.none, null)
+    // A note type and the sound of the same note share one picture.
+    assert.equal(noteTypeShapes.trace, sfxShapes.normalTrace[0])
+    assert.equal(noteTypeShapes.forceTick, sfxShapes.normalTick[0])
+    assert.equal(noteTypeShapes.damage, sfxShapes.damage[0])
+    // Critical sounds are the same notes in the critical colours.
+    assert.deepEqual(sfxShapes.criticalFlick, [sfxShapes.normalFlick[0], true])
 })

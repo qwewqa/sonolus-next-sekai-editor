@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { NoteSfx } from '../../chart/note'
 import { i18n } from '../../i18n'
 import OptionalSelectField from './OptionalSelectField.vue'
+import { sfxGlyph } from './noteGlyphs'
 
 const modelValue = defineModel<NoteSfx | undefined>({ required: true })
+
+// Default, None, unset, mixed and unknown values have no picture.
+const glyph = computed(() => (modelValue.value === undefined ? null : sfxGlyph(modelValue.value)))
 </script>
 
 <template>
@@ -23,5 +28,8 @@ const modelValue = defineModel<NoteSfx | undefined>({ required: true })
             [i18n.modals.form.sfx.criticalTick, 'criticalTick'],
             [i18n.modals.form.sfx.damage, 'damage'],
         ]"
-    />
+        :option-glyph="sfxGlyph"
+    >
+        <template v-if="glyph" #leading><component :is="glyph" /></template>
+    </OptionalSelectField>
 </template>
