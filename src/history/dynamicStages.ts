@@ -62,7 +62,7 @@ export const checkDynamicStages = async () => {
     })
 
     pushState(() => i18n.value.history.dynamicStages.enabled, {
-        ...transaction.commit(selectedEntities.value),
+        ...transaction.commit([...selectedEntities.value]),
         isDynamicStages: true,
     })
 

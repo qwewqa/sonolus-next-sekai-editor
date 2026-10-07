@@ -84,5 +84,5 @@ export const duplicateOwned = (state: State, owners: OwnerCopies): State => {
             addNote(transaction, slideId, { ...note, [owners.key]: copyOf(note[owners.key]) })
     }
 
-    return transaction.commit(state.selectedEntities)
+    return transaction.commit([...state.selectedEntities])
 }
