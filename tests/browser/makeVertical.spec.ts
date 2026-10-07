@@ -176,9 +176,7 @@ test('the context action uses the earliest selected note and supports one-step u
     await page.keyboard.press('Escape')
 })
 
-test('one note anchors mixed events and collisions stay within the matching group and stage', async ({
-    page,
-}) => {
+test('selected BPM changes, time scales and events stay put and selected', async ({ page }) => {
     const result = await page.evaluate(async () => {
         const { makeVertical } = await import('/src/state/operations/makeVertical.ts')
         const { fixtures, show, history } = window.editorTest
@@ -214,64 +212,40 @@ test('one note anchors mixed events and collisions stay within the matching grou
             ],
         })
         const source = history.state.value
-        const note = [...source.store.slides.note.values()].flat()[0]!
-        const untouched = [...source.store.slides.note.values()].flat()[1]!
-        const bpms = [...source.store.grid.bpm.values()]
-            .flatMap((bucket) => [...bucket])
-            .filter((entity) => entity.beat === 0 || entity.beat === 8)
-        const times = [...source.store.grid.timeScale.values()]
-            .flatMap((bucket) => [...bucket])
-            .filter((entity) => entity.groupId === firstGroup)
-        const cameras = [...source.store.grid.cameraEventJoint.values()].flatMap((bucket) => [
-            ...bucket,
-        ])
-        const transforms = [...source.store.grid.stageTransformEventJoint.values()]
-            .flatMap((bucket) => [...bucket])
-            .filter((entity) => entity.stageId === firstStage)
-        const vertical = makeVertical(source, [...bpms, ...times, ...cameras, ...transforms, note])
+        const notes = [...source.store.slides.note.values()].flat()
+        const others = (state: typeof source) =>
+            (['bpm', 'timeScale', 'cameraEventJoint', 'stageTransformEventJoint'] as const).flatMap(
+                (type) =>
+                    [...state.store.grid[type].values()]
+                        .flatMap((bucket) => [...bucket])
+                        .filter((entity, i, all) => all.indexOf(entity) === i),
+            )
+        const selected = [...others(source), ...notes]
+        const vertical = makeVertical(source, selected)
+        const kept = new Set(others(vertical))
         return {
-            note: [...vertical.store.slides.note.values()]
+            notes: [...vertical.store.slides.note.values()]
                 .flat()
-                .find((entity) => entity.slideId === note.slideId)!.elevation,
-            bpms: [...vertical.store.grid.bpm.values()]
-                .flatMap((bucket) => [...bucket])
-                .map((entity) => [entity.beat, entity.bpm])
-                .sort((a, b) => a[0]! - b[0]!),
-            times: [...vertical.store.grid.timeScale.values()]
-                .flatMap((bucket) => [...bucket])
-                .map((entity) => [entity.groupId === firstGroup, entity.beat, entity.timeScale])
-                .sort((a, b) => Number(b[0]) - Number(a[0])),
-            camera: [...vertical.store.grid.cameraEventJoint.values()]
-                .flatMap((bucket) => [...bucket])
-                .map((entity) => [entity.beat, entity.cameraZoom]),
-            transforms: [...vertical.store.grid.stageTransformEventJoint.values()]
-                .flatMap((bucket) => [...bucket])
-                .map((entity) => [entity.stageId === firstStage, entity.beat, entity.elevation])
-                .sort((a, b) => Number(b[0]) - Number(a[0])),
-            selectedBeats: [...new Set(vertical.selectedEntities.map((entity) => entity.beat))],
-            untouched: vertical.store.slides.note.get(untouched.slideId)![0] === untouched,
-            sourceUnchanged: history.state.value === source && note.elevation === 3,
+                .map((note) => [note.beat, note.elevation]),
+            othersKept:
+                others(source).length === kept.size &&
+                others(source).every((entity) => kept.has(entity)),
+            othersSelected: others(source).every((entity) =>
+                vertical.selectedEntities.includes(entity),
+            ),
+            selected: vertical.selectedEntities.length === selected.length,
+            sourceUnchanged: history.state.value === source && notes[0]!.elevation === 3,
             noHistory: !history.canUndo.value,
         }
     })
     expect(result).toEqual({
-        note: 0,
-        bpms: [
-            [0, 120],
-            [4, 180],
-            [12, 240],
+        notes: [
+            [4, 0],
+            [4, 8],
         ],
-        times: [
-            [true, 4, 2],
-            [false, 4, 3],
-        ],
-        camera: [[4, 2]],
-        transforms: [
-            [true, 4, 11],
-            [false, 4, 3],
-        ],
-        selectedBeats: [4],
-        untouched: true,
+        othersKept: true,
+        othersSelected: true,
+        selected: true,
         sourceUnchanged: true,
         noHistory: true,
     })
@@ -371,29 +345,120 @@ test('common-beat notes retain their elevations and a single note is already ver
     })
 })
 
-test('moving an event to a distant note anchor cannot expand a connected grid without bound', async ({
+test('moving a slide note to a distant note anchor cannot expand a slide without bound', async ({
     page,
 }) => {
     const result = await page.evaluate(async () => {
         const { makeVertical } = await import('/src/state/operations/makeVertical.ts')
         const { fixtures, show, history } = window.editorTest
-        const chart = fixtures.events
-        const base = fixtures.interaction.slides[0]![0]!
-        const camera = chart.cameraEvents[0]!
+        const chart = fixtures.interaction
+        const base = chart.slides[0]![0]!
         show({
             ...chart,
-            slides: [[{ ...base, beat: 1e12 }], [{ ...base, beat: 1e12 + 4 }]],
-            cameraEvents: [
-                { ...camera, beat: 0 },
-                { ...camera, beat: 4 },
+            slides: [
+                [{ ...base, beat: 0 }],
+                [
+                    { ...base, beat: 1e12 },
+                    { ...base, beat: 1e12 + 4 },
+                ],
             ],
         })
         const source = history.state.value
-        const notes = [...source.store.slides.note.values()].flat()
-        const event = [...source.store.grid.cameraEventJoint.values()]
-            .flatMap((bucket) => [...bucket])
-            .find((entity) => entity.beat === 0)!
-        return makeVertical(source, [...notes, event]) === source && !history.canUndo.value
+        const [single, slide] = [...source.store.slides.note.values()]
+        return makeVertical(source, [single![0]!, slide![1]!]) === source && !history.canUndo.value
     })
     expect(result).toBe(true)
+})
+
+test('only notes become vertical and other selected objects stay put and selected', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, history, settings, store } = window.editorTest
+        const chart = fixtures.interaction
+        const base = chart.slides[0]![0]!
+        show(
+            {
+                ...chart,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 4, bpm: 150 },
+                ],
+                slides: [
+                    [
+                        { ...base, beat: 2.25, left: -4, size: 2 },
+                        { ...base, beat: 3.25, left: -4, size: 2 },
+                        { ...base, beat: 4.25, left: -4, size: 2 },
+                    ],
+                ],
+            },
+            2,
+        )
+        // A box over beats 2–4.5 catches the BPM change at 4.
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.beat >= 2 && entity.beat <= 4.5,
+            ),
+        })
+        settings.mouseSecondaryTool = 'selectContextMenu'
+    })
+    const values = () =>
+        page.evaluate(() => {
+            const { history } = window.editorTest
+            const { store, selectedEntities } = history.state.value
+            return {
+                notes: [...store.slides.note.values()]
+                    .flat()
+                    .map((note) => [note.beat, note.elevation]),
+                bpms: [...store.grid.bpm.values()]
+                    .flatMap((bucket) => [...bucket])
+                    .map((entity) => [entity.beat, entity.bpm])
+                    .sort((a, b) => a[0]! - b[0]!),
+                selected: selectedEntities.map((entity) => [entity.type, entity.beat]).sort(),
+            }
+        })
+    const initial = await values()
+    expect(initial.selected).toContainEqual(['bpm', 4])
+    const target = await page.evaluate(() => window.editorTest.point(-3, 2.25))
+    await page.mouse.click(target.x, target.y, { button: 'right' })
+    await page.getByRole('menuitem', { name: 'Make Vertical', exact: true }).click()
+    await expect(page.locator('.notification')).toHaveText('Made 3 notes vertical')
+    expect(await values()).toEqual({
+        notes: [
+            [2.25, 0],
+            [2.25, 1],
+            [2.25, 2],
+        ],
+        bpms: [
+            [0, 120],
+            [4, 150],
+        ],
+        selected: [
+            ['bpm', 4],
+            ['note', 2.25],
+            ['note', 2.25],
+            ['note', 2.25],
+        ],
+    })
+    await page.keyboard.press('z')
+    expect(await values()).toEqual(initial)
+    await page.keyboard.press('y')
+
+    // Vertical notes with an off-beat BPM have nothing left to change.
+    const result = await page.evaluate(async () => {
+        const { history, appImport } = window.editorTest
+        const { canMakeVertical } = await appImport<
+            typeof import('../../src/state/operations/makeVerticalValues')
+        >('/src/state/operations/makeVerticalValues.ts')
+        const { makeVertical } = await appImport<
+            typeof import('../../src/editor/commands/makeVertical')
+        >('/src/editor/commands/makeVertical/index.ts')
+        const source = history.state.value
+        const enabled = canMakeVertical(source.selectedEntities, source)
+        makeVertical.execute()
+        return { enabled, unchanged: history.state.value === source }
+    })
+    expect(result).toEqual({ enabled: false, unchanged: true })
+    await expect(page.locator('.notification')).toHaveText('Selected notes are already vertical')
 })

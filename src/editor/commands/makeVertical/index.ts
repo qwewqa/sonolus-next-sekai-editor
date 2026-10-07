@@ -1,7 +1,6 @@
 import type { Command } from '..'
 import { pushState, state } from '../../../history'
 import { i18n } from '../../../i18n'
-import { isEditableEntity } from '../../../state/operations/editable'
 import { makeVertical as applyMakeVertical } from '../../../state/operations/makeVertical'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -21,9 +20,7 @@ export const makeVertical: Command = {
         const result = applyMakeVertical(source, source.selectedEntities)
         if (result === source) {
             const beat = [...notes][0]?.beat
-            const unchanged = source.selectedEntities
-                .filter(isEditableEntity)
-                .every((entity) => entity.beat === beat)
+            const unchanged = [...notes].every((note) => note.beat === beat)
             notify(() =>
                 unchanged
                     ? i18n.value.commands.makeVertical.unchanged

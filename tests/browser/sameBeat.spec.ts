@@ -687,7 +687,7 @@ for (const [operation, extra] of [
     })
 }
 
-test('Make Vertical keeps a pair that was already one and merges the rest', async ({ page }) => {
+test('Make Vertical leaves selected same-beat pairs in place', async ({ page }) => {
     const result = await page.evaluate(async () => {
         const { show, fixtures, history, store, appImport } = window.editorTest
         const f = fixtures.events
@@ -713,25 +713,31 @@ test('Make Vertical keeps a pair that was already one and merges the rest', asyn
         const { makeVertical } = await appImport<
             typeof import('../../src/state/operations/makeVertical')
         >('/src/state/operations/makeVertical.ts')
-        // In beat order, as a box selection lists them; the latest beat wins a collision.
         const selected = [...store.getAllEntities()]
             .filter(
                 (entity) => entity.type === 'note' || (entity.type !== 'bpm' && entity.beat >= 5),
             )
             .sort((a, b) => a.beat - b.beat)
         const next = makeVertical({ ...history.state.value, selectedEntities: selected }, selected)
-        const at4 = (type: 'timeScale' | 'cameraEventJoint') =>
-            [...(next.store.grid[type].get(4) ?? [])]
-                .filter((entity) => entity.beat === 4)
+        const at = (type: 'timeScale' | 'cameraEventJoint', beat: number) =>
+            [...(next.store.grid[type].get(Math.floor(beat)) ?? [])]
+                .filter((entity) => entity.beat === beat)
                 .map((entity) =>
                     entity.type === 'timeScale'
                         ? entity.timeScale
                         : (entity as never)['cameraZoom'],
                 )
-        return { timeScale: at4('timeScale'), camera: at4('cameraEventJoint') }
+        return [4, 5, 6].map((beat) => [at('timeScale', beat), at('cameraEventJoint', beat)])
     })
-    // The 5 from beat 5 is replaced by the pair from beat 6, which stays a pair in order.
-    expect(result).toEqual({ timeScale: [1, 2], camera: [1, 2] })
+    // Only the notes move; the pair at beat 6 stays a pair in order.
+    expect(result).toEqual([
+        [[], []],
+        [[5], [5]],
+        [
+            [1, 2],
+            [1, 2],
+        ],
+    ])
 })
 
 test('flipping vertically mirrors event and time scale eases', async ({ page }) => {
