@@ -142,6 +142,11 @@ test('French text uses one typographic style', () => {
     }
 })
 
+test('the version line is translated where the script differs from English', () => {
+    for (const locale of ['ja', 'ko', 'zhs', 'zht'])
+        assert.doesNotMatch(read(locale)['notification.title']!, /Version/, locale)
+})
+
 test('event tool names start with a capital where the script has case', () => {
     for (const locale of readdirSync(directory, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())

@@ -906,7 +906,7 @@
     }
   },
   "notification": {
-    "title": "Sonolus Next SEKAI Editor\nVersion {0}"
+    "title": "Sonolus Next SEKAI Editor\nバージョン {0}"
   },
   "player": {
     "started": "再生しました",
