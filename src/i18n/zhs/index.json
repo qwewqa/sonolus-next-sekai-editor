@@ -79,10 +79,10 @@
       "relative": "已切换到相对轨道吸附"
     },
     "divisions": {
-      "title": "切换到 1/{0} 分割",
+      "title": "1/{0} 分割",
       "switched": "已切换到 1/{0} 分割",
       "custom": {
-        "title": "切换到自定义分割",
+        "title": "自定义分割",
         "modal": {
           "title": "自定义分割",
           "division": "分割"

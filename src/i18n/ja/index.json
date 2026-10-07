@@ -79,10 +79,10 @@
       "relative": "レーンの相対スナップに切り替えました"
     },
     "divisions": {
-      "title": "拍を1/{0}ずつ分割",
+      "title": "分割 1/{0}",
       "switched": "拍を1/{0}ずつ分割しました",
       "custom": {
-        "title": "拍をカスタム分割",
+        "title": "カスタム分割",
         "modal": {
           "title": "カスタム分割",
           "division": "分割数"

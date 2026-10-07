@@ -79,10 +79,10 @@
       "relative": "已切換到相對軌道吸附"
     },
     "divisions": {
-      "title": "切換到 1/{0} 拍分割",
+      "title": "1/{0} 拍分割",
       "switched": "已切換到 1/{0} 拍分割",
       "custom": {
-        "title": "切換到自訂分割",
+        "title": "自訂分割",
         "modal": {
           "title": "自訂分割",
           "division": "分割數"

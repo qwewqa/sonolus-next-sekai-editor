@@ -79,10 +79,10 @@
       "relative": "상대 레인 스냅으로 변경함"
     },
     "divisions": {
-      "title": "1/{0}분할로 변경",
+      "title": "분할 1/{0}",
       "switched": "1/{0}분할로 변경됨",
       "custom": {
-        "title": "맞춤 분할로 변경",
+        "title": "맞춤 분할",
         "modal": {
           "title": "맞춤 분할",
           "division": "분할"

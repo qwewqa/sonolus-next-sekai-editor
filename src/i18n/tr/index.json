@@ -79,10 +79,10 @@
       "relative": "Göreli şerit hizalamaya geçildi"
     },
     "divisions": {
-      "title": "1/{0} Bölümüne Geç",
+      "title": "1/{0} Bölüm",
       "switched": "1/{0} bölümüne geçildi",
       "custom": {
-        "title": "Özelleştirilebilir Bölüme Geç",
+        "title": "Özelleştirilebilir Bölüm",
         "modal": {
           "title": "Özelleştirilebilir Bölüm",
           "division": "Bölüm"

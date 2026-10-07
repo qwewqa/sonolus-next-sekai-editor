@@ -79,10 +79,10 @@
       "relative": "Alignement relatif des voies activé"
     },
     "divisions": {
-      "title": "Passer à la division en 1/{0}",
+      "title": "Division 1/{0}",
       "switched": "Division en 1/{0} sélectionnée",
       "custom": {
-        "title": "Passer à la division personnalisée",
+        "title": "Division personnalisée",
         "modal": {
           "title": "Division personnalisée",
           "division": "Division"

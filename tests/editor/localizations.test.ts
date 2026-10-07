@@ -134,6 +134,24 @@ test('both flip commands name their axis', () => {
     }
 })
 
+test('division commands are named as their dialog is, as lane division commands are', () => {
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        const messages = read(locale)
+        // Not French "Passer à la division personnalisée" beside "Division personnalisée".
+        for (const axis of ['divisions', 'laneDivisions'])
+            assert.equal(
+                messages[`commands.${axis}.custom.title`],
+                messages[`commands.${axis}.custom.modal.title`],
+                `${locale} ${axis}`,
+            )
+        // A noun with the fraction, not "Passer à la division en 1/4".
+        const title = messages['commands.divisions.title']!
+        assert.ok(title.replace('1/{0}', '').trim().split(/\s+/).length <= 2, locale)
+    }
+})
+
 test('the Japanese capture tooltip says what its prompt says', () => {
     const messages = read('ja')
     // As the prompt "キーを押すか、もう一度クリックして削除", not a longer sentence.
