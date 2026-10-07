@@ -249,6 +249,16 @@ test("hiding a tab writes its recovery back over another tab's", async ({ page, 
     const other = await context.newPage()
     await other.goto('/')
     await expect(other.locator('canvas.editor-chart')).toBeVisible()
+    // Its startup restore of the first tab's recovery would replace the reset below.
+    await expect
+        .poll(() =>
+            other.evaluate(async () => {
+                const { state } = await import('/src/history/index.ts')
+                return state.value.filename
+            }),
+        )
+        .toBe('named-chart')
+    await expect(other.getByRole('dialog')).toHaveCount(0)
     await other.evaluate(installEditorFixture)
     await other.evaluate(async () => {
         const { history, fixtures, settings, store } = window.editorTest
