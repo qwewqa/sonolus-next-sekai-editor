@@ -81,7 +81,9 @@ watch(
 
 const onKeydown = (event: KeyboardEvent) => {
     const modal = current.value
-    if (event.key !== 'Escape' || !modal || modals.at(-1) !== modal) return
+    // An Escape already handled, such as one that stops selecting, keeps the dialog.
+    if (event.key !== 'Escape' || event.defaultPrevented || !modal || modals.at(-1) !== modal)
+        return
     event.preventDefault()
     event.stopImmediatePropagation()
     closeModal(modal)

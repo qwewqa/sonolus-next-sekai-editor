@@ -687,6 +687,26 @@ test('Escape in the dialog fallback stops selecting and keeps the dialog', async
     await expect(dialog).toBeVisible()
 })
 
+test('Escape that stops selecting keeps an open tool dialog', async ({ page }) => {
+    await seedGroups(page, seed)
+    await page.evaluate(() => {
+        window.editorTest.settings.propertiesPosition = 'disabled'
+    })
+    await page.keyboard.press('a')
+    await page.keyboard.press('a')
+    const dialog = page.locator('[data-tool-dialog]')
+    await expect(dialog).toBeVisible()
+    const list = panel(page)
+    await nameButton(list, 'Other').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    await expect(list.locator('.manager-selection-bar')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(list.locator('.manager-check')).toHaveCount(0)
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+})
+
 test('the target row comes into view when the target changes elsewhere', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 600 })
     await seedGroups(
