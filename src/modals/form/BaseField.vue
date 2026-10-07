@@ -15,6 +15,7 @@ import {
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
 import { useStackLongValues, useStackLongWords, valueOverflows, wordOverflows } from './fieldLayout'
+import { cancelFit, queueFit } from './fitBatch'
 import { observeWidth, unobserveWidth } from './widthObserver'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
 
@@ -93,6 +94,18 @@ const stackLongWords = useStackLongWords()
 let frame = 0
 
 const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
+const controlOf = () =>
+    row.value?.querySelector<HTMLSelectElement | HTMLButtonElement | HTMLInputElement>(
+        ':scope > select, :scope > button, :scope > input[type="button"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
+    )
+const shownValue = (control: ReturnType<typeof controlOf>) =>
+    control instanceof HTMLSelectElement
+        ? control.selectedOptions[0]?.textContent
+        : control instanceof HTMLInputElement
+          ? control.value
+          : control?.textContent
+// The value the label was last fitted beside; updates that keep it need no fit.
+let fittedValue: string | undefined
 const fitLabel = () => {
     const element = labelRow.value
     const text = element?.querySelector<HTMLElement>('.form-field-text')
@@ -104,11 +117,8 @@ const fitLabel = () => {
     if (clamped(text)) text.classList.add('form-field-text-dense')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
-    const control = row.value?.querySelector<
-        HTMLSelectElement | HTMLButtonElement | HTMLInputElement
-    >(
-        ':scope > select, :scope > button, :scope > input[type="button"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
-    )
+    const control = controlOf()
+    fittedValue = shownValue(control)
     // An on/off value is measured at its longer state, so a click doesn't move the row.
     const { enabled, disabled } = i18n.value.modals.form.toggle
     const others = control?.parentElement?.classList.contains('form-field-toggle')
@@ -137,7 +147,7 @@ onMounted(() => {
 watch(() => props.label, fitLabel, { flush: 'post' })
 // A value can change without a change event, as a shortcut's capture prompt does.
 onUpdated(() => {
-    if (stackLongValues) refitLabel()
+    if (stackLongValues && shownValue(controlOf()) !== fittedValue) refitLabel()
 })
 
 onBeforeUnmount(() => {
@@ -230,49 +240,85 @@ const narrow = async (value: Chip, event: MouseEvent) => {
 const coverageOnly = computed(() => chips.value.length === 1 && !!chips.value[0]?.coverage)
 const line = useTemplateRef<HTMLElement>('line')
 let lineWidth = 0
-let lineFrame = 0
-const fitCoverage = () => {
+// What the line was last fitted for; while it holds, as when only a count's digits
+// change, the fit stands.
+let fitted = ''
+const fitOwner = {}
+const fitCoverage = (nextFrame = false, force = false) => {
     const element = line.value
     const text = labelRow.value?.querySelector<HTMLElement>('.form-field-text')
     if (!element || !text) return
-    element.classList.add('form-field-stacked')
-    if (!coverageOnly.value) return
-    const stackedHeight = text.scrollHeight
-    element.classList.remove('form-field-stacked')
-    text.style.overflowWrap = 'normal'
-    const fits =
-        text.scrollWidth <= text.clientWidth + 1 &&
-        text.scrollHeight <= Math.min(stackedHeight, text.clientHeight) + 1
-    text.style.overflowWrap = ''
-    if (!fits) element.classList.add('form-field-stacked')
+    if (!coverageOnly.value) {
+        cancelFit(fitOwner)
+        element.classList.add('form-field-stacked')
+        fitted = ''
+        return
+    }
+    // Digits keep their width, so a count changing its digits alone keeps the fit.
+    const fitFor = [props.label, lineWidth, chips.value[0]?.text?.replace(/\d/g, '0')].join(' ')
+    if (!force && fitFor === fitted) return
+    let stackedHeight = 0
+    let fits = true
+    queueFit(
+        fitOwner,
+        [
+            () => {
+                element.classList.add('form-field-stacked')
+            },
+            () => {
+                stackedHeight = text.scrollHeight
+            },
+            () => {
+                element.classList.remove('form-field-stacked')
+                text.style.overflowWrap = 'normal'
+            },
+            () => {
+                fits =
+                    text.scrollWidth <= text.clientWidth + 1 &&
+                    text.scrollHeight <= Math.min(stackedHeight, text.clientHeight) + 1
+            },
+            () => {
+                text.style.overflowWrap = ''
+                if (!fits) element.classList.add('form-field-stacked')
+                fitted = fitFor
+            },
+        ],
+        nextFrame,
+    )
 }
 const lineObserver = new ResizeObserver(([entry]) => {
     if (!entry || entry.contentRect.width === lineWidth) return
     lineWidth = entry.contentRect.width
     refitCoverage()
 })
+let observed: HTMLElement | undefined
 const observeLine = () => {
-    lineObserver.disconnect()
-    lineWidth = 0
-    if (coverageOnly.value && line.value) lineObserver.observe(line.value)
+    const target = coverageOnly.value ? (line.value ?? undefined) : undefined
+    if (target !== observed) {
+        lineObserver.disconnect()
+        lineWidth = 0
+        observed = target
+        if (target) lineObserver.observe(target)
+    }
     fitCoverage()
 }
 const refitCoverage = () => {
-    if (!coverageOnly.value) return
-    cancelAnimationFrame(lineFrame)
-    lineFrame = requestAnimationFrame(fitCoverage)
+    if (coverageOnly.value) fitCoverage(true)
+}
+const refitFonts = () => {
+    if (coverageOnly.value) fitCoverage(true, true)
 }
 onMounted(() => {
     observeLine()
-    document.fonts.addEventListener('loadingdone', refitCoverage)
+    document.fonts.addEventListener('loadingdone', refitFonts)
 })
 watch([coverageOnly, () => props.label, () => chips.value[0]?.text], observeLine, {
     flush: 'post',
 })
 onBeforeUnmount(() => {
     lineObserver.disconnect()
-    cancelAnimationFrame(lineFrame)
-    document.fonts.removeEventListener('loadingdone', refitCoverage)
+    cancelFit(fitOwner)
+    document.fonts.removeEventListener('loadingdone', refitFonts)
 })
 
 // The control is slotted, so it is linked to the description here.

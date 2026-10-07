@@ -145,32 +145,44 @@ const title = useTemplateRef<HTMLElement>('title')
 // The action names itself when the header has room and shows its icon otherwise.
 const iconOnly = ref(false)
 let context: CanvasRenderingContext2D | null | undefined
-const measure = () => {
+// The header's width and font, read as it resizes, so a count change forces no layout.
+let room: { width: number; fontSize: string; fontFamily: string; rem: number } | undefined
+const readRoom = () => {
     const element = header.value
-    if (!element || !title.value) return
-    context ??= document.createElement('canvas').getContext('2d')
-    if (!context) return
-    const style = getComputedStyle(element)
+    if (!element) return
+    const { fontSize, fontFamily } = getComputedStyle(element)
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+    room = { width: element.clientWidth, fontSize, fontFamily, rem }
+}
+const measure = () => {
+    if (!title.value) return
+    if (!room) readRoom()
+    context ??= document.createElement('canvas').getContext('2d')
+    if (!context || !room) return
+    const { width: available, fontSize, fontFamily, rem } = room
     const width = (text: string, weight: string) => {
         if (!context) return 0
-        context.font = `${weight} ${style.fontSize} ${style.fontFamily}`
+        context.font = `${weight} ${fontSize} ${fontFamily}`
         return context.measureText(text).width
     }
     const titleWidth = width(title.value.textContent, 'bold')
     // Icon, gap and padding around the action's name.
     const actionWidth = width(i18n.value.workspace.properties.selectOnly, 'normal') + 2.75 * rem
-    iconOnly.value = titleWidth + actionWidth + 0.5 * rem > element.clientWidth
+    iconOnly.value = titleWidth + actionWidth + 0.5 * rem > available
 }
 
 let frame = 0
 const observer = new ResizeObserver(() => {
+    readRoom()
     cancelAnimationFrame(frame)
     frame = requestAnimationFrame(measure)
 })
 onMounted(() => {
     if (header.value) observer.observe(header.value)
-    void document.fonts.ready.then(measure)
+    void document.fonts.ready.then(() => {
+        readRoom()
+        measure()
+    })
 })
 onBeforeUnmount(() => {
     cancelAnimationFrame(frame)
