@@ -186,7 +186,10 @@ const removes: {
 
 export const canRemove = (entity: Entity) => canRemoves[entity.type]?.(entity as never) ?? true
 
-export const remove = (entities: Entity[]) => {
+export const remove = (
+    entities: Entity[],
+    message: () => string = () => i18n.value.tools.eraser.erased,
+) => {
     entities = entities.filter(canRemove)
     if (!entities.length) {
         replaceState({
@@ -206,14 +209,11 @@ export const remove = (entities: Entity[]) => {
         removes[entity.type]?.(transaction, entity as never)
     }
 
-    pushState(
-        interpolate(() => i18n.value.tools.eraser.erased, `${entities.length}`),
-        transaction.commit([]),
-    )
+    pushState(interpolate(message, `${entities.length}`), transaction.commit([]))
     view.entities = {
         hovered: [],
         creating: [],
     }
 
-    notify(interpolate(() => i18n.value.tools.eraser.erased, `${entities.length}`))
+    notify(interpolate(message, `${entities.length}`))
 }

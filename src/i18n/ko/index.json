@@ -593,7 +593,8 @@
     "paste": "붙여넣기",
     "selectSlideNotes": "슬라이드 노트 선택",
     "editProperties": "속성 편집",
-    "delete": "삭제"
+    "delete": "삭제",
+    "deleted": "{0}개 객체 삭제됨"
   },
   "settings": {
     "title": "설정",

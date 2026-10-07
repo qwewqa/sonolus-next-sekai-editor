@@ -593,7 +593,8 @@
     "paste": "Coller",
     "selectSlideNotes": "Sélectionner les notes du slide",
     "editProperties": "Modifier les propriétés",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "deleted": "{0} objet supprimé|{0} objets supprimés"
   },
   "settings": {
     "title": "Paramètres",

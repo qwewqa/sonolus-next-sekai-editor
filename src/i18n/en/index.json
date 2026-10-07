@@ -593,7 +593,8 @@
         "paste": "Paste",
         "selectSlideNotes": "Select Slide Notes",
         "editProperties": "Edit Properties",
-        "delete": "Delete"
+        "delete": "Delete",
+        "deleted": "Deleted {0} object|Deleted {0} objects"
     },
     "settings": {
         "title": "Settings",

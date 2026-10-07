@@ -593,7 +593,8 @@
     "paste": "貼上",
     "selectSlideNotes": "選取滑條音符",
     "editProperties": "編輯屬性",
-    "delete": "刪除"
+    "delete": "刪除",
+    "deleted": "已刪除 {0} 個物件"
   },
   "settings": {
     "title": "設定",

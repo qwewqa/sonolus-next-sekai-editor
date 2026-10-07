@@ -593,7 +593,8 @@
     "paste": "Yapıştır",
     "selectSlideNotes": "Kaydırma Notalarını Seç",
     "editProperties": "Özellikleri Düzenle",
-    "delete": "Sil"
+    "delete": "Sil",
+    "deleted": "{0} nesne silindi"
   },
   "settings": {
     "title": "Ayarlar",

@@ -16,6 +16,7 @@ export const deleteSelection: Command = {
     },
 
     execute() {
-        if (canDeleteSelection()) remove(selectedEntities.value)
+        if (canDeleteSelection())
+            remove(selectedEntities.value, () => i18n.value.contextMenu.deleted)
     },
 }

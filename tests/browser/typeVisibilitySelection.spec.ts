@@ -92,7 +92,7 @@ test('Delete after hiding types erases only the objects still shown', async ({ p
     expect(await types(page, 'selected')).toEqual({ note: 2 })
     expect(await canUndo(page)).toBe(false)
     await page.keyboard.press('Delete')
-    await expect(page.locator('.notification')).toHaveText('Erased 2 objects')
+    await expect(page.locator('.notification')).toHaveText('Deleted 2 objects')
     expect(await types(page, 'chart')).toEqual(withoutNotes)
 })
 
@@ -136,7 +136,7 @@ test('marquee and click select only shown types', async ({ page }) => {
 test('undo and redo cannot bring a hidden type back into the selection', async ({ page }) => {
     await marquee(page)
     await page.keyboard.press('Delete')
-    await expect(page.locator('.notification')).toHaveText('Erased 14 objects')
+    await expect(page.locator('.notification')).toHaveText('Deleted 14 objects')
     await page.keyboard.press('/')
     await page.keyboard.press('z')
     await settle(page)

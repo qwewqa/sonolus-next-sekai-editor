@@ -36,8 +36,9 @@ test('Delete removes the selection in one undo step', async ({ page }) => {
     expect(await counts(page)).toEqual({ notes: 4, selected: 2, canUndo: false })
     await page.keyboard.press('Delete')
     expect(await counts(page)).toEqual({ notes: 2, selected: 0, canUndo: true })
-    await expect(page.locator('.notification')).toHaveText('Erased 2 objects')
+    await expect(page.locator('.notification')).toHaveText('Deleted 2 objects')
     await page.keyboard.press('z')
+    await expect(page.locator('.notification')).toHaveText('Undid "Deleted 2 objects"')
     expect(await counts(page)).toEqual({ notes: 4, selected: 2, canUndo: false })
 })
 

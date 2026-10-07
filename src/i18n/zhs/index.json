@@ -593,7 +593,8 @@
     "paste": "粘贴",
     "selectSlideNotes": "选择长按音符节点",
     "editProperties": "编辑属性",
-    "delete": "删除"
+    "delete": "删除",
+    "deleted": "已删除 {0} 个对象"
   },
   "settings": {
     "title": "设置",
