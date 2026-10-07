@@ -1244,3 +1244,66 @@ test('Delete Selected names the folders it deletes in its title', async ({ page 
     await remove.click()
     await expect(dialog).toContainText('Delete Folders and Groups')
 })
+
+test('a folder joins the selection whole from its menu, Select All and a right-press on an entry', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const verse = row(list, 'Verse')
+    const outro = row(list, 'Outro').locator('.manager-check')
+    const all = list.locator('.manager-all .manager-check')
+    const more = bar.getByRole('button', { name: 'More Actions for Selection' })
+    // Select Multiple from a folder's menu selects the folder with its members.
+    await verse.locator('.manager-more').click()
+    await page.getByRole('menuitem', { name: 'Select Multiple' }).click()
+    await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'true')
+    await expect(verse).toHaveClass(/manager-row-selected/)
+    await expect(bar).toContainText('3 Selected')
+    // A right-press on an entry adds it, keeping the folder.
+    await nameButton(list, 'Bass').click({ button: 'right' })
+    await expect(page.getByRole('menu')).toHaveAccessibleName('More Actions for Selection')
+    await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'true')
+    await expect(bar).toContainText('4 Selected')
+    await page.keyboard.press('Escape')
+
+    // Select All in the menu takes in the folders too.
+    await more.click()
+    await page.getByRole('menuitem', { name: 'Select All' }).click()
+    await expect(outro).toHaveAttribute('aria-checked', 'true')
+    await expect(all).toHaveAttribute('aria-checked', 'true')
+    await expect(bar).toContainText('9 Selected')
+    await more.click()
+    await page.getByRole('menuitem', { name: 'Select None' }).click()
+    await expect(bar).toContainText('0 Selected')
+
+    // Every member checked by hand leaves the folders out, so not all is selected.
+    for (const name of ['Default', 'Other', 'Lead', 'Fill', 'Bass', 'Drums', 'Pad'])
+        await nameButton(list, name).click()
+    await expect(bar).toContainText('7 Selected')
+    await expect(outro).toHaveAttribute('aria-checked', 'mixed')
+    await expect(all).toHaveAttribute('aria-checked', 'mixed')
+    await more.click()
+    await expect(page.getByRole('menuitem', { name: 'Select All' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Select None' })).toHaveCount(0)
+})
+
+test('a selected folder that regains a member by undo is no longer selected', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const verse = row(list, 'Verse').locator('.manager-check')
+    await row(list, 'Lead').locator('.manager-more').click()
+    await page.getByRole('menuitem', { name: 'Move to Folder…' }).click()
+    await page.getByRole('menuitemradio', { name: 'No Folder' }).click()
+    expect(await tree(page)).toBe('Default Other [Verse: Fill] Lead Bass Drums [Outro: Pad]')
+    await list.getByRole('button', { name: 'Select Multiple' }).click()
+    await verse.click()
+    await expect(verse).toHaveAttribute('aria-checked', 'true')
+    await expect(bar).toContainText('2 Selected')
+    await undo(page)
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+    await expect(verse).toHaveAttribute('aria-checked', 'mixed')
+    await expect(bar).toContainText('1 Selected')
+})
