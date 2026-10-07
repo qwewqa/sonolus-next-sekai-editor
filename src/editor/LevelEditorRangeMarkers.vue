@@ -5,6 +5,7 @@ import { settings } from '../settings'
 import { formatTime } from '../utils/format'
 import { formatBeatPosition } from './beatDisplay'
 import {
+    coveredEdgeLabels,
     edgeLabelSizes,
     lowerEdgeLabelsCovered,
     observeLabelSize,
@@ -36,14 +37,18 @@ onBeforeUnmount(() => {
         class="absolute flex size-full flex-col justify-between text-white/70 forced-color-adjust-none"
     >
         <div class="flex justify-between">
-            <span ref="topTime">{{ formatTime(times.max) }}</span>
-            <span ref="topBeat">{{
+            <span ref="topTime" :class="{ invisible: coveredEdgeLabels.top.time }">{{
+                formatTime(times.max)
+            }}</span>
+            <span ref="topBeat" :class="{ invisible: coveredEdgeLabels.top.beat }">{{
                 formatBeatPosition(sceneBpms, beats.max, settings.beatDisplay, true)
             }}</span>
         </div>
         <div class="flex justify-between" :class="{ invisible: lowerEdgeLabelsCovered }">
-            <span ref="bottomTime">{{ formatTime(times.min) }}</span>
-            <span ref="bottomBeat">{{
+            <span ref="bottomTime" :class="{ invisible: coveredEdgeLabels.bottom.time }">{{
+                formatTime(times.min)
+            }}</span>
+            <span ref="bottomBeat" :class="{ invisible: coveredEdgeLabels.bottom.beat }">{{
                 formatBeatPosition(sceneBpms, beats.min, settings.beatDisplay, true)
             }}</span>
         </div>

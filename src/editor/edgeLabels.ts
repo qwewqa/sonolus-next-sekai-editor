@@ -47,22 +47,48 @@ export const unobserveLabelSize = (element: Element) => {
     observer?.unobserve(element)
 }
 
+type RowBoxes = { time: LabelBox; beat: LabelBox }
+
+const rowBoxes = ({ time, beat }: Row, top: number): RowBoxes => ({
+    time: { left: 0, right: time.width, top, bottom: top + time.height },
+    beat: { left: view.w - beat.width, right: view.w, top, bottom: top + beat.height },
+})
+
+const height = ({ time, beat }: Row) => Math.max(time.height, beat.height)
+
+const rows = computed(() => {
+    const { top, bottom, hover } = edgeLabelSizes
+    return {
+        top: rowBoxes(top, 0),
+        bottom: rowBoxes(bottom, view.h - height(bottom)),
+        hover: rowBoxes(hover, hoverLabelCenter.value - height(hover) / 2),
+    }
+})
+
+const overlaps = (a: LabelBox, b: LabelBox) =>
+    a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+
+/** The edge labels under the hover time and beat labels, hidden while they are. */
+export const coveredEdgeLabels = computed(() => {
+    const { top, bottom, hover } = rows.value
+    const covered = (box: LabelBox) => overlaps(box, hover.time) || overlaps(box, hover.beat)
+    return {
+        top: { time: covered(top.time), beat: covered(top.beat) },
+        bottom: { time: covered(bottom.time), beat: covered(bottom.beat) },
+    }
+})
+
 /** Where the time (left) and beat (right) labels over the chart lie, in pane pixels. */
 export const edgeLabelBoxes = computed(() => {
     const boxes: { left: LabelBox[]; right: LabelBox[] } = { left: [], right: [] }
-    const add = ({ time, beat }: Row, top: number) => {
-        boxes.left.push({ left: 0, right: time.width, top, bottom: top + time.height })
-        boxes.right.push({
-            left: view.w - beat.width,
-            right: view.w,
-            top,
-            bottom: top + beat.height,
-        })
+    const add = ({ time, beat }: RowBoxes, hidden = { time: false, beat: false }) => {
+        if (!hidden.time) boxes.left.push(time)
+        if (!hidden.beat) boxes.right.push(beat)
     }
-    const height = ({ time, beat }: Row) => Math.max(time.height, beat.height)
-    const { top, bottom, hover } = edgeLabelSizes
-    add(top, 0)
-    if (!lowerEdgeLabelsCovered.value) add(bottom, view.h - height(bottom))
-    add(hover, hoverLabelCenter.value - height(hover) / 2)
+    const { top, bottom, hover } = rows.value
+    const covered = coveredEdgeLabels.value
+    add(top, covered.top)
+    if (!lowerEdgeLabelsCovered.value) add(bottom, covered.bottom)
+    add(hover)
     return boxes
 })

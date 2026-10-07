@@ -436,3 +436,38 @@ test('the grid knows where the hover time and beat labels lie', async ({ page })
         await expect.poll(matches).toBe(true)
     }
 })
+
+test('an edge label under the hover time and beat labels is hidden', async ({ page }) => {
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 5))
+    const pane = (await page.locator('canvas.editor-chart').boundingBox())!
+    const state = () =>
+        page.evaluate(async () => {
+            const { edgeLabelBoxes } = await window.editorTest.appImport<
+                typeof import('../../src/editor/edgeLabels')
+            >('/src/editor/edgeLabels.ts')
+            const rows = document.querySelectorAll<HTMLElement>(
+                '.chart-pane > div:first-of-type > div',
+            )
+            const visible = (row: Element) =>
+                [...row.children].map((span) => getComputedStyle(span).visibility === 'visible')
+            const { left, right } = edgeLabelBoxes.value
+            return {
+                top: visible(rows[0]!),
+                bottom: visible(rows[1]!),
+                boxes: [left.length, right.length],
+            }
+        })
+    for (const [y, top, bottom] of [
+        [15, false, true],
+        [pane.height / 2, true, true],
+        [pane.height - 15, true, false],
+    ] as const) {
+        await page.mouse.move(pane.x + pane.width / 2, pane.y + y)
+        // A hidden label no longer hides the grid labels under it.
+        await expect.poll(state).toEqual({
+            top: [top, top],
+            bottom: [bottom, bottom],
+            boxes: top && bottom ? [3, 3] : [2, 2],
+        })
+    }
+})
