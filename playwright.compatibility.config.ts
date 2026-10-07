@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 import config from './playwright.config'
 
+// Parallel local runs can each choose a free preview server port.
+const previewPort = process.env.PLAYWRIGHT_PREVIEW_PORT ?? '5211'
+const previewUrl = `http://127.0.0.1:${previewPort}`
+
 export default defineConfig({
     ...config,
     testMatch: ['playerAudio.spec.ts', 'waveform.spec.ts'],
@@ -22,13 +26,13 @@ export default defineConfig({
             name: 'firefox-production',
             testDir: './tests/production',
             testMatch: 'browserCompatibility.spec.ts',
-            use: { browserName: 'firefox', baseURL: 'http://127.0.0.1:5211' },
+            use: { browserName: 'firefox', baseURL: previewUrl },
         },
         {
             name: 'webkit-production',
             testDir: './tests/production',
             testMatch: 'browserCompatibility.spec.ts',
-            use: { browserName: 'webkit', baseURL: 'http://127.0.0.1:5211' },
+            use: { browserName: 'webkit', baseURL: previewUrl },
         },
         {
             name: 'mobile-webkit-production',
@@ -37,7 +41,7 @@ export default defineConfig({
             use: {
                 ...devices['iPhone 13'],
                 browserName: 'webkit',
-                baseURL: 'http://127.0.0.1:5211',
+                baseURL: previewUrl,
             },
         },
     ],
@@ -48,8 +52,8 @@ export default defineConfig({
               ? [config.webServer]
               : []),
         {
-            command: 'npx vite preview --host 127.0.0.1 --port 5211 --strictPort',
-            url: 'http://127.0.0.1:5211',
+            command: `npx vite preview --host 127.0.0.1 --port ${previewPort} --strictPort`,
+            url: previewUrl,
             reuseExistingServer: false,
         },
     ],

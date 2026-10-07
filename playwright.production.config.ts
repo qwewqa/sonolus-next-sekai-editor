@@ -3,6 +3,9 @@ import { defineConfig } from '@playwright/test'
 // Build with `npm run build:release` first, or set PRODUCTION_TEST_URL to check
 // the deployed site. Neither mode loads Vite development modules.
 const hostedUrl = process.env.PRODUCTION_TEST_URL
+// Parallel local runs can each choose a free preview server port.
+const previewPort = process.env.PLAYWRIGHT_PREVIEW_PORT ?? '5211'
+const previewUrl = `http://127.0.0.1:${previewPort}`
 
 export default defineConfig({
     testDir: './tests/production',
@@ -15,7 +18,7 @@ export default defineConfig({
     outputDir: 'test-results-production',
     use: {
         browserName: 'chromium',
-        baseURL: hostedUrl ?? 'http://127.0.0.1:5211',
+        baseURL: hostedUrl ?? previewUrl,
         locale: 'en-US',
         viewport: { width: 1600, height: 1000 },
         deviceScaleFactor: 1.25,
@@ -29,8 +32,8 @@ export default defineConfig({
     webServer: hostedUrl
         ? undefined
         : {
-              command: 'npx vite preview --host 127.0.0.1 --port 5211 --strictPort',
-              url: 'http://127.0.0.1:5211',
+              command: `npx vite preview --host 127.0.0.1 --port ${previewPort} --strictPort`,
+              url: previewUrl,
               reuseExistingServer: false,
               timeout: 30_000,
           },
