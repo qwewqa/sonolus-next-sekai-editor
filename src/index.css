@@ -12,6 +12,19 @@
     }
 }
 
+/* Wrapped Korean and Japanese break between words or phrases, not inside them; one
+   too long for its line still breaks, so nothing gets wider than before. */
+:lang(ko) {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+:lang(ja) {
+    word-break: auto-phrase;
+    line-break: strict;
+    overflow-wrap: anywhere;
+}
+
 html[data-app-inactive] *,
 html[data-app-inactive] *::before,
 html[data-app-inactive] *::after {

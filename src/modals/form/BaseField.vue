@@ -97,7 +97,10 @@ const fitLabel = () => {
     const text = element?.querySelector<HTMLElement>('.form-field-text')
     if (!element || !text) return
     element.classList.remove('form-field-iconless', 'form-field-label-roomy')
+    text.classList.remove('form-field-text-dense')
     fieldRoot.value?.classList.remove('form-field-value-stacked')
+    // Korean and Japanese wrap by word or phrase only where that doesn't clamp the label.
+    if (clamped(text)) text.classList.add('form-field-text-dense')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
     const control = row.value?.querySelector<
@@ -575,6 +578,11 @@ watchEffect(
     line-clamp: 2;
     line-height: 1.25;
     overflow-wrap: anywhere;
+}
+
+.form-field-text.form-field-text-dense {
+    word-break: normal;
+    line-break: auto;
 }
 
 /* Label and control share a row once the control keeps a usable width. */
