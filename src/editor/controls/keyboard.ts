@@ -73,7 +73,7 @@ const onKeydown = (event: KeyboardEvent) => {
     if (
         isCommandChord(event) &&
         names.some((name) => name === 'copy' || name === 'cut') &&
-        getSelection()?.isCollapsed === false
+        String(getSelection() ?? '').trim() !== ''
     )
         return
     for (const name of names) void commands[name].execute()

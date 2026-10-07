@@ -161,6 +161,34 @@ test.describe('chords', () => {
             .toContain('"entities"')
     })
 
+    test('a page selection without text leaves Ctrl+C to copy the objects', async ({ page }) => {
+        const range = await page.evaluate(() => {
+            const { history, store } = window.editorTest
+            // Firefox grants no clipboard permissions to tests, so the write is recorded instead.
+            Object.defineProperty(navigator.clipboard, 'writeText', {
+                configurable: true,
+                value: async (text: string) => {
+                    document.body.dataset.copied = text
+                },
+            })
+            const notes = [...store.getAllEntities()].filter((entity) => entity.type === 'note')
+            history.replaceState({ ...history.state.value, selectedEntities: notes })
+            const container = document.body.appendChild(document.createElement('p'))
+            container.appendChild(document.createElement('span'))
+            const range = document.createRange()
+            range.setStart(container, 0)
+            range.setEnd(container, 1)
+            getSelection()?.removeAllRanges()
+            getSelection()?.addRange(range)
+            return { collapsed: getSelection()?.isCollapsed, text: String(getSelection()) }
+        })
+        expect(range).toEqual({ collapsed: false, text: '' })
+        await page.keyboard.press('Control+c')
+        await expect
+            .poll(() => page.evaluate(() => document.body.dataset.copied))
+            .toContain('"entities"')
+    })
+
     test('a rebound undo key undoes with Ctrl too', async ({ page }) => {
         await page.evaluate(() => {
             const { settings } = window.editorTest
