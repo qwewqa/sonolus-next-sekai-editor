@@ -60,7 +60,7 @@ export type ManagerModel<T> = {
     /** Renames an entry; blank or unchanged names change nothing. */
     rename: (id: T, name: string) => void
     remove: (id: T) => void
-    /** Deletes several entries, and folders holding only those, as one step. */
+    /** Deletes entries, and the given folders, whose members are among them, as one step. */
     removeMany: (ids: ReadonlySet<T>, folders?: ReadonlySet<FolderId>) => void
     openProperties: (id: T) => void
     /** The object field that assigns notes and events to entries. */
