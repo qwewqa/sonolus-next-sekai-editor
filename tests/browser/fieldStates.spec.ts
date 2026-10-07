@@ -191,13 +191,15 @@ test('an unset choice in a select looks like an unset number field', async ({ pa
             .filter({ has: page.locator('.form-field-text').getByText(label, { exact: true }) })
     const noteType = field('Note Type').locator('select')
     await expect(noteType.locator('option:checked')).toHaveText('Copy')
+    // The field draws the value over a select with a shared list.
     const colors = await page.evaluate(
         ([select, input]) => ({
-            unset: getComputedStyle(select!).color,
+            unset: getComputedStyle(select!.parentElement!.querySelector('.select-value')!).color,
             placeholder: getComputedStyle(input!, '::placeholder').color,
             option: getComputedStyle((select as HTMLSelectElement).options[1]!).color,
-            set: getComputedStyle(document.querySelector('#workspace-panel-properties select')!)
-                .color,
+            set: getComputedStyle(
+                document.querySelector('#workspace-panel-properties .select-value')!,
+            ).color,
         }),
         [await noteType.elementHandle(), await field('Elevation').locator('input').elementHandle()],
     )

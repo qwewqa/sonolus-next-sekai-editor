@@ -73,6 +73,7 @@ import {
 } from './state'
 import { elevationBounds, elevationViewport, fitElevationViewport } from './viewport'
 import { drawElevationConnections, getElevationConnections } from './connections'
+import SelectValue from '../../modals/form/SelectValue.vue'
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const container = useTemplateRef<HTMLElement>('container')
@@ -1118,7 +1119,13 @@ onUnmounted(() => {
                                 >
                                     1/{{ division }}
                                 </option></select
-                            ><span
+                            ><SelectValue
+                                :value="
+                                    settings.elevationSnap
+                                        ? `1/${settings.elevationSnap}`
+                                        : i18n.elevation.off
+                                "
+                                class="z-[2] px-3 text-base tabular-nums text-fg group-active:text-on-accent" /><span
                                 class="elevation-select-icon group-active:text-on-accent"
                                 aria-hidden="true"
                                 ><ChevronIcon direction="down" /></span></span

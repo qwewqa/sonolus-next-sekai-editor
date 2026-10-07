@@ -1,0 +1,222 @@
+/* Selects open a list styled as menus are on fine pointers; `data-native-lists` turns it off. */
+
+/* Without the shared list, options are text and selects draw their own value. */
+.select-option-glyph,
+.select-value {
+    display: none;
+}
+
+@supports (appearance: base-select) {
+    @media (pointer: fine) {
+        html:not([data-native-lists]) select,
+        html:not([data-native-lists]) select::picker(select) {
+            appearance: base-select;
+        }
+
+        html:not([data-native-lists]) select {
+            border: none;
+            min-block-size: 0;
+            align-items: center;
+        }
+
+        /* Fields draw their own chevron. */
+        html:not([data-native-lists]) select::picker-icon {
+            display: none;
+        }
+
+        html:not([data-native-lists]) select::picker(select) {
+            box-sizing: border-box;
+            inline-size: max-content;
+            min-inline-size: max(anchor-size(self-inline), min(12rem, calc(100vw - 1rem)));
+            max-inline-size: calc(100vw - 1rem);
+            max-block-size: calc(var(--viewport-height) - 1rem);
+            margin-block: 0.25rem;
+            padding: 0.25rem;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            border: none;
+            border-radius: 0.5rem;
+            outline: 1px solid theme('colors.fg / 10%');
+            background-color: theme('colors.modal');
+            color: theme('colors.fg');
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            box-shadow:
+                0 20px 25px -5px rgb(0 0 0 / 0.1),
+                0 8px 10px -6px rgb(0 0 0 / 0.1);
+            position-try-fallbacks:
+                flip-block,
+                flip-inline,
+                flip-block flip-inline;
+            position-try-order: most-block-size;
+        }
+
+        html:not([data-native-lists]) select option:not([hidden]) {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-block-size: 2.25rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            color: theme('colors.fg');
+            font-size: 0.875rem;
+            font-weight: 400;
+            line-height: 1.25rem;
+            white-space: normal;
+            outline-offset: -2px;
+            transition: background-color 150ms;
+        }
+
+        /* The choice column: a check for the current value, blank otherwise. */
+        html:not([data-native-lists]) select option::checkmark {
+            content: '';
+            flex: none;
+            width: 1rem;
+            height: 1rem;
+            background-color: currentColor;
+            -webkit-mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>')
+                center / contain no-repeat;
+            mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>')
+                center / contain no-repeat;
+        }
+
+        html:not([data-native-lists]) select option:not(:checked)::checkmark {
+            visibility: hidden;
+        }
+
+        /* The picture column, where a field gives one; blank for values without one. */
+        html:not([data-native-lists]) .select-option-glyph {
+            display: flex;
+            flex: none;
+            align-items: center;
+            justify-content: center;
+            width: 1rem;
+        }
+
+        @media (hover: hover) {
+            html:not([data-native-lists]) select option:enabled:hover {
+                background-color: theme('colors.button');
+            }
+        }
+
+        html:not([data-native-lists]) select option:focus-visible {
+            outline: 2px solid theme('colors.fg');
+            background-color: theme('colors.button');
+        }
+
+        html:not([data-native-lists]) select option:enabled:active {
+            background-color: theme('colors.accent');
+            color: theme('colors.on-accent');
+        }
+
+        html:not([data-native-lists]) select option:disabled {
+            opacity: 0.4;
+        }
+
+        /* A finger on a touch laptop gets the rows menus give it. */
+        @media (any-pointer: coarse) {
+            html:not([data-native-lists]) select option:not([hidden]) {
+                min-block-size: 2.75rem;
+            }
+        }
+
+        /* Sections, such as folders, under their headings; their options span the list. */
+        html:not([data-native-lists]) select optgroup {
+            display: block;
+            margin-inline: 0.5rem;
+            padding: 0.5rem 0.25rem 0;
+            color: theme('colors.fg / 80%');
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1rem;
+        }
+
+        html:not([data-native-lists]) select optgroup > option:not([hidden]) {
+            margin-inline: -0.75rem;
+        }
+
+        html:not([data-native-lists]) select optgroup > option:first-of-type {
+            margin-top: 0.25rem;
+        }
+
+        html:not([data-native-lists]) select :is(option:not([hidden]), optgroup) + optgroup {
+            margin-top: 0.25rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid theme('colors.fg / 15%');
+        }
+
+        html:not([data-native-lists]) select optgroup:has(+ option) {
+            margin-bottom: 0.25rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid theme('colors.fg / 15%');
+        }
+
+        /* The list's own value can't truncate, so the field draws it in its place. */
+        html:not([data-native-lists]) select:has(~ .select-value) {
+            color: transparent;
+        }
+
+        /* Dimmed as a disabled system select is, value and all. */
+        html:not([data-native-lists]) select:disabled:has(~ .select-value),
+        html:not([data-native-lists]) select:disabled ~ .select-value {
+            opacity: 0.7;
+        }
+
+        html:not([data-native-lists]) .select-value {
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        html:not([data-native-lists]) .select-value > span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (forced-colors: active) {
+            /* High contrast would draw the select's own value under the field's. */
+            html:not([data-native-lists]) select:has(~ .select-value) {
+                forced-color-adjust: none;
+                background-color: Canvas;
+                color: transparent;
+                box-shadow: none;
+            }
+
+            /* The focus outline other fields get from high contrast. */
+            html:not([data-native-lists]) select:has(~ .select-value):focus {
+                outline-color: Highlight;
+            }
+
+            html:not([data-native-lists]) select::picker(select),
+            html:not([data-native-lists]) select :is(option, optgroup) {
+                forced-color-adjust: auto;
+            }
+
+            /* The check is a mask over its background, which high contrast would drop. */
+            html:not([data-native-lists]) select option::checkmark {
+                forced-color-adjust: none;
+                background-color: CanvasText;
+            }
+        }
+    }
+}
+
+/* A select field's value keeps clear of its chevron and leading glyph, as the select's own does. */
+.form-field-select > .select-value {
+    padding-left: 1rem;
+    padding-right: 1.75rem;
+}
+
+.form-field-select-leading > .select-value {
+    padding-left: 1.875rem;
+}
+
+@container (min-width: 13.5rem) and (max-width: 18.99rem) {
+    .form-field-select > .select-value {
+        padding-left: 0.75rem;
+    }
+}

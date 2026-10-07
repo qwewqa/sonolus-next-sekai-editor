@@ -3,6 +3,7 @@ import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import { computed } from 'vue'
 import BaseField from './BaseField.vue'
 import { resyncSelect } from './resync'
+import SelectValue from './SelectValue.vue'
 import { isUnknownValue, optionName } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
@@ -39,6 +40,7 @@ const shown = computed(() =>
                     {{ name }}
                 </option>
             </select>
+            <SelectValue :value="shown" class="group-active:text-on-accent" />
             <span class="form-field-select-icon group-active:text-on-accent" aria-hidden="true">
                 <ChevronIcon direction="down" />
             </span>

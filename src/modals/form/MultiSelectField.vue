@@ -5,6 +5,7 @@ import ChevronIcon from '../../editor/workspace/ChevronIcon.vue'
 import BaseField from './BaseField.vue'
 import { useLeadFit } from './leadFit'
 import { resyncSelect } from './resync'
+import SelectValue from './SelectValue.vue'
 import { isUnknownValue, isUnset, mixedOptions, optionName, useFieldUsage } from './fieldUsage'
 import { unknownLabel } from './unknownLabel'
 
@@ -127,6 +128,11 @@ const leadless = useLeadFit(useTemplateRef<HTMLElement>('wrapper'))
                     </template>
                 </template>
             </select>
+            <SelectValue
+                :value="shown"
+                :class="{ 'text-fg/80': modelValue === undefined }"
+                class="group-active:text-on-accent"
+            />
             <span class="form-field-select-icon group-active:text-on-accent" aria-hidden="true">
                 <ChevronIcon direction="down" />
             </span>

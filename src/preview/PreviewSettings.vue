@@ -11,6 +11,7 @@ import { i18n } from '../i18n'
 import { settings } from '../settings'
 import { previewAspectRatios, previewNoteSpeed, previewRenderScale } from './options'
 import { panelPositionOptions, previewTransportOptions } from './settingsOptions'
+import SelectValue from '../modals/form/SelectValue.vue'
 import { handOffPreviewSettings, isCoarsePointer, type ControlsMetrics } from './usePreviewViewport'
 
 const props = defineProps<{
@@ -443,6 +444,15 @@ const onPlacementChange = () => {
                                 {{ label }}
                             </option>
                         </select>
+                        <SelectValue
+                            :value="
+                                optionName(
+                                    settings.previewTransportPosition,
+                                    previewTransportOptions,
+                                )
+                            "
+                            class="pl-4 pr-9 group-active:text-on-accent"
+                        />
                         <span
                             class="pointer-events-none absolute inset-y-0 right-4 flex items-center group-active:text-on-accent"
                             aria-hidden="true"
@@ -474,6 +484,10 @@ const onPlacementChange = () => {
                                 {{ label }}
                             </option>
                         </select>
+                        <SelectValue
+                            :value="optionName(settings.previewPosition, panelPositionOptions)"
+                            class="pl-4 pr-9 group-active:text-on-accent"
+                        />
                         <span
                             class="pointer-events-none absolute inset-y-0 right-4 flex items-center group-active:text-on-accent"
                             aria-hidden="true"
