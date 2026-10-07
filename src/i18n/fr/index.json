@@ -1182,6 +1182,7 @@
       "key": {
         "input": "Touche de saisie",
         "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
+        "pressCancel": "Appuyez sur une touche ou sur Esc pour annuler",
         "clear": "Cliquez à nouveau pour effacer ce raccourci",
         "unassigned": "Non attribué",
         "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche",

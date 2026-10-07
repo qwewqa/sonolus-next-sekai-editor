@@ -28,7 +28,7 @@ const isActive = ref(false)
 // The name reads the binding or prompt after the label.
 const valueId = useId()
 // A capture the keyboard started ends on Escape; a click's records it, so Escape stays bindable.
-let fromKeyboard = false
+const fromKeyboard = ref(false)
 // The chord last refused during this capture, as shown, and why.
 const refused = ref<string>()
 const refusedAs = ref<'reserved' | 'altGraph'>('reserved')
@@ -46,7 +46,7 @@ const notes = computed(() =>
 const onClick = (event: MouseEvent) => {
     if (isActive.value) modelValue.value = undefined
     isActive.value = !isActive.value
-    fromKeyboard = event.detail === 0
+    fromKeyboard.value = event.detail === 0
     refused.value = undefined
     // Safari doesn't focus clicked buttons, so keys would never reach this one.
     if (isActive.value) (event.currentTarget as HTMLElement).focus()
@@ -97,7 +97,7 @@ const onKeyDown = (event: KeyboardEvent) => {
     event.preventDefault()
     event.stopPropagation()
 
-    if (event.key === 'Escape' && fromKeyboard && !hasModifier(event)) {
+    if (event.key === 'Escape' && fromKeyboard.value && !hasModifier(event)) {
         isActive.value = false
         refused.value = undefined
         return
@@ -152,7 +152,9 @@ const onBlur = () => {
             >
                 <span :id="valueId">{{
                     isActive
-                        ? i18n.modals.form.key.press
+                        ? fromKeyboard
+                            ? i18n.modals.form.key.pressCancel
+                            : i18n.modals.form.key.press
                         : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
                 }}</span>
             </button>

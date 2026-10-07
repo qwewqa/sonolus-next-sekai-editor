@@ -99,7 +99,7 @@ test('shortcut capture takes keys when a click does not focus the button', async
         .filter({ has: page.getByText('Save', { exact: true }) })
         .getByRole('button')
     // Safari and WebKit don't focus a clicked button.
-    await save.dispatchEvent('click')
+    await save.dispatchEvent('click', { detail: 1 })
     await expect(save).toHaveText('Press a key or click again to clear')
     await page.keyboard.press('l')
     await expect(save).toHaveText('L')
@@ -363,6 +363,50 @@ for (const locale of ['fr', 'tr', 'en']) {
     })
 }
 
+for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht'])
+    for (const width of [1600, 390])
+        test(`${locale} the keyboard capture prompt shows in full at ${width}px`, async ({
+            page,
+        }) => {
+            await page.setViewportSize({ width, height: 812 })
+            await page.evaluate(
+                (locale) => (window.editorTest.settings.locale = locale as never),
+                locale,
+            )
+            const prompt = await page.evaluate(
+                async () =>
+                    (
+                        await window.editorTest.appImport<typeof import('../../src/i18n')>(
+                            '/src/i18n/index.ts',
+                        )
+                    ).i18n.value.modals.form.key.pressCancel,
+            )
+            const field = page
+                .getByRole('dialog')
+                .locator('.form-field')
+                .filter({ has: page.locator('[data-icon-column]') })
+                .first()
+            const save = field.getByRole('button')
+            await save.scrollIntoViewIfNeeded()
+            await save.focus()
+            await page.keyboard.press('Enter')
+            await expect(save).toHaveText(prompt)
+            await expect
+                .poll(() =>
+                    save.evaluate(
+                        (button) =>
+                            button.scrollWidth <= button.clientWidth &&
+                            button.scrollHeight <= button.clientHeight,
+                    ),
+                )
+                .toBe(true)
+            if (process.env.SHOTS)
+                await field.screenshot({ path: `${process.env.SHOTS}/f4-${locale}-${width}.png` })
+            // Escape ends it, and the binding shows again.
+            await page.keyboard.press('Escape')
+            await expect(save).toHaveText('O')
+        })
+
 for (const locale of ['en', 'fr', 'ja', 'tr']) {
     test(`${locale} the capture prompt shows in full on a phone`, async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 812 })
@@ -456,7 +500,7 @@ test('from the keyboard, Escape cancels a capture and Delete or Backspace clears
     const save = shortcutButton(page, 'Save')
     await save.focus()
     await page.keyboard.press('Enter')
-    await expect(save).toHaveText('Press a key or click again to clear')
+    await expect(save).toHaveText('Press a key, or Esc to cancel')
     await page.keyboard.press('Escape')
     await expect(save).toHaveText('P')
     await expect(save).toBeFocused()
@@ -483,7 +527,7 @@ test('from the keyboard, Escape cancels a capture and Delete or Backspace clears
     ] as const) {
         await save.focus()
         await page.keyboard.press('Enter')
-        await expect(save).toHaveText('Press a key or click again to clear')
+        await expect(save).toHaveText('Press a key, or Esc to cancel')
         await page.keyboard.press(key)
         await expect(save, key).toHaveText(shown)
         expect(await savedShortcut(page, 'save'), key).toBe(key)

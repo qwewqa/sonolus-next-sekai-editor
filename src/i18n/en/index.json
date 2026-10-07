@@ -1182,6 +1182,7 @@
             "key": {
                 "input": "Input Key",
                 "press": "Press a key or click again to clear",
+                "pressCancel": "Press a key, or Esc to cancel",
                 "clear": "Click again to clear this shortcut",
                 "unassigned": "Unassigned",
                 "reserved": "{0} is reserved by the browser or system. Press another key.",
