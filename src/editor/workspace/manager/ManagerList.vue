@@ -2000,6 +2000,14 @@ const folderEyeLabel = (item: FolderItem) =>
 </template>
 
 <style scoped>
+/* While the list scrolls, its rows and the band over them end clear of the
+   overlay scrollbar's 10px strip and any dock inset beside it, so their buttons
+   never sit under the thumb. Only widths change, so overflow never toggles. */
+.manager-list:has(.manager-entries[data-scrollable]) .manager-band,
+.manager-entries[data-scrollable] {
+    padding-right: calc(0.625rem + var(--overlay-scrollbar-inset, 0px));
+}
+
 /* Room below the last row for the floating Add: the pill, its 8px inset and
    an 8px gap, so every row can scroll fully clear of it. */
 .manager-entries-floating {

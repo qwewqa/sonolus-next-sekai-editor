@@ -263,81 +263,113 @@ test('reduced motion shows and hides the bar without fading', async ({ page }) =
     ).not.toBe('0s')
 })
 
-test('a long manager list reserves no gutter, and its band lines up with the rows', async ({
-    page,
-}) => {
-    await open(page)
-    await page.evaluate(async () => {
-        const { history, fixtures, settings, nextTick } = window.editorTest
-        const chart = structuredClone(fixtures.notes)
-        chart.groups = new Map(
-            Array.from({ length: 40 }, (_, i) => [(i + 1) as never, { name: `Group ${i + 1}` }]),
+for (const position of ['left', 'right'] as const) {
+    test(`a long manager list in the ${position} dock keeps its rows' buttons clear of the bar`, async ({
+        page,
+    }) => {
+        await open(page)
+        await page.evaluate(async (position) => {
+            const { history, fixtures, settings, nextTick } = window.editorTest
+            const chart = structuredClone(fixtures.notes)
+            chart.groups = new Map(
+                Array.from({ length: 40 }, (_, i) => [
+                    (i + 1) as never,
+                    { name: `Group ${i + 1}` },
+                ]),
+            )
+            history.resetState(false, chart, 0, 'groups.json')
+            settings.groupsPosition = position
+            settings.showGroups = true
+            await nextTick()
+        }, position)
+        const groups = page.locator('#workspace-panel-groups')
+        const list = groups.locator('.manager-entries')
+        await expect(list.locator('.manager-entry').first()).toBeVisible()
+        expect(await overflows(list)).toBe(true)
+        expect(await gutter(list)).toBe(0)
+        const ends = await groups.evaluate((panel) => ({
+            band: panel.querySelector('.manager-all .manager-mode')!.getBoundingClientRect().right,
+            row: panel.querySelector('.manager-entry .manager-more')!.getBoundingClientRect().right,
+        }))
+        expect(ends.band).toBeCloseTo(ends.row, 0)
+
+        const box = (await list.boundingBox())!
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+        await page.mouse.wheel(0, 200)
+        await expect(bar(groups)).toHaveClass(/overlay-scrollbar-shown/)
+        const strip = (await bar(groups).boundingBox())!
+        // Clear of the dock's resize handle at the left dock's edge.
+        if (position === 'left')
+            expect(strip.x + strip.width).toBeLessThanOrEqual(box.x + box.width - 6)
+        // Every row's menu button ends before the strip.
+        const rights = await list
+            .locator('.manager-more')
+            .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().right))
+        for (const right of rights) expect(right).toBeLessThanOrEqual(strip.x)
+
+        // The thumb drags from its visible pill.
+        const pill = (await thumb(groups).boundingBox())!
+        const start = { x: pill.x + pill.width - 5, y: pill.y + pill.height / 2 }
+        const before = await scrollTop(list)
+        await page.mouse.move(start.x, start.y)
+        await expect(bar(groups)).toHaveClass(/overlay-scrollbar-active/)
+        await page.mouse.down()
+        await page.mouse.move(start.x, start.y + 60, { steps: 3 })
+        await page.mouse.up()
+        const dragged = await scrollTop(list)
+        expect(dragged).toBeGreaterThan(before + 60)
+
+        // A row's menu button still opens its menu.
+        const shown = await list.locator('.manager-more').evaluateAll(
+            (buttons, { top, bottom }) =>
+                buttons.findIndex((button) => {
+                    const rect = button.getBoundingClientRect()
+                    return rect.top > top + 40 && rect.bottom < bottom - 80
+                }),
+            { top: box.y, bottom: box.y + box.height },
         )
-        history.resetState(false, chart, 0, 'groups.json')
-        settings.showGroups = true
-        await nextTick()
-    })
-    const groups = page.locator('#workspace-panel-groups')
-    const list = groups.locator('.manager-entries')
-    await expect(list.locator('.manager-entry').first()).toBeVisible()
-    expect(await overflows(list)).toBe(true)
-    expect(await gutter(list)).toBe(0)
-    const ends = await groups.evaluate((panel) => ({
-        band: panel.querySelector('.manager-all')!.getBoundingClientRect().right,
-        row: panel.querySelector('.manager-entry')!.getBoundingClientRect().right,
-    }))
-    expect(ends.band).toBeCloseTo(ends.row, 0)
-
-    const box = (await list.boundingBox())!
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.mouse.wheel(0, 200)
-    await expect(bar(groups)).toHaveClass(/overlay-scrollbar-shown/)
-    // Clear of the dock's resize handle at the left dock's edge.
-    const strip = await hoverEdge(page, groups)
-    expect(strip.x + strip.width).toBeLessThanOrEqual(box.x + box.width - 6)
-    // The thumb drags from a spot with no control beneath.
-    const start = await clearSpot(thumb(groups))
-    const before = await scrollTop(list)
-    await page.mouse.move(start.x, start.y)
-    await expect(bar(groups)).toHaveClass(/overlay-scrollbar-active/)
-    await page.mouse.down()
-    await page.mouse.move(start.x, start.y + 60, { steps: 3 })
-    await page.mouse.up()
-    const dragged = await scrollTop(list)
-    expect(dragged).toBeGreaterThan(before + 60)
-
-    // A row's menu button keeps its clicks where the strip lies over it, beside
-    // the thumb or under it.
-    const thumbBox = (await thumb(groups).boundingBox())!
-    const buttons = await list.locator('.manager-more').evaluateAll(
-        (buttons, { left, listTop }) =>
-            buttons
-                .map((button) => button.getBoundingClientRect())
-                .filter(
-                    (rect) =>
-                        rect.right > left + 2 &&
-                        rect.top > listTop + 8 &&
-                        rect.bottom < innerHeight - 80,
-                )
-                .map((rect) => rect.toJSON() as DOMRect),
-        { left: strip.x, listTop: box.y },
-    )
-    const beside = buttons.find(
-        (rect) => rect.bottom < thumbBox.y || rect.top > thumbBox.y + thumbBox.height,
-    )
-    const under = buttons.find(
-        (rect) => rect.top > thumbBox.y && rect.bottom < thumbBox.y + thumbBox.height,
-    )
-    for (const more of [beside, under]) {
-        expect(more).toBeTruthy()
-        const x = more!.right - 1
-        const y = more!.y + more!.height / 2
-        await page.mouse.move(x, y)
-        await expect(bar(groups)).not.toHaveClass(/overlay-scrollbar-active/)
-        await page.mouse.click(x, y)
+        const more = list.locator('.manager-more').nth(shown)
+        await more.click()
         await expect(page.getByRole('menu')).toBeVisible()
         expect(await scrollTop(list)).toBe(dragged)
-        await page.keyboard.press('Escape')
-        await expect(page.getByRole('menu')).toHaveCount(0)
-    }
+    })
+}
+
+test('a manager list makes room for the bar only while it scrolls', async ({ page }) => {
+    await open(page)
+    const seed = (count: number) =>
+        page.evaluate(async (count) => {
+            const { history, fixtures, settings, nextTick } = window.editorTest
+            const chart = structuredClone(fixtures.notes)
+            chart.groups = new Map(
+                Array.from({ length: count }, (_, i) => [
+                    (i + 1) as never,
+                    { name: `Group ${i + 1}` },
+                ]),
+            )
+            history.resetState(false, chart, 0, 'groups.json')
+            settings.showGroups = true
+            await nextTick()
+        }, count)
+    const groups = page.locator('#workspace-panel-groups')
+    const list = groups.locator('.manager-entries')
+    const padding = () =>
+        groups.evaluate((panel) => ({
+            band: getComputedStyle(panel.querySelector('.manager-band')!).paddingRight,
+            list: getComputedStyle(panel.querySelector('.manager-entries')!).paddingRight,
+        }))
+    await seed(3)
+    await expect(list.locator('.manager-entry')).toHaveCount(3)
+    await frames(page)
+    await expect(list).not.toHaveAttribute('data-scrollable')
+    expect(await padding()).toEqual({ band: '6px', list: '6px' })
+
+    await seed(40)
+    // The left dock's 6px inset beside the strip.
+    await expect(list).toHaveAttribute('data-scrollable')
+    expect(await padding()).toEqual({ band: '16px', list: '16px' })
+
+    await seed(3)
+    await expect(list).not.toHaveAttribute('data-scrollable')
+    expect(await padding()).toEqual({ band: '6px', list: '6px' })
 })

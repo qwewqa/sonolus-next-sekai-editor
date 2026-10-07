@@ -7,7 +7,8 @@ import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue'
  * shows while scrolling and while a mouse or pen is near the edge, then fades.
  * Only the thumb takes pointer events, and only while edge-hovered or dragged,
  * so a bar shown by scrolling never takes a click meant for the content beneath. Forced colors
- * keep the native scrollbar instead.
+ * keep the native scrollbar instead. While `target` overflows it carries
+ * `data-scrollable`, so its content can keep clear of the bar.
  *
  * Place it in a positioned element that holds `target`.
  */
@@ -60,6 +61,8 @@ const measure = () => {
     if (!element || !host) return
     const { clientHeight, scrollHeight, scrollTop } = element
     overflowing.value = scrollHeight > clientHeight + 1
+    // Lets content make room for the bar only while it can show.
+    element.toggleAttribute('data-scrollable', overflowing.value)
     if (!overflowing.value) {
         shown.value = false
         hovered.value = false
@@ -225,7 +228,11 @@ watch(
         shown.value = false
         hovered.value = false
         if (!element || forced) return
-        onCleanup(listen(element))
+        const stop = listen(element)
+        onCleanup(() => {
+            stop()
+            element.removeAttribute('data-scrollable')
+        })
     },
     { flush: 'post', immediate: true },
 )
