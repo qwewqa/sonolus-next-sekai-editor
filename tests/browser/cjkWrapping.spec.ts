@@ -23,9 +23,9 @@ const open = async (page: Page, locale: string) => {
 }
 
 /** A label's text split where it wraps. */
-const lines = (page: Page, label: string) =>
-    panel(page)
-        .locator('.form-field-text')
+const lines = (page: Page, label: string, selector = '.form-field-text', root = panel(page)) =>
+    root
+        .locator(selector)
         .getByText(label, { exact: true })
         .first()
         .evaluate((element) => {
@@ -60,4 +60,39 @@ test('Japanese labels wrap between phrases, never before a long vowel mark', asy
     for (const label of await panel(page).locator('.form-field-text').allTextContents())
         for (const line of (await lines(page, label)).slice(1))
             expect(line.startsWith('ー'), label).toBe(false)
+})
+
+test('Preview Settings labels make room for a phrase rather than break inside it', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.addInitScript(installCanvasCounters)
+    await page.goto('/')
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.evaluate(installEditorFixture)
+    await page.evaluate(async () => {
+        const { settings, nextTick, fixtures, show } = window.editorTest
+        Object.assign(settings, { locale: 'ja', showSidebar: true, showPreview: true })
+        show(fixtures.interaction, 3)
+        await nextTick()
+    })
+    // The default dock has room to show the form.
+    const form = page.locator('.preview-controls:not(.invisible)')
+    await expect(form).toBeVisible()
+    const label = (text: string) => lines(page, text, '.preview-setting-label', form)
+    // Not "アンチエイリア / ス" or "再生コントロー / ル".
+    await expect.poll(() => label('アンチエイリアス')).toEqual(['アンチエイリアス'])
+    await expect.poll(() => label('再生コントロール')).toEqual(['再生コントロール'])
+    await expect.poll(() => label('選択対象を強調表示')).toEqual(['選択対象を', '強調表示'])
+    // Controls share one column, and no value truncates.
+    const edges = await form
+        .locator('.preview-setting-control')
+        .evaluateAll((elements) =>
+            elements.map((element) => Math.round(element.getBoundingClientRect().left)),
+        )
+    expect(new Set(edges).size).toBe(1)
+    for (const field of await form.locator('.preview-field').all())
+        expect(await field.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+            true,
+        )
 })

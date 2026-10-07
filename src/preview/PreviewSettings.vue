@@ -2,7 +2,7 @@
 import { computed, nextTick, onUpdated, useId, useTemplateRef, watch, type StyleValue } from 'vue'
 import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
-import { valueOverflows } from '../modals/form/fieldLayout'
+import { valueOverflows, wordOverflows } from '../modals/form/fieldLayout'
 import { optionName } from '../modals/form/fieldUsage'
 import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
 import { resyncInput } from '../modals/form/resync'
@@ -147,18 +147,28 @@ watch([controls, controlsBody], ([element, body], _previous, onCleanup) => {
     })
 })
 
-// A value that would truncate beside its label goes below it, as in Properties;
-// an on/off value is measured at its longer state, so a click doesn't move the row.
+// As in Properties, labels whose word or phrase would break take back some of the
+// controls' room, and a label or value that still doesn't fit stacks. An on/off value
+// is measured at its longer state, so a click doesn't move the row.
 let fitFrame = 0
 const fitRows = () => {
+    const body = controlsBody.value
+    if (!body) return
     const { enabled, disabled } = i18n.value.modals.form.toggle
-    for (const row of controlsBody.value?.querySelectorAll<HTMLElement>('.preview-setting') ?? []) {
+    const rows = [...body.querySelectorAll<HTMLElement>('.preview-setting')]
+    const labels = rows.map((row) => row.querySelector<HTMLElement>('.preview-setting-label'))
+    body.classList.remove('preview-controls-roomy')
+    for (const row of rows) row.classList.remove('preview-setting-stacked')
+    // One column for every row keeps the controls' edges aligned.
+    if (labels.some((label) => label && wordOverflows(label)))
+        body.classList.add('preview-controls-roomy')
+    rows.forEach((row, index) => {
+        const label = labels[index]
         const control = row.querySelector<HTMLElement>('.preview-toggle, select.preview-field')
-        if (!control) continue
-        row.classList.remove('preview-setting-stacked')
         const others = control instanceof HTMLSelectElement ? [] : [enabled, disabled]
-        if (valueOverflows(control, others)) row.classList.add('preview-setting-stacked')
-    }
+        if ((label && wordOverflows(label)) || (control && valueOverflows(control, others)))
+            row.classList.add('preview-setting-stacked')
+    })
 }
 const refitRows = () => {
     cancelAnimationFrame(fitFrame)
@@ -558,6 +568,11 @@ const onPlacementChange = () => {
     flex-shrink: 0;
 }
 
+/* Labels whose word or phrase would break take back some of the controls' room. */
+.preview-controls-roomy .preview-setting:not(.preview-setting-stacked) {
+    grid-template-columns: minmax(0, 1fr) 9rem;
+}
+
 /* A value too long to sit beside its label takes the full row below it. */
 .preview-setting.preview-setting-stacked {
     grid-template-columns: minmax(0, 1fr);
@@ -658,10 +673,15 @@ const onPlacementChange = () => {
         grid-template-columns: minmax(0, 1fr) 8.5rem;
         column-gap: 0.5rem;
     }
+
+    .preview-controls-roomy .preview-setting:not(.preview-setting-stacked) {
+        grid-template-columns: minmax(0, 1fr) 7.5rem;
+    }
 }
 
 @container (max-width: 15.99rem) {
-    .preview-setting {
+    .preview-setting,
+    .preview-controls-roomy .preview-setting:not(.preview-setting-stacked) {
         grid-template-columns: minmax(0, 1fr);
     }
 }

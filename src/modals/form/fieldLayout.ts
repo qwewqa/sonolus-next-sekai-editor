@@ -33,3 +33,14 @@ export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
         Math.max(...[text, ...others].map((text) => measure.measureText(text).width)) > room + 0.5
     )
 }
+
+/** Whether a label's longest word or phrase is wider than its box, so would break inside. */
+export const wordOverflows = (label: HTMLElement) => {
+    const { width, overflowWrap } = label.style
+    const room = label.clientWidth
+    // At min-content width, a label is as wide as its longest unbreakable part.
+    Object.assign(label.style, { width: 'min-content', overflowWrap: 'normal' })
+    const longest = label.getBoundingClientRect().width
+    Object.assign(label.style, { width, overflowWrap })
+    return longest > room + 0.5
+}
