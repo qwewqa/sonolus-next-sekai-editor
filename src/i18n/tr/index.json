@@ -51,7 +51,7 @@
       "cut": "{0} nesne kesildi"
     },
     "deselect": {
-      "title": "Seçimi kaldır",
+      "title": "Seçimi Kaldır",
       "deselected": "Tüm nesnelerin seçimi kaldırıldı"
     },
     "laneLimits": {
@@ -79,10 +79,10 @@
       "relative": "Göreli şerit hizalamaya geçildi"
     },
     "divisions": {
-      "title": "1/{0} bölümüne geç",
+      "title": "1/{0} Bölümüne Geç",
       "switched": "1/{0} bölümüne geçildi",
       "custom": {
-        "title": "Özelleştirilebilir bölüme geç",
+        "title": "Özelleştirilebilir Bölüme Geç",
         "modal": {
           "title": "Özelleştirilebilir Bölüm",
           "division": "Bölüm"
@@ -94,16 +94,16 @@
       "switched": "Silgi aracına geçildi"
     },
     "flip": {
-      "title": "Yatay çevir",
+      "title": "Yatay Çevir",
       "noSelected": "Çevrilecek nesne seçilmedi",
       "flipped": "{0} nesne yatay çevrildi"
     },
     "flipVertical": {
-      "title": "Dikey çevir",
+      "title": "Dikey Çevir",
       "flipped": "{0} nesne dikey çevrildi"
     },
     "scaleBeat": {
-      "title": "Vuruşları ölçekle",
+      "title": "Vuruşları Ölçekle",
       "noSelected": "Ölçeklemek için farklı vuruşlarda en az iki nesne seçin",
       "scaled": "{0} nesnenin vuruşları ölçeklendi"
     },
@@ -113,7 +113,7 @@
       "scaled": "{0} nesnenin genişliği ölçeklendi"
     },
     "scaleElevation": {
-      "title": "Yükseklikleri ölçekle",
+      "title": "Yükseklikleri Ölçekle",
       "noSelected": "Ölçeklemek için farklı yüksekliklerde en az iki nota veya sahne dönüşümü seçin",
       "scaled": "{0} nesnenin yükseklikleri ölçeklendi"
     },
@@ -123,7 +123,7 @@
       "invalidFactor": "Sonucu editörün desteklediği aralıkta tutan pozitif bir ölçek katsayısı girin"
     },
     "makeVertical": {
-      "title": "Dikey düzenle",
+      "title": "Dikey Düzenle",
       "noSelected": "Dikey düzenlemek için en az bir nota seçin",
       "unchanged": "Seçilen notalar zaten dikey düzenlenmiş",
       "invalid": "Seçim, editörün desteklediği aralıkta dikey düzenlenemiyor",
@@ -135,25 +135,25 @@
       "split": "{0} bağlantı bölündü"
     },
     "combineNotes": {
-      "title": "Kaydırmada birleştir",
+      "title": "Kaydırmada Birleştir",
       "noSelected": "Birleştirilecek nota seçilmedi",
       "sameSlide": "Seçilen notalar zaten aynı kaydırmaya ait",
       "combined": "{0} nota tek kaydırmada birleştirildi"
     },
     "fullscreen": {
-      "title": "Tam ekran",
+      "title": "Tam Ekran",
       "toggled": "Tam ekran değiştirildi",
       "unsupported": "Cihazınız tam ekranı desteklemiyor"
     },
     "groups": {
       "groupAll": {
-        "title": "Tüm gruplara geç"
+        "title": "Tüm Gruplara Geç"
       },
       "groupPrev": {
-        "title": "Önceki gruba geç"
+        "title": "Önceki Gruba Geç"
       },
       "groupNext": {
-        "title": "Sonraki gruba geç"
+        "title": "Sonraki Gruba Geç"
       },
       "switched": {
         "all": "Tüm gruplara geçildi",
@@ -176,7 +176,7 @@
       }
     },
     "manageGroups": {
-      "title": "Grupları yönet",
+      "title": "Grupları Yönet",
       "modal": {
         "title": "Grupları Yönet",
         "moveUp": "Grubu yukarı taşı",
@@ -196,7 +196,7 @@
       }
     },
     "manageStages": {
-      "title": "Sahneleri yönet",
+      "title": "Sahneleri Yönet",
       "modal": {
         "title": "Sahneleri Yönet",
         "moveUp": "Sahneyi yukarı taşı",
@@ -219,7 +219,7 @@
         "default": "Nota",
         "preset": "Nota #{0}"
       },
-      "switched": "#{0} Nota Aracına Geçildi",
+      "switched": "#{0} Nota aracına geçildi",
       "modal": {
         "title": "Varsayılan Nota Özellikleri"
       }
@@ -297,7 +297,7 @@
     },
     "select": {
       "title": "Seçim",
-      "switched": "Seçim Aracına Geçildi"
+      "switched": "Seçim aracına geçildi"
     },
     "settings": {
       "title": "Ayarlar"
@@ -307,7 +307,7 @@
         "default": "Kaydırma",
         "preset": "Kaydırma #{0}"
       },
-      "switched": "#{0} Kaydırma Aracına Geçildi",
+      "switched": "#{0} Kaydırma aracına geçildi",
       "modal": {
         "title": "Varsayılan Kaydırma Özellikleri"
       }
@@ -327,13 +327,13 @@
     },
     "stages": {
       "stageAll": {
-        "title": "Tüm sahnelere geç"
+        "title": "Tüm Sahnelere Geç"
       },
       "stagePrev": {
-        "title": "Önceki sahneye geç"
+        "title": "Önceki Sahneye Geç"
       },
       "stageNext": {
-        "title": "Sonraki sahneye geç"
+        "title": "Sonraki Sahneye Geç"
       },
       "switched": {
         "all": "Tüm sahnelere geçildi",
@@ -344,7 +344,7 @@
       "title": "Durdur"
     },
     "toggleVolume": {
-      "title": "{0} sesini aç/kapat",
+      "title": "{0} Sesini Aç/Kapat",
       "toggled": "{0} sesi açıldı/kapatıldı",
       "type": {
         "bgm": "Arka Plan Müziği",
@@ -352,7 +352,7 @@
       }
     },
     "undo": {
-      "title": "Geri al",
+      "title": "Geri Al",
       "noState": "Geri alınacak hiçbir şey yok",
       "undid": "\"{0}\" geri alındı"
     },
@@ -572,7 +572,7 @@
     }
   },
   "elevation": {
-    "edit": "Yükseklikleri düzenle",
+    "edit": "Yükseklikleri Düzenle",
     "header": "Yükseklik Editörü",
     "beat": "Vuruş",
     "previousBeat": "Önceki vuruş",
@@ -590,10 +590,10 @@
     "resize": "Yükseklik editörünü yeniden boyutlandır"
   },
   "contextMenu": {
-    "title": "Seçim işlemleri",
+    "title": "Seçim İşlemleri",
     "paste": "Yapıştır",
     "selectSlideNotes": "Kaydırma Notalarını Seç",
-    "editProperties": "Özellikleri düzenle",
+    "editProperties": "Özellikleri Düzenle",
     "delete": "Sil"
   },
   "settings": {
@@ -696,7 +696,7 @@
     },
     "toolbar": {
       "title": "Araç Çubuğu",
-      "add": "Araç ekle",
+      "add": "Araç Ekle",
       "modal": {
         "title": "Araç Seç"
       }

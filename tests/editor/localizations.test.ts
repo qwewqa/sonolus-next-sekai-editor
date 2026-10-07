@@ -99,3 +99,21 @@ test('event tool names start with a capital where the script has case', () => {
         }
     }
 })
+
+test('Turkish command titles use Title Case', () => {
+    const messages = read('tr')
+    const titles = Object.entries(messages).filter(
+        ([key]) =>
+            key.startsWith('commands.') && !key.includes('.modal.') && /\.title(\.|$)/.test(key),
+    )
+    for (const [key, text] of [
+        ...titles,
+        ...['contextMenu.title', 'contextMenu.editProperties', 'elevation.edit'].map(
+            (key) => [key, messages[key]!] as const,
+        ),
+    ])
+        for (const word of text.replace(/\{\d+\}/g, '').split(/[\s/]+/)) {
+            const first = word.match(/\p{L}/u)?.[0]
+            if (first) assert.equal(first, first.toLocaleUpperCase('tr'), `tr ${key}: ${text}`)
+        }
+})
