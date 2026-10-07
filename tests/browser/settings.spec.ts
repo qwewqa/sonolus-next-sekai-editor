@@ -559,3 +559,24 @@ test('the capture prompt and its tooltip clear with the same word', async ({ pag
     await expect(save).toHaveText('Press a key or click again to clear')
     await expect(save).toHaveAttribute('title', 'Click again to clear this shortcut')
 })
+
+test('a punctuation shortcut reads larger and bold, as in the toolbar', async ({ page }) => {
+    const style = (name: string) =>
+        shortcutButton(page, name).evaluate((button) => {
+            const value = getComputedStyle(button.firstElementChild!)
+            return {
+                text: button.textContent.trim(),
+                size: parseFloat(value.fontSize),
+                weight: Number(value.fontWeight),
+                height: button.getBoundingClientRect().height,
+            }
+        })
+    const letter = await style('Save')
+    const punctuation = await style('Utilities')
+    expect([letter.text, punctuation.text]).toEqual(['P', '.'])
+    expect(punctuation.size).toBeGreaterThan(letter.size)
+    expect(punctuation.weight).toBeGreaterThanOrEqual(700)
+    expect(letter.weight).toBeLessThan(700)
+    // The row keeps its height.
+    expect(punctuation.height).toBe(letter.height)
+})

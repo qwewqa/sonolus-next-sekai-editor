@@ -7,6 +7,7 @@ import {
     formatBinding,
     isAltGraphAlphanumeric,
     isApplePlatform,
+    isPunctuationShortcut,
     isReservedChord,
 } from '../../editor/controls/bindings'
 import { isComposingKey } from '../../utils/composition'
@@ -150,13 +151,21 @@ const onBlur = () => {
                 @keydown="onKeyDown"
                 @blur="onBlur"
             >
-                <span :id="valueId">{{
-                    isActive
-                        ? fromKeyboard
-                            ? i18n.modals.form.key.pressCancel
-                            : i18n.modals.form.key.press
-                        : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
-                }}</span>
+                <!-- One punctuation mark reads larger and bold, as in the toolbar. -->
+                <span
+                    :id="valueId"
+                    :class="{
+                        'text-lg font-bold leading-none':
+                            !isActive && isPunctuationShortcut(formatShortcut(modelValue) ?? ''),
+                    }"
+                    >{{
+                        isActive
+                            ? fromKeyboard
+                                ? i18n.modals.form.key.pressCancel
+                                : i18n.modals.form.key.press
+                            : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
+                    }}</span
+                >
             </button>
             <span class="sr-only" role="status">{{ refusal }}</span>
         </template>
