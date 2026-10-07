@@ -1,22 +1,23 @@
 import type { NoteSfx, NoteType } from '../../chart/note'
 
-/** A note pictogram, drawn in the editor's default note colours. */
-export type NoteShape = 'tap' | 'flick' | 'trace' | 'tick' | 'nonTick' | 'damage' | 'anchor'
+/** A note pictogram in the editor's default note colours, or a muted speaker. */
+export type NoteShape =
+    'tap' | 'flick' | 'trace' | 'tick' | 'nonTick' | 'damage' | 'anchor' | 'mute'
 
-/** Each note type's pictogram; Default has none. */
+/** Each note type's pictogram; Default is a plain tap. */
 export const noteTypeShapes = {
-    default: null,
+    default: 'tap',
     trace: 'trace',
     anchor: 'anchor',
     damage: 'damage',
     forceTick: 'tick',
     forceNonTick: 'nonTick',
-} as const satisfies Record<NoteType, NoteShape | null>
+} as const satisfies Record<NoteType, NoteShape>
 
-/** The note whose sound each SFX plays, and whether it's critical; Default and None have none. */
+/** The note whose sound each SFX plays, and whether it's critical; Default has none. */
 export const sfxShapes = {
     default: null,
-    none: null,
+    none: ['mute', false],
     normalTap: ['tap', false],
     criticalTap: ['tap', true],
     normalFlick: ['flick', false],

@@ -139,30 +139,31 @@ test('note type and SFX fields picture the note', async ({ page }) => {
     await expect(lead(page, 'Note Type').locator('polygon')).toHaveCount(1)
     // Critical sounds take the critical colours.
     await expect(lead(page, 'SFX').locator('rect')).toHaveAttribute('fill', '#fed983')
-    // Every option keeps the slot; Default and None leave it empty, unannounced.
+    // Every option keeps the slot, unannounced; only the default sound leaves it empty.
     const type = field(page, 'Note Type').locator('select')
     await expect(type.locator('.select-option-glyph[aria-hidden=true]')).toHaveCount(6)
-    await expect(type.locator('.select-option-glyph svg')).toHaveCount(5)
-    await expect(
-        type.getByRole('option', { name: 'Default', exact: true }).locator('svg'),
-    ).toHaveCount(0)
+    await expect(type.locator('.select-option-glyph svg')).toHaveCount(6)
     await expect(type.getByRole('option', { name: 'Force Non Tick', exact: true })).toHaveCount(1)
     const sfx = field(page, 'SFX').locator('select')
     await expect(sfx.locator('.select-option-glyph[aria-hidden=true]')).toHaveCount(11)
-    await expect(sfx.locator('.select-option-glyph svg')).toHaveCount(9)
-    for (const name of ['Default', 'None'])
-        await expect(sfx.getByRole('option', { name, exact: true }).locator('svg')).toHaveCount(0)
+    await expect(sfx.locator('.select-option-glyph svg')).toHaveCount(10)
+    await expect(
+        sfx.getByRole('option', { name: 'Default', exact: true }).locator('svg'),
+    ).toHaveCount(0)
+    await expect(
+        sfx.getByRole('option', { name: 'None', exact: true }).locator('path'),
+    ).toHaveCount(1)
 
-    // Default and None show no glyph and no inset.
+    // The default type is a plain tap, and None a muted speaker.
     await select(page, 'note', [2])
-    await expect(lead(page, 'Note Type')).toHaveCount(0)
-    await expect(lead(page, 'SFX')).toHaveCount(0)
-    expect(await selectPadding(page, 'SFX')).toBe('16px')
+    await expect(lead(page, 'Note Type').locator('rect')).toHaveAttribute('fill', '#aabfff')
+    await expect(lead(page, 'SFX').locator('path')).toHaveCount(1)
 
-    // Mixed values show none either.
+    // Mixed values show no glyph and no inset.
     await select(page, 'note', [0, 2])
     await expect(lead(page, 'Note Type')).toHaveCount(0)
     await expect(lead(page, 'SFX')).toHaveCount(0)
+    expect(await selectPadding(page, 'SFX')).toBe('16px')
 })
 
 test('tool presets show glyphs only for values that are set', async ({ page }) => {

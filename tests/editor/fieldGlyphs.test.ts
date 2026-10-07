@@ -68,10 +68,10 @@ test('every note type and SFX has a note pictogram or an empty slot', () => {
         'damage',
     ] satisfies NoteSfx[])
         assert.notEqual(soundShapes[value], undefined, value)
-    // Only the values with nothing to picture take the empty slot.
-    assert.equal(noteTypeShapes.default, null)
+    // Only the default sound has nothing to picture; Default is a plain tap and None is muted.
+    assert.equal(noteTypeShapes.default, sfxShapes.normalTap[0])
     assert.equal(sfxShapes.default, null)
-    assert.equal(sfxShapes.none, null)
+    assert.deepEqual(sfxShapes.none, ['mute', false])
     // A note type and the sound of the same note share one picture.
     assert.equal(noteTypeShapes.trace, sfxShapes.normalTrace[0])
     assert.equal(noteTypeShapes.forceTick, sfxShapes.normalTick[0])

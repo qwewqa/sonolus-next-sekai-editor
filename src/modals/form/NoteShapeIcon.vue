@@ -113,6 +113,18 @@ const kite = (cx: number, cy: number, scale: number) =>
                 stroke-linejoin="round"
             />
         </template>
+        <template v-else-if="shape === 'mute'">
+            <path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor" fill-opacity="0.75" />
+            <g
+                stroke="currentColor"
+                stroke-opacity="0.75"
+                stroke-width="1.5"
+                stroke-linecap="round"
+            >
+                <line x1="10.5" y1="6" x2="14.5" y2="10" />
+                <line x1="10.5" y1="10" x2="14.5" y2="6" />
+            </g>
+        </template>
         <template v-else>
             <polygon
                 :points="kite(8, 9.65, 22)"
