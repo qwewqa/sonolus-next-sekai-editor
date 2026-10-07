@@ -773,3 +773,34 @@ test('held toggle keys act once while held movement keys repeat', async ({ page 
         scrolls: 4,
     })
 })
+
+test('held elevation, brush and flip keys act once while undo repeats', async ({ page }) => {
+    const counts = await page.evaluate(async () => {
+        const { appImport } = window.editorTest
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const names = ['elevation', 'brush', 'flip', 'flipVertical', 'undo'] as const
+        const counts = { elevation: 0, brush: 0, flip: 0, flipVertical: 0, undo: 0 }
+        const executes = names.map((name) => commands[name].execute)
+        for (const name of names) {
+            commands[name].execute = () => {
+                counts[name]++
+            }
+        }
+        const hold = (key: string, shiftKey = false) => {
+            for (const repeat of [false, true, true, true])
+                dispatchEvent(
+                    new KeyboardEvent('keydown', { key, shiftKey, repeat, bubbles: true }),
+                )
+        }
+        hold('t')
+        hold('b')
+        hold('u')
+        hold('U', true)
+        hold('z')
+        names.forEach((name, i) => (commands[name].execute = executes[i]!))
+        return counts
+    })
+    expect(counts).toEqual({ elevation: 1, brush: 1, flip: 1, flipVertical: 1, undo: 4 })
+})

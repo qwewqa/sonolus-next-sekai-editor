@@ -132,6 +132,24 @@ test('context command supports an assigned hotkey and preserves selection regard
     expect((await page.evaluate(() => window.editorTest.snapshot())).notes).toEqual(before.notes)
 })
 
+test('holding the context menu key opens the menu once', async ({ page }) => {
+    await selectTwo(page)
+    await page.evaluate(() => {
+        window.editorTest.settings.keyboardShortcuts.openContextMenu = 'F9'
+    })
+    const counts: number[] = []
+    // Later keydowns are repeats.
+    for (let i = 0; i < 4; i++) {
+        await page.keyboard.down('F9')
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        counts.push(await page.getByRole('menu').count())
+    }
+    await page.keyboard.up('F9')
+    expect(counts).toEqual([1, 1, 1, 1])
+    await page.keyboard.press('F9')
+    await expect(page.getByRole('menu')).toHaveCount(0)
+})
+
 test('context shortcut can be assigned and cleared through settings without a default binding', async ({
     page,
 }) => {

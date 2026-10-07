@@ -222,7 +222,8 @@ const isApple = isApplePlatform()
 
 const onKeydown = (event: KeyboardEvent) => {
     const { names } = matchBindings(settings.keyboardShortcuts, event, isApple)
-    if (event.key === 'Escape' || names.includes('openContextMenu')) {
+    // A held binding keeps the menu it opened.
+    if (event.key === 'Escape' || (names.includes('openContextMenu') && !event.repeat)) {
         event.preventDefault()
         dismiss(true)
     } else if (event.key === 'Tab') {

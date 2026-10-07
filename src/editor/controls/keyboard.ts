@@ -70,6 +70,11 @@ const ignoresRepeat = new Set<CommandName>([
     'stageStyleEventVisibility',
     'stageTransformEventVisibility',
     'fullscreen',
+    'elevation',
+    'openContextMenu',
+    // A flip reverses itself, so held, the result would depend on the repeat count.
+    'flip',
+    'flipVertical',
     // Pressed again, tools cycle their presets or kinds, or open their dialog.
     'note',
     'note0',
@@ -88,6 +93,7 @@ const ignoresRepeat = new Set<CommandName>([
     'stagePivotEvent',
     'stageStyleEvent',
     'stageTransformEvent',
+    'brush',
 ])
 
 const onKeydown = (event: KeyboardEvent) => {
