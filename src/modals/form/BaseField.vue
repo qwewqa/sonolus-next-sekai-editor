@@ -107,11 +107,13 @@ const fitLabel = () => {
     const control = row.value?.querySelector<
         HTMLSelectElement | HTMLButtonElement | HTMLInputElement
     >(
-        ':scope > select, :scope > button, :scope > .form-field-select > select, :scope > .form-field-toggle > input',
+        ':scope > select, :scope > button, :scope > input[type="button"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
     )
     // An on/off value is measured at its longer state, so a click doesn't move the row.
     const { enabled, disabled } = i18n.value.modals.form.toggle
-    const others = control instanceof HTMLInputElement ? [enabled, disabled] : []
+    const others = control?.parentElement?.classList.contains('form-field-toggle')
+        ? [enabled, disabled]
+        : []
     // Japanese may break between characters, so only its values stack.
     if (
         (stackLongValues && control && valueOverflows(control, others)) ||

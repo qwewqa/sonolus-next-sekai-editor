@@ -1107,7 +1107,7 @@
         "qualifiedFunction": "イベントの加減速関数"
       },
       "file": {
-        "select": "ファイルを選択してください…"
+        "select": "ファイルを選択…"
       },
       "flickDirection": {
         "label": "フリック",

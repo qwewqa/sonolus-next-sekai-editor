@@ -225,3 +225,42 @@ for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
         })
     }
 }
+
+for (const locale of ['fr', 'ja']) {
+    test(`${locale} file buttons in dialogs show their whole prompt on a phone`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.addInitScript(installCanvasCounters)
+        await page.goto('/')
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(installEditorFixture)
+        await page.evaluate(async (locale) => {
+            window.editorTest.settings.locale = locale
+            const url = performance
+                .getEntriesByType('resource')
+                .find(
+                    (entry) => new URL(entry.name).pathname === '/src/editor/commands/index.ts',
+                )!.name
+            const { commands } = (await import(url)) as typeof import('../../src/editor/commands')
+            void commands.bgm.execute()
+        }, locale)
+        const file = page.getByRole('dialog').locator('input[type="button"]')
+        await expect(file).toBeVisible()
+        // The prompt goes below its label rather than end in an ellipsis.
+        await expect
+            .poll(() =>
+                file.evaluate((input: HTMLInputElement) => {
+                    const style = getComputedStyle(input)
+                    const context = document.createElement('canvas').getContext('2d')!
+                    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+                    const room =
+                        input.clientWidth -
+                        parseFloat(style.paddingLeft) -
+                        parseFloat(style.paddingRight)
+                    return context.measureText(input.value).width <= room + 0.5
+                }),
+            )
+            .toBe(true)
+    })
+}

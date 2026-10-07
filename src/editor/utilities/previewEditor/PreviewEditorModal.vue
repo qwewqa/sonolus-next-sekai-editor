@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { computed, ref } from 'vue'
+import { computed, ref, provide } from 'vue'
 import { bgm } from '../../../history/bgm'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
@@ -12,6 +12,10 @@ import { loadBgm } from '../../../player'
 import { formatTime } from '../../../utils/format'
 import { remap, unlerp } from '../../../utils/math'
 import { timeout } from '../../../utils/promise'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
+
+// Long values go below their label, as in Settings.
+provide(stackLongValuesKey, true)
 
 const buffer = ref(bgm.value.buffer)
 

@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, useTemplateRef, onMounted, onUnmounted, watch, provide } from 'vue'
 import { i18n } from '../../../i18n'
 import BaseModal from '../../../modals/BaseModal.vue'
 import BaseField from '../../../modals/form/BaseField.vue'
 import { modals } from '../../../modals'
 import { isComposingKey } from '../../../utils/composition'
 import { getScaleLabels } from './labels'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
 import {
     scalingSession,
     setScalingFactor,
     applyScalingSession,
     cancelScalingSession,
 } from './session'
+
+// Long values go below their label, as in Settings.
+provide(stackLongValuesKey, true)
 
 const props = defineProps<{ sessionId: number }>()
 const emit = defineEmits<{ close: [] }>()

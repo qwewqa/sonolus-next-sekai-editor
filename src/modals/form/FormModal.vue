@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { provide } from 'vue'
 import { i18n } from '../../i18n'
 import BaseModal from '../BaseModal.vue'
+import { stackLongValuesKey } from './fieldLayout'
+
+// Long values go below their label, as in Settings.
+provide(stackLongValuesKey, true)
 
 defineProps<{
     title: string

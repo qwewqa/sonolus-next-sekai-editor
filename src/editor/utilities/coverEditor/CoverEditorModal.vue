@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
 import BaseModal from '../../../modals/BaseModal.vue'
@@ -9,6 +9,10 @@ import NumberField from '../../../modals/form/NumberField.vue'
 import LoadingModal from '../../../modals/LoadingModal.vue'
 import { createBlob } from '../../../utils/canvas'
 import { timeout } from '../../../utils/promise'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
+
+// Long values go below their label, as in Settings.
+provide(stackLongValuesKey, true)
 
 const image = ref<HTMLImageElement>()
 
