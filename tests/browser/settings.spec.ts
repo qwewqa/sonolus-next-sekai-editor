@@ -472,6 +472,22 @@ test('unassigned shortcuts are muted like other placeholder text', async ({ page
     expect(await fontStyle(bound)).toBe('normal')
 })
 
+test('unassigned shortcuts stay upright in CJK, which has no italic', async ({ page }) => {
+    const unassigned = page.getByRole('dialog').locator('.key-field-unassigned').first()
+    for (const [locale, style] of [
+        ['fr', 'italic'],
+        ['ja', 'normal'],
+        ['ko', 'normal'],
+        ['zhs', 'normal'],
+        ['zht', 'normal'],
+    ] as const) {
+        await page.evaluate((locale) => (window.editorTest.settings.locale = locale), locale)
+        await expect
+            .poll(() => unassigned.evaluate((element) => getComputedStyle(element).fontStyle))
+            .toBe(style)
+    }
+})
+
 for (const width of [1600, 375]) {
     test(`a shortcut's button stays under the pointer while capturing at ${width}px`, async ({
         page,

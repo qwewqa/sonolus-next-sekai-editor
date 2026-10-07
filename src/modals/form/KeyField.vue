@@ -137,12 +137,12 @@ const onBlur = () => {
             /></span>
         </template>
         <template #default="{ textId }">
-            <!-- Unassigned is italic so bound keys stand out, also in forced colours. -->
+            <!-- Unassigned is muted, and italic outside CJK, so bound keys stand out. -->
             <button
                 class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
                 :class="{
                     'animate-pulse': isActive,
-                    'italic text-fg/80': !isActive && !formatShortcut(modelValue),
+                    'key-field-unassigned text-fg/80': !isActive && !formatShortcut(modelValue),
                 }"
                 type="button"
                 :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
@@ -174,6 +174,15 @@ const onBlur = () => {
 </template>
 
 <style scoped>
+.key-field-unassigned {
+    font-style: italic;
+}
+
+/* CJK fonts have no italic, and a slanted fallback reads as broken. */
+.key-field-unassigned:is(:lang(ja), :lang(ko), :lang(zh)) {
+    font-style: normal;
+}
+
 /* One line rounds fully at 2xl; wrapped lines round as a card. */
 .key-field-button {
     white-space: normal;
