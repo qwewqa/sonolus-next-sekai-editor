@@ -136,7 +136,7 @@ const editorMinWidth = (width: number) => Math.min(320, Math.round(width * 0.4))
 const editorMinHeight = (height: number) =>
     Math.min(240, Math.max(Math.round(height * 0.4), Math.min(200, Math.round(height * 0.55))))
 
-export type DefaultDockRoom = {
+type DefaultDockRoom = {
     /** Root font size in pixels. */
     rem?: number
     rail?: number

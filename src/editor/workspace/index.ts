@@ -68,7 +68,7 @@ export const workspaceSize = shallowRef({
 const readRootFontSize = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
 
 /** The root font size, which scales the default side dock width. */
-export const rootFontSize = shallowRef(readRootFontSize())
+const rootFontSize = shallowRef(readRootFontSize())
 
 /** Rereads the root font size, as the app shell does with the workspace size. */
 export const measureRootFontSize = () => {

@@ -8,13 +8,13 @@ const canOpen = typeof CSS !== 'undefined' && CSS.supports('selector(:open)')
 const isOpen = (select: HTMLSelectElement) => canOpen && select.matches(':open')
 
 /** The select whose open list holds an element, such as its focused option. */
-export const openSelectOf = (element: EventTarget | null) => {
+const openSelectOf = (element: EventTarget | null) => {
     const select = element instanceof Element ? element.closest('select') : null
     return select && isOpen(select) ? select : undefined
 }
 
 /** Whether a select opens the shared list rather than the system one. */
-export const hasSharedList = (select: HTMLSelectElement) =>
+const hasSharedList = (select: HTMLSelectElement) =>
     getComputedStyle(select).appearance === 'base-select'
 
 // Closed system selects step their value with these keys on Windows and Linux.
