@@ -9,6 +9,7 @@ import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { vScrollEdges } from '../directives/scrollEdges'
+import { interpolate } from '../utils/interpolate'
 import { holdsCharacter, menuKeyIndex } from '../utils/menuKeys'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import {
@@ -26,6 +27,7 @@ import { openElevationEditor } from './elevation/state'
 import PropertiesIcon from './commands/properties/PropertiesIcon.vue'
 import { isCoarsePointer } from './workspace'
 import { editorNavigation } from './navigation'
+import { notify } from './notification'
 import { isEntityInScope, scopeLookup } from './scope'
 import { toolName } from './tools'
 import { canRemove, remove } from './tools/eraser'
@@ -166,12 +168,14 @@ const execute = (name: ActionName) => {
         }
     } else if (name === 'editProperties') editSelectionProperties()
     else if (name === 'delete') remove(selectedEntities.value)
-    else if (name === 'selectSlideNotes')
+    else if (name === 'selectSlideNotes') {
+        const targets = modifyEntities(selectedEntities.value, { ctrl: false, shift: true })
         replaceState({
             ...state.value,
-            selectedEntities: modifyEntities(selectedEntities.value, { ctrl: false, shift: true }),
+            selectedEntities: targets,
         })
-    else if (name === 'paste') {
+        notify(interpolate(() => i18n.value.tools.select.selected, `${targets.length}`))
+    } else if (name === 'paste') {
         if (point) void pasteAtContextPosition(point.x, point.y, { ctrl: false, shift: false })
     } else void commands[name].execute()
 }

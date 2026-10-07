@@ -296,6 +296,8 @@ test('select slide notes expands to siblings while preserving other selected not
     expect(
         (await snapshot(page)).selected.map((entity) => entity.beat).sort((a, b) => a - b),
     ).toEqual([3, 5, 7])
+    // Announced as other selections are.
+    await expect(page.getByText('Selected 3 objects')).toBeVisible()
     expect((await snapshot(page)).notes).toHaveLength(4)
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
     await click(page, -3, 3)
