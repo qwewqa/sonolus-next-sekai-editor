@@ -48,7 +48,7 @@ const cases: TextCase[] = [
         fontFamily: systemFont,
         scale: 47.25,
         labels: [
-            { text: 'Stage A', align: 'end', color: '#f6f' },
+            { text: 'Stage A', align: 'end', color: '#a0a' },
             { text: 'Group B', align: 'start', color: '#0aa' },
         ],
     },
@@ -57,7 +57,7 @@ const cases: TextCase[] = [
         fontFamily: 'Arial',
         scale: 43.3,
         labels: [
-            { text: ' \tStage  A\n ', align: 'end', color: '#f6f' },
+            { text: ' \tStage  A\n ', align: 'end', color: '#a0a' },
             { text: '\u00a0Group\u00a0', align: 'start', color: '#0aa' },
         ],
     },

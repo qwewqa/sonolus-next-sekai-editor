@@ -342,7 +342,7 @@ test("a note's stage and group names keep a gap between them", (t) => {
     assert.deepEqual(
         labels.map(({ text, x, align, color }) => [text, Math.round(x * 100) / 100, align, color]),
         [
-            ['Side stage', 0.9, 'end', '#f6f'],
+            ['Side stage', 0.9, 'end', '#a0a'],
             ['Other group', 1.1, 'start', '#0aa'],
         ],
     )

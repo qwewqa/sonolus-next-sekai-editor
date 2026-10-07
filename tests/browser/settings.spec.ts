@@ -620,7 +620,7 @@ test('Name Contrast is off by default, persists and recolours names', async ({ p
     await expect(toggle).toHaveValue('Disabled')
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
     // Off, names keep their plain colours over note bodies and connectors.
-    expect(await nameColors()).toEqual({ Center: ['#ff66ff'], 'Other group': ['#00aaaa'] })
+    expect(await nameColors()).toEqual({ Center: ['#aa00aa'], 'Other group': ['#00aaaa'] })
 
     await toggle.click()
     await expect(toggle).toHaveValue('Enabled')
@@ -638,5 +638,5 @@ test('Name Contrast is off by default, persists and recolours names', async ({ p
     await toggle.click()
     await expect(toggle).toHaveValue('Disabled')
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
-    expect(await nameColors()).toEqual({ Center: ['#ff66ff'], 'Other group': ['#00aaaa'] })
+    expect(await nameColors()).toEqual({ Center: ['#aa00aa'], 'Other group': ['#00aaaa'] })
 })

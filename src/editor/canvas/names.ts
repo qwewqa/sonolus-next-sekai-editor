@@ -126,6 +126,10 @@ export const markFill = (context: EditorDrawContext, fill: NameFill) => {
     context.names?.fills.push(fill)
 }
 
+// Stage names lighten only where contrast redraws them over fills.
+export const stageNameColor = (context: EditorDrawContext) =>
+    context.nameContrast ? '#f6f' : '#a0a'
+
 /** Draws a name now, or queues it when the frame places names. */
 export const drawName = (
     context: EditorDrawContext,

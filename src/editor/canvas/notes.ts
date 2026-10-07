@@ -5,7 +5,7 @@ import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slid
 import { beatToTime } from '../../state/integrals/bpms'
 import { noteStyleColors } from '../../utils/colors'
 import { blendOverChart } from './nameColors'
-import { drawName, markFill, type NameFill } from './names'
+import { drawName, markFill, stageNameColor, type NameFill } from './names'
 import type { EditorDrawContext } from './types'
 
 // Lanes between a note's stage and group names and its middle.
@@ -441,7 +441,7 @@ export const createNoteRenderer = () => {
                         stage,
                         x + entity.size / 2 - gap,
                         y + 0.3,
-                        '#f6f',
+                        stageNameColor(context),
                         0.4,
                         group ? 'end' : 'center',
                         body,

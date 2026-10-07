@@ -252,8 +252,8 @@ test('without name contrast, names draw once in their own colours', (t) => {
     })
     placeNames(context, layer)
     assert.deepEqual(texts, [
-        { text: 'Side stage', color: '#f6f', clips: [] },
-        { text: 'Side stage', color: '#f6f', clips: [] },
+        { text: 'Side stage', color: '#a0a', clips: [] },
+        { text: 'Side stage', color: '#a0a', clips: [] },
         { text: 'Group', color: '#0aa', clips: [] },
     ])
 })

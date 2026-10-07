@@ -12,7 +12,7 @@ import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD, getRangePathDs } from '../entities/events/path'
 import type { ScopeLookup } from '../scopeRules'
-import { drawName, markDot } from './names'
+import { drawName, markDot, stageNameColor } from './names'
 import { drawText, measureText } from './text'
 import type { CanvasBounds, EditorDrawContext } from './types'
 
@@ -468,7 +468,7 @@ export const drawEvent = (
                         stageName,
                         (x + (xs[1] ?? x)) / 2,
                         y,
-                        '#f6f',
+                        stageNameColor(context),
                     )
             }
         }
