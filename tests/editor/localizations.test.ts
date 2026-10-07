@@ -141,6 +141,10 @@ test('the Japanese capture tooltip says what its prompt says', () => {
     assert.match(messages['modals.form.key.clear']!, /^もう一度クリックして\S*削除$/)
 })
 
+test('Japanese writes すべて, never 全て', () => {
+    for (const [key, text] of Object.entries(read('ja'))) assert.doesNotMatch(text, /全て/, key)
+})
+
 test('English uses curly apostrophes', () => {
     for (const [key, text] of Object.entries(english)) assert.doesNotMatch(text, /'/, key)
 })
