@@ -230,3 +230,78 @@ for (const pixelRatio of [1, 1.25, 2]) {
         }
     })
 }
+
+test('a split name draws each pixel once where a trace box and its diamond overlap', async ({
+    page,
+}) => {
+    await page.goto('/')
+    const [overlap, box] = await page.evaluate(async () => {
+        const notesPath = '/src/editor/canvas/notes.ts'
+        const namesPath = '/src/editor/canvas/names.ts'
+        const { createNoteRenderer } = (await import(
+            notesPath
+        )) as typeof import('../../src/editor/canvas/notes')
+        const { createNameLayer, placeNames } = (await import(
+            namesPath
+        )) as typeof import('../../src/editor/canvas/names')
+        const canvas = document.createElement('canvas')
+        canvas.width = 200
+        canvas.height = 100
+        const ctx = canvas.getContext('2d')!
+        ctx.setTransform(40, 0, 0, 40, 0, 0)
+        const context = {
+            ctx,
+            scale: 40,
+            pixelRatio: 1,
+            ups: 1,
+            fontFamily: 'sans-serif',
+            fontMiddle: 0.25,
+            nameContrast: true,
+            showStageName: true,
+            showGroupName: false,
+            recentlyActive: false,
+            state: {
+                store: { slides: { info: new Map() } },
+                isDynamicStages: true,
+                stages: new Map([[2, { name: 'A long side stage name' }]]),
+            },
+        } as unknown as EditorDrawContext
+        const names = createNameLayer()
+        const note = {
+            type: 'note',
+            beat: 0,
+            noteType: 'trace',
+            connectorType: 'active',
+            isConnectorSeparator: false,
+            size: 2,
+            left: 1,
+            noteStyle: 'default',
+            flickDirection: 'none',
+            isCritical: false,
+            isFake: false,
+            stageId: 2,
+        }
+        createNoteRenderer().draw({ ...context, names }, note as never, true, 0.5, {
+            left: 1,
+            y: 1,
+        })
+        // Only the name's pixels, each draw covering the whole clip.
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.restore()
+        ctx.fillText = function () {
+            this.save()
+            this.setTransform(1, 0, 0, 1, 0, 0)
+            this.fillRect(0, 0, canvas.width, canvas.height)
+            this.restore()
+        }
+        placeNames(context, names)
+        const pixel = (x: number, y: number) => [...ctx.getImageData(x * 40, y * 40, 1, 1).data]
+        // The diamond's middle, and the box well clear of the diamond.
+        return [pixel(2, 1.3), pixel(1.4, 1.3)]
+    })
+    expect(box[3]).toBeGreaterThan(100)
+    expect(box[3]).toBeLessThan(160)
+    expect(overlap).toEqual(box)
+})

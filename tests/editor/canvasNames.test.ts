@@ -87,7 +87,7 @@ const fill = (owner: Entity | undefined, l: number, r: number, b: number, color:
     const fill: NameFill = {
         owner,
         box: { l, r, t: -1, b },
-        path: () => path as unknown as Path2D,
+        shapes: () => [path as unknown as Path2D],
         colorsAt: () => [color],
     }
     return { fill, id: path.id }

@@ -254,7 +254,7 @@ const bodyFill = (
         ...(rect ? [{ l: rect.l, r: rect.l + rect.w, t: rect.t, b: rect.t + rect.h }] : []),
         ...(diamond ? [{ l: cx - 0.3, r: cx + 0.3, t: cy - 0.3, b: cy + 0.15 }] : []),
     ]
-    let path: Path2D | undefined
+    let shapes: Path2D[] | undefined
     return {
         owner: entity,
         box: {
@@ -263,23 +263,28 @@ const bodyFill = (
             t: Math.min(...boxes.map(({ t }) => t)),
             b: Math.max(...boxes.map(({ b }) => b)),
         },
-        path: () => {
-            if (path) return path
-            path = new Path2D()
+        shapes: () => {
+            if (shapes) return shapes
+            shapes = []
             if (rect) {
                 const { l, t, w, h } = rect
+                const path = new Path2D()
                 const radii = { x: Math.min(0.1, w / 2), y: Math.min(0.1, h / 2) }
                 if (typeof path.roundRect === 'function') path.roundRect(l, t, w, h, radii)
                 else path.rect(l, t, w, h)
+                shapes.push(path)
             }
+            // Wound like the box, so their union clips in.
             if (diamond) {
+                const path = new Path2D()
                 for (const [index, [px, py]] of diamondPoints.entries()) {
                     if (index) path.lineTo(cx + px, cy + py)
                     else path.moveTo(cx + px, cy + py)
                 }
                 path.closePath()
+                shapes.push(path)
             }
-            return path
+            return shapes
         },
         colorsAt: () => fills,
     }

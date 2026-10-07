@@ -529,7 +529,7 @@ export const createConnectorRenderer = () => {
                 const { box, path, color, headAlpha, tailAlpha, yHead, yTail } = graphic
                 markFill(context, {
                     box,
-                    path: () => path,
+                    shapes: () => [path],
                     colorsAt: (y) => [
                         blendOverChart(
                             color,

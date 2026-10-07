@@ -10,7 +10,8 @@ export type NameFill = {
     /** The note whose names alone it affects; none for connectors. */
     owner?: Entity
     box: Box
-    path: () => Path2D
+    /** Its outline as shapes that may overlap, all wound the same way. */
+    shapes: () => Path2D[]
     /** The opaque colours it shows at a height. */
     colorsAt: (y: number) => string[]
 }
@@ -49,12 +50,23 @@ const nameBox = (name: Omit<NameRequest, 'owner' | 'highlighted' | 'alpha'>, wid
     return { l, r: l + width, t: name.y - name.size / 2, b: name.y + name.size / 2 }
 }
 
-// Clip to everything around the box but the path.
-const clipOut = (ctx: CanvasRenderingContext2D, path: Path2D, box: Box) => {
-    const outside = new Path2D()
-    outside.rect(box.l - 1, box.t - 1, box.r - box.l + 2, box.b - box.t + 2)
-    outside.addPath(path)
-    ctx.clip(outside, 'evenodd')
+// Clip to everything around the box but the shapes, one at a time so overlaps stay out.
+const clipOut = (ctx: CanvasRenderingContext2D, shapes: Path2D[], box: Box) => {
+    for (const shape of shapes) {
+        const outside = new Path2D()
+        outside.rect(box.l - 1, box.t - 1, box.r - box.l + 2, box.b - box.t + 2)
+        outside.addPath(shape)
+        ctx.clip(outside, 'evenodd')
+    }
+}
+
+// Like-wound shapes clip in as one nonzero union.
+const union = (shapes: Path2D[]) => {
+    const [only] = shapes
+    if (only && shapes.length === 1) return only
+    const path = new Path2D()
+    for (const shape of shapes) path.addPath(shape)
+    return path
 }
 
 /** Draws a name in its colour, and in a darker or lighter one over each fill it would not read on. */
@@ -78,17 +90,17 @@ const drawSplitName = (
         return
     }
     const { ctx } = context
-    const paths = over.map(({ fill }) => fill.path())
+    const shapes = over.map(({ fill }) => fill.shapes())
     ctx.save()
-    for (const path of paths) clipOut(ctx, path, box)
+    clipOut(ctx, shapes.flat(), box)
     draw(name.color)
     ctx.restore()
     // Later fills cover earlier ones.
     for (const [index, { color }] of over.entries()) {
         ctx.save()
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        ctx.clip(paths[index]!)
-        for (const path of paths.slice(index + 1)) clipOut(ctx, path, box)
+        ctx.clip(union(shapes[index]!))
+        clipOut(ctx, shapes.slice(index + 1).flat(), box)
         draw(color)
         ctx.restore()
     }
