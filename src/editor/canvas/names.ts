@@ -91,6 +91,33 @@ const drawSplitName = (
     }
 }
 
+// Every shown name is measured on every frame; keep widths for one font and zoom.
+const noWidths = () => ({
+    fontFamily: '',
+    scale: 0,
+    bySize: new Map<number, Map<string, number>>(),
+})
+let widths = noWidths()
+
+/** Forgets measured names, as a loaded font changes their widths. */
+export const clearNameWidths = () => {
+    widths = noWidths()
+}
+
+const measureName = (context: EditorDrawContext, text: string, size: number) => {
+    const { fontFamily, scale } = context
+    if (widths.fontFamily !== fontFamily || widths.scale !== scale)
+        widths = { fontFamily, scale, bySize: new Map() }
+    let bySize = widths.bySize.get(size)
+    if (!bySize) widths.bySize.set(size, (bySize = new Map<string, number>()))
+    let width = bySize.get(text)
+    if (width === undefined) {
+        width = measureText(context, text, size)
+        bySize.set(text, width)
+    }
+    return width
+}
+
 /** Records a fill names may lie over, when the frame places names. */
 export const markFill = (context: EditorDrawContext, fill: NameFill) => {
     context.names?.fills.push(fill)
@@ -112,7 +139,7 @@ export const drawName = (
     if (!context.names) {
         const name = { text, x, y, color, size, align }
         if (!body.length) drawText(context, text, x, y, color, size, align)
-        else drawSplitName(context, name, nameBox(name, measureText(context, text, size)), body)
+        else drawSplitName(context, name, nameBox(name, measureName(context, text, size)), body)
         return
     }
     const alpha = context.ctx.globalAlpha
@@ -141,7 +168,7 @@ export const placeNames = (context: EditorDrawContext, { names, dots, fills }: N
         ...names.filter(({ highlighted }) => highlighted),
         ...names.filter(({ highlighted }) => !highlighted),
     ]) {
-        const width = measureText(context, name.text, name.size)
+        const width = measureName(context, name.text, name.size)
         if (!width) continue
         const box = nameBox(name, width)
         if (placed.some((other) => overlaps(box, other))) continue

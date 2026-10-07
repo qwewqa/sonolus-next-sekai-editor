@@ -21,7 +21,7 @@ import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid, timeScaleEdgeLabelYs } from './grid'
-import { createNameLayer, placeNames } from './names'
+import { clearNameWidths, createNameLayer, placeNames } from './names'
 import { createNoteRenderer } from './notes'
 import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
@@ -308,6 +308,7 @@ const updateFont = () => {
         fontMiddle.value = measureTextMiddle(fontFamily.value, container.value)
         figureMiddle.value = measureFigureMiddle(fontFamily.value)
     }
+    clearNameWidths()
     redrawVersion.value++
 }
 const restoreContext = () => {
