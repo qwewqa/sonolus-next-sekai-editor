@@ -231,6 +231,8 @@ for (const [label, objects, message] of [
     ],
     ['a negative BPM beat', [{ type: 'bpm', beat: -2, bpm: 90 }], 'Invalid level: negative beat'],
     ['a negative note size', [{ ...single, size: -3 }], 'Invalid level: negative note size'],
+    ['a zero BPM', [{ type: 'bpm', beat: 2, bpm: 0 }], 'Invalid level: zero or negative BPM'],
+    ['a negative BPM', [{ type: 'bpm', beat: 2, bpm: -60 }], 'Invalid level: zero or negative BPM'],
 ] as const)
     test(`a USC with ${label} is refused`, async ({ page }) => {
         const chart = { ...usc, usc: { ...usc.usc, objects: [...usc.usc.objects, ...objects] } }
@@ -244,6 +246,18 @@ test('a SUS with a negative beat is refused', async ({ page }) => {
     await expect(page.getByRole('dialog')).toContainText('Invalid level: negative beat')
     expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
 })
+
+// An unknown BPM id reads as 0 in SUS.
+for (const [label, lines] of [
+    ['a zero BPM', ['#BPM02:0', '#00108:02']],
+    ['a negative BPM', ['#BPM02:-90', '#00108:02']],
+    ['an undefined BPM', ['#00108:03']],
+] as const)
+    test(`a SUS with ${label} is refused`, async ({ page }) => {
+        await open(page, 'chart.sus', Buffer.from([sus, ...lines].join('\n')))
+        await expect(page.getByRole('dialog')).toContainText('Invalid level: zero or negative BPM')
+        expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+    })
 
 test("a USC 'none' direction flicks up, as the engine reads it", async ({ page }) => {
     const single = (beat: number, direction?: string) => ({
