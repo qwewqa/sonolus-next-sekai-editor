@@ -162,6 +162,16 @@ test('French text uses one typographic style', () => {
     }
 })
 
+test('Preview Editor units stay on the line of the word before them', () => {
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name))
+        for (const [key, text] of Object.entries(read(locale)))
+            // As fr "Durée du fondu de sortie (s)", which left "(s)" alone at 390.
+            if (key.startsWith('utilities.previewEditor.'))
+                assert.doesNotMatch(text, / [(（]/, `${locale} ${key}`)
+})
+
 test('the version line is translated where the script differs from English', () => {
     for (const locale of ['ja', 'ko', 'zhs', 'zht'])
         assert.doesNotMatch(read(locale)['notification.title']!, /Version/, locale)
