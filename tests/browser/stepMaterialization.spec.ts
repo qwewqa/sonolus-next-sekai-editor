@@ -81,3 +81,40 @@ test('make vertical materializes a note on a stage step at the held lane', async
     // Make Vertical sets elevation from the beat offset, 0 for the earliest note.
     expect(await materialize(page, 'makeVertical')).toEqual([held])
 })
+
+test('combine orders same-beat slides on a stage step by the held elevation', async ({ page }) => {
+    // At beat 4, stage 2 holds elevation 0: its note (1) sits below stage 1's (2), not above it (3).
+    const stages = await page.evaluate(async () => {
+        const { combineNotes } = await import('/src/state/operations/combineNotes.ts')
+        const { fixtures, show, history } = window.editorTest
+        const transform = fixtures.events.stageTransformEvents[0]!
+        const base = { ...fixtures.interaction.slides[0]![0]!, stageId: 1 as never }
+        const side = 2 as never
+        show({
+            ...fixtures.interaction,
+            isDynamicStages: true,
+            stagePivotEvents: [],
+            stageTransformEvents: [
+                { ...transform, stageId: side, beat: 0, xTranslation: 0, elevation: 0 },
+                { ...transform, stageId: side, beat: 4, xTranslation: 0, elevation: 2 },
+            ].map((event) => ({ ...event, eventEase: 'inStep' as const })),
+            slides: [
+                [
+                    { ...base, beat: 2, left: -4, size: 2 },
+                    { ...base, beat: 4, stageId: side, left: 0, size: 2, elevation: 1 },
+                ],
+                [
+                    { ...base, beat: 4, left: 3, size: 2, elevation: 2 },
+                    { ...base, beat: 6, left: 3, size: 2 },
+                ],
+            ],
+        })
+        const source = history.state.value
+        const result = combineNotes(source, [...source.store.slides.note.values()].flat())
+        return [...result.store.slides.note.values()]
+            .flat()
+            .filter((note) => note.beat === 4)
+            .map((note) => note.stageId)
+    })
+    expect(stages).toEqual([2, 1])
+})
