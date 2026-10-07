@@ -659,6 +659,90 @@ test('a note on a stage step shows the held pivot and elevation, as Play does', 
     expect(shown).toEqual([{ lane: 1, elevation: 1 }])
 })
 
+// Pivot 1 and elevation 0.5 step to 3 and 2 at beat 6; Play holds the values from before.
+const showStageStep = (page: Page) =>
+    page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        const pivot = {
+            ...fixtures.events.stagePivotEvents[0]!,
+            yOffset: 0,
+            eventEase: 'inStep' as const,
+        }
+        const transform = {
+            ...fixtures.events.stageTransformEvents[0]!,
+            xTranslation: 0,
+            eventEase: 'inStep' as const,
+        }
+        show(
+            {
+                ...fixtures.interaction,
+                isDynamicStages: true,
+                stagePivotEvents: [
+                    { ...pivot, beat: 0, pivotLane: 1 },
+                    { ...pivot, beat: 6, pivotLane: 3 },
+                ],
+                stageTransformEvents: [
+                    { ...transform, beat: 0, elevation: 0.5 },
+                    { ...transform, beat: 6, elevation: 2 },
+                ],
+                slides: [[{ ...base, beat: 6, left: 0, size: 2, elevation: 1 }]],
+            },
+            3,
+        )
+        view.cursorTime = 3
+    })
+
+test('placing a note on a stage step uses the held pivot and elevation', async ({ page }) => {
+    await showStageStep(page)
+    await open(page)
+    await page.keyboard.press('a')
+    const target = await at(page, -3, 1.5)
+    await page.mouse.click(target.x, target.y)
+    await expect.poll(() => notes(page)).toHaveLength(2)
+    expect((await notes(page)).find((note) => note.left !== 0)).toEqual({
+        beat: 6,
+        left: -4,
+        size: 2,
+        elevation: 1,
+    })
+})
+
+test('pasting on a stage step uses the held pivot and elevation', async ({ page }) => {
+    await showStageStep(page)
+    await page.evaluate(() => {
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async () => undefined,
+        })
+        Object.defineProperty(navigator.clipboard, 'readText', {
+            configurable: true,
+            value: async () => '',
+        })
+        const { history } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+    })
+    await page.keyboard.press('c')
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.replaceState({ ...history.state.value, selectedEntities: [] })
+    })
+    await open(page)
+    await page.keyboard.press('v')
+    const target = await at(page, -3, 1.5)
+    await page.mouse.click(target.x, target.y)
+    await expect.poll(() => notes(page)).toHaveLength(2)
+    expect((await notes(page)).find((note) => note.left !== 0)).toEqual({
+        beat: 6,
+        left: -5,
+        size: 2,
+        elevation: 1,
+    })
+})
+
 test('mobile touch dragging uses the same editor controls and cancellation', async ({
     page,
 }, testInfo) => {
