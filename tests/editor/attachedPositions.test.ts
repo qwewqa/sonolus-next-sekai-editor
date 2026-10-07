@@ -4,8 +4,10 @@ import type { Chart } from '../../src/chart'
 import type { GroupId } from '../../src/chart/groups'
 import type { NoteObject } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
+import { serializeToLevelData } from '../../src/levelData/serialize'
 import { attachEasedFrac, buildPreviewChart } from '../../src/preview/engine/chart'
 import { createState, type State } from '../../src/state'
+import { getMaterializedNotePositions } from '../../src/state/operations/notePositions'
 
 const groupId = 1 as GroupId
 const stageId = 1 as StageId
@@ -101,4 +103,42 @@ test('attached notes follow the ease at their time fraction', () => {
     assert.ok(Math.abs(center(state) - engineCenter(state)) < 1e-12)
     const compiled = buildPreviewChart(state, 6).notes.find((entity) => entity.isAttached)!
     assert.ok(Math.abs(attached(state).size - compiled.size * 2) < 1e-12)
+})
+
+test('attached notes export clean lanes when their time fraction carries float noise', () => {
+    // At 70 BPM the tick's time fraction is 0.4999999999999997, not 0.5.
+    const state = createState(
+        {
+            ...chart([
+                { beat: 0, bpm: 60 },
+                { beat: 1, bpm: 70 },
+            ]),
+            slides: [
+                [
+                    note(3, -3),
+                    note(4, 0, { isAttached: true }),
+                    { ...note(5, 0), left: 3, size: 4 },
+                ],
+            ],
+        },
+        0,
+    )
+    const { entities } = serializeToLevelData(
+        state.initialLife,
+        state.isDynamicStages,
+        0,
+        state.store,
+        state.groups,
+        state.stages,
+    )
+    const value = (entity: (typeof entities)[number], name: string) =>
+        (entity.data.find((item) => item.name === name && 'value' in item) as { value: number })
+            ?.value
+    const tick = entities.find((entity) => value(entity, 'isAttached') === 1)!
+    assert.deepEqual([value(tick, 'lane'), value(tick, 'size')], [1, 1.5])
+    // Materializing it, as Make Vertical does, places it as cleanly.
+    const { left, size } = getMaterializedNotePositions(state, [attached(state)]).get(
+        attached(state),
+    )!
+    assert.deepEqual([left, size], [-0.5, 3])
 })

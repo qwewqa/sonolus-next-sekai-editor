@@ -248,3 +248,86 @@ test("a USC 'none' direction flicks up, as the engine reads it", async ({ page }
         ['trace', 'none'],
     ])
 })
+
+test('Chart Cyanvas attached ticks after a BPM change export clean lanes and sizes', async ({
+    page,
+}) => {
+    const note = (name: string, archetype: string, data: Record<string, unknown>) => ({
+        name,
+        archetype,
+        data: Object.entries(data).map(([key, value]) =>
+            typeof value === 'string' ? { name: key, ref: value } : { name: key, value },
+        ),
+    })
+    // At 70 BPM their time fractions carry float noise.
+    const ticks = [3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75].map((beat, index) =>
+        note(`t${index}`, 'NormalAttachedSlideTickNote', { '#BEAT': beat, attach: 'c' }),
+    )
+    const level = {
+        ...chcy,
+        entities: [
+            ...chcy.entities.slice(0, 6),
+            note('', '#BPM_CHANGE', { '#BEAT': 0, '#BPM': 60 }),
+            note('', '#BPM_CHANGE', { '#BEAT': 1, '#BPM': 70 }),
+            note('s', 'NormalSlideStartNote', {
+                '#BEAT': 3,
+                lane: -3,
+                size: 1,
+                timeScaleGroup: 'tsg:0',
+            }),
+            note('e', 'NormalSlideEndNote', {
+                '#BEAT': 5,
+                lane: 5,
+                size: 2,
+                slide: 'c',
+                timeScaleGroup: 'tsg:0',
+            }),
+            note('c', 'NormalSlideConnector', {
+                start: 's',
+                end: 'e',
+                head: 's',
+                tail: 'e',
+                ease: 1,
+                startType: 0,
+            }),
+            ...ticks,
+        ],
+    }
+    await open(page, 'level-data', gzipSync(JSON.stringify(level)))
+    await expect(page.locator('.notification')).toHaveText('Imported Chart Cyanvas level')
+    const values = await page.evaluate(async () => {
+        const urls = new Map(
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => [new URL(entry.name).pathname, entry.name]),
+        )
+        const appImport = <T>(pathname: string): Promise<T> =>
+            import(urls.get(pathname) ?? pathname)
+        const { state } =
+            await appImport<typeof import('../../src/history/index')>('/src/history/index.ts')
+        const { serializeToLevelData } = await appImport<
+            typeof import('../../src/levelData/serialize')
+        >('/src/levelData/serialize.ts')
+        const { entities } = serializeToLevelData(
+            1000,
+            false,
+            0,
+            state.value.store,
+            state.value.groups,
+            state.value.stages,
+        )
+        const value = (entity: (typeof entities)[number], name: string) => {
+            const item = entity.data.find((item) => item.name === name)
+            return item && 'value' in item ? item.value : undefined
+        }
+        return entities
+            .filter(
+                (entity) =>
+                    value(entity, 'isAttached') === 1 && value(entity, 'lane') !== undefined,
+            )
+            .flatMap((entity) => [value(entity, 'lane'), value(entity, 'size')])
+    })
+    expect(values).toHaveLength(14)
+    // At most 9 decimals: no float noise.
+    for (const value of values) expect(String(value)).toMatch(/^-?\d+(\.\d{1,9})?$/)
+})

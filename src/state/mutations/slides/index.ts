@@ -1,5 +1,5 @@
 import { ease } from '../../../ease'
-import { clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
+import { alignNear, clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
 import { toConnectorEntity, type ConnectorEntity } from '../../entities/slides/connector'
@@ -7,6 +7,9 @@ import { toNoteEntity, type NoteEntity } from '../../entities/slides/note'
 import { beatToTime, type BpmIntegral } from '../../integrals/bpms'
 import type { Store } from '../../store'
 import { addToStoreGrid, removeFromStoreGrid } from '../../store/grid'
+
+// Snaps the float noise of time-based attached positions; keeps 1/256 and 1/100 steps.
+export const alignAttached = (value: number) => alignNear(value, 6400)
 
 export const rebuildSlide = (
     store: Store,
@@ -141,8 +144,8 @@ export const rebuildSlide = (
         )
 
         // Overshooting eases may shrink a note past zero width; keep its center.
-        const size = lerp(head.size, tail.size, x)
-        const left = lerp(head.left, tail.left, x) + Math.min(size, 0) / 2
+        const size = alignAttached(lerp(head.size, tail.size, x))
+        const left = alignAttached(lerp(head.left, tail.left, x) + Math.min(size, 0) / 2)
         // Noise from a BPM edit keeps the note, and its identity.
         if (
             nearlyEqual(left, rawInfo.note.left) &&
