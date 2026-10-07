@@ -221,9 +221,10 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
     const select = toolbar.getByTitle('Select', { exact: true })
     await expect.poll(() => fills(select, 'path')).toEqual([selectedText])
 
-    // Focus stays distinct from the selected fill and its resting edge.
+    // Focus keeps the edge and adds an inner ring, distinct from the resting look.
     await focus(select)
-    expect(await outline(select)).toEqual({ style: 'solid', width: '2px', color: text })
+    expect(await outline(select)).toEqual({ style: 'solid', width: '2px', color: selectedText })
+    expect(await innerRing(select)).toBe(selectedText)
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
 
     // Pressing it keeps the selected colours, as other buttons keep theirs.
@@ -254,6 +255,45 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     await expectTools(picker.locator('button[title]:not([aria-label])'), 0)
 })
+
+// The colour of a focused tool's innermost inset ring, if any.
+const innerRing = (locator: Locator) =>
+    locator.evaluate((element) => {
+        const shadow = getComputedStyle(element).boxShadow
+        const rings = shadow === 'none' ? [] : shadow.split(/,(?![^(]*\))/)
+        return rings.at(-1)?.match(/rgba?\([^)]*\)/)?.[0]
+    })
+
+for (const colorScheme of ['light', 'dark'] as const)
+    test(`focus on the tool in use is an inner ring on its fill (${colorScheme})`, async ({
+        page,
+    }) => {
+        await page.emulateMedia({ forcedColors: 'active', colorScheme })
+        const selectedText = await systemColor(page, 'HighlightText')
+        const toolbar = page.locator('[data-editor-toolbar]')
+        const select = toolbar
+            .locator(':scope > div > div > button')
+            .and(page.getByTitle('Select', { exact: true }))
+        await focus(select)
+        await expect.poll(() => innerRing(select)).toBe(selectedText)
+        // Not in use: no inner ring.
+        const undo = toolbar
+            .locator(':scope > div > div > button')
+            .and(page.getByTitle('Undo', { exact: true }))
+        await focus(undo)
+        expect(await innerRing(undo)).toBeUndefined()
+
+        // The flyout row of the tool in use too.
+        await page.keyboard.press('Escape')
+        await focus(select)
+        await page.keyboard.press('Enter')
+        const row = toolbar
+            .locator(':scope > div > div > div button')
+            .and(page.getByTitle('Select', { exact: true }))
+        await expect(row).toHaveAttribute('aria-pressed', 'true')
+        await focus(row)
+        await expect.poll(() => innerRing(row)).toBe(selectedText)
+    })
 
 const systemColor = (page: Page, name: string) =>
     page.evaluate((name) => {

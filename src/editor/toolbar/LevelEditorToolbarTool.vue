@@ -30,6 +30,7 @@ const iconProps = computed(
 // leaves SVG fills alone, so monochrome icons take ButtonText. The tool in use
 // takes the selected look, unforced so its text gets no backplate. The
 // transparent outline is the edge high contrast paints; inset, as tools sit close.
+// Focus on the tool in use adds an inner ring of the selected text colour.
 const shortcut = computed(() =>
     isCoarsePointer.value ? undefined : formatShortcut(settings.keyboardShortcuts[props.name]),
 )
@@ -40,7 +41,7 @@ const shortcut = computed(() =>
         class="flex items-center rounded-full p-2 shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 active:bg-accent active:fill-on-accent active:text-on-accent [dialog_&]:focus-visible:ring-fg"
         :class="[
             pressed
-                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:bg-[Highlight] forced-colors:fill-[HighlightText] forced-colors:text-[HighlightText] forced-colors:outline-[color:HighlightText] forced-colors:forced-color-adjust-none forced-colors:![box-shadow:none] forced-colors:focus-visible:outline-[color:CanvasText] forced-colors:active:bg-[Highlight] forced-colors:active:fill-[HighlightText] forced-colors:active:text-[HighlightText]'
+                ? 'bg-accent fill-on-accent text-on-accent focus-visible:ring-button forced-colors:bg-[Highlight] forced-colors:fill-[HighlightText] forced-colors:text-[HighlightText] forced-colors:outline-[color:HighlightText] forced-colors:forced-color-adjust-none forced-colors:![box-shadow:none] forced-colors:focus-visible:![box-shadow:inset_0_0_0_4px_Highlight,inset_0_0_0_6px_HighlightText] forced-colors:active:bg-[Highlight] forced-colors:active:fill-[HighlightText] forced-colors:active:text-[HighlightText]'
                 : 'bg-button focus-visible:ring-accent forced-colors:fill-[ButtonText]',
             { '[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3': showLabel },
         ]"
