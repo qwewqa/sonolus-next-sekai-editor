@@ -134,6 +134,13 @@ test('both flip commands name their axis', () => {
     }
 })
 
+test('the Japanese capture tooltip says what its prompt says', () => {
+    const messages = read('ja')
+    // As the prompt "キーを押すか、もう一度クリックして削除", not a longer sentence.
+    assert.ok(messages['modals.form.key.press']!.includes('もう一度クリックして削除'))
+    assert.match(messages['modals.form.key.clear']!, /^もう一度クリックして\S*削除$/)
+})
+
 test('English uses curly apostrophes', () => {
     for (const [key, text] of Object.entries(english)) assert.doesNotMatch(text, /'/, key)
 })
