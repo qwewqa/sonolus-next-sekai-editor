@@ -194,8 +194,8 @@ test.describe('time scale transition', () => {
         await expect(segments(page).getByRole('radio', { name: 'Scroll' })).toBeChecked()
     })
 
-    test('the default dock keeps every name in full, with its marker', async ({ page }) => {
-        await open(page)
+    test('a 336 dock keeps every name in full, with its marker', async ({ page }) => {
+        await open(page, { rightDockWidth: 336 })
         await select(page, 'timeScale', [1])
         const control = field(page, transition).locator('select')
         await expect(control).toBeVisible()
@@ -399,7 +399,7 @@ for (const width of [336, 260]) {
 }
 
 test('a value glyph gives way only when that lets the value fit', async ({ page }) => {
-    await open(page)
+    await open(page, { rightDockWidth: 336 })
     // Every select with a glyph: hidden only if the value then fits, kept if it
     // truncates either way.
     const check = () =>

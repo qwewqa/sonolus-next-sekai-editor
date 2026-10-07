@@ -613,16 +613,17 @@ test('a long band count widens its column and the name gives way', async ({ page
 })
 
 // The count gives up its words before the bar gives up its visibility button.
-for (const [device, viewport, mobile, dock] of [
-    ['desktop', { width: 1600, height: 1000 }, false, undefined],
-    ['336px dock', { width: 1600, height: 1000 }, false, 336],
-    ['260px dock', { width: 1600, height: 1000 }, false, 260],
-    ['phone', { width: 375, height: 812 }, true, undefined],
+const locales = ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']
+for (const [device, viewport, mobile, dock, worded] of [
+    ['desktop', { width: 1600, height: 1000 }, false, undefined, locales],
+    ['336px dock', { width: 1600, height: 1000 }, false, 336, ['en', 'ko', 'tr']],
+    ['260px dock', { width: 1600, height: 1000 }, false, 260, ['tr']],
+    ['phone', { width: 375, height: 812 }, true, undefined, ['en', 'ko', 'tr']],
 ] as const) {
     test.describe(`${device} selection bar`, () => {
         test.use({ viewport, isMobile: mobile, hasTouch: mobile })
 
-        for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
+        for (const locale of locales) {
             test(`${locale} shortens its count before dropping the visibility button`, async ({
                 page,
             }) => {
@@ -660,8 +661,7 @@ for (const [device, viewport, mobile, dock] of [
                 // Labels that fit beside the visibility button keep their words; the
                 // rest show the number, titled in full, and keep the button.
                 const full = (await bar.locator('[role="status"]').textContent())!
-                const worded = dock === 260 ? ['tr'] : ['en', 'ko', 'tr']
-                if (worded.includes(locale)) {
+                if ((worded as readonly string[]).includes(locale)) {
                     await expect(count).toHaveText(full)
                     await expect(count).not.toHaveAttribute('title')
                 } else {

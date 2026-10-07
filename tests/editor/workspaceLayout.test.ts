@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
     carryAcrossShape,
     computeWorkspaceLayout,
+    defaultDockSize,
     distribute,
     railSize,
     reduceWorkspace,
@@ -247,6 +248,48 @@ test('hiding one side dock never resizes the other', () => {
     assert.equal(rightOnly.docks.right?.size, both.docks.right?.size)
 })
 
+test('side docks default to 24rem, at most a quarter of the width but never below 260', () => {
+    const side = (width: number, rem?: number) => defaultDockSize('left', width, 1000, rem)
+    assert.equal(side(1280), 320)
+    assert.equal(side(1600), 384)
+    assert.equal(side(1920), 384)
+    assert.equal(side(2560), 384)
+    // Larger text widens the default up to the quarter cap.
+    assert.equal(side(1920, 20), 480)
+    assert.equal(side(1600, 20), 400)
+    assert.equal(side(1600, 12), 288)
+    // Narrow windows and small text keep the floor.
+    assert.equal(side(900), 260)
+    assert.equal(side(390), 260)
+    assert.equal(side(1920, 8), 260)
+    // The top dock follows the height alone.
+    assert.equal(defaultDockSize('top', 1600, 1000, 20), defaultDockSize('top', 1600, 1000))
+})
+
+test('unsized side docks use the default, scaled by the root font size', () => {
+    const base = input({
+        positions: { preview: 'left', groups: 'left', stages: 'left', properties: 'right' },
+    })
+    const sizes = (layout: ReturnType<typeof computeWorkspaceLayout>) => [
+        layout.docks.left?.size,
+        layout.docks.right?.size,
+        layout.docks.right?.default,
+    ]
+    assert.deepEqual(sizes(computeWorkspaceLayout(base)), [384, 384, 384])
+    assert.deepEqual(
+        sizes(computeWorkspaceLayout({ ...base, width: 1280, height: 800 })),
+        [320, 320, 320],
+    )
+    assert.deepEqual(sizes(computeWorkspaceLayout({ ...base, rootFontSize: 18 })), [400, 400, 400])
+    // Stored sizes still win.
+    const stored = computeWorkspaceLayout({ ...base, sizes: { left: 300, right: 336, top: 0 } })
+    assert.deepEqual(sizes(stored), [300, 336, 384])
+    // A phone held sideways keeps the floor beside the editor.
+    const phone = computeWorkspaceLayout({ ...base, width: 844, height: 390 })
+    assert.equal(phone.docks.left?.overlay, false)
+    assert.equal(phone.docks.left?.size, phone.docks.right?.size)
+})
+
 test('collapsing the shown side does not reveal the other side in its place', () => {
     const base = input({
         width: 480,
@@ -304,8 +347,8 @@ test('a stacked Preview fits its image, plus the playback strip unless it overla
                 previewOverlay,
             }),
         ).docks.left?.tiles.find(({ id }) => id === 'preview')?.size
-    assert.ok(Math.abs((tile(false) ?? 0) - (336 / (4 / 3) + 52)) < 1e-6)
-    assert.ok(Math.abs((tile(true) ?? 0) - 336 / (4 / 3)) < 1e-6)
+    assert.ok(Math.abs((tile(false) ?? 0) - (384 / (4 / 3) + 52)) < 1e-6)
+    assert.ok(Math.abs((tile(true) ?? 0) - 384 / (4 / 3)) < 1e-6)
 })
 
 const visibleOf = (layout: ReturnType<typeof computeWorkspaceLayout>) =>

@@ -86,7 +86,9 @@ test('a stacked choice stays a select instead of switching back and forth', asyn
 })
 
 for (const locale of ['en', 'fr', 'tr', 'ja']) {
-    test(`${locale} values at the default dock stay beside their labels`, async ({ page }) => {
+    test(`${locale} values at a 336 dock, below the default, stay beside their labels`, async ({
+        page,
+    }) => {
         await open(page, locale, 336)
         expect(await stacked(page)).toEqual([])
     })

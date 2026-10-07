@@ -60,6 +60,8 @@ export type WorkspaceLayoutInput = {
     coarse?: boolean
     /** Whether the playback strip always shows over the image, needing no room. */
     previewOverlay?: boolean
+    /** Root font size in pixels, which scales the default side dock width. */
+    rootFontSize?: number
 }
 
 export type DockTile = {
@@ -134,12 +136,13 @@ const editorMinHeight = (height: number) =>
 
 /**
  * Default dock sizes. A side dock's default never depends on the other side,
- * so showing or hiding one dock does not resize its neighbor.
+ * so showing or hiding one dock does not resize its neighbor. Side docks aim for
+ * 24rem, at most a quarter of the width but never below 260.
  */
-export const defaultDockSize = (side: DockSide, width: number, height: number) =>
+export const defaultDockSize = (side: DockSide, width: number, height: number, rem = 16) =>
     side === 'top'
         ? Math.round(clamp(height * 0.38, 180, 420))
-        : Math.round(clamp(width * 0.21, 260, 340))
+        : Math.round(Math.max(260, Math.min(24 * rem, width * 0.25)))
 
 /**
  * Distributes `length` between tiles by weight while honoring each tile's
@@ -307,7 +310,8 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     if (overlay) {
         const max = Math.max(minSideBody, width - rails - 48)
         for (const side of inline) {
-            const preferred = input.sizes[side] || defaultDockSize(side, width, height)
+            const preferred =
+                input.sizes[side] || defaultDockSize(side, width, height, input.rootFontSize)
             sideSizes[side] = { value: clamp(preferred, minSideBody, max), min: minSideBody, max }
         }
     } else {
@@ -315,7 +319,10 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
         // and let each grow only into room the other is not using, so dragging
         // one side never squeezes the other.
         const preferred = inline.map((side) =>
-            Math.max(minSideBody, input.sizes[side] || defaultDockSize(side, width, height)),
+            Math.max(
+                minSideBody,
+                input.sizes[side] || defaultDockSize(side, width, height, input.rootFontSize),
+            ),
         )
         const total = preferred.reduce((sum, value) => sum + value, 0)
         const excess = total - inline.length * minSideBody
@@ -337,7 +344,7 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     const docks: Partial<Record<DockSide, DockLayout>> = {}
     for (const side of ['left', 'right'] as const) {
         if (!has(side)) continue
-        const fallback = defaultDockSize(side, width, height)
+        const fallback = defaultDockSize(side, width, height, input.rootFontSize)
         const size = sideSizes[side] ?? { value: 0, min: minSideBody, max: maxSideTotal }
         docks[side] = layoutDock(
             side,

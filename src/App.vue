@@ -7,6 +7,7 @@ import {
     drawerSide,
     isInWorkspaceDock,
     keepPanelsAcrossShape,
+    measureRootFontSize,
     setDockCollapsed,
     workspaceSize,
 } from './editor/workspace'
@@ -81,6 +82,7 @@ watch(root, (element, _, onCleanup) => {
     // window resize, before observers run, lets panels observe the new layout
     // in the same frame without ResizeObserver loop errors.
     const measure = () => {
+        measureRootFontSize()
         const { width, height } = element.getBoundingClientRect()
         if (width === workspaceSize.value.width && height === workspaceSize.value.height) return
         workspaceSize.value = { width, height }

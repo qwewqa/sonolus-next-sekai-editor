@@ -591,7 +591,7 @@ test('a kind heading never wraps its count onto a line alone', async ({ page }) 
 })
 
 test('a View value too long beside its label goes below it, as in Settings', async ({ page }) => {
-    await open(page, { locale: 'fr' })
+    await open(page, { locale: 'fr', rightDockWidth: 336 })
     await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.events, 3))
     const field = (label: string) =>
         panel(page)

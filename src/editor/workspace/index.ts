@@ -64,6 +64,17 @@ export const workspaceSize = shallowRef({
     height: document.documentElement.clientHeight,
 })
 
+const readRootFontSize = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+
+/** The root font size, which scales the default side dock width. */
+export const rootFontSize = shallowRef(readRootFontSize())
+
+/** Rereads the root font size, as the app shell does with the workspace size. */
+export const measureRootFontSize = () => {
+    const size = readRootFontSize()
+    if (size !== rootFontSize.value) rootFontSize.value = size
+}
+
 /**
  * The shape used to resolve Auto placement. The app shell holds it while a
  * text field inside a dock has focus, so an on-screen keyboard cannot move the
@@ -128,6 +139,7 @@ const layoutOf = (state: WorkspaceToggleState) =>
         railSize: isCoarsePointer.value ? coarseRailSize : railSize,
         coarse: isCoarsePointer.value,
         previewOverlay: settings.previewTransportPosition === 'overlay',
+        rootFontSize: rootFontSize.value,
     })
 
 export const workspaceLayout = computed(() => layoutOf(toggleState.value))

@@ -121,7 +121,7 @@ test.describe('roomy panel', () => {
 })
 
 test('a narrow dock uses a select and hands focus over when it widens', async ({ page }) => {
-    await open(page)
+    await open(page, { rightDockWidth: 336 })
     await expect(transition(page)).toHaveCount(0)
     const select = panel(page).getByRole('combobox', { name: 'Transition', exact: true })
     // While mixed, options in use carry their object counts.
