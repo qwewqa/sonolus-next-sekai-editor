@@ -1154,3 +1154,20 @@ test("a row's bulk menu closes on a press on the row and never toggles on reopen
     await expect(menu).toBeVisible()
     await expect(check).toHaveAttribute('aria-checked', 'true')
 })
+
+test('Shift+Home and Shift+Up onto the band range to the first row', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('Shift+Home')
+    expect(await checked(list)).toEqual(['Default', 'Other', 'Lead', 'Fill', 'Bass'])
+    await expect(nameButton(list, 'Default')).toBeFocused()
+    await page.keyboard.press('Escape')
+
+    await nameButton(list, 'Other').focus()
+    await page.keyboard.press('Shift+ArrowUp')
+    expect(await checked(list)).toEqual(['Default', 'Other'])
+    await page.keyboard.press('Shift+ArrowUp')
+    expect(await checked(list)).toEqual(['Default', 'Other'])
+    await expect(nameButton(list, 'Default')).toBeFocused()
+})

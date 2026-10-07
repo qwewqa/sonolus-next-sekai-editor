@@ -205,12 +205,14 @@ const onKeydown = (event: KeyboardEvent) => {
     event.preventDefault()
     const names = [...(root.value?.querySelectorAll<HTMLElement>('.manager-name') ?? [])]
     const index = names.indexOf(target)
-    const next =
+    let next =
         event.key === 'Home'
             ? names[0]
             : event.key === 'End'
               ? names.at(-1)
               : names[index + (event.key === 'ArrowUp' ? -1 : 1)]
+    // Ranges stop at the first row, short of the band.
+    if (event.shiftKey && next && !keyOfRow(next)) next = names.find((name) => keyOfRow(name))
     if (!next) return
     next.focus({ preventScroll: true })
     const row = next.closest<HTMLElement>('[data-row]')
