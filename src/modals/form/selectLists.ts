@@ -115,7 +115,7 @@ const onPointerDown = (event: PointerEvent) => {
         swallowPress(event)
 }
 
-/** Installs before the app, so these see each key and press first. */
+/** Installs before the app mounts, ahead of its components' listeners but not module-level ones. */
 export const installSelectLists = () => {
     addEventListener('keydown', onKeydown, true)
     addEventListener('keypress', hold, true)

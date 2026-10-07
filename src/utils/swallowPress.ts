@@ -20,6 +20,26 @@ const trail = 1000
 
 let release: (() => void) | undefined
 
+// The press after a swallowed one is a single click, though the system counts it as the second.
+const endSequence = () => {
+    const stop = (event: Event) => {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        disarm()
+    }
+    const onClick = (event: MouseEvent) => {
+        if (event.detail < 2) disarm()
+    }
+    const disarm = () => {
+        window.removeEventListener('dblclick', stop, true)
+        window.removeEventListener('click', onClick, true)
+        window.removeEventListener('pointerdown', disarm, true)
+    }
+    window.addEventListener('dblclick', stop, true)
+    window.addEventListener('click', onClick, true)
+    window.addEventListener('pointerdown', disarm, true)
+}
+
 /** Keeps the rest of a press from reaching anything, as one that only dismisses must. */
 export const swallowPress = (event: PointerEvent) => {
     event.preventDefault()
@@ -43,7 +63,9 @@ export const swallowPress = (event: PointerEvent) => {
     }
     // The next press is the user's own.
     const onPointerDown = (next: PointerEvent) => {
-        if (next !== event) end()
+        if (next === event) return
+        end()
+        endSequence()
     }
     const end = () => {
         clearTimeout(timer)

@@ -1310,3 +1310,24 @@ for (const { name, viewport, touch } of [
         })
     })
 }
+
+test('a double click whose first press only closed a menu counts as one click', async ({
+    page,
+}) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Outro']])
+    const name = folderRow(page, 'Verse').locator('.manager-name')
+    await expect(name).toHaveAttribute('aria-expanded', 'true')
+    await panel(page).locator('.manager-name', { hasText: 'Default' }).click({ button: 'right' })
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    const box = (await folderRow(page, 'Verse').locator('.manager-label').boundingBox())!
+    await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(menu).toHaveCount(0)
+    await expect(name).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel(page).locator('.manager-rename')).toHaveCount(0)
+    // A double click of its own still renames.
+    await page.mouse.move(0, 0)
+    await page.waitForTimeout(600)
+    await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(panel(page).locator('.manager-rename')).toBeFocused()
+})

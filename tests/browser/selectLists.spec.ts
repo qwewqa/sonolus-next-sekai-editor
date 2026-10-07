@@ -415,6 +415,22 @@ test('Home and End on the end value fire no change', async ({ page }) => {
     expect(await changes(page)).toBe(3)
 })
 
+test('a double click whose first press only closed a list never resets a dock', async ({
+    page,
+}) => {
+    await boot(page, { ...sidebar, rightDockWidth: 420 })
+    await selectNotes(page, [0])
+    const select = field(panel(page), 'Note Color')
+    await select.click()
+    expect(await isOpen(select)).toBe(true)
+    const handle = page.getByRole('separator', { name: 'Resize Right Panels' })
+    const box = (await handle.boundingBox())!
+    await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+    expect(await isOpen(select)).toBe(false)
+    await page.evaluate(() => window.editorTest.nextTick())
+    expect(await page.evaluate(() => window.editorTest.settings.rightDockWidth)).toBe(420)
+})
+
 test('a key click right after a press that closed a list still lands', async ({ page }) => {
     await boot(page, sidebar)
     await selectNotes(page, [0])
