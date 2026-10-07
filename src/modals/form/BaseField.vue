@@ -99,7 +99,7 @@ const fitLabel = () => {
     element.classList.remove('form-field-iconless', 'form-field-label-roomy')
     text.classList.remove('form-field-text-dense')
     fieldRoot.value?.classList.remove('form-field-value-stacked')
-    // Korean and Japanese wrap by word or phrase only where that doesn't clamp the label.
+    // Japanese wraps by phrase only where that doesn't clamp the label.
     if (clamped(text)) text.classList.add('form-field-text-dense')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
@@ -554,7 +554,8 @@ watchEffect(
     overflow-wrap: anywhere;
 }
 
-.form-field-text.form-field-text-dense {
+/* Korean keeps its word breaks; a word too long for its line still breaks. */
+.form-field-text.form-field-text-dense:not(:lang(ko)) {
     word-break: normal;
     line-break: auto;
 }

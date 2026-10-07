@@ -96,3 +96,17 @@ test('Preview Settings labels make room for a phrase rather than break inside it
             true,
         )
 })
+
+test('Korean labels too long for two lines by word still break between words', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await open(page, 'ko')
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    // Not "스테이지 마스크 이 / 벤트 표시 여부 전환".
+    await expect
+        .poll(() =>
+            lines(page, '스테이지 마스크 이벤트 표시 여부 전환', '.form-field-text', dialog),
+        )
+        .toEqual(['스테이지 마스크 이벤트', '표시 여부 전환'])
+})
