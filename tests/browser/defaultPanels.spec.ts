@@ -202,6 +202,17 @@ test('an overlaid playback strip keeps a short window as it was', async ({ page 
     expect(await stored(page)).toEqual({ showGroups: false, showStages: false })
 })
 
+test('moving a panel saves the panels the default showed', async ({ page }) => {
+    await boot(page, { width: 1280, height: 800 })
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    await tab(page, 'right', 'Properties').click({ button: 'right' })
+    await page.getByRole('menu').getByRole('menuitemradio', { name: 'Dock Left' }).click()
+    // Properties displaces only Stages; Groups stays as the default showed it.
+    await expect(tab(page, 'left', 'Properties')).toHaveAttribute('aria-selected', 'true')
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: false })
+    expect(await stored(page)).toMatchObject({ showGroups: true, showStages: false })
+})
+
 test('Reset Settings brings back the default', async ({ page }) => {
     await boot(
         page,
