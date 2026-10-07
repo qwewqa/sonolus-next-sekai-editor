@@ -151,35 +151,55 @@ watch([controls, controlsBody], ([element, body], _previous, onCleanup) => {
 // controls' room, and a label or value that still doesn't fit stacks. An on/off value
 // is measured at its longer state, so a click doesn't move the row.
 let fitFrame = 0
+// Labels are measured again only when the width or language changes, as that
+// forces layouts; values are measured on every update.
+let labelsFit = false
+const labelStacked = new WeakSet<HTMLElement>()
 const fitRows = () => {
     const body = controlsBody.value
     if (!body) return
     const { enabled, disabled } = i18n.value.modals.form.toggle
     const rows = [...body.querySelectorAll<HTMLElement>('.preview-setting')]
-    const labels = rows.map((row) => row.querySelector<HTMLElement>('.preview-setting-label'))
-    body.classList.remove('preview-controls-roomy')
-    for (const row of rows) row.classList.remove('preview-setting-stacked')
-    // One column for every row keeps the controls' edges aligned.
-    if (labels.some((label) => label && wordOverflows(label)))
-        body.classList.add('preview-controls-roomy')
-    rows.forEach((row, index) => {
-        const label = labels[index]
+    if (!labelsFit) {
+        labelsFit = true
+        const labels = rows.map((row) => row.querySelector<HTMLElement>('.preview-setting-label'))
+        body.classList.remove('preview-controls-roomy')
+        for (const row of rows) row.classList.remove('preview-setting-stacked')
+        // One column for every row keeps the controls' edges aligned.
+        if (labels.some((label) => label && wordOverflows(label)))
+            body.classList.add('preview-controls-roomy')
+        rows.forEach((row, index) => {
+            const label = labels[index]
+            if (label && wordOverflows(label)) labelStacked.add(row)
+            else labelStacked.delete(row)
+        })
+    }
+    for (const row of rows) {
+        if (labelStacked.has(row)) {
+            row.classList.add('preview-setting-stacked')
+            continue
+        }
+        row.classList.remove('preview-setting-stacked')
         const control = row.querySelector<HTMLElement>('.preview-toggle, select.preview-field')
         const others = control instanceof HTMLSelectElement ? [] : [enabled, disabled]
-        if ((label && wordOverflows(label)) || (control && valueOverflows(control, others)))
-            row.classList.add('preview-setting-stacked')
-    })
+        if (control && valueOverflows(control, others)) row.classList.add('preview-setting-stacked')
+    }
 }
 const refitRows = () => {
     cancelAnimationFrame(fitFrame)
     fitFrame = requestAnimationFrame(fitRows)
 }
+const refitLabels = () => {
+    labelsFit = false
+    refitRows()
+}
 watch(
     controlsBody,
     (body, _previous, onCleanup) => {
         if (!body) return
+        labelsFit = false
         fitRows()
-        observeWidth(body, refitRows)
+        observeWidth(body, refitLabels)
         onCleanup(() => {
             unobserveWidth(body)
             cancelAnimationFrame(fitFrame)
@@ -187,6 +207,7 @@ watch(
     },
     { flush: 'post' },
 )
+watch(() => i18n.value, refitLabels)
 onUpdated(refitRows)
 
 // Focus the new form once it is placed; before that it is not yet visible.
