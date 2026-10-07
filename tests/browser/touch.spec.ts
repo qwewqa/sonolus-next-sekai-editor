@@ -121,3 +121,23 @@ test('two fingers still pinch to zoom', async ({ page }) => {
     await touch('touchEnd', [])
     expect(await page.evaluate(() => window.editorTest.settings.pps)).toBeGreaterThan(before)
 })
+
+test('holding a finger still during a mouse drag opens no menu', async ({ page }) => {
+    await showNotes(page)
+    await page.keyboard.press('a')
+    const a = await point(page, -3, 2)
+    const aTo = await point(page, -1, 2.5)
+    const b = await point(page, 3, 2)
+    await page.mouse.move(a.x, a.y)
+    await page.mouse.down()
+    await page.mouse.move(aTo.x, aTo.y, { steps: 4 })
+    await touch('touchStart', [[b.x, b.y]])
+    await page.waitForTimeout(700)
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await touch('touchEnd', [])
+    await page.mouse.up()
+    expect(await notes(page)).toEqual([
+        { beat: 2.5, left: -2 },
+        { beat: 2, left: 2 },
+    ])
+})

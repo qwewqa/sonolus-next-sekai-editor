@@ -5,7 +5,7 @@ import { stopPlayer } from '../player'
 import { tool } from '../tools'
 import { updateViewPointer, view } from '../view'
 import { gesture } from './gestures/gesture'
-import { drag } from './gestures/recognizers/drag'
+import { drag, isDragging } from './gestures/recognizers/drag'
 import { pan } from './gestures/recognizers/pan'
 import { tap } from './gestures/recognizers/tap'
 import { threeTap } from './gestures/recognizers/threeTap'
@@ -41,7 +41,8 @@ const startLongPress = (id: number, x: number, y: number) => {
         x,
         y,
         timer: window.setTimeout(() => {
-            if (!longPress || touchGesture.pointerCount !== 1) return
+            // A mouse drag holds the tool.
+            if (!longPress || touchGesture.pointerCount !== 1 || isDragging.value) return
             const { x, y } = longPress
             longPress = undefined
             touchGesture.cancel()
