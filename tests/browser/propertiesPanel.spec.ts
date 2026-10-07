@@ -796,3 +796,67 @@ test.describe('phone sheet', () => {
         await brushKeepsToolSection(page, false)
     })
 })
+
+for (const width of [260, 336])
+    test(`stacked brush rows give their label the line at a ${width}px dock`, async ({ page }) => {
+        let stacked = 0
+        for (const locale of ['en', 'fr', 'ja', 'tr']) {
+            await page.goto('/')
+            await open(page, {
+                locale,
+                rightDockWidth: width,
+                propertiesCollapsed: ['selection'],
+                propertiesSection: 'tool',
+            })
+            await page.keyboard.press('b')
+            await page.evaluate(async () => {
+                const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+                const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+                brushProperties.value = Object.fromEntries(
+                    brushFields
+                        .filter((field) => typeof field.brush?.initial === 'boolean')
+                        .map((field) => [field.key, field.brush!.initial]),
+                )
+            })
+            await expect(panel(page).locator('.brush-row').first()).toBeVisible()
+            await page.waitForTimeout(100)
+            const rows = await panel(page)
+                .locator('.brush-row:has(> .form-field-value-stacked)')
+                .evaluateAll((rows) =>
+                    rows.map((row) => {
+                        const text = row.querySelector('.form-field-text')!
+                        const node = text.firstChild!
+                        const content = node.textContent ?? ''
+                        const range = document.createRange()
+                        // Each word on one line: none breaks mid-word.
+                        let start = 0
+                        const broken: string[] = []
+                        for (const word of content.split(' ')) {
+                            range.setStart(node, start)
+                            range.setEnd(node, start + word.length)
+                            if (range.getClientRects().length > 1) broken.push(word)
+                            start += word.length + 1
+                        }
+                        range.selectNodeContents(text)
+                        const remove = row.querySelector('.brush-remove')!.getBoundingClientRect()
+                        const box = row.getBoundingClientRect()
+                        return {
+                            label: content,
+                            broken,
+                            clear: range.getBoundingClientRect().right <= remove.left + 0.5,
+                            // Remove ends the line.
+                            atEnd: box.right - remove.right < remove.width,
+                        }
+                    }),
+                )
+            stacked += rows.length
+            for (const row of rows)
+                expect(row, locale).toEqual({
+                    label: row.label,
+                    broken: [],
+                    clear: true,
+                    atEnd: true,
+                })
+        }
+        expect(stacked).toBeGreaterThan(0)
+    })

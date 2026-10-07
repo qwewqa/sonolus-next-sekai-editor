@@ -299,15 +299,17 @@ const clear = () => {
     }
 }
 
-/* A value stacked below its label leaves remove on the label line, in its column. */
+/* A value stacked below its label leaves the label the line, with remove at its end. */
 @container (min-width: 13.5rem) {
     .brush-row:has(> .form-field-value-stacked) .brush-remove {
+        --label-w: 100cqw;
         inset-block: auto;
         top: calc(1rem - var(--remove-size) / 2);
         margin-block: 0;
     }
 
     .brush-row :deep(.form-field-value-stacked .form-field-label) {
+        --label-w: 100cqw;
         width: var(--label-w);
     }
 }
