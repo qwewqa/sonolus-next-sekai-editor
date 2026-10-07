@@ -1203,3 +1203,24 @@ test("the selection bar's menu buttons show when open, and Done is named by its 
     await done.click()
     await expect(bar).toHaveCount(0)
 })
+
+test('disabled manager buttons keep full strength in forced colors', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' })
+    await seedGroups(page, seed, ['Spare'])
+    const list = panel(page)
+    const opacity = (locator: Locator) =>
+        locator.evaluate((element) => getComputedStyle(element).opacity)
+    // System GrayText alone marks them; fading it too leaves it unreadable.
+    const eye = row(list, 'Spare').locator('.manager-eye')
+    await expect(eye).toBeDisabled()
+    expect(await opacity(eye)).toBe('1')
+    await row(list, 'Spare')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    const move = list.locator('.manager-bulk-move')
+    await expect(move).toBeDisabled()
+    expect(await opacity(move)).toBe('1')
+
+    await page.emulateMedia({ forcedColors: 'none' })
+    expect(await opacity(move)).toBe('0.4')
+})

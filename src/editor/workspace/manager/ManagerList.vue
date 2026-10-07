@@ -2076,7 +2076,7 @@ const folderEyeLabel = (item: FolderItem) =>
 }
 
 .manager-round {
-    @apply disabled:pointer-events-none disabled:opacity-40;
+    @apply disabled:pointer-events-none disabled:opacity-40 forced-colors:disabled:opacity-100;
 }
 
 .manager-new-folder-icon {

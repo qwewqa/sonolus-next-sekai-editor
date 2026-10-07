@@ -575,7 +575,7 @@ const onRenameBlur = (event: FocusEvent) => {
 }
 
 .manager-icon-button {
-    @apply flex size-9 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none disabled:opacity-40;
+    @apply flex size-9 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent disabled:pointer-events-none disabled:opacity-40 forced-colors:disabled:opacity-100;
 }
 
 /* A button whose menu is open holds its hover look. */
