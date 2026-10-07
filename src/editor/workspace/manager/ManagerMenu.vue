@@ -205,6 +205,8 @@ const typeAhead = createTypeAhead()
 const onKeydown = (event: KeyboardEvent) => {
     // Letters and digits move to the next item starting with what was typed.
     if (isTypeAheadKey(event)) {
+        // Also keeps Firefox's quick find closed.
+        event.preventDefault()
         const list = buttons()
         const labels = list.map(
             (button) =>

@@ -525,6 +525,14 @@ test.describe('brush', () => {
         // Typing adds nothing.
         await expect(tool(page).locator('[data-brush-key]')).toHaveCount(0)
         await expect(menu).toBeVisible()
+        // Nor does it start Firefox's quick find.
+        expect(
+            await page.evaluate(() =>
+                document.activeElement?.dispatchEvent(
+                    new KeyboardEvent('keydown', { key: 'g', bubbles: true, cancelable: true }),
+                ),
+            ),
+        ).toBe(false)
     })
 
     test('picks agreeing values from the selection and clears them', async ({ page }) => {
