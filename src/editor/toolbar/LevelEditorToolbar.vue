@@ -216,11 +216,21 @@ const place = () => {
     }
 }
 
+// A flyout opens with its checked value centred, without moving focus.
+const revealChecked = () => {
+    const row = flyout?.querySelector('[data-value-check]')?.closest('button')
+    if (!flyout || !row) return
+    const top = row.offsetTop - (flyout.clientHeight - row.offsetHeight) / 2
+    flyout.scrollTo({ top, behavior: 'instant' })
+}
+
 watch(activeIndex, async () => {
     placement.value = undefined
     if (activeIndex.value === -1) return
     await nextTick()
     place()
+    await nextTick()
+    revealChecked()
 })
 watch([room, short], place)
 

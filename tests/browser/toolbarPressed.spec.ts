@@ -873,3 +873,35 @@ test('round toolbar faces take input over their whole square', async ({ page }) 
     await corner('Brush')
     await expect(face('Brush')).toHaveAttribute('aria-expanded', 'true')
 })
+
+test.describe('on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+    test('a value flyout opens with its checked row in view', async ({ page }) => {
+        // The preview, as by default, leaves the flyout too little room for every row.
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.locale = 'fr'
+            settings.showPreview = true
+        })
+        // Lane Division, at 1/1, its last row.
+        await shown(page).nth(14).tap()
+        const flyout = toolbar(page).locator(':scope > div > div > div').first()
+        const checked = flyout.locator('button:has([data-value-check])')
+        await expect(checked).toHaveCount(1)
+        await expect(checked).toHaveAttribute('aria-pressed', 'true')
+        const inView = () =>
+            checked.evaluate((row) => {
+                const view = row.parentElement!.getBoundingClientRect()
+                const { top, bottom } = row.getBoundingClientRect()
+                return (
+                    row.parentElement!.scrollHeight > row.parentElement!.clientHeight &&
+                    top >= view.top &&
+                    bottom <= view.bottom
+                )
+            })
+        await expect.poll(inView).toBe(true)
+        // Focus stays where it was.
+        expect(await checked.evaluate((row) => row.contains(document.activeElement))).toBe(false)
+    })
+})
