@@ -478,6 +478,114 @@ test('a stage duplicates with its events and notes, which keep their groups', as
     expect(after.groups).toEqual(before.groups)
 })
 
+for (const [key, owner] of [
+    ['groups', 'Other'],
+    ['stages', 'Side stage'],
+] as const) {
+    test(`a ${key.slice(0, -1)} owning part of a slide duplicates its ticks where they are drawn`, async ({
+        page,
+    }) => {
+        await seed(page)
+        // An Out Quad slide whose head and ticks Other and the side stage own, but not its tail.
+        const drawn = await page.evaluate(async () => {
+            const { history, appImport } = window.editorTest
+            const { createTransaction } = await appImport<
+                typeof import('../../src/state/transaction')
+            >('/src/state/transaction.ts')
+            const { addNote } = await appImport<
+                typeof import('../../src/state/mutations/slides/note')
+            >('/src/state/mutations/slides/note.ts')
+            const { createSlideId } = await appImport<
+                typeof import('../../src/state/entities/slides')
+            >('/src/state/entities/slides/index.ts')
+            const { getMaterializedNotePositions } = await appImport<
+                typeof import('../../src/state/operations/notePositions')
+            >('/src/state/operations/notePositions.ts')
+            const { addToGroups } =
+                await appImport<typeof import('../../src/chart/groups')>('/src/chart/groups.ts')
+            const { addToStages } =
+                await appImport<typeof import('../../src/chart/stages')>('/src/chart/stages.ts')
+            const source = history.state.value
+            // The seed's ids were not minted; move both counters past them.
+            const last = Math.max(...source.groups.keys(), ...source.stages.keys())
+            while (addToGroups(new Map())[0] < last);
+            while (addToStages(new Map())[0] < last);
+            const base = [...source.store.slides.note.values()][0]![0]!
+            const transaction = createTransaction(source)
+            const slideId = createSlideId()
+            for (const [beat, left, owner, isAttached] of [
+                [40, -4, 2, false],
+                [41, 0, 2, true],
+                [42, 0, 2, true],
+                [44, 4, 1, false],
+            ] as const)
+                addNote(transaction, slideId, {
+                    ...base,
+                    beat,
+                    left,
+                    size: 2,
+                    groupId: owner as never,
+                    stageId: owner as never,
+                    isAttached,
+                    isConnectorSeparator: false,
+                    connectorEase: 'outQuad',
+                })
+            const state = transaction.commit([])
+            history.replaceState(state)
+            const notes = state.store.slides.note.get(slideId)!
+            const positions = getMaterializedNotePositions(state, notes)
+            return notes.slice(0, 3).map((note) => ({
+                beat: note.beat,
+                left: positions.get(note)?.left ?? note.left,
+                size: positions.get(note)?.size ?? note.size,
+                isAttached: false,
+            }))
+        })
+        const notesOf = (name: string) =>
+            page.evaluate(
+                ({ key, name }) => {
+                    const state = window.editorTest.history.state.value
+                    const id = [...state[key]].find(([, entry]) => entry.name === name)?.[0]
+                    return [...state.store.slides.note.values()]
+                        .flat()
+                        .filter(
+                            (note) =>
+                                note.beat >= 40 &&
+                                note[key === 'groups' ? 'groupId' : 'stageId'] === id,
+                        )
+                        .sort((a, b) => a.beat - b.beat)
+                        .map(({ beat, left, size, isAttached }) => ({
+                            beat,
+                            left,
+                            size,
+                            isAttached,
+                        }))
+                },
+                { key, name },
+            )
+
+        const source = await notesOf(owner)
+        const list = panel(page, key)
+        await (
+            await openMenu(list, owner)
+        )
+            .getByRole('menuitem', { name: 'Duplicate', exact: true })
+            .click()
+        await page.keyboard.press('Escape')
+        const copied = await notesOf(`${owner} (2)`)
+        expect(copied.map((note) => note.beat)).toEqual(drawn.map((note) => note.beat))
+        for (const [i, note] of drawn.entries()) {
+            expect(copied[i]!.left).toBeCloseTo(note.left, 6)
+            expect(copied[i]!.size).toBeCloseTo(note.size, 6)
+        }
+        expect(copied.map((note) => note.isAttached)).toEqual([false, false, false])
+
+        await undo(page)
+        expect(await tree(page, key)).not.toContain(`${owner} (2)`)
+        expect(await notesOf(owner)).toEqual(source)
+    })
+}
+
 test('without dynamic stages there is no stage to duplicate', async ({ page }) => {
     await seed(page)
     await page.evaluate(() => {
