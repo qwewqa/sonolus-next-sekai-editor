@@ -177,6 +177,43 @@ test('Properties and Settings fields keep their edge, as Preview Settings fields
     await expectEdges(page.getByRole('dialog').locator(pills))
 })
 
+test('on/off switches keep their track and knob, whose place shows the state', async ({ page }) => {
+    const buttonText = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'ButtonText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    const toggle = (label: string) =>
+        panel(page)
+            .locator('.form-field')
+            .filter({
+                has: page.locator('.form-field-text', { hasText: new RegExp(`^${label}$`) }),
+            })
+            .locator('.form-field-toggle-icon > span')
+    const switches = await Promise.all(
+        ['Critical', 'Fake'].map((label) =>
+            toggle(label).evaluate((track) => {
+                const knob = track.firstElementChild as HTMLElement
+                const { outlineStyle, outlineWidth, outlineColor } = getComputedStyle(track)
+                return {
+                    track: { style: outlineStyle, width: outlineWidth, color: outlineColor },
+                    knob: getComputedStyle(knob).backgroundColor,
+                    left: knob.offsetLeft,
+                }
+            }),
+        ),
+    )
+    for (const { track, knob } of switches) {
+        expect(track).toEqual({ style: 'solid', width: '1px', color: buttonText })
+        expect(knob).toBe(buttonText)
+    }
+    // Critical is mixed, its knob centered; Fake is off.
+    expect(switches[0]!.left).toBeGreaterThan(switches[1]!.left)
+})
+
 test('toolbar tools keep their edge, and the tool in use is selected', async ({ page }) => {
     const text = await systemColor(page, 'CanvasText')
     const selected = await systemColor(page, 'Highlight')
