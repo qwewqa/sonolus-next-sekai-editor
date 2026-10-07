@@ -14,7 +14,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
-import { useStackLongValues, valueOverflows } from './fieldLayout'
+import { useStackLongValues, useStackLongWords, valueOverflows, wordOverflows } from './fieldLayout'
 import { observeWidth, unobserveWidth } from './widthObserver'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
 
@@ -89,6 +89,7 @@ const slots = useSlots()
 const labelRow = useTemplateRef<HTMLElement>('labelRow')
 const fieldRoot = useTemplateRef<HTMLElement>('fieldRoot')
 const stackLongValues = useStackLongValues()
+const stackLongWords = useStackLongWords()
 let frame = 0
 
 const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
@@ -111,7 +112,11 @@ const fitLabel = () => {
     // An on/off value is measured at its longer state, so a click doesn't move the row.
     const { enabled, disabled } = i18n.value.modals.form.toggle
     const others = control instanceof HTMLInputElement ? [enabled, disabled] : []
-    if (stackLongValues && control && valueOverflows(control, others))
+    // Japanese may break between characters, so only its values stack.
+    if (
+        (stackLongValues && control && valueOverflows(control, others)) ||
+        (stackLongWords && !text.matches(':lang(ja)') && wordOverflows(text))
+    )
         fieldRoot.value?.classList.add('form-field-value-stacked')
     // A label still clamped shows in full on hover.
     if (clamped(text)) text.title = props.label

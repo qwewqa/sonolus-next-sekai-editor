@@ -6,6 +6,11 @@ export const stackLongValuesKey: InjectionKey<boolean> = Symbol('stackLongValues
 
 export const useStackLongValues = () => inject(stackLongValuesKey, false)
 
+/** Fields whose label would break inside a word take the row below it. */
+export const stackLongWordsKey: InjectionKey<boolean> = Symbol('stackLongWords')
+
+export const useStackLongWords = () => inject(stackLongWordsKey, false)
+
 let context: CanvasRenderingContext2D | null | undefined
 
 /**
@@ -36,11 +41,12 @@ export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
 
 /** Whether a label's longest word or phrase is wider than its box, so would break inside. */
 export const wordOverflows = (label: HTMLElement) => {
-    const { width, overflowWrap } = label.style
-    const room = label.clientWidth
-    // At min-content width, a label is as wide as its longest unbreakable part.
-    Object.assign(label.style, { width: 'min-content', overflowWrap: 'normal' })
+    const { width, overflowWrap, flexShrink } = label.style
+    const room = label.getBoundingClientRect().width
+    // At min-content width, unshrunk, a label is as wide as its longest unbreakable part.
+    Object.assign(label.style, { width: 'min-content', overflowWrap: 'normal', flexShrink: '0' })
     const longest = label.getBoundingClientRect().width
-    Object.assign(label.style, { width, overflowWrap })
-    return longest > room + 0.5
+    Object.assign(label.style, { width, overflowWrap, flexShrink })
+    // A word even a fraction wider than the box breaks.
+    return longest > room + 0.01
 }

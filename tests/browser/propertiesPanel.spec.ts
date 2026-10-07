@@ -918,6 +918,59 @@ for (const width of [260, 336])
         expect(stacked).toBeGreaterThan(0)
     })
 
+test('brush labels too narrow for a word take the line above their value', async ({ page }) => {
+    for (const locale of ['en', 'fr', 'ko', 'tr']) {
+        await page.goto('/')
+        await open(page, {
+            locale,
+            rightDockWidth: 260,
+            propertiesCollapsed: ['selection'],
+            propertiesSection: 'tool',
+        })
+        await page.evaluate(async () => {
+            const { show, fixtures } = window.editorTest
+            show(fixtures.connectors, 3)
+            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+            const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+            brushProperties.value = Object.fromEntries(
+                brushFields.flatMap((field) =>
+                    field.brush ? [[field.key, field.brush.initial]] : [],
+                ),
+            )
+        })
+        await page.keyboard.press('b')
+        await expect(panel(page).locator('.brush-row').first()).toBeVisible()
+        await page.waitForTimeout(100)
+        const fields = await panel(page)
+            .locator('.brush-row .form-field')
+            .evaluateAll((fields) =>
+                fields.map((field) => {
+                    const text = field.querySelector('.form-field-text')!
+                    const node = text.firstChild!
+                    const content = node.textContent ?? ''
+                    const range = document.createRange()
+                    const broken: string[] = []
+                    // Words, also split before "(" and after "/", as in "건너뛰기(비트)".
+                    for (const { 0: word, index } of content.matchAll(/\(?[^\s(/]+\/?/g)) {
+                        range.setStart(node, index)
+                        range.setEnd(node, index + word.length)
+                        if (range.getClientRects().length > 1) broken.push(word)
+                    }
+                    return {
+                        label: content,
+                        broken,
+                        stacked: field.classList.contains('form-field-value-stacked'),
+                    }
+                }),
+            )
+        expect(fields.length, locale).toBeGreaterThan(30)
+        for (const { label, broken } of fields)
+            expect({ label, broken }, locale).toEqual({ label, broken: [] })
+        // Labels that fit keep their value beside them.
+        expect(fields.filter((field) => !field.stacked).length, locale).toBeGreaterThan(20)
+    }
+})
+
 for (const width of [260, 336, 480])
     test(`only the brush field that owns remove keeps clear of it at a ${width}px dock`, async ({
         page,
