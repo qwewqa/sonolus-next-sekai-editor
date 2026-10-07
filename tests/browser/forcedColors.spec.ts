@@ -112,3 +112,26 @@ test('status bar chips show keyboard focus', async ({ page }) => {
         color: await highlight(page),
     })
 })
+
+test('rail and Properties tabs mark the selected tab', async ({ page }) => {
+    const background = (locator: Locator, pseudo?: string) =>
+        locator.evaluate(
+            (element, pseudo) => getComputedStyle(element, pseudo).backgroundColor,
+            pseudo,
+        )
+    const text = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'CanvasText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    const marker = page.locator('[data-panel-tab="properties"] .panel-tab-marker')
+    expect(await background(marker)).toBe(text)
+    // Short panels show one section at a time behind tabs.
+    await page.setViewportSize({ width: 1600, height: 480 })
+    const active = panel(page).locator('.properties-tab-active .properties-tab-label')
+    await expect(active).toBeVisible()
+    expect(await background(active, '::after')).toBe(text)
+})

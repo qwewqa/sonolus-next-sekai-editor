@@ -368,7 +368,7 @@ const chevronDirection = computed(() => {
                 }}</span>
                 <span
                     v-if="state(id) === 'visible'"
-                    class="panel-tab-marker pointer-events-none absolute bg-accent"
+                    class="panel-tab-marker pointer-events-none absolute bg-accent forced-colors:bg-[CanvasText]"
                     :class="{
                         'inset-y-1 right-0 w-[3px] rounded-l-full': side === 'left',
                         'inset-y-1 left-0 w-[3px] rounded-r-full': side === 'right',

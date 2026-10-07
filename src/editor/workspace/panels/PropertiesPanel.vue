@@ -306,6 +306,13 @@ const onTabKeydown = (event: KeyboardEvent) => {
     @apply pointer-events-none absolute -bottom-3 -left-2 -right-2 h-1 rounded-t-full bg-fg;
 }
 
+/* High contrast keeps system colours, so the bar still shows. */
+@media (forced-colors: active) {
+    .properties-tab-active .properties-tab-label::after {
+        background-color: CanvasText;
+    }
+}
+
 @media (hover: hover) {
     /* Not while pressed, so the press fill shows as on every other control. */
     .properties-tab:not(.properties-tab-active):not(:active):hover .properties-tab-pill {
