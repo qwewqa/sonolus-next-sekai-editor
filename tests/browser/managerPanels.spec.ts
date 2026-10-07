@@ -1381,3 +1381,41 @@ test.describe('menus on a phone', () => {
         await expect(panel.locator('.manager-rename')).toBeVisible()
     })
 })
+
+test.describe('menus on a touch tablet', () => {
+    test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true })
+
+    test('a tap outside an action menu only closes it', async ({ page }) => {
+        await seedGroups(page, ['Default', 'Other group'])
+        const panel = await openGroups(page)
+        const menu = page.getByRole('menu')
+        await page.evaluate(async () => {
+            const { history, store } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'note',
+                ),
+            })
+            await window.editorTest.nextTick()
+        })
+        const selected = () =>
+            page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length)
+        const count = await selected()
+        expect(count).toBeGreaterThan(0)
+        await panel.getByRole('button', { name: 'More Actions for Default' }).tap()
+        await expect(menu).toBeVisible()
+        // Wide enough for a menu by its button rather than a sheet.
+        await expect(page.locator('.manager-menu-backdrop')).toBeHidden()
+        // The chart takes touches as its own; none of this one reaches it.
+        const chart = (await page.locator('canvas.editor-chart').boundingBox())!
+        const point = { x: chart.x + chart.width / 2, y: chart.y + 40 }
+        await page.touchscreen.tap(point.x, point.y)
+        await expect(menu).toHaveCount(0)
+        await page.waitForTimeout(300)
+        expect(await selected()).toBe(count)
+        // The next tap is the user's own.
+        await page.touchscreen.tap(point.x, point.y)
+        await expect.poll(selected).toBe(0)
+    })
+})
