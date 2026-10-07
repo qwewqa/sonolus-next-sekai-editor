@@ -33,7 +33,8 @@ import { view } from './view'
  *   state: never saved, never in history, and never read by the preview,
  *   serialization, or the clipboard. Authoring never reads them either, so
  *   hiding an entry never reassigns newly created objects. The All commands
- *   clear them, and changing a show-other setting drops those contradicting it.
+ *   clear them (deleted entries keep theirs for undo), and changing a
+ *   show-other setting drops those contradicting it.
  *
  * The pure rules, including how each entity type maps onto groups and stages,
  * live in `scopeRules.ts`.
@@ -133,9 +134,14 @@ const createScope = <T>(options: {
             options.setFocus(id)
         },
 
-        /** The All command: clears the focus and every override, showing everything. */
+        /**
+         * The All command: clears the focus and every current entry's override,
+         * showing everything; deleted ones keep theirs.
+         */
         focusAll() {
-            if (options.getOverrides().size) options.setOverrides(new Map())
+            const overrides = new Map(options.getOverrides())
+            for (const id of options.ids()) overrides.delete(id)
+            if (overrides.size < options.getOverrides().size) options.setOverrides(overrides)
             options.setFocus(undefined)
         },
 

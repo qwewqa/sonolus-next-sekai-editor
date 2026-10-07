@@ -1557,3 +1557,23 @@ test('Ctrl+A anywhere in the list selects every row, never switching tools', asy
     await expect(bar).toHaveCount(0)
     expect(await tool()).toBe(before)
 })
+
+test('All Groups keeps the hidden state of deleted rows for undo', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await row(list, 'Bass').locator('.manager-eye').click()
+    await row(list, 'Drums').locator('.manager-eye').click()
+    await row(list, 'Bass').getByRole('button', { name: 'More Actions for Bass' }).click()
+    await page.getByRole('menuitem', { name: 'Delete Group' }).click()
+    await expect(nameButton(list, 'Bass')).toHaveCount(0)
+
+    await page.evaluate(async () => {
+        const { groupAll } = await window.editorTest.appImport<
+            typeof import('../../src/editor/commands/groups/groupAll')
+        >('/src/editor/commands/groups/groupAll.ts')
+        groupAll.execute()
+    })
+    await expect(list.locator('.manager-all .manager-meta')).toHaveCount(0)
+    await undo(page)
+    expect((await state(page)).hidden).toEqual(['Bass'])
+})
