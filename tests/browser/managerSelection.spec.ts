@@ -1375,3 +1375,54 @@ for (const host of ['panel', 'dialog'] as const) {
         expect((await state(page)).hidden).toEqual(['Bass', 'Drums'])
     })
 }
+
+for (const host of ['panel', 'dialog'] as const) {
+    test(`a keyboard Move to Folder keeps focus on the moved row in the ${host}`, async ({
+        page,
+    }) => {
+        await seedGroups(page, seed)
+        let list = panel(page)
+        if (host === 'dialog') {
+            await page.evaluate(() => {
+                window.editorTest.settings.groupsPosition = 'disabled'
+            })
+            await page.keyboard.press('e')
+            list = page.locator('dialog')
+        }
+        const menu = page.getByRole('menu')
+        const more = row(list, 'Bass').locator('.manager-more')
+        const moveTo = async (folder: string) => {
+            await page.keyboard.press('Shift+F10')
+            await menu.getByRole('menuitem', { name: 'Move to Folder…' }).focus()
+            await page.keyboard.press('Enter')
+            await menu.getByRole('menuitemradio', { name: folder }).focus()
+            await page.keyboard.press('Enter')
+            await expect(menu).toHaveCount(0)
+        }
+
+        await nameButton(list, 'Bass').focus()
+        await moveTo('Verse')
+        expect(await tree(page)).toBe('Default Other [Verse: Lead Fill Bass] Drums [Outro: Pad]')
+        await expect(more).toBeFocused()
+        await moveTo('No Folder')
+        expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+        await expect(more).toBeFocused()
+
+        // Into a collapsed folder, the folder's ••• takes focus.
+        await nameButton(list, 'Outro').click()
+        await nameButton(list, 'Bass').focus()
+        await moveTo('Outro')
+        expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Drums [Outro: Pad Bass]')
+        await expect(row(list, 'Outro').locator('.manager-more')).toBeFocused()
+        await undo(page)
+
+        // While selecting, the row's name keeps focus.
+        await nameButton(list, 'Bass').focus()
+        await page.keyboard.press('Shift+ArrowDown')
+        await expect(list.locator('.manager-selection-bar')).toBeVisible()
+        await nameButton(list, 'Bass').focus()
+        await moveTo('Verse')
+        expect(await tree(page)).toBe('Default Other [Verse: Lead Fill Bass Drums] [Outro: Pad]')
+        await expect(nameButton(list, 'Bass')).toBeFocused()
+    })
+}

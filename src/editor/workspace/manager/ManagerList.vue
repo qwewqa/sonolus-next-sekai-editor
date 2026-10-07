@@ -117,6 +117,12 @@ const focusIn = (key: RowKey, selector: string) => {
     rowOf(key)?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true })
 }
 
+/** Focuses a row's control, or its collapsed folder's. */
+const focusShown = (key: RowKey, selector: string) => {
+    const folder = key.type === 'entry' && !rowOf(key) ? folderOfEntry.value.get(key.id) : undefined
+    focusIn(folder === undefined ? key : { type: 'folder', id: folder }, selector)
+}
+
 /**
  * Scrolls only the list, never the page or the panel around it, so the row
  * clears the list padding and the sticky Add item.
@@ -684,9 +690,10 @@ const onBulkDelete = async (keyboard = false) => {
 
 /**
  * Moves every selected entry, selected folders' members too, since folders don't
- * nest; the folders stay put, and stay selected, emptied.
+ * nest; the folders stay put, and stay selected, emptied. By keyboard from a
+ * row's menu, focus returns to that row's name.
  */
-const onBulkFolder = async (choice: string) => {
+const onBulkFolder = async (choice: string, from?: RowKey) => {
     const ids = new Set(selectedIds.value)
     if (!ids.size) return
     if (choice === 'new') {
@@ -698,6 +705,7 @@ const onBulkFolder = async (choice: string) => {
     await nextTick()
     const first = selectedIds.value[0]
     if (first !== undefined) reveal({ type: 'entry', id: first })
+    if (from) focusShown(from, '.manager-name')
 }
 
 const onExpand = async (id: FolderId, expanded: boolean, keyboard = false) => {
@@ -1467,7 +1475,8 @@ const onMenuSelect = (key: string, keyboard: boolean) => {
         return
     }
     closeMenu(keyboard)
-    if (current.key.type === 'selection') void runBulk(key, keyboard)
+    if (current.key.type === 'selection')
+        void runBulk(key, keyboard, keyboard ? keyOfRow(current.anchor) : undefined)
     else void run(current.key, key, keyboard, current.anchor)
 }
 
@@ -1476,9 +1485,9 @@ const onInlineAction = (id: T, key: string, button: HTMLElement, keyboard: boole
     void run({ type: 'entry', id }, key, keyboard, button)
 }
 
-const runBulk = async (action: string, keyboard: boolean) => {
+const runBulk = async (action: string, keyboard: boolean, from?: RowKey) => {
     if (action.startsWith('folder:')) {
-        await onBulkFolder(action.slice('folder:'.length))
+        await onBulkFolder(action.slice('folder:'.length), from)
         return
     }
     switch (action) {
@@ -1523,7 +1532,7 @@ const runBulk = async (action: string, keyboard: boolean) => {
 const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLElement) => {
     const index = rowIndex(key)
     if (action.startsWith('folder:') && key.type === 'entry') {
-        await chooseFolder(key.id, action.slice('folder:'.length))
+        await chooseFolder(key.id, action.slice('folder:'.length), keyboard)
         return
     }
     switch (action) {
@@ -1615,7 +1624,8 @@ const duplicateRow = async (key: RowKey) => {
     startRename(copy)
 }
 
-const chooseFolder = async (id: T, choice: string) => {
+/** Moves an entry; by keyboard, focus stays on its •••, as for Move Up and Down. */
+const chooseFolder = async (id: T, choice: string, keyboard: boolean) => {
     if (choice === 'new') {
         await onNewFolder(new Set([id]))
         return
@@ -1637,6 +1647,7 @@ const chooseFolder = async (id: T, choice: string) => {
     }
     await nextTick()
     reveal({ type: 'entry', id })
+    if (keyboard) focusShown({ type: 'entry', id }, '.manager-more')
 }
 
 // Row bindings shared by loose entries and folder members.
