@@ -296,6 +296,39 @@ test('monochrome tool icons take the button text color', async ({ page }) => {
     await expect.poll(() => fills(add, 'path')).toEqual([text])
 })
 
+for (const colorScheme of ['light', 'dark'] as const)
+    test(`the generic Event icon is a ring in the button text colour (${colorScheme})`, async ({
+        page,
+    }) => {
+        await page.emulateMedia({ forcedColors: 'active', colorScheme })
+        const toolbar = page.locator('[data-editor-toolbar]')
+        const event = toolbar.getByTitle('Event', { exact: true })
+        const ring = () =>
+            event.locator('circle').evaluate((circle) => {
+                const { fill, stroke } = getComputedStyle(circle)
+                return { fill, stroke }
+            })
+        const clear = 'rgba(0, 0, 0, 0)'
+        await expect
+            .poll(ring)
+            .toEqual({ fill: clear, stroke: await systemColor(page, 'ButtonText') })
+
+        // In use, it takes the selected text colour.
+        await page.evaluate(async () => {
+            const { switchToolTo } = await import('/src/editor/tools/index.ts')
+            switchToolTo('cameraEvent')
+            await window.editorTest.nextTick()
+        })
+        await expect(event).toHaveAttribute('aria-pressed', 'true')
+        await expect
+            .poll(ring)
+            .toEqual({ fill: clear, stroke: await systemColor(page, 'HighlightText') })
+
+        // Outside high contrast it stays a white disc.
+        await page.emulateMedia({ forcedColors: 'none' })
+        await expect.poll(async () => (await ring()).fill).toBe('rgb(255, 255, 255)')
+    })
+
 test('the BPM and Time Scale tools keep their chip colours', async ({ page }) => {
     // The colour names the tool, as on the chart.
     await page.emulateMedia({ forcedColors: 'active', colorScheme: 'dark' })
