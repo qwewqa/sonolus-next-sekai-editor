@@ -113,12 +113,12 @@ html[data-app-inactive] *::after {
 }
 
 /* The manager's raised pills, as other buttons: high contrast paints the transparent
-   outline as their edge, and Highlight on focus. */
+   outline as their edge, and Highlight on focus; inset, as they sit close together. */
 .manager-selection-done,
 .manager-new-folder,
 .manager-round {
     outline: 2px solid transparent;
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 
 /* Menus' shared surface; edges and focus are outlines, which high contrast keeps. */

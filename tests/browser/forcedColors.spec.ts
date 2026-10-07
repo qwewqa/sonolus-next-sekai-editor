@@ -275,6 +275,13 @@ test('raised buttons and segment tracks keep their edge, as fields do', async ({
 
     await page.locator('.panel-tab', { hasText: 'Groups' }).click()
     await expectEdges(page.locator('.manager-add, .manager-new-folder'))
+    // The selection bar's pill and round buttons.
+    const groups = page.locator('#workspace-panel-groups')
+    await groups.getByRole('button', { name: 'Select Multiple' }).click()
+    await groups.locator('.manager-check').first().click()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await expectEdges(groups.locator('.manager-selection-done, .manager-round'))
+    await page.keyboard.press('Escape')
 
     await page.keyboard.press(',')
     const dialog = page.getByRole('dialog')

@@ -9,7 +9,7 @@ defineProps<{ label: string }>()
     the label on the names. -->
     <button
         type="button"
-        class="manager-add pointer-events-auto flex items-center rounded-full bg-button p-0.5 pr-4 shadow-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+        class="manager-add pointer-events-auto flex items-center rounded-full bg-button p-0.5 pr-4 shadow-md outline-none -outline-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
     >
         <span
             class="flex size-9 shrink-0 items-center justify-center [@media(pointer:coarse)]:size-11"
