@@ -469,6 +469,20 @@ test('a checked folder duplicates whole beside other entries, in one step', asyn
     expect(await tree(page)).toBe(
         'Default Other [Verse: Lead Lead (2) Fill] Bass Drums [Outro: Pad]',
     )
+    await undo(page)
+
+    // One folder alone is named, as from its own menu.
+    await bar.locator('.manager-selection-done').click()
+    await row(list, 'Verse')
+        .locator('.manager-name')
+        .click({ modifiers: ['ControlOrMeta'] })
+    await expect(bar).toContainText('3 Selected')
+    await bar.locator('.manager-bulk-more').click()
+    await page.getByRole('menuitem', { name: 'Duplicate Selected' }).click()
+    expect(await tree(page)).toBe(
+        'Default Other [Verse: Lead Fill] [Verse (2): Lead Fill] Bass Drums [Outro: Pad]',
+    )
+    await expect(page.getByText('Duplicated Verse folder')).toBeVisible()
 })
 
 test('a stage duplicates with its events and notes, which keep their groups', async ({ page }) => {

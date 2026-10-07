@@ -335,8 +335,17 @@ test('checked folders delete with their members, empty ones too, and undo restor
     await bar.getByRole('button', { name: 'Delete Selected…' }).click()
     await expect(dialog).toHaveCount(0)
     expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] Bass Drums [Outro: Pad]')
+    // One folder alone is named, as from its own menu.
+    await expect(page.getByText('Deleted Spare folder')).toBeVisible()
     await undo(page)
     expect(await tree(page)).toBe(before)
+
+    await list.getByRole('button', { name: 'Select Multiple' }).click()
+    await row(list, 'Verse').locator('.manager-check').click()
+    await bar.getByRole('button', { name: 'Delete Selected…' }).click()
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click()
+    expect(await tree(page)).toBe('Default Other Bass Drums [Outro: Pad] [Spare:]')
+    await expect(page.getByText('Deleted Verse folder')).toBeVisible()
 })
 
 test('Move to Folder moves every selected entry, emptying checked folders, in one step', async ({
