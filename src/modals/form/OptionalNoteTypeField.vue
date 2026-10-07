@@ -7,7 +7,7 @@ import { noteTypeGlyph } from './noteGlyphs'
 
 const modelValue = defineModel<NoteType | undefined>({ required: true })
 
-// Default, unset, mixed and unknown values have no picture.
+// Unset and mixed values have no picture.
 const glyph = computed(() =>
     modelValue.value === undefined ? null : noteTypeGlyph(modelValue.value),
 )

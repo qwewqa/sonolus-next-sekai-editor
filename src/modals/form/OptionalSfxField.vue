@@ -7,7 +7,7 @@ import { sfxGlyph } from './noteGlyphs'
 
 const modelValue = defineModel<NoteSfx | undefined>({ required: true })
 
-// Default, None, unset, mixed and unknown values have no picture.
+// Default, unset, mixed and unknown values have no picture.
 const glyph = computed(() => (modelValue.value === undefined ? null : sfxGlyph(modelValue.value)))
 </script>
 
