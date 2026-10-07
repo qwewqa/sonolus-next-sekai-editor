@@ -123,6 +123,10 @@ export const view = shallowReactive({
     >(),
 })
 
+// Under reduced motion, eased scrolls jump to their end unless smooth scrolling is chosen.
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
+const isInstant = () => reducedMotion.matches && !settings.mouseSmoothScrolling
+
 watch(time, ({ now, delta }) => {
     if (view.scrollingX) {
         switch (view.scrollingX.type) {
@@ -138,7 +142,7 @@ watch(time, ({ now, delta }) => {
                 break
             }
             case 'ease': {
-                if (now >= view.scrollingX.to.time) {
+                if (now >= view.scrollingX.to.time || isInstant()) {
                     view.lane = view.scrollingX.to.viewLane
                     view.scrollingX = undefined
                     break
@@ -168,7 +172,7 @@ watch(time, ({ now, delta }) => {
                 break
             }
             case 'ease': {
-                if (now >= view.scrollingY.to.time) {
+                if (now >= view.scrollingY.to.time || isInstant()) {
                     view.time = view.scrollingY.to.viewTime
                     view.scrollingY = undefined
                     break

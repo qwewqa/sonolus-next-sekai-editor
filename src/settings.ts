@@ -385,7 +385,10 @@ const settingsProperties = {
         { default: 'selectContextMenu' },
     ),
 
-    mouseSmoothScrolling: Type.Boolean({ default: true }),
+    // Off by default under reduced motion.
+    mouseSmoothScrolling: Type.Boolean({
+        default: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+    }),
 
     touchQuickScrollZone: number(25, 0, 50),
 

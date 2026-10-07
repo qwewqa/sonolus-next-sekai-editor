@@ -738,3 +738,45 @@ test('with storage full, a former dock size still loads and is kept for later', 
     ).toEqual({ width: 432, legacy: '432' })
     expect(errors).toEqual([])
 })
+
+test('reduced motion stops sliding and turning, and view scrolls jump', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.evaluate(() => localStorage.clear())
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    // Smooth scrolling defaults off.
+    const smooth = await page.evaluate(async () => {
+        const url = performance
+            .getEntriesByType('resource')
+            .find((entry) => new URL(entry.name).pathname === '/src/settings.ts')!.name
+        const { settings } = (await import(url)) as typeof import('../../src/settings')
+        return settings.mouseSmoothScrolling
+    })
+    expect(smooth).toBe(false)
+    await page.evaluate(installEditorFixture)
+    // No transition moves anything; colour changes stay.
+    const moving = await page.evaluate(() =>
+        [...document.querySelectorAll('*')].flatMap((element) => {
+            const { transitionProperty, transitionDuration } = getComputedStyle(element)
+            return transitionDuration.split(', ').some((duration) => duration !== '0s') &&
+                /all|transform|translate|rotate|scale|left|top|width|height/.test(
+                    transitionProperty,
+                )
+                ? [`${element.className}: ${transitionProperty}`]
+                : []
+        }),
+    )
+    expect(moving).toEqual([])
+    expect(
+        await page.evaluate(
+            () =>
+                getComputedStyle(document.querySelector('.transition-colors')!).transitionProperty,
+        ),
+    ).toContain('background-color')
+    // A page scroll lands at once.
+    await page.keyboard.press('PageUp')
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    expect(await page.evaluate(() => window.editorTest.view.scrollingY)).toBeUndefined()
+    expect(await page.evaluate(() => window.editorTest.view.time)).toBeGreaterThan(0)
+})

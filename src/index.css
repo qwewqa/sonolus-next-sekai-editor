@@ -25,6 +25,16 @@
     overflow-wrap: anywhere;
 }
 
+/* Reduced motion: nothing slides, turns or grows; colour and fade changes stay. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-property:
+            color, background-color, border-color, outline-color, fill, stroke, opacity, box-shadow !important;
+    }
+}
+
 html[data-app-inactive] *,
 html[data-app-inactive] *::before,
 html[data-app-inactive] *::after {
