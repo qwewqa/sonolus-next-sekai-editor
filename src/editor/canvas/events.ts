@@ -12,6 +12,7 @@ import { formatBpm, formatTimeScale } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { getPathD, getRangePathDs } from '../entities/events/path'
 import type { ScopeLookup } from '../scopeRules'
+import { drawName, markDot } from './names'
 import { drawText, measureText } from './text'
 import type { CanvasBounds, EditorDrawContext } from './types'
 
@@ -360,6 +361,7 @@ export const drawEvent = (
             }
             if (part === 'line') break
             timeScaleMarker(ctx, x, y, isScroll, hideNotes)
+            markDot(context, entity, x, y, isScroll ? DIAMOND_RADIUS : 0.1)
             // A same-beat jump reads as one label, in the order it plays.
             const label = timeScaleLabel(context, entity)
             if (!label) break
@@ -384,17 +386,19 @@ export const drawEvent = (
                 direction > 0 ? 'start' : 'end',
                 context.figureMiddle,
             )
+            const isStackHighlighted =
+                highlighted || !!stack?.some((member) => context.isHighlighted?.(member))
             if (
                 context.showGroupName &&
                 entity.groupId !== context.defaultGroupId &&
-                (highlighted ||
-                    context.recentlyActive ||
-                    !!stack?.some((member) => context.isHighlighted?.(member)))
+                (isStackHighlighted || context.recentlyActive)
             ) {
                 // Opposite the label, unless it turned inward for want of room there.
                 const side = direction === (x > 0 ? 1 : -1) ? -direction : direction
-                drawText(
+                drawName(
                     context,
+                    entity,
+                    isStackHighlighted,
                     state.groups.get(entity.groupId)?.name ?? '',
                     side === direction ? textX + (textWidth + 0.2) * direction : x + 0.2 * side,
                     y,
@@ -419,19 +423,19 @@ export const drawEvent = (
             ctx.globalAlpha *= 0.5
             if (xs[1] !== undefined) line(ctx, x, y, xs[1], y)
             if (entity.type === 'cameraEventJoint') {
+                const target =
+                    entity.cameraLeft + entity.cameraSize / 2 + entity.cameraZoomTargetLane
                 ctx.beginPath()
-                ctx.arc(
-                    entity.cameraLeft + entity.cameraSize / 2 + entity.cameraZoomTargetLane,
-                    y,
-                    0.1,
-                    0,
-                    2 * Math.PI,
-                )
+                ctx.arc(target, y, 0.1, 0, 2 * Math.PI)
                 ctx.fill()
+                markDot(context, entity, target, y, 0.1)
             }
             ctx.globalAlpha *= 2
             ctx.strokeStyle = '#fff'
-            for (const x of xs) marker(ctx, x, y)
+            for (const x of xs) {
+                marker(ctx, x, y)
+                markDot(context, entity, x, y, 0.1)
+            }
             // Same-beat joints of one track draw as one; say how many there are.
             const stack = stackOf(
                 state.store.grid[entity.type] as Map<number, Set<Entity>>,
@@ -456,7 +460,16 @@ export const drawEvent = (
                 (highlighted || context.recentlyActive)
             ) {
                 const stageName = state.stages.get(entity.stageId)?.name
-                if (stageName) drawText(context, stageName, (x + (xs[1] ?? x)) / 2, y, '#f6f')
+                if (stageName)
+                    drawName(
+                        context,
+                        entity,
+                        highlighted,
+                        stageName,
+                        (x + (xs[1] ?? x)) / 2,
+                        y,
+                        '#f6f',
+                    )
             }
         }
     }

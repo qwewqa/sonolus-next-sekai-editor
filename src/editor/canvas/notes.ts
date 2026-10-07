@@ -4,7 +4,7 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { getActiveNoteRole, type SlideNoteInfo } from '../../state/entities/slides/semantics'
 import { beatToTime } from '../../state/integrals/bpms'
 import { noteStyleColors } from '../../utils/colors'
-import { drawText } from './text'
+import { drawName } from './names'
 import type { EditorDrawContext } from './types'
 
 // Lanes between a note's stage and group names and its middle.
@@ -346,8 +346,10 @@ export const createNoteRenderer = () => {
                 // Side by side, the names keep 0.1 lane each from the middle.
                 const gap = stage && group ? NAME_GAP : 0
                 if (stage) {
-                    drawText(
+                    drawName(
                         context,
+                        entity,
+                        highlighted,
                         stage,
                         x + entity.size / 2 - gap,
                         y + 0.3,
@@ -357,8 +359,10 @@ export const createNoteRenderer = () => {
                     )
                 }
                 if (group) {
-                    drawText(
+                    drawName(
                         context,
+                        entity,
+                        highlighted,
                         group,
                         x + entity.size / 2 + gap,
                         y + 0.3,

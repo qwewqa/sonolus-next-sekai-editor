@@ -6,12 +6,14 @@ import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import { drawGrid, timeScaleEdgeLabelYs } from '../../src/editor/canvas/grid'
+import { createNameLayer, placeNames } from '../../src/editor/canvas/names'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { getPathD, getRangePathDs } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
 import type { EntityType } from '../../src/state/entities'
 import type { StageMaskEventJointEntity } from '../../src/state/entities/events/joints/stage/mask'
+import type { StagePivotEventJointEntity } from '../../src/state/entities/events/joints/stage/pivot'
 import type { TimeScaleEntity } from '../../src/state/entities/timeScale'
 import { calculateBpms } from '../../src/state/integrals/bpms'
 
@@ -119,6 +121,8 @@ class RecordingCanvas {
         })
     }
 }
+
+type DrawnEvent = Parameters<typeof drawEvent>[1]
 
 const groupId = 1 as GroupId
 const stageId = 1 as StageId
@@ -899,4 +903,46 @@ test('a floored range draws a step as held values with a gap at the jump', () =>
         getRangePathDs([2, 2], [-1, 1], 0, -4, 'none', 0.02),
         getRangePathDs([2, 2], [-1, 1], 0, -4, 'inStep', 0.02),
     )
+})
+
+test('names yield to names placed before them and to other objects’ event dots', () => {
+    const pivot = (beat: number, pivotLane: number) =>
+        ({ type: 'stagePivotEventJoint', stageId, beat, pivotLane }) as StagePivotEventJointEntity
+    const place = (draws: [DrawnEvent, boolean][]) => {
+        const { context, canvas } = makeContext()
+        context.names = createNameLayer()
+        for (const [entity, highlighted] of draws) drawEvent(context, entity, highlighted)
+        // Nothing is drawn until the frame places its names.
+        assert.equal(canvas.labels.length, 0)
+        placeNames(context, context.names)
+        return canvas.labels.map(({ text, x, y }) => [text, x, y])
+    }
+    // 'Stage A' is 1.68 lanes wide. Its own dot does not hide it, but its name hides
+    // another's at lane 1.2 just above it...
+    const a = pivot(2, 0)
+    const b = pivot(2.02, 1.2)
+    assert.deepEqual(
+        place([
+            [a, true],
+            [b, true],
+        ]),
+        [['Stage A', 0, -9.9]],
+    )
+    // ...unless that one is selected or hovered.
+    assert.deepEqual(
+        place([
+            [a, false],
+            [b, true],
+        ]),
+        [['Stage A', 1.2, -10]],
+    )
+    // A mask's name between its ends yields to a pivot's dot under it.
+    assert.deepEqual(
+        place([
+            [mask(6), true],
+            [pivot(6, 0.5), true],
+        ]),
+        [['Stage A', 0.5, -29.9]],
+    )
+    assert.deepEqual(place([[mask(6), true]]), [['Stage A', 0, -29.9]])
 })

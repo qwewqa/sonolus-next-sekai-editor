@@ -21,6 +21,7 @@ import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
 import { drawGrid, timeScaleEdgeLabelYs } from './grid'
+import { createNameLayer, placeNames } from './names'
 import { createNoteRenderer } from './notes'
 import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
@@ -176,7 +177,7 @@ watchEffect(
             }
             // Measured with the frame's font and bounds, as the labels are drawn.
             const edgeLabelYs = timeScaleEdgeLabelYs(base, entities)
-            const context = base
+            const context = { ...base, names: createNameLayer() }
             waveform.draw(context, currentWaveform, offset, currentTimes)
             drawGrid(
                 context,
@@ -199,6 +200,7 @@ watchEffect(
             for (const { entity, highlighted, opacity, part } of entities) {
                 drawEntity(context, entity, highlighted || !!hovered?.has(entity), opacity, part)
             }
+            placeNames(context, context.names)
         })
     },
     { flush: 'post' },
