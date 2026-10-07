@@ -192,3 +192,43 @@ test('Reset Settings brings back the default', async ({ page }) => {
     await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
     expect(await stored(page)).toEqual({})
 })
+
+test.describe('touch', () => {
+    test.use({ isMobile: true, hasTouch: true })
+
+    for (const viewport of [
+        { width: 390, height: 844 },
+        { width: 820, height: 1180 },
+    ])
+        test(`portrait ${viewport.width}x${viewport.height} keeps managers closed`, async ({
+            page,
+        }) => {
+            await boot(page, viewport)
+            await expectShown(page, 'top', { Preview: true, Groups: false, Stages: false })
+        })
+
+    test('a landscape phone keeps managers closed', async ({ page }) => {
+        await boot(page, { width: 844, height: 390 })
+        await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
+    })
+
+    test('a landscape tablet opens managers and an on-screen keyboard keeps them', async ({
+        page,
+    }) => {
+        await boot(page, { width: 1180, height: 820 })
+        await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+        // Renaming a group raises the keyboard, which shortens the window.
+        const name = dock(page, 'left').locator('.manager-name').filter({ hasText: 'Other group' })
+        await name.dblclick()
+        await name.dblclick()
+        const rename = dock(page, 'left').locator('.manager-rename')
+        await expect(rename).toBeFocused()
+        await page.setViewportSize({ width: 1180, height: 470 })
+        await settle(page)
+        await expect(rename).toBeFocused()
+        await expect(tab(page, 'left', 'Groups')).toHaveAttribute('aria-selected', 'true')
+        await page.setViewportSize({ width: 1180, height: 820 })
+        await settle(page)
+        await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    })
+})

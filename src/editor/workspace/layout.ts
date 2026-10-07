@@ -436,11 +436,13 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
  * Whether the panels, opened beside those already open, would each show in a
  * side dock beside the editor that shows all its open panels, with Preview at
  * its natural size and the others at least at their minimums. Judged at default
- * dock and tile sizes, so resizing never opens or closes panels.
+ * dock and tile sizes, so resizing never opens or closes panels, and at the
+ * Auto shape, so an on-screen keyboard never closes them.
  */
 export const hasRoomFor = (input: WorkspaceLayoutInput, ids: readonly PanelId[]) => {
     const layout = computeWorkspaceLayout({
         ...input,
+        ...input.autoShape,
         open: { ...input.open, ...Object.fromEntries(ids.map((id) => [id, true])) },
         sizes: { left: 0, right: 0, top: 0 },
         weights: {},

@@ -596,6 +596,9 @@ test('groups and stages open by default only where they fit beside preview', () 
     assert.ok(!room({ width: 1280, height: 683, previewAspectRatio: 4 / 3 }))
     // An overlaid playback strip needs only Preview's minimum.
     assert.ok(room({ width: 1280, height: 660, previewOverlay: true }))
+    assert.ok(room({ width: 1180, height: 820, coarse: true, railSize: coarseRailSize }))
+    // An on-screen keyboard shortens the window but not the held Auto shape.
+    assert.ok(room({ width: 1180, height: 470, autoShape: { width: 1180, height: 820 } }))
     // Resized docks and tiles never change the default.
     assert.ok(
         room({
