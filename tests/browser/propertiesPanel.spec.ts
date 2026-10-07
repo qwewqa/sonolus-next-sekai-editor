@@ -548,12 +548,19 @@ for (const locale of ['ja', 'fr']) {
                         addFits: add.scrollWidth <= add.clientWidth,
                     }
                 })
-            await expect.poll(async () => (await measure()).pick.width).toBeGreaterThan(0)
-            const layout = await measure()
-            expect(layout.addFits).toBe(true)
-            expect(layout.pick.top).toBeGreaterThan(layout.add.bottom)
-            // Clear never wraps onto a line of its own.
-            expect(Math.abs(layout.clear.top - layout.pick.top)).toBeLessThan(1)
+            // The whole layout, since the panel may still be settling from the resize.
+            await expect
+                .poll(async () => {
+                    const { add, pick, clear, addFits } = await measure()
+                    return {
+                        shown: pick.width > 0,
+                        addFits,
+                        pickBelowAdd: pick.top > add.bottom,
+                        // Clear never wraps onto a line of its own.
+                        clearBesidePick: Math.abs(clear.top - pick.top) < 1,
+                    }
+                })
+                .toEqual({ shown: true, addFits: true, pickBelowAdd: true, clearBesidePick: true })
         }
     })
 }
