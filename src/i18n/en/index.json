@@ -496,9 +496,8 @@
                 "properties": "Switch to Slide Tool again to change preset or default properties."
             },
             "splitSlide": {
-                "split": "Split Slide cuts the connection from each selected note to the next note, creating independent slides.",
-                "tail": "Selecting the final note of a slide has no effect.",
-                "undo": "All cuts form one undoable edit. Note positions and remaining connector settings are preserved."
+                "split": "Cuts the connection from each selected note to the next note.",
+                "tail": "The last note of a slide has no connection to cut."
             },
             "generateSlideNotesTool": {
                 "title": "Generate Slide Notes Tool",

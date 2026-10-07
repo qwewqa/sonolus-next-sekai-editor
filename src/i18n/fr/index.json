@@ -496,9 +496,8 @@
         "properties": "Passez à l'outil Slide de nouveau pour changer le préréglage ou les propriétés par défaut."
       },
       "splitSlide": {
-        "split": "Scinder le slide coupe la connexion de chaque note sélectionnée vers la note suivante et crée des slides indépendants.",
-        "tail": "Sélectionner la dernière note d’un slide n’a aucun effet.",
-        "undo": "Toutes les coupures forment une seule modification annulable. Les positions des notes et les paramètres des connexions restantes sont conservés."
+        "split": "Coupe la connexion de chaque note sélectionnée vers la note suivante.",
+        "tail": "La dernière note d’un slide n’a pas de connexion à couper."
       },
       "generateSlideNotesTool": {
         "title": "Outil Générer les notes de slide",

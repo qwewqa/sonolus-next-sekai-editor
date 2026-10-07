@@ -85,7 +85,6 @@ import HelpSection from './HelpSection.vue'
         <HelpSection :title="i18n.commands.splitHold.title" command="splitHold">
             <li>{{ i18n.help.modal.splitSlide.split }}</li>
             <li>{{ i18n.help.modal.splitSlide.tail }}</li>
-            <li>{{ i18n.help.modal.splitSlide.undo }}</li>
         </HelpSection>
 
         <HelpSection

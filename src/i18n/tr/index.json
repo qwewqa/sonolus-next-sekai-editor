@@ -496,9 +496,8 @@
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
       },
       "splitSlide": {
-        "split": "Kaydırmayı Böl, seçilen her notanın sonraki notayla bağlantısını keserek bağımsız kaydırmalar oluşturur.",
-        "tail": "Kaydırmanın son notasını seçmek bir değişiklik yapmaz.",
-        "undo": "Tüm kesmeler tek işlem olarak geri alınabilir. Nota konumları ve kalan bağlantı ayarları korunur."
+        "split": "Seçilen her notanın sonraki notayla bağlantısını keser.",
+        "tail": "Kaydırmanın son notasının kesilecek bağlantısı yoktur."
       },
       "generateSlideNotesTool": {
         "title": "Kaydırma Notası Oluşturma Aracı",

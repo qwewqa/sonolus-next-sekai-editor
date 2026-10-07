@@ -283,7 +283,7 @@ test('localized Split Slide works in the elevation editor on a phone', async ({
     ).toEqual([[0, 1, 2, 3]])
 })
 
-test('Help explains outgoing cuts, final notes and undo in English and Japanese on a phone', async ({
+test('Help explains outgoing cuts and final notes in English and Japanese on a phone', async ({
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -293,9 +293,10 @@ test('Help explains outgoing cuts, final notes and undo in English and Japanese 
     })
     await section.scrollIntoViewIfNeeded()
     await expect(section).toBeVisible()
-    await expect(section).toContainText('each selected note to the next note')
-    await expect(section).toContainText('Selecting the final note of a slide has no effect.')
-    await expect(section).toContainText('All cuts form one undoable edit.')
+    await expect(section.locator('li')).toHaveText([
+        'Cuts the connection from each selected note to the next note.',
+        'The last note of a slide has no connection to cut.',
+    ])
     const bounds = await section.boundingBox()
     expect(bounds!.x).toBeGreaterThanOrEqual(0)
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
@@ -305,7 +306,8 @@ test('Help explains outgoing cuts, final notes and undo in English and Japanese 
     const translated = page.locator('section').filter({
         has: page.getByRole('heading', { name: 'スライドを分割', exact: true }),
     })
-    await expect(translated).toContainText('選択した各ノーツから次のノーツへの接続が切れ')
-    await expect(translated).toContainText('最後のノーツを選択しても変化はありません')
-    await expect(translated).toContainText('1回の操作で元に戻せます')
+    await expect(translated.locator('li')).toHaveText([
+        '選択した各ノーツから次のノーツへの接続を切ります。',
+        'スライドの最後のノーツには切る接続がありません。',
+    ])
 })
