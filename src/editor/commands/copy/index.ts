@@ -109,7 +109,8 @@ const getEntities = <T extends EntityType>(entities: Entity[], type: T) =>
         (entity) => entity,
     )
 
-const getSlides = (entities: Entity[]) => {
+/** Each touched slide's selected notes, in the slide's own order. */
+export const getSlides = (entities: Entity[]) => {
     const selectedNotes = entities.filter((entity) => entity.type === 'note')
     const selectedNotesSet = new Set(selectedNotes)
 
