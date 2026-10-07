@@ -135,6 +135,12 @@ const drawArtwork = (
     ctx.setLineDash([])
 
     if (type === 'anchor' || type === 'tick') {
+        // A zero-width tick has no diamond; show the placeholder in its colour.
+        if (type === 'tick' && size <= 0) {
+            roundedRect(ctx, x, 0.15, w, 0.3)
+            ctx.fillStyle = palette?.[1] ?? diamondColors[isCritical ? color : 'green']
+            ctx.fill()
+        }
         if (outline) {
             roundedRect(ctx, x, 0.15, w, 0.3)
             ctx.strokeStyle = '#fff'

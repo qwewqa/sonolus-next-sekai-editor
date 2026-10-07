@@ -347,3 +347,87 @@ test("a note's stage and group names keep a gap between them", (t) => {
         ],
     )
 })
+
+test('a zero-width tick shows a flat placeholder in its colour, under any fake X', (t) => {
+    // Filled boxes and red strokes, in drawing order.
+    const marks: (
+        { fill: [number, number, number, number]; color: string } | { cross: [number, number][] }
+    )[] = []
+    const makeCanvasContext = () => {
+        let rect: [number, number, number, number] | undefined
+        let path: [number, number][] = []
+        const target: Record<string, unknown> = { globalAlpha: 1 }
+        return new Proxy(target, {
+            get(target, property) {
+                if (property in target) return Reflect.get(target, property)
+                if (property === 'beginPath') return () => ((rect = undefined), (path = []))
+                if (property === 'roundRect')
+                    return (x: number, y: number, w: number, h: number) => (rect = [x, y, w, h])
+                if (property === 'moveTo' || property === 'lineTo')
+                    return (x: number, y: number) => path.push([x, y])
+                if (property === 'fill')
+                    return () => {
+                        if (rect) marks.push({ fill: rect, color: target.fillStyle as string })
+                    }
+                if (property === 'stroke')
+                    return () => {
+                        if (target.strokeStyle === '#f44') marks.push({ cross: path })
+                    }
+                return () => {}
+            },
+        }) as unknown as CanvasRenderingContext2D
+    }
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'document')
+    Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: {
+            createElement: () => ({ width: 0, height: 0, getContext: makeCanvasContext }),
+        },
+    })
+    t.after(() => {
+        if (original) Object.defineProperty(globalThis, 'document', original)
+        else Reflect.deleteProperty(globalThis, 'document')
+    })
+    const renderer = createNoteRenderer()
+    const context = {
+        ctx: makeCanvasContext(),
+        scale: 40,
+        pixelRatio: 1,
+        ups: -2,
+        recentlyActive: false,
+        state: { bpms: [{ x: 0, y: 0, s: 0.5 }], store: { slides: { info: new Map() } } },
+    } as unknown as EditorDrawContext
+    const draw = (properties: Partial<NoteEntity>) => {
+        marks.length = 0
+        renderer.draw(
+            context,
+            note(0, {
+                noteType: 'forceTick',
+                size: 0,
+                left: 0,
+                noteStyle: 'default',
+                flickDirection: 'none',
+                isCritical: false,
+                isFake: false,
+                ...properties,
+            }),
+            false,
+        )
+        return marks.map((mark) =>
+            'fill' in mark
+                ? ['fill', ...mark.fill.map((v) => Math.round(v * 100) / 100), mark.color]
+                : ['cross', ...mark.cross.flat()],
+        )
+    }
+    // The 0.2-wide flat box of trace and damage, in the diamond's colour.
+    assert.deepEqual(draw({}), [['fill', -0.1, 0.15, 0.2, 0.3, '#abfbe3']])
+    assert.deepEqual(draw({ isCritical: true }), [['fill', -0.1, 0.15, 0.2, 0.3, '#fff2c3']])
+    // A fake one's X lies over the box.
+    assert.deepEqual(draw({ isFake: true }), [
+        ['fill', -0.1, 0.15, 0.2, 0.3, '#abfbe3'],
+        ['cross', -0.1, 0.15, 0.1, 0.45],
+        ['cross', -0.1, 0.45, 0.1, 0.15],
+    ])
+    // Anchors stay invisible until outlined.
+    assert.deepEqual(draw({ noteType: 'anchor' }), [])
+})
