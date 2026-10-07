@@ -1585,3 +1585,52 @@ test('Select Objects on a hidden group keeps the selection', async ({ page }) =>
     expect(await selection()).toBe(selected)
     await expect(page.getByText('Selected 0 objects')).toHaveCount(0)
 })
+
+test('Select Objects leaves out objects of hidden types', async ({ page }) => {
+    await page.evaluate(() => {
+        const { fixtures, show } = window.editorTest
+        show(fixtures.events)
+    })
+    const panel = await openGroups(page)
+    const selected = () =>
+        page.evaluate(() =>
+            window.editorTest.history.state.value.selectedEntities.map(({ type }) => type).sort(),
+        )
+    const hide = (types: string[]) =>
+        page.evaluate((types) => {
+            const { view } = window.editorTest
+            view.visibilities = {
+                ...view.visibilities,
+                ...Object.fromEntries(types.map((type) => [type, false])),
+            }
+        }, types)
+    const selectObjects = page.getByRole('menuitem', { name: 'Select Objects' })
+
+    // With notes hidden, Default selects its time scales only, and says so.
+    await hide(['note', 'connector'])
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    await selectObjects.click()
+    expect(await selected()).toEqual(['timeScale', 'timeScale'])
+    await expect(page.getByText('Selected 2 objects')).toBeVisible()
+
+    // With time scales hidden too, there is nothing to select, and the selection stays.
+    await page.evaluate(() => {
+        const { history, store } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(({ type }) => type === 'bpm'),
+        })
+    })
+    await hide(['timeScale'])
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    await expect(selectObjects).toBeDisabled()
+    await page.keyboard.press('Escape')
+    const count = await page.evaluate(async () => {
+        const { selectOwned } = await window.editorTest.appImport<
+            typeof import('../../src/editor/workspace/manager/objects')
+        >('/src/editor/workspace/manager/objects.ts')
+        return selectOwned('groupId', 1)
+    })
+    expect(count).toBe(0)
+    expect(await selected()).toEqual(['bpm', 'bpm'])
+})

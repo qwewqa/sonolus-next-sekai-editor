@@ -196,6 +196,10 @@ export const scopeLookup = computed(() =>
     }),
 )
 
+/** Whether the entity shows: its type is visible and its group and stage aren't hidden. */
+export const isEntityShown = (entity: Entity) =>
+    view.visibilities[entity.type] && entityScopeVisibility(entity, scopeLookup.value) !== 'hidden'
+
 /** Whether the entity's group and stage allow hovering, selecting and editing it. */
 export const isEntityInScope = (entity: Entity) =>
     entityScopeVisibility(entity, scopeLookup.value) === 'full'

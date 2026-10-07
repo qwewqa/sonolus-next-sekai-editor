@@ -7,8 +7,7 @@ import type { Entity } from '../../../state/entities'
 import type { Store } from '../../../state/store'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
-import { scopeLookup } from '../../scope'
-import { entityScopeVisibility } from '../../scopeRules'
+import { isEntityShown } from '../../scope'
 
 /** Which entity field assigns an object to a group or a stage. */
 export type OwnerKey = 'groupId' | 'stageId'
@@ -78,11 +77,8 @@ export const ownedCounts = (key: OwnerKey): ReadonlyMap<number, number> =>
     key === 'groupId' ? groupCounts.value : stageCounts.value
 
 /** Whether an object is the owner's and currently visible in the editor. */
-const isVisibleOwned = (key: OwnerKey, owners: Owners) => {
-    const scope = scopeLookup.value
-    return (entity: Entity) =>
-        isOwnedBy(ownerOf(entity, key), owners) && entityScopeVisibility(entity, scope) !== 'hidden'
-}
+const isVisibleOwned = (key: OwnerKey, owners: Owners) => (entity: Entity) =>
+    isOwnedBy(ownerOf(entity, key), owners) && isEntityShown(entity)
 
 /** The owner's objects that are currently visible in the editor. */
 const visibleOwned = (key: OwnerKey, owners: Owners) => {

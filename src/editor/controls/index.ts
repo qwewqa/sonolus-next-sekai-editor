@@ -2,11 +2,11 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { isAppActive } from '../../activity'
 import { replaceState, state } from '../../history'
 import { hasSameChartData } from '../../state/data'
-import type { Entity, EntityType } from '../../state/entities'
+import type { EntityType } from '../../state/entities'
 import { cancelScalingSession, scalingSession } from '../commands/scaleSelection/session'
 import { editorNavigation, type EditorNavigation } from '../navigation'
-import { scopeLookup } from '../scope'
-import { entityScopeVisibility, isScopeReduced } from '../scopeRules'
+import { isEntityShown, scopeLookup } from '../scope'
+import { isScopeReduced } from '../scopeRules'
 import { tool } from '../tools'
 import { view } from '../view'
 import { dragCursor, lockedCursor } from './cursor'
@@ -32,9 +32,6 @@ const cancelControls = (restoreTool = true) => {
     view.entities = { hovered: [], creating: [] }
 }
 
-const isShown = (entity: Entity) =>
-    view.visibilities[entity.type] && entityScopeVisibility(entity, scopeLookup.value) !== 'hidden'
-
 // Hidden objects, by type, group or stage, must not stay selected: keyboard
 // commands, properties and scaling act on the selection. Dimmed objects stay
 // selected (for example after moving notes to an unfocused group). This only
@@ -43,8 +40,8 @@ const isShown = (entity: Entity) =>
 const deselectHidden = () => {
     const current = state.value
     const selected = current.selectedEntities
-    if (selected.every(isShown)) return
-    replaceState({ ...current, selectedEntities: selected.filter(isShown) })
+    if (selected.every(isEntityShown)) return
+    replaceState({ ...current, selectedEntities: selected.filter(isEntityShown) })
 }
 
 export const useControlLifecycle = () => {
