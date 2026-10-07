@@ -641,6 +641,63 @@ test.describe('saved shortcuts', () => {
         ).toEqual(saved)
     })
 
+    /** Reloads with a saved record built from the defaults; null leaves a command out. */
+    const loadSaved = async (page: Page, changes: Record<string, string | null>) => {
+        await page.evaluate((changes) => {
+            const record: Record<string, string> = {
+                ...window.editorTest.settings.keyboardShortcuts,
+            }
+            for (const [name, key] of Object.entries(changes))
+                if (key === null) Reflect.deleteProperty(record, name)
+                else record[name] = key
+            localStorage.setItem(
+                'sonolus-next-sekai-editor.keyboardShortcuts',
+                JSON.stringify(record),
+            )
+        }, changes)
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(installEditorFixture)
+        return page.evaluate(() => window.editorTest.settings.keyboardShortcuts)
+    }
+
+    test('a record saved before a command existed gains its default', async ({ page }) => {
+        const loaded = await loadSaved(page, { deleteSelection: null, undo: 'l' })
+        expect(loaded.deleteSelection).toBe('Delete')
+        expect(loaded.undo).toBe('l')
+    })
+
+    test("a new command's default never takes a key the user gave another", async ({ page }) => {
+        const loaded = await loadSaved(page, { deleteSelection: null, stop: 'Delete' })
+        expect(loaded.deleteSelection).toBe('')
+        expect(loaded.stop).toBe('Delete')
+    })
+
+    test('an unbound command stays unbound', async ({ page }) => {
+        // Unbinding is saved as ''; records saved by 757e7e9 left the command out.
+        const loaded = await loadSaved(page, { deleteSelection: '', save: null, undo: 'l' })
+        expect(loaded.deleteSelection).toBe('')
+        expect(loaded.save).toBeUndefined()
+    })
+
+    test('unbinding a command in Settings outlasts a reload', async ({ page }) => {
+        await page.keyboard.press(',')
+        const button = page
+            .getByRole('dialog')
+            .locator('label')
+            .filter({ has: page.getByText('Delete', { exact: true }) })
+            .getByRole('button')
+        await button.click()
+        await button.click()
+        await expect(button).toHaveText('Unassigned')
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(installEditorFixture)
+        expect(
+            await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.deleteSelection),
+        ).toBe('')
+    })
+
     test('a chord binding persists and Reset Shortcuts removes it', async ({ page }) => {
         await page.evaluate(() => {
             const { settings } = window.editorTest

@@ -190,7 +190,7 @@ const keyNames = new Map([
 
 /** Readable text for a binding; Apple platforms use the menu symbols. */
 export const formatBinding = (binding: string | undefined, apple: boolean) => {
-    if (binding === undefined || binding === '') return binding
+    if (!binding) return
     const chord = parseChord(binding)
     if (!chord) {
         // Letters show as on the keycap; Shift is named, so a capital is never ambiguous.

@@ -32,9 +32,8 @@ test('shortcut capture preserves the old binding until replaced or cleared', asy
     await save.click()
     await save.click()
     await expect(save).toHaveText('Unassigned')
-    expect(
-        await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.save),
-    ).toBeUndefined()
+    // Saved as '' rather than left out, which a later start reads as a new command.
+    expect(await page.evaluate(() => window.editorTest.settings.keyboardShortcuts.save)).toBe('')
     expect(
         await page.evaluate(
             () =>
@@ -42,7 +41,7 @@ test('shortcut capture preserves the old binding until replaced or cleared', asy
                     localStorage.getItem('sonolus-next-sekai-editor.keyboardShortcuts') ?? '{}',
                 ).save,
         ),
-    ).toBeUndefined()
+    ).toBe('')
     await save.click()
     await save.press('Tab')
     await expect(save).toHaveText('Unassigned')
@@ -515,7 +514,7 @@ test('from the keyboard, Escape cancels a capture and Delete or Backspace clears
         await save.focus()
         await page.keyboard.press(key)
         await expect(save, key).toHaveText('Unassigned')
-        expect(await savedShortcut(page, 'save'), key).toBeUndefined()
+        expect(await savedShortcut(page, 'save'), key).toBe('')
         await expect(dialog).toBeVisible()
     }
 

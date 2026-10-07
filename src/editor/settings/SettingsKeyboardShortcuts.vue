@@ -15,11 +15,9 @@ import SettingsSection from './SettingsSection.vue'
 
 const getKey = (name: CommandName) => settings.keyboardShortcuts[name]
 
+// Unbinding saves '', so a later start can't mistake it for a new command.
 const setKey = (name: CommandName, key: string | undefined) => {
-    const shortcuts = { ...settings.keyboardShortcuts }
-    if (key === undefined) Reflect.deleteProperty(shortcuts, name)
-    else shortcuts[name] = key
-    settings.keyboardShortcuts = shortcuts
+    settings.keyboardShortcuts = { ...settings.keyboardShortcuts, [name]: key ?? '' }
 }
 
 // Commands sharing a binding all run; each row names the others.

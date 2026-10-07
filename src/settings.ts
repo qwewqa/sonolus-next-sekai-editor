@@ -4,6 +4,7 @@ import { shallowRef, watch } from 'vue'
 import { noteStyles, noteStyleSchema } from './chart/noteStyle'
 import { easeEdits, type EaseEdit } from './ease'
 import { isCommandName, type CommandName } from './editor/commands'
+import { normalizeBinding } from './editor/controls/bindings'
 import { migrateToolbar } from './editor/toolbar/migrate'
 import { isPanelId, panelIds, type PanelId } from './editor/workspace/layout'
 import { defaultLocale } from './i18n/locale'
@@ -554,6 +555,29 @@ const legacyKeys: Partial<Record<string, string>> = {
     topDockHeight: 'previewHeight',
 }
 
+// Bound by default while unbinding still left a command out of the saved record.
+const legacyShortcutNames = new Set(
+    'open save reset utilities play stop bgm speedUp speedDown select elevation deselect eraser brush flip flipVertical combineNotes cut copy paste undo redo note slide generateSlideNotes bpm timeScale manageGroups event manageStages scrollLeft scrollRight scrollUp scrollDown scrollPageUp scrollPageDown jumpUp jumpDown cycleVisibilities division1 division2 division3 division4 division6 division8 division12 division16 divisionCustom snapping zoomXIn zoomXOut zoomYIn zoomYOut help settings'.split(
+        ' ',
+    ),
+)
+
+// A saved record gains newer commands' defaults, left unbound where the user took the key.
+const mergeShortcutDefaults = (saved: unknown, defaults: Record<string, string>) => {
+    if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return saved
+    const record = { ...saved } as Record<string, unknown>
+    const taken = new Set(
+        Object.values(record).flatMap((key) =>
+            typeof key === 'string' && key ? [normalizeBinding(key)] : [],
+        ),
+    )
+    for (const [name, key] of Object.entries(defaults)) {
+        if (Object.hasOwn(record, name) || legacyShortcutNames.has(name)) continue
+        record[name] = taken.has(normalizeBinding(key)) ? '' : key
+    }
+    return record
+}
+
 const loadSetting = (key: string, defaultValue: unknown) => {
     const legacyKey = legacyKeys[key]
     const legacy = legacyKey === undefined ? undefined : storageGet(legacyKey, undefined)
@@ -588,8 +612,17 @@ export const settings = Object.defineProperties(
     Object.fromEntries(
         Object.entries(settingsProperties).map(([key, schema]) => {
             const defaultValue = Value.Create(schema)
+            const loaded = loadSetting(key, defaultValue)
             const prop = shallowRef(
-                normalize(schema, migrateSetting(key, loadSetting(key, defaultValue))),
+                normalize(
+                    schema,
+                    migrateSetting(
+                        key,
+                        key === 'keyboardShortcuts'
+                            ? mergeShortcutDefaults(loaded, defaultValue as Record<string, string>)
+                            : loaded,
+                    ),
+                ),
             )
             watch(
                 prop,
