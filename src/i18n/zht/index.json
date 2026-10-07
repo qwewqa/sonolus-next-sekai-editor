@@ -42,17 +42,17 @@
     },
     "copy": {
       "title": "複製",
-      "noSelected": "未選擇要複製的對象",
-      "copied": "已複製 {0} 個對象"
+      "noSelected": "未選擇要複製的物件",
+      "copied": "已複製 {0} 個物件"
     },
     "cut": {
       "title": "剪下",
-      "noSelected": "未選擇要剪下的對象",
-      "cut": "已剪下 {0} 個對象"
+      "noSelected": "未選擇要剪下的物件",
+      "cut": "已剪下 {0} 個物件"
     },
     "deselect": {
       "title": "取消選擇",
-      "deselected": "已取消選取所有對象"
+      "deselected": "已取消選取所有物件"
     },
     "laneLimits": {
       "none": "不限制軌道",
@@ -95,8 +95,8 @@
     },
     "flip": {
       "title": "水平翻轉",
-      "noSelected": "未選擇要翻轉的對象",
-      "flipped": "已翻轉 {0} 個對象"
+      "noSelected": "未選擇要翻轉的物件",
+      "flipped": "已翻轉 {0} 個物件"
     },
     "flipVertical": {
       "title": "垂直翻轉",
@@ -449,7 +449,7 @@
       },
       "selectTool": {
         "title": "選擇工具",
-        "select": "點擊以選擇一個對象，在重疊的對象之間循環。",
+        "select": "點擊以選擇一個物件，在重疊的物件之間循環。",
         "deselect": "點選空白處可取消選取所有物件。",
         "move": "拖曳物件來移動多個物件。",
         "selectMultiple": "拖曳區域以選取多個物件。",
@@ -713,10 +713,10 @@
   },
   "sidebars": {
     "default": {
-      "none": "未選擇對象",
-      "edited": "已編輯 {0} 個對象",
+      "none": "未選擇物件",
+      "edited": "已編輯 {0} 個物件",
       "editedNotes": "已編輯 {0} 個音符",
-      "set": "已設定 {0} 個對象的{1}",
+      "set": "已設定 {0} 個物件的{1}",
       "setNotes": "已設定 {0} 個音符的{1}",
       "noChange": "沒有變更",
       "setBpm": "已設定 {0} 個 BPM 的{1}",
@@ -766,7 +766,7 @@
     },
     "brush": {
       "title": "筆刷",
-      "deselected": "取消選取所有對象",
+      "deselected": "取消選取所有物件",
       "brushing": "正在套用筆刷至 {0} 個物件",
       "brushed": "已套用筆刷至 {0} 個物件",
       "sidebar": {
@@ -792,9 +792,9 @@
     },
     "eraser": {
       "title": "橡皮擦",
-      "deselected": "取消選取所有對象",
-      "erasing": "正在刪除 {0} 個對象",
-      "erased": "已刪除 {0} 個對象"
+      "deselected": "取消選取所有物件",
+      "erasing": "正在刪除 {0} 個物件",
+      "erased": "已刪除 {0} 個物件"
     },
     "generateSlideNotes": {
       "title": "生成滑條音符",
@@ -824,18 +824,18 @@
     },
     "paste": {
       "title": "貼上",
-      "pasted": "已貼上 {0} 個對象",
+      "pasted": "已貼上 {0} 個物件",
       "sidebar": {
         "title": "剪貼簿歷史記錄"
       }
     },
     "select": {
       "title": "選取",
-      "deselected": "取消選取所有對象",
-      "selecting": "正在選擇 {0} 個對象",
-      "selected": "已選擇 {0} 個對象",
-      "moving": "正在移動 {0} 個對象",
-      "moved": "已移動 {0} 個對象"
+      "deselected": "取消選取所有物件",
+      "selecting": "正在選擇 {0} 個物件",
+      "selected": "已選擇 {0} 個物件",
+      "moving": "正在移動 {0} 個物件",
+      "moved": "已移動 {0} 個物件"
     },
     "slide": {
       "title": "滑條 #{0}",
