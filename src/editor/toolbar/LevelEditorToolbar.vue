@@ -57,14 +57,17 @@ watch(activeNames, (names) => shownByLayout.set(layoutOf(toolbar.value), [...nam
     immediate: true,
 })
 
+const isPressed = (name: CommandName, index: number) =>
+    isCommandPressed(name, toolbar.value[index] ?? [])
+
 // A group switches to its member whose tool comes into use, nearest its default.
 watch(
-    () => toolbar.value.map((group) => group.filter(isCommandPressed)),
+    () => toolbar.value.map((group) => group.filter((name) => isCommandPressed(name, group))),
     (pressed) => {
         for (const [index, names] of pressed.entries()) {
             const shown = activeNames.value[index]
             const name = names[names.length - 1]
-            if (name && shown && !isCommandPressed(shown)) activeNames.value[index] = name
+            if (name && shown && !isPressed(shown, index)) activeNames.value[index] = name
         }
     },
     { immediate: true },
@@ -150,10 +153,10 @@ const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     activeIndex.value = -1
     // A toggle takes the face once in use; one a dialog cancels leaves it on the one in use.
     const show = () => {
-        if (isCommandPressed(name) !== false && toolbar.value[index]?.includes(name))
+        if (isPressed(name, index) !== false && toolbar.value[index]?.includes(name))
             activeNames.value[index] = name
     }
-    if (isCommandPressed(name) === false) void Promise.resolve(done).then(show)
+    if (isPressed(name, index) === false) void Promise.resolve(done).then(show)
     else show()
 }
 
@@ -245,7 +248,7 @@ onBeforeUnmount(() => {
                 <LevelEditorToolbarTool
                     class="size-[--tool-size] justify-center"
                     :name="activeName"
-                    :pressed="isCommandPressed(activeName)"
+                    :pressed="isPressed(activeName, i)"
                     v-bind="flyoutAttributes(i)"
                     @pointermove="onOverMain($event, i)"
                     @click="onClickMain($event, i, activeName)"
@@ -271,7 +274,7 @@ onBeforeUnmount(() => {
                         :key="j"
                         class="mb-1 w-full"
                         :name
-                        :pressed="isCommandPressed(name)"
+                        :pressed="isPressed(name, i)"
                         show-label
                         @click="onClickSub($event, i, name)"
                     />

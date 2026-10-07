@@ -1,5 +1,5 @@
 import { settings } from '../../settings'
-import { commands, type CommandName } from '../commands'
+import { type CommandName } from '../commands'
 import { isElevationEditorOpen } from '../elevation/state'
 import { toolName, tools, type ToolName } from '../tools'
 import { defaultNotePropertiesPresetIndex } from '../tools/note'
@@ -23,8 +23,25 @@ const divisionOf = (axis: string) => (axis === 'division' ? view.division : view
 
 const laneLimits: Partial<Record<CommandName, number>> = { laneLimitNone: 0, laneLimitSix: 6 }
 
-/** Whether a tool, mode or value is in use; undefined for plain actions, which are not toggles. */
-export const isCommandPressed = (name: CommandName): boolean | undefined => {
+// A value preset's family, and whether its value is in use.
+const valuePreset = (name: CommandName) => {
+    const division = /^(division|laneDivision)(\d+)$/.exec(name)
+    if (division) {
+        const [, family = '', value] = division
+        return { family, current: Number(value) === divisionOf(family) }
+    }
+    const limit = laneLimits[name]
+    if (limit !== undefined) return { family: 'laneLimit', current: settings.maxLane === limit }
+}
+
+/**
+ * Whether a tool, mode or value is in use; undefined for plain actions, which
+ * are not toggles. Custom is in use while no preset in its toolbar group is.
+ */
+export const isCommandPressed = (
+    name: CommandName,
+    group: readonly CommandName[],
+): boolean | undefined => {
     if (name === 'elevation') return isElevationEditorOpen.value
     if (name === 'event') return eventTools.includes(toolName.value)
 
@@ -34,15 +51,14 @@ export const isCommandPressed = (name: CommandName): boolean | undefined => {
         return toolName.value === tool && presetIndices[tool].value === Number(preset[2])
     }
 
-    // A preset is pressed while its value is in use, and Custom while no preset's is.
-    const division = /^(division|laneDivision)(\d+|Custom)$/.exec(name)
-    if (division) {
-        const [, axis = '', member] = division
-        const value = divisionOf(axis)
-        return member === 'Custom' ? !(`${axis}${value}` in commands) : Number(member) === value
-    }
-    if (name in laneLimits) return settings.maxLane === laneLimits[name]
-    if (name === 'laneLimitCustom') return !Object.values(laneLimits).includes(settings.maxLane)
+    const value = valuePreset(name)
+    if (value) return value.current
+    const custom = /^(division|laneDivision|laneLimit)Custom$/.exec(name)
+    if (custom)
+        return !group.some((other) => {
+            const value = valuePreset(other)
+            return !!value && value.family === custom[1] && value.current
+        })
 
     return name in tools ? toolName.value === name : undefined
 }

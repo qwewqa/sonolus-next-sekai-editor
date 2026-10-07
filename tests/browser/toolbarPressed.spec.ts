@@ -443,3 +443,32 @@ test('division and lane groups show the value in use on their face', async ({ pa
     await expect(face(3)).toHaveAttribute('title', 'Redo')
     await expect(face(3)).not.toHaveAttribute('aria-pressed')
 })
+
+test('a value without a preset in its group shows on that group’s Custom face', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['divisionCustom', 'division8', 'division4', 'division1'],
+            ['laneDivisionCustom', 'laneDivision1'],
+            ['laneLimitCustom', 'laneLimitNone'],
+        ]
+    })
+    const face = (index: number) => shown(page).nth(index)
+    const expectFace = async (index: number, title: string, text?: string) => {
+        await expect(face(index)).toHaveAttribute('title', title)
+        await expect(face(index)).toHaveAttribute('aria-pressed', 'true')
+        if (text) await expect(face(index)).toHaveText(text)
+    }
+    // 1/3 has a command, but not in this group.
+    await page.keyboard.press('3')
+    await expectFace(0, 'Custom Division', '1/3')
+    await run(page, 'laneDivision2')
+    await expectFace(1, 'Custom Lane Division', '1/2')
+    await run(page, 'laneLimitSix')
+    await expectFace(2, 'Custom Lane Limit', '6')
+
+    // A preset in the group still takes the face.
+    await page.keyboard.press('8')
+    await expectFace(0, '1/8 Division', '1/8')
+})
