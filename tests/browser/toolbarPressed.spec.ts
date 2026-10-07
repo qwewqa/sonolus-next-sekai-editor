@@ -772,3 +772,34 @@ test('a group with two value families keeps its face as values change', async ({
         'No Lane Limit',
     ])
 })
+
+test('a value picked while its group’s tool is in use leaves the tool on the face', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['divisionCustom', 'note', 'select', 'division4']]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('Select*')
+    // Already in use, so nothing changes.
+    await pickAt(page, 0, '1/4 Division')
+    await expectFace('Select*')
+    // Custom applies once its dialog closes.
+    await pickAt(page, 0, 'Custom Division')
+    await page.getByRole('spinbutton', { name: 'Division', exact: true }).fill('7')
+    await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expect(page.getByRole('spinbutton', { name: 'Division', exact: true })).toHaveCount(0)
+    await expectFace('Select*')
+    expect(await flyoutRows(page, 0)).toEqual([
+        'Custom Division*✓',
+        'Note',
+        'Select*',
+        '1/4 Division',
+    ])
+
+    // With no tool in use, a pick holds the face.
+    await run(page, 'eraser')
+    await expectFace('Select')
+    await pickAt(page, 0, '1/4 Division')
+    await expectFace('1/4 Division*')
+})

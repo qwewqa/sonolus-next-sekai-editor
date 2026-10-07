@@ -64,6 +64,12 @@ const stateOf = (name: CommandName, index: number) => commandState(name, toolbar
 const hasValues = (index: number) =>
     toolbar.value[index]?.some((name) => stateOf(name, index)?.kind === 'value') ?? false
 
+const hasToolInUse = (index: number) =>
+    toolbar.value[index]?.some((name) => {
+        const state = stateOf(name, index)
+        return state?.kind === 'tool' && state.current
+    }) ?? false
+
 // Values move a face only in a group whose states are all of one value family.
 const followsValues = (index: number) => {
     const states = (toolbar.value[index] ?? []).flatMap((name) => stateOf(name, index) ?? [])
@@ -166,8 +172,10 @@ const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     activeIndex.value = -1
     // A toggle takes the face once in use; one a dialog cancels leaves it on the one in use.
     const show = () => {
-        if (isPressed(name, index) !== false && toolbar.value[index]?.includes(name))
-            activeNames.value[index] = name
+        if (isPressed(name, index) === false || !toolbar.value[index]?.includes(name)) return
+        // A value leaves the face to a tool in use.
+        if (stateOf(name, index)?.kind === 'value' && hasToolInUse(index)) return
+        activeNames.value[index] = name
     }
     if (isPressed(name, index) === false) void Promise.resolve(done).then(show)
     else show()
