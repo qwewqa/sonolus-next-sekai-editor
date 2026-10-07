@@ -98,6 +98,76 @@ test('materializes disrupted attachments while preserving complete attachment in
     expect(result.original).toEqual([false, true, true, false, true, false])
 })
 
+test('only ticks that become endpoints detach; a tick inside a piece stays attached, and undo is exact', async ({
+    page,
+}) => {
+    const before = await page.evaluate(async () => {
+        const { getMaterializedNotePositions } =
+            await import('/src/state/operations/notePositions.ts')
+        const { fixtures, show, history, settings } = window.editorTest
+        const chart = fixtures.interaction
+        const base = chart.slides[0]![0]!
+        show({
+            ...chart,
+            slides: [
+                [
+                    { ...base, beat: 0, left: -4, size: 2, elevation: 2, connectorEase: 'inQuad' },
+                    { ...base, beat: 1, elevation: 9, isAttached: true },
+                    { ...base, beat: 2, elevation: 9, isAttached: true },
+                    { ...base, beat: 3, elevation: 9, isAttached: true },
+                    { ...base, beat: 4, left: 4, size: 4, elevation: 4 },
+                ],
+            ],
+        })
+        const source = history.state.value
+        const notes = [...source.store.slides.note.values()][0]!
+        history.replaceState({ ...source, selectedEntities: [notes[1]!] })
+        settings.toolbar = [['splitHold']]
+        ;(window as unknown as { notesBefore: unknown[] }).notesBefore = [...notes]
+        const positions = getMaterializedNotePositions(source, notes)
+        return [notes[1]!, notes[2]!].map((note) => positions.get(note)!)
+    })
+    await page.getByRole('button', { name: 'Split Slide', exact: true }).click()
+    const after = await page.evaluate(() =>
+        [...window.editorTest.history.state.value.store.slides.note.values()].map((notes) =>
+            notes.map(({ beat, left, size, elevation, isAttached }) => ({
+                beat,
+                left,
+                size,
+                elevation,
+                isAttached,
+            })),
+        ),
+    )
+    const [cut, head] = before
+    // The beat 3 tick re-anchors halfway between the new head and the tail.
+    expect(after).toEqual([
+        [
+            { beat: 0, left: -4, size: 2, elevation: 2, isAttached: false },
+            { beat: 1, ...cut, isAttached: false },
+        ],
+        [
+            { beat: 2, ...head, isAttached: false },
+            {
+                beat: 3,
+                left: expect.closeTo((head!.left + 4) / 2, 6),
+                size: expect.closeTo((head!.size + 4) / 2, 6),
+                elevation: 9,
+                isAttached: true,
+            },
+            { beat: 4, left: 4, size: 4, elevation: 4, isAttached: false },
+        ],
+    ])
+    await page.keyboard.press('z')
+    expect(
+        await page.evaluate(() => {
+            const notesBefore = (window as unknown as { notesBefore: unknown[] }).notesBefore
+            const notes = [...window.editorTest.history.state.value.store.slides.note.values()]
+            return notes.length === 1 && notes[0]!.every((note, i) => note === notesBefore[i])
+        }),
+    ).toBe(true)
+})
+
 test('new heads inherit their connector segment settings and equal-beat order stays intact', async ({
     page,
 }) => {

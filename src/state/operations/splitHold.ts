@@ -31,13 +31,7 @@ export const splitHold = (source: State, selected: Entity[]): State => {
     for (const id of slideIds) {
         const infos = source.store.slides.info.get(id)
         if (!infos) continue
-        const pieces = new Map<NoteEntity, number>()
-        let piece = 0
-        for (const { note } of infos) {
-            pieces.set(note, piece)
-            if (cuts.has(note)) piece++
-            removeNote(transaction, note)
-        }
+        for (const { note } of infos) removeNote(transaction, note)
 
         let slideId = id
         for (const [index, info] of infos.entries()) {
@@ -45,10 +39,8 @@ export const splitHold = (source: State, selected: Entity[]): State => {
             const previous = infos[index - 1]?.note
             const isHead = index === 0 || (!!previous && cuts.has(previous))
             if (isHead && index > 0) slideId = createSlideId()
-            const detach =
-                note.isAttached &&
-                (pieces.get(info.attachHead) !== pieces.get(note) ||
-                    pieces.get(info.attachTail) !== pieces.get(note))
+            // Only a new endpoint detaches, where drawn; other ticks re-anchor within their piece.
+            const detach = note.isAttached && ((isHead && index > 0) || cuts.has(note))
             const [replacement] = addNote(transaction, slideId, {
                 ...note,
                 ...(isHead
