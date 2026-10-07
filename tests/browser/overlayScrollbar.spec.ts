@@ -134,6 +134,8 @@ test('hovering the edge shows the bar until the pointer leaves', async ({ page }
 
 test('dragging the thumb scrolls, and clicking the track pages', async ({ page }) => {
     await open(page)
+    const field = properties(page).locator('input:visible').first()
+    await field.focus()
     await hoverEdge(page, properties(page))
     const start = (await thumb(properties(page)).boundingBox())!
     await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
@@ -148,7 +150,7 @@ test('dragging the thumb scrolls, and clicking the track pages', async ({ page }
     expect(moved.y - start.y).toBeCloseTo(100, 0)
     await page.mouse.up()
     // Focus stays where it was.
-    await expect(page.locator('[data-workspace-dock] :focus')).toHaveCount(0)
+    await expect(field).toBeFocused()
 
     const strip = (await bar(properties(page)).boundingBox())!
     const clientHeight = await scroller(page).evaluate((element) => element.clientHeight)
@@ -161,8 +163,75 @@ test('dragging the thumb scrolls, and clicking the track pages', async ({ page }
 test('wheeling over the hovered bar still scrolls', async ({ page }) => {
     await open(page)
     await hoverEdge(page, properties(page))
+    // The thumb, unlike the track, lies over no content to take the wheel.
+    const onThumb = async () => {
+        const { x, y } = await clearSpot(thumb(properties(page)))
+        await page.mouse.move(x, y)
+    }
+    // Whether each wheel was taken from the browser.
+    await page.evaluate(() => {
+        const taken: boolean[] = []
+        Object.assign(window, { taken })
+        addEventListener('wheel', (event) => taken.push(event.defaultPrevented))
+    })
+    await onThumb()
     await page.mouse.wheel(0, 150)
     await expect.poll(() => scrollTop(scroller(page))).toBeGreaterThan(100)
+    // Ctrl+wheel is left to the browser's zoom.
+    await onThumb()
+    await page.keyboard.down('Control')
+    await page.mouse.wheel(0, 150)
+    await page.keyboard.up('Control')
+    await expect
+        .poll(() => page.evaluate(() => (window as unknown as { taken: boolean[] }).taken))
+        .toEqual([true, false])
+})
+
+test('a press from elsewhere or a touch passing the edge never reveals the bar', async ({
+    page,
+}) => {
+    await open(page)
+    const content = (await scroller(page).boundingBox())!
+    const { x, y } = await clearSpot(bar(properties(page)))
+    // A drag from the content, as when selecting text, crosses the edge.
+    await page.mouse.move(content.x + content.width / 2, y)
+    await page.mouse.down()
+    await page.mouse.move(x, y, { steps: 4 })
+    await frames(page)
+    await expect(bar(properties(page))).not.toHaveClass(/overlay-scrollbar-active/)
+    await page.mouse.up()
+    await page.mouse.move(content.x + content.width / 2, y)
+    // A touch moving at the edge leaves it too.
+    await scroller(page).evaluate(
+        (element, { x, y }) =>
+            element.dispatchEvent(
+                new PointerEvent('pointermove', {
+                    bubbles: true,
+                    pointerType: 'touch',
+                    clientX: x,
+                    clientY: y,
+                }),
+            ),
+        { x, y },
+    )
+    await frames(page)
+    await expect(bar(properties(page))).not.toHaveClass(/overlay-scrollbar-active/)
+    // A mouse there reveals it.
+    await page.mouse.move(x, y)
+    await expect(bar(properties(page))).toHaveClass(/overlay-scrollbar-active/)
+})
+
+test('the thumb keeps a minimum height on very long content', async ({ page }) => {
+    await open(page)
+    await scroller(page).evaluate((element) => {
+        const filler = document.createElement('div')
+        filler.style.height = '200000px'
+        element.append(filler)
+    })
+    await hoverEdge(page, properties(page))
+    await expect
+        .poll(async () => (await thumb(properties(page)).boundingBox())!.height)
+        .toBeCloseTo(24, 0)
 })
 
 test('forced colors keep the native scrollbar and its gutter', async ({ page }) => {
