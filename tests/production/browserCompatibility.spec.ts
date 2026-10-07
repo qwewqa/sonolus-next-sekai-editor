@@ -260,3 +260,37 @@ test('vertical rail labels stay centered while panels open and close', async ({ 
         for (const offset of await offsets()) expect(offset).toBeLessThan(1)
     }
 })
+
+test('selects open the list the browser and pointer allow, and show their value once', async ({
+    page,
+}, testInfo) => {
+    await page.setViewportSize({ width: 1600, height: 1000 })
+    await page.keyboard.press('t')
+    const snap = page.getByRole('combobox', { name: 'Elevation Snapping', exact: true })
+    await expect(snap).toBeVisible()
+    // The shared list needs customizable select and a fine primary pointer; Firefox,
+    // older browsers and touch keep the system list.
+    const shared = await page.evaluate(
+        () => CSS.supports('appearance', 'base-select') && matchMedia('(pointer: fine)').matches,
+    )
+    if (testInfo.project.name.startsWith('firefox')) expect(shared).toBe(false)
+    if (testInfo.project.name.startsWith('mobile')) expect(shared).toBe(false)
+    expect(await snap.evaluate((select) => getComputedStyle(select).appearance)).toBe(
+        shared ? 'base-select' : 'none',
+    )
+    const value = page.locator('.elevation-select .select-value')
+    if (shared) await expect(value).toBeVisible()
+    else await expect(value).toBeHidden()
+    expect(await snap.evaluate((select) => getComputedStyle(select).color)).not.toBe(
+        shared ? 'rgb(68, 68, 102)' : 'rgba(0, 0, 0, 0)',
+    )
+    if (testInfo.project.name.startsWith('mobile')) return
+    // A closed select steps on arrows off Apple platforms, either way.
+    const before = await snap.inputValue()
+    await snap.focus()
+    await page.keyboard.press('ArrowDown')
+    await expect(snap).not.toHaveValue(before)
+    expect(
+        await snap.evaluate((select) => CSS.supports('selector(:open)') && select.matches(':open')),
+    ).toBe(false)
+})
