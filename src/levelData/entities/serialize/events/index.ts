@@ -1,4 +1,4 @@
-import { type LevelDataEntity } from '@sonolus/core'
+import type { LevelDataEntity } from '@sonolus/core'
 import type { BaseEventConnectionEntity } from '../../../../state/entities/events/connections'
 import type { EventJointEntity } from '../../../../state/entities/events/joints'
 import type { Range } from '../../../../utils/range'

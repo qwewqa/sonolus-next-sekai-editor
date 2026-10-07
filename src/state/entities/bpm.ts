@@ -1,4 +1,4 @@
-import { type BaseEntity } from '.'
+import type { BaseEntity } from '.'
 import type { BpmObject } from '../../chart/bpm'
 
 export type BpmEntity = BaseEntity & {

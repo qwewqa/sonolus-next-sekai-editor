@@ -1,4 +1,4 @@
-import { type LevelDataEntity } from '@sonolus/core'
+import type { LevelDataEntity } from '@sonolus/core'
 import { parseEvents } from '..'
 import type { StageId } from '../../../../stages'
 

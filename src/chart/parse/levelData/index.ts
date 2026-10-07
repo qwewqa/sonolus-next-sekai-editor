@@ -1,4 +1,4 @@
-import { type LevelDataEntity } from '@sonolus/core'
+import type { LevelDataEntity } from '@sonolus/core'
 import Type from 'typebox'
 import Value from 'typebox/value'
 import type { Chart } from '../..'

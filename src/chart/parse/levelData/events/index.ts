@@ -1,4 +1,4 @@
-import { type LevelDataEntity } from '@sonolus/core'
+import type { LevelDataEntity } from '@sonolus/core'
 import { getOptionalRef } from '..'
 
 export const getEventRefs = (entities: LevelDataEntity[], archetype: string) => {

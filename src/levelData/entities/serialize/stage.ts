@@ -1,4 +1,4 @@
-import { type LevelDataEntity } from '@sonolus/core'
+import type { LevelDataEntity } from '@sonolus/core'
 import type { FolderId } from '../../../chart/folders'
 import type { StageId, Stages } from '../../../chart/stages'
 import { serializeFolderRef } from './folder'

@@ -1,6 +1,6 @@
 import { findIntegral, integrate, type Integral } from '.'
-import { type Chart } from '../../chart'
-import { type BpmObject } from '../../chart/bpm'
+import type { Chart } from '../../chart'
+import type { BpmObject } from '../../chart/bpm'
 import { bisect } from '../../utils/ordered'
 
 export type BpmIntegral = Integral & {

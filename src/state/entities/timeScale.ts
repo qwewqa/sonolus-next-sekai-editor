@@ -1,4 +1,4 @@
-import { type BaseEntity } from '.'
+import type { BaseEntity } from '.'
 import type { GroupId } from '../../chart/groups'
 import type { TimeScaleEase, TimeScaleObject, TimeScaleTransition } from '../../chart/timeScale'
 

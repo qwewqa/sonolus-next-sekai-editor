@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { type PreviewFrameContext } from '../../src/preview/engine/context'
+import type { PreviewFrameContext } from '../../src/preview/engine/context'
 import {
     approach,
     createLayout,

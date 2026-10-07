@@ -39,6 +39,8 @@ export default tsEslint.config(
             ],
             '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
             '@typescript-eslint/switch-exhaustiveness-check': 'error',
+            // An all-type inline import still loads its module, adding import cycles.
+            '@typescript-eslint/no-import-type-side-effects': 'error',
             '@typescript-eslint/restrict-template-expressions': [
                 'error',
                 {
@@ -73,6 +75,7 @@ export default tsEslint.config(
         },
         rules: {
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+            '@typescript-eslint/no-import-type-side-effects': 'error',
         },
     },
 

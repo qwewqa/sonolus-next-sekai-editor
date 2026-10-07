@@ -1,5 +1,5 @@
 import { settings } from '../../settings'
-import { type CommandName } from '../commands'
+import type { CommandName } from '../commands'
 import { isElevationEditorOpen } from '../elevation/state'
 import { toolName, tools, type ToolName } from '../tools'
 import { defaultNotePropertiesPresetIndex } from '../tools/note'

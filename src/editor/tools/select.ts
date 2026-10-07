@@ -1,4 +1,4 @@
-import { type Tool } from '.'
+import type { Tool } from '.'
 import type { BpmObject } from '../../chart/bpm'
 import type { CameraEventObject } from '../../chart/events/camera'
 import type { StageMaskEventObject } from '../../chart/events/stage/mask'
