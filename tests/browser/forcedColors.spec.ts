@@ -515,3 +515,20 @@ test('raised buttons and segment tracks keep their edge, as fields do', async ({
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     await expectEdges(dialog.getByRole('button', { name: /^(Reset Settings|Reset Shortcuts)$/ }))
 })
+
+test('side-by-side dialog buttons keep a gap between their edges', async ({ page }) => {
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    // The painted edge: the box grown by the outline's offset and width.
+    const edge = (name: string) =>
+        dialog.getByRole('button', { name, exact: true }).evaluate((button) => {
+            const { left, right } = button.getBoundingClientRect()
+            const { outlineWidth, outlineOffset } = getComputedStyle(button)
+            const grow = parseFloat(outlineWidth) + parseFloat(outlineOffset)
+            return { left: left - grow, right: right + grow }
+        })
+    const settings = await edge('Reset Settings')
+    const shortcuts = await edge('Reset Shortcuts')
+    expect(shortcuts.left - settings.right).toBeGreaterThanOrEqual(6)
+})

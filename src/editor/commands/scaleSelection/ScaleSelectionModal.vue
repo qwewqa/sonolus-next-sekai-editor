@@ -98,14 +98,14 @@ onUnmounted(() => {
                 <div class="mt-4 flex justify-end gap-2">
                     <button
                         type="button"
-                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-button px-4 shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
+                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-button px-4 shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:h-11"
                         @click="cancel"
                     >
                         {{ i18n.modals.confirm.cancel }}
                     </button>
                     <button
                         type="submit"
-                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:h-11"
+                        class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:h-11"
                         :disabled="!session?.valid"
                     >
                         {{ i18n.commands.scaleSelection.apply }}
