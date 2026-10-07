@@ -659,3 +659,116 @@ test('the default toolbar’s faces follow the tool and values in use', async ({
     await page.keyboard.press('3')
     await expectFaces({ 13: '1/3 Division*' })
 })
+
+// Each flyout row, with a star while pressed and a tick while checked.
+const flyoutRows = async (page: Page, index: number) => {
+    await shown(page).nth(index).hover()
+    const rows = toolbar(page).locator(':scope > div > div > div button')
+    await expect(rows.first()).toBeVisible()
+    const result = await rows.evaluateAll((buttons) =>
+        buttons.map(
+            (button) =>
+                `${button.getAttribute('title')}${button.getAttribute('aria-pressed') === 'true' ? '*' : ''}${button.querySelector('[data-value-check]') ? '✓' : ''}`,
+        ),
+    )
+    await page.keyboard.press('Escape')
+    return result
+}
+
+const pickAt = async (page: Page, index: number, title: string) => {
+    await shown(page).nth(index).hover()
+    await toolbar(page).getByTitle(title, { exact: true }).click()
+}
+
+test('a tool in use takes a mixed group’s face from a value, which never takes it back', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['division4', 'note']]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('Note')
+    await pickAt(page, 0, '1/4 Division')
+    await expectFace('1/4 Division*')
+
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+    // The value in use stays in the flyout.
+    expect(await flyoutRows(page, 0)).toEqual(['1/4 Division*✓', 'Note*'])
+    await page.keyboard.press('f')
+    await expectFace('Note')
+    await page.keyboard.press('8')
+    await expectFace('Note')
+    await page.keyboard.press('4')
+    await expectFace('Note')
+    expect(await flyoutRows(page, 0)).toEqual(['1/4 Division*✓', 'Note'])
+})
+
+test('a mixed group shows its tool in use over any value', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['note', 'select', 'division4']]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('Select*')
+    expect(await flyoutRows(page, 0)).toEqual(['Note', 'Select*', '1/4 Division*✓'])
+
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+    await page.keyboard.press('8')
+    await expectFace('Note*')
+    // A value picked while a tool is in use gives the face back to the tool.
+    await pickAt(page, 0, '1/4 Division')
+    await expectFace('Note*')
+    await page.keyboard.press('f')
+    await expectFace('Select*')
+    await page.keyboard.press('g')
+    await expectFace('Select')
+    expect(await flyoutRows(page, 0)).toEqual(['Note', 'Select', '1/4 Division*✓'])
+    await page.keyboard.press('8')
+    await expectFace('Select')
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+})
+
+test('a group with two value families keeps its face as values change', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['divisionCustom', 'division8', 'division4', 'laneLimitSix', 'laneLimitNone'],
+        ]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('No Lane Limit*')
+    await run(page, 'laneLimitSix')
+    await expectFace('No Lane Limit')
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 0))
+    await expectFace('No Lane Limit*')
+    await page.keyboard.press('8')
+    await expectFace('No Lane Limit*')
+
+    // A pick holds the face.
+    await pickAt(page, 0, '1/4 Division')
+    await expectFace('1/4 Division*')
+    await page.keyboard.press('8')
+    await expectFace('1/4 Division')
+    await page.evaluate(() => (window.editorTest.view.division = 7))
+    await expectFace('1/4 Division')
+    await run(page, 'laneLimitSix')
+    await expectFace('1/4 Division')
+    // Custom is checked while no division preset in the group is in use.
+    expect(await flyoutRows(page, 0)).toEqual([
+        'Custom Division*✓',
+        '1/8 Division',
+        '1/4 Division',
+        'Limit to ±6 Lanes*✓',
+        'No Lane Limit',
+    ])
+    await page.keyboard.press('4')
+    await expectFace('1/4 Division*')
+    expect(await flyoutRows(page, 0)).toEqual([
+        'Custom Division',
+        '1/8 Division',
+        '1/4 Division*✓',
+        'Limit to ±6 Lanes*✓',
+        'No Lane Limit',
+    ])
+})

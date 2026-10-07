@@ -35,7 +35,8 @@ const valuePreset = (name: CommandName) => {
 }
 
 /** A tool or mode, shown strongly while in use, or a setting's value, shown low-key. */
-export type CommandState = { kind: 'tool' | 'value'; current: boolean }
+export type CommandState =
+    { kind: 'tool'; current: boolean } | { kind: 'value'; family: string; current: boolean }
 
 const tool = (current: boolean): CommandState => ({ kind: 'tool', current })
 
@@ -57,16 +58,19 @@ export const commandState = (
     }
 
     const value = valuePreset(name)
-    if (value) return { kind: 'value', current: value.current }
+    if (value) return { kind: 'value', ...value }
     const custom = /^(division|laneDivision|laneLimit)Custom$/.exec(name)
-    if (custom)
+    if (custom) {
+        const [, family = ''] = custom
         return {
             kind: 'value',
+            family,
             current: !group.some((other) => {
                 const value = valuePreset(other)
-                return !!value && value.family === custom[1] && value.current
+                return !!value && value.family === family && value.current
             }),
         }
+    }
 
     return name in tools ? tool(toolName.value === name) : undefined
 }

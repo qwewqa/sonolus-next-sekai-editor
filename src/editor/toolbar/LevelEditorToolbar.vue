@@ -64,14 +64,23 @@ const stateOf = (name: CommandName, index: number) => commandState(name, toolbar
 const hasValues = (index: number) =>
     toolbar.value[index]?.some((name) => stateOf(name, index)?.kind === 'value') ?? false
 
-// A group switches to its member whose tool comes into use, nearest its default.
+// Values move a face only in a group whose states are all of one value family.
+const followsValues = (index: number) => {
+    const states = (toolbar.value[index] ?? []).flatMap((name) => stateOf(name, index) ?? [])
+    const families = new Set(states.map((state) => state.kind === 'value' && state.family))
+    return families.size === 1 && !families.has(false)
+}
+
+// A group shows its tool in use, else its value in use where values move it, nearest its default.
 watch(
     () => toolbar.value.map((group) => group.filter((name) => isCommandPressed(name, group))),
     (pressed) => {
         for (const [index, names] of pressed.entries()) {
+            const tools = names.filter((name) => stateOf(name, index)?.kind === 'tool')
+            const candidates = tools.length || !followsValues(index) ? tools : names
             const shown = activeNames.value[index]
-            const name = names[names.length - 1]
-            if (name && shown && !isPressed(shown, index)) activeNames.value[index] = name
+            const name = candidates[candidates.length - 1]
+            if (name && shown && !candidates.includes(shown)) activeNames.value[index] = name
         }
     },
     { immediate: true },
