@@ -1187,8 +1187,8 @@
                 "reserved": "{0} is reserved by the browser or system. Press another key.",
                 "altGraph": "{0} types characters on many keyboards. Press another key.",
                 "alsoRuns": "Also runs {0}",
-                "browserReload": "Replaces the browser's reload shortcut",
-                "browserFind": "Replaces the browser's find shortcut"
+                "browserReload": "Replaces the browser’s reload shortcut",
+                "browserFind": "Replaces the browser’s find shortcut"
             },
             "maskLeft": {
                 "label": "Mask Lane"

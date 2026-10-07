@@ -229,9 +229,9 @@ test('shortcut capture waits past IME and dead keys and ignores Caps Lock', asyn
 test('shared and browser-claiming bindings are named under their rows', async ({ page }) => {
     // Default plain keys that also answer to the browser's Ctrl chords.
     await expect(shortcutField(page, 'Manage Stages')).toContainText(
-        "Replaces the browser's reload",
+        'Replaces the browser’s reload',
     )
-    await expect(shortcutField(page, 'Select')).toContainText("Replaces the browser's find")
+    await expect(shortcutField(page, 'Select')).toContainText('Replaces the browser’s find')
     // The browser keeps zooming with Ctrl+=.
     await expect(shortcutField(page, 'Zoom In Y')).not.toContainText('Replaces')
     await expect(shortcutField(page, 'Save')).not.toContainText('Replaces')
@@ -246,7 +246,7 @@ test('shared and browser-claiming bindings are named under their rows', async ({
     await shortcutButton(page, 'Save').click()
     await page.keyboard.press('Control+r')
     await expect(shortcutField(page, 'Slide')).not.toContainText('Also runs')
-    await expect(shortcutField(page, 'Save')).toContainText("Replaces the browser's reload")
+    await expect(shortcutField(page, 'Save')).toContainText('Replaces the browser’s reload')
     await expect(shortcutField(page, 'Manage Stages')).not.toContainText('Replaces')
 })
 

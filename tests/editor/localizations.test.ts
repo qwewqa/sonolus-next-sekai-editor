@@ -134,6 +134,10 @@ test('both flip commands name their axis', () => {
     }
 })
 
+test('English uses curly apostrophes', () => {
+    for (const [key, text] of Object.entries(english)) assert.doesNotMatch(text, /'/, key)
+})
+
 test('French text uses one typographic style', () => {
     for (const [key, text] of Object.entries(read('fr'))) {
         assert.doesNotMatch(text, /'/, `fr ${key}: curly apostrophes, as most of fr`)
