@@ -27,7 +27,7 @@ export const view = shallowReactive({
     time: 0,
     hoverTime: 0,
     // Touch has no hover; it shows the marker only while dragging.
-    isHoverHidden: false,
+    isHoverHidden: matchMedia('(hover: none)').matches,
     cursorTime: 0,
 
     lane: 0,

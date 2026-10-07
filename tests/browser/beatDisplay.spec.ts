@@ -437,6 +437,13 @@ test('the grid knows where the hover time and beat labels lie', async ({ page })
     }
 })
 
+test('a device with hover shows the hover labels from load', async ({ page }) => {
+    expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(false)
+    const spans = page.locator('.chart-pane > div:nth-of-type(2) > span')
+    await expect(spans).toHaveCount(2)
+    for (const span of await spans.all()) await expect(span).toBeVisible()
+})
+
 test('an edge label under the hover time and beat labels is hidden', async ({ page }) => {
     await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 5))
     const pane = (await page.locator('canvas.editor-chart').boundingBox())!

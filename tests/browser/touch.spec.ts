@@ -142,40 +142,41 @@ test('holding a finger still during a mouse drag opens no menu', async ({ page }
     ])
 })
 
+/** The hover labels, the top edge labels, and whether the grid and overlay know the hover. */
+const hoverState = (page: Page) =>
+    page.evaluate(async () => {
+        const { edgeLabelBoxes, hoverLabelCenter } = await window.editorTest.appImport<
+            typeof import('../../src/editor/edgeLabels')
+        >('/src/editor/edgeLabels.ts')
+        const visible = (selector: string) =>
+            [...document.querySelectorAll(selector)].map(
+                (span) => getComputedStyle(span).visibility === 'visible',
+            )
+        const canvas = document.querySelector<HTMLCanvasElement>('canvas.editor-overlay')!
+        const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+        let drawn = false
+        for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) drawn = true
+        const { left, right } = edgeLabelBoxes.value
+        return {
+            hover: visible('.chart-pane > div:nth-of-type(2) > span'),
+            top: visible('.chart-pane > div:first-of-type > div:first-child > span'),
+            // The grid leaves out its labels under the hover labels' boxes.
+            gridSkipsHover: [left, right].map((boxes) =>
+                boxes.some(
+                    ({ top, bottom }) =>
+                        Math.abs((top + bottom) / 2 - hoverLabelCenter.value) < 0.01,
+                ),
+            ),
+            drawn,
+        }
+    })
+
 test('touch leaves no hover marker, and the edge labels under it come back', async ({ page }) => {
     await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 5))
     const pane = (await page.locator('canvas.editor-chart').boundingBox())!
     const x = pane.x + 30
     const y = pane.y + 15
-    const state = () =>
-        page.evaluate(async () => {
-            const { edgeLabelBoxes, hoverLabelCenter } = await window.editorTest.appImport<
-                typeof import('../../src/editor/edgeLabels')
-            >('/src/editor/edgeLabels.ts')
-            const visible = (selector: string) =>
-                [...document.querySelectorAll(selector)].map(
-                    (span) => getComputedStyle(span).visibility === 'visible',
-                )
-            const canvas = document.querySelector<HTMLCanvasElement>('canvas.editor-overlay')!
-            const pixels = canvas
-                .getContext('2d')!
-                .getImageData(0, 0, canvas.width, canvas.height).data
-            let drawn = false
-            for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) drawn = true
-            const { left, right } = edgeLabelBoxes.value
-            return {
-                hover: visible('.chart-pane > div:nth-of-type(2) > span'),
-                top: visible('.chart-pane > div:first-of-type > div:first-child > span'),
-                // The grid leaves out its labels under the hover labels' boxes.
-                gridSkipsHover: [left, right].map((boxes) =>
-                    boxes.some(
-                        ({ top, bottom }) =>
-                            Math.abs((top + bottom) / 2 - hoverLabelCenter.value) < 0.01,
-                    ),
-                ),
-                drawn,
-            }
-        })
+    const state = () => hoverState(page)
     const hidden = {
         hover: [false, false],
         top: [true, true],
@@ -216,4 +217,24 @@ test('touch leaves no hover marker, and the edge labels under it come back', asy
     await expect.poll(async () => (await state()).hover).toEqual([true, true])
     await touch('touchEnd', [])
     await expect.poll(state).toEqual(hidden)
+})
+
+test.describe('on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+
+    test('a device without hover starts with no hover marker', async ({ page }) => {
+        expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true)
+        await expect
+            .poll(() => hoverState(page))
+            .toEqual({
+                hover: [false, false],
+                top: [true, true],
+                gridSkipsHover: [false, false],
+                drawn: false,
+            })
+        // The first mouse move shows it.
+        const pane = (await page.locator('canvas.editor-chart').boundingBox())!
+        await page.mouse.move(pane.x + pane.width / 2, pane.y + pane.height / 2)
+        await expect.poll(async () => (await hoverState(page)).hover).toEqual([true, true])
+    })
 })
