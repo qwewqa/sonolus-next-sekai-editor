@@ -55,17 +55,18 @@ const clearSpot = (element: Locator) =>
         const control = 'button, a, input, select, textarea, label, [role="button"], [tabindex]'
         const rect = element.getBoundingClientRect()
         const strip = element.closest('.overlay-scrollbar')!
+        const host = strip.parentElement!
         const middle = (rect.top + rect.bottom) / 2
         for (let offset = 0; offset < rect.height / 2 - 2; offset++)
             for (const y of [middle + offset, middle - offset])
-                for (let x = rect.right - 1; x > rect.left; x--)
-                    if (
-                        !document
-                            .elementsFromPoint(x, y)
-                            .find((under) => !strip.contains(under))
-                            ?.closest(control)
-                    )
-                        return { x, y }
+                for (let x = rect.right - 1; x > rect.left; x--) {
+                    // Only controls beside the bar count, not a focusable host around it.
+                    const hit = document
+                        .elementsFromPoint(x, y)
+                        .find((under) => !strip.contains(under))
+                        ?.closest(control)
+                    if (!hit || hit === host || !host.contains(hit)) return { x, y }
+                }
         throw new Error('No spot clear of controls')
     })
 
@@ -76,6 +77,30 @@ const hoverEdge = async (page: Page, scope: Locator) => {
     await page.mouse.move(x, y)
     await expect(bar(scope)).toHaveClass(/overlay-scrollbar-active/)
     return box
+}
+
+/** With the rows' room for the bar taken away, a row's ••• beneath it keeps its clicks. */
+const moreWins = async (page: Page, scope: Locator) => {
+    const list = scope.locator('.manager-entries')
+    await expect(list).toHaveAttribute('data-scrollable')
+    await list.evaluate((element: HTMLElement) => (element.style.paddingRight = '0px'))
+    const strip = (await bar(scope).boundingBox())!
+    const shown = await list.locator('.manager-more').evaluateAll(
+        (buttons, { top, bottom }) =>
+            buttons.findIndex((button) => {
+                const rect = button.getBoundingClientRect()
+                return rect.top > top + 40 && rect.bottom < bottom - 80
+            }),
+        { top: strip.y, bottom: strip.y + strip.height },
+    )
+    const box = (await list.locator('.manager-more').nth(shown).boundingBox())!
+    expect(box.x + box.width).toBeGreaterThan(strip.x + strip.width / 2)
+    const at = { x: strip.x + strip.width / 2, y: box.y + box.height / 2 }
+    await page.mouse.move(at.x, at.y)
+    await frames(page)
+    await expect(bar(scope)).not.toHaveClass(/overlay-scrollbar-active/)
+    await page.mouse.click(at.x, at.y)
+    await expect(page.getByRole('menu')).toBeVisible()
 }
 
 test('stacked sections reserve no gutter and their bands reach the panel edge', async ({
@@ -372,4 +397,69 @@ test('a manager list makes room for the bar only while it scrolls', async ({ pag
     await seed(3)
     await expect(list).not.toHaveAttribute('data-scrollable')
     expect(await padding()).toEqual({ band: '6px', list: '6px' })
+})
+
+test('the bar in a Manage dialog hovers, drags and pages, and its buttons keep their clicks', async ({
+    page,
+}) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { history, fixtures, settings, nextTick } = window.editorTest
+        const chart = structuredClone(fixtures.notes)
+        chart.groups = new Map(
+            Array.from({ length: 60 }, (_, i) => [(i + 1) as never, { name: `Group ${i + 1}` }]),
+        )
+        history.resetState(false, chart, 0, 'groups.json')
+        settings.groupsPosition = 'disabled'
+        await nextTick()
+    })
+    await page.keyboard.press('e')
+    const dialog = page.locator('dialog')
+    const list = dialog.locator('.manager-entries')
+    await expect(list.locator('.manager-entry').first()).toBeVisible()
+    await expect(list).toHaveAttribute('data-scrollable')
+
+    await hoverEdge(page, dialog)
+    const start = (await thumb(dialog).boundingBox())!
+    await page.mouse.move(start.x + start.width - 5, start.y + start.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(start.x + start.width - 5, start.y + start.height / 2 + 60, {
+        steps: 3,
+    })
+    await expect(bar(dialog)).toHaveClass(/overlay-scrollbar-dragging/)
+    await page.mouse.up()
+    const dragged = await scrollTop(list)
+    expect(dragged).toBeGreaterThan(60)
+
+    await hoverEdge(page, dialog)
+    const strip = (await bar(dialog).boundingBox())!
+    const { clientHeight, scrollHeight } = await list.evaluate((element) => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+    }))
+    await page.mouse.click(strip.x + strip.width / 2, strip.y + strip.height / 2 + 100)
+    await expect
+        .poll(() => scrollTop(list))
+        .toBeCloseTo(Math.min(scrollHeight - clientHeight, dragged + clientHeight * 0.875), -1)
+    await expect(dialog).toBeVisible()
+
+    await moreWins(page, dialog)
+})
+
+test('a row button beneath the bar in a dock keeps its clicks', async ({ page }) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { history, fixtures, settings, nextTick } = window.editorTest
+        const chart = structuredClone(fixtures.notes)
+        chart.groups = new Map(
+            Array.from({ length: 40 }, (_, i) => [(i + 1) as never, { name: `Group ${i + 1}` }]),
+        )
+        history.resetState(false, chart, 0, 'groups.json')
+        settings.groupsPosition = 'left'
+        settings.showGroups = true
+        await nextTick()
+    })
+    const groups = page.locator('#workspace-panel-groups')
+    await expect(groups.locator('.manager-entry').first()).toBeVisible()
+    await moreWins(page, groups)
 })

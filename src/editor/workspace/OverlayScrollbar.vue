@@ -108,12 +108,16 @@ const nearEdge = (event: PointerEvent) => {
 
 const control = 'button, a, input, select, textarea, label, [role="button"], [tabindex]'
 
-// Whether a control lies under the pointer, looking past the thumb.
-const overControl = (event: PointerEvent) =>
-    !!document
+// Whether a control beside the bar lies under the pointer, looking past the
+// thumb; a focusable host around it, such as a dialog, is not one.
+const overControl = (event: PointerEvent) => {
+    const host = strip.value?.parentElement
+    const hit = document
         .elementsFromPoint(event.clientX, event.clientY)
         .find((element) => !strip.value?.contains(element))
         ?.closest(control)
+    return !!hit && !!host && hit !== host && host.contains(hit)
+}
 
 const onPointerMove = (event: PointerEvent) => {
     // A press that started elsewhere, such as selecting text, passes over it,
