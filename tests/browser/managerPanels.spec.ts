@@ -1529,3 +1529,33 @@ test('a press on a menu padding, separator or disabled item keeps focus in the m
         await expect(more).toBeFocused()
     }
 })
+
+test('an open manager menu keeps typed characters such as quick find keys from the browser', async ({
+    page,
+}) => {
+    await seedGroups(page, ['Default', 'Other group'])
+    const panel = await openGroups(page)
+    await panel.getByRole('button', { name: 'More Actions for Default' }).click()
+    const menu = page.getByRole('menu')
+    await expect(menu).toBeVisible()
+    await page.evaluate(() => {
+        const seen: [string, boolean][] = []
+        Object.assign(window, { seen })
+        document.addEventListener(
+            'keydown',
+            (event) => setTimeout(() => seen.push([event.key, event.defaultPrevented])),
+            true,
+        )
+    })
+    for (const key of ['/', "'"]) await page.keyboard.press(key)
+    await expect(menu).toBeVisible()
+    await expect
+        .poll(() => page.evaluate(() => (window as unknown as { seen: unknown }).seen))
+        .toEqual([
+            ['/', true],
+            ["'", true],
+        ])
+    // Enter still chooses the focused item.
+    await page.keyboard.press('Enter')
+    await expect(menu).toHaveCount(0)
+})

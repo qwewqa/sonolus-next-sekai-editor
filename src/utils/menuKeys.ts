@@ -1,3 +1,9 @@
+import { blocksDefault, isCharacter } from '../editor/controls/bindings'
+
+/** Whether an open menu keeps a typed character from the browser, as shortcuts do (Firefox quick find). */
+export const holdsCharacter = (event: KeyboardEvent) =>
+    isCharacter(event.key) && blocksDefault(event, false)
+
 /** The item an arrow, Home or End key moves a menu to; arrows stop at the ends. */
 export const menuKeyIndex = (key: string, index: number, count: number) => {
     if (!count) return

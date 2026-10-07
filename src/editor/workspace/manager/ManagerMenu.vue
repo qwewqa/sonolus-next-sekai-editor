@@ -10,7 +10,7 @@ import {
     type Component,
 } from 'vue'
 import { vScrollEdges } from '../../../directives/scrollEdges'
-import { menuKeyIndex } from '../../../utils/menuKeys'
+import { holdsCharacter, menuKeyIndex } from '../../../utils/menuKeys'
 import { swallowPress } from '../../../utils/swallowPress'
 import { createTypeAhead, isTypeAheadKey } from '../../../utils/typeAhead'
 import { isInWorkspaceDock, workspaceDockAttribute } from '..'
@@ -249,6 +249,8 @@ const onKeydown = (event: KeyboardEvent) => {
         const index = list.findIndex((button) => button === document.activeElement)
         const next = menuKeyIndex(event.key, index, list.length)
         if (next !== undefined) list[next]?.focus()
+    } else if (holdsCharacter(event)) {
+        event.preventDefault()
     }
 }
 

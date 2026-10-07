@@ -9,7 +9,7 @@ import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { vScrollEdges } from '../directives/scrollEdges'
-import { menuKeyIndex } from '../utils/menuKeys'
+import { holdsCharacter, menuKeyIndex } from '../utils/menuKeys'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import {
     formatShortcut,
@@ -241,8 +241,11 @@ const onKeydown = (event: KeyboardEvent) => {
         if (action) {
             event.preventDefault()
             execute(action.name)
-        } else if ((event.ctrlKey || event.metaKey) && /^[a-z]$/i.test(event.key)) {
-            // Nor do other chords reach the browser, such as Ctrl+S saving the page.
+        } else if (
+            ((event.ctrlKey || event.metaKey) && /^[a-z]$/i.test(event.key)) ||
+            holdsCharacter(event)
+        ) {
+            // Nor do other chords or characters reach the browser, such as Ctrl+S saving the page.
             event.preventDefault()
         }
     }

@@ -473,3 +473,28 @@ test('menus fit desktop and narrow viewports with readable selection actions', a
     await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toBeInViewport()
     await page.screenshot({ path: testInfo.outputPath('narrow-menu.png') })
 })
+
+test('the open menu keeps typed characters such as quick find keys from the browser', async ({
+    page,
+}) => {
+    await selectTwo(page)
+    await click(page, -3, 3)
+    await expect(page.getByRole('menu')).toBeVisible()
+    await page.evaluate(() => {
+        const seen: [string, boolean][] = []
+        Object.assign(window, { seen })
+        document.addEventListener(
+            'keydown',
+            (event) => setTimeout(() => seen.push([event.key, event.defaultPrevented])),
+            true,
+        )
+    })
+    for (const key of ['/', "'"]) await page.keyboard.press(key)
+    await expect(page.getByRole('menu')).toBeVisible()
+    await expect
+        .poll(() => page.evaluate(() => (window as unknown as { seen: unknown }).seen))
+        .toEqual([
+            ['/', true],
+            ["'", true],
+        ])
+})
