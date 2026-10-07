@@ -1826,6 +1826,34 @@ test('preview number fields keep typing through re-renders and normalize on chan
     await expect(speed).toHaveValue('12')
 })
 
+test('a preview setting value that would truncate goes below its label', async ({ page }) => {
+    const rows = page.locator('.preview-controls .preview-setting')
+    const stacked = () =>
+        rows.evaluateAll((elements) =>
+            elements
+                .filter((element) => element.classList.contains('preview-setting-stacked'))
+                .map((element) => element.querySelector('.preview-setting-label')?.textContent),
+        )
+    // Values that fit stay beside their labels.
+    await settle(page)
+    expect(await stacked()).toEqual([])
+
+    await page.setViewportSize({ width: 1280, height: 1000 })
+    await page.evaluate(() => (window.editorTest.settings.locale = 'ko'))
+    const row = rows.filter({ hasText: '판정 범위 표시' })
+    await expect(row).toHaveClass(/preview-setting-stacked/)
+    const value = row.locator('.preview-toggle')
+    await expect(value).toHaveText('비활성화됨')
+    expect(await value.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
+    // Measured at its longer state, a click doesn't move the row.
+    const box = await row.boundingBox()
+    await row.getByRole('checkbox').click()
+    await expect(value).toHaveText('활성화됨')
+    await settle(page)
+    await expect(row).toHaveClass(/preview-setting-stacked/)
+    expect(await row.boundingBox()).toEqual(box)
+})
+
 test('preview options share persisted settings with the main options menu', async ({ page }) => {
     const preview = page.locator('.preview-controls')
     for (const label of ['Note Speed', 'Render Scale']) {

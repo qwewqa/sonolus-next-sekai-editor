@@ -12,10 +12,7 @@ let context: CanvasRenderingContext2D | null | undefined
  * Whether a control's shown value, or any of `others` it can switch to, is wider
  * than the room its pill gives it.
  */
-export const valueOverflows = (
-    control: HTMLSelectElement | HTMLButtonElement | HTMLInputElement,
-    others: string[] = [],
-) => {
+export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
     const style = getComputedStyle(control)
     const measure = (context ??= document.createElement('canvas').getContext('2d'))
     if (!measure) return false

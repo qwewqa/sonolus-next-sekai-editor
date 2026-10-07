@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, useId, useTemplateRef, watch, type StyleValue } from 'vue'
+import { computed, nextTick, onUpdated, useId, useTemplateRef, watch, type StyleValue } from 'vue'
 import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
+import { valueOverflows } from '../modals/form/fieldLayout'
 import { optionName } from '../modals/form/fieldUsage'
+import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
 import { resyncInput } from '../modals/form/resync'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
@@ -144,6 +146,38 @@ watch([controls, controlsBody], ([element, body], _previous, onCleanup) => {
         cancelAnimationFrame(frame)
     })
 })
+
+// A value that would truncate beside its label goes below it, as in Properties;
+// an on/off value is measured at its longer state, so a click doesn't move the row.
+let fitFrame = 0
+const fitRows = () => {
+    const { enabled, disabled } = i18n.value.modals.form.toggle
+    for (const row of controlsBody.value?.querySelectorAll<HTMLElement>('.preview-setting') ?? []) {
+        const control = row.querySelector<HTMLElement>('.preview-toggle, select.preview-field')
+        if (!control) continue
+        row.classList.remove('preview-setting-stacked')
+        const others = control instanceof HTMLSelectElement ? [] : [enabled, disabled]
+        if (valueOverflows(control, others)) row.classList.add('preview-setting-stacked')
+    }
+}
+const refitRows = () => {
+    cancelAnimationFrame(fitFrame)
+    fitFrame = requestAnimationFrame(fitRows)
+}
+watch(
+    controlsBody,
+    (body, _previous, onCleanup) => {
+        if (!body) return
+        fitRows()
+        observeWidth(body, refitRows)
+        onCleanup(() => {
+            unobserveWidth(body)
+            cancelAnimationFrame(fitFrame)
+        })
+    },
+    { flush: 'post' },
+)
+onUpdated(refitRows)
 
 // Focus the new form once it is placed; before that it is not yet visible.
 if (props.focusPlacement) {
@@ -522,6 +556,11 @@ const onPlacementChange = () => {
     row-gap: 0.25rem;
     min-height: 2rem;
     flex-shrink: 0;
+}
+
+/* A value too long to sit beside its label takes the full row below it. */
+.preview-setting.preview-setting-stacked {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 /* Long translations wrap within their column instead of pushing fields out. */
