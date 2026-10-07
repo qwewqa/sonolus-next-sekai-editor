@@ -11,7 +11,7 @@ import { switchToolTo, tool, toolName, type ToolName } from '../tools'
 import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
 import { lockCursor, unlockCursor } from './cursor'
 import { gesture } from './gestures/gesture'
-import { drag } from './gestures/recognizers/drag'
+import { drag, isDragging } from './gestures/recognizers/drag'
 import { tap } from './gestures/recognizers/tap'
 import { clearPageSelection } from './pageSelection'
 
@@ -105,7 +105,7 @@ const mousemove = (event: MouseEvent) => {
 
     if (mouseGesture.pointerCount) {
         mouseGesture.move([p])
-    } else {
+    } else if (!isDragging.value) {
         setViewHover(p.y)
         void tool.value.hover?.(p.x, p.y, p.modifiers)
     }

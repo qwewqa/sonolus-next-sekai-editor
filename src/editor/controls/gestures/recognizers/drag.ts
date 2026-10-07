@@ -86,6 +86,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             const bounds = getControlBounds(view)
             const p = (x - bounds.x) / bounds.w
             if (!quickScroll || p < 1 - settings.touchQuickScrollZone / 100) {
+                // Tools hold one drag; another input's drag leaves this press inert.
+                if (isDragging.value) return true
                 const startState = state.value
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true
 
