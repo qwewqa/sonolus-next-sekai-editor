@@ -6,6 +6,7 @@ import {
     autoShape,
     drawerSide,
     isInWorkspaceDock,
+    keepDefaultsAcrossDisplay,
     keepPanelsAcrossShape,
     measureRootFontSize,
     setDockCollapsed,
@@ -28,6 +29,7 @@ watch(
 const root = useTemplateRef<HTMLDivElement>('root')
 
 keepPanelsAcrossShape()
+keepDefaultsAcrossDisplay()
 
 // Text entry inside a dock may open an on-screen keyboard. Hold the shape used
 // for Auto placement until editing ends so the field stays where it is.

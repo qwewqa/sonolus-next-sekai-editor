@@ -675,10 +675,20 @@ export const settings = Object.defineProperties(
     [K in keyof typeof settingsProperties]: Type.StaticDecode<(typeof settingsProperties)[K]>
 }
 
+let resetting = false
+
+/** Whether Reset Settings is running, changing its keys one at a time. */
+export const isResettingSettings = () => resetting
+
 export const resetSettings = () => {
-    for (const [key, schema] of Object.entries(settingsProperties)) {
-        if (key === 'keyboardShortcuts') continue
-        Reflect.set(settings, key, Value.Create(schema))
+    resetting = true
+    try {
+        for (const [key, schema] of Object.entries(settingsProperties)) {
+            if (key === 'keyboardShortcuts') continue
+            Reflect.set(settings, key, Value.Create(schema))
+        }
+    } finally {
+        resetting = false
     }
 }
 

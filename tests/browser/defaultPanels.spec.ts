@@ -182,8 +182,32 @@ test('an older saved open manager stays open alone', async ({ page }) => {
     await expectShown(page, 'left', { Preview: true, Groups: true, Stages: false })
 })
 
+test('a display change saves the panels the default showed', async ({ page }) => {
+    await boot(page, { width: 1280, height: 720 })
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    // A 4:3 preview needs more height than 720 leaves beside the managers.
+    await page.evaluate(() => (window.editorTest.settings.previewAspectRatio = 4 / 3))
+    await settle(page)
+    await expectShown(page, 'left', { Preview: true, Groups: true, Stages: true })
+    expect(await stored(page)).toEqual({ showGroups: true, showStages: true })
+})
+
+test('an overlaid playback strip keeps a short window as it was', async ({ page }) => {
+    await boot(page, { width: 1280, height: 670 })
+    await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
+    // Without the strip's room Preview would fit beside the managers.
+    await page.evaluate(() => (window.editorTest.settings.previewTransportPosition = 'overlay'))
+    await settle(page)
+    await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
+    expect(await stored(page)).toEqual({ showGroups: false, showStages: false })
+})
+
 test('Reset Settings brings back the default', async ({ page }) => {
-    await boot(page, { width: 1600, height: 1000 }, { showGroups: false, showStages: false })
+    await boot(
+        page,
+        { width: 1600, height: 1000 },
+        { showGroups: false, showStages: false, previewAspectRatio: 4 / 3 },
+    )
     await expectShown(page, 'left', { Preview: true, Groups: false, Stages: false })
     await page.keyboard.press(',')
     const dialog = page.getByRole('dialog')

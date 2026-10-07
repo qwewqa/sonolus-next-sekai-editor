@@ -1,5 +1,5 @@
 import { computed, ref, shallowRef, watch } from 'vue'
-import { settings } from '../../settings'
+import { isResettingSettings, settings } from '../../settings'
 import { oneRowToolbarWidth, toolbarGroups } from '../toolbar/layout'
 import {
     carryAcrossShape,
@@ -15,6 +15,7 @@ import {
     type PanelId,
     type PanelPosition,
     type WorkspaceAction,
+    type WorkspaceLayoutInput,
     type WorkspaceToggleState,
 } from './layout'
 
@@ -146,7 +147,8 @@ const savedOpenStates = computed(
 
 const isPanelStateUnset = computed(() => panelIds.some((id) => savedOpenStates.value[id] === null))
 
-const toggleState = computed((): WorkspaceToggleState => {
+// Display settings can be given as they were before a change.
+const resolveToggleState = (display: Partial<WorkspaceLayoutInput> = {}): WorkspaceToggleState => {
     const saved = savedOpenStates.value
     const unset = panelIds.filter((id) => saved[id] === null)
     const state = {
@@ -162,12 +164,14 @@ const toggleState = computed((): WorkspaceToggleState => {
         },
     }
     const enabled = unset.filter(isPanelEnabled)
-    if (!enabled.length || !hasRoomFor(layoutInput(state), enabled)) return state
+    if (!enabled.length || !hasRoomFor({ ...layoutInput(state), ...display }, enabled)) return state
     return {
         ...state,
         open: { ...state.open, ...Object.fromEntries(enabled.map((id) => [id, true])) },
     }
-})
+}
+
+const toggleState = computed(() => resolveToggleState())
 
 const panelOpenStates = computed(() => toggleState.value.open)
 
@@ -199,6 +203,35 @@ export const setDockCollapsed = (side: DockSide, collapsed: boolean) => {
     keepDefaults()
     settings[collapsedKeys[side]] = collapsed
 }
+
+/**
+ * Changing a display setting the default's room depends on saves the panels it
+ * showed, so a display tweak never opens or closes panels. The app shell starts
+ * it once settings are loaded.
+ */
+export const keepDefaultsAcrossDisplay = () =>
+    watch(
+        [
+            () => settings.previewAspectRatio,
+            () => settings.previewTransportPosition,
+            () => toolbarGroups(settings.toolbar).length,
+        ],
+        (_, [previewAspectRatio, transport, tools]) => {
+            if (!isPanelStateUnset.value || isResettingSettings()) return
+            commit(
+                resolveToggleState({
+                    previewAspectRatio,
+                    previewOverlay: transport === 'overlay',
+                    toolbarWidth: oneRowToolbarWidth(
+                        tools,
+                        rootFontSize.value,
+                        isCoarsePointer.value,
+                    ),
+                }),
+            )
+        },
+        { flush: 'sync' },
+    )
 
 /**
  * Keeps exactly the same panels shown when rotating a tablet, or resizing
