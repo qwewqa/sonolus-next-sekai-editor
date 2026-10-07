@@ -472,3 +472,61 @@ test('a value without a preset in its group shows on that group’s Custom face'
     await page.keyboard.press('8')
     await expectFace(0, '1/8 Division', '1/8')
 })
+
+test('values in use keep the resting look, and their flyout checks the one in use', async ({
+    page,
+}) => {
+    // The selected fill, not the press feedback every tool has.
+    const fill = /(^|\s)bg-accent(\s|$)/
+    const values = ['1/4 Division', '1/1 Lane Division', 'No Lane Limit']
+    for (const title of values) {
+        const face = shown(page).and(page.getByTitle(title, { exact: true }))
+        await expect(face).toHaveAttribute('aria-pressed', 'true')
+        await expect(face).not.toHaveClass(fill)
+        await expect(face).toHaveClass(/(^|\s)bg-button(\s|$)/)
+    }
+    await expect(shown(page).and(page.getByTitle('Select', { exact: true }))).toHaveClass(fill)
+
+    const rows = toolbar(page).locator(':scope > div > div > div button')
+    const checked = () =>
+        rows.evaluateAll((buttons) =>
+            buttons
+                .filter((button) => button.querySelector('[data-value-check]'))
+                .map((button) => button.getAttribute('title')),
+        )
+    await shown(page)
+        .and(page.getByTitle('1/4 Division', { exact: true }))
+        .hover()
+    await expect(rows.first()).toBeVisible()
+    expect(await checked()).toEqual(['1/4 Division'])
+    // Every row keeps the column, Snapping too, so the names line up.
+    const lefts = await rows.evaluateAll((buttons) =>
+        buttons.map((button) =>
+            Math.round(button.querySelector('[data-icon-column]')!.getBoundingClientRect().left),
+        ),
+    )
+    expect(new Set(lefts).size).toBe(1)
+    await expect(rows.and(page.locator('[class~="bg-accent"]'))).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // A custom value checks Custom.
+    await page.evaluate(() => (window.editorTest.view.division = 7))
+    await shown(page)
+        .and(page.getByTitle('Custom Division', { exact: true }))
+        .hover()
+    await expect(rows.first()).toBeVisible()
+    expect(await checked()).toEqual(['Custom Division'])
+    await page.keyboard.press('Escape')
+
+    // Tool flyouts have no check column.
+    await shown(page)
+        .and(page.getByTitle('Select', { exact: true }))
+        .hover()
+    await expect(rows.first()).toBeVisible()
+    await expect(rows.locator('[data-icon-column]').first()).toBeVisible()
+    expect(
+        await rows.evaluateAll((buttons) =>
+            buttons.every((button) => button.firstElementChild?.hasAttribute('data-icon-column')),
+        ),
+    ).toBe(true)
+})

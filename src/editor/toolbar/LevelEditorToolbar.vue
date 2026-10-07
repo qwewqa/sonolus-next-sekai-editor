@@ -31,7 +31,7 @@ import {
     toolbarGroups,
     toolbarPadding,
 } from './layout'
-import { isCommandPressed } from './pressed'
+import { commandState, isCommandPressed } from './pressed'
 
 const props = defineProps<{ available?: CommandName[] }>()
 
@@ -59,6 +59,10 @@ watch(activeNames, (names) => shownByLayout.set(layoutOf(toolbar.value), [...nam
 
 const isPressed = (name: CommandName, index: number) =>
     isCommandPressed(name, toolbar.value[index] ?? [])
+const stateOf = (name: CommandName, index: number) => commandState(name, toolbar.value[index] ?? [])
+// A flyout with values gives every row the check column, so labels line up.
+const hasValues = (index: number) =>
+    toolbar.value[index]?.some((name) => stateOf(name, index)?.kind === 'value') ?? false
 
 // A group switches to its member whose tool comes into use, nearest its default.
 watch(
@@ -248,7 +252,7 @@ onBeforeUnmount(() => {
                 <LevelEditorToolbarTool
                     class="size-[--tool-size] justify-center"
                     :name="activeName"
-                    :pressed="isPressed(activeName, i)"
+                    :state="stateOf(activeName, i)"
                     v-bind="flyoutAttributes(i)"
                     @pointermove="onOverMain($event, i)"
                     @click="onClickMain($event, i, activeName)"
@@ -274,7 +278,8 @@ onBeforeUnmount(() => {
                         :key="j"
                         class="mb-1 w-full"
                         :name
-                        :pressed="isPressed(name, i)"
+                        :state="stateOf(name, i)"
+                        :check-column="hasValues(i)"
                         show-label
                         @click="onClickSub($event, i, name)"
                     />

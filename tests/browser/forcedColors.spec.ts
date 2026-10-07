@@ -195,8 +195,13 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
                 }
             }),
         )
+    // Values in use are pressed too, but keep the resting look.
+    const isValue = (title: string | null) => /Division|Lane Limit/.test(title ?? '')
     const expectTools = async (locator: Locator, pressedCount: number) => {
-        const tools = await looks(locator)
+        const tools = (await looks(locator)).map((tool) => ({
+            ...tool,
+            pressed: tool.pressed && !isValue(tool.title),
+        }))
         expect(tools.length).toBeGreaterThan(1)
         for (const { title, pressed, edge, background, color, fill } of tools) {
             // The edge takes the text colour.
@@ -216,8 +221,10 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
         expect(tools.filter(({ pressed }) => pressed)).toHaveLength(pressedCount)
     }
     const toolbar = page.locator('[data-editor-toolbar]')
-    // Select is in use; the division and lane groups show their current values.
-    await expectTools(toolbar.locator(':scope > div > div > button'), 4)
+    // Select is in use; the division and lane groups show their current values, unselected.
+    const faces = toolbar.locator(':scope > div > div > button')
+    await expect(faces.and(page.locator('[aria-pressed="true"]'))).toHaveCount(4)
+    await expectTools(faces, 1)
     const select = toolbar.getByTitle('Select', { exact: true })
     await expect.poll(() => fills(select, 'path')).toEqual([selectedText])
 
@@ -241,6 +248,22 @@ test('toolbar tools keep their edge, and the tool in use is selected', async ({ 
     await select.hover()
     await expect(toolbar.getByTitle('Eraser', { exact: true })).toBeVisible()
     await expectTools(toolbar.locator(':scope > div > div > div button'), 1)
+    await page.keyboard.press('Escape')
+
+    // A value's flyout checks the one in use in the text colour, with no fill.
+    await toolbar.getByTitle('1/4 Division', { exact: true }).hover()
+    const rows = toolbar.locator(':scope > div > div > div button')
+    await expect(rows.first()).toBeVisible()
+    await expectTools(rows, 0)
+    const checks = rows.locator('[data-value-check]')
+    await expect(checks).toHaveCount(1)
+    await expect(rows.filter({ has: page.locator('[data-value-check]') })).toHaveAttribute(
+        'title',
+        '1/4 Division',
+    )
+    expect(await checks.evaluate((check) => getComputedStyle(check).fill)).toBe(
+        await systemColor(page, 'ButtonText'),
+    )
     await page.keyboard.press('Escape')
 
     await page.keyboard.press(',')
