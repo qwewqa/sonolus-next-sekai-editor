@@ -654,3 +654,61 @@ test('Name Contrast is off by default, persists and recolours names', async ({ p
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
     expect(await nameColors()).toEqual({ Center: ['#aa00aa'], 'Other group': ['#00aaaa'] })
 })
+
+test('with storage full, a changed setting still applies without an error', async ({ page }) => {
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await page.evaluate(() => {
+        const fill = (size: number) => {
+            const chunk = 'x'.repeat(size)
+            try {
+                for (let i = 0; ; i++) localStorage.setItem(`fill-${size}-${i}`, chunk)
+            } catch {
+                // Full.
+            }
+        }
+        fill(256 * 1024)
+        fill(1024)
+        fill(1)
+    })
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    const width = await page.evaluate(() => window.editorTest.settings.width)
+    await page.keyboard.press(']')
+    expect(await page.evaluate(() => window.editorTest.settings.width)).not.toBe(width)
+    expect(errors).toEqual([])
+})
+
+test('with storage full, a former dock size still loads and is kept for later', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        localStorage.setItem('sonolus-next-sekai-editor.previewWidth', '432')
+        localStorage.removeItem('sonolus-next-sekai-editor.leftDockWidth')
+        const fill = (size: number) => {
+            const chunk = 'x'.repeat(size)
+            try {
+                for (let i = 0; ; i++) localStorage.setItem(`fill-${size}-${i}`, chunk)
+            } catch {
+                // Full.
+            }
+        }
+        fill(256 * 1024)
+        fill(1024)
+        fill(1)
+    })
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    expect(
+        await page.evaluate(async () => {
+            const { settings } = await import('/src/settings.ts')
+            return {
+                width: settings.leftDockWidth,
+                legacy: localStorage.getItem('sonolus-next-sekai-editor.previewWidth'),
+            }
+        }),
+    ).toEqual({ width: 432, legacy: '432' })
+    expect(errors).toEqual([])
+})

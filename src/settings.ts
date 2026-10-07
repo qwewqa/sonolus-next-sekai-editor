@@ -557,7 +557,12 @@ const loadSetting = (key: string, defaultValue: unknown) => {
     const legacyKey = legacyKeys[key]
     const legacy = legacyKey === undefined ? undefined : storageGet(legacyKey, undefined)
     if (legacyKey !== undefined && legacy !== undefined) {
-        if (storageGet(key, undefined) === undefined) storageSet(key, legacy)
+        try {
+            if (storageGet(key, undefined) === undefined) storageSet(key, legacy)
+        } catch {
+            // Storage is full: moved on a later start.
+            return legacy
+        }
         storageRemove(legacyKey)
     }
     return storageGet(key, defaultValue)
@@ -588,10 +593,15 @@ export const settings = Object.defineProperties(
             watch(
                 prop,
                 (value) => {
-                    if (Value.Equal(value, defaultValue)) {
-                        storageRemove(key)
-                    } else {
-                        storageSet(key, value)
+                    try {
+                        if (Value.Equal(value, defaultValue)) {
+                            storageRemove(key)
+                        } else {
+                            storageSet(key, value)
+                        }
+                    } catch (error) {
+                        // Storage is full: the setting still applies in this tab.
+                        console.error('Failed to save setting:', error)
                     }
                 },
                 { flush: 'sync' },
