@@ -362,3 +362,41 @@ test('a faint BPM label under Show Other Objects still replaces its beat label',
     expect(texts).toContain('1.2')
     expect(texts).not.toContain('2.1')
 })
+
+test('the grid knows where the time and beat labels over the chart lie', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 3))
+    // The grid leaves out its labels under these boxes; they follow the text's width.
+    const boxes = () =>
+        page.evaluate(async () => {
+            const { edgeLabelBoxes } = await window.editorTest.appImport<
+                typeof import('../../src/editor/edgeLabels')
+            >('/src/editor/edgeLabels.ts')
+            const pane = document.querySelector('canvas.editor-chart')!.getBoundingClientRect()
+            const spans = [
+                ...document.querySelectorAll<HTMLElement>(
+                    '.chart-pane > div:first-of-type > div > span',
+                ),
+            ].map((span) => {
+                const { left, right, top, bottom } = span.getBoundingClientRect()
+                return [left - pane.left, right - pane.left, top - pane.top, bottom - pane.top]
+            })
+            const { left, right } = edgeLabelBoxes.value
+            const stored = [left[0], right[0], left[1], right[1]].map((box) =>
+                box ? [box.left, box.right, box.top, box.bottom] : [],
+            )
+            return { spans, stored }
+        })
+    const expectMatching = async () =>
+        await expect
+            .poll(async () => {
+                const { spans, stored } = await boxes()
+                return stored.every((box, index) =>
+                    box.every((edge, side) => Math.abs(edge - spans[index]![side]!) < 0.5),
+                )
+            })
+            .toBe(true)
+    await expectMatching()
+    await page.evaluate(() => (window.editorTest.settings.beatDisplay = 'both'))
+    await expectMatching()
+})

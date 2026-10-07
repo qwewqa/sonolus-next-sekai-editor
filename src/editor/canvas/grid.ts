@@ -1,10 +1,12 @@
+import type { State } from '../../state'
 import type { Entity } from '../../state/entities'
 import { beatToTime, getMeasureBeats } from '../../state/integrals/bpms'
 import { formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
+import type { LabelBox } from '../edgeLabels'
 import { timeScaleLabel } from './events'
-import { drawText } from './text'
+import { drawText, measureText } from './text'
 import type { EdgeLabelYs, EditorDrawContext } from './types'
 
 // Half the beat or time (0.4) and BPM or time scale (0.5) label sizes.
@@ -25,6 +27,62 @@ export const timeScaleEdgeLabelYs = (
         if (label.max > 6.1) ys.right.push(y)
     }
     return ys
+}
+
+/** The time (left) and beat (right) labels the grid draws, by text and y. */
+const gridLabels = (
+    state: State,
+    ups: number,
+    beats: Range<number>,
+    times: Range<number>,
+    beatDisplay: BeatDisplay,
+) => {
+    const left: { text: string; y: number }[] = []
+    for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++)
+        left.push({ text: formatIntegerTime(time), y: time * ups })
+    const right: { text: string; y: number }[] = []
+    for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++)
+        right.push({
+            text: formatBeatPosition(state.bpms, beat, beatDisplay),
+            y: beatToTime(state.bpms, beat) * ups,
+        })
+    return { left, right }
+}
+
+/** The ys of the time and beat labels under the given boxes, in pane pixels. */
+export const coveredLabelYs = (
+    context: EditorDrawContext,
+    beats: Range<number>,
+    times: Range<number>,
+    beatDisplay: BeatDisplay,
+    boxes: { left: LabelBox[]; right: LabelBox[] },
+): EdgeLabelYs => {
+    const { bounds, scale, state, ups } = context
+    const labels = gridLabels(state, ups, beats, times, beatDisplay)
+    // A label's box in pane pixels: drawn from `edge` toward `align`, 0.4 tall.
+    const covered = (
+        boxes: LabelBox[],
+        { text, y }: { text: string; y: number },
+        edge: number,
+        align: 'start' | 'end',
+    ) => {
+        const width = measureText(context, text)
+        const left = ((align === 'start' ? edge : edge - width) - bounds.l) * scale
+        const right = left + width * scale
+        const top = (y - 0.2 - bounds.t) * scale
+        const bottom = (y + 0.2 - bounds.t) * scale
+        return boxes.some(
+            (box) => box.left < right && box.right > left && box.top < bottom && box.bottom > top,
+        )
+    }
+    return {
+        left: labels.left
+            .filter((label) => covered(boxes.left, label, -6.1, 'end'))
+            .map(({ y }) => y),
+        right: labels.right
+            .filter((label) => covered(boxes.right, label, 6.1, 'start'))
+            .map(({ y }) => y),
+    }
 }
 
 export const drawGrid = (
@@ -105,32 +163,14 @@ export const drawGrid = (
     const beatYs = [...bpmYs, ...edgeLabelYs.right]
     const near = (ys: number[], y: number) =>
         ys.some((other) => Math.abs(y - other) < LABEL_CLEARANCE)
-    for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++) {
-        const y = beatToTime(state.bpms, beat) * ups
+    const labels = gridLabels(state, ups, beats, times, beatDisplay)
+    for (const { text, y } of labels.right) {
         if (near(beatYs, y)) continue
-        drawText(
-            context,
-            formatBeatPosition(state.bpms, beat, beatDisplay),
-            6.1,
-            y,
-            '#fff',
-            0.4,
-            'start',
-            context.figureMiddle,
-        )
+        drawText(context, text, 6.1, y, '#fff', 0.4, 'start', context.figureMiddle)
     }
-    for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++) {
-        if (near(edgeLabelYs.left, time * ups)) continue
-        drawText(
-            context,
-            formatIntegerTime(time),
-            -6.1,
-            time * ups,
-            '#fff',
-            0.4,
-            'end',
-            context.figureMiddle,
-        )
+    for (const { text, y } of labels.left) {
+        if (near(edgeLabelYs.left, y)) continue
+        drawText(context, text, -6.1, y, '#fff', 0.4, 'end', context.figureMiddle)
     }
     ctx.restore()
 }

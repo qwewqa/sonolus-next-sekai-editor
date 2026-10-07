@@ -5,7 +5,7 @@ import type { GroupId } from '../../src/chart/groups'
 import type { StageId } from '../../src/chart/stages'
 import type { TimeScaleObject } from '../../src/chart/timeScale'
 import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
-import { drawGrid, timeScaleEdgeLabelYs } from '../../src/editor/canvas/grid'
+import { coveredLabelYs, drawGrid, timeScaleEdgeLabelYs } from '../../src/editor/canvas/grid'
 import { createNameLayer, placeNames } from '../../src/editor/canvas/names'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
 import { getPathD, getRangePathDs } from '../../src/editor/entities/events/path'
@@ -769,6 +769,25 @@ test('labels that turn inward or sit on another lane leave the columns alone', (
     const stacked = gridLabelsBeside([edgeTimeScale(4, 0), edgeTimeScale(4, -7)])
     assert.deepEqual(stacked.edges, { left: [], right: [] })
     assert.ok(stacked.texts.includes('00:02'))
+})
+
+test('time and beat labels under the labels over the chart are left out', () => {
+    const { context, canvas } = makeContext()
+    // 1 s, beat 2 (shown as 3), lies 900px down the pane; its time label spans
+    // 27-39px across and its beat label 161-163.4px.
+    const row = (left: number, right: number) => ({ left, right, top: 890, bottom: 914 })
+    const covered = (left: number, right: number) =>
+        coveredLabelYs(context, { min: 1, max: 5 }, { min: 1, max: 2 }, 'beat', {
+            left: [row(0, left)],
+            right: [row(right, 200)],
+        })
+    assert.deepEqual(covered(30, 160), { left: [-10], right: [-10] })
+    // Clear of the labels, by their width.
+    assert.deepEqual(covered(20, 170), { left: [], right: [] })
+    drawGrid(context, { min: 1, max: 5 }, { min: 1, max: 2 }, 1, 1, 'beat', false, covered(30, 160))
+    const texts = canvas.labels.map(({ text }) => text)
+    for (const hidden of ['00:01', '3']) assert.ok(!texts.includes(hidden), hidden)
+    for (const shown of ['00:02', '2', '4']) assert.ok(texts.includes(shown), shown)
 })
 
 test('a BPM label stays drawn where a time scale label reaches the beat column', () => {

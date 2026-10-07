@@ -18,15 +18,16 @@ import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
 import { hitOffscreenIndicator, useOffscreenIndicators } from '../offscreenIndicators'
 import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
+import { edgeLabelBoxes } from '../edgeLabels'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
-import { drawGrid, timeScaleEdgeLabelYs } from './grid'
+import { coveredLabelYs, drawGrid, timeScaleEdgeLabelYs } from './grid'
 import { clearNameWidths, createNameLayer, placeNames } from './names'
 import { createNoteRenderer } from './notes'
 import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
 import { createFrameScheduler, prepareSurface } from './surface'
 import { FIGURE_MIDDLE, measureFigureMiddle, measureTextMiddle } from './text'
-import type { EditorDrawContext } from './types'
+import type { EdgeLabelYs, EditorDrawContext } from './types'
 import { createWaveformRenderer } from './waveform'
 
 const container = useTemplateRef('container')
@@ -120,6 +121,25 @@ const contextInputs = computed(() => ({
     redrawVersion: redrawVersion.value,
 }))
 
+// Grid labels under the time and beat labels over the chart are left out. Equal
+// results keep the same object, so they redraw the chart only when they change.
+const measureContext = document.createElement('canvas').getContext('2d')
+const coveredYs = computed<EdgeLabelYs>((previous) => {
+    if (!measureContext) return { left: [], right: [] }
+    const ys = coveredLabelYs(
+        { ...contextInputs.value, ctx: measureContext },
+        beats.value,
+        times.value,
+        settings.beatDisplay,
+        edgeLabelBoxes.value,
+    )
+    const same = (a: number[], b: number[]) =>
+        a.length === b.length && a.every((y, index) => y === b[index])
+    return previous && same(previous.left, ys.left) && same(previous.right, ys.right)
+        ? previous
+        : ys
+})
+
 const drawEntity = (
     context: EditorDrawContext,
     entity: Entity,
@@ -158,6 +178,7 @@ watchEffect(
         const laneDivision = view.laneDivision
         const beatDisplay = settings.beatDisplay
         const cursor = view.cursorTime
+        const covered = coveredYs.value
         const currentWaveform = settings.waveform === 'off' ? undefined : inputs.state.bgm.waveform
         const offset = inputs.state.bgm.offset + bgmOffsetDelta.value
         void waveformVersion.value
@@ -177,7 +198,11 @@ watchEffect(
                 isHighlighted: (entity: Entity) => selected.has(entity) || !!hovered?.has(entity),
             }
             // Measured with the frame's font and bounds, as the labels are drawn.
-            const edgeLabelYs = timeScaleEdgeLabelYs(base, entities)
+            const timeScaleYs = timeScaleEdgeLabelYs(base, entities)
+            const edgeLabelYs = {
+                left: [...timeScaleYs.left, ...covered.left],
+                right: [...timeScaleYs.right, ...covered.right],
+            }
             const context = { ...base, names: createNameLayer() }
             waveform.draw(context, currentWaveform, offset, currentTimes)
             drawGrid(
