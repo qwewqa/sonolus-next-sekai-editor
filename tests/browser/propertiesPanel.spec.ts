@@ -913,3 +913,55 @@ for (const width of [260, 336, 480])
         expect(paddings[0]).not.toBe('0px')
         expect(paddings[1]).toBe('0px')
     })
+
+test('brushing that empties the selection leaves none of it under its header', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await open(page)
+    const scroller = panel(page).locator('.properties-scroller')
+    // Brushes of every height, so the selection's edge lands anywhere in view.
+    for (let count = 0; count <= 10; count++) {
+        await page.evaluate(async (count) => {
+            const { history, store, nextTick, show, fixtures } = window.editorTest
+            show(fixtures.interaction, 3)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+            })
+            const { switchToolTo } = await import('/src/editor/tools/index.ts')
+            switchToolTo('brush')
+            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+            const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+            brushProperties.value = Object.fromEntries(
+                brushFields
+                    .filter((field) => typeof field.brush?.initial === 'boolean')
+                    .slice(0, count)
+                    .map((field) => [field.key, field.brush!.initial]),
+            )
+            await nextTick()
+        }, count)
+        await expect(panel(page).getByText('Brush Properties', { exact: true })).toBeVisible()
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        await scroller.evaluate((element) => (element.scrollTop = element.scrollHeight))
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+
+        // Empty space, clear of the notes and the toolbar.
+        const empty = await page.evaluate(() => window.editorTest.point(-5, 4.5))
+        await page.mouse.click(empty.x, empty.y)
+        await expect
+            .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
+            .toBe(0)
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        const layout = await panel(page).evaluate((panel) => {
+            const header = panel
+                .querySelector('[data-properties-section="selection"] > h2')!
+                .getBoundingClientRect()
+            const body = panel
+                .querySelector('#properties-section-selection')!
+                .getBoundingClientRect()
+            return {
+                clipped: body.top < header.bottom - 0.5 && body.bottom > header.bottom + 0.5,
+            }
+        })
+        expect(layout, `${count} properties`).toEqual({ clipped: false })
+    }
+})

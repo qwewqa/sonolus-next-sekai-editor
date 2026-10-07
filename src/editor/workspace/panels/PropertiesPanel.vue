@@ -159,11 +159,24 @@ const toolBounds = () => {
 const release = () => {
     heldTop = undefined
 }
+// A Selection with only a message never sits partly under its own header: it
+// shows whole or scrolls away, whichever is nearer.
+const unclipped = (element: HTMLElement, top: number) => {
+    const section = element.querySelector('[data-properties-section="selection"]')
+    const header = section?.querySelector('h2')
+    const body = section?.querySelector('#properties-section-selection')
+    if (!section || !header || !body || body.querySelector('.form-field')) return top
+    const origin = element.getBoundingClientRect().top - element.scrollTop
+    const start = body.getBoundingClientRect().top - origin - header.offsetHeight
+    const end = section.getBoundingClientRect().bottom - origin
+    if (top <= start || top >= end - header.offsetHeight) return top
+    return top - start <= end - top ? start : end
+}
 const restore = (resize: boolean) => {
     const element = scroller.value
     const bounds = toolBounds()
     if (heldTop === undefined || !bounds || !element) return
-    const top = element.scrollTop + bounds.top - heldTop
+    const top = unclipped(element, element.scrollTop + bounds.top - heldTop)
     if (resize) setRoom(Math.max(0, top + element.clientHeight - (element.scrollHeight - room)))
     element.scrollTop = top
 }
