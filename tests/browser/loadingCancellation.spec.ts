@@ -298,6 +298,11 @@ test('cancelling preview generation during encoder loading prevents the download
     )
     await openUtility(page, 'previewEditor')
     await page.getByRole('dialog').locator('input[type="number"]').nth(1).fill('0.02')
+    // Fades that fit the 0.02 s length.
+    for (const index of [2, 3]) {
+        await page.getByRole('dialog').locator('input[type="number"]').nth(index).fill('0')
+    }
+    await page.keyboard.press('Tab')
     await page.getByRole('button', { name: 'Generate', exact: true }).click()
     await expect.poll(() => !!release).toBe(true)
     await page.keyboard.press('Escape')
@@ -305,4 +310,47 @@ test('cancelling preview generation during encoder loading prevents the download
     await release!()
     await expect.poll(() => page.evaluate(() => window.loadingReview.completed)).toBe(1)
     expect(await page.evaluate(() => window.loadingReview.downloadUrls)).toEqual([])
+})
+
+test('preview generation is unavailable until End follows Start and the fades fit', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            bgm: { offset: 0, buffer: new AudioBuffer({ length: 48000, sampleRate: 48000 }) },
+        })
+    })
+    await openUtility(page, 'previewEditor')
+    const dialog = page.getByRole('dialog')
+    const field = (label: string) =>
+        dialog
+            .locator('label')
+            .filter({ has: page.getByText(label, { exact: true }) })
+            .locator('input')
+    const generate = dialog.getByRole('button', { name: 'Generate', exact: true })
+    await expect(generate).toBeEnabled()
+    await expect(dialog.getByRole('alert')).toHaveCount(0)
+
+    // A click straight from the field commits it first and generates nothing.
+    await field('End').fill('0')
+    await generate.click()
+    await expect(generate).toBeDisabled()
+    await expect(page.getByRole('dialog')).toHaveCount(1)
+    expect(await page.evaluate(() => window.loadingReview)).toMatchObject({
+        completed: 0,
+        downloadUrls: [],
+    })
+    await expect(dialog.getByRole('alert')).toHaveText('End must be after Start')
+
+    await field('End').fill('1.5')
+    await field('End').press('Tab')
+    await expect(generate).toBeDisabled()
+    await expect(dialog.getByRole('alert')).toHaveText('Fades must fit between Start and End')
+
+    await field('Fade End').fill('0.5')
+    await field('Fade End').press('Tab')
+    await expect(generate).toBeEnabled()
+    await expect(dialog.getByRole('alert')).toHaveCount(0)
 })

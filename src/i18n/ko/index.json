@@ -900,6 +900,8 @@
       "end": "끝",
       "fadeStart": "페이드 인",
       "fadeEnd": "페이드 아웃",
+      "invalidRange": "끝은 시작보다 뒤여야 합니다",
+      "invalidFades": "페이드 인과 페이드 아웃은 시작과 끝 사이에 들어가야 합니다",
       "generate": "생성",
       "loading": "파일 불러오는 중…",
       "decoding": "오디오 디코딩 중…",

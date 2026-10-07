@@ -900,6 +900,8 @@
       "end": "Son",
       "fadeStart": "Ses Geçişi Başlangıcı",
       "fadeEnd": "Ses Geçişi Bitişi",
+      "invalidRange": "Son değeri Başlangıç değerinden büyük olmalıdır",
+      "invalidFades": "Ses geçişleri Başlangıç ile Son arasına sığmalıdır",
       "generate": "Oluştur",
       "loading": "Dosya yükleniyor…",
       "decoding": "Ses çözümleniyor…",

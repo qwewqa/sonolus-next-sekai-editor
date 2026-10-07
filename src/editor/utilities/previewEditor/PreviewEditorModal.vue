@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { bgm } from '../../../history/bgm'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
@@ -19,6 +19,15 @@ const start = ref(0)
 const end = ref(30)
 const fadeStart = ref(1)
 const fadeEnd = ref(1)
+
+// Why Generate is unavailable, if it is.
+const problem = computed(() =>
+    end.value <= start.value
+        ? i18n.value.utilities.previewEditor.invalidRange
+        : fadeStart.value + fadeEnd.value > end.value - start.value
+          ? i18n.value.utilities.previewEditor.invalidFades
+          : undefined,
+)
 
 const onSelect = (file: File) => {
     void showModal(LoadingModal, {
@@ -149,11 +158,15 @@ const onGenerate = () => {
                 :min="0"
                 step="any"
             />
+            <p v-if="buffer && problem" role="alert" class="text-sm text-danger">
+                {{ problem }}
+            </p>
         </div>
 
         <div v-if="buffer" class="flex justify-end">
             <button
-                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
+                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:h-11"
+                :disabled="!!problem"
                 @click="onGenerate"
             >
                 {{ i18n.utilities.previewEditor.generate }}

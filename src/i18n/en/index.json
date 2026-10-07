@@ -900,6 +900,8 @@
             "end": "End",
             "fadeStart": "Fade Start",
             "fadeEnd": "Fade End",
+            "invalidRange": "End must be after Start",
+            "invalidFades": "Fades must fit between Start and End",
             "generate": "Generate",
             "loading": "Loading file…",
             "decoding": "Decoding audio…",
