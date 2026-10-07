@@ -186,6 +186,7 @@ export const paste: Tool = {
             hovered: [],
             creating: [],
         }
+        clearPasteGhost()
 
         notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
 
@@ -194,6 +195,7 @@ export const paste: Tool = {
 
     dragCancel() {
         active = undefined
+        clearPasteGhost()
     },
 }
 
@@ -209,6 +211,11 @@ let ghost:
 
 /** The ghost's slides, for drawing their notes as they'll land. */
 export const pasteGhostInfos = () => ghost?.infos
+
+/** Drops the ghost once it no longer shows. */
+export const clearPasteGhost = () => {
+    ghost = undefined
+}
 
 const isSameSlides = (a: NoteObject[][], b: NoteObject[][]) =>
     a.length === b.length &&
@@ -416,6 +423,7 @@ export const pasteAtPosition = async (
         hovered: [],
         creating: [],
     }
+    clearPasteGhost()
 
     notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
 }

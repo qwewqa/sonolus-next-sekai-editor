@@ -183,3 +183,32 @@ test('a pasted BPM change times the ghost as the paste does', async ({ page }) =
     // The attached tick lands by the pasted tempo, not the chart's.
     for (const [i, note] of pasted.entries()) expect(shown.notes[i]!.left).toBeCloseTo(note.left, 6)
 })
+
+test('the ghost is dropped once a paste lands or the tool changes', async ({ page }) => {
+    const hasGhost = () =>
+        page.evaluate(async () => {
+            const { pasteGhostInfos } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/paste')
+            >('/src/editor/tools/paste/index.ts')
+            return pasteGhostInfos() !== undefined
+        })
+    await copySlide(page, { lane: -3, beat: 2 })
+    const target = await point(page, -3, 4)
+    await page.mouse.move(target.x, target.y)
+    await settle(page)
+    expect(await hasGhost()).toBe(true)
+    await page.mouse.click(target.x, target.y)
+    await expect.poll(hasGhost).toBe(false)
+
+    const next = await point(page, -3, 8)
+    await page.mouse.move(next.x, next.y)
+    await settle(page)
+    expect(await hasGhost()).toBe(true)
+    await page.evaluate(async () => {
+        const { switchToolTo } = await window.editorTest.appImport<
+            typeof import('../../src/editor/tools')
+        >('/src/editor/tools/index.ts')
+        switchToolTo('select')
+    })
+    expect(await hasGhost()).toBe(false)
+})

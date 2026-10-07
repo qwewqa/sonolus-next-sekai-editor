@@ -288,7 +288,7 @@ watchEffect(
                     const context = {
                         ...inputs,
                         ctx: creatingContext,
-                        slideInfos: pasteGhostInfos(),
+                        slideInfos: tool.value === tools.paste ? pasteGhostInfos() : undefined,
                     }
                     for (const entity of creating) {
                         if (isEntityInBeatRange(entity, range.min, range.max))

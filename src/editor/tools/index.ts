@@ -18,7 +18,7 @@ import { stageTransformEvent } from './events/stage/transform'
 import { generateSlideNotes } from './generateSlideNotes'
 import { note } from './note'
 import { offset } from './offset'
-import { paste } from './paste'
+import { clearPasteGhost, paste } from './paste'
 import { select } from './select'
 import { slide } from './slide'
 import { toolName } from './state'
@@ -98,4 +98,5 @@ export const switchToolTo = (tool: ToolName) => {
         hovered: [],
         creating: [],
     }
+    clearPasteGhost()
 }
