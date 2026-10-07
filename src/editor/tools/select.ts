@@ -281,7 +281,7 @@ export const select: Tool = {
         switch (active.type) {
             case 'move': {
                 const lane = xToLane(x)
-                const beatOffset = yToBeatOffset(y, active.focus.beat)
+                const beatOffset = toMoveBeatOffset(active, yToBeatOffset(y, active.focus.beat))
 
                 if (active.lastLane === lane && active.lastBeatOffset === beatOffset) break
                 active.lastLane = lane
@@ -290,8 +290,8 @@ export const select: Tool = {
                 const creating: Entity[] = []
                 let focusBeat = active.focus.beat
                 for (const entity of active.entities) {
+                    if (isPinned(entity, beatOffset)) continue
                     const beat = entity.beat + beatOffset
-                    if (beat < 0) continue
 
                     const result = creates[entity.type]?.(
                         active.onlyType,
@@ -369,7 +369,7 @@ export const select: Tool = {
         switch (active.type) {
             case 'move': {
                 const lane = xToLane(x)
-                const beatOffset = yToBeatOffset(y, active.focus.beat)
+                const beatOffset = toMoveBeatOffset(active, yToBeatOffset(y, active.focus.beat))
                 // Dropping everything where it started adds no undo step.
                 if (isUnmoved(active, lane, beatOffset)) {
                     view.entities = {
@@ -380,14 +380,16 @@ export const select: Tool = {
                 }
                 const moved = moveEntities(state.value, active, lane, beatOffset)
                 const selectedEntities = moved.selectedEntities
-                const focus = creates[active.focus.type]?.(
-                    active.onlyType,
-                    active.focus as never,
-                    active.lane,
-                    lane,
-                    active.focus.beat + beatOffset,
-                    active.focus,
-                )
+                const focus = isPinned(active.focus, beatOffset)
+                    ? undefined
+                    : creates[active.focus.type]?.(
+                          active.onlyType,
+                          active.focus as never,
+                          active.lane,
+                          lane,
+                          active.focus.beat + beatOffset,
+                          active.focus,
+                      )
 
                 pushState(
                     interpolate(() => i18n.value.tools.select.moved, `${selectedEntities.length}`),
@@ -452,8 +454,8 @@ const moveEntities = (
     )
     const selectedEntities: Entity[] = []
     for (const entity of entities) {
+        if (isPinned(entity, beatOffset)) continue
         const beat = entity.beat + beatOffset
-        if (beat < 0) continue
 
         const result = moves[entity.type]?.(
             transaction,
@@ -470,8 +472,21 @@ const moveEntities = (
     return transaction.commit(selectedEntities)
 }
 
+const isInitialBpm = (entity: Entity) => entity.type === 'bpm' && entity.beat === 0
+
+/** The beat-0 BPM stays at 0 when the rest moves earlier. */
+const isPinned = (entity: Entity, beatOffset: number) => beatOffset < 0 && isInitialBpm(entity)
+
+/** Shifts a move later so its earliest object stops at beat 0, as paste does. */
+const toMoveBeatOffset = (active: MoveActive, beatOffset: number) =>
+    active.entities.reduce(
+        (offset, entity) => (isInitialBpm(entity) ? offset : Math.max(offset, -entity.beat)),
+        beatOffset,
+    )
+
 const isUnmoved = (active: MoveActive, lane: number, beatOffset: number) =>
     active.entities.every((entity) => {
+        if (isPinned(entity, beatOffset)) return true
         const moved = creates[entity.type]?.(
             active.onlyType,
             entity as never,
