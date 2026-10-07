@@ -1338,3 +1338,40 @@ test('Hide, Show Only and Move to Folder are disabled with only empty folders se
     for (const name of ['Duplicate Selected', 'Delete Selected…'])
         await expect(menu.getByRole('menuitem', { name })).toBeEnabled()
 })
+
+for (const host of ['panel', 'dialog'] as const) {
+    test(`a keyboard row menu while selecting returns focus to the row in the ${host}`, async ({
+        page,
+    }) => {
+        await seedGroups(page, seed)
+        let list = panel(page)
+        if (host === 'dialog') {
+            await page.evaluate(() => {
+                window.editorTest.settings.groupsPosition = 'disabled'
+            })
+            await page.keyboard.press('e')
+            list = page.locator('dialog')
+        }
+        const menu = page.getByRole('menu')
+        await nameButton(list, 'Bass').focus()
+        await page.keyboard.press('Shift+ArrowDown')
+        await expect(list.locator('.manager-selection-bar')).toBeVisible()
+
+        // Escape closes the menu onto the row's name.
+        await nameButton(list, 'Drums').focus()
+        await page.keyboard.press('Shift+F10')
+        await expect(menu).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(menu).toHaveCount(0)
+        await expect(nameButton(list, 'Drums')).toBeFocused()
+
+        // So does choosing an item.
+        await page.keyboard.press('ContextMenu')
+        await expect(menu).toBeVisible()
+        await menu.getByRole('menuitem', { name: 'Hide Selected' }).focus()
+        await page.keyboard.press('Enter')
+        await expect(menu).toHaveCount(0)
+        await expect(nameButton(list, 'Drums')).toBeFocused()
+        expect((await state(page)).hidden).toEqual(['Bass', 'Drums'])
+    })
+}

@@ -1423,9 +1423,20 @@ function closeMenu(restoreFocus: boolean) {
     if (!current) return
     menu.value = undefined
     // Never take focus from a dialog that opened meanwhile.
-    if (restoreFocus && modals.length <= current.modals && current.anchor.isConnected)
-        current.anchor.focus({ preventScroll: true })
+    if (!restoreFocus || modals.length > current.modals || !current.anchor.isConnected) return
+    focusableOf(current.anchor)?.focus({ preventScroll: true })
 }
+
+/** A button anchor, or for a row anchor while selecting, its name or check. */
+const focusableOf = (anchor: HTMLElement) =>
+    [
+        anchor,
+        anchor.querySelector<HTMLElement>('.manager-name'),
+        anchor.querySelector<HTMLElement>('.manager-check'),
+    ].find(
+        (element): element is HTMLElement =>
+            element instanceof HTMLButtonElement && !element.disabled,
+    )
 
 // Close when the anchor row disappears, e.g. after an undo.
 watch(tree, () => {
