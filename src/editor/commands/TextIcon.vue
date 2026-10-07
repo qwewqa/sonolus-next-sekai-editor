@@ -11,7 +11,11 @@ defineProps<{
 <template>
     <!-- In an icon column beside names, text glyphs fit its 20px. -->
     <div class="flex items-center justify-center whitespace-nowrap">
-        <span v-if="chip" class="flex rounded-sm leading-4 text-on-accent" :class="chip"
+        <!-- High contrast keeps the colour that names its object. -->
+        <span
+            v-if="chip"
+            class="flex rounded-sm leading-4 text-on-accent forced-color-adjust-none"
+            :class="chip"
             ><FitText
                 class="px-0.5 [[data-icon-column]_&]:px-0"
                 :text="title"

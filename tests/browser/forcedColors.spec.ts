@@ -227,6 +227,30 @@ test('monochrome tool icons take the button text color', async ({ page }) => {
     await expect.poll(() => fills(add, 'path')).toEqual([text])
 })
 
+test('the BPM and Time Scale tools keep their chip colours', async ({ page }) => {
+    // The colour names the tool, as on the chart.
+    await page.emulateMedia({ forcedColors: 'active', colorScheme: 'dark' })
+    const toolbar = page.locator('[data-editor-toolbar]')
+    const chip = (title: string) =>
+        toolbar
+            .getByTitle(title, { exact: true })
+            .locator('.rounded-sm')
+            .evaluate((element) => {
+                const { backgroundColor, color } = getComputedStyle(element)
+                return { backgroundColor, color }
+            })
+    expect(await chip('BPM')).toEqual({
+        backgroundColor: 'rgb(255, 0, 255)',
+        color: 'rgb(48, 51, 77)',
+    })
+    await toolbar.getByTitle('BPM', { exact: true }).hover()
+    await expect(toolbar.getByTitle('Time Scale', { exact: true })).toBeVisible()
+    expect(await chip('Time Scale')).toEqual({
+        backgroundColor: 'rgb(255, 255, 0)',
+        color: 'rgb(48, 51, 77)',
+    })
+})
+
 for (const colorScheme of ['light', 'dark'] as const)
     test(`chart panes keep their dark background (${colorScheme})`, async ({ page }) => {
         // The canvases draw white grids, labels and selection boxes for it.
