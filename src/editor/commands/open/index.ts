@@ -1,4 +1,5 @@
 import { ungzip } from 'pako'
+import { AssertError } from 'typebox/value'
 import type { Command } from '..'
 import { parseLevelDataChart } from '../../../chart/parse/levelData'
 import { parseSusChart } from '../../../chart/parse/sus'
@@ -48,43 +49,49 @@ export const open: Command = {
                 signal.throwIfAborted()
 
                 const [type, data] = tryImport(buffer)
-                switch (type) {
-                    case 'chcy': {
-                        const { offset, objects } = chcyToUsc(parseLevelData(data))
+                try {
+                    switch (type) {
+                        case 'chcy': {
+                            const { offset, objects } = chcyToUsc(parseLevelData(data))
 
-                        const chart = parseUscChart(objects)
-                        validateChart(chart)
+                            const chart = parseUscChart(objects)
+                            validateChart(chart)
 
-                        resetState(false, chart, offset, getFilename(file))
-                        break
+                            resetState(false, chart, offset, getFilename(file))
+                            break
+                        }
+                        case 'levelData': {
+                            const levelData = parseLevelData(data)
+
+                            const chart = parseLevelDataChart(levelData.entities)
+                            validateChart(chart)
+
+                            resetState(false, chart, levelData.bgmOffset, getFilename(file), handle)
+                            break
+                        }
+                        case 'usc': {
+                            const { usc } = parseUsc(data)
+
+                            const chart = parseUscChart(usc.objects)
+                            validateChart(chart)
+
+                            resetState(false, chart, usc.offset, getFilename(file))
+                            break
+                        }
+                        case 'sus': {
+                            const sus = parseSus(data)
+
+                            const chart = parseSusChart(sus)
+                            validateChart(chart)
+
+                            resetState(false, chart, sus.offset, getFilename(file))
+                            break
+                        }
                     }
-                    case 'levelData': {
-                        const levelData = parseLevelData(data)
-
-                        const chart = parseLevelDataChart(levelData.entities)
-                        validateChart(chart)
-
-                        resetState(false, chart, levelData.bgmOffset, getFilename(file), handle)
-                        break
-                    }
-                    case 'usc': {
-                        const { usc } = parseUsc(data)
-
-                        const chart = parseUscChart(usc.objects)
-                        validateChart(chart)
-
-                        resetState(false, chart, usc.offset, getFilename(file))
-                        break
-                    }
-                    case 'sus': {
-                        const sus = parseSus(data)
-
-                        const chart = parseSusChart(sus)
-                        validateChart(chart)
-
-                        resetState(false, chart, sus.offset, getFilename(file))
-                        break
-                    }
+                } catch (error) {
+                    // A file its format's schema refuses is one the editor cannot read.
+                    if (error instanceof AssertError) throw new UnsupportedFileError()
+                    throw error
                 }
 
                 notify(() => i18n.value.commands.open[openedMessages[type]])

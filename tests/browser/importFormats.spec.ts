@@ -204,6 +204,22 @@ test('an unsupported file explains what can be opened', async ({ page }) => {
     await expect(page.getByRole('dialog')).not.toContainText('Error:')
 })
 
+for (const [label, content] of [
+    ['null', null],
+    ['an array', []],
+    ['a number', 42],
+    ['level data without its offset', { entities: [] }],
+    ['level data with malformed entities', { bgmOffset: 0, entities: [1, 2] }],
+    ['a USC of another version', { version: 3, usc: { offset: 0, objects: [] } }],
+] as const)
+    test(`a file that is ${label} explains what can be opened`, async ({ page }) => {
+        await open(page, 'chart.json', Buffer.from(JSON.stringify(content)))
+        await expect(page.getByRole('dialog')).toContainText(
+            'Unsupported file. Open level data, a Chart Cyanvas level, or a USC or SUS chart.',
+        )
+        await expect(page.getByRole('dialog')).not.toContainText('Error')
+    })
+
 test("a USC 'none' direction flicks up, as the engine reads it", async ({ page }) => {
     const single = (beat: number, direction?: string) => ({
         type: 'single',
