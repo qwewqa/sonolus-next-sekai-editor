@@ -12,7 +12,7 @@ import { editBpm as applyBpmEdit, editSelectedBpm } from '../../../state/operati
 import { getInStoreGrid } from '../../../state/store/grid'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
-import { editSelectionProperties } from '../../editSelectionProperties'
+import { revealSelectionProperties } from '../../editSelectionProperties'
 import { notify } from '../../notification'
 import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
@@ -114,7 +114,7 @@ export const bpm: Tool = {
             }
             focusEntityAtBeat(object.beat)
 
-            editSelectionProperties()
+            void revealSelectionProperties()
         }
     },
 
@@ -217,7 +217,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
-                    editSelectionProperties()
+                    void revealSelectionProperties()
                 } else {
                     const object: BpmObject = {
                         beat,
@@ -232,7 +232,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(object.beat)
 
-                    editSelectionProperties()
+                    void revealSelectionProperties()
                 }
                 break
             }

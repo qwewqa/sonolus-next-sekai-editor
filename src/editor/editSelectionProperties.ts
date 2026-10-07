@@ -27,11 +27,8 @@ export const editSelectionProperties = () => {
     })
 }
 
-/**
- * Also moves focus into the shown panel's Selection section: its first field,
- * or its heading so a tap never summons the on-screen keyboard.
- */
-export const focusSelectionProperties = async (toField: boolean) => {
+// The shown Selection section's first field, or its heading.
+const shownSelectionTarget = async (toField: boolean) => {
     editSelectionProperties()
     if (!isSidebarVisible.value) return
     await nextTick()
@@ -44,5 +41,18 @@ export const focusSelectionProperties = async (toField: boolean) => {
               )
             : null) ?? body.querySelector<HTMLElement>('.properties-block h3')
     target?.scrollIntoView({ block: 'nearest' })
-    target?.focus({ preventScroll: true })
+    return target
+}
+
+/** Also scrolls the shown panel's Selection section to its first rows, leaving focus alone. */
+export const revealSelectionProperties = async () => {
+    await shownSelectionTarget(false)
+}
+
+/**
+ * Also moves focus into the shown panel's Selection section: its first field,
+ * or its heading so a tap never summons the on-screen keyboard.
+ */
+export const focusSelectionProperties = async (toField: boolean) => {
+    ;(await shownSelectionTarget(toField))?.focus({ preventScroll: true })
 }

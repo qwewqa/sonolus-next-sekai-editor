@@ -77,3 +77,52 @@ for (const [type, key, title] of [
             await page.mouse.up()
             await expectEditor(6)
         })
+
+for (const [type, key] of [
+    ['bpm', 'q'],
+    ['timeScale', 'w'],
+] as const)
+    test(`a ${type} added with the panel scrolled away shows its first rows, focus left alone`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 1280, height: 560 })
+        await page.evaluate(() => {
+            const { settings, show, fixtures } = window.editorTest
+            settings.showSidebar = true
+            show(fixtures.interaction, 3)
+        })
+        await page.keyboard.press(key)
+        const first = await point(page, 0, 7)
+        await page.mouse.click(first.x, first.y)
+        await expect(
+            panel(page).locator('#properties-section-selection input').first(),
+        ).toBeVisible()
+        const scroller = panel(page).locator('.properties-scroller-sections')
+        await scroller.evaluate((element) => (element.scrollTop = element.scrollHeight))
+        await expect
+            .poll(() =>
+                scroller.evaluate(
+                    (element) =>
+                        element.scrollTop + element.clientHeight >= element.scrollHeight - 1,
+                ),
+            )
+            .toBe(true)
+        const focused = await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 60))
+
+        const second = await point(page, 0, 5)
+        await page.mouse.click(second.x, second.y)
+        expect(await selected(page)).toEqual([{ type, beat: 5 }])
+        const header = panel(page).locator('#properties-section-selection-header')
+        const field = panel(page).locator('#properties-section-selection input').first()
+        await expect
+            .poll(async () => {
+                const below = (await header.boundingBox())!
+                const box = (await field.boundingBox())!
+                const view = (await scroller.boundingBox())!
+                return box.y >= below.y + below.height && box.y + box.height <= view.y + view.height
+            })
+            .toBe(true)
+        expect(await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 60))).toBe(
+            focused,
+        )
+    })
