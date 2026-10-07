@@ -724,6 +724,35 @@ test('the selection dialog follows the selection', async ({ page }) => {
     await expect(dialog).toHaveCount(0)
 })
 
+test('emptying the selection returns focus the dialog held to the chart', async ({ page }) => {
+    await page.evaluate(() => (window.editorTest.settings.propertiesPosition = 'disabled'))
+    await showSlides(page, [[{ beat: 0 }, { beat: 1 }]])
+    await page.evaluate(async () => {
+        const { editSelectionProperties } = await window.editorTest.appImport<
+            typeof import('../../src/editor/editSelectionProperties')
+        >('/src/editor/editSelectionProperties.ts')
+        editSelectionProperties()
+    })
+    const dialog = page.locator('.editor-tool-modal')
+    await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
+    await page.evaluate(async () => {
+        const { history, nextTick } = window.editorTest
+        history.replaceState({ ...history.state.value, selectedEntities: [] })
+        await nextTick()
+    })
+    await expect(dialog).toHaveCount(0)
+    await expect
+        .poll(() =>
+            page.evaluate(
+                () =>
+                    document.activeElement?.getAttribute('tabindex') === '-1' &&
+                    !!document.activeElement.querySelector('canvas.editor-chart') &&
+                    !document.activeElement.querySelector('[data-workspace-dock]'),
+            ),
+        )
+        .toBe(true)
+})
+
 test.describe('brush on a phone', () => {
     test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
 

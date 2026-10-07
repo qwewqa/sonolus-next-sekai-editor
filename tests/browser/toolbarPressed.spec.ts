@@ -223,3 +223,54 @@ test('Escape on a tool dialog returns focus to the tool that opened it, or to th
         ),
     ).toBe(true)
 })
+
+test('a tool dialog closed by its button or a tool switch returns focus it held', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        settings.toolbar = [['select'], ['brush']]
+    })
+    const setTool = (name: string) =>
+        page.evaluate(async (name) => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            toolName.value = name as never
+        }, name)
+    await setTool('brush')
+    const dialog = page.locator('.editor-tool-modal')
+    const brush = shown(page).and(page.getByTitle('Brush', { exact: true }))
+    const open = async () => {
+        await setTool('brush')
+        await brush.focus()
+        await page.keyboard.press('Enter')
+        await expect(dialog).toBeVisible()
+    }
+
+    // The close button.
+    await open()
+    await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
+    await page.keyboard.press('Enter')
+    await expect(dialog).toHaveCount(0)
+    await expect(brush).toBeFocused()
+
+    // A tool switch while the dialog holds focus.
+    await open()
+    await dialog.getByRole('button', { name: 'Close', exact: true }).focus()
+    await setTool('select')
+    await expect(dialog).toHaveCount(0)
+    await expect(brush).toBeFocused()
+
+    // Focus the user moved elsewhere stays there.
+    await open()
+    await page.evaluate(() => {
+        const input = document.body.appendChild(document.createElement('input'))
+        input.id = 'elsewhere'
+        input.focus()
+    })
+    await setTool('select')
+    await expect(dialog).toHaveCount(0)
+    await expect(page.locator('#elsewhere')).toBeFocused()
+})
