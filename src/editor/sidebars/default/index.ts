@@ -3,7 +3,7 @@ import { selectedEntities } from '../../../history/selectedEntities'
 import { i18n } from '../../../i18n'
 import type { Entity } from '../../../state/entities'
 import { isEditableEntity, type EditableObject } from '../../../state/operations/editable'
-import { planEdit } from '../../../state/operations/properties/plan'
+import { isEditInRange, planEdit } from '../../../state/operations/properties/plan'
 import { interpolate } from '../../../utils/interpolate'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
@@ -73,6 +73,8 @@ export const editSelectedEditableEntities = (
     object: EditableObject,
     only?: (entity: Entity) => boolean,
 ) => {
+    // Refused without a notice, as fields refuse out-of-range values.
+    if (!isEditInRange(state.value, selectedEntities.value, object, only)) return
     const { state: edited, changed } = planEdit(state.value, selectedEntities.value, object, {
         only,
     })

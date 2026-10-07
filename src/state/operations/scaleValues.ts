@@ -147,6 +147,11 @@ export const isWithinGridBudget = (source: State, values: Map<EditableEntity, nu
     return true
 }
 
+/** Whether objects can move to these beats; Scale Selection refuses results past this. */
+export const isWithinBeatRange = (source: State, values: Map<EditableEntity, number>) =>
+    [...values.values()].every((beat) => Number.isSafeInteger(Math.floor(beat))) &&
+    isWithinGridBudget(source, values)
+
 export const getScaledSelectionValues = (
     selected: Entity[],
     axis: ScaleAxis,

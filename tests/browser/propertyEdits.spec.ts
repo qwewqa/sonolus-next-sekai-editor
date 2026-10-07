@@ -514,3 +514,44 @@ test('an edit looks up the changed objects in linear time', async ({ page }) => 
     })
     expect(result).toMatchObject({ changed: 2000, linear: true })
 })
+
+test('a beat past the range Scale Selection keeps to is refused like an out-of-range value', async ({
+    page,
+}) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await showSlides(page, [[{ beat: 2 }, { beat: 4 }]])
+    await page.evaluate(() => {
+        const { history, settings } = window.editorTest
+        settings.showSidebar = true
+        const state = history.state.value
+        const tail = [...state.store.slides.note.values()].flat().find((note) => note.beat === 4)!
+        history.replaceState({ ...state, selectedEntities: [tail] })
+    })
+    const tailBeats = () =>
+        page.evaluate(() =>
+            window.editorTest
+                .snapshot()
+                .notes.map((note) => note.beat)
+                .sort((a, b) => a - b),
+        )
+    const beat = page.getByLabel('Beat', { exact: true })
+    await expect(beat).toHaveValue('5')
+    // About 1.5 million grid cells for the slide, past the million Scale Selection allows.
+    await beat.fill('1500002')
+    await beat.press('Enter')
+    await expect(beat).toHaveValue('5')
+    expect(await tailBeats()).toEqual([2, 4])
+    // Edits made without the field are refused too.
+    await page.evaluate(async () => {
+        const { editSelectedEditableEntities } = await window.editorTest.appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        editSelectedEditableEntities({ beat: 1500001 })
+    })
+    expect(await tailBeats()).toEqual([2, 4])
+    await beat.fill('9')
+    await beat.press('Enter')
+    expect(await tailBeats()).toEqual([2, 8])
+    expect(errors).toEqual([])
+})

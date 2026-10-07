@@ -13,7 +13,7 @@ import {
     noteFieldsApply,
 } from '../../state/operations/properties/applicability'
 import { getNoteFieldsIn } from '../../state/operations/properties/noteFields'
-import { planEdit } from '../../state/operations/properties/plan'
+import { isEditInRange, planEdit } from '../../state/operations/properties/plan'
 import { editSelectedEditableEntities } from '../sidebars/default'
 import { aggregateValues, type ValueUsage } from './aggregate'
 import type { NoteFields } from './noteFields'
@@ -91,13 +91,20 @@ export const useEntitiesProperties = (
             const object = draft.value
             if (!object) return
             const current = source
+            const scope = only(object, current.store)
+            // A beat past the supported range is invalid, like one past a field's limits.
+            if (!isEditInRange(current, current.selectedEntities, object, scope)) {
+                valid = false
+                clearOwnedPreview()
+                return
+            }
             // The preview is exactly what the commit will do.
             setPreviewEdit(
                 current,
                 () =>
                     planEdit(current, current.selectedEntities, object, {
                         autoAddGroup: false,
-                        only: only(object, current.store),
+                        only: scope,
                     }).state,
             )
             ownedPreview = previewEdit.value

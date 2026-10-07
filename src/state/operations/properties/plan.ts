@@ -13,6 +13,7 @@ import { editSelectedStagePivotEvent } from '../events/stage/pivot'
 import { editSelectedStageStyleEvent } from '../events/stage/style'
 import { editSelectedStageTransformEvent } from '../events/stage/transform'
 import { editSelectedNote } from '../note'
+import { isWithinBeatRange } from '../scaleValues'
 import { editSelectedTimeScale, editTimeScale } from '../timeScale'
 import { inStoredOrder } from '../transformSelection'
 import { noteFieldsApply } from './applicability'
@@ -72,6 +73,21 @@ export const editChanges = (store: Store, entity: Entity, object: EditableObject
     )
 }
 
+/** Whether an edit's beat is within the range Scale Selection keeps to. */
+export const isEditInRange = (
+    source: State,
+    selected: Entity[],
+    object: EditableObject,
+    only?: (entity: Entity) => boolean,
+) => {
+    const { beat } = object
+    if (beat === undefined) return true
+    const moved = selected.filter(
+        (entity): entity is EditableEntity => isEditableEntity(entity) && (!only || only(entity)),
+    )
+    return isWithinBeatRange(source, new Map(moved.map((entity) => [entity, beat])))
+}
+
 /** What an edit of the selection does: the new state and the objects it changed. */
 export const planEdit = (
     source: State,
@@ -79,6 +95,7 @@ export const planEdit = (
     object: EditableObject,
     { only, single = true, ...options }: PlanOptions = {},
 ) => {
+    if (!isEditInRange(source, selected, object, only)) return { state: source, changed: [] }
     const changed = selected.filter(
         (entity) =>
             isEditableEntity(entity) &&
