@@ -346,7 +346,15 @@ test.describe('connector fields', () => {
             'Slide · Quad',
         )
         await showSlides(page, [
-            [{ beat: 0, connectorType: 'guide', connectorLayer: 'bottom' }, { beat: 1 }],
+            [
+                {
+                    beat: 0,
+                    connectorEase: 'outSine',
+                    connectorType: 'guide',
+                    connectorLayer: 'bottom',
+                },
+                { beat: 1 },
+            ],
             [
                 {
                     beat: 2,
@@ -360,10 +368,21 @@ test.describe('connector fields', () => {
         await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
             '4 values differ',
         )
-        // A Linear connector has no function to agree on.
+        // None and Linear have no function, so the curved eases name it, as the Function row does.
         await showSlides(page, [
             [{ beat: 0, connectorEase: 'linear' }, { beat: 1 }],
             [{ beat: 2, connectorEase: 'outQuad' }, { beat: 3 }],
+            [{ beat: 4, connectorEase: 'none' }, { beat: 5 }],
+        ])
+        await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
+            'Slide · Default · Quad · Top',
+        )
+        await header(page).click()
+        await expect(control(page, 'Ease Function').locator('option:checked')).toHaveText('Quad')
+        await header(page).click()
+        await showSlides(page, [
+            [{ beat: 0, connectorEase: 'linear' }, { beat: 1 }],
+            [{ beat: 2, connectorEase: 'none' }, { beat: 3 }],
         ])
         await expect(header(page).locator('.properties-subsection-summary')).toHaveText(
             'Slide · Default · Top',

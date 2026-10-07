@@ -99,11 +99,9 @@ const connectorSummary = computed(() => {
         if (field.ease) {
             if (eases.includes(value as Ease))
                 return [field.valueLabel?.(i18n.value, value as never)]
-            // Agreeing on one half alone still names it; None and Linear have no function.
+            // Agreeing on one half alone still names it; None and Linear have no function to differ.
             const { type, name } = easeEditParts(value as Ease | undefined)
-            const values = props.aggregate.usage.get(field.key)?.values.keys() ?? []
-            const named = name && [...values].every((ease) => easeFunctionOf(ease as Ease))
-            const half = type ?? (named ? name : undefined)
+            const half = type ?? name
             return half ? [i18n.value.modals.form.ease[half]] : []
         }
         return value !== undefined && field.valueLabel
