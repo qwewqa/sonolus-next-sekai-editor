@@ -122,6 +122,35 @@ test('two fingers still pinch to zoom', async ({ page }) => {
     expect(await page.evaluate(() => window.editorTest.settings.pps)).toBeGreaterThan(before)
 })
 
+test('a lane limit change after a touch shows no ghost where it ended', async ({ page }) => {
+    await showNotes(page)
+    await page.keyboard.press('a')
+    const { x, y } = await point(page, 0, 3)
+    await touch('touchStart', [
+        [x - 40, y],
+        [x + 40, y],
+    ])
+    for (let step = 1; step <= 4; step++)
+        await touch('touchMove', [
+            [x - 40, y - step * 10],
+            [x + 40, y - step * 10],
+        ])
+    await touch('touchEnd', [])
+    const ghosts = () =>
+        page.evaluate(() => {
+            const { view } = window.editorTest
+            return { hidden: view.isHoverHidden, creating: view.entities.creating.length }
+        })
+    expect(await ghosts()).toEqual({ hidden: true, creating: 0 })
+    await page.evaluate(async () => {
+        const { commands } = await window.editorTest.appImport<
+            typeof import('../../src/editor/commands')
+        >('/src/editor/commands/index.ts')
+        await commands.laneLimitSix.execute()
+    })
+    expect(await ghosts()).toEqual({ hidden: true, creating: 0 })
+})
+
 test('holding a finger still during a mouse drag opens no menu', async ({ page }) => {
     await showNotes(page)
     await page.keyboard.press('a')

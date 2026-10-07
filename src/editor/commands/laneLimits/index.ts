@@ -12,7 +12,8 @@ import LaneLimitIcon from './LaneLimitIcon.vue'
 
 const setLimit = (maxLane: number) => {
     settings.maxLane = maxLane
-    if (!isDragging.value)
+    // Touch hides the hover, so where a finger lifted gets no ghost.
+    if (!isDragging.value && !view.isHoverHidden)
         void tool.value.hover?.(view.pointer.x, view.pointer.y, view.pointer.modifiers)
     notify(
         maxLane
