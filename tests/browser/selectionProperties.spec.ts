@@ -689,7 +689,7 @@ test('kind blocks use short labels; General names what several kinds share', asy
     expect(eases).toEqual(expect.arrayContaining(['inQuad']))
 })
 
-test('ease functions list linear eases apart and narrow to them', async ({ page }) => {
+test('ease functions leave linear eases out of their chips', async ({ page }) => {
     await page.evaluate(async () => {
         const { fixtures, show, history, store, nextTick } = window.editorTest
         show(fixtures.connectors)
@@ -705,9 +705,10 @@ test('ease functions list linear eases apart and narrow to them', async ({ page 
         .locator('.form-field')
         .filter({ has: page.getByText('Ease Function', { exact: true }) })
         .first()
-    await expect(name.locator('.form-field-mixed-value').last()).toHaveText('Linear 5')
-    await name.getByRole('button', { name: 'Select only Linear (5)' }).click()
-    expect(await selectedCount(page)).toBe(5)
+    await expect(name.locator('.form-field-mixed-value').first()).toBeVisible()
+    expect(await name.locator('.form-field-mixed-value').allTextContents()).not.toContainEqual(
+        expect.stringContaining('Linear'),
+    )
 })
 
 test('the selection dialog follows the selection', async ({ page }) => {

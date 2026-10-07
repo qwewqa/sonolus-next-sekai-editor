@@ -4,7 +4,6 @@ import {
     composeEase,
     easeEditParts,
     easeFunctionOf,
-    easeTypeOf,
     easeTypes,
     setEaseEditFunction,
     setEaseEditType,
@@ -17,7 +16,7 @@ import {
 import { i18n } from '../../i18n'
 import FieldUsageProvider from '../../editor/workspace/properties/FieldUsageProvider.vue'
 import { unsetChoiceKey } from './emptyLabel'
-import { useFieldUsage, type FieldUsage, type MixedValue } from './fieldUsage'
+import { useFieldUsage, type FieldUsage } from './fieldUsage'
 import EaseIcon from './EaseIcon.vue'
 import MultiSelectField from './MultiSelectField.vue'
 import type { OptionGlyph } from './optionGlyph'
@@ -69,40 +68,24 @@ const standalone = computed(() => {
     )
 })
 
-// The function covers only modes; None and Linear objects are listed apart, and narrow.
+// The function applies only to modes; None and Linear objects count as it not applying.
 const functionUsage = computed((): FieldUsage => {
     const own = field?.value
     const usage = own?.usage
     if (!own || !usage) return { usage: undefined }
     const values = new Map<unknown, number>()
-    const apart = new Map<EaseType, number>()
+    let standaloneCount = 0
     for (const [value, count] of usage.values) {
         if (easeFunctionOf(value as Ease)) values.set(value, count)
-        else
-            apart.set(
-                easeTypeOf(value as Ease),
-                (apart.get(easeTypeOf(value as Ease)) ?? 0) + count,
-            )
+        else standaloneCount += count
     }
-    if (!apart.size) return own
+    if (!standaloneCount) return own
     if (!values.size) return { usage: undefined }
-    const covered = [...apart.values()].reduce((sum, count) => sum + count, 0)
     return {
         ...own,
-        usage: { values, covered: usage.covered - covered, total: usage.total },
-        extra: easeTypes.flatMap((standaloneType): MixedValue[] => {
-            const count = apart.get(standaloneType)
-            return count
-                ? [
-                      {
-                          label: i18n.value.modals.form.ease[standaloneType],
-                          count,
-                          narrow: () =>
-                              own.narrow?.((value) => easeTypeOf(value as Ease) === standaloneType),
-                      },
-                  ]
-                : []
-        }),
+        usage: { values, covered: usage.covered - standaloneCount, total: usage.total },
+        narrow: (predicate) =>
+            own.narrow?.((value) => !!easeFunctionOf(value as Ease) && predicate(value)),
     }
 })
 

@@ -147,8 +147,6 @@ type Chip = {
     /** The chip's action, as its accessible name. */
     label: string
     coverage?: boolean
-    /** Outside the coverage, after a divider. */
-    apart?: boolean
     narrow?: () => void
 }
 
@@ -183,9 +181,6 @@ const chips = computed((): Chip[] => {
               ]
             : []),
         ...values.value.map((value) => valueChip(value)),
-        // Objects the field doesn't apply to, such as None and Linear eases for a
-        // function, follow apart and outside the coverage.
-        ...(field?.value?.extra ?? []).map((value) => ({ ...valueChip(value), apart: true })),
     ]
 })
 
@@ -313,33 +308,25 @@ watchEffect(
                 :aria-label="label"
                 @keydown="move"
             >
-                <template v-for="(chip, index) in chips" :key="index">
-                    <span
-                        v-if="chip.apart && !chips[index - 1]?.apart"
-                        class="form-field-mixed-divider"
-                        aria-hidden="true"
-                    />
-                    <button
-                        type="button"
-                        class="form-field-mixed-value"
-                        :class="{
-                            'form-field-coverage-chip': chip.coverage,
-                            'form-field-apart-chip': chip.apart,
-                        }"
-                        :tabindex="index === current ? 0 : -1"
-                        :title="chip.label"
-                        :aria-label="chip.label"
-                        :disabled="!chip.narrow"
-                        @focus="current = index"
-                        @click="narrow(chip, $event)"
+                <button
+                    v-for="(chip, index) in chips"
+                    :key="index"
+                    type="button"
+                    class="form-field-mixed-value"
+                    :class="{ 'form-field-coverage-chip': chip.coverage }"
+                    :tabindex="index === current ? 0 : -1"
+                    :title="chip.label"
+                    :aria-label="chip.label"
+                    :disabled="!chip.narrow"
+                    @focus="current = index"
+                    @click="narrow(chip, $event)"
+                >
+                    <template v-if="chip.text">{{ chip.text }}</template>
+                    <template v-else
+                        >{{ chip.name }}
+                        <span class="tabular-nums">{{ chip.count }}</span></template
                     >
-                        <template v-if="chip.text">{{ chip.text }}</template>
-                        <template v-else
-                            >{{ chip.name }}
-                            <span class="tabular-nums">{{ chip.count }}</span></template
-                        >
-                    </button>
-                </template>
+                </button>
             </div>
         </div>
         <div v-if="notes?.length" class="form-field-notes" aria-hidden="true">
@@ -530,20 +517,6 @@ watchEffect(
 
 .form-field-coverage-chip {
     background-color: transparent;
-    color: rgb(68 68 102 / 0.8);
-}
-
-/* Values outside the coverage: muted, after a short divider, still narrowing. */
-.form-field-mixed-divider {
-    align-self: center;
-    width: 1px;
-    height: 1rem;
-    margin-inline: 0.125rem;
-    background-color: rgb(68 68 102 / 0.25);
-}
-
-.form-field-apart-chip {
-    background-color: rgb(68 68 102 / 0.04);
     color: rgb(68 68 102 / 0.8);
 }
 

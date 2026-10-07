@@ -109,36 +109,96 @@ test.describe('ease fields', () => {
         await expect.poll(() => selected(name)).toBe('Step')
     })
 
-    test('None and Linear stand apart from the function values they are not part of', async ({
-        page,
-    }) => {
-        await showSlides(page, ['outSine', 'inQuad', 'none', 'linear', 'linear'])
-        const row = panel(page)
+    // None and Linear have no function, so the function row covers only the other eases.
+    const functionRow = (page: Page) =>
+        panel(page)
             .locator('.form-field')
             .filter({ has: page.getByText('Ease Function', { exact: true }) })
-            .getByRole('toolbar')
-        await expect(row).toBeVisible()
-        const chips = await row.evaluate((row) =>
-            [...row.children].map((child) =>
-                child.matches('.form-field-mixed-divider')
-                    ? '|'
-                    : `${child.textContent!.replace(/s+/g, ' ').trim()}${
-                          child.matches('.form-field-apart-chip') ? '*' : ''
-                      }`,
-            ),
+    const chipTexts = (page: Page) =>
+        functionRow(page)
+            .locator('.form-field-mixed button')
+            .evaluateAll((chips) =>
+                chips.map((chip) => chip.textContent.replace(/\s+/g, ' ').trim()),
+            )
+    const selectedEases = (page: Page) =>
+        page.evaluate(() =>
+            window.editorTest.history.state.value.selectedEntities
+                .map((entity) =>
+                    'connectorEase' in entity
+                        ? entity.connectorEase
+                        : 'timeScaleEase' in entity
+                          ? entity.timeScaleEase
+                          : 'eventEase' in entity
+                            ? entity.eventEase
+                            : undefined,
+                )
+                .sort(),
         )
-        // Coverage counts only the eases with a function; the rest follow a divider.
-        expect(chips).toEqual(['2 of 5', 'Sine 1', 'Quad 1', '|', 'None 1*', 'Linear 2*'])
-        // They still narrow the selection.
-        await row.getByRole('button', { name: /Linear/ }).click()
-        expect(
-            await page.evaluate(() =>
-                window.editorTest.history.state.value.selectedEntities.map(
-                    (entity) => entity.type === 'note' && entity.connectorEase,
-                ),
-            ),
-        ).toEqual(['linear', 'linear'])
+
+    test('None and Linear are outside the function row and get no chips', async ({ page }) => {
+        await showSlides(page, ['outSine', 'inQuad', 'none', 'linear', 'linear'])
+        await expect.poll(() => chipTexts(page)).toEqual(['2 of 5', 'Sine 1', 'Quad 1'])
+        await expect.poll(() => selected(functionRow(page).locator('select'))).toBe('Mixed')
+        // Coverage narrows to the eases with a function.
+        await functionRow(page)
+            .getByRole('button', { name: /2 of 5/ })
+            .click()
+        expect(await selectedEases(page)).toEqual(['inQuad', 'outSine'])
     })
+
+    for (const kind of ['timeScale', 'cameraEventJoint', 'stageMaskEventJoint'] as const) {
+        test(`${kind} eases without a function are outside the function row`, async ({ page }) => {
+            const show = (eases: Ease[]) =>
+                page.evaluate(
+                    async ({ kind, eases }) => {
+                        const { fixtures, show, history, store, nextTick } = window.editorTest
+                        const events = fixtures.events
+                        show({
+                            ...events,
+                            timeScales: eases.map((timeScaleEase, index) => ({
+                                ...events.timeScales[0]!,
+                                beat: index + 1,
+                                timeScaleEase: timeScaleEase as never,
+                            })),
+                            cameraEvents: eases.map((eventEase, index) => ({
+                                ...events.cameraEvents[0]!,
+                                beat: index + 1,
+                                eventEase,
+                            })),
+                            stageMaskEvents: eases.map((eventEase, index) => ({
+                                ...events.stageMaskEvents[0]!,
+                                beat: index + 1,
+                                eventEase,
+                            })),
+                        })
+                        history.replaceState({
+                            ...history.state.value,
+                            selectedEntities: [...store.getAllEntities()].filter(
+                                (entity) => entity.type === kind,
+                            ),
+                        })
+                        await nextTick()
+                    },
+                    { kind, eases },
+                )
+            const select = functionRow(page).locator('select')
+
+            await show(['none', 'none', 'linear', 'none', 'inQuad', 'inQuad', 'inQuad'])
+            await expect.poll(() => selected(select)).toBe('Quad')
+            await expect.poll(() => chipTexts(page)).toEqual(['3 of 7'])
+
+            await show(['none', 'none', 'linear', 'none', 'inQuad', 'inSine', 'inSine'])
+            await expect.poll(() => selected(select)).toBe('Mixed')
+            await expect.poll(() => chipTexts(page)).toEqual(['3 of 7', 'Sine 2', 'Quad 1'])
+            await functionRow(page)
+                .getByRole('button', { name: /3 of 7/ })
+                .click()
+            expect(await selectedEases(page)).toEqual(['inQuad', 'inSine', 'inSine'])
+            // A value chip narrows to its function.
+            await functionRow(page).getByRole('button', { name: /Sine/ }).click()
+            expect(await selectedEases(page)).toEqual(['inSine', 'inSine'])
+        })
+    }
 
     test('multiple selections keep each type or function when only the other changes', async ({
         page,
