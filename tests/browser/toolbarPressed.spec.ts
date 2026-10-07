@@ -530,3 +530,132 @@ test('values in use keep the resting look, and their flyout checks the one in us
         ),
     ).toBe(true)
 })
+
+// Every main toolbar group's face, with a star while it is pressed.
+const faces = (page: Page) =>
+    toolbar(page)
+        .first()
+        .locator(':scope > div > div > button')
+        .evaluateAll((buttons) =>
+            buttons.map(
+                (button) =>
+                    `${button.getAttribute('title')}${button.getAttribute('aria-pressed') === 'true' ? '*' : ''}`,
+            ),
+        )
+
+const pick = async (page: Page, face: string, title: string) => {
+    await shown(page)
+        .and(page.getByTitle(face, { exact: true }))
+        .hover()
+    await toolbar(page).getByTitle(title, { exact: true }).click()
+}
+
+test('the default toolbar’s faces follow the tool and values in use', async ({ page }) => {
+    const initial = [
+        'Open',
+        'Play',
+        'Undo',
+        'Select*',
+        'Flip Horizontally',
+        'Note',
+        'Slide',
+        'BPM',
+        'Manage Groups',
+        'Event',
+        'Manage Stages',
+        'Jump to Start',
+        'Cycle Object Visibilities',
+        '1/4 Division*',
+        '1/1 Lane Division*',
+        'No Lane Limit*',
+        'Zoom Out Y',
+        'Help',
+    ]
+    let expected = [...initial]
+    // Faces so far, changed at the given group indices.
+    const expectFaces = async (changes: Record<number, string>) => {
+        expected = expected.map((face, index) => changes[index] ?? face)
+        await expect.poll(() => faces(page)).toEqual(expected)
+    }
+    await expectFaces({})
+
+    // Tool switches move the pressed face between groups.
+    await page.keyboard.press('g')
+    await expectFaces({ 3: 'Eraser*' })
+    await page.keyboard.press('b')
+    await expectFaces({ 3: 'Brush*' })
+    await page.keyboard.press('a')
+    await expectFaces({ 3: 'Brush', 5: 'Note*' })
+    await run(page, 'note2')
+    await expectFaces({})
+    await page.keyboard.press('s')
+    await expectFaces({ 5: 'Note', 6: 'Slide*' })
+    await run(page, 'slide3')
+    await expectFaces({})
+    await page.keyboard.press('q')
+    await expectFaces({ 6: 'Slide', 7: 'BPM*' })
+    await page.keyboard.press('w')
+    await expectFaces({ 7: 'Time Scale*' })
+    await page.keyboard.press('d')
+    await expectFaces({ 7: 'Time Scale', 9: 'Event*' })
+    await run(page, 'stageMaskEvent')
+    await expectFaces({})
+    await run(page, 'elevation')
+    await expectFaces({ 4: 'Elevation Editor*', 9: 'Event' })
+    await run(page, 'elevation')
+    await expectFaces({ 4: 'Elevation Editor', 9: 'Event*' })
+    await page.keyboard.press('f')
+    await expectFaces({ 3: 'Select*', 9: 'Event' })
+
+    // A picked action holds the face until the next change returns it to the tool in use.
+    await pick(page, 'Select', 'Deselect')
+    await expectFaces({ 3: 'Deselect' })
+    await page.keyboard.press('8')
+    await expectFaces({ 3: 'Select*', 13: '1/8 Division*' })
+    await pick(page, '1/8 Division', 'Snapping')
+    await expectFaces({ 13: 'Snapping' })
+    await run(page, 'laneDivision2')
+    await expectFaces({ 13: '1/8 Division*', 14: '1/2 Lane Division*' })
+    await pick(page, 'Undo', 'Redo')
+    await expectFaces({ 2: 'Redo' })
+    await page.keyboard.press('g')
+    await expectFaces({ 3: 'Eraser*' })
+    await page.keyboard.press('f')
+    await expectFaces({ 3: 'Select*' })
+
+    // Values move their own face only.
+    await pick(page, '1/8 Division', '1/3 Division')
+    await expectFaces({ 13: '1/3 Division*' })
+    await page.keyboard.press('`')
+    await page.getByRole('spinbutton', { name: 'Division', exact: true }).fill('7')
+    await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expectFaces({ 13: 'Custom Division*' })
+    await page.keyboard.press('0')
+    await expectFaces({ 13: '1/16 Division*' })
+    await page.evaluate(() => (window.editorTest.view.division = 5))
+    await expectFaces({ 13: 'Custom Division*' })
+    await page.evaluate(() => (window.editorTest.view.laneDivision = 5))
+    await expectFaces({ 14: 'Custom Lane Division*' })
+    await pick(page, 'Custom Lane Division', '1/16 Lane Division')
+    await expectFaces({ 14: '1/16 Lane Division*' })
+    await run(page, 'laneLimitSix')
+    await expectFaces({ 15: 'Limit to ±6 Lanes*' })
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 12))
+    await expectFaces({ 15: 'Custom Lane Limit*' })
+    await pick(page, 'Custom Lane Limit', 'No Lane Limit')
+    await expectFaces({ 15: 'No Lane Limit*' })
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 12))
+    await expectFaces({ 15: 'Custom Lane Limit*' })
+    await page.keyboard.press('a')
+    await expectFaces({ 3: 'Select', 5: 'Note*' })
+
+    // A reload starts from the defaults, with the settings kept.
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    expected = [...initial]
+    await expectFaces({ 15: 'Custom Lane Limit*' })
+    await page.keyboard.press('a')
+    await expectFaces({ 3: 'Select', 5: 'Note*' })
+    await page.keyboard.press('3')
+    await expectFaces({ 13: '1/3 Division*' })
+})
