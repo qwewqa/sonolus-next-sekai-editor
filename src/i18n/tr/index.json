@@ -1182,7 +1182,7 @@
       "key": {
         "input": "Tuş Girin",
         "press": "Bir tuşa basın veya temizlemek için tekrar tıklayın",
-        "clear": "Bu kısayolu kaldırmak için tekrar tıklayın",
+        "clear": "Bu kısayolu temizlemek için tekrar tıklayın",
         "unassigned": "Atanmamış",
         "reserved": "{0} tarayıcıya veya sisteme ayrılmıştır; başka bir tuşa basın",
         "altGraph": "{0} birçok klavyede karakter yazmak için kullanılır; başka bir tuşa basın",

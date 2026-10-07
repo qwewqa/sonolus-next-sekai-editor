@@ -1182,7 +1182,7 @@
             "key": {
                 "input": "Input Key",
                 "press": "Press a key or click again to clear",
-                "clear": "Click again to remove this shortcut",
+                "clear": "Click again to clear this shortcut",
                 "unassigned": "Unassigned",
                 "reserved": "{0} is reserved by the browser or system. Press another key.",
                 "altGraph": "{0} types characters on many keyboards. Press another key.",

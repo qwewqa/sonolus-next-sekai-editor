@@ -508,3 +508,10 @@ test("a shortcut button's name gives its binding and the capture prompt", async 
     await save.click()
     await expect(save).toHaveAccessibleName('Save Unassigned')
 })
+
+test('the capture prompt and its tooltip clear with the same word', async ({ page }) => {
+    const save = shortcutButton(page, 'Save')
+    await save.click()
+    await expect(save).toHaveText('Press a key or click again to clear')
+    await expect(save).toHaveAttribute('title', 'Click again to clear this shortcut')
+})

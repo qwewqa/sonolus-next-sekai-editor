@@ -1182,7 +1182,7 @@
       "key": {
         "input": "Touche de saisie",
         "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
-        "clear": "Cliquez à nouveau pour supprimer ce raccourci",
+        "clear": "Cliquez à nouveau pour effacer ce raccourci",
         "unassigned": "Non attribué",
         "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche",
         "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche",
