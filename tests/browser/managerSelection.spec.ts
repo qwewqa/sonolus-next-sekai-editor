@@ -1013,3 +1013,22 @@ test('a long list keeps the full selection bar while the count is short', async 
     await expect(bar.locator('.manager-selection-done > span').last()).toHaveText('3 Selected')
     await expect(bar.locator('.manager-bulk-visibility')).toBeVisible()
 })
+
+test('a range from a row an undo removed starts from the target instead', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await nameButton(list, 'Other').click()
+    await list.getByRole('button', { name: 'Add Group', exact: true }).click()
+    const input = list.getByRole('textbox')
+    await expect(input).toBeFocused()
+    const name = await input.inputValue()
+    await input.press('Escape')
+    // Toggled on and off, the new row is left as the anchor of an empty selection.
+    await nameButton(list, name).click({ modifiers: ['ControlOrMeta'] })
+    await nameButton(list, name).click({ modifiers: ['ControlOrMeta'] })
+    expect(await checked(list)).toEqual([])
+    await undo(page)
+    await expect(nameButton(list, name)).toHaveCount(0)
+    await nameButton(list, 'Bass').click({ modifiers: ['Shift'] })
+    expect(await checked(list)).toEqual(['Other', 'Lead', 'Fill', 'Bass'])
+})

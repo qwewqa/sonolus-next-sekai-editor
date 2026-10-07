@@ -541,12 +541,12 @@ watch(tree, () => {
     const ids = new Set(allIds.value)
     const entries = new Set([...selected.value].filter((id) => ids.has(id)))
     const folders = unitsOf(selectedFolders.value, entries)
+    if (anchor && !exists(anchor)) anchor = undefined
     if (entries.size === selected.value.size && folders.size === selectedFolders.value.size) return
     selected.value = entries
     selectedFolders.value = folders
     const base = new Set([...rangeBase.entries].filter((id) => ids.has(id)))
     rangeBase = { entries: base, folders: unitsOf(rangeBase.folders, base) }
-    if (anchor && !exists(anchor)) anchor = undefined
 })
 
 const onEntrySelect = (id: T, { range, toggle }: SelectModifiers) => {
