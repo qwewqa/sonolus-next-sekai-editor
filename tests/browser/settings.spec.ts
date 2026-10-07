@@ -496,3 +496,15 @@ test('from the keyboard, Escape cancels a capture and Delete or Backspace clears
     expect(await savedShortcut(page, 'save')).toBe('Escape')
     await expect(dialog).toBeVisible()
 })
+
+test("a shortcut button's name gives its binding and the capture prompt", async ({ page }) => {
+    const save = shortcutButton(page, 'Save')
+    await expect(save).toHaveAccessibleName('Save P')
+    await save.click()
+    await expect(save).toHaveAccessibleName('Save Press a key or click again to clear')
+    await save.press('l')
+    await expect(save).toHaveAccessibleName('Save L')
+    await save.click()
+    await save.click()
+    await expect(save).toHaveAccessibleName('Save Unassigned')
+})

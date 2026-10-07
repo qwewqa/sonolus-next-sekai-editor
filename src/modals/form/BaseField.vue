@@ -31,6 +31,9 @@ const props = defineProps<{
 const field = useFieldUsage()
 const row = useTemplateRef<HTMLElement>('row')
 const descriptionId = useId()
+// Controls named by more than the label, as a shortcut by its binding, refer to it.
+const fallbackTextId = useId()
+const textId = computed(() => props.labelId ?? fallbackTextId)
 
 const coverage = computed(() => {
     const usage = field?.value?.usage
@@ -283,11 +286,11 @@ watchEffect(
                 class="form-field-row"
             >
                 <span ref="labelRow" class="form-field-label"
-                    ><slot name="icon" /><span :id="labelId" class="form-field-text">{{
+                    ><slot name="icon" /><span :id="textId" class="form-field-text">{{
                         label
                     }}</span></span
                 >
-                <slot />
+                <slot :text-id="textId" />
             </component>
             <!-- Which objects the field covers and which values they hold; each chip
         selects only its objects. -->

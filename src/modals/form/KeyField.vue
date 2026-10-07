@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, useId } from 'vue'
 import { i18n } from '../../i18n'
 import {
     bindingOf,
@@ -25,6 +25,8 @@ const modelValue = defineModel<string | undefined>({ required: true })
 provide(stackLongValuesKey, false)
 
 const isActive = ref(false)
+// The name reads the binding or prompt after the label.
+const valueId = useId()
 // A capture the keyboard started ends on Escape; a click's records it, so Escape stays bindable.
 let fromKeyboard = false
 // The chord last refused during this capture, as shown, and why.
@@ -133,26 +135,29 @@ const onBlur = () => {
                 ><slot name="icon"
             /></span>
         </template>
-        <button
-            class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
-            :class="{
-                'animate-pulse': isActive,
-                'text-fg/80': !isActive && !formatShortcut(modelValue),
-            }"
-            type="button"
-            :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
-            @mousedown="onMouseDown"
-            @click="onClick"
-            @keydown="onKeyDown"
-            @blur="onBlur"
-        >
-            {{
-                isActive
-                    ? i18n.modals.form.key.press
-                    : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
-            }}
-        </button>
-        <span class="sr-only" role="status">{{ refusal }}</span>
+        <template #default="{ textId }">
+            <button
+                class="key-field-button w-full rounded-2xl bg-button px-4 py-1 text-left shadow-md transition-colors hover:shadow-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
+                :class="{
+                    'animate-pulse': isActive,
+                    'text-fg/80': !isActive && !formatShortcut(modelValue),
+                }"
+                type="button"
+                :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
+                :aria-labelledby="`${textId} ${valueId}`"
+                @mousedown="onMouseDown"
+                @click="onClick"
+                @keydown="onKeyDown"
+                @blur="onBlur"
+            >
+                <span :id="valueId">{{
+                    isActive
+                        ? i18n.modals.form.key.press
+                        : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
+                }}</span>
+            </button>
+            <span class="sr-only" role="status">{{ refusal }}</span>
+        </template>
     </BaseField>
 </template>
 
