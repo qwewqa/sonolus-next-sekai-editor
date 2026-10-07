@@ -145,6 +145,10 @@ test('Japanese writes すべて, never 全て', () => {
     for (const [key, text] of Object.entries(read('ja'))) assert.doesNotMatch(text, /全て/, key)
 })
 
+test('Japanese writes ペースト, as the command, never 貼り付け', () => {
+    for (const [key, text] of Object.entries(read('ja'))) assert.doesNotMatch(text, /貼り付/, key)
+})
+
 test('Korean show settings all end in 표시', () => {
     for (const [key, text] of Object.entries(read('ko')))
         if (/^settings\.editor\.show/.test(key)) assert.match(text, /표시$/, key)
