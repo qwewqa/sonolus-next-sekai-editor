@@ -3,7 +3,7 @@ import { beginAudioPreviewInteraction } from '../audioPreview'
 import { openContextMenu } from '../contextMenu'
 import { stopPlayer } from '../player'
 import { tool } from '../tools'
-import { updateViewPointer, view } from '../view'
+import { hideViewHover, updateViewPointer, view } from '../view'
 import { gesture } from './gestures/gesture'
 import { drag, isDragging } from './gestures/recognizers/drag'
 import { pan } from './gestures/recognizers/pan'
@@ -56,6 +56,11 @@ export const cancelTouchControls = () => {
     touchGesture.cancel()
 }
 
+// Runs after the gesture: its tap or last drag update shows the marker.
+const endTouchHover = () => {
+    if (!touchGesture.pointerCount && !isDragging.value) hideViewHover()
+}
+
 const toPs = (event: TouchEvent) =>
     [...event.changedTouches].map((touch) => ({
         id: touch.identifier,
@@ -76,6 +81,8 @@ const touchstart = (event: TouchEvent) => {
     view.scrollingX = undefined
     stopPlayer(false)
     if (!touchGesture.pointerCount) beginAudioPreviewInteraction()
+    // A mouse drag keeps its marker.
+    if (!isDragging.value) hideViewHover()
 
     touchGesture.start(ps)
 
@@ -110,6 +117,7 @@ const touchend = (event: TouchEvent) => {
 
     cancelLongPress()
     touchGesture.end(ps)
+    endTouchHover()
 
     event.preventDefault()
 }
@@ -120,6 +128,7 @@ const touchcancel = (event: TouchEvent) => {
 
     cancelLongPress()
     touchGesture.cancel()
+    endTouchHover()
 
     event.preventDefault()
 }

@@ -34,6 +34,7 @@ onBeforeUnmount(() => {
 <template>
     <div
         class="absolute flex w-full -translate-y-1/2 justify-between text-white/70 forced-color-adjust-none"
+        :class="{ invisible: view.isHoverHidden }"
         :style="{ top: `${hoverLabelCenter}px` }"
     >
         <span ref="time">{{ formatTime(hover.time) }}</span>

@@ -141,3 +141,79 @@ test('holding a finger still during a mouse drag opens no menu', async ({ page }
         { beat: 2, left: 2 },
     ])
 })
+
+test('touch leaves no hover marker, and the edge labels under it come back', async ({ page }) => {
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 5))
+    const pane = (await page.locator('canvas.editor-chart').boundingBox())!
+    const x = pane.x + 30
+    const y = pane.y + 15
+    const state = () =>
+        page.evaluate(async () => {
+            const { edgeLabelBoxes, hoverLabelCenter } = await window.editorTest.appImport<
+                typeof import('../../src/editor/edgeLabels')
+            >('/src/editor/edgeLabels.ts')
+            const visible = (selector: string) =>
+                [...document.querySelectorAll(selector)].map(
+                    (span) => getComputedStyle(span).visibility === 'visible',
+                )
+            const canvas = document.querySelector<HTMLCanvasElement>('canvas.editor-overlay')!
+            const pixels = canvas
+                .getContext('2d')!
+                .getImageData(0, 0, canvas.width, canvas.height).data
+            let drawn = false
+            for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) drawn = true
+            const { left, right } = edgeLabelBoxes.value
+            return {
+                hover: visible('.chart-pane > div:nth-of-type(2) > span'),
+                top: visible('.chart-pane > div:first-of-type > div:first-child > span'),
+                // The grid leaves out its labels under the hover labels' boxes.
+                gridSkipsHover: [left, right].map((boxes) =>
+                    boxes.some(
+                        ({ top, bottom }) =>
+                            Math.abs((top + bottom) / 2 - hoverLabelCenter.value) < 0.01,
+                    ),
+                ),
+                drawn,
+            }
+        })
+    const hidden = {
+        hover: [false, false],
+        top: [true, true],
+        gridSkipsHover: [false, false],
+        drawn: false,
+    }
+    const shown = {
+        hover: [true, true],
+        top: [false, false],
+        gridSkipsHover: [true, true],
+        drawn: true,
+    }
+
+    await touch('touchStart', [[x, y]])
+    await touch('touchEnd', [])
+    await expect.poll(state).toEqual(hidden)
+
+    await page.mouse.move(x, y)
+    await expect.poll(state).toEqual(shown)
+
+    // A pinch starts by clearing the mouse's marker.
+    await touch('touchStart', [
+        [x, y + 100],
+        [x + 100, y + 100],
+    ])
+    await expect.poll(state).toEqual(hidden)
+    for (let step = 1; step <= 4; step++)
+        await touch('touchMove', [
+            [x, y + 100],
+            [x + 100 + step * 25, y + 100],
+        ])
+    await touch('touchEnd', [])
+    await expect.poll(state).toEqual(hidden)
+
+    // A drag shows it while the finger is down.
+    await touch('touchStart', [[x, y + 100]])
+    for (let step = 1; step <= 4; step++) await touch('touchMove', [[x + step * 20, y]])
+    await expect.poll(async () => (await state()).hover).toEqual([true, true])
+    await touch('touchEnd', [])
+    await expect.poll(state).toEqual(hidden)
+})

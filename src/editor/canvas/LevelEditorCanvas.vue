@@ -261,7 +261,7 @@ watchEffect(
         const hovered = hoveredEntities.value
         const selected = visibleSelectedEntities.value
         const selection = view.selection
-        const hover = view.hoverTime
+        const hover = view.isHoverHidden ? undefined : view.hoverTime
         overlayFrame.schedule((timestamp) => {
             notes.beginFrame(timestamp)
             const ctx = prepareSurface(
@@ -326,10 +326,12 @@ watchEffect(
                 ctx.globalAlpha = 0.5
                 ctx.strokeRect(x, y, w, h)
             }
-            ctx.beginPath()
-            ctx.moveTo(-6, hover * inputs.ups)
-            ctx.lineTo(6, hover * inputs.ups)
-            ctx.stroke()
+            if (hover !== undefined) {
+                ctx.beginPath()
+                ctx.moveTo(-6, hover * inputs.ups)
+                ctx.lineTo(6, hover * inputs.ups)
+                ctx.stroke()
+            }
             ctx.restore()
         })
     },

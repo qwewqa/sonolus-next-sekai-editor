@@ -26,6 +26,8 @@ export type Selection = {
 export const view = shallowReactive({
     time: 0,
     hoverTime: 0,
+    // Touch has no hover; it shows the marker only while dragging.
+    isHoverHidden: false,
     cursorTime: 0,
 
     lane: 0,
@@ -276,6 +278,11 @@ export const scrollViewYBy = (dy: number, smooth = false) => {
 export const setViewHover = (y: number) => {
     if (editorNavigation.value) return
     view.hoverTime = Math.max(0, yToTime(y))
+    view.isHoverHidden = false
+}
+
+export const hideViewHover = () => {
+    view.isHoverHidden = true
 }
 
 export const focusViewAtBeat = (beat: number) => {

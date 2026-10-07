@@ -71,7 +71,8 @@ const overlaps = (a: LabelBox, b: LabelBox) =>
 /** The edge labels under the hover time and beat labels, hidden while they are. */
 export const coveredEdgeLabels = computed(() => {
     const { top, bottom, hover } = rows.value
-    const covered = (box: LabelBox) => overlaps(box, hover.time) || overlaps(box, hover.beat)
+    const covered = (box: LabelBox) =>
+        !view.isHoverHidden && (overlaps(box, hover.time) || overlaps(box, hover.beat))
     return {
         top: { time: covered(top.time), beat: covered(top.beat) },
         bottom: { time: covered(bottom.time), beat: covered(bottom.beat) },
@@ -89,6 +90,6 @@ export const edgeLabelBoxes = computed(() => {
     const covered = coveredEdgeLabels.value
     add(top, covered.top)
     if (!lowerEdgeLabelsCovered.value) add(bottom, covered.bottom)
-    add(hover)
+    if (!view.isHoverHidden) add(hover)
     return boxes
 })
