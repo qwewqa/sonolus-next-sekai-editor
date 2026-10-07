@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
-import { pluralForm } from '../../src/i18n/plural'
+import { languageTag, pluralForm } from '../../src/i18n/plural'
 
 type Localization = { [key: string]: string | Localization }
 const directory = new URL('../../src/i18n/', import.meta.url)
@@ -67,6 +67,28 @@ test('plural forms follow each locale’s rules', () => {
     // Chinese has one form; locale codes map to language tags.
     assert.equal(pluralForm('zhs', message, '1'), '{0} objects')
     assert.equal(pluralForm('en', 'Saved', '1'), 'Saved')
+})
+
+test('every locale has a language tag that names its script', () => {
+    const scripts: Record<string, string> = {
+        en: 'Latn',
+        fr: 'Latn',
+        ja: 'Jpan',
+        ko: 'Kore',
+        tr: 'Latn',
+        zhs: 'Hans',
+        zht: 'Hant',
+    }
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        // An unknown code such as "zht" maximizes to no script, so Chinese fonts fall back.
+        assert.equal(
+            new Intl.Locale(languageTag(locale)).maximize().script,
+            scripts[locale],
+            locale,
+        )
+    }
 })
 
 test('status bar scope names start with a capital where the script has case', () => {

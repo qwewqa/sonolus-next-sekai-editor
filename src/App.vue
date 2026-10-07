@@ -11,6 +11,7 @@ import {
     workspaceSize,
 } from './editor/workspace'
 import WorkspaceDock from './editor/workspace/WorkspaceDock.vue'
+import { languageTag } from './i18n/plural'
 import { modals } from './modals'
 import ModalManager from './modals/ModalManager.vue'
 import { settings } from './settings'
@@ -18,7 +19,7 @@ import { settings } from './settings'
 watch(
     () => settings.locale,
     () => {
-        document.documentElement.lang = settings.locale
+        document.documentElement.lang = languageTag(settings.locale)
     },
     { immediate: true },
 )

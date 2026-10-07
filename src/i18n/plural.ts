@@ -1,11 +1,14 @@
 // Locale codes that are not language tags.
 const tags: Partial<Record<string, string>> = { zhs: 'zh-Hans', zht: 'zh-Hant' }
 
+/** The BCP 47 tag for a locale code, as `lang` and `Intl` take it. */
+export const languageTag = (locale: string) => tags[locale] ?? locale
+
 const rules = new Map<string, Intl.PluralRules>()
 
 const pluralRules = (locale: string) => {
     let rule = rules.get(locale)
-    if (!rule) rules.set(locale, (rule = new Intl.PluralRules(tags[locale] ?? locale)))
+    if (!rule) rules.set(locale, (rule = new Intl.PluralRules(languageTag(locale))))
     return rule
 }
 
