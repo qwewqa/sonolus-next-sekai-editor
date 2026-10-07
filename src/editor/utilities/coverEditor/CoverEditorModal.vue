@@ -107,7 +107,7 @@ const onGenerate = () => {
         <div class="flex flex-col gap-3">
             <FileField
                 :label="i18n.utilities.coverEditor.cover"
-                :value="image && `${image.width}x${image.height}`"
+                :value="image && `${image.width}×${image.height}`"
                 @select="onSelect"
             />
             <NumberField

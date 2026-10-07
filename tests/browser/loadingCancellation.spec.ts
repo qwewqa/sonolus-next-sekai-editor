@@ -205,11 +205,11 @@ test('cancelled cover decoding cannot replace a newer selected image', async ({ 
 
     await chooseFile(page, 'new.svg', 'image/svg+xml', cover(22, 33))
     const file = page.getByRole('dialog').first().locator('input[type="button"]')
-    await expect(file).toHaveValue('22x33')
+    await expect(file).toHaveValue('22×33')
     await expect.poll(() => page.evaluate(() => window.loadingReview.completed)).toBe(1)
     await page.evaluate(() => window.loadingReview.release())
     await expect.poll(() => page.evaluate(() => window.loadingReview.completed)).toBe(2)
-    await expect(file).toHaveValue('22x33')
+    await expect(file).toHaveValue('22×33')
 })
 
 test('cancelled audio decoding cannot replace newer preview audio', async ({ page }) => {
@@ -251,7 +251,7 @@ test('cancelling cover generation while PNG encoding finishes prevents the downl
 }) => {
     await openUtility(page, 'coverEditor')
     await chooseFile(page, 'cover.svg', 'image/svg+xml', cover(22, 33))
-    await expect(page.getByRole('dialog').locator('input[type="button"]')).toHaveValue('22x33')
+    await expect(page.getByRole('dialog').locator('input[type="button"]')).toHaveValue('22×33')
     await expect.poll(() => page.evaluate(() => window.loadingReview.completed)).toBe(1)
     await page.evaluate(() => {
         const toBlob = HTMLCanvasElement.prototype.toBlob
