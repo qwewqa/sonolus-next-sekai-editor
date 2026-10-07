@@ -37,6 +37,15 @@ const defaultWeights: Record<PanelId, number> = {
 const previewStrip = (input: WorkspaceLayoutInput) => (input.coarse ? 60 : 52)
 const previewChrome = (input: WorkspaceLayoutInput) =>
     input.previewOverlay ? 0 : previewStrip(input)
+// Preview's letterboxed image and playback strip, given the dock's thickness.
+const previewNatural = (
+    input: WorkspaceLayoutInput,
+    axis: 'vertical' | 'horizontal',
+    cross: number,
+) =>
+    axis === 'vertical'
+        ? cross / input.previewAspectRatio + previewChrome(input)
+        : (cross - previewChrome(input)) * input.previewAspectRatio
 
 const minSideBody = 220
 const minTopBody = 176
@@ -207,11 +216,7 @@ const tileWeight = (
 
     // Until the user adjusts a stack, give Preview its natural letterboxed size
     // and share the rest of the dock between the other panels.
-    const natural =
-        axis === 'vertical'
-            ? cross / input.previewAspectRatio + previewChrome(input)
-            : (cross - previewChrome(input)) * input.previewAspectRatio
-    const share = clamp(natural / length, 0.2, 0.6)
+    const share = clamp(previewNatural(input, axis, cross) / length, 0.2, 0.6)
     const rest = others.reduce(
         (sum, other) => sum + (input.weights[other] ?? defaultWeights[other]),
         0,
@@ -425,6 +430,29 @@ export const computeWorkspaceLayout = (input: WorkspaceLayoutInput): WorkspaceLa
     }
 
     return { docks, sides }
+}
+
+/**
+ * Whether the panels, opened beside those already open, would each show in a
+ * side dock beside the editor that shows all its open panels, with Preview at
+ * its natural size and the others at least at their minimums. Judged at default
+ * dock and tile sizes, so resizing never opens or closes panels.
+ */
+export const hasRoomFor = (input: WorkspaceLayoutInput, ids: readonly PanelId[]) => {
+    const layout = computeWorkspaceLayout({
+        ...input,
+        open: { ...input.open, ...Object.fromEntries(ids.map((id) => [id, true])) },
+        sizes: { left: 0, right: 0, top: 0 },
+        weights: {},
+    })
+    return ids.every((id) => {
+        const side = layout.sides[id]
+        const dock = side && layout.docks[side]
+        if (!dock || dock.side === 'top' || dock.overlay || dock.collapsed) return false
+        if (dock.covered.length || !dock.visible.includes(id)) return false
+        const preview = dock.tiles.find((tile) => tile.id === 'preview')
+        return !preview || preview.size >= previewNatural(input, 'vertical', dock.size) - 0.5
+    })
 }
 
 /**

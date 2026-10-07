@@ -7,6 +7,7 @@ import {
     computeWorkspaceLayout,
     defaultDockSize,
     distribute,
+    hasRoomFor,
     railSize,
     reduceWorkspace,
     resizeTilePair,
@@ -565,4 +566,53 @@ test('rotating a tablet keeps exactly the same panels shown', () => {
     const back = rotate(mixed, tabletLandscape, tabletPortrait)
     assert.deepEqual(visibleOf(layoutIn(tabletPortrait, back)), ['properties'])
     assert.equal(back.collapsed.top, false)
+})
+
+test('groups and stages open by default only where they fit beside preview', () => {
+    const managers = ['groups', 'stages'] as const
+    const room = (overrides: Partial<WorkspaceLayoutInput>) =>
+        hasRoomFor(input(overrides), managers)
+    for (const [width, height] of [
+        [1280, 720],
+        [1280, 800],
+        [1366, 768],
+        [1440, 900],
+        [1600, 1000],
+        [1920, 1080],
+    ])
+        assert.ok(room({ width, height }), `${width}x${height}`)
+    // Preview keeps its natural size: 1280 wide needs 223 + 2 * 226 + 2 * 4.
+    assert.ok(room({ width: 1280, height: 683 }))
+    assert.ok(!room({ width: 1280, height: 682 }))
+    assert.ok(!room({ width: 1280, height: 600 }))
+    // Properties shares the left dock and would cover Stages.
+    assert.ok(!room({ width: 1024, height: 768 }))
+    // Portrait screens use the top dock, and narrow ones open drawers.
+    assert.ok(!room({ width: 820, height: 1180 }))
+    assert.ok(!room({ width: 390, height: 844 }))
+    assert.ok(!room({ width: 844, height: 390 }))
+    // Taller touch controls and a 4:3 preview need more height.
+    assert.ok(!room({ width: 1280, height: 683, coarse: true, railSize: coarseRailSize }))
+    assert.ok(!room({ width: 1280, height: 683, previewAspectRatio: 4 / 3 }))
+    // An overlaid playback strip needs only Preview's minimum.
+    assert.ok(room({ width: 1280, height: 660, previewOverlay: true }))
+    // Resized docks and tiles never change the default.
+    assert.ok(
+        room({
+            width: 1280,
+            height: 683,
+            sizes: { left: 600, right: 0, top: 0 },
+            weights: { preview: 3 },
+        }),
+    )
+})
+
+test('a manager moved elsewhere opens by default only where it fits', () => {
+    const moved = { ...positions('auto'), stages: 'right' as const }
+    assert.ok(hasRoomFor(input({ positions: moved }), ['groups', 'stages']))
+    // Properties on the right leaves no room for Stages in a short window.
+    assert.ok(!hasRoomFor(input({ height: 420, positions: moved }), ['stages']))
+    assert.ok(hasRoomFor(input({ positions: moved }), ['groups']))
+    // A top dock never opens managers by default.
+    assert.ok(!hasRoomFor(input({ positions: { ...moved, groups: 'top' } }), ['groups']))
 })

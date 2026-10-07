@@ -114,8 +114,9 @@ const settingsProperties = {
     showPreview: Type.Boolean({ default: true }),
     // Properties retains the open state saved by the former sidebar.
     showSidebar: Type.Boolean({ default: true }),
-    showGroups: Type.Boolean(),
-    showStages: Type.Boolean(),
+    // Null until the user acts on panels: open where there's room.
+    showGroups: Type.Union([Type.Boolean(), Type.Null()], { default: null }),
+    showStages: Type.Union([Type.Boolean(), Type.Null()], { default: null }),
 
     panelRecency: Type.Codec(
         Type.Array(Type.String(), {
@@ -578,7 +579,25 @@ const mergeShortcutDefaults = (saved: unknown, defaults: Record<string, string>)
     return record
 }
 
+// Panel state saved while Groups and Stages defaulted to closed, which left a
+// closed one unsaved.
+const panelStateKeys = [
+    'showPreview',
+    'showSidebar',
+    'showGroups',
+    'showStages',
+    'panelRecency',
+    'leftDockCollapsed',
+    'rightDockCollapsed',
+    'topDockCollapsed',
+]
+
 const loadSetting = (key: string, defaultValue: unknown) => {
+    if (
+        (key === 'showGroups' || key === 'showStages') &&
+        panelStateKeys.some((other) => storageGet(other, undefined) !== undefined)
+    )
+        return storageGet(key, false)
     const legacyKey = legacyKeys[key]
     const legacy = legacyKey === undefined ? undefined : storageGet(legacyKey, undefined)
     if (legacyKey !== undefined && legacy !== undefined) {

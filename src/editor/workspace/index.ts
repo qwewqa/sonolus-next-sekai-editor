@@ -6,6 +6,7 @@ import {
     coarseRailSize,
     computeWorkspaceLayout,
     dockSides,
+    hasRoomFor,
     panelIds,
     railSize,
     reduceWorkspace,
@@ -91,19 +92,8 @@ export const setPanelPosition = (id: PanelId, position: PanelPosition) => {
 
 export const isPanelEnabled = (id: PanelId) => getPanelPosition(id) !== 'disabled'
 
-export const isPanelOpen = (id: PanelId) => settings[openKeys[id]]
-
-const panelOpenStates = computed(
-    () =>
-        Object.fromEntries(panelIds.map((id) => [id, isPanelOpen(id)])) as Record<PanelId, boolean>,
-)
-
 export const setDockSize = (side: DockSide, size: number) => {
     settings[sizeKeys[side]] = Math.max(0, Math.round(size))
-}
-
-export const setDockCollapsed = (side: DockSide, collapsed: boolean) => {
-    settings[collapsedKeys[side]] = collapsed
 }
 
 const panelPositions = computed(
@@ -114,16 +104,6 @@ const panelPositions = computed(
         >,
 )
 
-const toggleState = computed((): WorkspaceToggleState => ({
-    open: panelOpenStates.value,
-    recency: settings.panelRecency,
-    collapsed: {
-        left: settings.leftDockCollapsed,
-        right: settings.rightDockCollapsed,
-        top: settings.topDockCollapsed,
-    },
-}))
-
 // The main editor's toolbar, which side docks' defaults leave room for.
 const toolbarWidth = computed(() =>
     oneRowToolbarWidth(
@@ -133,25 +113,65 @@ const toolbarWidth = computed(() =>
     ),
 )
 
-const layoutOf = (state: WorkspaceToggleState) =>
-    computeWorkspaceLayout({
-        ...workspaceSize.value,
-        autoShape: autoShape.value,
-        positions: panelPositions.value,
-        ...state,
-        sizes: {
-            left: dockSizeDrafts.value.left ?? settings.leftDockWidth,
-            right: dockSizeDrafts.value.right ?? settings.rightDockWidth,
-            top: dockSizeDrafts.value.top ?? settings.topDockHeight,
+const layoutInput = (state: WorkspaceToggleState) => ({
+    ...workspaceSize.value,
+    autoShape: autoShape.value,
+    positions: panelPositions.value,
+    ...state,
+    sizes: {
+        left: dockSizeDrafts.value.left ?? settings.leftDockWidth,
+        right: dockSizeDrafts.value.right ?? settings.rightDockWidth,
+        top: dockSizeDrafts.value.top ?? settings.topDockHeight,
+    },
+    weights: panelWeightsDraft.value ?? settings.panelWeights,
+    previewAspectRatio: settings.previewAspectRatio,
+    railSize: isCoarsePointer.value ? coarseRailSize : railSize,
+    coarse: isCoarsePointer.value,
+    previewOverlay: settings.previewTransportPosition === 'overlay',
+    rootFontSize: rootFontSize.value,
+    toolbarWidth: toolbarWidth.value,
+})
+
+const layoutOf = (state: WorkspaceToggleState) => computeWorkspaceLayout(layoutInput(state))
+
+// Null until the user first acts on panels; Groups and Stages then default to
+// open where there's room.
+const savedOpenStates = computed(
+    () =>
+        Object.fromEntries(panelIds.map((id) => [id, settings[openKeys[id]]])) as Record<
+            PanelId,
+            boolean | null
+        >,
+)
+
+const isPanelStateUnset = computed(() => panelIds.some((id) => savedOpenStates.value[id] === null))
+
+const toggleState = computed((): WorkspaceToggleState => {
+    const saved = savedOpenStates.value
+    const unset = panelIds.filter((id) => saved[id] === null)
+    const state = {
+        open: Object.fromEntries(panelIds.map((id) => [id, !!saved[id]])) as Record<
+            PanelId,
+            boolean
+        >,
+        recency: settings.panelRecency,
+        collapsed: {
+            left: settings.leftDockCollapsed,
+            right: settings.rightDockCollapsed,
+            top: settings.topDockCollapsed,
         },
-        weights: panelWeightsDraft.value ?? settings.panelWeights,
-        previewAspectRatio: settings.previewAspectRatio,
-        railSize: isCoarsePointer.value ? coarseRailSize : railSize,
-        coarse: isCoarsePointer.value,
-        previewOverlay: settings.previewTransportPosition === 'overlay',
-        rootFontSize: rootFontSize.value,
-        toolbarWidth: toolbarWidth.value,
-    })
+    }
+    const enabled = unset.filter(isPanelEnabled)
+    if (!enabled.length || !hasRoomFor(layoutInput(state), enabled)) return state
+    return {
+        ...state,
+        open: { ...state.open, ...Object.fromEntries(enabled.map((id) => [id, true])) },
+    }
+})
+
+const panelOpenStates = computed(() => toggleState.value.open)
+
+export const isPanelOpen = (id: PanelId) => panelOpenStates.value[id]
 
 export const workspaceLayout = computed(() => layoutOf(toggleState.value))
 
@@ -170,6 +190,16 @@ const apply = (action: WorkspaceAction) => {
     commit(reduceWorkspace(toggleState.value, action, layoutOf))
 }
 
+// Saves the open states shown by default, so later window sizes keep them.
+const keepDefaults = () => {
+    commit(toggleState.value)
+}
+
+export const setDockCollapsed = (side: DockSide, collapsed: boolean) => {
+    keepDefaults()
+    settings[collapsedKeys[side]] = collapsed
+}
+
 /**
  * Keeps exactly the same panels shown when rotating a tablet, or resizing
  * across a placement threshold, moves Auto panels between docks. The app shell
@@ -180,6 +210,8 @@ export const keepPanelsAcrossShape = () =>
         [workspaceLayout, panelPositions],
         ([layout, positions], [previous, previousPositions]) => {
             if (positions !== previousPositions) return
+            // Until the user acts on panels, each shape shows its own default.
+            if (isPanelStateUnset.value) return
             if (panelIds.every((id) => layout.sides[id] === previous.sides[id])) return
             commit(carryAcrossShape(previous, layout, toggleState.value))
         },
@@ -230,6 +262,7 @@ export const closePanel = (id: PanelId) => {
 
 /** Docks a panel elsewhere and shows it there, leaving nothing revealed behind. */
 export const movePanel = (id: PanelId, position: PanelPosition) => {
+    keepDefaults()
     // Panels its old dock was not showing would otherwise take its place.
     const side = getPanelSide(id)
     const covered = (side && workspaceLayout.value.docks[side]?.covered) ?? []
