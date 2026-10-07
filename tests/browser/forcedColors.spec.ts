@@ -148,21 +148,22 @@ const expectEdges = async (fields: Locator) => {
     })
     // At rest: a dialog focuses its first field.
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-    const count = await fields.count()
-    expect(count).toBeGreaterThan(3)
-    for (let index = 0; index < count; index++) {
-        const field = fields.nth(index)
-        const label = await field.evaluate(
-            (element) =>
-                element.closest('.form-field')?.querySelector('.form-field-text')?.textContent,
-        )
-        expect({ label, ...(await outline(field)) }).toEqual({
-            label,
-            style: 'solid',
-            width: '2px',
-            color: text,
-        })
-    }
+    // One round trip for every field.
+    const edges = await fields.evaluateAll((elements) =>
+        elements.map((element) => {
+            const { outlineStyle, outlineWidth, outlineColor } = getComputedStyle(element)
+            return {
+                label: element.closest('.form-field')?.querySelector('.form-field-text')
+                    ?.textContent,
+                style: outlineStyle,
+                width: outlineWidth,
+                color: outlineColor,
+            }
+        }),
+    )
+    expect(edges.length).toBeGreaterThan(3)
+    for (const { label, ...edge } of edges)
+        expect({ label, ...edge }).toEqual({ label, style: 'solid', width: '2px', color: text })
 }
 
 test('Properties and Settings fields keep their edge, as Preview Settings fields do', async ({
@@ -254,14 +255,14 @@ test('raised buttons and segment tracks keep their edge, as fields do', async ({
     const text = await systemColor(page, 'CanvasText')
     const expectEdges = async (locator: Locator) => {
         await expect(locator.first()).toBeVisible()
-        const count = await locator.count()
-        expect(count).toBeGreaterThan(0)
-        for (let index = 0; index < count; index++)
-            expect(await outline(locator.nth(index))).toEqual({
-                style: 'solid',
-                width: '2px',
-                color: text,
-            })
+        const edges = await locator.evaluateAll((elements) =>
+            elements.map((element) => {
+                const { outlineStyle, outlineWidth, outlineColor } = getComputedStyle(element)
+                return { style: outlineStyle, width: outlineWidth, color: outlineColor }
+            }),
+        )
+        for (const edge of edges)
+            expect(edge).toEqual({ style: 'solid', width: '2px', color: text })
     }
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     await expectEdges(panel(page).locator('.form-field-mixed-value'))
