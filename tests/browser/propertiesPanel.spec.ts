@@ -697,3 +697,102 @@ test('selects show their value on hover', async ({ page }) => {
     await expect(page.locator('.elevation-select select')).toHaveAttribute('title', /./)
     expect(await mismatched()).toEqual([])
 })
+
+// Brushing selects what it brushes, which resizes the Selection section above.
+const brushKeepsToolSection = async (page: Page, scrolled: boolean) => {
+    // Scrolling from a resize observer would loop the scroller's observers.
+    page.on('pageerror', (error) => {
+        throw error
+    })
+    // Four notes in a row across the chart, clear of the toolbar.
+    const chart = (await page.locator('canvas.editor-chart').boundingBox())!
+    const toolbarTop = (await page.locator('[data-editor-toolbar] button').first().boundingBox())!.y
+    const y = (Math.max(chart.y, 0) + toolbarTop) / 2
+    await page.evaluate(async (y) => {
+        const { show, fixtures, point, nextTick } = window.editorTest
+        show({ ...fixtures.interaction, slides: [] }, 3)
+        const beat = (point(0, 0).y - y) / (point(0, 0).y - point(0, 1).y)
+        const note = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [-7, -3, 1, 5].map((left) => [{ ...note, beat, left, size: 2 }]),
+            },
+            3,
+        )
+        const { switchToolTo } = await import('/src/editor/tools/index.ts')
+        switchToolTo('brush')
+        await nextTick()
+    }, y)
+    await expect(panel(page).getByRole('tablist')).toHaveCount(0)
+    const heading = panel(page).getByText('Brush Properties', { exact: true })
+    await expect(heading).toBeVisible()
+    if (scrolled)
+        // The Brush near the top, with the Selection above it out of view.
+        await panel(page)
+            .locator('.properties-scroller')
+            .evaluate((scroller) => {
+                const tool = scroller.querySelector('[data-properties-section="tool"]')!
+                scroller.scrollTop +=
+                    tool.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 16
+            })
+    const top = async () => (await heading.boundingBox())!.y
+    const before = await top()
+
+    const start = { x: (await page.evaluate(() => window.editorTest.point(-8, 0))).x, y: y - 12 }
+    const end = { x: (await page.evaluate(() => window.editorTest.point(8, 0))).x, y: y + 12 }
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    for (let step = 1; step <= 6; step++) {
+        await page.mouse.move(
+            start.x + ((end.x - start.x) * step) / 6,
+            start.y + ((end.y - start.y) * step) / 6,
+        )
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        expect(Math.abs((await top()) - before), `step ${step}`).toBeLessThan(3)
+    }
+    await page.mouse.up()
+    await expect
+        .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
+        .toBe(4)
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    expect(Math.abs((await top()) - before)).toBeLessThan(3)
+}
+
+test('the Brush keeps its place in the panel while brushing selects notes', async ({ page }) => {
+    await open(page)
+    await brushKeepsToolSection(page, false)
+
+    // Once the panel is used, a smaller selection leaves no blank room below.
+    await panel(page).getByText('Brush Properties', { exact: true }).click()
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((entity) => entity.type === 'bpm'),
+        })
+        await nextTick()
+    })
+    const scroller = panel(page).locator('.properties-scroller')
+    await expect
+        .poll(() =>
+            scroller.evaluate((element) => {
+                const view = element.querySelector('[data-properties-section="view"]')!
+                const blank =
+                    element.getBoundingClientRect().bottom - view.getBoundingClientRect().bottom
+                return element.scrollTop > 0 && blank > 1
+            }),
+        )
+        .toBe(false)
+
+    await brushKeepsToolSection(page, true)
+})
+
+test.describe('phone sheet', () => {
+    test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+
+    test('the Brush keeps its place in a tall panel while brushing', async ({ page }) => {
+        await open(page, { showPreview: false, topDockHeight: 2000 })
+        await brushKeepsToolSection(page, false)
+    })
+})

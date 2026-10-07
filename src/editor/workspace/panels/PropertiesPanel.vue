@@ -22,9 +22,12 @@ import ViewProperties from '../properties/ViewProperties.vue'
 import ChevronIcon from '../ChevronIcon.vue'
 import OverlayScrollbar from '../OverlayScrollbar.vue'
 import { useScrollMemory } from '../useScrollMemory'
+import { toolSectionHolds } from '../properties/toolSectionHold'
+import { toolName } from '../../tools'
 
 const root = useTemplateRef<HTMLElement>('root')
 const scroller = useTemplateRef<HTMLElement>('scroller')
+const spacer = useTemplateRef<HTMLElement>('spacer')
 const tablist = useTemplateRef<HTMLElement>('tablist')
 
 const components: Record<PropertiesSection, Component> = {
@@ -128,9 +131,87 @@ watch(
     { flush: 'pre' },
 )
 
+// Brushing selects what it brushes, resizing the Selection section above the
+// Brush: a Tool section in view keeps its place until the panel is used. Room
+// below the content lets it scroll there, and goes as the panel scrolls back.
+let heldTop: number | undefined
+let room = 0
+const setRoom = (height: number) => {
+    room = height
+    if (spacer.value) spacer.value.style.height = `${height}px`
+}
+const trimRoom = () => {
+    const element = scroller.value
+    if (!room || !element) return
+    const natural = element.scrollHeight - room
+    setRoom(Math.max(0, Math.min(room, element.scrollTop + element.clientHeight - natural)))
+}
+const toolBounds = () => {
+    const element = scroller.value
+    const tool = element?.querySelector('[data-properties-section="tool"]')
+    if (!element || !tool) return
+    const box = element.getBoundingClientRect()
+    const { top, bottom } = tool.getBoundingClientRect()
+    return { top: top - box.top, bottom: bottom - box.top, height: box.height }
+}
+const release = () => {
+    heldTop = undefined
+}
+const restore = (resize: boolean) => {
+    const element = scroller.value
+    const bounds = toolBounds()
+    if (heldTop === undefined || !bounds || !element) return
+    const top = element.scrollTop + bounds.top - heldTop
+    if (resize) setRoom(Math.max(0, top + element.clientHeight - (element.scrollHeight - room)))
+    element.scrollTop = top
+}
+// Measured before the selection renders, and restored once it has.
+watch(
+    toolSectionHolds,
+    () => {
+        const bounds = presentation.value === 'sections' ? toolBounds() : undefined
+        heldTop = bounds && bounds.bottom > 0 && bounds.top < bounds.height ? bounds.top : undefined
+    },
+    { flush: 'pre' },
+)
+watch(
+    toolSectionHolds,
+    () => {
+        restore(true)
+    },
+    { flush: 'post' },
+)
+watch([presentation, toolName], release)
+watch(presentation, () => {
+    setRoom(0)
+})
+// Later layout, such as fields measuring themselves, only scrolls: resizing
+// here would loop the observers watching the scroller's children. Released,
+// the room goes, so a smaller selection leaves no blank below.
+let roomFrame = 0
+const anchor = new ResizeObserver(() => {
+    restore(false)
+    if (heldTop !== undefined || !room) return
+    cancelAnimationFrame(roomFrame)
+    roomFrame = requestAnimationFrame(() => {
+        if (heldTop === undefined) setRoom(0)
+    })
+})
+watch(
+    presentation,
+    () => {
+        anchor.disconnect()
+        const selection = scroller.value?.querySelector('[data-properties-section="selection"]')
+        if (presentation.value === 'sections' && selection) anchor.observe(selection)
+    },
+    { flush: 'post' },
+)
+
 onBeforeUnmount(() => {
     commitPendingEdit(null)
     observer?.disconnect()
+    anchor.disconnect()
+    cancelAnimationFrame(roomFrame)
 })
 
 // Pointer clicks return keyboard shortcuts to the editor; keyboard activation
@@ -157,6 +238,11 @@ const onTab = (event: MouseEvent, section: PropertiesSection) => {
     blurAfterPointer(event)
 }
 
+const onSectionsScroll = () => {
+    updateRaised()
+    trimRoom()
+}
+
 const onTabKeydown = (event: KeyboardEvent) => {
     const section = nextPropertiesSection(propertiesSections, active.value, event.key)
     if (!section) return
@@ -167,7 +253,13 @@ const onTabKeydown = (event: KeyboardEvent) => {
 </script>
 
 <template>
-    <div ref="root" class="properties-panel relative h-full w-full bg-modal text-fg">
+    <div
+        ref="root"
+        class="properties-panel relative h-full w-full bg-modal text-fg"
+        @pointerdown.capture="release"
+        @focusin="release"
+        @wheel.passive="release"
+    >
         <!-- Constrained: one section at a time behind a fixed tab strip. -->
         <div v-if="presentation === 'tabs'" class="flex h-full flex-col">
             <!-- Section tabs in a lavender band. Like the rail's tabs, the shown
@@ -234,7 +326,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
             ref="scroller"
             v-scroll-edges.end
             class="properties-scroller properties-scroller-sections overlay-scroller h-full scroll-pt-12 overflow-y-auto overscroll-contain"
-            @scroll.passive="updateRaised"
+            @scroll.passive="onSectionsScroll"
         >
             <section
                 v-for="(section, index) in propertiesSections"
@@ -271,6 +363,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
                     <component :is="components[section]" />
                 </div>
             </section>
+            <div ref="spacer" aria-hidden="true" />
         </div>
         <OverlayScrollbar :target="scroller" />
     </div>

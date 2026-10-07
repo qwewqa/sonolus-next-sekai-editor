@@ -38,6 +38,7 @@ import {
     yToTime,
     yToValidBeat,
 } from '../../view'
+import { holdToolSection } from '../../workspace/properties/toolSectionHold'
 import {
     hitAllEntitiesAtPoint,
     hitAllEntitiesInSelection,
@@ -132,6 +133,7 @@ export const brush: Tool = {
     },
 
     tap(x, y, modifiers) {
+        holdToolSection()
         const entities = tapTarget(x, y)
 
         if (entities === 'selection') {
@@ -180,6 +182,7 @@ export const brush: Tool = {
         const selection = toSelection(active.lane, active.time, x, y)
         const targets = modifyEntities(hitAllEntitiesInSelection(selection), modifiers)
 
+        holdToolSection()
         replaceState({
             ...state.value,
             selectedEntities: targets,
@@ -214,6 +217,7 @@ export const brush: Tool = {
 }
 
 export const applyBrushToEntities = (entities: Entity[]) => {
+    holdToolSection()
     if (!entities.length) {
         replaceState({
             ...state.value,
