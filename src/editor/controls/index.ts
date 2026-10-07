@@ -2,7 +2,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { isAppActive } from '../../activity'
 import { replaceState, state } from '../../history'
 import { hasSameChartData } from '../../state/data'
-import type { Entity } from '../../state/entities'
+import type { Entity, EntityType } from '../../state/entities'
 import { cancelScalingSession, scalingSession } from '../commands/scaleSelection/session'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { scopeLookup } from '../scope'
@@ -32,12 +32,14 @@ const cancelControls = (restoreTool = true) => {
     view.entities = { hovered: [], creating: [] }
 }
 
-const isShown = (entity: Entity) => entityScopeVisibility(entity, scopeLookup.value) !== 'hidden'
+const isShown = (entity: Entity) =>
+    view.visibilities[entity.type] && entityScopeVisibility(entity, scopeLookup.value) !== 'hidden'
 
-// Hidden objects must not stay selected: keyboard commands, properties and
-// scaling act on the selection. Dimmed objects stay selected (for example after
-// moving notes to an unfocused group). This only replaces the selection of the
-// current history entry; it never changes chart data or adds an undo entry.
+// Hidden objects, by type, group or stage, must not stay selected: keyboard
+// commands, properties and scaling act on the selection. Dimmed objects stay
+// selected (for example after moving notes to an unfocused group). This only
+// replaces the selection of the current history entry; it never changes chart
+// data or adds an undo entry.
 const deselectHidden = () => {
     const current = state.value
     const selected = current.selectedEntities
@@ -71,6 +73,18 @@ export const useControlLifecycle = () => {
             // Cancel rather than commit an edit the user cannot see. Pure
             // reveals, including authoring revealing its own target, cannot.
             if (!isScopeReduced(previous, next)) return
+            cancelControls()
+            if (scalingSession.value) cancelScalingSession()
+            deselectHidden()
+        },
+        { flush: 'sync' },
+    )
+    watch(
+        () => view.visibilities,
+        (next, previous) => {
+            // Hiding a type hides its objects the same way.
+            const types = Object.keys(next) as EntityType[]
+            if (!types.some((type) => previous[type] && !next[type])) return
             cancelControls()
             if (scalingSession.value) cancelScalingSession()
             deselectHidden()
