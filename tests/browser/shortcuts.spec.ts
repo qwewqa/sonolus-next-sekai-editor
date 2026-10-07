@@ -161,6 +161,68 @@ test.describe('chords', () => {
             .toContain('"entities"')
     })
 
+    test('a new object selection drops selected page text, so Ctrl+C copies the objects', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            // Firefox grants no clipboard permissions to tests, so the write is recorded instead.
+            Object.defineProperty(navigator.clipboard, 'writeText', {
+                configurable: true,
+                value: async (text: string) => {
+                    document.body.dataset.copied = text
+                },
+            })
+            const text = document.body.appendChild(document.createElement('p'))
+            text.id = 'text'
+            text.textContent = 'Note Speed'
+            document.addEventListener('copy', () => (text.dataset.copied = String(getSelection())))
+            getSelection()?.selectAllChildren(text)
+        })
+        // As a properties chip or the manager's Select Objects does.
+        const selectNotes = () =>
+            page.evaluate(async () => {
+                const { history, store, nextTick } = window.editorTest
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: [...store.getAllEntities()].filter(
+                        (entity) => entity.type === 'note',
+                    ),
+                })
+                await nextTick()
+            })
+        await selectNotes()
+        expect(await page.evaluate(() => getSelection()?.isCollapsed)).toBe(true)
+        await page.keyboard.press('Control+c')
+        await expect
+            .poll(() => page.evaluate(() => document.body.dataset.copied))
+            .toContain('"entities"')
+
+        // Text selected afterwards keeps its native copy.
+        await page.evaluate(() => {
+            delete document.body.dataset.copied
+            getSelection()?.selectAllChildren(document.getElementById('text')!)
+        })
+        await page.keyboard.press('Control+c')
+        await expect(page.locator('#text')).toHaveAttribute('data-copied', 'Note Speed')
+        await page.waitForTimeout(100)
+        expect(await page.evaluate(() => document.body.dataset.copied)).toBeUndefined()
+
+        // A field keeps its own selection.
+        await page.evaluate(() => {
+            const input = document.body.appendChild(document.createElement('input'))
+            input.value = 'Lead'
+            input.focus()
+            input.select()
+        })
+        await selectNotes()
+        expect(
+            await page.evaluate(() => {
+                const input = document.activeElement as HTMLInputElement
+                return [input.selectionStart, input.selectionEnd]
+            }),
+        ).toEqual([0, 4])
+    })
+
     test('a page selection without text leaves Ctrl+C to copy the objects', async ({ page }) => {
         const range = await page.evaluate(() => {
             const { history, store } = window.editorTest

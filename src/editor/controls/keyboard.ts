@@ -1,4 +1,5 @@
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { selectedEntities } from '../../history/selectedEntities'
 import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
 import { settings } from '../../settings'
 import { commands } from '../commands'
@@ -10,6 +11,7 @@ import {
     isCommandChord,
     matchBindings,
 } from './bindings'
+import { clearPageSelection } from './pageSelection'
 
 const isTextEntry = (target: EventTarget | null) =>
     target instanceof HTMLTextAreaElement ||
@@ -87,6 +89,15 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 export const useKeyboardControl = () => {
+    // A new object selection drops page text selected before it, so Ctrl+C copies the objects.
+    watch(
+        selectedEntities,
+        () => {
+            if (!isTextEntry(document.activeElement)) clearPageSelection()
+        },
+        { flush: 'sync' },
+    )
+
     onMounted(() => {
         addEventListener('keydown', onKeydown)
     })
