@@ -122,6 +122,18 @@ test('group and stage names stand apart from the noun after them', () => {
         assert.doesNotMatch(text, /\{\d+\}번/, `ko ${key}`)
 })
 
+test('both flip commands name their axis', () => {
+    for (const locale of readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)) {
+        const messages = read(locale)
+        // As French "Retourner" beside "Retourner verticalement" did not.
+        const horizontal = messages['commands.flip.title']!
+        const vertical = messages['commands.flipVertical.title']!
+        assert.ok(!vertical.startsWith(horizontal) && !horizontal.startsWith(vertical), locale)
+    }
+})
+
 test('event tool names start with a capital where the script has case', () => {
     for (const locale of readdirSync(directory, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())

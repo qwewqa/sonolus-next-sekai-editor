@@ -94,9 +94,9 @@
       "switched": "Outil Gomme activé"
     },
     "flip": {
-      "title": "Retourner",
+      "title": "Retourner horizontalement",
       "noSelected": "Aucun objet sélectionné à retourner",
-      "flipped": "{0} objet retourné|{0} objets retournés"
+      "flipped": "{0} objet retourné horizontalement|{0} objets retournés horizontalement"
     },
     "flipVertical": {
       "title": "Retourner verticalement",
