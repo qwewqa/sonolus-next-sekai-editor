@@ -125,6 +125,7 @@ const curve = computed(() =>
             :label="functionLabel"
             :options="functionOptions"
             :disabled="standalone"
+            :empty-label="standalone ? '—' : undefined"
             :option-glyph="functionGlyph"
         />
     </template>

@@ -449,8 +449,8 @@ test.describe('brush', () => {
         // Added properties start from the selection's value when it agrees.
         await addBrushProperty(tool(page), 'isCritical')
         const row = tool(page).locator('[data-brush-key="isCritical"]')
-        await expect(row.locator('select')).toBeFocused()
-        await expect(row.locator('option:checked')).toHaveText('Enabled')
+        await expect(row.locator('input')).toBeFocused()
+        await expect(row.locator('input')).toHaveValue('Enabled')
         await expect(tool(page).locator('.brush-group h3')).toHaveText(['Note'])
         // A set property leaves the menu.
         await tool(page).getByRole('button', { name: 'Add Property', exact: true }).click()
@@ -551,7 +551,7 @@ test.describe('brush', () => {
 
     test('picks agreeing values from the selection and clears them', async ({ page }) => {
         await tool(page).getByRole('button', { name: 'Pick from Selection' }).click()
-        await expect(tool(page).locator('[data-brush-key="isCritical"] option:checked')).toHaveText(
+        await expect(tool(page).locator('[data-brush-key="isCritical"] input')).toHaveValue(
             'Enabled',
         )
         await expect(tool(page).locator('[data-brush-key="connectorType"]')).toHaveCount(1)
@@ -559,6 +559,60 @@ test.describe('brush', () => {
         await expect(tool(page).locator('[data-brush-key="left"]')).toHaveCount(0)
         await tool(page).getByRole('button', { name: 'Clear', exact: true }).click()
         await expect(tool(page).locator('.brush-group')).toHaveCount(0)
+    })
+
+    test('on/off properties are toggles, as in Selection', async ({ page }) => {
+        const keys = [
+            'isCritical',
+            'isAttached',
+            'isFake',
+            'isConnectorSeparator',
+            'connectorIsFake',
+            'connectorActiveIsCritical',
+            'connectorIsPassThrough',
+            'hideNotes',
+        ]
+        await page.evaluate(async (keys) => {
+            const { appImport, nextTick } = window.editorTest
+            const brush = await appImport<typeof import('../../src/editor/tools/brush')>(
+                '/src/editor/tools/brush/index.ts',
+            )
+            brush.brushProperties.value = Object.fromEntries(keys.map((key) => [key, false]))
+            await nextTick()
+        }, keys)
+        for (const key of keys) {
+            const row = tool(page).locator(`[data-brush-key="${key}"]`)
+            await expect(row.locator('select'), key).toHaveCount(0)
+            await expect(row.locator('.form-field-toggle input'), key).toHaveValue('Disabled')
+        }
+        const critical = tool(page).locator('[data-brush-key="isCritical"] input')
+        await critical.click()
+        await expect(critical).toHaveValue('Enabled')
+        expect(
+            await page.evaluate(async () => {
+                const brush = await window.editorTest.appImport<
+                    typeof import('../../src/editor/tools/brush')
+                >('/src/editor/tools/brush/index.ts')
+                return brush.brushProperties.value.isCritical
+            }),
+        ).toBe(true)
+    })
+
+    test('a None or Linear ease shows no function, as in Selection', async ({ page }) => {
+        await page.evaluate(async () => {
+            const { appImport, nextTick } = window.editorTest
+            const brush = await appImport<typeof import('../../src/editor/tools/brush')>(
+                '/src/editor/tools/brush/index.ts',
+            )
+            brush.brushProperties.value = { connectorEase: 'linear' }
+            await nextTick()
+        })
+        const name = tool(page)
+            .locator('label')
+            .filter({ has: page.getByText('Ease Function', { exact: true }) })
+            .locator('select')
+        await expect(name).toBeDisabled()
+        await expect(name.locator('option:checked')).toHaveText('—')
     })
 
     test('never offers the stage without dynamic stages', async ({ page }) => {
@@ -584,6 +638,8 @@ test.describe('unset values', () => {
     test('creation presets say whether an unset field copies or is automatic', async ({ page }) => {
         await page.keyboard.press('a')
         await expect(empty(page, 'Note Type')).toHaveText('Copy')
+        // On/off presets keep their unset entry.
+        await expect(empty(page, 'Critical')).toHaveText('Copy')
         await expect(empty(page, 'Type')).toHaveText('Auto')
         await tool(page)
             .locator('label')
