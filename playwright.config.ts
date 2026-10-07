@@ -30,8 +30,16 @@ export default defineConfig({
     projects: [
         { name: 'chromium', testIgnore: timingSpecs },
         // Measures real frame timing, so it runs alone after the parallel batch.
-        // Any chromium failure skips it; npm run test:timing runs it by itself.
-        { name: 'timing', testMatch: timingSpecs, dependencies: ['chromium'], workers: 1 },
+        // In npx playwright test any chromium failure skips it; npm run test:browser
+        // runs it after chromium regardless, and npm run test:timing runs it alone.
+        {
+            name: 'timing',
+            testMatch: timingSpecs,
+            dependencies: ['chromium'],
+            workers: 1,
+            // Its own folder, so running it after chromium keeps chromium's failure output.
+            outputDir: 'test-results/timing',
+        },
     ],
     webServer: {
         command: `npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
