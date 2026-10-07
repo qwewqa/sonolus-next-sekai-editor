@@ -1,5 +1,6 @@
 import { ease } from '../../../ease'
 import { alignNear, clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
+import { bisect } from '../../../utils/ordered'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
 import { toConnectorEntity, type ConnectorEntity } from '../../entities/slides/connector'
@@ -10,6 +11,20 @@ import { addToStoreGrid, removeFromStoreGrid } from '../../store/grid'
 
 // Snaps the float noise of time-based attached positions; keeps 1/256 and 1/100 steps.
 export const alignAttached = (value: number) => alignNear(value, 6400)
+
+/** By time, as the engine places them (get_attach_frac); by beat, exactly, under one tempo. */
+const attachFraction = (bpms: BpmIntegral[], head: number, tail: number, beat: number) => {
+    let i = bisect(bpms, 'x', head)
+    while (bpms[i]?.x === head) i++
+    if ((bpms[i]?.x ?? Infinity) >= tail)
+        return head === tail ? 0.5 : clamp(unlerp(head, tail, beat))
+
+    const tHead = beatToTime(bpms, head)
+    const tTail = beatToTime(bpms, tail)
+    return Math.abs(tTail - tHead) < 1e-6
+        ? 0.5
+        : clamp(unlerp(tHead, tTail, beatToTime(bpms, beat)))
+}
 
 export const rebuildSlide = (
     store: Store,
@@ -133,14 +148,9 @@ export const rebuildSlide = (
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const tail = notes[rawInfo.attachTail]!
 
-        // By time, as the engine places them (get_attach_frac).
-        const tHead = beatToTime(bpms, head.beat)
-        const tTail = beatToTime(bpms, tail.beat)
         const x = ease(
             head.connectorEase,
-            Math.abs(tTail - tHead) < 1e-6
-                ? 0.5
-                : clamp(unlerp(tHead, tTail, beatToTime(bpms, rawInfo.note.beat))),
+            attachFraction(bpms, head.beat, tail.beat, rawInfo.note.beat),
         )
 
         // Overshooting eases may shrink a note past zero width; keep its center.

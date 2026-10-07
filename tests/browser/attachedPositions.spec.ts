@@ -158,3 +158,34 @@ test('a BPM edit leaves attached notes it does not move alone', async ({ page })
     })
     expect(result).toEqual([0])
 })
+
+test('under one tempo attached notes take the exact beat fraction', async ({ page }) => {
+    const attached = await page.evaluate(() => {
+        const { fixtures, show } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        // The tempo changes before the slide, not within it.
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 60 },
+                    { beat: 1, bpm: 150 },
+                ],
+                slides: [
+                    [
+                        { ...base, beat: 2, left: -4, size: 2, isAttached: false },
+                        { ...base, beat: 3, left: 0, size: 2, isAttached: true },
+                        { ...base, beat: 5, left: 4, size: 5.5, isAttached: false },
+                    ],
+                ],
+            },
+            1,
+        )
+        const note = [...window.editorTest.history.state.value.store.slides.note.values()]
+            .flat()
+            .find((entity) => entity.isAttached)!
+        return { left: note.left, size: note.size }
+    })
+    // lerp by a third, as 757e7e9 exported them.
+    expect(attached).toEqual({ left: -4 + (1 / 3) * 8, size: 2 + (1 / 3) * 3.5 })
+})
