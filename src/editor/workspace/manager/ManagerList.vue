@@ -2250,6 +2250,21 @@ const folderEyeLabel = (item: FolderItem) =>
     @apply pointer-events-none absolute inset-y-2 w-0.5 rounded-full bg-fg/30;
 }
 
+/* High contrast drops backgrounds; the line takes the text colour. */
+@media (forced-colors: active) {
+    .manager-members > li::before,
+    .manager-members > li:has(> .manager-row-current)::after,
+    .manager-members > li:has(> .manager-row-selected)::after,
+    .manager-entries li.manager-dragged-in::after {
+        background-color: CanvasText;
+    }
+
+    /* A selected row's pill is see-through here, so it would dim its stretch. */
+    .manager-members > li::before {
+        z-index: 1;
+    }
+}
+
 @media (pointer: coarse) {
     .manager-entries {
         --guide-x: calc(0.125rem + 2.75rem + 0.625rem + 0.375rem - 1px);

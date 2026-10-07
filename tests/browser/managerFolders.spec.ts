@@ -996,6 +996,36 @@ test('the folder holding the target names it and marks the line through it', asy
     await expect(groupChip).toHaveText('Default Group')
 })
 
+test('the folder line and its target mark keep showing in high contrast', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' })
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse']])
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = 1002 as never
+    })
+    await expect(entryRow(page, 'Fill')).toHaveClass(/manager-row-current/)
+    const text = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'CanvasText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    const line = (name: string, pseudo: string) =>
+        panel(page)
+            .locator('.manager-members > li')
+            .filter({
+                has: page.locator('.manager-label', { hasText: new RegExp('^' + name + '$') }),
+            })
+            .evaluate(
+                (element, pseudo) => getComputedStyle(element, pseudo).backgroundColor,
+                pseudo,
+            )
+    expect(await line('Lead', '::before')).toBe(text)
+    expect(await line('Fill', '::before')).toBe(text)
+    expect(await line('Fill', '::after')).toBe(text)
+})
+
 test.describe('touch', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
