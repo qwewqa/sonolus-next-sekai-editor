@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import { isDynamicStages } from '../../../history/dynamicStages.ts'
 import { selectedEntities } from '../../../history/selectedEntities'
 import { store } from '../../../history/store'
@@ -7,6 +7,7 @@ import { i18n } from '../../../i18n'
 import type { Entity, EntityType } from '../../../state/entities'
 import { isEditableEntity } from '../../../state/operations/editable'
 import type { Store } from '../../../state/store'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
 import { aggregateEntities, mergeAggregates, type EntitiesAggregate } from '../../utils/properties'
 import { generalKeys, layoutFields, sharedKeys, type SelectionContext } from './fields'
 import PropertiesBlock from './PropertiesBlock.vue'
@@ -16,6 +17,9 @@ const props = defineProps<{
     /** Shows only this kind's objects, as a kind's dialog does. */
     kind?: SummaryKind
 }>()
+
+// Long values go below their label, as in View.
+provide(stackLongValuesKey, true)
 
 const entities = computed(() =>
     selectedEntities.value.filter(

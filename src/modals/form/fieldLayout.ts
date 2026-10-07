@@ -1,4 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
+import { PLAIN_PADDING } from './leadFit'
 
 /** Fields whose value would truncate beside the label take the row below it. */
 export const stackLongValuesKey: InjectionKey<boolean> = Symbol('stackLongValues')
@@ -7,17 +8,31 @@ export const useStackLongValues = () => inject(stackLongValuesKey, false)
 
 let context: CanvasRenderingContext2D | null | undefined
 
-/** Whether a select's or button's shown value is wider than the room its pill gives it. */
-export const valueOverflows = (control: HTMLSelectElement | HTMLButtonElement) => {
+/**
+ * Whether a control's shown value, or any of `others` it can switch to, is wider
+ * than the room its pill gives it.
+ */
+export const valueOverflows = (
+    control: HTMLSelectElement | HTMLButtonElement | HTMLInputElement,
+    others: string[] = [],
+) => {
     const style = getComputedStyle(control)
-    context ??= document.createElement('canvas').getContext('2d')
-    if (!context) return false
-    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    const measure = (context ??= document.createElement('canvas').getContext('2d'))
+    if (!measure) return false
+    measure.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const text =
         control instanceof HTMLSelectElement
             ? (control.selectedOptions[0]?.textContent.trim() ?? '')
-            : control.textContent.trim()
-    const room =
-        control.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-    return context.measureText(text).width > room + 0.5
+            : control instanceof HTMLInputElement
+              ? control.value
+              : control.textContent.trim()
+    // A leading glyph gives way before the value moves, so its room counts.
+    const padding = parseFloat(style.paddingLeft)
+    const left = control.closest('.form-field-select-leading')
+        ? Math.min(padding, PLAIN_PADDING)
+        : padding
+    const room = control.clientWidth - left - parseFloat(style.paddingRight)
+    return (
+        Math.max(...[text, ...others].map((text) => measure.measureText(text).width)) > room + 0.5
+    )
 }

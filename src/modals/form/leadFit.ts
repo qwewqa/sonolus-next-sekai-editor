@@ -2,7 +2,7 @@ import { onBeforeUnmount, onMounted, onUpdated, ref, type Ref } from 'vue'
 
 // Room a select gives its value, as BaseField's styles set it (px).
 const LEAD_PADDING = 30
-const PLAIN_PADDING = 16
+export const PLAIN_PADDING = 16
 
 let context: CanvasRenderingContext2D | null | undefined
 

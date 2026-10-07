@@ -76,6 +76,17 @@ test('on/off values carry the shown value as their hover title, as selects do', 
 
 test('a clamped label carries its full text as its hover title', async ({ page }) => {
     await open(page)
+    // Event fields, such as "Alignement vertical du zoom", clamp at this dock.
+    await page.evaluate(async () => {
+        const { history, store, nextTick, fixtures, show } = window.editorTest
+        show(fixtures.events, 3)
+        await nextTick()
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()],
+        })
+        await nextTick()
+    })
     await expect
         .poll(async () => (await labels(page)).filter(({ clamped }) => clamped).length)
         .toBeGreaterThan(0)

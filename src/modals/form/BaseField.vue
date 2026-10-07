@@ -100,10 +100,15 @@ const fitLabel = () => {
     fieldRoot.value?.classList.remove('form-field-value-stacked')
     if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
     if (clamped(text)) element.classList.add('form-field-label-roomy')
-    const control = row.value?.querySelector<HTMLSelectElement | HTMLButtonElement>(
-        ':scope > select, :scope > button, :scope > .form-field-select > select',
+    const control = row.value?.querySelector<
+        HTMLSelectElement | HTMLButtonElement | HTMLInputElement
+    >(
+        ':scope > select, :scope > button, :scope > .form-field-select > select, :scope > .form-field-toggle > input',
     )
-    if (stackLongValues && control && valueOverflows(control))
+    // An on/off value is measured at its longer state, so a click doesn't move the row.
+    const { enabled, disabled } = i18n.value.modals.form.toggle
+    const others = control instanceof HTMLInputElement ? [enabled, disabled] : []
+    if (stackLongValues && control && valueOverflows(control, others))
         fieldRoot.value?.classList.add('form-field-value-stacked')
     // A label still clamped shows in full on hover.
     if (clamped(text)) text.title = props.label

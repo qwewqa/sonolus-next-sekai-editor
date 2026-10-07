@@ -80,13 +80,15 @@ const measure = () => {
     text.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
     const widths = props.options.map(([name]) => Math.ceil(text.measureText(name).width) + 1)
-    layout.value = choiceLayout(
-        element.clientWidth,
-        widths,
-        optional.value && unsetChoice,
-        rem,
-        !!slots.glyph,
-    )
+    // A select stacked below its label stays one; segments beside the label would unstack it.
+    if (layout.value !== 'select' || !fieldRoot()?.classList.contains('form-field-value-stacked'))
+        layout.value = choiceLayout(
+            element.clientWidth,
+            widths,
+            optional.value && unsetChoice,
+            rem,
+            !!slots.glyph,
+        )
     selectGlyph.value = !!slots.glyph && selectGlyphFits(element.clientWidth, widths, rem)
 }
 
