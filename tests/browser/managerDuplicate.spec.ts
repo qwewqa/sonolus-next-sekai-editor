@@ -564,6 +564,8 @@ for (const [key, owner] of [
                 { key, name },
             )
 
+        // Out Quad from lane -4 to 4: the tick at beat 41 is drawn at left -0.5.
+        expect(drawn[1]!.left).toBeCloseTo(-0.5, 6)
         const source = await notesOf(owner)
         const list = panel(page, key)
         await (
