@@ -233,6 +233,16 @@ watch(
     { flush: 'post' },
 )
 
+/** Selects every row; a control that selecting replaces hands focus to its check. */
+const selectAllFrom = async (target: HTMLElement) => {
+    const key = keyOfRow(target)
+    setSelection(allIds.value, allFolderIds.value, anchor)
+    await nextTick()
+    if (target.isConnected) return
+    if (key) focusIn(key, '.manager-check')
+    else focusFirst(root.value?.querySelector<HTMLElement>('.manager-all .manager-check'))
+}
+
 /**
  * Up and Down step between the rows' names, from the band's row down, and Home
  * and End reach the ends, as in a tree; Tab still visits every control. With
@@ -246,13 +256,12 @@ const onKeydown = (event: KeyboardEvent) => {
         void onSelectingKeydown(event, target)
         return
     }
-    if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === 'a' &&
-        target.classList.contains('manager-name')
-    ) {
+    // Anywhere in the list but the rename field, which keeps its text's. Stopped
+    // here: a focused eye or ••• is gone by the time the editor's keys see it.
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
         event.preventDefault()
-        setSelection(allIds.value, allFolderIds.value, anchor)
+        event.stopPropagation()
+        void selectAllFrom(target)
         return
     }
     if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return

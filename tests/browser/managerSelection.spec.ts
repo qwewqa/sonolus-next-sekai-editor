@@ -1485,3 +1485,75 @@ test('Show Only and Show All keep the hidden state of deleted rows for undo', as
     await undo(page)
     expect((await state(page)).hidden).toEqual(['Bass'])
 })
+
+test('Ctrl+A anywhere in the list selects every row, never switching tools', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const tool = () =>
+        page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            return toolName.value
+        })
+    const before = await tool()
+    const selectAllFrom = async (control: Locator, focused = control) => {
+        await control.focus()
+        await page.keyboard.press('ControlOrMeta+a')
+        expect(await checked(list)).toHaveLength(7)
+        await expect(bar).toContainText('9 Selected')
+        expect(await tool()).toBe(before)
+        // A control that selecting replaces hands focus to its check.
+        await expect(focused).toBeFocused()
+    }
+    const stop = async () => {
+        await bar.locator('.manager-selection-done').click()
+        await expect(bar).toHaveCount(0)
+    }
+
+    // Not selecting: an eye, a •••, the band's eye and toggle, and Add.
+    const bandCheck = list.locator('.manager-all .manager-check')
+    await selectAllFrom(
+        row(list, 'Bass').locator('.manager-eye'),
+        row(list, 'Bass').locator('.manager-check'),
+    )
+    await stop()
+    await selectAllFrom(
+        row(list, 'Verse').locator('.manager-more'),
+        row(list, 'Verse').locator('.manager-check'),
+    )
+    await stop()
+    await selectAllFrom(list.locator('.manager-all .manager-eye'), bandCheck)
+    await stop()
+    await selectAllFrom(list.locator('.manager-all .manager-mode'))
+    await stop()
+    await selectAllFrom(list.getByRole('button', { name: 'Add Group', exact: true }), bandCheck)
+
+    // Selecting: a row's and the band's checks, and the bar's buttons.
+    await page.keyboard.press('Escape')
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    await selectAllFrom(row(list, 'Bass').locator('.manager-check'))
+    await nameButton(list, 'Bass').click()
+    await selectAllFrom(list.locator('.manager-all .manager-check'))
+    await nameButton(list, 'Bass').click()
+    await selectAllFrom(bar.locator('.manager-bulk-more'))
+    await nameButton(list, 'Bass').click()
+    await selectAllFrom(bar.locator('.manager-selection-done'))
+
+    // The rename field keeps Ctrl+A for its text.
+    await stop()
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('F2')
+    const field = list.locator('.manager-rename')
+    await expect(field).toBeFocused()
+    await page.keyboard.press('ArrowRight')
+    await page.keyboard.press('ControlOrMeta+a')
+    expect(
+        await field.evaluate(
+            (input: HTMLInputElement) => input.selectionEnd! - input.selectionStart!,
+        ),
+    ).toBe(4)
+    await expect(bar).toHaveCount(0)
+    expect(await tool()).toBe(before)
+})
