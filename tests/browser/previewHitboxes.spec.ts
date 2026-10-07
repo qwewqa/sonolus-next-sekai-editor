@@ -116,7 +116,7 @@ test('the preview popup and global settings share the hitbox option', async ({ p
     const field = dialog
         .locator('label')
         .filter({ has: page.getByText('Show Hitboxes', { exact: true }) })
-        .getByRole('button')
+        .getByRole('switch')
     await expect(field).toHaveValue('Disabled')
     const plain = await vertices(page)
     await field.click()

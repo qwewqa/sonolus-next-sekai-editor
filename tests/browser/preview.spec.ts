@@ -1045,7 +1045,7 @@ test('expanded preview settings leave docked playback buttons and the clock reac
     expect(geometry.transportReachable.every(Boolean)).toBe(true)
 
     // The settings body scrolls instead of making its lower controls unreachable.
-    const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+    const antialias = page.getByRole('switch', { name: 'Antialias', exact: true })
     await antialias.uncheck()
     await expect(antialias).not.toBeChecked()
     await expect(page.locator('.preview-transport')).toBeVisible()
@@ -1094,7 +1094,7 @@ for (const side of ['left', 'right'] as const) {
         expect(geometry.headerReachable).toBe(true)
         expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
         expect(geometry.transportReachable.every(Boolean)).toBe(true)
-        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        const antialias = page.getByRole('switch', { name: 'Antialias', exact: true })
         await antialias.uncheck()
         await expect(antialias).not.toBeChecked()
         // A pointer change returns focus, so editor shortcuts keep working.
@@ -1142,7 +1142,7 @@ test('preview restores lost contexts and reuses decoded atlases for every new co
         .toBeGreaterThan(initialFrames)
     expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
 
-    await page.getByRole('checkbox', { name: 'Antialias', exact: true }).uncheck()
+    await page.getByRole('switch', { name: 'Antialias', exact: true }).uncheck()
     await expect.poll(() => page.evaluate(() => window.previewTest.uploads)).toBe(6)
 
     // Closing keeps the decoded atlases for the next preview; reopening only
@@ -1847,7 +1847,7 @@ test('a preview setting value that would truncate goes below its label', async (
     expect(await value.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
     // Measured at its longer state, a click doesn't move the row.
     const box = await row.boundingBox()
-    await row.getByRole('checkbox').click()
+    await row.getByRole('switch').click()
     await expect(value).toHaveText('활성화됨')
     await settle(page)
     await expect(row).toHaveClass(/preview-setting-stacked/)
@@ -1946,13 +1946,13 @@ test('preview options share persisted settings with the main options menu', asyn
         dialog
             .locator('label')
             .filter({ has: page.getByText('Show Effects', { exact: true }) })
-            .getByRole('button'),
+            .getByRole('switch'),
     ).toHaveValue('Disabled')
     await expect(
         dialog
             .locator('label')
             .filter({ has: page.getByText('Antialias', { exact: true }) })
-            .getByRole('button'),
+            .getByRole('switch'),
     ).toHaveValue('Disabled')
     await dialog.getByLabel('Note Speed', { exact: true }).fill('8.5')
     await dialog.getByLabel('Note Speed', { exact: true }).press('Tab')
@@ -1964,12 +1964,12 @@ test('preview options share persisted settings with the main options menu', asyn
     await dialog
         .locator('label')
         .filter({ has: page.getByText('Show Effects', { exact: true }) })
-        .getByRole('button')
+        .getByRole('switch')
         .click()
     await dialog
         .locator('label')
         .filter({ has: page.getByText('Antialias', { exact: true }) })
-        .getByRole('button')
+        .getByRole('switch')
         .click()
     await dialog
         .getByRole('combobox', { name: 'Preview Settings Panel', exact: true })
@@ -2183,7 +2183,7 @@ test.describe('preview panel lifecycle', () => {
             expect(geometry.transportReachable.length).toBeGreaterThanOrEqual(4)
             expect(geometry.transportReachable.every(Boolean)).toBe(true)
             expect(overlapArea(geometry.settings, geometry.bar!)).toBe(0)
-            const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+            const antialias = page.getByRole('switch', { name: 'Antialias', exact: true })
             await antialias.uncheck()
             await expect(antialias).not.toBeChecked()
         })
@@ -2213,7 +2213,7 @@ test.describe('preview panel lifecycle', () => {
         expect(overlapArea(geometry.settings, geometry.preview)).toBe(0)
         expect(geometry.headerReachable).toBe(true)
         expect(geometry.transportReachable.every(Boolean)).toBe(true)
-        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        const antialias = page.getByRole('switch', { name: 'Antialias', exact: true })
         await antialias.scrollIntoViewIfNeeded()
         await antialias.uncheck()
         await expect(antialias).not.toBeChecked()
@@ -2254,7 +2254,7 @@ test.describe('preview panel lifecycle', () => {
         const shownWidth = (await strip.boundingBox())!.width
         const frames = await page.evaluate(() => window.previewTest.frames)
 
-        const showTime = page.getByRole('checkbox', { name: 'Show Time', exact: true })
+        const showTime = page.getByRole('switch', { name: 'Show Time', exact: true })
         await expect(showTime).toBeChecked()
         await showTime.uncheck()
         await expect(barTime).toHaveCount(0)
@@ -2542,7 +2542,7 @@ test.describe('preview panel lifecycle', () => {
         expect(geometry.settings.top).toBeGreaterThanOrEqual(geometry.preview.bottom)
         expect(geometry.settings.bottom).toBeLessThanOrEqual(500)
         expect(geometry.headerReachable).toBe(true)
-        const antialias = page.getByRole('checkbox', { name: 'Antialias', exact: true })
+        const antialias = page.getByRole('switch', { name: 'Antialias', exact: true })
         await antialias.scrollIntoViewIfNeeded()
         await antialias.uncheck()
         await expect(antialias).not.toBeChecked()

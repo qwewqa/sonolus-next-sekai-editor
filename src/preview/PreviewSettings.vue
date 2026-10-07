@@ -386,6 +386,7 @@ const onPlacementChange = () => {
                             v-model="settings[key]"
                             class="peer absolute inset-0 size-full cursor-pointer opacity-0"
                             type="checkbox"
+                            role="switch"
                             :aria-label="label"
                             :title="
                                 settings[key]
@@ -474,6 +475,7 @@ const onPlacementChange = () => {
                             v-model="settings.previewAntialias"
                             class="peer absolute inset-0 size-full cursor-pointer opacity-0"
                             type="checkbox"
+                            role="switch"
                             :aria-label="i18n.settings.preview.antialias"
                             :title="
                                 settings.previewAntialias

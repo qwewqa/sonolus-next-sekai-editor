@@ -627,7 +627,7 @@ test('Name Contrast is off by default, persists and recolours names', async ({ p
         .getByRole('dialog')
         .locator('label')
         .filter({ has: page.getByText('Name Contrast', { exact: true }) })
-        .getByRole('button')
+        .getByRole('switch')
     // Colours of each stage and group name drawn on the chart in the next frames.
     const nameColors = () =>
         page.evaluate(async () => {
@@ -788,4 +788,16 @@ test('Auto Save Delay sits under Auto Save, and Beat Display with the display ro
     const at = (label: string) => labels.indexOf(label)
     expect(at('Auto Save Delay (s)')).toBe(at('Auto Save') + 1)
     expect(at('Waveform Visualization')).toBe(at('Beat Display') + 1)
+})
+
+test('on/off fields are switches named by their row', async ({ page }) => {
+    const autoSave = page
+        .getByRole('dialog')
+        .getByRole('switch', { name: 'Auto Save', exact: true })
+    // The fixture turns auto save off.
+    await expect(autoSave).not.toBeChecked()
+    await expect(autoSave).toHaveValue('Disabled')
+    await autoSave.click()
+    await expect(autoSave).toBeChecked()
+    await expect(autoSave).toHaveValue('Enabled')
 })

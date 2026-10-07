@@ -92,7 +92,7 @@ test('segmented controls show the checked choice and keyboard focus', async ({ p
 
 test('Preview Settings on/off fields show keyboard focus', async ({ page }) => {
     await page.locator('.panel-tab', { hasText: 'Preview' }).click()
-    const input = page.getByRole('checkbox', { name: 'Show Hitboxes', exact: true })
+    const input = page.getByRole('switch', { name: 'Show Hitboxes', exact: true })
     const field = input.locator('+ .preview-field')
     // The resting edge.
     expect(await outline(field)).toMatchObject({ style: 'solid', width: '2px' })

@@ -1047,3 +1047,23 @@ test('brushing that empties the selection leaves none of it under its header', a
         expect(layout, `${count} properties`).toEqual({ clipped: false })
     }
 })
+
+test('a mixed on/off field is a mixed switch named by its row', async ({ page }) => {
+    await open(page, { propertiesConnectorExpanded: true })
+    await page.evaluate(async () => {
+        const { show, fixtures, history, store, nextTick } = window.editorTest
+        show(fixtures.connectors, 3)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note' && entity.beat === 1,
+            ),
+        })
+        await nextTick()
+    })
+    const fake = panel(page).getByRole('switch', { name: 'Slide Fake', exact: true })
+    await expect(fake).toHaveAttribute('aria-checked', 'mixed')
+    await expect(
+        panel(page).getByRole('switch', { name: 'Critical', exact: true }),
+    ).toHaveAttribute('aria-checked', 'false')
+})
