@@ -400,3 +400,39 @@ test('the grid knows where the time and beat labels over the chart lie', async (
     await page.evaluate(() => (window.editorTest.settings.beatDisplay = 'both'))
     await expectMatching()
 })
+
+test('the grid knows where the hover time and beat labels lie', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.interaction, 3))
+    const matches = () =>
+        page.evaluate(async () => {
+            const { edgeLabelBoxes } = await window.editorTest.appImport<
+                typeof import('../../src/editor/edgeLabels')
+            >('/src/editor/edgeLabels.ts')
+            const pane = document.querySelector('canvas.editor-chart')!.getBoundingClientRect()
+            const spans = [
+                ...document.querySelectorAll<HTMLElement>(
+                    '.chart-pane > div:nth-of-type(2) > span',
+                ),
+            ]
+            const { left, right } = edgeLabelBoxes.value
+            return [left.at(-1), right.at(-1)].every((box, index) => {
+                const rect = spans[index]!.getBoundingClientRect()
+                return (
+                    !!box &&
+                    [
+                        [box.left, rect.left - pane.left],
+                        [box.right, rect.right - pane.left],
+                        [box.top, rect.top - pane.top],
+                        [box.bottom, rect.bottom - pane.top],
+                    ].every(([a, b]) => Math.abs(a! - b!) < 0.5)
+                )
+            })
+        })
+    // At a whole second, as the pointer moves.
+    for (const beat of [4, 5.5]) {
+        const { x, y } = await page.evaluate((beat) => window.editorTest.point(0, beat), beat)
+        await page.mouse.move(x, y)
+        await expect.poll(matches).toBe(true)
+    }
+})

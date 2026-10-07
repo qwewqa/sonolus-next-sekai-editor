@@ -1,4 +1,5 @@
 import { computed, reactive } from 'vue'
+import { settings } from '../settings'
 import { hasToolModal } from './toolModals'
 import { view } from './view'
 
@@ -10,8 +11,13 @@ export type LabelBox = { left: number; right: number; top: number; bottom: numbe
 
 const row = (): Row => ({ time: { width: 0, height: 0 }, beat: { width: 0, height: 0 } })
 
-/** The laid-out sizes of the time and beat labels over the chart's edges. */
-export const edgeLabelSizes = reactive({ top: row(), bottom: row() })
+/** The laid-out sizes of the time and beat labels over the chart's edges and at the hover time. */
+export const edgeLabelSizes = reactive({ top: row(), bottom: row(), hover: row() })
+
+/** Where the hover time's labels are centred, in pane pixels. */
+export const hoverLabelCenter = computed(
+    () => 0.5 * view.h - (view.hoverTime - view.time) * settings.pps,
+)
 
 // A docked dialog (up to 28rem wide, centered at the bottom) covers the lower
 // labels in narrow panes; hidden there rather than left peeking out under its
@@ -53,9 +59,10 @@ export const edgeLabelBoxes = computed(() => {
             bottom: top + beat.height,
         })
     }
-    const { top, bottom } = edgeLabelSizes
+    const height = ({ time, beat }: Row) => Math.max(time.height, beat.height)
+    const { top, bottom, hover } = edgeLabelSizes
     add(top, 0)
-    if (!lowerEdgeLabelsCovered.value)
-        add(bottom, view.h - Math.max(bottom.time.height, bottom.beat.height))
+    if (!lowerEdgeLabelsCovered.value) add(bottom, view.h - height(bottom))
+    add(hover, hoverLabelCenter.value - height(hover) / 2)
     return boxes
 })
