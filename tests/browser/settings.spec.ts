@@ -780,3 +780,12 @@ test('reduced motion stops sliding and turning, and view scrolls jump', async ({
     expect(await page.evaluate(() => window.editorTest.view.scrollingY)).toBeUndefined()
     expect(await page.evaluate(() => window.editorTest.view.time)).toBeGreaterThan(0)
 })
+
+test('Auto Save Delay sits under Auto Save, and Beat Display with the display rows', async ({
+    page,
+}) => {
+    const labels = await page.getByRole('dialog').locator('.form-field-text').allTextContents()
+    const at = (label: string) => labels.indexOf(label)
+    expect(at('Auto Save Delay (s)')).toBe(at('Auto Save') + 1)
+    expect(at('Waveform Visualization')).toBe(at('Beat Display') + 1)
+})
