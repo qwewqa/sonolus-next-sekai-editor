@@ -3,6 +3,9 @@ import type { CommandName as Name } from '../commands'
 
 // Each layout's shown members, kept while a tool dialog hides the toolbar.
 const shownByLayout = new Map<string, Name[]>()
+// Each layout's faces a tool in use displaced until it ends, and groups with a tool in use.
+type Temporary = { displaced: (Name | undefined)[]; inUse: boolean[] }
+const temporaryByLayout = new Map<string, Temporary>()
 const layoutOf = (toolbar: Name[][]) => toolbar.map((group) => group.join(',')).join('|')
 </script>
 
@@ -38,6 +41,7 @@ const props = defineProps<{ available?: CommandName[] }>()
 const toolbar = computed<CommandName[][]>(() => toolbarGroups(settings.toolbar, props.available))
 
 const activeNames = ref<CommandName[]>([])
+let temporary: Temporary = { displaced: [], inUse: [] }
 
 watch(
     toolbar,
@@ -49,6 +53,11 @@ watch(
         activeNames.value = toolbar.map(
             (commands, index) => kept?.[index] ?? commands[commands.length - 1] ?? 'select',
         )
+        temporary = (previous ? undefined : temporaryByLayout.get(layout)) ?? {
+            displaced: [],
+            inUse: [],
+        }
+        temporaryByLayout.set(layout, temporary)
     },
     { immediate: true },
 )
@@ -83,10 +92,28 @@ watch(
     (pressed) => {
         for (const [index, names] of pressed.entries()) {
             const tools = names.filter((name) => stateOf(name, index)?.kind === 'tool')
+            const { displaced, inUse } = temporary
+            const wasInUse = inUse[index]
+            inUse[index] = tools.length > 0
+            const restored = displaced[index]
+            if (!tools.length && restored) {
+                displaced[index] = undefined
+                activeNames.value[index] = restored
+                continue
+            }
             const candidates = tools.length || !followsValues(index) ? tools : names
             const shown = activeNames.value[index]
             const name = candidates[candidates.length - 1]
-            if (name && shown && !candidates.includes(shown)) activeNames.value[index] = name
+            if (!name || !shown || candidates.includes(shown)) continue
+            // A tool coming into use over an action or value shows until it ends; elevation stays.
+            if (
+                inUse[index] &&
+                wasInUse === false &&
+                stateOf(shown, index)?.kind !== 'tool' &&
+                name !== 'elevation'
+            )
+                displaced[index] = shown
+            activeNames.value[index] = name
         }
     },
     { immediate: true },
@@ -173,6 +200,10 @@ const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     // A toggle takes the face once in use; one a dialog cancels leaves it on the one in use.
     const show = () => {
         if (isPressed(name, index) === false || !toolbar.value[index]?.includes(name)) return
+        // Over a temporary face, a picked tool holds the face; anything else is where it returns.
+        const { displaced } = temporary
+        if (displaced[index])
+            displaced[index] = stateOf(name, index)?.kind === 'tool' ? undefined : name
         // A value leaves the face to a tool in use.
         if (stateOf(name, index)?.kind === 'value' && hasToolInUse(index)) return
         activeNames.value[index] = name

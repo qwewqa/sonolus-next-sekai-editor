@@ -607,6 +607,53 @@ test('the default toolbar’s faces follow the tool and values in use', async ({
     await page.keyboard.press('f')
     await expectFaces({ 3: 'Select*', 9: 'Event' })
 
+    // Paste shows over Undo only while in use.
+    await page.keyboard.press('v')
+    await expectFaces({ 2: 'Paste*', 3: 'Select' })
+    await page.keyboard.press('Escape')
+    await expectFaces({ 2: 'Undo', 3: 'Select*' })
+    await page.keyboard.press('Control+v')
+    await expectFaces({ 2: 'Paste*', 3: 'Select' })
+    await page.keyboard.press('g')
+    await expectFaces({ 2: 'Undo', 3: 'Eraser*' })
+    await page.keyboard.press('f')
+    await expectFaces({ 3: 'Select*' })
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        const note = [...history.state.value.store.slides.note.values()].flat()[0]
+        if (note) history.replaceState({ ...history.state.value, selectedEntities: [note] })
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async () => undefined,
+        })
+        Object.defineProperty(navigator.clipboard, 'readText', {
+            configurable: true,
+            value: async () => {
+                throw new DOMException('Clipboard denied', 'NotAllowedError')
+            },
+        })
+    })
+    await page.keyboard.press('Control+c')
+    const notes = () => page.evaluate(() => window.editorTest.snapshot().notes.length)
+    const count = await notes()
+    await page.keyboard.press('v')
+    await expectFaces({ 2: 'Paste*', 3: 'Select' })
+    // Pasting stays in paste mode; Escape deselects, then leaves it.
+    const target = await page.evaluate(() => window.editorTest.point(2, 3))
+    await page.mouse.click(target.x, target.y)
+    await expect.poll(notes).toBe(count + 1)
+    await expectFaces({})
+    await page.keyboard.press('Escape')
+    await expectFaces({})
+    await page.keyboard.press('Escape')
+    await expectFaces({ 2: 'Undo', 3: 'Select*' })
+    // The context menu's Paste leaves the tool, and the face, as they are.
+    await page.mouse.click(target.x, target.y + 40, { button: 'right' })
+    await page.getByRole('menuitem', { name: 'Paste', exact: true }).click()
+    await expect.poll(notes).toBe(count + 2)
+    await expectFaces({})
+    await page.keyboard.press('Escape')
+
     // A picked action holds the face until the next change returns it to the tool in use.
     await pick(page, 'Select', 'Deselect')
     await expectFaces({ 3: 'Deselect' })
@@ -677,14 +724,18 @@ const flyoutRows = async (page: Page, index: number) => {
 
 const pickAt = async (page: Page, index: number, title: string) => {
     await shown(page).nth(index).hover()
-    await toolbar(page).getByTitle(title, { exact: true }).click()
+    // A flyout row, though the face may show the same member.
+    await toolbar(page)
+        .locator(':scope > div > div > div button')
+        .and(page.getByTitle(title, { exact: true }))
+        .click()
 }
 
-test('a tool in use takes a mixed group’s face from a value, which never takes it back', async ({
-    page,
-}) => {
+test('a tool coming into use over a mixed group’s value shows until it ends', async ({ page }) => {
     await page.evaluate(() => {
-        window.editorTest.settings.toolbar = [['division4', 'note']]
+        const { settings } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        settings.toolbar = [['division4', 'note']]
     })
     const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
     await expectFace('Note')
@@ -696,12 +747,85 @@ test('a tool in use takes a mixed group’s face from a value, which never takes
     // The value in use stays in the flyout.
     expect(await flyoutRows(page, 0)).toEqual(['1/4 Division*✓', 'Note*'])
     await page.keyboard.press('f')
-    await expectFace('Note')
+    await expectFace('1/4 Division*')
     await page.keyboard.press('8')
-    await expectFace('Note')
+    await expectFace('1/4 Division')
     await page.keyboard.press('4')
-    await expectFace('Note')
+    await expectFace('1/4 Division*')
     expect(await flyoutRows(page, 0)).toEqual(['1/4 Division*✓', 'Note'])
+
+    // The note dialog hides the toolbar without losing the face to return to.
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+    await page.keyboard.press('a')
+    await expect(page.locator('.editor-tool-modal')).toBeVisible()
+    await expect(toolbar(page)).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.editor-tool-modal')).toHaveCount(0)
+    await expectFace('Note*')
+    await page.keyboard.press('f')
+    await expectFace('1/4 Division*')
+
+    // A pick over the temporary face holds.
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+    // In use, it opens its dialog.
+    await pickAt(page, 0, 'Note')
+    await expect(page.locator('.editor-tool-modal')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expectFace('Note*')
+    await page.keyboard.press('f')
+    await expectFace('Note')
+})
+
+test('a group of tools keeps the last tool used on its face', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['select', 'note']]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('Select*')
+    await page.keyboard.press('a')
+    await expectFace('Note*')
+    await page.keyboard.press('g')
+    await expectFace('Note')
+    await page.keyboard.press('f')
+    await expectFace('Select*')
+    await page.keyboard.press('g')
+    await expectFace('Select')
+})
+
+test('a pick over a tool’s temporary face becomes the face', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['paste', 'cut', 'copy', 'redo', 'undo'],
+            ['division8', 'division4'],
+        ]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await expectFace('Undo')
+    await page.keyboard.press('v')
+    await expectFace('Paste*')
+    await page.keyboard.press('f')
+    await expectFace('Undo')
+
+    await page.keyboard.press('v')
+    await expectFace('Paste*')
+    // An action shows now, and once paste ends.
+    await pickAt(page, 0, 'Redo')
+    await expectFace('Redo')
+    // The next change returns the face to paste in use.
+    await page.keyboard.press('8')
+    await expectFace('Paste*')
+    await page.keyboard.press('f')
+    await expectFace('Redo')
+
+    // Paste itself holds the face.
+    await page.keyboard.press('v')
+    await expectFace('Paste*')
+    await pickAt(page, 0, 'Paste')
+    await expectFace('Paste*')
+    await page.keyboard.press('f')
+    await expectFace('Paste')
 })
 
 test('a mixed group shows its tool in use over any value', async ({ page }) => {
