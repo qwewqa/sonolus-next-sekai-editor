@@ -624,9 +624,9 @@
       "dragToPanX": "드래그하여 X축 이동",
       "autoAddGroup": "자동 그룹 추가",
       "showGroupName": "그룹 이름 표시",
-      "showOtherGroups": "다른 그룹 보기",
-      "showStageName": "스테이지 이름 보이기",
-      "showOtherStages": "다른 스테이지 보기",
+      "showOtherGroups": "다른 그룹 표시",
+      "showStageName": "스테이지 이름 표시",
+      "showOtherStages": "다른 스테이지 표시",
       "showOtherObjects": "다른 객체 표시",
       "deselectSwitchesToSelect": "선택 해제를 두 번 하면 선택 도구로 전환",
       "beatDisplay": {
