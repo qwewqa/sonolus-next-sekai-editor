@@ -392,21 +392,41 @@ const toggleSelected = (id: T) => {
     setSelection(next, id)
 }
 
+/** Each entry's row on screen; members of a collapsed folder share its row. */
+const rowPlaces = computed(() => {
+    const places = new Map<T, number>()
+    let place = 0
+    for (const item of tree.value) {
+        if (item.type === 'entry') {
+            places.set(item.id, place++)
+            continue
+        }
+        const row = place++
+        const open = isFolderExpanded(item.id)
+        for (const id of item.members) places.set(id, open ? place++ : row)
+    }
+    return places
+})
+
 /** Adds the visible entries from the anchor to this one; a new range replaces the last. */
 const selectRange = (id: T) => {
-    const ids = visibleIds.value
     const start = anchor ?? focused.value ?? id
-    const from = ids.indexOf(start)
-    const to = ids.indexOf(id)
-    if (from === -1 || to === -1) {
+    const from = rowPlaces.value.get(start)
+    const to = rowPlaces.value.get(id)
+    if (from === undefined || to === undefined) {
         toggleSelected(id)
         return
     }
+    const low = Math.min(from, to)
+    const high = Math.max(from, to)
     selecting.value = true
     anchor = start
     selected.value = new Set([
         ...rangeBase,
-        ...ids.slice(Math.min(from, to), Math.max(from, to) + 1),
+        ...visibleIds.value.filter((other) => {
+            const place = rowPlaces.value.get(other) ?? -1
+            return place >= low && place <= high
+        }),
     ])
 }
 

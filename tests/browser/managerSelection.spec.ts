@@ -232,6 +232,30 @@ test('ranges skip collapsed folders; folder and band checks select their entries
     await expect(list.locator('.manager-check')).toHaveCount(0)
 })
 
+test('a range from an entry in a collapsed folder starts at the folder', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const bar = list.locator('.manager-selection-bar')
+    const verse = row(list, 'Verse')
+    // From the last toggled entry.
+    await nameButton(list, 'Fill').click({ modifiers: ['ControlOrMeta'] })
+    await verse.locator('.manager-name').click()
+    await nameButton(list, 'Drums').click({ modifiers: ['Shift'] })
+    expect(await checked(list)).toEqual(['Bass', 'Drums'])
+    await expect(bar).toContainText('3 Selected')
+    await expect(verse.locator('.manager-check')).toHaveAttribute('aria-checked', 'mixed')
+    await bar.getByRole('button', { name: 'Stop Selecting' }).click()
+
+    // From the target the folder stands in for.
+    await verse.locator('.manager-name').click()
+    await nameButton(list, 'Lead').click()
+    await verse.locator('.manager-name').click()
+    await nameButton(list, 'Default').click({ modifiers: ['Shift'] })
+    expect(await checked(list)).toEqual(['Default', 'Other'])
+    await expect(bar).toContainText('2 Selected')
+    expect((await state(page)).focus).toBe('Lead')
+})
+
 test('the selection moves to a folder, out of folders and into a new folder in one step each', async ({
     page,
 }) => {
