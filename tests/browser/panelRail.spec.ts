@@ -141,16 +141,18 @@ test('Shift+F10 and the menu key open the menu from the keyboard', async ({ page
         focusVisible: true,
     })
 
-    // Arrows move through the choices and on to Close, then wrap.
+    // Arrows move through the choices and on to Close, stopping at the ends.
     await page.keyboard.press('ArrowDown')
     expect((await activeName(page)).text).toBe('Dock Left')
     await page.keyboard.press('End')
     expect((await activeName(page)).text).toBe('Close Properties')
     await page.keyboard.press('ArrowDown')
-    expect((await activeName(page)).text).toBe('Dock Automatically')
-    await page.keyboard.press('ArrowUp')
+    expect((await activeName(page)).text).toBe('Close Properties')
     await page.keyboard.press('ArrowUp')
     expect(await activeName(page)).toMatchObject({ role: 'menuitemradio', text: 'Dock Top' })
+    await page.keyboard.press('Home')
+    await page.keyboard.press('ArrowUp')
+    expect((await activeName(page)).text).toBe('Dock Automatically')
 
     await page.keyboard.press('Escape')
     await expect(menu(page)).toHaveCount(0)

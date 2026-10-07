@@ -9,6 +9,7 @@ import { canMakeVertical } from '../state/operations/makeVerticalValues'
 import { canScaleSelection } from '../state/operations/scaleValues'
 import { getSplitHoldNotes } from '../state/operations/splitHold'
 import { vScrollEdges } from '../directives/scrollEdges'
+import { menuKeyIndex } from '../utils/menuKeys'
 import { commands, isCommandName, type Command, type CommandName } from './commands'
 import {
     formatShortcut,
@@ -231,18 +232,8 @@ const onKeydown = (event: KeyboardEvent) => {
         event.preventDefault()
         const buttons = [...(menu.value?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
         const index = buttons.findIndex((button) => button === document.activeElement)
-        const next =
-            event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? buttons.length - 1
-                  : index === -1
-                    ? event.key === 'ArrowDown'
-                        ? 0
-                        : buttons.length - 1
-                    : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) %
-                      buttons.length
-        buttons[next]?.focus()
+        const next = menuKeyIndex(event.key, index, buttons.length)
+        if (next !== undefined) buttons[next]?.focus()
     } else {
         const action = actions.value
             .flat()

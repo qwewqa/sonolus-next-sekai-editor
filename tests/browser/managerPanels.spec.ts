@@ -384,7 +384,7 @@ test('action menu supports the keyboard and keeps chart rules', async ({ page })
     await expect(item('Move Group Up')).toBeDisabled()
     await expect(item('Rename')).toBeFocused()
 
-    // Arrow keys skip disabled items and wrap.
+    // Arrow keys skip disabled items and stop at the ends, as lists do.
     await page.keyboard.press('ArrowDown')
     await expect(item('Duplicate')).toBeFocused()
     await page.keyboard.press('ArrowDown')
@@ -394,10 +394,10 @@ test('action menu supports the keyboard and keeps chart rules', async ({ page })
     await page.keyboard.press('End')
     await expect(item('Delete Group')).toBeFocused()
     await page.keyboard.press('ArrowDown')
-    await expect(item('Rename')).toBeFocused()
-    await page.keyboard.press('ArrowUp')
     await expect(item('Delete Group')).toBeFocused()
     await page.keyboard.press('Home')
+    await expect(item('Rename')).toBeFocused()
+    await page.keyboard.press('ArrowUp')
     await expect(item('Rename')).toBeFocused()
 
     // Editor shortcuts do not fire while the menu has focus.

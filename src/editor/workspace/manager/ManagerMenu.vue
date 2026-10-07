@@ -10,6 +10,7 @@ import {
     type Component,
 } from 'vue'
 import { vScrollEdges } from '../../../directives/scrollEdges'
+import { menuKeyIndex } from '../../../utils/menuKeys'
 import { createTypeAhead, isTypeAheadKey } from '../../../utils/typeAhead'
 import { workspaceDockAttribute } from '..'
 
@@ -225,19 +226,9 @@ const onKeydown = (event: KeyboardEvent) => {
     } else if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
         event.preventDefault()
         const list = buttons()
-        if (!list.length) return
         const index = list.findIndex((button) => button === document.activeElement)
-        const next =
-            event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? list.length - 1
-                  : index === -1
-                    ? event.key === 'ArrowDown'
-                        ? 0
-                        : list.length - 1
-                    : (index + (event.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length
-        list[next]?.focus()
+        const next = menuKeyIndex(event.key, index, list.length)
+        if (next !== undefined) list[next]?.focus()
     }
 }
 
