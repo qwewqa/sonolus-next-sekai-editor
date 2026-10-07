@@ -106,13 +106,13 @@ const closeAddMenu = (restoreFocus: boolean) => {
     if (restoreFocus && modals.length <= current.modals) addButton.value?.focus()
 }
 
-const add = async (key: string, keyboard: boolean) => {
+const add = async (key: string, touch: boolean) => {
     addMenu.value = undefined
     const field = brushFields.find((field) => field.key === key)
     if (!field) return
     brushProperties.value = { ...brushProperties.value, [field.key]: initialValue(field) }
-    // Only a keyboard choice moves on to the field; a tap must not summon the on-screen keyboard.
-    if (!keyboard) return
+    // A tap must not summon the on-screen keyboard; keys and clicks move on to the field.
+    if (touch) return
     await nextTick()
     root.value
         ?.querySelector<HTMLElement>(`[data-brush-key="${field.key}"] :is(input, select)`)
@@ -178,7 +178,7 @@ const clear = () => {
                 :label="i18n.tools.brush.add"
                 :items="addItems"
                 :focus-last="addMenu.last"
-                @select="add"
+                @select="(key, _keyboard, touch) => add(key, touch)"
                 @close="closeAddMenu"
             />
             <button

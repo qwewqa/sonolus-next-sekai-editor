@@ -434,8 +434,7 @@ test.describe('brush', () => {
         // Added properties start from the selection's value when it agrees.
         await addBrushProperty(tool(page), 'isCritical')
         const row = tool(page).locator('[data-brush-key="isCritical"]')
-        // A pointer choice leaves focus alone; Enter moves to the field.
-        await expect(row.locator('select')).not.toBeFocused()
+        await expect(row.locator('select')).toBeFocused()
         await expect(row.locator('option:checked')).toHaveText('Enabled')
         await expect(tool(page).locator('.brush-group h3')).toHaveText(['Note'])
         // A set property leaves the menu.

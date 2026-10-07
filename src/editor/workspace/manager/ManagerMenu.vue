@@ -48,7 +48,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    select: [key: string, keyboard: boolean]
+    select: [key: string, keyboard: boolean, touch: boolean]
     close: [restoreFocus: boolean]
 }>()
 
@@ -241,9 +241,17 @@ const onKeydown = (event: KeyboardEvent) => {
     }
 }
 
+// Firefox for Android reports a plain MouseEvent click, so the last press tells touch apart.
+let lastPointerType = ''
+const onPointerDown = (event: PointerEvent) => (lastPointerType = event.pointerType)
+
 const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
     if (item.disabled) return
-    emit('select', item.key, event.detail === 0)
+    const keyboard = event.detail === 0
+    const touch =
+        !keyboard &&
+        (event instanceof PointerEvent ? event.pointerType : lastPointerType) === 'touch'
+    emit('select', item.key, keyboard, touch)
 }
 </script>
 
@@ -262,6 +270,7 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                 maxHeight: placement?.maxHeight === undefined ? '' : `${placement.maxHeight}px`,
             }"
             @keydown.stop="onKeydown"
+            @pointerdown.capture="onPointerDown"
             @contextmenu.prevent
         >
             <!-- The fade marks more items; the menu's own chrome stays crisp. -->
