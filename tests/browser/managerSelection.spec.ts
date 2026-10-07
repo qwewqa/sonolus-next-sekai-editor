@@ -1066,3 +1066,52 @@ test('Move to Folder leaves entries already in the folder in place', async ({ pa
     expect(await tree(page)).toBe(before)
     expect(await historyLength(page)).toBe(0)
 })
+
+for (const host of ['dock', 'dialog'] as const)
+    test(`keyboard focus stays in the ${host} list as selecting starts and stops`, async ({
+        page,
+    }) => {
+        await seedGroups(page, seed)
+        let list = panel(page)
+        if (host === 'dialog') {
+            await page.evaluate(() => {
+                window.editorTest.settings.groupsPosition = 'disabled'
+            })
+            await page.keyboard.press('e')
+            list = page.locator('dialog')
+        }
+        const menu = page.getByRole('menu')
+        const bar = list.locator('.manager-selection-bar')
+        const mode = list.locator('.manager-all .manager-mode')
+        const selectMultiple = async (name: string) => {
+            await row(list, name)
+                .getByRole('button', { name: `More Actions for ${name}` })
+                .focus()
+            await page.keyboard.press('Enter')
+            await menu.getByRole('menuitem', { name: 'Select Multiple' }).focus()
+            await page.keyboard.press('Enter')
+            await expect(bar).toBeVisible()
+        }
+
+        // Started from a row's or a folder's menu, focus goes to its check.
+        await selectMultiple('Bass')
+        await expect(row(list, 'Bass').locator('.manager-check')).toBeFocused()
+        // Escape there stops selecting and keeps the dialog.
+        await page.keyboard.press('Escape')
+        await expect(bar).toHaveCount(0)
+        await expect(nameButton(list, 'Bass')).toBeFocused()
+        await selectMultiple('Verse')
+        await expect(row(list, 'Verse').locator('.manager-check')).toBeFocused()
+
+        // Escape from the bar, or Done, returns focus to the band's toggle.
+        await bar.getByRole('button', { name: 'Move to Folder…' }).focus()
+        await page.keyboard.press('Escape')
+        await expect(bar).toHaveCount(0)
+        await expect(mode).toBeFocused()
+        await selectMultiple('Bass')
+        await bar.locator('.manager-selection-done').focus()
+        await page.keyboard.press('Enter')
+        await expect(bar).toHaveCount(0)
+        await expect(mode).toBeFocused()
+        if (host === 'dialog') await expect(list).toBeVisible()
+    })

@@ -141,6 +141,20 @@ const revealRow = (row: HTMLElement) => {
     else if (rect.bottom > bottom) container.scrollTop += rect.bottom - bottom
 }
 
+// The band's toggle outlasts the selection bar.
+const focusMode = () =>
+    root.value
+        ?.querySelector<HTMLElement>('.manager-all .manager-mode')
+        ?.focus({ preventScroll: true })
+
+/** Done; by keyboard, focus moves on from the bar it leaves. */
+const onDone = async (event: MouseEvent) => {
+    stopSelecting()
+    if (event.detail > 0) return
+    await nextTick()
+    focusMode()
+}
+
 const keyOfRow = (element: Element | null | undefined) =>
     parseRowKey(element?.closest<HTMLElement>('[data-row]')?.dataset.row)
 
@@ -152,10 +166,12 @@ const onSelectingKeydown = async (event: KeyboardEvent, target: HTMLElement) => 
         const row = target.closest<HTMLElement>('[data-row]')?.dataset.row
         stopSelecting()
         await nextTick()
-        if (row && !target.isConnected)
+        if (target.isConnected) return
+        if (row)
             list.value
                 ?.querySelector<HTMLElement>(`[data-row="${row}"] .manager-name`)
                 ?.focus({ preventScroll: true })
+        else focusMode()
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault()
         await onBulkDelete(true)
@@ -1486,6 +1502,10 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
         case 'selectMultiple':
             if (key.type === 'entry') startSelecting([key.id])
             else startSelecting(folderItems.value.get(key.id)?.members ?? [], [key.id])
+            // The row trades its ••• for a check.
+            if (!keyboard) return
+            await nextTick()
+            focusIn(key, '.manager-check')
             return
         case 'properties':
             if (key.type === 'entry') props.model.openProperties(key.id)
@@ -1914,7 +1934,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     class="manager-selection-done pointer-events-auto flex min-w-0 items-center rounded-full bg-button p-0.5 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
                     :aria-label="i18n.workspace.manager.stopSelecting"
                     :title="i18n.workspace.manager.stopSelecting"
-                    @click="stopSelecting"
+                    @click="onDone"
                 >
                     <span
                         class="flex size-9 shrink-0 items-center justify-center [@media(pointer:coarse)]:size-11"
