@@ -152,3 +152,32 @@ test('selected invisible anchors show a preview line that respects the highlight
         await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
     ).toBe(1)
 })
+
+test('deselecting clears the outline across later presented frames', async ({ page }) => {
+    // Read pixels only at the end: a readback flushes Chromium's deferred Canvas and hides the bug.
+    const present = async () => {
+        await page.evaluate(
+            () =>
+                new Promise((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(resolve)),
+                ),
+        )
+        await page.waitForTimeout(650)
+    }
+    const box = (await page.locator('canvas.editor-chart').boundingBox())!
+    const click = async (x: number, y: number) => {
+        await page.mouse.click(box.x + box.width * x, box.y + box.height * y)
+        await present()
+    }
+    await present()
+    await page.keyboard.press('a')
+    await click(0.5, 0.45)
+    await page.keyboard.press('f')
+    await present()
+    await click(0.3, 0.6)
+    for (const y of [0.3, 0.7, 0.2, 0.8, 0.5]) await click(0.3, y)
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(0)
+    expect(await outlinePixels(page)).toBe(0)
+})

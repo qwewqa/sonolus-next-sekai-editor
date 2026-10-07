@@ -52,7 +52,7 @@ export const installCanvasCounters = () => {
     }
     const fillRect = CanvasRenderingContext2D.prototype.fillRect
     CanvasRenderingContext2D.prototype.fillRect = function (...args) {
-        if (this.globalCompositeOperation === 'copy') count(this)
+        if (this.globalCompositeOperation === 'destination-out') count(this)
         return fillRect.apply(this, args)
     }
     for (const setting of ['showPreview', 'showSidebar', 'autoSave']) {

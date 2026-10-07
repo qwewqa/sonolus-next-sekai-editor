@@ -1,6 +1,20 @@
 import { cancelFrame, requestFrame } from '../../frame'
 import type { CanvasBounds } from './types'
 
+// Explicitly erase the pixels, including on frames with no visible drawing.
+// Chromium's deferred Canvas backend can retain old outlines after clearRect
+// when the next stroke lies offscreen, and after a 'copy' fill once the canvas
+// has been read. This avoids a readback or backing-store reallocation.
+export const clearSurface = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, width, height)
+    ctx.restore()
+}
+
 // Changing the backing dimensions clears all Canvas state and allocates a new
 // surface. Only do that on a real resize, never on an ordinary scroll or edit.
 export const prepareSurface = (
@@ -16,17 +30,7 @@ export const prepareSurface = (
     if (canvas.height !== h) canvas.height = h
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    // Explicitly replace the pixels, including on frames with no visible
-    // drawing. Chromium's deferred Canvas backend can retain old outlines after
-    // clearRect when the next stroke lies offscreen. This avoids a readback or
-    // backing-store reallocation to flush that clear.
-    ctx.save()
-    ctx.globalAlpha = 1
-    ctx.globalCompositeOperation = 'copy'
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)'
-    ctx.fillRect(0, 0, w, h)
-    ctx.restore()
+    clearSurface(ctx, w, h)
     const scale = width / bounds.w
     // CSS dimensions and DPR can both be fractional. Use the actual backing
     // dimensions so browser scaling keeps the scene aligned with pointer and

@@ -24,13 +24,16 @@ test.beforeEach(async ({ page }) => {
     await page.addInitScript(installCanvasCounters)
     await page.addInitScript(() => {
         // Every preview frame clears its selection overlay first.
-        const clearRect = CanvasRenderingContext2D.prototype.clearRect
-        CanvasRenderingContext2D.prototype.clearRect = function (...args) {
-            if (this.canvas instanceof HTMLCanvasElement) {
-                if (this.canvas.classList.contains('preview-selection') && window.pacing)
-                    window.pacing.preview++
-            }
-            return clearRect.apply(this, args)
+        const fillRect = CanvasRenderingContext2D.prototype.fillRect
+        CanvasRenderingContext2D.prototype.fillRect = function (...args) {
+            if (
+                this.canvas instanceof HTMLCanvasElement &&
+                this.canvas.classList.contains('preview-selection') &&
+                this.globalCompositeOperation === 'destination-out' &&
+                window.pacing
+            )
+                window.pacing.preview++
+            return fillRect.apply(this, args)
         }
         localStorage.setItem('sonolus-next-sekai-editor.previewPosition', '"left"')
     })

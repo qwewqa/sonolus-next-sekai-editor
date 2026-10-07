@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, shallowRef, watch, watchEffect, type Ref } from 'vue'
 import { isAppActive } from '../activity'
+import { clearSurface } from '../editor/canvas/surface'
 import { view } from '../editor/view'
 import { dockSizeDrafts, panelWeightsDraft } from '../editor/workspace'
 import { cancelFrame, requestFrame } from '../frame'
@@ -237,7 +238,7 @@ export const usePreviewRendering = (
                         0,
                         0,
                     )
-                    ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value)
+                    clearSurface(ctx, overlay.width, overlay.height)
                 }
                 const outline = createSelectionOutline()
                 const quad = renderPreviewFrame(

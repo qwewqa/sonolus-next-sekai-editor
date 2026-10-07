@@ -411,8 +411,8 @@ test('canvas surfaces reuse backing storage while applying DPR, scrolling and no
                 'clearing uses backing-pixel coordinates',
             )
             assert.equal(ctx.globalAlpha, 1)
-            assert.equal(ctx.globalCompositeOperation, 'copy')
-            assert.equal(ctx.fillStyle, 'rgba(0, 0, 0, 0)')
+            assert.equal(ctx.globalCompositeOperation, 'destination-out')
+            assert.equal(ctx.fillStyle, '#000')
             clears.push(args)
         },
         lineWidth: 0,
