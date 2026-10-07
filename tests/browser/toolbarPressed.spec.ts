@@ -803,3 +803,54 @@ test('a value picked while its group’s tool is in use leaves the tool on the f
     await pickAt(page, 0, '1/4 Division')
     await expectFace('1/4 Division*')
 })
+
+test('round toolbar faces take input over their whole square', async ({ page }) => {
+    // Every corner of every face hits that face, and no two faces overlap.
+    const tiles = () =>
+        shown(page).evaluateAll((buttons) => {
+            const rects = buttons.map((button) => button.getBoundingClientRect())
+            const corners = buttons.every((button, index) => {
+                const { left, right, top, bottom } = rects[index]!
+                return [
+                    [left + 1, top + 1],
+                    [right - 1, top + 1],
+                    [left + 1, bottom - 1],
+                    [right - 1, bottom - 1],
+                ].every(([x, y]) => document.elementFromPoint(x!, y!)?.closest('button') === button)
+            })
+            const overlaps = rects.some((a, i) =>
+                rects.some(
+                    (b, j) =>
+                        i < j &&
+                        a.left < b.right &&
+                        b.left < a.right &&
+                        a.top < b.bottom &&
+                        b.top < a.bottom,
+                ),
+            )
+            return { corners, overlaps }
+        })
+    expect(await tiles()).toEqual({ corners: true, overlaps: false })
+    // Wrapped into rows too.
+    const viewport = page.viewportSize()!
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect.poll(tiles).toEqual({ corners: true, overlaps: false })
+    await page.setViewportSize(viewport)
+
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['select'], ['eraser'], ['undo', 'brush']]
+    })
+    const face = (title: string) => shown(page).and(page.getByTitle(title, { exact: true }))
+    // A bottom-left corner, outside the circle.
+    const corner = async (title: string) => {
+        const box = (await face(title).boundingBox())!
+        await page.mouse.move(box.x + 1, box.y + box.height - 1)
+    }
+    await corner('Eraser')
+    await page.mouse.down()
+    await page.mouse.up()
+    await expect(face('Eraser')).toHaveAttribute('aria-pressed', 'true')
+    // Moving into a corner opens a group's flyout.
+    await corner('Brush')
+    await expect(face('Brush')).toHaveAttribute('aria-expanded', 'true')
+})

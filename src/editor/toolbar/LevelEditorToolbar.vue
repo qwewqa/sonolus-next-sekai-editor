@@ -266,8 +266,9 @@ onBeforeUnmount(() => {
                 :class="{ 'z-20': activeIndex === i }"
                 :inert="activeIndex !== -1 && activeIndex !== i"
             >
+                <!-- A square pseudo-element takes input in the circle's corners. -->
                 <LevelEditorToolbarTool
-                    class="size-[--tool-size] justify-center"
+                    class="relative size-[--tool-size] justify-center before:absolute before:inset-0"
                     :name="activeName"
                     :state="stateOf(activeName, i)"
                     v-bind="flyoutAttributes(i)"
