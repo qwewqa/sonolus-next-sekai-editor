@@ -788,6 +788,34 @@ test('the Brush keeps its place in the panel while brushing selects notes', asyn
     await brushKeepsToolSection(page, true)
 })
 
+test('dragging the thumb after brushing keeps its size until release', async ({ page }) => {
+    await open(page)
+    await brushKeepsToolSection(page, false)
+    const scroller = panel(page).locator('.properties-scroller')
+    const room = () =>
+        scroller.evaluate((element) => (element.lastElementChild as HTMLElement).offsetHeight)
+    expect(await room()).toBeGreaterThan(100)
+    const box = (await scroller.boundingBox())!
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2)
+    const thumb = panel(page).locator('.overlay-scrollbar-thumb')
+    await expect(panel(page).locator('.overlay-scrollbar-active')).toHaveCount(1)
+    const start = (await thumb.boundingBox())!
+    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
+    await page.mouse.down()
+    for (let step = 1; step <= 5; step++) {
+        await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2 - step * 21)
+        await page.evaluate(() => new Promise(requestAnimationFrame))
+        expect(
+            Math.abs((await thumb.boundingBox())!.height - start.height),
+            `step ${step}`,
+        ).toBeLessThan(1)
+    }
+    const held = await room()
+    await page.mouse.up()
+    // Released, the room out of view goes.
+    await expect.poll(room).toBeLessThan(held)
+})
+
 test.describe('phone sheet', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 

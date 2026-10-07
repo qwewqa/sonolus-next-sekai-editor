@@ -140,9 +140,11 @@ const setRoom = (height: number) => {
     room = height
     if (spacer.value) spacer.value.style.height = `${height}px`
 }
+// Not under a dragged thumb, which would grow as the content shrinks.
+let thumbDragging = false
 const trimRoom = () => {
     const element = scroller.value
-    if (!room || !element) return
+    if (!room || !element || thumbDragging) return
     const natural = element.scrollHeight - room
     setRoom(Math.max(0, Math.min(room, element.scrollTop + element.clientHeight - natural)))
 }
@@ -236,6 +238,11 @@ const select = (event: Event, section: PropertiesSection) => {
 const onTab = (event: MouseEvent, section: PropertiesSection) => {
     select(event, section)
     blurAfterPointer(event)
+}
+
+const onThumbDrag = (active: boolean) => {
+    thumbDragging = active
+    trimRoom()
 }
 
 const onSectionsScroll = () => {
@@ -365,7 +372,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
             </section>
             <div ref="spacer" aria-hidden="true" />
         </div>
-        <OverlayScrollbar :target="scroller" />
+        <OverlayScrollbar :target="scroller" @drag="onThumbDrag" />
     </div>
 </template>
 

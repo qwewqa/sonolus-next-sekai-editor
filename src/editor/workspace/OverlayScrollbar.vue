@@ -15,6 +15,7 @@ import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue'
 const props = defineProps<{
     target: HTMLElement | null | undefined
 }>()
+const emit = defineEmits<{ drag: [active: boolean] }>()
 
 const strip = useTemplateRef<HTMLElement>('strip')
 
@@ -37,6 +38,9 @@ const overflowing = shallowRef(false)
 const shown = shallowRef(false)
 const hovered = shallowRef(false)
 const dragging = shallowRef(false)
+watch(dragging, (active) => {
+    emit('drag', active)
+})
 
 let hideTimer: ReturnType<typeof setTimeout> | undefined
 let frame = 0
