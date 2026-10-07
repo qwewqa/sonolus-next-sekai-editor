@@ -16,7 +16,7 @@ const hover = computed(() => ({
 
 <template>
     <div
-        class="absolute flex w-full -translate-y-1/2 justify-between text-white/70"
+        class="absolute flex w-full -translate-y-1/2 justify-between text-white/70 forced-color-adjust-none"
         :style="{ top: `${hover.top}px` }"
     >
         <span>{{ formatTime(hover.time) }}</span>

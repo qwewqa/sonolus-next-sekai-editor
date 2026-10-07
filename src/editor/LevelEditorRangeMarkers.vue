@@ -15,7 +15,9 @@ const lowerCovered = computed(() => hasToolModal('main') && view.w < 640)
 </script>
 
 <template>
-    <div class="absolute flex size-full flex-col justify-between text-white/70">
+    <div
+        class="absolute flex size-full flex-col justify-between text-white/70 forced-color-adjust-none"
+    >
         <div class="flex justify-between">
             <span>{{ formatTime(times.max) }}</span>
             <span>{{ formatBeatPosition(sceneBpms, beats.max, settings.beatDisplay, true) }}</span>

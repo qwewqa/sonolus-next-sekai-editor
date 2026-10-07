@@ -225,3 +225,27 @@ test('monochrome tool icons take the button text color', async ({ page }) => {
     const add = page.getByRole('dialog').getByRole('button', { name: 'Add Tool' }).first()
     await expect.poll(() => fills(add, 'path')).toEqual([text])
 })
+
+for (const colorScheme of ['light', 'dark'] as const)
+    test(`chart panes keep their dark background (${colorScheme})`, async ({ page }) => {
+        // The canvases draw white grids, labels and selection boxes for it.
+        await page.emulateMedia({ forcedColors: 'active', colorScheme })
+        const backdrop = (selector: string) =>
+            page
+                .locator(selector)
+                .evaluate((element) => getComputedStyle(element, '::before').backgroundColor)
+        const bg = 'rgb(64, 68, 100)'
+        expect(await backdrop('.chart-pane:has(canvas.editor-chart)')).toBe(bg)
+        // The time and beat labels on it stay light.
+        const label = page.locator('.chart-pane > div:first-of-type span').first()
+        await expect(label).toBeVisible()
+        expect(await label.evaluate((element) => getComputedStyle(element).color)).toBe(
+            'rgba(255, 255, 255, 0.7)',
+        )
+        await page.evaluate(async () => {
+            const { commands } = await import('/src/editor/commands/index.ts')
+            await commands.elevation.execute()
+        })
+        await expect(page.locator('.elevation-canvas')).toBeVisible()
+        expect(await backdrop('.elevation-editor')).toBe(bg)
+    })

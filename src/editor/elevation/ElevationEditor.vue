@@ -1031,7 +1031,7 @@ onUnmounted(() => {
 <template>
     <section
         ref="container"
-        class="elevation-editor absolute size-full"
+        class="elevation-editor chart-pane absolute size-full"
         tabindex="-1"
         @pointerenter="activate"
         @focusin="activate"

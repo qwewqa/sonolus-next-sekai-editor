@@ -263,7 +263,7 @@ const stageCount = computed(() =>
             <div
                 v-if="!isElevationEditorOpen || isElevationSideBySide"
                 ref="container"
-                class="relative min-w-0 flex-1 overflow-hidden"
+                class="chart-pane relative min-w-0 flex-1 overflow-hidden"
                 tabindex="-1"
                 @pointerenter="activateEditorNavigation()"
                 @focusin="activateEditorNavigation()"

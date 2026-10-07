@@ -101,6 +101,17 @@ html[data-app-inactive] *::after {
     }
 }
 
+/* Chart panes draw for their dark background, so high contrast keeps it behind them. */
+@media (forced-colors: active) {
+    .chart-pane::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: theme('colors.bg');
+        forced-color-adjust: none;
+    }
+}
+
 /* Menus' shared surface; edges and focus are outlines, which high contrast keeps. */
 @layer components {
     .popup-surface {
