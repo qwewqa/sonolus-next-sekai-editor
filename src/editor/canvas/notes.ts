@@ -401,7 +401,9 @@ export const createNoteRenderer = () => {
                 entity = { ...entity, size: position.size, useInfoOf: entity.useInfoOf ?? entity }
             const { ctx, state, scale, recentlyActive } = context
             if (opacity <= 0 || scale <= 0 || context.pixelRatio <= 0) return
-            const infos = state.store.slides.info.get(entity.slideId)
+            const infos =
+                state.store.slides.info.get(entity.slideId) ??
+                context.slideInfos?.get(entity.slideId)
             const lookup = infos && getSlideInfoLookup(infos)
             const type = getNoteVisualType(entity, infos, lookup)
             const outline =

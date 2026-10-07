@@ -13,6 +13,7 @@ import { isScenePreview, sceneState } from '../sceneState'
 import { scopeLookup } from '../scope'
 import { bgmOffsetDelta } from '../tools/offset'
 import { tool, tools } from '../tools'
+import { pasteGhostInfos } from '../tools/paste'
 import { isVisible } from '../tools/utils'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
@@ -284,7 +285,11 @@ watchEffect(
                     inputs.bounds,
                 )
                 if (creatingContext) {
-                    const context = { ...inputs, ctx: creatingContext }
+                    const context = {
+                        ...inputs,
+                        ctx: creatingContext,
+                        slideInfos: pasteGhostInfos(),
+                    }
                     for (const entity of creating) {
                         if (isEntityInBeatRange(entity, range.min, range.max))
                             drawEntity(context, entity, true)

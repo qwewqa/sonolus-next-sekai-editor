@@ -40,9 +40,10 @@ import {
     toStageTransformEventJointEntity,
     type StageTransformEventJointEntity,
 } from '../../../state/entities/events/joints/stage/transform.ts'
-import { createSlideId } from '../../../state/entities/slides'
+import { createSlideId, type SlideId } from '../../../state/entities/slides'
 import { toNoteEntity, type NoteEntity } from '../../../state/entities/slides/note'
 import { toTimeScaleEntity, type TimeScaleEntity } from '../../../state/entities/timeScale'
+import type { BpmIntegral } from '../../../state/integrals/bpms'
 import { addBpm, removeBpm } from '../../../state/mutations/bpm'
 import { addCameraEventJoint } from '../../../state/mutations/events/camera'
 import { addStageMaskEventJoint } from '../../../state/mutations/events/stage/mask'
@@ -51,7 +52,9 @@ import { addStageStyleEventJoint } from '../../../state/mutations/events/stage/s
 import { addStageTransformEventJoint } from '../../../state/mutations/events/stage/transform.ts'
 import { addNote } from '../../../state/mutations/slides/note'
 import { addTimeScale, removeTimeScale } from '../../../state/mutations/timeScale'
+import { createStore } from '../../../state/store/creates'
 import { getInStoreGrid } from '../../../state/store/grid'
+import type { StoreSlides } from '../../../state/store/slides'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import type { Modifiers } from '../../controls/gestures/pointer'
@@ -89,27 +92,7 @@ export const paste: Tool = {
         const lane = xToLane(x)
         const beatOffset = toPasteBeatOffset(entities, yToBeatOffset(y, data.beat))
 
-        const creating: Entity[] = []
-        for (const entity of entities) {
-            const beat = entity.beat + beatOffset
-
-            const result = creates[entity.type]?.(
-                onlyType,
-                entity as never,
-                data.lane,
-                lane,
-                beat,
-                modifiers.shift,
-            )
-            if (!result) continue
-
-            creating.push(result)
-        }
-
-        view.entities = {
-            hovered: [],
-            creating,
-        }
+        showGhost(entities, onlyType, data.lane, lane, beatOffset, modifiers.shift)
     },
 
     async tap(x, y, modifiers) {
@@ -141,27 +124,7 @@ export const paste: Tool = {
         const lane = xToLane(x)
         const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
 
-        const creating: Entity[] = []
-        for (const entity of active.entities) {
-            const beat = entity.beat + beatOffset
-
-            const result = creates[entity.type]?.(
-                active.onlyType,
-                entity as never,
-                active.lane,
-                lane,
-                beat,
-                modifiers.shift,
-            )
-            if (!result) continue
-
-            creating.push(result)
-        }
-
-        view.entities = {
-            hovered: [],
-            creating,
-        }
+        showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
 
         return true
     },
@@ -172,27 +135,7 @@ export const paste: Tool = {
         const lane = xToLane(x)
         const beatOffset = toPasteBeatOffset(active.entities, yToBeatOffset(y, active.beat))
 
-        const creating: Entity[] = []
-        for (const entity of active.entities) {
-            const beat = entity.beat + beatOffset
-
-            const result = creates[entity.type]?.(
-                active.onlyType,
-                entity as never,
-                active.lane,
-                lane,
-                beat,
-                modifiers.shift,
-            )
-            if (!result) continue
-
-            creating.push(result)
-        }
-
-        view.entities = {
-            hovered: [],
-            creating,
-        }
+        showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
     },
 
     async dragEnd(x, y, modifiers) {
@@ -254,6 +197,97 @@ export const paste: Tool = {
         active = undefined
     },
 }
+
+let ghost:
+    | {
+          slides: NoteObject[][]
+          bpms: BpmIntegral[]
+          entities: Entity[]
+          infos: StoreSlides['info']
+      }
+    | undefined
+
+/** The ghost's slides, for drawing their notes as they'll land. */
+export const pasteGhostInfos = () => ghost?.infos
+
+const isSameSlides = (a: NoteObject[][], b: NoteObject[][]) =>
+    a.length === b.length &&
+    a.every((slide, i) => {
+        const other = b[i]
+        return (
+            slide.length === other?.length &&
+            slide.every((note, j) => {
+                const otherNote = other[j] as Record<string, unknown> | undefined
+                return Object.entries(note).every(([key, value]) => otherNote?.[key] === value)
+            })
+        )
+    })
+
+// Slides land whole: their connectors and attached ticks as a paste places them.
+const showGhost = (
+    entities: Entity[],
+    onlyType: EntityType | undefined,
+    startLane: number,
+    lane: number,
+    beatOffset: number,
+    flip: boolean,
+) => {
+    const creating: Entity[] = []
+    const slides = new Map<SlideId, NoteObject[]>()
+    for (const entity of entities) {
+        const beat = entity.beat + beatOffset
+        if (entity.type === 'note') {
+            const object = toMovedNoteObject(entity, startLane, lane, beat, flip)
+            const slide = slides.get(entity.slideId)
+            if (slide) slide.push(object)
+            else slides.set(entity.slideId, [object])
+            continue
+        }
+
+        const result = creates[entity.type]?.(
+            onlyType,
+            entity as never,
+            startLane,
+            lane,
+            beat,
+            flip,
+        )
+        if (result) creating.push(result)
+    }
+
+    // Rebuilt only when a note moves to another snapped place or the tempo changes.
+    const { bpms } = state.value
+    const objects = [...slides.values()]
+    if (ghost?.bpms !== bpms || !isSameSlides(ghost.slides, objects)) {
+        const { slides: built } = createStore({ ...emptyChart(), slides: objects }, bpms)
+        ghost = {
+            slides: objects,
+            bpms,
+            entities: [...[...built.connector.values()].flat(), ...[...built.note.values()].flat()],
+            infos: built.info,
+        }
+    }
+
+    view.entities = {
+        hovered: [],
+        creating: [...ghost.entities, ...creating],
+    }
+}
+
+const emptyChart = (): Chart => ({
+    initialLife: 1000,
+    isDynamicStages: false,
+    bpms: [],
+    groups: new Map(),
+    stages: new Map(),
+    cameraEvents: [],
+    stageMaskEvents: [],
+    stagePivotEvents: [],
+    stageStyleEvents: [],
+    stageTransformEvents: [],
+    timeScales: [],
+    slides: [],
+})
 
 // Authoring reveals its target: pasted objects land in the focused group/stage
 // or keep their own, and must neither vanish nor replace hidden objects (a

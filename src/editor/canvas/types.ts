@@ -1,6 +1,7 @@
 import type { GroupId } from '../../chart/groups'
 import type { State } from '../../state'
 import type { Entity } from '../../state/entities'
+import type { StoreSlides } from '../../state/store/slides'
 import type { NameLayer } from './names'
 
 export type CanvasBounds = {
@@ -24,6 +25,8 @@ export type EditorDrawContext = {
     bounds: CanvasBounds
     ups: number
     state: State
+    /** Slides drawn outside the state, such as a paste's ghost. */
+    slideInfos?: StoreSlides['info']
     defaultGroupId: GroupId | undefined
     showStageName: boolean
     showGroupName: boolean
