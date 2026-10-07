@@ -105,13 +105,8 @@ watch(
             const shown = activeNames.value[index]
             const name = candidates[candidates.length - 1]
             if (!name || !shown || candidates.includes(shown)) continue
-            // A tool coming into use over an action or value shows until it ends; elevation stays.
-            if (
-                inUse[index] &&
-                wasInUse === false &&
-                stateOf(shown, index)?.kind !== 'tool' &&
-                name !== 'elevation'
-            )
+            // A tool coming into use over an action or value shows until it ends.
+            if (inUse[index] && wasInUse === false && stateOf(shown, index)?.kind !== 'tool')
                 displaced[index] = shown
             activeNames.value[index] = name
         }

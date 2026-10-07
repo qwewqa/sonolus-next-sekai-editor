@@ -603,7 +603,7 @@ test('the default toolbar’s faces follow the tool and values in use', async ({
     await run(page, 'elevation')
     await expectFaces({ 4: 'Elevation Editor*', 9: 'Event' })
     await run(page, 'elevation')
-    await expectFaces({ 4: 'Elevation Editor', 9: 'Event*' })
+    await expectFaces({ 4: 'Flip Horizontally', 9: 'Event*' })
     await page.keyboard.press('f')
     await expectFaces({ 3: 'Select*', 9: 'Event' })
 
