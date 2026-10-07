@@ -157,7 +157,7 @@ const settingsProperties = {
         )
         .Encode((values) => values),
     // Connector fields in Selection start collapsed behind their summary.
-    propertiesConnectorExpanded: Type.Boolean(),
+    propertiesConnectorExpanded: Type.Boolean({ default: true }),
 
     previewControls: Type.Union([
         Type.Literal('auto'),
