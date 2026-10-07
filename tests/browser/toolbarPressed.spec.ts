@@ -805,37 +805,56 @@ test('a value picked while its group’s tool is in use leaves the tool on the f
 })
 
 test('round toolbar faces take input over their whole square', async ({ page }) => {
-    // Every corner of every face hits that face, and no two faces overlap.
+    // Every face takes its corners and nothing a pixel beyond its square.
     const tiles = () =>
         shown(page).evaluateAll((buttons) => {
-            const rects = buttons.map((button) => button.getBoundingClientRect())
-            const corners = buttons.every((button, index) => {
-                const { left, right, top, bottom } = rects[index]!
+            const hits = (x: number, y: number) =>
+                document.elementFromPoint(x, y)?.closest('button')
+            const corners = buttons.every((button) => {
+                const { left, right, top, bottom } = button.getBoundingClientRect()
                 return [
                     [left + 1, top + 1],
                     [right - 1, top + 1],
                     [left + 1, bottom - 1],
                     [right - 1, bottom - 1],
-                ].every(([x, y]) => document.elementFromPoint(x!, y!)?.closest('button') === button)
+                ].every(([x, y]) => hits(x!, y!) === button)
             })
-            const overlaps = rects.some((a, i) =>
-                rects.some(
-                    (b, j) =>
-                        i < j &&
-                        a.left < b.right &&
-                        b.left < a.right &&
-                        a.top < b.bottom &&
-                        b.top < a.bottom,
-                ),
-            )
+            const overlaps = buttons.some((button) => {
+                const { left, right, top, bottom } = button.getBoundingClientRect()
+                const [x, y] = [(left + right) / 2, (top + bottom) / 2]
+                return [
+                    [left - 1, top - 1],
+                    [x, top - 1],
+                    [right + 1, top - 1],
+                    [right + 1, y],
+                    [right + 1, bottom + 1],
+                    [x, bottom + 1],
+                    [left - 1, bottom + 1],
+                    [left - 1, y],
+                ].some(([x, y]) => hits(x!, y!) === button)
+            })
             return { corners, overlaps }
         })
     expect(await tiles()).toEqual({ corners: true, overlaps: false })
-    // Wrapped into rows too.
+    // Wrapped into rows, and at touch sizes, too.
     const viewport = page.viewportSize()!
     await page.setViewportSize({ width: 390, height: 844 })
     await expect.poll(tiles).toEqual({ corners: true, overlaps: false })
     await page.setViewportSize(viewport)
+    await page.evaluate(async () => {
+        const { isCoarsePointer } = await window.editorTest.appImport<
+            typeof import('../../src/editor/workspace')
+        >('/src/editor/workspace/index.ts')
+        isCoarsePointer.value = true
+    })
+    await expect(shown(page).first()).not.toHaveCSS('width', '32px')
+    await expect.poll(tiles).toEqual({ corners: true, overlaps: false })
+    await page.evaluate(async () => {
+        const { isCoarsePointer } = await window.editorTest.appImport<
+            typeof import('../../src/editor/workspace')
+        >('/src/editor/workspace/index.ts')
+        isCoarsePointer.value = false
+    })
 
     await page.evaluate(() => {
         window.editorTest.settings.toolbar = [['select'], ['eraser'], ['undo', 'brush']]
