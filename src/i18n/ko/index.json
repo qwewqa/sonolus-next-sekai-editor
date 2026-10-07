@@ -1191,7 +1191,23 @@
         "altGraph": "{0}은(는) 많은 키보드에서 문자 입력에 쓰입니다. 다른 키를 누르세요",
         "alsoRuns": "{0}도 함께 실행됩니다",
         "browserReload": "브라우저 새로 고침 대신 실행됩니다",
-        "browserFind": "브라우저 찾기 대신 실행됩니다"
+        "browserFind": "브라우저 찾기 대신 실행됩니다",
+        "names": {
+          "space": "Space",
+          "escape": "Esc",
+          "delete": "Delete",
+          "backspace": "Backspace",
+          "enter": "Enter",
+          "tab": "Tab",
+          "pageUp": "Page Up",
+          "pageDown": "Page Down",
+          "home": "Home",
+          "end": "End",
+          "insert": "Insert",
+          "ctrl": "Ctrl",
+          "alt": "Alt",
+          "shift": "Shift"
+        }
       },
       "maskLeft": {
         "label": "마스크 레인"

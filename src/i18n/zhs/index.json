@@ -1191,7 +1191,23 @@
         "altGraph": "{0} 在许多键盘上用于输入字符，请按其他键。",
         "alsoRuns": "同时执行{0}",
         "browserReload": "将取代浏览器的刷新快捷键",
-        "browserFind": "将取代浏览器的查找快捷键"
+        "browserFind": "将取代浏览器的查找快捷键",
+        "names": {
+          "space": "Space",
+          "escape": "Esc",
+          "delete": "Delete",
+          "backspace": "Backspace",
+          "enter": "Enter",
+          "tab": "Tab",
+          "pageUp": "Page Up",
+          "pageDown": "Page Down",
+          "home": "Home",
+          "end": "End",
+          "insert": "Insert",
+          "ctrl": "Ctrl",
+          "alt": "Alt",
+          "shift": "Shift"
+        }
       },
       "maskLeft": {
         "label": "遮罩轨道"

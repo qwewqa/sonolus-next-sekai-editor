@@ -1191,7 +1191,23 @@
         "altGraph": "{0} は多くのキーボードで文字の入力に使われます。別のキーを押してください",
         "alsoRuns": "{0}も実行されます",
         "browserReload": "ブラウザの再読み込みの代わりに実行されます",
-        "browserFind": "ブラウザのページ内検索の代わりに実行されます"
+        "browserFind": "ブラウザのページ内検索の代わりに実行されます",
+        "names": {
+          "space": "Space",
+          "escape": "Esc",
+          "delete": "Delete",
+          "backspace": "Backspace",
+          "enter": "Enter",
+          "tab": "Tab",
+          "pageUp": "Page Up",
+          "pageDown": "Page Down",
+          "home": "Home",
+          "end": "End",
+          "insert": "Insert",
+          "ctrl": "Ctrl",
+          "alt": "Alt",
+          "shift": "Shift"
+        }
       },
       "maskLeft": {
         "label": "マスクのレーン"

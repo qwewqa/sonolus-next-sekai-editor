@@ -10,8 +10,10 @@ import {
     matchBindings,
     normalizeBinding,
     parseChord,
+    setKeyNames,
     stringifyChord,
     type KeyInput,
+    type KeyNames,
 } from '../../src/editor/controls/bindings'
 
 // Modifiers by letter: c Ctrl, m Meta, a Alt, s Shift, g AltGraph.
@@ -253,4 +255,39 @@ test('named keys read as on the keycap, for display only', () => {
     assert.deepEqual(matchBindings({ scrollLeft: 'ArrowLeft' }, press('ArrowLeft'), false).names, [
         'scrollLeft',
     ])
+})
+
+test('bindings show the locale’s key and modifier names', () => {
+    const english = {
+        space: 'Space',
+        escape: 'Esc',
+        delete: 'Delete',
+        backspace: 'Backspace',
+        enter: 'Enter',
+        tab: 'Tab',
+        pageUp: 'Page Up',
+        pageDown: 'Page Down',
+        home: 'Home',
+        end: 'End',
+        insert: 'Insert',
+        ctrl: 'Ctrl',
+        alt: 'Alt',
+        shift: 'Shift',
+    } satisfies KeyNames
+    setKeyNames(() => ({
+        ...english,
+        escape: 'Échap',
+        delete: 'Suppr',
+        space: 'Espace',
+        shift: 'Maj',
+    }))
+    try {
+        assert.equal(formatBinding('Escape', false), 'Échap')
+        assert.equal(formatBinding('U', false), 'Maj+U')
+        assert.equal(formatBinding('Mod+Shift+Delete', false), 'Ctrl+Maj+Suppr')
+        assert.equal(formatBinding('Mod+ ', true), '⌘Espace')
+        assert.equal(formatBinding('ArrowUp', false), '↑')
+    } finally {
+        setKeyNames(() => english)
+    }
 })

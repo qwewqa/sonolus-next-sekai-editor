@@ -1191,7 +1191,23 @@
         "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche.",
         "alsoRuns": "Exécute aussi {0}",
         "browserReload": "Remplace le raccourci d’actualisation du navigateur",
-        "browserFind": "Remplace le raccourci de recherche du navigateur"
+        "browserFind": "Remplace le raccourci de recherche du navigateur",
+        "names": {
+          "space": "Espace",
+          "escape": "Échap",
+          "delete": "Suppr",
+          "backspace": "Retour arrière",
+          "enter": "Entrée",
+          "tab": "Tab",
+          "pageUp": "Pg préc",
+          "pageDown": "Pg suiv",
+          "home": "Début",
+          "end": "Fin",
+          "insert": "Inser",
+          "ctrl": "Ctrl",
+          "alt": "Alt",
+          "shift": "Maj"
+        }
       },
       "maskLeft": {
         "label": "Voie du masque"

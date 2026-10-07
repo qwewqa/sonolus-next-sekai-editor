@@ -176,35 +176,92 @@ export const isReservedChord = (input: KeyInput, apple: boolean) => {
     return ['n', 't', 'w', 'tab', 'escape'].includes(key)
 }
 
-// Keys whose DOM names read poorly; shown only, never stored.
-const keyNames = new Map([
-    [' ', 'Space'],
+/** Shown names for keys and modifiers, which locales may name their own way. */
+export type KeyNames = Record<
+    | 'space'
+    | 'escape'
+    | 'delete'
+    | 'backspace'
+    | 'enter'
+    | 'tab'
+    | 'pageUp'
+    | 'pageDown'
+    | 'home'
+    | 'end'
+    | 'insert'
+    | 'ctrl'
+    | 'alt'
+    | 'shift',
+    string
+>
+
+const englishKeyNames: KeyNames = {
+    space: 'Space',
+    escape: 'Esc',
+    delete: 'Delete',
+    backspace: 'Backspace',
+    enter: 'Enter',
+    tab: 'Tab',
+    pageUp: 'Page Up',
+    pageDown: 'Page Down',
+    home: 'Home',
+    end: 'End',
+    insert: 'Insert',
+    ctrl: 'Ctrl',
+    alt: 'Alt',
+    shift: 'Shift',
+}
+
+let shownKeyNames = (): KeyNames => englishKeyNames
+
+/** Sets where shown key names come from, such as the current locale. */
+export const setKeyNames = (names: () => KeyNames) => {
+    shownKeyNames = names
+}
+
+// Keys shown by another name; shown only, never stored.
+const namedKeys = new Map<string, keyof KeyNames>([
+    [' ', 'space'],
+    ['Escape', 'escape'],
+    ['Delete', 'delete'],
+    ['Backspace', 'backspace'],
+    ['Enter', 'enter'],
+    ['Tab', 'tab'],
+    ['PageUp', 'pageUp'],
+    ['PageDown', 'pageDown'],
+    ['Home', 'home'],
+    ['End', 'end'],
+    ['Insert', 'insert'],
+])
+const arrows = new Map([
     ['ArrowLeft', '←'],
     ['ArrowRight', '→'],
     ['ArrowUp', '↑'],
     ['ArrowDown', '↓'],
-    ['PageUp', 'Page Up'],
-    ['PageDown', 'Page Down'],
-    ['Escape', 'Esc'],
 ])
+const keyName = (key: string, names: KeyNames) => {
+    const named = namedKeys.get(key)
+    return named ? names[named] : arrows.get(key)
+}
 
 /** Readable text for a binding; Apple platforms use the menu symbols. */
 export const formatBinding = (binding: string | undefined, apple: boolean) => {
     if (!binding) return
+    const names = shownKeyNames()
     const chord = parseChord(binding)
     if (!chord) {
         // Letters show as on the keycap; Shift is named, so a capital is never ambiguous.
-        const named = keyNames.get(binding)
+        const named = keyName(binding, names)
         if (named) return named
         const upper = binding.toUpperCase()
         if (!isLetter(binding) || upper.length !== 1) return binding
-        return binding === upper ? `Shift+${binding}` : upper
+        return binding === upper ? `${names.shift}+${binding}` : upper
     }
     const key =
-        keyNames.get(chord.key) ?? (isLetter(chord.key) ? chord.key.toUpperCase() : chord.key)
+        keyName(chord.key, names) ?? (isLetter(chord.key) ? chord.key.toUpperCase() : chord.key)
     if (apple)
         return `${chord.alt ? '⌥' : ''}${chord.shift ? '⇧' : ''}${chord.mod ? '⌘' : ''}${key}`
-    return [chord.mod && 'Ctrl', chord.alt && 'Alt', chord.shift && 'Shift', key]
+    return [chord.mod && names.ctrl, chord.alt && names.alt, chord.shift && names.shift, key]
         .filter(Boolean)
         .join('+')
 }

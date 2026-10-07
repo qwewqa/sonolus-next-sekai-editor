@@ -1191,7 +1191,23 @@
         "altGraph": "{0} 在許多鍵盤上用於輸入字元，請按其他鍵。",
         "alsoRuns": "同時執行{0}",
         "browserReload": "將取代瀏覽器的重新整理快捷鍵",
-        "browserFind": "將取代瀏覽器的尋找快捷鍵"
+        "browserFind": "將取代瀏覽器的尋找快捷鍵",
+        "names": {
+          "space": "Space",
+          "escape": "Esc",
+          "delete": "Delete",
+          "backspace": "Backspace",
+          "enter": "Enter",
+          "tab": "Tab",
+          "pageUp": "Page Up",
+          "pageDown": "Page Down",
+          "home": "Home",
+          "end": "End",
+          "insert": "Insert",
+          "ctrl": "Ctrl",
+          "alt": "Alt",
+          "shift": "Shift"
+        }
       },
       "maskLeft": {
         "label": "遮罩軌道"

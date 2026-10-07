@@ -1191,7 +1191,23 @@
                 "altGraph": "{0} types characters on many keyboards. Press another key.",
                 "alsoRuns": "Also runs {0}",
                 "browserReload": "Replaces the browser’s reload shortcut",
-                "browserFind": "Replaces the browser’s find shortcut"
+                "browserFind": "Replaces the browser’s find shortcut",
+                "names": {
+                    "space": "Space",
+                    "escape": "Esc",
+                    "delete": "Delete",
+                    "backspace": "Backspace",
+                    "enter": "Enter",
+                    "tab": "Tab",
+                    "pageUp": "Page Up",
+                    "pageDown": "Page Down",
+                    "home": "Home",
+                    "end": "End",
+                    "insert": "Insert",
+                    "ctrl": "Ctrl",
+                    "alt": "Alt",
+                    "shift": "Shift"
+                }
             },
             "maskLeft": {
                 "label": "Mask Lane"

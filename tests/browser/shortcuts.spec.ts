@@ -804,3 +804,26 @@ test('held elevation, brush and flip keys act once while undo repeats', async ({
     })
     expect(counts).toEqual({ elevation: 1, brush: 1, flip: 1, flipVertical: 1, undo: 4 })
 })
+
+test('shortcut chips use the locale’s key names', async ({ page }) => {
+    await page.evaluate(() => {
+        const { settings, history, store } = window.editorTest
+        settings.locale = 'fr'
+        settings.keyboardShortcuts = { ...settings.keyboardShortcuts, openContextMenu: 'F9' }
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+    })
+    await page.keyboard.press('F9')
+    const hints = page.getByRole('menu').locator('span[aria-hidden="true"]')
+    await expect(hints.filter({ hasText: /^Suppr$/ })).toHaveCount(1)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press(',')
+    const chips = (await page.locator('.key-field-button').allTextContents()).map((text) =>
+        text.trim(),
+    )
+    expect(chips).toEqual(expect.arrayContaining(['Échap', 'Maj+U', 'Suppr', 'Espace']))
+    for (const english of ['Esc', 'Shift+U', 'Delete', 'Space'])
+        expect(chips).not.toContain(english)
+})
