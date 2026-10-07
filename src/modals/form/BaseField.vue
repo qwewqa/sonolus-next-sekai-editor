@@ -105,6 +105,9 @@ const fitLabel = () => {
     )
     if (stackLongValues && control && valueOverflows(control))
         fieldRoot.value?.classList.add('form-field-value-stacked')
+    // A label still clamped shows in full on hover.
+    if (clamped(text)) text.title = props.label
+    else text.removeAttribute('title')
 }
 const refitLabel = () => {
     cancelAnimationFrame(frame)

@@ -313,6 +313,11 @@ const onPlacementChange = () => {
                             class="peer absolute inset-0 size-full cursor-pointer opacity-0"
                             type="checkbox"
                             :aria-label="label"
+                            :title="
+                                settings[key]
+                                    ? i18n.modals.form.toggle.enabled
+                                    : i18n.modals.form.toggle.disabled
+                            "
                         />
                         <span
                             class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent"
@@ -395,6 +400,11 @@ const onPlacementChange = () => {
                             class="peer absolute inset-0 size-full cursor-pointer opacity-0"
                             type="checkbox"
                             :aria-label="i18n.settings.preview.antialias"
+                            :title="
+                                settings.previewAntialias
+                                    ? i18n.modals.form.toggle.enabled
+                                    : i18n.modals.form.toggle.disabled
+                            "
                         />
                         <span
                             class="preview-field preview-toggle peer-hover:shadow-accent peer-focus-visible:ring-2 peer-active:bg-accent peer-active:text-on-accent"
