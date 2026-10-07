@@ -250,6 +250,47 @@ test('a SUS with a negative beat is refused', async ({ page }) => {
     expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
 })
 
+test('level data with a value its format refuses names it, and is refused', async ({ page }) => {
+    // The editor's own level data for the USC chart.
+    await open(page, 'chart.usc', Buffer.from(JSON.stringify(usc)))
+    await expect(page.locator('.notification')).toHaveText('Imported USC chart')
+    const level = await page.evaluate(async () => {
+        const urls = new Map(
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => [new URL(entry.name).pathname, entry.name]),
+        )
+        const { state } = (await import(
+            urls.get('/src/history/index.ts') ?? '/src/history/index.ts'
+        )) as typeof import('../../src/history/index')
+        const { serializeToLevelData } = (await import(
+            urls.get('/src/levelData/serialize.ts') ?? '/src/levelData/serialize.ts'
+        )) as typeof import('../../src/levelData/serialize')
+        const { store, groups, stages } = state.value
+        return serializeToLevelData(1000, false, 0, store, groups, stages)
+    })
+    const withValue = (name: string, value: unknown) => {
+        const copy = structuredClone(level)
+        const item = copy.entities
+            .flatMap((entity) => entity.data)
+            .find((item) => item.name === name && 'value' in item)
+        if (!item) throw new Error(`no ${name}`)
+        Object.assign(item, { value })
+        return gzipSync(JSON.stringify(copy))
+    }
+    for (const [name, value, message] of [
+        ['connectorEase', 99, 'Invalid level: unknown connector ease'],
+        ['#BEAT', -1, 'Invalid level: invalid beat'],
+    ] as const) {
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await open(page, 'level-data', withValue(name, value))
+        await expect(page.getByRole('dialog')).toContainText(message)
+        await expect(page.getByRole('dialog')).not.toContainText('Unsupported')
+        expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+    }
+})
+
 // An unknown BPM id reads as 0 in SUS.
 for (const [label, lines] of [
     ['a zero BPM', ['#BPM02:0', '#00108:02']],

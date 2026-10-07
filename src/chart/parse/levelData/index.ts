@@ -172,6 +172,21 @@ export const parseLevelDataChart = (
     return chart
 }
 
+// A choice the editor doesn't know is unknown; other refused values are invalid.
+const assertValue: <T extends Type.TSchema>(
+    name: string,
+    schema: T,
+    value: unknown,
+) => asserts value is Type.Static<T> = (name, schema, value) => {
+    if (Value.Check(schema, value)) return
+    const isChoice = Type.IsUnion(schema) && schema.anyOf.every((option) => Type.IsLiteral(option))
+    const words = name
+        .replace(/^#/, '')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .toLowerCase()
+    throw new Error(`Invalid level: ${isChoice ? 'unknown' : 'invalid'} ${words}`)
+}
+
 export const getValue = <T extends Type.TSchema>(
     entity: LevelDataEntity,
     name: string,
@@ -181,7 +196,7 @@ export const getValue = <T extends Type.TSchema>(
     if (!data) throw new Error(`Invalid level: data ${name} not found`)
     if (!('value' in data)) throw new Error(`Invalid level: data ${name} has no value`)
 
-    Value.Assert(schema, data.value)
+    assertValue(name, schema, data.value)
     return data.value
 }
 
@@ -194,7 +209,7 @@ export const getOptionalValue = <T extends Type.TSchema>(
     if (!data) return
     if (!('value' in data)) return
 
-    Value.Assert(schema, data.value)
+    assertValue(name, schema, data.value)
     return data.value
 }
 
