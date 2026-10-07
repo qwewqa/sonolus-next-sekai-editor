@@ -23,6 +23,7 @@ import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
 import { createTransaction } from '../../state/transaction'
 import { alignNear, clamp } from '../../utils/math'
+import { createNameLayer, placeNames } from '../canvas/names'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
 import type { EditorDrawContext } from '../canvas/types'
@@ -857,6 +858,7 @@ watchEffect(() => {
             ctx.stroke()
         }
         drawElevationConnections(ctx, belowNotes)
+        const names = createNameLayer()
         const context: EditorDrawContext = {
             ctx,
             scale: layout.laneScale,
@@ -879,6 +881,7 @@ watchEffect(() => {
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,
             figureMiddle: 0.35,
+            names,
         }
         notes.beginFrame(timestamp)
         const padding = layout.laneScale * 1.6 + 8
@@ -906,6 +909,11 @@ watchEffect(() => {
             ctx.restore()
         }
         drawElevationConnections(ctx, aboveNotes)
+        // Names go over every row and connection, as on the chart.
+        ctx.save()
+        ctx.scale(layout.laneScale, layout.laneScale)
+        placeNames(context, names)
+        ctx.restore()
         for (const row of visibleRows) {
             if (selected.has(row.note) || row.note === hover) {
                 // At least the 0.2-lane placeholder a zero-width note draws.

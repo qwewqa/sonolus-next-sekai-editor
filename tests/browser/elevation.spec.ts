@@ -1760,3 +1760,94 @@ test('header controls take keys as dock controls do', async ({ page }) => {
     await page.keyboard.press('Escape')
     await expect(page.locator('.elevation-editor')).toHaveCount(0)
 })
+
+test('names draw after every row and skip overlaps, selected rows first', async ({
+    page,
+}, testInfo) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                isDynamicStages: true,
+                slides: [
+                    [{ ...base, beat: 6, left: 0, elevation: 2, stageId: 1 as never }],
+                    [{ ...base, beat: 6, left: 1, elevation: 2, stageId: 2 as never }],
+                ],
+            },
+            3,
+        )
+        view.cursorTime = 3
+    })
+    await open(page)
+    // Bodies and names drawn on the elevation canvas in the next frames, in order.
+    const draws = (selectIndex?: number) =>
+        page.evaluate(async (selectIndex) => {
+            const { history } = window.editorTest
+            const drawn: string[] = []
+            const prototype = CanvasRenderingContext2D.prototype
+            const { drawImage, fill, fillText } = prototype
+            const record = (canvas: unknown, entry: string) => {
+                if (
+                    canvas instanceof HTMLCanvasElement &&
+                    canvas.classList.contains('elevation-canvas')
+                )
+                    drawn.push(entry)
+            }
+            prototype.drawImage = function (...args: unknown[]) {
+                record(this.canvas, 'body')
+                return (drawImage as (...args: unknown[]) => void).apply(this, args)
+            }
+            prototype.fill = function (...args: unknown[]) {
+                record(this.canvas, 'body')
+                return (fill as (...args: unknown[]) => void).apply(this, args)
+            }
+            prototype.fillText = function (text, ...args) {
+                if (text === 'Center' || text === 'Side stage') record(this.canvas, text)
+                return fillText.call(this, text, ...args)
+            }
+            const rows = window.elevationTest.scene.elevationLayout.value.rows
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: selectIndex === undefined ? [] : [rows[selectIndex]!.note],
+            })
+            await window.editorTest.nextTick()
+            await new Promise<void>((resolve) =>
+                requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+            )
+            Object.assign(prototype, { drawImage, fill, fillText })
+            return drawn
+        }, selectIndex)
+    const names = (drawn: string[]) => drawn.filter((entry) => entry !== 'body')
+    const plain = await draws()
+    await page.locator('.elevation-canvas').screenshot({
+        path: testInfo.outputPath('elevation-names.png'),
+        style: '.notification { visibility: hidden }',
+    })
+    // One of the two overlapping names, after both bodies.
+    expect(new Set(names(plain))).toEqual(new Set(['Center']))
+    expect(plain.lastIndexOf('body')).toBeLessThan(plain.indexOf('Center'))
+    // A selected row's name wins.
+    const stageNames = await page.evaluate(() =>
+        window.elevationTest.scene.elevationLayout.value.rows.map(
+            (row) => window.editorTest.history.state.value.stages.get(row.note.stageId)?.name,
+        ),
+    )
+    const selected = await draws(stageNames.indexOf('Side stage'))
+    await page.locator('.elevation-canvas').screenshot({
+        path: testInfo.outputPath('elevation-names-selected.png'),
+        style: '.notification { visibility: hidden }',
+    })
+    expect(new Set(names(selected))).toEqual(new Set(['Side stage']))
+    expect(selected.lastIndexOf('body')).toBeLessThan(selected.indexOf('Side stage'))
+    // With Name Contrast, the name still draws once, last, split over its own body.
+    await page.evaluate(() => (window.editorTest.settings.nameContrast = true))
+    const contrast = await draws(stageNames.indexOf('Side stage'))
+    await page.locator('.elevation-canvas').screenshot({
+        path: testInfo.outputPath('elevation-names-contrast.png'),
+        style: '.notification { visibility: hidden }',
+    })
+    expect(new Set(names(contrast))).toEqual(new Set(['Side stage']))
+    expect(contrast.lastIndexOf('body')).toBeLessThan(contrast.indexOf('Side stage'))
+})
