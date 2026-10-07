@@ -129,11 +129,6 @@ class UnsupportedFileError extends Error {
     constructor() {
         super(i18n.value.commands.open.unsupported)
     }
-
-    // The loading dialog shows errors as text; this one is already a sentence.
-    override toString() {
-        return this.message
-    }
 }
 
 const isLevelDataLike = (data: unknown) =>

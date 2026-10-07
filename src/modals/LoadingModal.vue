@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { i18n } from '../i18n'
+import { errorMessage } from '../utils/error'
 import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{
@@ -36,8 +37,7 @@ onMounted(async () => {
         }
         console.error(error)
 
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        message.value = () => `${error}`
+        message.value = () => errorMessage(error)
     }
 })
 

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref, shallowRef } from 'vue'
+import { errorMessage } from '../utils/error'
 import { loadParticleFromScp, type LoadedParticle } from './particle'
 import { loadPreviewResource } from './resource'
 import { loadSkinFromScp, type LoadedSkin } from './skin'
@@ -55,7 +56,7 @@ const load = async (signal: AbortSignal) => {
         } catch (error) {
             if (signal.aborted) return
             console.error('Failed to load preview skin:', error)
-            skinError.value = error instanceof Error ? error.message : String(error)
+            skinError.value = errorMessage(error)
             skinStatus.value = 'missing'
             return
         }
@@ -106,7 +107,7 @@ export const usePreviewResources = () => {
     )
 
     const setGraphicsError = (error: unknown) => {
-        graphicsError.value = error instanceof Error ? error.message : String(error)
+        graphicsError.value = errorMessage(error)
     }
     const clearGraphicsError = () => {
         graphicsError.value = undefined

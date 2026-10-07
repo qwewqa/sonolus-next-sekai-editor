@@ -238,12 +238,14 @@ for (const [label, objects, message] of [
         const chart = { ...usc, usc: { ...usc.usc, objects: [...usc.usc.objects, ...objects] } }
         await open(page, 'chart.usc', Buffer.from(JSON.stringify(chart)))
         await expect(page.getByRole('dialog')).toContainText(message)
+        await expect(page.getByRole('dialog')).not.toContainText('Error:')
         expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
     })
 
 test('a SUS with a negative beat is refused', async ({ page }) => {
     await open(page, 'chart.sus', Buffer.from(`${sus}\n#TIL00: "0'-480:2"`))
     await expect(page.getByRole('dialog')).toContainText('Invalid level: negative beat')
+    await expect(page.getByRole('dialog')).not.toContainText('Error:')
     expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
 })
 
@@ -256,6 +258,7 @@ for (const [label, lines] of [
     test(`a SUS with ${label} is refused`, async ({ page }) => {
         await open(page, 'chart.sus', Buffer.from([sus, ...lines].join('\n')))
         await expect(page.getByRole('dialog')).toContainText('Invalid level: zero or negative BPM')
+        await expect(page.getByRole('dialog')).not.toContainText('Error:')
         expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
     })
 
