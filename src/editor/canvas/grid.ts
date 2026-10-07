@@ -1,6 +1,6 @@
 import type { State } from '../../state'
 import type { Entity } from '../../state/entities'
-import { beatToTime, getMeasureBeats } from '../../state/integrals/bpms'
+import { beatToTime, getMeasureBeats, timeToBeat } from '../../state/integrals/bpms'
 import { formatIntegerTime } from '../../utils/format'
 import type { Range } from '../../utils/range'
 import { formatBeatPosition, type BeatDisplay } from '../beatDisplay'
@@ -29,23 +29,33 @@ export const timeScaleEdgeLabelYs = (
     return ys
 }
 
+// Beat labels closer than this, in pane pixels, are a smear; skipping them bounds their count.
+const MIN_LABEL_SPACING = 2
+
+export type GridLabels = {
+    left: { text: string; y: number }[]
+    right: { text: string; y: number }[]
+}
+
 /** The time (left) and beat (right) labels the grid draws, by text and y. */
-const gridLabels = (
+export const gridLabels = (
     state: State,
     ups: number,
+    scale: number,
     beats: Range<number>,
     times: Range<number>,
     beatDisplay: BeatDisplay,
-) => {
-    const left: { text: string; y: number }[] = []
+): GridLabels => {
+    const left: GridLabels['left'] = []
     for (let time = Math.max(1, Math.ceil(times.min)); time <= times.max; time++)
         left.push({ text: formatIntegerTime(time), y: time * ups })
-    const right: { text: string; y: number }[] = []
-    for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max; beat++)
-        right.push({
-            text: formatBeatPosition(state.bpms, beat, beatDisplay),
-            y: beatToTime(state.bpms, beat) * ups,
-        })
+    const right: GridLabels['right'] = []
+    const gap = MIN_LABEL_SPACING / Math.abs(ups * scale)
+    for (let beat = Math.max(1, Math.ceil(beats.min)); beat <= beats.max;) {
+        const time = beatToTime(state.bpms, beat)
+        right.push({ text: formatBeatPosition(state.bpms, beat, beatDisplay), y: time * ups })
+        beat = Math.max(beat + 1, Math.ceil(timeToBeat(state.bpms, time + gap)))
+    }
     return { left, right }
 }
 
@@ -56,9 +66,9 @@ export const coveredLabelYs = (
     times: Range<number>,
     beatDisplay: BeatDisplay,
     boxes: { left: LabelBox[]; right: LabelBox[] },
+    labels = gridLabels(context.state, context.ups, context.scale, beats, times, beatDisplay),
 ): EdgeLabelYs => {
-    const { bounds, scale, state, ups } = context
-    const labels = gridLabels(state, ups, beats, times, beatDisplay)
+    const { bounds, scale } = context
     // A label's box in pane pixels: drawn from `edge` toward `align`, 0.4 tall.
     const covered = (
         boxes: LabelBox[],
@@ -95,6 +105,7 @@ export const drawGrid = (
     beatDisplay: BeatDisplay = 'measure',
     isBpmVisible = false,
     edgeLabelYs: EdgeLabelYs = { left: [], right: [] },
+    labels = gridLabels(context.state, context.ups, context.scale, beats, times, beatDisplay),
 ) => {
     const { ctx, bounds, scale, state, ups } = context
     ctx.save()
@@ -164,7 +175,6 @@ export const drawGrid = (
     const beatYs = [...bpmYs, ...edgeLabelYs.right]
     const near = (ys: number[], y: number) =>
         ys.some((other) => Math.abs(y - other) < LABEL_CLEARANCE)
-    const labels = gridLabels(state, ups, beats, times, beatDisplay)
     for (const { text, y } of labels.right) {
         if (near(beatYs, y)) continue
         drawText(context, text, 6.1, y, '#fff', 0.4, 'start', context.figureMiddle)

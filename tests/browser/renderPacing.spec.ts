@@ -140,3 +140,39 @@ test('dragging a dock edge scales the preview buffers and reallocates them once 
     expect(endHeight).toBeGreaterThan(height)
     expect(endOverlayWidth).toBeGreaterThan(overlayWidth)
 })
+
+test('a huge BPM still draws a chart frame quickly', async ({ page }) => {
+    await page.evaluate(() => (window.editorTest.settings.showPreview = false))
+    await settle(page)
+    const elapsed = await page.evaluate(async () => {
+        const { show, fixtures, view, nextTick } = window.editorTest
+        const nextChartFrame = () => {
+            const chart = window.editorFrames.chart
+            return new Promise<void>((resolve) => {
+                const frame = () => {
+                    if (window.editorFrames.chart > chart) resolve()
+                    else requestAnimationFrame(frame)
+                }
+                requestAnimationFrame(frame)
+            })
+        }
+        // Beat 4 is at 2 s, and every beat past it 6 µs later.
+        show(
+            {
+                ...fixtures.interaction,
+                bpms: [
+                    { beat: 0, bpm: 120 },
+                    { beat: 4, bpm: 10000000 },
+                ],
+            },
+            2.2,
+        )
+        await nextTick()
+        await nextChartFrame()
+        const start = performance.now()
+        view.time = 2.25
+        await nextChartFrame()
+        return performance.now() - start
+    })
+    expect(elapsed).toBeLessThan(100)
+})

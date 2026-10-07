@@ -718,6 +718,20 @@ test('a BPM label takes the place of beat labels near enough to overlap', () => 
     assert.deepEqual(draw(-10), ['9', '10', '11', '12'])
 })
 
+test('beat labels closer than 2px are skipped, so a huge BPM draws a bounded number', () => {
+    const { context, canvas } = makeContext({
+        bpms: [
+            { beat: 0, bpm: 120 },
+            { beat: 4, bpm: 100000 },
+        ],
+    })
+    // 2 s at 120 BPM, then 8 s at 0.06px per beat: about 13,000 beats in 800px.
+    drawGrid(context, { min: 0, max: 13337 }, { min: 0, max: 0 }, 1, 1, 'beat')
+    const texts = canvas.labels.map(({ text }) => text)
+    assert.deepEqual(texts.slice(0, 4), ['2', '3', '4', '5'])
+    assert.ok(texts.length > 300 && texts.length <= 404, `${texts.length}`)
+})
+
 const edgeTimeScale = (beat: number, editorLane: number): TimeScaleObject => ({
     groupId,
     beat,

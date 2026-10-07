@@ -21,7 +21,7 @@ import { groupOffscreenNotes, RANGE_LABEL_HEIGHT } from '../offscreenNotes'
 import { edgeLabelBoxes } from '../edgeLabels'
 import { createConnectorRenderer } from './connectors'
 import { drawEvent, drawEventInfinities } from './events'
-import { coveredLabelYs, drawGrid, timeScaleEdgeLabelYs } from './grid'
+import { coveredLabelYs, drawGrid, gridLabels, timeScaleEdgeLabelYs } from './grid'
 import { clearNameWidths, createNameLayer, placeNames } from './names'
 import { createNoteRenderer } from './notes'
 import { orderEntities, toDrawSteps, type DrawStep } from './ordering'
@@ -121,6 +121,18 @@ const contextInputs = computed(() => ({
     redrawVersion: redrawVersion.value,
 }))
 
+// Computed once per view, for the covered labels and the grid.
+const labels = computed(() =>
+    gridLabels(
+        sceneState.value,
+        viewBox.value.ups,
+        view.w / viewBox.value.w,
+        beats.value,
+        times.value,
+        settings.beatDisplay,
+    ),
+)
+
 // Grid labels under the time and beat labels over the chart are left out. Equal
 // results keep the same object, so they redraw the chart only when they change.
 const measureContext = document.createElement('canvas').getContext('2d')
@@ -132,6 +144,7 @@ const coveredYs = computed<EdgeLabelYs>((previous) => {
         times.value,
         settings.beatDisplay,
         edgeLabelBoxes.value,
+        labels.value,
     )
     const same = (a: number[], b: number[]) =>
         a.length === b.length && a.every((y, index) => y === b[index])
@@ -179,6 +192,7 @@ watchEffect(
         const beatDisplay = settings.beatDisplay
         const cursor = view.cursorTime
         const covered = coveredYs.value
+        const currentLabels = labels.value
         const currentWaveform = settings.waveform === 'off' ? undefined : inputs.state.bgm.waveform
         const offset = inputs.state.bgm.offset + bgmOffsetDelta.value
         void waveformVersion.value
@@ -214,6 +228,7 @@ watchEffect(
                 beatDisplay,
                 isBpmVisible,
                 edgeLabelYs,
+                currentLabels,
             )
             ctx.save()
             ctx.strokeStyle = '#fff'
