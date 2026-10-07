@@ -91,3 +91,38 @@ for (const locale of ['en', 'fr', 'tr', 'ja']) {
         expect(await stacked(page)).toEqual([])
     })
 }
+
+test('brush values stack too, with remove kept on the label line', async ({ page }) => {
+    await open(page, 'ja', 260)
+    await page.evaluate(async () => {
+        const { history, store, nextTick, settings } = window.editorTest
+        settings.propertiesCollapsed = ['selection']
+        const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
+        history.replaceState({ ...history.state.value, selectedEntities: [note] })
+        await nextTick()
+    })
+    await page.keyboard.press('b')
+    const tool = page.locator('#workspace-panel-properties')
+    await tool.locator('.brush-pick').click()
+    const row = tool.locator('[data-brush-key="noteStyle"]')
+    await expect(row.locator('.form-field')).toHaveClass(/form-field-value-stacked/)
+    const layout = await row.evaluate((row) => {
+        const box = (selector: string) => row.querySelector(selector)!.getBoundingClientRect()
+        const range = document.createRange()
+        range.selectNodeContents(row.querySelector('.form-field-text')!)
+        return {
+            remove: box('.brush-remove').toJSON() as DOMRect,
+            text: range.getBoundingClientRect().toJSON() as DOMRect,
+            control: box('.form-field-row > :not(.form-field-label)').toJSON() as DOMRect,
+        }
+    })
+    // Beside the label, not over the value below it.
+    expect(layout.remove.left).toBeGreaterThanOrEqual(layout.text.right)
+    expect(layout.remove.bottom).toBeLessThanOrEqual(layout.control.top)
+    expect(
+        Math.abs(
+            (layout.remove.top + layout.remove.bottom) / 2 -
+                (layout.text.top + layout.text.bottom) / 2,
+        ),
+    ).toBeLessThan(4)
+})

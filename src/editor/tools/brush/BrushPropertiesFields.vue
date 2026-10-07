@@ -8,6 +8,7 @@ import { defaultStageId } from '../../../history/stages'
 import { i18n } from '../../../i18n'
 import { modals } from '../../../modals'
 import { emptyLabelKey, unsetChoiceKey } from '../../../modals/form/emptyLabel'
+import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
 import { isEditableEntity } from '../../../state/operations/editable'
 import { interpolate, interpolateRaw } from '../../../utils/interpolate'
 import { notify } from '../../notification'
@@ -30,6 +31,8 @@ import {
 provide(emptyLabelKey, () => i18n.value.modals.form.unset.unchanged)
 // Rows leave the brush through their remove button.
 provide(unsetChoiceKey, false)
+// Long values go below their label, as in Selection and View.
+provide(stackLongValuesKey, true)
 
 // A blank entry is rejected and reverts; rows leave only through their remove button.
 const createModel = (key: BrushKey) =>
@@ -293,6 +296,19 @@ const clear = () => {
     .brush-remove,
     .brush-row :deep(.form-field-label) {
         --label-w: calc(100cqw - max(6.25rem, 50cqw) - 0.5rem);
+    }
+}
+
+/* A value stacked below its label leaves remove on the label line, in its column. */
+@container (min-width: 13.5rem) {
+    .brush-row:has(> .form-field-value-stacked) .brush-remove {
+        inset-block: auto;
+        top: calc(1rem - var(--remove-size) / 2);
+        margin-block: 0;
+    }
+
+    .brush-row :deep(.form-field-value-stacked .form-field-label) {
+        width: var(--label-w);
     }
 }
 
