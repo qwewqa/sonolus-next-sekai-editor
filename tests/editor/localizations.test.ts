@@ -152,6 +152,18 @@ test('division commands are named as their dialog is, as lane division commands 
     }
 })
 
+test('unit labels follow their locale’s pattern', () => {
+    const unit = '\\((?:초|밀리초|비트|레인|%|秒|毫秒|拍|ミリ秒)\\)'
+    // Japanese and Korean put a space before the parenthesis.
+    for (const locale of ['ja', 'ko'])
+        for (const [key, text] of Object.entries(read(locale)))
+            assert.doesNotMatch(text, new RegExp(`[^\\s]${unit}`), `${locale} ${key}`)
+    // Chinese uses full-width parentheses.
+    for (const locale of ['zhs', 'zht'])
+        for (const [key, text] of Object.entries(read(locale)))
+            assert.doesNotMatch(text, new RegExp(unit), `${locale} ${key}`)
+})
+
 test('the Japanese capture tooltip says what its prompt says', () => {
     const messages = read('ja')
     // As the prompt "キーを押すか、もう一度クリックして削除", not a longer sentence.

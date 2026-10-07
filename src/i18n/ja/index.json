@@ -704,7 +704,7 @@
     },
     "touch": {
       "title": "タッチ操作",
-      "quickScrollZone": "クイックスクロールゾーンの大きさ(画面右何%)",
+      "quickScrollZone": "クイックスクロールゾーン (%)",
       "scrollInertia": "スクロールの慣性",
       "longPressContextMenu": "長押しでコンテキストメニュー"
     },

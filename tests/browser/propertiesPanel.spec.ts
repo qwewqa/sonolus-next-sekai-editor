@@ -950,7 +950,7 @@ test('brush labels too narrow for a word take the line above their value', async
                     const content = node.textContent ?? ''
                     const range = document.createRange()
                     const broken: string[] = []
-                    // Words, also split before "(" and after "/", as in "건너뛰기(비트)".
+                    // Words, also split before "(" and after "/", as in "Bölüm Tekliği/Çiftliği".
                     for (const { 0: word, index } of content.matchAll(/\(?[^\s(/]+\/?/g)) {
                         range.setStart(node, index)
                         range.setEnd(node, index + word.length)

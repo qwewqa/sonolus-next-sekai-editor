@@ -27,7 +27,7 @@
       "changed": "배경음 변경됨",
       "modal": {
         "file": "파일",
-        "offset": "오프셋(밀리초)",
+        "offset": "오프셋 (밀리초)",
         "loading": "파일 불러오는 중…",
         "decoding": "오디오 디코딩 중…",
         "generating": "파형 생성 중…"
@@ -1262,7 +1262,7 @@
         "label": "크기"
       },
       "skip": {
-        "label": "건너뛰기(비트)"
+        "label": "건너뛰기 (비트)"
       },
       "stage": {
         "label": "스테이지"
@@ -1296,7 +1296,7 @@
         "label": "Y 오프셋"
       },
       "yOffsetBeat": {
-        "label": "Y 오프셋(비트)"
+        "label": "Y 오프셋 (비트)"
       },
       "noteStyle": {
         "label": "노트 색상",

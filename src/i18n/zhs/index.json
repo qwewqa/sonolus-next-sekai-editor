@@ -27,7 +27,7 @@
       "changed": "已更改背景音乐",
       "modal": {
         "file": "文件",
-        "offset": "偏移 (毫秒)",
+        "offset": "偏移（毫秒）",
         "loading": "正在载入文件…",
         "decoding": "正在解码音频…",
         "generating": "正在生成波形…"
