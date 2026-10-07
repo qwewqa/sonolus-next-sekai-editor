@@ -26,39 +26,52 @@ const brief = (notes: Brief[]) =>
         .map(({ beat, left, isAttached }) => ({ beat, left, isAttached }))
         .sort((a, b) => a.beat - b.beat)
 
-/** Head at 1, attached tick at 2, tail at 3, all selected, plus the beat-0 BPM if asked. */
-const seedSlide = (page: Page, withBpm: boolean) =>
-    page.evaluate((withBpm) => {
-        const { show, fixtures, history, view, store } = window.editorTest
-        const base = fixtures.interaction.slides[0]![0]!
-        show(
-            {
-                ...fixtures.interaction,
-                slides: [
-                    [
-                        { ...base, beat: 1, left: -4 },
-                        { ...base, beat: 2, isAttached: true },
-                        { ...base, beat: 3, left: -2 },
+/**
+ * Head at 1, attached tick at 2, tail at 3, all selected, plus the beat-0 BPM if asked
+ * and selected time scales of the given beats and values.
+ */
+const seedSlide = (page: Page, withBpm: boolean, timeScales: [number, number][] = []) =>
+    page.evaluate(
+        ({ withBpm, timeScales }) => {
+            const { show, fixtures, history, view, store } = window.editorTest
+            const base = fixtures.interaction.slides[0]![0]!
+            show(
+                {
+                    ...fixtures.interaction,
+                    timeScales: timeScales.map(([beat, timeScale]) => ({
+                        ...fixtures.events.timeScales[0]!,
+                        groupId: fixtures.interaction.slides[0]![0]!.groupId,
+                        beat,
+                        timeScale,
+                    })),
+                    slides: [
+                        [
+                            { ...base, beat: 1, left: -4 },
+                            { ...base, beat: 2, isAttached: true },
+                            { ...base, beat: 3, left: -2 },
+                        ],
                     ],
-                ],
-            },
-            1.5,
-        )
-        view.snapping = 'absolute'
-        view.division = 4
+                },
+                1.5,
+            )
+            view.snapping = 'absolute'
+            view.division = 4
 
-        history.replaceState({
-            ...history.state.value,
-            selectedEntities: [
-                ...[...history.state.value.store.slides.note.values()].flat(),
-                ...(withBpm
-                    ? [...store.getAllEntities()].filter(
-                          (entity) => entity.type === 'bpm' && entity.beat === 0,
-                      )
-                    : []),
-            ],
-        })
-    }, withBpm)
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [
+                    ...[...history.state.value.store.slides.note.values()].flat(),
+                    ...(withBpm
+                        ? [...store.getAllEntities()].filter(
+                              (entity) => entity.type === 'bpm' && entity.beat === 0,
+                          )
+                        : []),
+                    ...[...store.getAllEntities()].filter((entity) => entity.type === 'timeScale'),
+                ],
+            })
+        },
+        { withBpm, timeScales },
+    )
 
 const dragTail = async (page: Page) => {
     const start = await point(page, -1, 3)
@@ -106,6 +119,10 @@ const result = (page: Page) =>
             bpms: [...window.editorTest.store.getAllEntities()].flatMap((entity) =>
                 entity.type === 'bpm' ? [{ beat: entity.beat, bpm: entity.bpm }] : [],
             ),
+            timeScales: [...window.editorTest.store.getAllEntities()].flatMap((entity) =>
+                entity.type === 'timeScale' ? [[entity.beat, entity.timeScale]] : [],
+            ),
+            reparsedTimeScales: reparsed.timeScales.map(({ beat, timeScale }) => [beat, timeScale]),
             reparsed: reparsed.slides.map((slide) =>
                 slide.map(({ beat, left, isAttached }) => ({ beat, left, isAttached })),
             ),
@@ -139,4 +156,32 @@ test('the beat-0 BPM stays put in a Select move earlier and does not stop the re
     expect(brief(notes)).toEqual(moved)
     expect(slides).toBe(1)
     expect(bpms).toEqual([{ beat: 0, bpm: 120 }])
+})
+
+test('beat-0 time scales, a pair too, stay put in a Select move earlier and do not stop the rest', async ({
+    page,
+}) => {
+    await seedSlide(page, true, [
+        [0, 2],
+        [0, 0.5],
+    ])
+    expect(brief(await dragTail(page))).toEqual(moved)
+    const { notes, slides, bpms, reparsedTimeScales } = await result(page)
+    expect(brief(notes)).toEqual(moved)
+    expect(slides).toBe(1)
+    expect(bpms).toEqual([{ beat: 0, bpm: 120 }])
+    // The pair keeps its order.
+    expect(reparsedTimeScales).toEqual([
+        [0, 2],
+        [0, 0.5],
+    ])
+})
+
+test('a time scale after beat 0 still stops a Select move at beat 0', async ({ page }) => {
+    await seedSlide(page, false, [[0.5, 3]])
+    expect(brief(await dragTail(page))).toEqual(
+        moved.map((note) => ({ ...note, beat: note.beat + 0.5 })),
+    )
+    const { timeScales } = await result(page)
+    expect(timeScales).toEqual([[0, 3]])
 })

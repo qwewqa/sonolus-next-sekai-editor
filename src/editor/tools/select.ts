@@ -472,15 +472,17 @@ const moveEntities = (
     return transaction.commit(selectedEntities)
 }
 
-const isInitialBpm = (entity: Entity) => entity.type === 'bpm' && entity.beat === 0
+/** The starting BPM and time scales. */
+const isInitial = (entity: Entity) =>
+    (entity.type === 'bpm' || entity.type === 'timeScale') && entity.beat === 0
 
-/** The beat-0 BPM stays at 0 when the rest moves earlier. */
-const isPinned = (entity: Entity, beatOffset: number) => beatOffset < 0 && isInitialBpm(entity)
+/** Starting values stay at 0 when the rest moves earlier. */
+const isPinned = (entity: Entity, beatOffset: number) => beatOffset < 0 && isInitial(entity)
 
 /** Shifts a move later so its earliest object stops at beat 0, as paste does. */
 const toMoveBeatOffset = (active: MoveActive, beatOffset: number) =>
     active.entities.reduce(
-        (offset, entity) => (isInitialBpm(entity) ? offset : Math.max(offset, -entity.beat)),
+        (offset, entity) => (isInitial(entity) ? offset : Math.max(offset, -entity.beat)),
         beatOffset,
     )
 
