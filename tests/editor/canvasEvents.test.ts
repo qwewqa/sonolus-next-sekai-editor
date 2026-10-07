@@ -790,6 +790,22 @@ test('time and beat labels under the labels over the chart are left out', () => 
     for (const shown of ['00:02', '2', '4']) assert.ok(texts.includes(shown), shown)
 })
 
+test('only grid labels in a covering band are measured', () => {
+    const { context, canvas } = makeContext()
+    const measured: string[] = []
+    const measure = canvas.measureText.bind(canvas)
+    canvas.measureText = (text) => {
+        measured.push(text)
+        return measure(text)
+    }
+    const row = { left: 0, right: 200, top: 890, bottom: 914 }
+    coveredLabelYs(context, { min: 1, max: 5 }, { min: 1, max: 2 }, 'beat', {
+        left: [row],
+        right: [row],
+    })
+    assert.deepEqual(measured, ['00:01', '3'])
+})
+
 test('a BPM label stays drawn where a time scale label reaches the beat column', () => {
     const { context, canvas } = makeContext({
         bpms: [

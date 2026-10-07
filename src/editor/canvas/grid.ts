@@ -66,14 +66,15 @@ export const coveredLabelYs = (
         edge: number,
         align: 'start' | 'end',
     ) => {
+        const top = (y - 0.2 - bounds.t) * scale
+        const bottom = (y + 0.2 - bounds.t) * scale
+        // Measure only labels in a box's band.
+        const band = boxes.filter((box) => box.top < bottom && box.bottom > top)
+        if (!band.length) return false
         const width = measureText(context, text)
         const left = ((align === 'start' ? edge : edge - width) - bounds.l) * scale
         const right = left + width * scale
-        const top = (y - 0.2 - bounds.t) * scale
-        const bottom = (y + 0.2 - bounds.t) * scale
-        return boxes.some(
-            (box) => box.left < right && box.right > left && box.top < bottom && box.bottom > top,
-        )
+        return band.some((box) => box.left < right && box.right > left)
     }
     return {
         left: labels.left
