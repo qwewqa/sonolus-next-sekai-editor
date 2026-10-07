@@ -60,7 +60,10 @@ export const stepOption = (
     }
 }
 
-const stepsClosed = !isApplePlatform()
+const isApple = isApplePlatform()
+
+// Apple system selects open on these instead of stepping.
+const openKeys = new Set(['ArrowDown', 'ArrowUp'])
 
 // An open list holds every key, as a system one does; its own keys still work.
 const hold = (event: KeyboardEvent) => {
@@ -87,19 +90,22 @@ const step = (select: HTMLSelectElement, key: string) => {
 
 const onKeydown = (event: KeyboardEvent) => {
     if (hold(event)) return
-    // The shared list opens on arrows; elsewhere a closed one steps, one change each.
+    // A closed shared list steps, one change each; Apple arrows open it where scripts can.
     const select = event.target
     if (
-        !stepsClosed ||
         !(select instanceof HTMLSelectElement) ||
         event.altKey ||
         event.ctrlKey ||
         event.metaKey ||
-        !stepKeys.has(event.key) ||
+        !(isApple ? openKeys : stepKeys).has(event.key) ||
         !hasSharedList(select)
     )
         return
     event.preventDefault()
+    if (isApple && 'showPicker' in select) {
+        select.showPicker()
+        return
+    }
     // After the page's own handlers see the key, as a system select's step comes.
     const { key } = event
     setTimeout(() => {

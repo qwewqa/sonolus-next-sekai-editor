@@ -467,6 +467,40 @@ test('Apple platforms open the list on arrows, as their system selects do', asyn
     expect(await noteStyles(page)).toEqual(['purple'])
 })
 
+test('Apple platforms step on arrows where a script cannot open the list', async ({ page }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' })
+        Object.defineProperty(navigator, 'userAgentData', { get: () => undefined })
+        // As in WebKit.
+        delete (HTMLSelectElement.prototype as Partial<HTMLSelectElement>).showPicker
+    })
+    await boot(page, sidebar)
+    await selectNotes(page, [0])
+    const select = field(panel(page), 'Note Color')
+    await select.focus()
+    await page.keyboard.press('ArrowDown')
+    await expect.poll(() => noteStyles(page)).toEqual(['cyan'])
+    await page.keyboard.press('ArrowDown')
+    await expect.poll(() => noteStyles(page)).toEqual(['black'])
+    await page.keyboard.press('ArrowUp')
+    await expect.poll(() => noteStyles(page)).toEqual(['cyan'])
+    expect(await isOpen(select)).toBe(false)
+    // Other keys stay with the browser, as on a Mac system select.
+    await page.keyboard.press('Home')
+    await page.keyboard.press('ArrowLeft')
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve)))
+    expect(await noteStyles(page)).toEqual(['cyan'])
+    // Each step is its own undo.
+    for (const style of ['black', 'cyan', 'purple']) {
+        await page.evaluate(async () => {
+            window.editorTest.history.undoState()
+            await window.editorTest.nextTick()
+        })
+        await selectNotes(page, [0])
+        expect(await noteStyles(page)).toEqual([style])
+    }
+})
+
 test('high contrast keeps the list edge, the check and one copy of the value', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active' })
     await boot(page, sidebar)
