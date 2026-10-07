@@ -226,4 +226,15 @@ const isDrawerOpen = computed(() => drawerSide.value === props.side)
         0 1px 0 rgb(0 0 0 / 0.3),
         0 6px 12px -6px rgb(0 0 0 / 0.45);
 }
+
+/* Overlay scrollbars keep clear of the resize handle's half over the dock. */
+.workspace-dock-body-left {
+    --overlay-scrollbar-inset: 0.375rem;
+}
+
+@media (pointer: coarse) {
+    .workspace-dock-body-left {
+        --overlay-scrollbar-inset: 0.625rem;
+    }
+}
 </style>

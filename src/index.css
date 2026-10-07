@@ -89,6 +89,18 @@ html[data-app-inactive] *::after {
     }
 }
 
+/* Dock scrollers draw an `OverlayScrollbar` instead of a native one, so they
+   reserve no gutter. Forced colors keep the native scrollbar. */
+@media not (forced-colors: active) {
+    .overlay-scroller {
+        scrollbar-width: none;
+    }
+
+    .overlay-scroller::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 /* Menus' shared surface; edges and focus are outlines, which high contrast keeps. */
 @layer components {
     .popup-surface {

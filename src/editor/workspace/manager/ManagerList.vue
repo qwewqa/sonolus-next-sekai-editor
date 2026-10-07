@@ -23,6 +23,7 @@ import CopyIcon from '../../commands/copy/CopyIcon.vue'
 import SelectIcon from '../../commands/select/SelectIcon.vue'
 import ResetIcon from '../../commands/reset/ResetIcon.vue'
 import CloseIcon from '../CloseIcon.vue'
+import OverlayScrollbar from '../OverlayScrollbar.vue'
 import { workspaceSize } from '..'
 import { hasScrollMemory, useScrollMemory } from '../useScrollMemory'
 import { isFolderExpanded, setFolderExpanded, type EntryPlace } from './folders'
@@ -239,8 +240,9 @@ const observer = new ResizeObserver((entries) => {
         void revealTarget()
     }
 })
-// Classic scrollbars reserve a gutter at the right (see the styles below). The
-// rows' own 6px inset gives way to it, so they stay as centered as they can.
+// Classic scrollbars, kept in forced colors, reserve a gutter at the right (see
+// the styles below). The rows' own 6px inset gives way to it, so they stay as
+// centered as they can.
 const gutterPadding = shallowRef<string>()
 watch(list, (element, previous) => {
     if (previous) observer.unobserve(previous)
@@ -1597,7 +1599,7 @@ const folderEyeLabel = (item: FolderItem) =>
         <div class="relative flex min-h-0 flex-1 flex-col">
             <ul
                 ref="list"
-                class="manager-entries relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-1.5 pt-1.5"
+                class="manager-entries overlay-scroller relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-1.5 pt-1.5"
                 :class="{
                     'manager-entries-dragging': drag?.started,
                     'manager-entries-scrolled': scrolled,
@@ -1737,6 +1739,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     </button>
                 </li>
             </ul>
+            <OverlayScrollbar :target="list" />
             <!-- Otherwise it floats in reach over the list, which leaves room below
         its last row and fades rows out behind it only while more lie below.
         The buttons are the only things drawn here. -->
@@ -1974,22 +1977,24 @@ const folderEyeLabel = (item: FolderItem) =>
     scale: 0.88;
 }
 
-/*
- * Classic scrollbars take their room whether or not the list overflows, and
- * the band reserves the same gutter, so adding a row never shifts the columns
- * and the band's count lines up with the rows' counts.
- */
-.manager-entries {
-    scrollbar-gutter: stable;
-    scrollbar-width: thin;
-}
-
 /* Rows scrolled under the band: a hairline, a soft shadow and a short fade. */
 .manager-band {
     overflow: hidden;
-    scrollbar-gutter: stable;
-    scrollbar-width: thin;
     transition: box-shadow 150ms;
+}
+
+/*
+ * The overlay bar takes no room. Forced colors keep classic scrollbars, which
+ * take their room whether or not the list overflows, and the band reserves the
+ * same gutter, so adding a row never shifts the columns and the band's count
+ * lines up with the rows' counts.
+ */
+@media (forced-colors: active) {
+    .manager-entries,
+    .manager-band {
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+    }
 }
 
 .manager-band-raised {

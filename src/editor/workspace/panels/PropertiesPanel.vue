@@ -20,6 +20,7 @@ import SelectionProperties from '../properties/SelectionProperties.vue'
 import ToolProperties from '../properties/ToolProperties.vue'
 import ViewProperties from '../properties/ViewProperties.vue'
 import ChevronIcon from '../ChevronIcon.vue'
+import OverlayScrollbar from '../OverlayScrollbar.vue'
 import { useScrollMemory } from '../useScrollMemory'
 
 const root = useTemplateRef<HTMLElement>('root')
@@ -166,7 +167,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
 </script>
 
 <template>
-    <div ref="root" class="properties-panel h-full w-full bg-modal text-fg">
+    <div ref="root" class="properties-panel relative h-full w-full bg-modal text-fg">
         <!-- Constrained: one section at a time behind a fixed tab strip. -->
         <div v-if="presentation === 'tabs'" class="flex h-full flex-col">
             <!-- Section tabs in a lavender band. Like the rail's tabs, the shown
@@ -216,7 +217,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
                 ref="scroller"
                 :key="active"
                 v-scroll-edges.end
-                class="properties-scroller min-h-0 flex-1 scroll-pt-2 overflow-y-auto overscroll-contain"
+                class="properties-scroller overlay-scroller min-h-0 flex-1 scroll-pt-2 overflow-y-auto overscroll-contain"
                 role="tabpanel"
                 :aria-labelledby="headerId(active)"
                 @scroll.passive="updateRaised"
@@ -232,7 +233,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
             v-else-if="presentation === 'sections'"
             ref="scroller"
             v-scroll-edges.end
-            class="properties-scroller properties-scroller-sections h-full scroll-pt-12 overflow-y-auto overscroll-contain"
+            class="properties-scroller properties-scroller-sections overlay-scroller h-full scroll-pt-12 overflow-y-auto overscroll-contain"
             @scroll.passive="updateRaised"
         >
             <section
@@ -271,22 +272,25 @@ const onTabKeydown = (event: KeyboardEvent) => {
                 </div>
             </section>
         </div>
+        <OverlayScrollbar :target="scroller" />
     </div>
 </template>
 
 <style scoped>
-/* Classic scrollbars keep their room, so selecting more objects never shifts
-   the fields sideways. */
-.properties-scroller {
-    scrollbar-gutter: stable;
-}
+/* The overlay bar takes no room. Forced colors keep classic scrollbars, which
+   keep their room so selecting more objects never shifts the fields sideways. */
+@media (forced-colors: active) {
+    .properties-scroller {
+        scrollbar-gutter: stable;
+    }
 
-/* Stacked section bands stick inside the scroller and cannot paint into a
-   reserved gutter, so they would stop short of the panel edge: reserve none,
-   and keep the scrollbar thin when it does appear. */
-.properties-scroller-sections {
-    scrollbar-gutter: auto;
-    scrollbar-width: thin;
+    /* Stacked section bands stick inside the scroller and cannot paint into a
+       reserved gutter, so they would stop short of the panel edge: reserve none,
+       and keep the scrollbar thin when it does appear. */
+    .properties-scroller-sections {
+        scrollbar-gutter: auto;
+        scrollbar-width: thin;
+    }
 }
 
 .properties-tabs {

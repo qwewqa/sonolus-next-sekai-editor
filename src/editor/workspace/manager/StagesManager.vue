@@ -3,6 +3,7 @@ import { vScrollEdges } from '../../../directives/scrollEdges'
 import { nextTick, useTemplateRef } from 'vue'
 import { checkDynamicStages, isDynamicStages } from '../../../history/dynamicStages'
 import { i18n } from '../../../i18n'
+import OverlayScrollbar from '../OverlayScrollbar.vue'
 import ManagerList from './ManagerList.vue'
 import ManagerRow from './ManagerRow.vue'
 import { stageManager } from './stages'
@@ -12,6 +13,7 @@ defineProps<{
 }>()
 
 const root = useTemplateRef<HTMLDivElement>('root')
+const disabledBody = useTemplateRef<HTMLDivElement>('disabledBody')
 
 const onEnable = async (event: MouseEvent) => {
     const keyboard = event.detail === 0
@@ -32,7 +34,7 @@ const onEnable = async (event: MouseEvent) => {
             :model="stageManager"
             :scroll-key
         />
-        <div v-else class="manager-disabled flex min-h-0 flex-1 flex-col text-fg">
+        <div v-else class="manager-disabled relative flex min-h-0 flex-1 flex-col text-fg">
             <!-- The band stays so the panel keeps its shape, muted while unavailable. -->
             <div
                 class="manager-band shrink-0 bg-header px-1.5 py-1 [@media(pointer:coarse)]:py-0.5"
@@ -49,7 +51,11 @@ const onEnable = async (event: MouseEvent) => {
                     :eye-label="i18n.workspace.stages.showAll"
                 />
             </div>
-            <div v-scroll-edges class="flex min-h-0 flex-col items-start gap-3 overflow-y-auto p-4">
+            <div
+                ref="disabledBody"
+                v-scroll-edges
+                class="overlay-scroller flex min-h-0 flex-col items-start gap-3 overflow-y-auto p-4"
+            >
                 <p class="text-fg/80">{{ i18n.workspace.stages.disabled }}</p>
                 <button
                     type="button"
@@ -61,6 +67,7 @@ const onEnable = async (event: MouseEvent) => {
                     <span class="min-w-0">{{ i18n.workspace.stages.enable }}</span>
                 </button>
             </div>
+            <OverlayScrollbar :target="disabledBody" />
         </div>
     </div>
 </template>
