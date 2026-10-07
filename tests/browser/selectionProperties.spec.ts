@@ -446,6 +446,16 @@ test.describe('brush', () => {
         await expect(tool(page).getByText('Brush Properties')).toBeVisible()
     })
 
+    test('undo just after a committed value leaves the value as set', async ({ page }) => {
+        await addBrushProperty(tool(page), 'size')
+        const size = tool(page).locator('[data-brush-key="size"] input')
+        await size.fill('4')
+        await size.press('Enter')
+        await size.press('ControlOrMeta+z')
+        await size.blur()
+        await expect(size).toHaveValue('4')
+    })
+
     test('a press on an Add Property heading keeps focus in the menu', async ({ page }) => {
         const add = tool(page).getByRole('button', { name: 'Add Property', exact: true })
         await add.click()
@@ -900,4 +910,46 @@ test.describe('brush on a phone', () => {
         await expect(size).toBeVisible()
         await expect(size).not.toBeFocused()
     })
+})
+
+test('undo just after a committed edit undoes it in the chart, not only in the field', async ({
+    page,
+}) => {
+    await showSlides(page, [[{ beat: 1, left: 3 }]])
+    const left = () =>
+        page.evaluate(() => window.editorTest.snapshot().notes.map((note) => note.left))
+    const canUndo = () => page.evaluate(() => window.editorTest.history.canUndo.value)
+    const lane = control(page, 'Lane')
+    await expect(lane).toHaveValue('3')
+    await lane.fill('5')
+    await lane.press('Enter')
+    await expect.poll(left).toEqual([5])
+    await expect(lane).toBeFocused()
+    await lane.press('ControlOrMeta+z')
+    await expect.poll(left).toEqual([3])
+    await expect(lane).toHaveValue('3')
+    expect(await canUndo()).toBe(false)
+    // Redo, too, while the field holds its committed value.
+    await lane.press('ControlOrMeta+y')
+    await expect.poll(left).toEqual([5])
+    await expect(lane).toHaveValue('5')
+    await lane.press('ControlOrMeta+z')
+    await expect.poll(left).toEqual([3])
+    // Leaving the field commits nothing.
+    await lane.blur()
+    expect(await left()).toEqual([3])
+    expect(await canUndo()).toBe(false)
+})
+
+test('undo during typing in a field stays in the field', async ({ page }) => {
+    await showSlides(page, [[{ beat: 1, left: 3 }]])
+    const lane = control(page, 'Lane')
+    await lane.fill('5')
+    await lane.press('Enter')
+    await lane.pressSequentially('7')
+    await lane.press('ControlOrMeta+z')
+    await expect(lane).toHaveValue('5')
+    expect(
+        await page.evaluate(() => window.editorTest.snapshot().notes.map((note) => note.left)),
+    ).toEqual([5])
 })

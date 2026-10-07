@@ -14,6 +14,7 @@ import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 import { isUnset, mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
+import { trackTyping } from './resync'
 
 defineProps<{
     label: string
@@ -32,6 +33,7 @@ const edit = inject(numberEditKey, undefined)
 const owner = Symbol('number field')
 const text = ref(`${modelValue.value ?? ''}`)
 let dirty = false
+trackTyping(input, () => dirty)
 
 const reset = () => {
     dirty = false

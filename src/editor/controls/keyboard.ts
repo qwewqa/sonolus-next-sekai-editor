@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted, watch } from 'vue'
 import { selectedEntities } from '../../history/selectedEntities'
 import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
+import { holdsTyping } from '../../modals/form/resync'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { takesDockKeys } from '../workspace'
@@ -103,6 +104,13 @@ const onKeydown = (event: KeyboardEvent) => {
 
     const commandChord = isCommandChord(event) && isCharacter(event.key)
     const active = document.activeElement
+    const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
+    // A field showing its committed value passes undo and redo to the editor.
+    const passesHistory =
+        commandChord &&
+        isTextEntry(active) &&
+        names.some((name) => name === 'undo' || name === 'redo') &&
+        !holdsTyping(active)
     // In docks, fields keep their keys; other controls pass only unclaimed Ctrl or Cmd chords.
     // Tool dialogs float over the chart, so only their fields and selects hold keys that way.
     const inDialog = isInToolDialog(active)
@@ -110,11 +118,11 @@ const onKeydown = (event: KeyboardEvent) => {
         takesDockKeys(active) ||
         (inDialog && (isTextEntry(active) || active instanceof HTMLSelectElement))
     ) {
-        if (!commandChord || event.defaultPrevented || isTextEntry(active)) return
+        if (!commandChord || event.defaultPrevented || (isTextEntry(active) && !passesHistory))
+            return
     }
     if (inDialog && active && movesFocus(active, event.key)) return
 
-    const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
     // Selected page text keeps its native copy and cut, and the objects stay as they are.
     if (
         isCommandChord(event) &&
@@ -128,7 +136,11 @@ const onKeydown = (event: KeyboardEvent) => {
     }
     if (!names.length) return
     // A command chord has no native use outside text entry, so selects and toggles drop it.
-    if (keepsDefault(event) && !(isCommandChord(event) && !isTextEntry(event.target))) return
+    if (
+        keepsDefault(event) &&
+        !(isCommandChord(event) && (passesHistory || !isTextEntry(event.target)))
+    )
+        return
 
     // Handled keys skip browser defaults such as Firefox quick find, WebKit Backspace
     // navigation and Ctrl+S saving the page; zoom and tab keys keep theirs.

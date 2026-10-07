@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type Ref } from 'vue'
 import BaseField from './BaseField.vue'
-import { resyncInput, revertOnEscape } from './resync'
+import { resyncInput, revertOnEscape, trackTypedText } from './resync'
 
 defineProps<{
     label: string
@@ -16,6 +16,8 @@ const modelValue = defineModel<number>({
     required: true,
     set: (value) => (input.value?.reportValidity() ? value : modelValue.value),
 })
+
+trackTypedText(input, () => `${modelValue.value}`)
 
 const onFocus = (event: FocusEvent) => {
     ;(event.currentTarget as HTMLInputElement | null)?.select()
