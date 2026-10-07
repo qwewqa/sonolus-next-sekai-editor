@@ -297,23 +297,15 @@ onUnmounted(() => {
             role="menu"
             tabindex="-1"
             :aria-label="i18n.contextMenu.title"
-            class="context-menu fixed z-50 flex max-h-[calc(var(--viewport-height)-1rem)] w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-modal text-sm text-fg shadow-xl outline-none ring-1 ring-fg/10"
+            class="context-menu popup-surface popup-sheet fixed z-50 max-h-[calc(var(--viewport-height)-1rem)]"
             :style="{ left: `${position.left}px`, top: `${position.top}px` }"
             @keydown.stop="onKeydown"
             @contextmenu.prevent
         >
             <!-- The fade marks more items; the menu's own chrome stays crisp. -->
-            <div
-                v-scroll-edges
-                role="none"
-                class="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-1"
-            >
+            <div v-scroll-edges role="none" class="popup-scroller">
                 <template v-for="(group, index) in actions" :key="index">
-                    <div
-                        v-if="index > 0"
-                        role="separator"
-                        class="mx-2 my-1 border-t border-fg/15"
-                    />
+                    <div v-if="index > 0" role="separator" class="popup-separator" />
                     <div role="none">
                         <button
                             v-for="{ name, title, icon, shortcut } in group"
@@ -321,7 +313,7 @@ onUnmounted(() => {
                             type="button"
                             role="menuitem"
                             tabindex="-1"
-                            class="flex min-h-9 w-full items-center gap-3 rounded px-3 py-2 text-left transition-colors hover:bg-button focus-visible:bg-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(pointer:coarse)]:min-h-11"
+                            class="popup-item"
                             :class="{ 'text-danger': name === 'delete' }"
                             @click="execute(name)"
                         >
@@ -349,16 +341,3 @@ onUnmounted(() => {
         </div>
     </Teleport>
 </template>
-
-<style scoped>
-@media (width < 640px) {
-    .context-menu {
-        left: 8px !important;
-        right: 8px;
-        top: auto !important;
-        bottom: 8px;
-        width: auto;
-        max-height: min(calc(var(--viewport-height) * 0.7), calc(var(--viewport-height) - 16px));
-    }
-}
-</style>

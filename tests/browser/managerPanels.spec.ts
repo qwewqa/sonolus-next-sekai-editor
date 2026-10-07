@@ -1110,7 +1110,9 @@ test('deleting an entry keeps the rest of the selection', async ({ page }) => {
     expect(selection).toEqual({ count: defaultNotes, groups: [1], current: true })
 })
 
-test('keyboard focus in the action menu shows a ring', async ({ page }) => {
+test('keyboard focus in the action menu shows an inset outline, which high contrast keeps', async ({
+    page,
+}) => {
     await seedGroups(page, ['Default', 'Other group'])
     const panel = await openGroups(page)
     await panel.getByRole('button', { name: 'More Actions for Other group' }).focus()
@@ -1118,7 +1120,18 @@ test('keyboard focus in the action menu shows a ring', async ({ page }) => {
     await page.keyboard.press('ArrowDown')
     const focused = page.locator('[role="menuitem"]:focus')
     await expect(focused).toHaveCount(1)
-    expect(await focused.evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/inset/)
+    const style = await focused.evaluate((e) => {
+        const { outlineStyle, outlineWidth, outlineOffset } = getComputedStyle(e)
+        return { outlineStyle, outlineWidth, outlineOffset }
+    })
+    expect(style).toEqual({ outlineStyle: 'solid', outlineWidth: '2px', outlineOffset: '-2px' })
+    // So is the menu's edge.
+    expect(
+        await page.getByRole('menu').evaluate((e) => {
+            const { outlineStyle, outlineWidth } = getComputedStyle(e)
+            return { outlineStyle, outlineWidth }
+        }),
+    ).toEqual({ outlineStyle: 'solid', outlineWidth: '1px' })
 })
 
 test('stages disabled state keeps its band and fits narrow tiles', async ({ page }) => {

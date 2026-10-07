@@ -262,7 +262,7 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
             :[workspaceDockAttribute]="'menu'"
             role="menu"
             :aria-label="label"
-            class="manager-menu fixed z-50 flex w-max min-w-[min(12rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg bg-modal text-sm text-fg shadow-xl ring-1 ring-fg/10"
+            class="manager-menu popup-surface fixed z-50"
             :class="{ invisible: !placement }"
             :style="{
                 left: `${placement?.left ?? 0}px`,
@@ -274,17 +274,12 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
             @contextmenu.prevent
         >
             <!-- The fade marks more items; the menu's own chrome stays crisp. -->
-            <div
-                ref="scroller"
-                v-scroll-edges
-                role="none"
-                class="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-1"
-            >
+            <div ref="scroller" v-scroll-edges role="none" class="popup-scroller">
                 <template v-for="(section, index) in sections" :key="index">
                     <div
                         v-if="section.group !== undefined && index > 0"
                         role="separator"
-                        class="mx-2 my-1 shrink-0 border-t border-fg/15"
+                        class="popup-separator"
                     />
                     <div
                         :role="section.group === undefined ? 'none' : 'group'"
@@ -297,7 +292,7 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                             v-if="section.group !== undefined"
                             :id="`${headingId}-${index}`"
                             aria-hidden="true"
-                            class="manager-menu-heading shrink-0 px-3 pb-1 pt-2 text-xs font-bold text-fg/80"
+                            class="manager-menu-heading popup-heading"
                         >
                             {{ section.group }}
                         </div>
@@ -305,14 +300,14 @@ const onSelect = (event: MouseEvent, item: ManagerMenuItem) => {
                             <div
                                 v-if="item.separated || item.destructive"
                                 role="separator"
-                                class="mx-2 my-1 shrink-0 border-t border-fg/15"
+                                class="popup-separator"
                             />
                             <button
                                 type="button"
                                 :role="item.checked === undefined ? 'menuitem' : 'menuitemradio'"
                                 :aria-checked="item.checked"
                                 tabindex="-1"
-                                class="manager-menu-item flex min-h-9 w-full shrink-0 items-center gap-3 rounded px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg enabled:focus-visible:bg-button enabled:active:bg-accent enabled:active:text-on-accent disabled:opacity-40 [@media(hover:hover)]:enabled:hover:bg-button [@media(pointer:coarse)]:min-h-11"
+                                class="manager-menu-item popup-item"
                                 :class="{ 'text-danger': item.destructive }"
                                 :disabled="item.disabled"
                                 :data-menu-key="item.key"
