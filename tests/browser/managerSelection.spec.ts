@@ -361,6 +361,23 @@ test('the keyboard extends, selects all, deletes and stops selecting', async ({ 
     expect(await historyLength(page)).toBe(0)
 })
 
+test('closing the delete prompt by a button returns focus to the row', async ({ page }) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    await nameButton(list, 'Other').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    await page.keyboard.press('Shift+ArrowDown')
+    await expect(nameButton(list, 'Lead')).toBeFocused()
+    await page.keyboard.press('Delete')
+    const dialog = page.locator('dialog')
+    await expect(dialog).toContainText('Delete the selected groups (2)')
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).focus()
+    await page.keyboard.press('Enter')
+    await expect(dialog).toHaveCount(0)
+    await expect(nameButton(list, 'Lead')).toBeFocused()
+    expect(await historyLength(page)).toBe(0)
+})
+
 test('Escape in the dialog fallback stops selecting and keeps the dialog', async ({ page }) => {
     await seedGroups(page, seed)
     await page.evaluate(() => {

@@ -50,6 +50,10 @@ const vOpen = {
             })
         }, 0)
     },
+    // Closing first returns focus to the opener, as Escape does.
+    beforeUnmount(el: HTMLDialogElement) {
+        if (el.open) el.close()
+    },
 }
 </script>
 

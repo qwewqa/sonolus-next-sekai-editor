@@ -87,6 +87,38 @@ test.describe('dialogs', () => {
         expect(await calls()).toEqual(['SELECT:true'])
     })
 
+    test('closing by a button returns focus where it came from, as Escape does', async ({
+        page,
+    }) => {
+        await boot(page)
+        await page.evaluate(async () => {
+            const { appImport } = window.editorTest
+            const { showModal } =
+                await appImport<typeof import('../../src/modals')>('/src/modals/index.ts')
+            const { default: ConfirmModal } = await appImport<{
+                default: typeof import('../../src/modals/ConfirmModal.vue').default
+            }>('/src/modals/ConfirmModal.vue')
+            const opener = document.body.appendChild(document.createElement('button'))
+            opener.id = 'opener'
+            opener.textContent = 'Opener'
+            opener.addEventListener('click', () => {
+                void showModal(ConfirmModal, { title: () => 'Named Title', message: () => 'Body' })
+            })
+        })
+        const opener = page.locator('#opener')
+        const dialog = page.getByRole('dialog', { name: 'Named Title', exact: true })
+        for (const close of ['Close', 'Cancel', 'Confirm', 'Escape']) {
+            await opener.focus()
+            await page.keyboard.press('Enter')
+            await expect(dialog, close).toBeVisible()
+            if (close !== 'Escape')
+                await dialog.getByRole('button', { name: close, exact: true }).focus()
+            await page.keyboard.press(close === 'Escape' ? 'Escape' : 'Enter')
+            await expect(dialog, close).toHaveCount(0)
+            await expect(opener, close).toBeFocused()
+        }
+    })
+
     test.describe('on a phone', () => {
         test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
