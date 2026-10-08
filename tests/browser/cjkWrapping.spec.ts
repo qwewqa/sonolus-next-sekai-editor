@@ -29,20 +29,23 @@ const lines = (page: Page, label: string, selector = '.form-field-text', root = 
         .getByText(label, { exact: true })
         .first()
         .evaluate((element) => {
-            const node = element.firstChild!
-            const text = node.textContent!
             const range = document.createRange()
             const result: string[] = []
             let top: number | undefined
-            for (let index = 0; index < text.length; index++) {
-                range.setStart(node, index)
-                range.setEnd(node, index + 1)
-                const rect = range.getClientRects()[0]
-                if (!rect) continue
-                const character = text.charAt(index)
-                if (top === undefined || rect.top > top + 2) result.push(character)
-                else result.push(`${result.pop() ?? ''}${character}`)
-                top = rect.top
+            // A unit sits in its own span, so every text node counts.
+            const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+                const text = node.textContent!
+                for (let index = 0; index < text.length; index++) {
+                    range.setStart(node, index)
+                    range.setEnd(node, index + 1)
+                    const rect = range.getClientRects()[0]
+                    if (!rect) continue
+                    const character = text.charAt(index)
+                    if (top === undefined || rect.top > top + 2) result.push(character)
+                    else result.push(`${result.pop() ?? ''}${character}`)
+                    top = rect.top
+                }
             }
             return result.map((line) => line.trim())
         })
@@ -110,3 +113,34 @@ test('Korean labels too long for two lines by word still break between words', a
         )
         .toEqual(['스테이지 마스크 이벤트', '표시 여부 전환'])
 })
+
+for (const [locale, command, label] of [
+    ['zht', ',', '水平捲動上限（軌道）'],
+    ['zht', ',', '自動儲存週期（秒）'],
+    ['zhs', ',', '背景音乐音量（%）'],
+    ['zhs', ',', '自动保存延迟（秒）'],
+    ['ja', 'm', 'オフセット\u00a0(ミリ秒)'],
+] as const)
+    test(`${locale} ${label} keeps its unit whole, on the line of the word before it`, async ({
+        page,
+    }) => {
+        await page.setViewportSize({ width: 320, height: 700 })
+        await open(page, locale)
+        await page.keyboard.press(command)
+        const dialog = page.getByRole('dialog')
+        await expect(dialog).toBeVisible()
+        const unit = /[(（][^()（）]*[)）]$/.exec(label)![0]
+        const text = await lines(page, label, '.form-field-text', dialog)
+        expect(text.join('').replace(/\s/g, '')).toBe(label.replace(/\s/g, ''))
+        // The unit's line holds all of it, and a character before it.
+        const last = text.at(-1)!
+        expect(last.endsWith(unit), text.join('|')).toBe(true)
+        expect(last.length, text.join('|')).toBeGreaterThan(unit.length)
+        // Its row still fits.
+        const field = dialog.locator('.form-field').filter({
+            has: page.locator('.form-field-text').getByText(label, { exact: true }),
+        })
+        expect(await field.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+            true,
+        )
+    })

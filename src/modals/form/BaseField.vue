@@ -14,6 +14,7 @@ import {
 } from 'vue'
 import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
+import { splitUnit } from '../../utils/unitLabel'
 import { useStackLongValues, useStackLongWords, valueOverflows, wordOverflows } from './fieldLayout'
 import { cancelFit, queueFit } from './fitBatch'
 import { holdsTyping } from './resync'
@@ -36,6 +37,9 @@ const descriptionId = useId()
 // Controls named by more than the label, as a shortcut by its binding, refer to it.
 const fallbackTextId = useId()
 const textId = computed(() => props.labelId ?? fallbackTextId)
+
+// A trailing unit, as "(ms)" or "（秒）", never splits or wraps alone.
+const labelParts = computed(() => splitUnit(props.label))
 
 const coverage = computed(() => {
     const usage = field?.value?.usage
@@ -350,9 +354,12 @@ watchEffect(
                 class="form-field-row"
             >
                 <span ref="labelRow" class="form-field-label"
-                    ><slot name="icon" /><span :id="textId" class="form-field-text">{{
-                        label
-                    }}</span></span
+                    ><slot name="icon" /><span :id="textId" class="form-field-text"
+                        >{{ labelParts.text
+                        }}<span v-if="labelParts.nowrap" class="form-field-unit">{{
+                            labelParts.nowrap
+                        }}</span></span
+                    ></span
                 >
                 <slot :text-id="textId" />
             </component>
@@ -610,6 +617,10 @@ watchEffect(
     line-clamp: 2;
     line-height: 1.25;
     overflow-wrap: anywhere;
+}
+
+.form-field-unit {
+    white-space: nowrap;
 }
 
 /* Korean keeps its word breaks; a word too long for its line still breaks. */
