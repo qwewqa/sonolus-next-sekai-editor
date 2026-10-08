@@ -43,6 +43,8 @@ const refusal = computed(() =>
 const notes = computed(() =>
     refusal.value === undefined ? props.notes : [...(props.notes ?? []), refusal.value],
 )
+// An unassigned shortcut has nothing for a second click to clear.
+const canClear = computed(() => !!formatShortcut(modelValue.value))
 
 const onClick = (event: MouseEvent) => {
     if (isActive.value) modelValue.value = undefined
@@ -146,7 +148,9 @@ const onBlur = () => {
                     'key-field-unassigned text-fg/80': !isActive && !formatShortcut(modelValue),
                 }"
                 type="button"
-                :title="isActive ? i18n.modals.form.key.clear : i18n.modals.form.key.input"
+                :title="
+                    isActive && canClear ? i18n.modals.form.key.clear : i18n.modals.form.key.input
+                "
                 :aria-labelledby="`${textId} ${valueId}`"
                 @mousedown="onMouseDown"
                 @click="onClick"
@@ -164,7 +168,9 @@ const onBlur = () => {
                         isActive
                             ? fromKeyboard
                                 ? i18n.modals.form.key.pressCancel
-                                : i18n.modals.form.key.press
+                                : canClear
+                                  ? i18n.modals.form.key.press
+                                  : i18n.modals.form.key.pressUnassigned
                             : (formatShortcut(modelValue) ?? i18n.modals.form.key.unassigned)
                     }}</span
                 >

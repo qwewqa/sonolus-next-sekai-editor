@@ -1186,6 +1186,7 @@
       "key": {
         "input": "Tuş Girin",
         "press": "Bir tuşa basın veya temizlemek için tekrar tıklayın",
+        "pressUnassigned": "Bir tuşa basın",
         "pressCancel": "Bir tuşa basın veya Esc ile iptal edin",
         "clear": "Bu kısayolu temizlemek için tekrar tıklayın",
         "unassigned": "Atanmamış",

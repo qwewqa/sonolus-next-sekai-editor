@@ -1186,6 +1186,7 @@
       "key": {
         "input": "キーを入力",
         "press": "キーを押すか、もう一度クリックして削除",
+        "pressUnassigned": "キーを押す",
         "pressCancel": "キーを押すか、Escでキャンセル",
         "clear": "もう一度クリックしてショートカットを削除",
         "unassigned": "未割り当て",

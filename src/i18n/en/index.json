@@ -1186,6 +1186,7 @@
             "key": {
                 "input": "Input Key",
                 "press": "Press a key or click again to clear",
+                "pressUnassigned": "Press a key",
                 "pressCancel": "Press a key, or Esc to cancel",
                 "clear": "Click again to clear this shortcut",
                 "unassigned": "Unassigned",

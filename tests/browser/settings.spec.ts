@@ -586,6 +586,17 @@ test('the capture prompt and its tooltip clear with the same word', async ({ pag
     await expect(save).toHaveAttribute('title', 'Click again to clear this shortcut')
 })
 
+test('the capture prompt on an unassigned shortcut offers no clearing', async ({ page }) => {
+    const save = shortcutButton(page, 'Save')
+    await save.press('Delete')
+    await expect(save).toHaveText('Unassigned')
+    await save.click()
+    await expect(save).toHaveText('Press a key')
+    await expect(save).toHaveAttribute('title', 'Input Key')
+    await save.press('l')
+    await expect(save).toHaveText('L')
+})
+
 test('a punctuation shortcut reads larger and bold, as in the toolbar', async ({ page }) => {
     const style = (name: string) =>
         shortcutButton(page, name).evaluate((button) => {

@@ -1186,6 +1186,7 @@
       "key": {
         "input": "Touche de saisie",
         "press": "Appuyez sur une touche ou cliquez à nouveau pour effacer",
+        "pressUnassigned": "Appuyez sur une touche",
         "pressCancel": "Appuyez sur une touche ou sur Échap pour annuler",
         "clear": "Cliquez à nouveau pour effacer ce raccourci",
         "unassigned": "Non attribué",

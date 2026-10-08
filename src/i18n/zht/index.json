@@ -1186,6 +1186,7 @@
       "key": {
         "input": "輸入鍵位",
         "press": "按一個鍵，或再次點選以清除",
+        "pressUnassigned": "按一個鍵",
         "pressCancel": "按一個鍵，或按 Esc 取消",
         "clear": "再次點選以清除此快捷鍵",
         "unassigned": "未設定",
