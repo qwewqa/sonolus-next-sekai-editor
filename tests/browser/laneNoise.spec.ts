@@ -207,3 +207,130 @@ test('select drags of a left edge leave clean lanes', async ({ page }) => {
     await drag(page, 0.75, 0.65)
     expect(await note(page)).toEqual({ left: 0.6, size: 1.2 })
 })
+
+test('a resize dragged out and back leaves a noisy edge exact, adding no undo step', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const original = fixtures.interaction.slides[1]![0]!
+        // An imported lane - size, as Chart Cyanvas gives.
+        show({ ...fixtures.interaction, slides: [[{ ...original, left: 0.1 + 0.2, size: 2 }]] }, 3)
+        view.laneSnapping = 'relative'
+    })
+    await settle(page)
+    const beat = await page.evaluate(() => window.editorTest.snapshot().notes[0]!.beat)
+    for (const tool of ['note', 'slide', 'select'] as const) {
+        await page.evaluate(
+            (tool) =>
+                window.editorTest
+                    .appImport<typeof import('../../src/editor/tools')>(
+                        '/src/editor/tools/index.ts',
+                    )
+                    .then(({ switchToolTo }) => switchToolTo(tool)),
+            tool,
+        )
+        const [start, away] = await page.evaluate(
+            (beat) => [window.editorTest.point(0.45, beat), window.editorTest.point(2.45, beat)],
+            beat,
+        )
+        await page.mouse.move(start!.x, start!.y)
+        await page.mouse.down()
+        await page.mouse.move(away!.x, away!.y, { steps: 6 })
+        await settle(page)
+        expect(await page.evaluate(() => window.editorTest.view.entities.creating.length)).toBe(1)
+        await page.mouse.move(start!.x, start!.y, { steps: 6 })
+        await page.mouse.up()
+        await settle(page)
+        expect(await note(page), tool).toEqual({ left: 0.1 + 0.2, size: 2 })
+        expect(await page.evaluate(() => window.editorTest.history.canUndo.value), tool).toBe(false)
+        await expect(page.locator('.notification'), tool).toHaveCount(0)
+    }
+})
+
+for (const { kind, tool } of [
+    { kind: 'cameraEvents', tool: 'cameraEvent' },
+    { kind: 'stageMaskEvents', tool: 'stageMaskEvent' },
+] as const)
+    test(`a ${tool} resize dragged out and back leaves a noisy edge exact`, async ({ page }) => {
+        const range = (page: Page) =>
+            page.evaluate(() => {
+                const entity = [...window.editorTest.store.getAllEntities()].find(
+                    (entity) =>
+                        entity.type === 'cameraEventJoint' || entity.type === 'stageMaskEventJoint',
+                )!
+                if (entity.type === 'cameraEventJoint')
+                    return [entity.cameraLeft, entity.cameraSize, entity.beat]
+                return entity.type === 'stageMaskEventJoint'
+                    ? [entity.maskLeft, entity.maskSize, entity.beat]
+                    : []
+            })
+        await page.evaluate(
+            ({ kind }) => {
+                const { fixtures, show, view } = window.editorTest
+                const { cameraEvents, stageMaskEvents } = fixtures.events
+                show(
+                    {
+                        ...fixtures.events,
+                        slides: [],
+                        cameraEvents: [],
+                        stageMaskEvents: [],
+                        ...(kind === 'cameraEvents'
+                            ? {
+                                  cameraEvents: [
+                                      { ...cameraEvents[0]!, beat: 4, cameraLeft: 0.1 + 0.2 },
+                                  ],
+                              }
+                            : {
+                                  stageMaskEvents: [
+                                      {
+                                          ...stageMaskEvents[0]!,
+                                          beat: 4,
+                                          maskLeft: 0.1 + 0.2,
+                                          maskSize: 2,
+                                      },
+                                  ],
+                              }),
+                    },
+                    3,
+                )
+                view.laneSnapping = 'relative'
+            },
+            { kind },
+        )
+        await settle(page)
+        const before = await range(page)
+        for (const name of [tool, 'select'] as const) {
+            await page.evaluate(
+                (name) =>
+                    window.editorTest
+                        .appImport<typeof import('../../src/editor/tools')>(
+                            '/src/editor/tools/index.ts',
+                        )
+                        .then(({ switchToolTo }) => switchToolTo(name)),
+                name,
+            )
+            const [start, away] = await page.evaluate(
+                (beat) => [
+                    window.editorTest.point(0.45, beat),
+                    window.editorTest.point(2.45, beat),
+                ],
+                before[2]!,
+            )
+            await page.mouse.move(start!.x, start!.y)
+            await page.mouse.down()
+            await page.mouse.move(away!.x, away!.y, { steps: 6 })
+            await settle(page)
+            expect(
+                await page.evaluate(() => window.editorTest.view.entities.creating.length),
+                name,
+            ).toBe(1)
+            await page.mouse.move(start!.x, start!.y, { steps: 6 })
+            await page.mouse.up()
+            await settle(page)
+            expect(await range(page), name).toEqual(before)
+            expect(await page.evaluate(() => window.editorTest.history.canUndo.value), name).toBe(
+                false,
+            )
+        }
+    })

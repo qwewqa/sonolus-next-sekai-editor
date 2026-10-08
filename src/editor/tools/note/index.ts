@@ -258,6 +258,7 @@ export const note: Tool = {
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
+                    [active.entity.left, active.entity.size],
                 )
                 const object = constrainLaneObject(
                     { ...active.entity, left, size },
@@ -324,6 +325,7 @@ export const note: Tool = {
                     Number.POSITIVE_INFINITY,
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
+                    [active.entity.left, active.entity.size],
                 )
 
                 commitDrop(

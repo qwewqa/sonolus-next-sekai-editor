@@ -281,6 +281,7 @@ export const stageMaskEvent: Tool = {
                     Number.POSITIVE_INFINITY,
                     active.entity.maskLeft +
                         (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
+                    [active.entity.maskLeft, active.entity.maskSize],
                 )
 
                 view.entities = {
@@ -373,6 +374,7 @@ export const stageMaskEvent: Tool = {
                     Number.POSITIVE_INFINITY,
                     active.entity.maskLeft +
                         (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
+                    [active.entity.maskLeft, active.entity.maskSize],
                 )
 
                 commitDrop(

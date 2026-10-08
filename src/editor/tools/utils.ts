@@ -72,8 +72,12 @@ export const resize = (
     min = 0,
     max = Number.POSITIVE_INFINITY,
     startEdge = anchor,
+    original?: readonly [left: number, size: number],
 ) => {
-    const edge = startEdge + offset(startEdge, lane, startEdge)
+    const shift = offset(startEdge, lane, startEdge)
+    // An edge dragged back to its start keeps the values exactly.
+    if (original && shift === 0) return original
+    const edge = startEdge + shift
     const size = clamp(alignComputed(Math.abs(edge - anchor)), min, max)
 
     // The fixed edge stays as given; callers snap one that is a sum.

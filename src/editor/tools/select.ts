@@ -551,6 +551,7 @@ const toMovedCameraEventObject = (
             24,
             entity.cameraLeft +
                 (startLane >= focus.cameraLeft + focus.cameraSize / 2 ? entity.cameraSize : 0),
+            [entity.cameraLeft, entity.cameraSize],
         )
 
         return constrainLaneObject(
@@ -595,6 +596,7 @@ const toMovedStageMaskEventObject = (
             Number.POSITIVE_INFINITY,
             entity.maskLeft +
                 (startLane >= focus.maskLeft + focus.maskSize / 2 ? entity.maskSize : 0),
+            [entity.maskLeft, entity.maskSize],
         )
 
         return constrainLaneObject(
@@ -689,6 +691,7 @@ const toMovedNoteObject = (
             minimumNoteSize(entity.noteType),
             Number.POSITIVE_INFINITY,
             entity.left + (isLeft ? entity.size : 0),
+            [entity.left, entity.size],
         )
 
         return constrainLaneObject(

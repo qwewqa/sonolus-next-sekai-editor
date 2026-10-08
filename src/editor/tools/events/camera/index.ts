@@ -282,6 +282,7 @@ export const cameraEvent: Tool = {
                     24,
                     active.entity.cameraLeft +
                         (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
+                    [active.entity.cameraLeft, active.entity.cameraSize],
                 )
 
                 view.entities = {
@@ -374,6 +375,7 @@ export const cameraEvent: Tool = {
                     24,
                     active.entity.cameraLeft +
                         (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
+                    [active.entity.cameraLeft, active.entity.cameraSize],
                 )
 
                 commitDrop(
