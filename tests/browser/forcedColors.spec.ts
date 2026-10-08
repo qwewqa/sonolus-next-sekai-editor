@@ -596,3 +596,62 @@ test('Select Multiple shows it is on, as the toolbar tool in use', async ({ page
     await expect(dialog).toBeVisible()
     await expectOn(dialog)
 })
+
+test('focus rings on the current group keep a gap from its edge', async ({ page }) => {
+    await page.evaluate(() => {
+        const { history, view } = window.editorTest
+        view.groupId = [...history.state.value.groups.keys()][0]!
+    })
+    await page.locator('.panel-tab', { hasText: 'Groups' }).click()
+    const row = page.locator(
+        '#workspace-panel-groups .manager-row-current:not(.manager-row-heading)',
+    )
+    const buttons = row.locator('.manager-icon-button')
+    await expect(buttons.first()).toBeVisible()
+    const count = await buttons.count()
+    expect(count).toBeGreaterThan(1)
+    for (let index = 0; index < count; index++) {
+        const button = buttons.nth(index)
+        await focus(button)
+        // The ring's outer edge against the inner edge of the row's own edge, on each side.
+        const gap = await button.evaluate((element) => {
+            const row = element.closest('.manager-row')!
+            const ring = (element: Element) => {
+                const { outlineWidth, outlineOffset } = getComputedStyle(element)
+                return parseFloat(outlineWidth) + parseFloat(outlineOffset)
+            }
+            const outer = ring(element)
+            const inner = ring(row) - parseFloat(getComputedStyle(row).outlineWidth)
+            const box = element.getBoundingClientRect()
+            const edge = row.getBoundingClientRect()
+            return Math.min(
+                box.left - outer - (edge.left - inner),
+                box.top - outer - (edge.top - inner),
+                edge.right + inner - (box.right + outer),
+                edge.bottom + inner - (box.bottom + outer),
+            )
+        })
+        expect(gap, `${await button.getAttribute('aria-label')}`).toBeGreaterThanOrEqual(2)
+    }
+})
+
+for (const colorScheme of ['light', 'dark'] as const)
+    test(`a focused dialog button differs from its edge by more than colour (${colorScheme})`, async ({
+        page,
+    }) => {
+        await page.emulateMedia({ forcedColors: 'active', colorScheme })
+        await page.keyboard.press(',')
+        const dialog = page.getByRole('dialog')
+        await expect(dialog).toBeVisible()
+        const button = dialog.getByRole('button', { name: 'Reset Settings', exact: true })
+        const ring = () =>
+            button.evaluate((element) => {
+                const { outlineStyle, outlineWidth, outlineOffset } = getComputedStyle(element)
+                return { style: outlineStyle, width: outlineWidth, offset: outlineOffset }
+            })
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+        expect(await ring()).toEqual({ style: 'solid', width: '2px', offset: '-2px' })
+        await focus(button)
+        // Thicker, growing inward, so it keeps clear of the button beside it.
+        expect(await ring()).toEqual({ style: 'solid', width: '4px', offset: '-4px' })
+    })
