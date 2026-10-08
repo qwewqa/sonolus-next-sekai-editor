@@ -445,7 +445,7 @@
             "keyboard": {
                 "title": "Keyboard",
                 "single": "Single press to execute.",
-                "multiple": "Long press to execute multiple times."
+                "multiple": "Hold a key to repeat scrolling, zooming, undo, redo, or changing note size, playback speed, group or stage."
             },
             "selectTool": {
                 "title": "Select Tool",

@@ -445,7 +445,7 @@
       "keyboard": {
         "title": "Clavier",
         "single": "Appuyez une fois pour exécuter.",
-        "multiple": "Restez appuyé pour exécuter plusieurs fois."
+        "multiple": "Maintenez une touche pour répéter le défilement, le zoom, l’annulation, le rétablissement, ou le changement de taille des notes, de vitesse de lecture, de groupe ou de scène."
       },
       "selectTool": {
         "title": "Outil Sélection",

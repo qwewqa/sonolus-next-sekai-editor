@@ -828,3 +828,52 @@ test('shortcut chips use the locale’s key names', async ({ page }) => {
     for (const english of ['Esc', 'Shift+U', 'Delete', 'Space'])
         expect(chips).not.toContain(english)
 })
+
+test('the commands Help says repeat when held all repeat', async ({ page }) => {
+    // Help: "Hold a key to repeat scrolling, zooming, undo, redo, or changing note size,
+    // playback speed, group or stage."
+    const names = [
+        'scrollLeft',
+        'scrollRight',
+        'scrollUp',
+        'scrollDown',
+        'scrollPageUp',
+        'scrollPageDown',
+        'zoomXIn',
+        'zoomXOut',
+        'zoomYIn',
+        'zoomYOut',
+        'undo',
+        'redo',
+        'increaseNoteSize',
+        'decreaseNoteSize',
+        'speedUp',
+        'speedDown',
+        'groupPrev',
+        'groupNext',
+        'stagePrev',
+        'stageNext',
+    ] as const
+    const counts = await page.evaluate(async (names) => {
+        const { appImport, settings } = window.editorTest
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const shortcuts = settings.keyboardShortcuts
+        const counts: Record<string, number> = {}
+        for (const name of names) {
+            const execute = commands[name].execute
+            counts[name] = 0
+            commands[name].execute = () => {
+                counts[name]!++
+            }
+            settings.keyboardShortcuts = { [name]: 'q' }
+            for (const repeat of [false, true, true, true])
+                dispatchEvent(new KeyboardEvent('keydown', { key: 'q', repeat, bubbles: true }))
+            commands[name].execute = execute
+        }
+        settings.keyboardShortcuts = shortcuts
+        return counts
+    }, names)
+    expect(counts).toEqual(Object.fromEntries(names.map((name) => [name, 4])))
+})

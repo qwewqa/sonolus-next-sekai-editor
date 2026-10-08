@@ -445,7 +445,7 @@
       "keyboard": {
         "title": "Klavye",
         "single": "Çalıştırmak için bir kere basın.",
-        "multiple": "Birden fazla kez çalıştırmak için uzun basın."
+        "multiple": "Kaydırmayı, yakınlaştırmayı, geri almayı, yeniden yapmayı veya nota boyutunu, oynatma hızını, grubu ya da sahneyi değiştirmeyi tekrarlamak için tuşu basılı tutun."
       },
       "selectTool": {
         "title": "Seçim Aracı",
