@@ -38,9 +38,15 @@ export const constrainLaneObject = <T extends EditableObject>(
                 : Math.max(minimum, Math.min(availableSize ?? 0, Math.max(minimum, maxLane * 2)))
         // Fitted edges come from sums, so they drop their float noise; kept values stay exact.
         const size = fittedSize === originalSize ? fittedSize : alignComputed(fittedSize)
-        const fittedLeft =
-            size > maxLane * 2 ? -size / 2 : clamp(position, -maxLane, maxLane - size)
-        const left = fittedLeft === position ? position : alignComputed(fittedLeft)
+        const oversized = size > maxLane * 2
+        const fittedLeft = oversized ? -size / 2 : clamp(position, -maxLane, maxLane - size)
+        // The snap never takes it past the limit.
+        const left =
+            fittedLeft === position
+                ? position
+                : oversized
+                  ? alignComputed(fittedLeft)
+                  : clamp(alignComputed(fittedLeft), -maxLane, maxLane - size)
         if (left === position && size === (originalSize ?? 0)) return object
         return {
             ...object,

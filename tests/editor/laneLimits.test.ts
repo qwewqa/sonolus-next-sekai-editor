@@ -64,11 +64,28 @@ test('fitted edges drop float noise, while kept and finer values stay exact', ()
     // Inside the limits, a resize keeps the object: (0.1 + 0.2) - 0.1 is not 0.2.
     const note = { left: 0.1, size: 0.2 }
     assert.equal(constrainLaneObject(note, 6, true, 0.125), note)
-    // 6.1 - 0.2 is 5.8999999999999995.
-    assert.deepEqual(constrainLaneObject({ left: 9, size: 0.2 }, 6.1), { left: 5.9, size: 0.2 })
+    // 6.2 - 0.1 is 6.1000000000000005.
+    assert.deepEqual(constrainLaneObject({ left: 9, size: 0.1 }, 6.2), { left: 6.1, size: 0.1 })
+    // 6.1 - 0.2 is 5.8999999999999995, but 5.9 + 0.2 would pass 6.1.
+    assert.deepEqual(constrainLaneObject({ left: 9, size: 0.2 }, 6.1), {
+        left: 6.1 - 0.2,
+        size: 0.2,
+    })
     assert.deepEqual(constrainLaneObject({ left: 9, size: 0.123456789 }, 6.1), {
         left: 6.1 - 0.123456789,
         size: 0.123456789,
+    })
+})
+
+test('a fitted edge snaps only while the object stays within the limit', () => {
+    // 6 - 0.50000000001 snaps up to 5.5, which would leave the right edge past 6.
+    const fitted = constrainLaneObject({ left: 9, size: 0.50000000001 }, 6)
+    assert.deepEqual(fitted, { left: 6 - 0.50000000001, size: 0.50000000001 })
+    assert.ok(fitted.left + fitted.size <= 6)
+    // An object wider than the limits stays centred.
+    assert.deepEqual(constrainLaneObject({ cameraLeft: 9, cameraSize: 6 }, 2), {
+        cameraLeft: -3,
+        cameraSize: 6,
     })
 })
 
