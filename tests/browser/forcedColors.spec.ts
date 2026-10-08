@@ -354,8 +354,16 @@ for (const colorScheme of ['light', 'dark'] as const)
         const undo = toolbar
             .locator(':scope > div > div > button')
             .and(page.getByTitle('Undo', { exact: true }))
+        const edge = (locator: Locator) =>
+            locator.evaluate((element) => {
+                const { outlineWidth, outlineOffset } = getComputedStyle(element)
+                return `${outlineWidth} ${outlineOffset}`
+            })
+        expect(await edge(undo)).toBe('2px -2px')
         await focus(undo)
         expect(await innerRing(undo)).toBeUndefined()
+        // Not in use: a thicker edge, drawn inward, so focus differs by more than colour.
+        expect(await edge(undo)).toBe('4px -4px')
 
         // The flyout row of the tool in use too.
         await page.keyboard.press('Escape')
@@ -367,6 +375,14 @@ for (const colorScheme of ['light', 'dark'] as const)
         await expect(row).toHaveAttribute('aria-pressed', 'true')
         await focus(row)
         await expect.poll(() => innerRing(row)).toBe(selectedText)
+        expect(await edge(row)).toBe('2px -2px')
+        // A row not in use thickens its edge too.
+        const other = toolbar
+            .locator(':scope > div > div > div button')
+            .and(page.getByTitle('Eraser', { exact: true }))
+        expect(await edge(other)).toBe('2px -2px')
+        await focus(other)
+        expect(await edge(other)).toBe('4px -4px')
     })
 
 const systemColor = (page: Page, name: string) =>
