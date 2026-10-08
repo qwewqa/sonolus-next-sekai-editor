@@ -1,3 +1,4 @@
+import { isPlaying } from '../../player'
 import { settings } from '../../settings'
 import { beginAudioPreviewInteraction } from '../audioPreview'
 import { openContextMenu } from '../contextMenu'
@@ -14,7 +15,17 @@ import { zoomX } from './gestures/recognizers/zoomX'
 import { zoomY } from './gestures/recognizers/zoomY'
 import { clearPageSelection } from './pageSelection'
 
-const touchGesture = gesture(zoomY(), zoomX(), pan(), drag(true), tap(), twoTap(), threeTap())
+// Whether playback ran when the gesture's first touch stopped it.
+let wasPlaying = false
+const touchGesture = gesture(
+    zoomY(),
+    zoomX(),
+    pan(),
+    drag(true),
+    tap(),
+    twoTap(),
+    threeTap(() => wasPlaying),
+)
 
 export const hasTouchControls = () => touchGesture.pointerCount > 0
 
@@ -79,6 +90,7 @@ const touchstart = (event: TouchEvent) => {
 
     view.scrollingY = undefined
     view.scrollingX = undefined
+    if (!touchGesture.pointerCount) wasPlaying = isPlaying.value
     stopPlayer(false)
     if (!touchGesture.pointerCount) beginAudioPreviewInteraction()
     // A mouse drag keeps its marker.

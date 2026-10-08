@@ -267,3 +267,49 @@ test.describe('on a phone', () => {
         await expect.poll(async () => (await hoverState(page)).hover).toEqual([true, true])
     })
 })
+
+test('a three-finger tap plays, and another stops, as Space does', async ({ page }) => {
+    await showNotes(page)
+    const isPlaying = () =>
+        page.evaluate(async () => {
+            const { isPlaying } =
+                await window.editorTest.appImport<typeof import('../../src/player')>(
+                    '/src/player.ts',
+                )
+            return isPlaying.value
+        })
+    const at = await point(page, 0, 2)
+    // In one task, so the tap stays quick on a loaded machine.
+    const threeTap = () =>
+        page.evaluate(({ x, y }) => {
+            const target = document.querySelector('.editor')!
+            const touches = [-40, 0, 40].map(
+                (dx, identifier) => new Touch({ identifier, target, clientX: x + dx, clientY: y }),
+            )
+            for (const type of ['touchstart', 'touchend'])
+                target.dispatchEvent(
+                    new TouchEvent(type, {
+                        changedTouches: touches,
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                )
+        }, at)
+    const cursor = () => page.evaluate(() => window.editorTest.view.cursorTime)
+    expect(await isPlaying()).toBe(false)
+    await threeTap()
+    await expect.poll(isPlaying).toBe(true)
+    // The fixture parks the cursor at 100 until playback first moves it.
+    await expect.poll(cursor).toBeLessThan(100)
+    const start = await cursor()
+    await expect.poll(cursor).toBeGreaterThan(start + 0.5)
+    await threeTap()
+    await expect.poll(isPlaying).toBe(false)
+    // The cursor stays where playback reached, as a pause leaves it.
+    const stopped = await cursor()
+    expect(stopped).toBeGreaterThan(start + 0.5)
+    await page.waitForTimeout(300)
+    expect(await cursor()).toBe(stopped)
+    await threeTap()
+    await expect.poll(isPlaying).toBe(true)
+})
