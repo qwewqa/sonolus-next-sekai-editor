@@ -330,6 +330,33 @@ test('live factor leaves chart history untouched until Apply, with one undo', as
     expect((await summary(page)).stored.map((note) => note.beat)).toEqual([3, 7, 8])
 })
 
+test('Ctrl+Z and Ctrl+Y in the factor reach the editor only while it shows the factor it opened with', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        const current = history.state.value
+        history.pushState(() => 'Seeded', { ...current, initialLife: current.initialLife + 1 })
+    })
+    await open(page)
+    await expect(factor(page)).toBeFocused()
+    await page.keyboard.type('2')
+    await expect(factor(page)).toHaveValue('2')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(factor(page)).toHaveValue('1')
+    await expect(panel(page)).toBeVisible()
+    expect((await summary(page)).canUndo).toBe(true)
+    // The factor it opened with: the editor undoes, which ends the scaling.
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(panel(page)).toHaveCount(0)
+    expect((await summary(page)).canUndo).toBe(false)
+    // So does Ctrl+Y, redoing it.
+    await open(page)
+    await page.keyboard.press('ControlOrMeta+y')
+    await expect(panel(page)).toHaveCount(0)
+    expect((await summary(page)).canUndo).toBe(true)
+})
+
 test('invalid factor preserves a finite draft and Cancel or Escape discards it', async ({
     page,
 }) => {

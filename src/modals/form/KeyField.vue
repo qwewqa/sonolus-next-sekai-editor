@@ -84,6 +84,7 @@ const isPartialKey = (event: KeyboardEvent) =>
 const hasModifier = (event: KeyboardEvent) =>
     event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
 
+// Not tracked for Ctrl+Z: a capture records it as a binding, and a button holds no typing.
 const onKeyDown = (event: KeyboardEvent) => {
     // Delete and Backspace clear, as a second click does; a capture records them.
     if (!isActive.value) {

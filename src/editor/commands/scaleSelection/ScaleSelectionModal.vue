@@ -5,6 +5,7 @@ import BaseModal from '../../../modals/BaseModal.vue'
 import BaseField from '../../../modals/form/BaseField.vue'
 import { modals } from '../../../modals'
 import { isComposingKey } from '../../../utils/composition'
+import { trackTypedText } from '../../../modals/form/resync'
 import { getScaleLabels } from './labels'
 import { stackLongValuesKey } from '../../../modals/form/fieldLayout'
 import {
@@ -24,6 +25,9 @@ const session = computed(() =>
 )
 const factor = ref<number | string>(session.value?.requestedFactor ?? 1)
 const input = useTemplateRef<HTMLInputElement>('input')
+// Typing differs from the factor set at open or by a drag; Ctrl+Z passes to the editor otherwise.
+const committed = ref(`${factor.value}`)
+trackTypedText(input, () => committed.value)
 const title = computed(() => getScaleLabels(session.value?.axis ?? 'beat').title)
 watch(
     () => session.value?.requestedFactor,
@@ -31,8 +35,10 @@ watch(
         if (
             value !== undefined &&
             !Object.is(factor.value === '' ? NaN : Number(factor.value), value)
-        )
+        ) {
             factor.value = value
+            committed.value = `${value}`
+        }
     },
 )
 watch(session, (value) => {

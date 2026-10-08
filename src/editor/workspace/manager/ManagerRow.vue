@@ -305,6 +305,7 @@ const onNameDblclick = (event: MouseEvent) => {
     if (props.renameLabel && (currentAtPress || props.folder)) emit('renameStart')
 }
 
+// Not tracked for Ctrl+Z: a rename edits a draft, so undo stays its own.
 const input = useTemplateRef<HTMLInputElement>('input')
 // Set once per rename, so updates to the row never overwrite the typing.
 const draft = ref('')
