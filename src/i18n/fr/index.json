@@ -27,7 +27,7 @@
       "changed": "Musique modifiée",
       "modal": {
         "file": "Fichier",
-        "offset": "Décalage (ms)",
+        "offset": "Décalage (ms)",
         "loading": "Chargement du fichier…",
         "decoding": "Décodage audio…",
         "generating": "Génération de forme d’onde…"

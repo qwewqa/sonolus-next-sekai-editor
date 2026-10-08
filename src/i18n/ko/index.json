@@ -27,7 +27,7 @@
       "changed": "배경음 변경됨",
       "modal": {
         "file": "파일",
-        "offset": "오프셋 (밀리초)",
+        "offset": "오프셋 (밀리초)",
         "loading": "파일 불러오는 중…",
         "decoding": "오디오 디코딩 중…",
         "generating": "파형 생성 중…"

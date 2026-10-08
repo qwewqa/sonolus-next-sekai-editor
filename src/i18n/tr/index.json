@@ -27,7 +27,7 @@
       "changed": "Arka plan müziği değiştirildi",
       "modal": {
         "file": "Dosya",
-        "offset": "Zaman Kayması (ms)",
+        "offset": "Zaman Kayması (ms)",
         "loading": "Dosya yükleniyor…",
         "decoding": "Ses çözümleniyor…",
         "generating": "Dalga formu oluşturuluyor…"

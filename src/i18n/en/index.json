@@ -27,7 +27,7 @@
             "changed": "Changed BGM",
             "modal": {
                 "file": "File",
-                "offset": "Offset (ms)",
+                "offset": "Offset (ms)",
                 "loading": "Loading file…",
                 "decoding": "Decoding audio…",
                 "generating": "Generating waveform…"

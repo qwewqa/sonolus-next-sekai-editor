@@ -27,7 +27,7 @@
       "changed": "BGMを変更しました",
       "modal": {
         "file": "ファイル",
-        "offset": "オフセット (ミリ秒)",
+        "offset": "オフセット (ミリ秒)",
         "loading": "ファイルを読み込み中…",
         "decoding": "音源をデコード中…",
         "generating": "波形を生成中…"
