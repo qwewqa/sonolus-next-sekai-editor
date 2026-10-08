@@ -1,6 +1,6 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
-import { clamp } from '../../utils/math'
+import { alignComputed, clamp } from '../../utils/math'
 import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
@@ -18,6 +18,12 @@ export const placementCursors: Record<'add' | 'edit' | 'move', CanvasCursor> = {
 
 export const offset = (startLane: number, lane: number, anchor = startLane) =>
     snappedOffset(startLane, lane, anchor, view.laneDivision, view.laneSnapping)
+
+// A lane moved by the drag's offset, without float noise; unmoved, it stays exact.
+export const moveLane = (value: number, startLane: number, lane: number, anchor?: number) => {
+    const delta = offset(startLane, lane, anchor)
+    return delta === 0 ? value : alignComputed(value + delta)
+}
 
 export const getLaneAnchor = (entity: Entity) => {
     switch (entity.type) {
@@ -54,9 +60,10 @@ export const resize = (
     startEdge = anchor,
 ) => {
     const edge = startEdge + offset(startEdge, lane, startEdge)
-    const size = clamp(Math.abs(edge - anchor), min, max)
+    const size = clamp(alignComputed(Math.abs(edge - anchor)), min, max)
 
-    return [anchor - (lane >= anchor ? 0 : size), size] as const
+    // Edges come from sums, so both values drop their float noise.
+    return [alignComputed(anchor - (lane >= anchor ? 0 : size)), size] as const
 }
 
 export const hitEntitiesAtPoint = <T extends EntityType>(

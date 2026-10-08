@@ -1,5 +1,5 @@
 import { ease } from '../../../ease'
-import { alignNear, clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
+import { alignComputed, clamp, lerp, nearlyEqual, unlerp } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
@@ -8,9 +8,6 @@ import { toNoteEntity, type NoteEntity } from '../../entities/slides/note'
 import { beatToTime, type BpmIntegral } from '../../integrals/bpms'
 import type { Store } from '../../store'
 import { addToStoreGrid, removeFromStoreGrid } from '../../store/grid'
-
-// Snaps the float noise of time-based attached positions; keeps 1/256 and 1/100 steps.
-export const alignAttached = (value: number) => alignNear(value, 6400)
 
 /** By time, as the engine places them (get_attach_frac); by beat, exactly, under one tempo. */
 const attachFraction = (bpms: BpmIntegral[], head: number, tail: number, beat: number) => {
@@ -157,8 +154,8 @@ export const rebuildSlide = (
         )
 
         // Overshooting eases may shrink a note past zero width; keep its center.
-        const size = alignAttached(lerp(head.size, tail.size, x))
-        const left = alignAttached(lerp(head.left, tail.left, x) + Math.min(size, 0) / 2)
+        const size = alignComputed(lerp(head.size, tail.size, x))
+        const left = alignComputed(lerp(head.left, tail.left, x) + Math.min(size, 0) / 2)
         // Noise from a BPM edit keeps the note, and its identity.
         if (
             nearlyEqual(left, rawInfo.note.left) &&

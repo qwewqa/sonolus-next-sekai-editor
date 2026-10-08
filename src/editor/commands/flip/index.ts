@@ -8,6 +8,7 @@ import type { EditableEntity, EditableObject } from '../../../state/operations/e
 import { editChanges, editEntity } from '../../../state/operations/properties/plan'
 import { createTransaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { alignComputed } from '../../../utils/math'
 import { notify } from '../../notification'
 import { view } from '../../view'
 import FlipIcon from './FlipIcon.vue'
@@ -81,14 +82,14 @@ const flips: {
     }),
 
     cameraEventJoint: (entities, entity) => ({
-        cameraLeft: -(entity.cameraLeft + entity.cameraSize),
+        cameraLeft: alignComputed(-(entity.cameraLeft + entity.cameraSize)),
         cameraZoomTargetLane: -entity.cameraZoomTargetLane,
         cameraRotation: -entity.cameraRotation,
     }),
     cameraEventConnection: undefined,
 
     stageMaskEventJoint: (entities, entity) => ({
-        maskLeft: -(entity.maskLeft + entity.maskSize),
+        maskLeft: alignComputed(-(entity.maskLeft + entity.maskSize)),
     }),
     stageMaskEventConnection: undefined,
 
@@ -113,7 +114,7 @@ const flips: {
     stageTransformEventConnection: undefined,
 
     note: (entities, entity) => ({
-        left: -(entity.left + entity.size),
+        left: alignComputed(-(entity.left + entity.size)),
         flickDirection: flippedFlickDirections[entity.flickDirection],
     }),
     connector: undefined,

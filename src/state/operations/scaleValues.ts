@@ -1,4 +1,5 @@
 import type { State } from '..'
+import { alignComputed } from '../../utils/math'
 import type { Entity } from '../entities'
 import { isEditableEntity, type EditableEntity, type EditableProperties } from './editable'
 
@@ -51,6 +52,12 @@ export const getScaleBounds = (entity: EditableEntity, axis: ScaleAxis) => {
     return { min, max: min + size }
 }
 
+// Computed lanes and sizes lose their float noise; values left as they were stay exact.
+const scaleSize = (size: number, factor: number) =>
+    factor === 1 ? size : alignComputed(size * factor)
+const alignWidth = (axis: ScaleAxis, value: number, result: number) =>
+    axis === 'width' && result !== value ? alignComputed(result) : result
+
 export const getScaleProperties = (
     entity: EditableEntity,
     axis: ScaleAxis,
@@ -63,7 +70,9 @@ export const getScaleProperties = (
     const sizeKey = keys[1]
     return {
         [keys[0]]: value,
-        ...(sizeKey ? { [sizeKey]: Number((entity as EditableProperties)[sizeKey]) * factor } : {}),
+        ...(sizeKey
+            ? { [sizeKey]: scaleSize(Number((entity as EditableProperties)[sizeKey]), factor) }
+            : {}),
     }
 }
 
@@ -172,7 +181,7 @@ export const getScaledSelectionValues = (
     const values = transformValues(
         entities,
         axis,
-        (value) => pivot + (value - pivot) * factor,
+        (value) => alignWidth(axis, value, pivot + (value - pivot) * factor),
         source,
     )
     if (axis === 'width' && values && !validWidthValues(values, factor)) return
@@ -183,7 +192,7 @@ const validWidthValues = (values: Map<EditableEntity, number>, factor: number) =
     for (const [entity, left] of values) {
         const sizeKey = widthKeys(entity)?.[1]
         const originalSize = sizeKey ? Number((entity as EditableProperties)[sizeKey]) : 0
-        const size = originalSize * factor
+        const size = scaleSize(originalSize, factor)
         if (
             !Number.isFinite(size) ||
             size < 0 ||
@@ -206,7 +215,7 @@ export const getTranslatedSelectionValues = (
     const values = transformValues(
         getScaleEntities(selected, axis, source),
         axis,
-        (value) => value + delta,
+        (value) => alignWidth(axis, value, value + delta),
         source,
     )
     if (axis === 'width' && values && !validWidthValues(values, 1)) return

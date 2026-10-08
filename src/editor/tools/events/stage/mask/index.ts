@@ -34,7 +34,7 @@ import SelectionPropertiesModal from '../../../../workspace/properties/Selection
 import {
     hitEntitiesAtPoint,
     isRangeResizeStart,
-    offset,
+    moveLane,
     placementCursors,
     resize,
 } from '../../../utils'
@@ -307,9 +307,12 @@ export const stageMaskEvent: Tool = {
                             constrainLaneObject({
                                 ...active.entity,
                                 beat,
-                                maskLeft:
-                                    active.entity.maskLeft +
-                                    offset(active.lane, lane, active.entity.maskLeft),
+                                maskLeft: moveLane(
+                                    active.entity.maskLeft,
+                                    active.lane,
+                                    lane,
+                                    active.entity.maskLeft,
+                                ),
                             }),
                         ),
                     ],
@@ -390,9 +393,12 @@ export const stageMaskEvent: Tool = {
                     constrainLaneObject({
                         ...active.entity,
                         beat,
-                        maskLeft:
-                            active.entity.maskLeft +
-                            offset(active.lane, lane, active.entity.maskLeft),
+                        maskLeft: moveLane(
+                            active.entity.maskLeft,
+                            active.lane,
+                            lane,
+                            active.entity.maskLeft,
+                        ),
                     }),
                 )
                 focusEntityAtBeat(beat)

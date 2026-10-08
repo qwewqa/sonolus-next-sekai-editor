@@ -1,4 +1,4 @@
-import { clamp } from '../../utils/math'
+import { alignComputed, clamp } from '../../utils/math'
 import type { EditableObject } from './editable'
 
 const fields = [
@@ -32,11 +32,15 @@ export const constrainLaneObject = <T extends EditableObject>(
                 ? clamp(position + originalSize, -maxLane, maxLane) -
                   clamp(position, -maxLane, maxLane)
                 : originalSize
-        const size =
+        const fittedSize =
             originalSize === undefined
                 ? 0
                 : Math.max(minimum, Math.min(availableSize ?? 0, Math.max(minimum, maxLane * 2)))
-        const left = size > maxLane * 2 ? -size / 2 : clamp(position, -maxLane, maxLane - size)
+        // Fitted edges come from sums, so they drop their float noise; kept values stay exact.
+        const size = fittedSize === originalSize ? fittedSize : alignComputed(fittedSize)
+        const fittedLeft =
+            size > maxLane * 2 ? -size / 2 : clamp(position, -maxLane, maxLane - size)
+        const left = fittedLeft === position ? position : alignComputed(fittedLeft)
         if (left === position && size === (originalSize ?? 0)) return object
         return {
             ...object,

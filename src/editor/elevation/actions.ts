@@ -7,6 +7,7 @@ import { toNoteEntity } from '../../state/entities/slides/note'
 import { addNote } from '../../state/mutations/slides/note'
 import { createTransaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
+import { alignComputed } from '../../utils/math'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
@@ -44,7 +45,7 @@ export const previewElevationNote = (
             {
                 ...properties,
                 beat,
-                left: lane - stage.pivotLane,
+                left: alignComputed(lane - stage.pivotLane),
                 elevation: elevation - stage.elevation,
                 size: size ?? properties.size,
             },
@@ -99,10 +100,11 @@ const getElevationPaste = (lane: number, elevation: number, beat: number, modifi
         )
         return constrainLaneObject({
             ...moved,
-            left:
+            left: alignComputed(
                 moved.left +
-                direction * (source.pivotLane - firstStage.pivotLane) -
-                destination.pivotLane,
+                    direction * (source.pivotLane - firstStage.pivotLane) -
+                    destination.pivotLane,
+            ),
             elevation:
                 note.elevation +
                 source.elevation +

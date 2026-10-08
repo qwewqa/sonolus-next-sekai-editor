@@ -102,6 +102,31 @@ test('width scaling supports each horizontal event field and rejects invalid spa
     )
 })
 
+test('width results drop float noise near the lane grid and keep finer values', () => {
+    // 0.1 * 3 and 0.2 + 0.1 are both 0.30000000000000004.
+    const first = { ...source('note', 0), left: 0, size: 0.1 }
+    const second = { ...source('note', 1), left: 0.1, size: 0.1 }
+    const scaled = getScaledSelectionValues([first, second], 'width', 3)!
+    assert.deepEqual([...scaled.values()], [0, 0.3])
+    assert.deepEqual(getScaleProperties(second, 'width', scaled.get(second)!, 3), {
+        left: 0.3,
+        size: 0.3,
+    })
+    const near = { ...source('note', 0), left: 0.2, size: 1 }
+    assert.deepEqual([...getTranslatedSelectionValues([near], 'width', 0.1)!.values()], [0.3])
+    // Off the grid, results are the plain arithmetic; an unscaled size stays as it is.
+    const fine = { ...source('note', 0), left: 0.123456789, size: 0.123456789 }
+    assert.deepEqual(
+        [...getTranslatedSelectionValues([fine], 'width', 0.1)!.values()],
+        [0.123456789 + 0.1],
+    )
+    assert.deepEqual(getScaleProperties(fine, 'width', 1), { left: 1, size: 0.123456789 })
+    assert.deepEqual(getScaleProperties(fine, 'width', 1, 3), {
+        left: 1,
+        size: 0.123456789 * 3,
+    })
+})
+
 test('scaling can anchor either endpoint while preserving ties', () => {
     const first = source('note', 3, 1)
     const middle = source('note', 5, 3)

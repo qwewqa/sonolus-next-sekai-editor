@@ -60,6 +60,18 @@ test('point events use their horizontal editing coordinate without changing othe
     assert.equal(constrainLaneObject(bpm, 6), bpm)
 })
 
+test('fitted edges drop float noise, while kept and finer values stay exact', () => {
+    // Inside the limits, a resize keeps the object: (0.1 + 0.2) - 0.1 is not 0.2.
+    const note = { left: 0.1, size: 0.2 }
+    assert.equal(constrainLaneObject(note, 6, true, 0.125), note)
+    // 6.1 - 0.2 is 5.8999999999999995.
+    assert.deepEqual(constrainLaneObject({ left: 9, size: 0.2 }, 6.1), { left: 5.9, size: 0.2 })
+    assert.deepEqual(constrainLaneObject({ left: 9, size: 0.123456789 }, 6.1), {
+        left: 6.1 - 0.123456789,
+        size: 0.123456789,
+    })
+})
+
 test('former default toolbar moves elevation to transforms and inserts lane limits after divisions', () => {
     const groups = [
         [

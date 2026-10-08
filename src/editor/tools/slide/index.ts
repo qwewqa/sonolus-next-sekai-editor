@@ -38,7 +38,7 @@ import {
     isNoteResizeStart,
     isVisible,
     modifyEntities,
-    offset,
+    moveLane,
     placementCursors,
     resize,
 } from '../utils'
@@ -273,7 +273,7 @@ export const slide: Tool = {
                 const object = constrainLaneObject({
                     ...active.entity,
                     beat,
-                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                    left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
                 })
 
                 view.entities = {
@@ -345,7 +345,7 @@ export const slide: Tool = {
                     constrainLaneObject({
                         ...active.entity,
                         beat,
-                        left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                        left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
                     }),
                 )
                 focusEntityAtBeat(beat)

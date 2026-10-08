@@ -32,7 +32,7 @@ import SelectionPropertiesModal from '../../../workspace/properties/SelectionPro
 import {
     hitEntitiesAtPoint,
     isRangeResizeStart,
-    offset,
+    moveLane,
     placementCursors,
     resize,
 } from '../../utils'
@@ -308,9 +308,12 @@ export const cameraEvent: Tool = {
                             constrainLaneObject({
                                 ...active.entity,
                                 beat,
-                                cameraLeft:
-                                    active.entity.cameraLeft +
-                                    offset(active.lane, lane, active.entity.cameraLeft),
+                                cameraLeft: moveLane(
+                                    active.entity.cameraLeft,
+                                    active.lane,
+                                    lane,
+                                    active.entity.cameraLeft,
+                                ),
                             }),
                         ),
                     ],
@@ -391,9 +394,12 @@ export const cameraEvent: Tool = {
                     constrainLaneObject({
                         ...active.entity,
                         beat,
-                        cameraLeft:
-                            active.entity.cameraLeft +
-                            offset(active.lane, lane, active.entity.cameraLeft),
+                        cameraLeft: moveLane(
+                            active.entity.cameraLeft,
+                            active.lane,
+                            lane,
+                            active.entity.cameraLeft,
+                        ),
                     }),
                 )
                 focusEntityAtBeat(beat)

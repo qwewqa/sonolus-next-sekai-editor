@@ -37,7 +37,7 @@ import {
     isNoteResizeStart,
     isVisible,
     modifyEntities,
-    offset,
+    moveLane,
     placementCursors,
     resize,
 } from '../utils'
@@ -271,7 +271,7 @@ export const note: Tool = {
                 const object = constrainLaneObject({
                     ...active.entity,
                     beat,
-                    left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                    left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
                 })
 
                 view.entities = {
@@ -342,7 +342,7 @@ export const note: Tool = {
                     constrainLaneObject({
                         ...active.entity,
                         beat,
-                        left: active.entity.left + offset(active.lane, lane, active.entity.left),
+                        left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
                     }),
                 )
                 focusEntityAtBeat(beat)

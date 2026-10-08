@@ -22,7 +22,7 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
 import { createTransaction } from '../../state/transaction'
-import { alignNear, clamp } from '../../utils/math'
+import { alignComputed, alignNear, clamp } from '../../utils/math'
 import { createNameLayer, placeNames } from '../canvas/names'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
@@ -290,7 +290,12 @@ const edit = (active: NonNullable<typeof drag>) => {
                       Number.POSITIVE_INFINITY,
                       active.movingEdge,
                   )
-                : [note.left + active.deltaLane, note.size]
+                : [
+                      active.deltaLane === 0
+                          ? note.left
+                          : alignComputed(note.left + active.deltaLane),
+                      note.size,
+                  ]
             const replacement = editSelectedNote(
                 transaction,
                 note,

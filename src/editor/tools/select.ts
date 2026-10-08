@@ -92,7 +92,7 @@ import {
     hitAllEntitiesInSelection,
     isSelectResize,
     modifyEntities,
-    offset,
+    moveLane,
     resize,
     toSelection,
 } from './utils'
@@ -525,7 +525,7 @@ const toMovedTimeScaleObject = (
             beat,
             editorLane:
                 onlyType === 'timeScale'
-                    ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
+                    ? moveLane(entity.editorLane, startLane, lane, getLaneAnchor(focus))
                     : entity.editorLane,
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
@@ -567,7 +567,7 @@ const toMovedCameraEventObject = (
         {
             ...entity,
             beat,
-            cameraLeft: entity.cameraLeft + offset(startLane, lane, getLaneAnchor(focus)),
+            cameraLeft: moveLane(entity.cameraLeft, startLane, lane, getLaneAnchor(focus)),
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
     )
@@ -609,7 +609,7 @@ const toMovedStageMaskEventObject = (
         {
             ...entity,
             beat,
-            maskLeft: entity.maskLeft + offset(startLane, lane, getLaneAnchor(focus)),
+            maskLeft: moveLane(entity.maskLeft, startLane, lane, getLaneAnchor(focus)),
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
     )
@@ -626,7 +626,7 @@ const toMovedStagePivotEventObject = (
         {
             ...entity,
             beat,
-            pivotLane: entity.pivotLane + offset(startLane, lane, getLaneAnchor(focus)),
+            pivotLane: moveLane(entity.pivotLane, startLane, lane, getLaneAnchor(focus)),
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
     )
@@ -645,7 +645,7 @@ const toMovedStageStyleEventObject = (
             beat,
             editorLane:
                 onlyType === 'stageStyleEventJoint'
-                    ? entity.editorLane + offset(startLane, lane, getLaneAnchor(focus))
+                    ? moveLane(entity.editorLane, startLane, lane, getLaneAnchor(focus))
                     : entity.editorLane,
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
@@ -662,7 +662,7 @@ const toMovedStageTransformEventObject = (
         {
             ...entity,
             beat,
-            xTranslation: entity.xTranslation + offset(startLane, lane, getLaneAnchor(focus)),
+            xTranslation: moveLane(entity.xTranslation, startLane, lane, getLaneAnchor(focus)),
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
     )
@@ -703,7 +703,7 @@ const toMovedNoteObject = (
         {
             ...entity,
             beat,
-            left: entity.left + offset(startLane, lane, getLaneAnchor(focus)),
+            left: moveLane(entity.left, startLane, lane, getLaneAnchor(focus)),
         },
         { enabled: entity === focus && (lane !== startLane || beat !== entity.beat) },
     )

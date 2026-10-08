@@ -57,6 +57,7 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import type { StoreSlides } from '../../../state/store/slides'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { alignComputed } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { constrainLaneObject } from '../../laneLimits'
@@ -542,8 +543,8 @@ const toMovedTimeScaleObject = (
         editorLane:
             onlyType === 'timeScale'
                 ? flip
-                    ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
-                    : entity.editorLane - alignLane(startLane) + alignLane(lane)
+                    ? alignComputed(-entity.editorLane + alignLane(startLane) + alignLane(lane))
+                    : alignComputed(entity.editorLane - alignLane(startLane) + alignLane(lane))
                 : entity.editorLane,
     })
 
@@ -558,8 +559,10 @@ const toMovedCameraEventObject = (
         ...entity,
         beat,
         cameraLeft: flip
-            ? -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane)
-            : entity.cameraLeft - alignLane(startLane) + alignLane(lane),
+            ? alignComputed(
+                  -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane),
+              )
+            : alignComputed(entity.cameraLeft - alignLane(startLane) + alignLane(lane)),
         cameraZoomTargetLane: flip ? -entity.cameraZoomTargetLane : entity.cameraZoomTargetLane,
         cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
     })
@@ -576,8 +579,10 @@ const toMovedStageMaskEventObject = (
         stageId: view.stageId ?? entity.stageId,
         beat,
         maskLeft: flip
-            ? -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane)
-            : entity.maskLeft - alignLane(startLane) + alignLane(lane),
+            ? alignComputed(
+                  -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane),
+              )
+            : alignComputed(entity.maskLeft - alignLane(startLane) + alignLane(lane)),
     })
 
 const toMovedStagePivotEventObject = (
@@ -592,8 +597,8 @@ const toMovedStagePivotEventObject = (
         stageId: view.stageId ?? entity.stageId,
         beat,
         pivotLane: flip
-            ? -entity.pivotLane + alignLane(startLane) + alignLane(lane)
-            : entity.pivotLane - alignLane(startLane) + alignLane(lane),
+            ? alignComputed(-entity.pivotLane + alignLane(startLane) + alignLane(lane))
+            : alignComputed(entity.pivotLane - alignLane(startLane) + alignLane(lane)),
     })
 
 const toMovedStageStyleEventObject = (
@@ -611,8 +616,8 @@ const toMovedStageStyleEventObject = (
         editorLane:
             onlyType === 'stageStyleEventJoint'
                 ? flip
-                    ? -entity.editorLane + alignLane(startLane) + alignLane(lane)
-                    : entity.editorLane - alignLane(startLane) + alignLane(lane)
+                    ? alignComputed(-entity.editorLane + alignLane(startLane) + alignLane(lane))
+                    : alignComputed(entity.editorLane - alignLane(startLane) + alignLane(lane))
                 : entity.editorLane,
         leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
         rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
@@ -631,8 +636,8 @@ const toMovedStageTransformEventObject = (
         beat,
         rotation: flip ? -entity.rotation : entity.rotation,
         xTranslation: flip
-            ? -entity.xTranslation + alignLane(startLane) + alignLane(lane)
-            : entity.xTranslation - alignLane(startLane) + alignLane(lane),
+            ? alignComputed(-entity.xTranslation + alignLane(startLane) + alignLane(lane))
+            : alignComputed(entity.xTranslation - alignLane(startLane) + alignLane(lane)),
     })
 
 const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
@@ -660,8 +665,10 @@ export const toMovedNoteObject = (
             stageId: view.stageId ?? entity.stageId,
             beat,
             left: flip
-                ? -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane)
-                : entity.left - alignLane(startLane) + alignLane(lane),
+                ? alignComputed(
+                      -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane),
+                  )
+                : alignComputed(entity.left - alignLane(startLane) + alignLane(lane)),
             flickDirection: flip
                 ? flippedFlickDirections[entity.flickDirection]
                 : entity.flickDirection,
