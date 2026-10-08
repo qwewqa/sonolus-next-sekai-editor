@@ -207,12 +207,12 @@ export const timeScaleLabel = (context: EditorDrawContext, entity: TimeScaleEnti
     }
 }
 
-// A plain jump: Step In, the last change, or one to the same value.
+// Held steps and segments without a value transition have a quieter indicator.
 const INSTANT_ALPHA = 0.7
 
 /**
  * Draws a time scale's ease toward the next change, mirrored when the value
- * decreases and faded when the speed simply jumps. Returns the width it takes.
+ * decreases, or an equals sign when no value transition follows. Returns its width.
  */
 const drawEaseGlyph = (
     context: EditorDrawContext,
@@ -224,23 +224,30 @@ const drawEaseGlyph = (
 ) => {
     const { ctx, scale } = context
     const next = nextTimeScale(context, entity)
+    const isConstant = next === null || next?.timeScale === entity.timeScale
     const { width, height, gap, stroke } = EASE_GLYPH
     const left = direction > 0 ? x : x - width
     const top = y - height / 2
     ctx.save()
-    if (isNoneEase(entity.timeScaleEase) || next === null || next?.timeScale === entity.timeScale)
-        ctx.globalAlpha *= INSTANT_ALPHA
+    if (isNoneEase(entity.timeScaleEase) || isConstant) ctx.globalAlpha *= INSTANT_ALPHA
     ctx.strokeStyle = color
     ctx.lineWidth = Math.max(stroke, 1 / scale)
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.beginPath()
-    for (const [index, [px, py]] of easeGlyphPoints(
-        entity.timeScaleEase,
-        !!next && next.timeScale < entity.timeScale,
-    ).entries()) {
-        if (index) ctx.lineTo(left + px * width, top + py * height)
-        else ctx.moveTo(left + px * width, top + py * height)
+    if (isConstant) {
+        for (const offset of [-height / 4, height / 4]) {
+            ctx.moveTo(left + stroke, y + offset)
+            ctx.lineTo(left + width - stroke, y + offset)
+        }
+    } else {
+        for (const [index, [px, py]] of easeGlyphPoints(
+            entity.timeScaleEase,
+            !!next && next.timeScale < entity.timeScale,
+        ).entries()) {
+            if (index) ctx.lineTo(left + px * width, top + py * height)
+            else ctx.moveTo(left + px * width, top + py * height)
+        }
     }
     ctx.stroke()
     ctx.restore()

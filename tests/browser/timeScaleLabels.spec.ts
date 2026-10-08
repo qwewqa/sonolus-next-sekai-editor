@@ -4,7 +4,7 @@ import { installCanvasCounters, installEditorFixture } from './editorFixture'
 type Ink = { left: number; right: number; top: number; bottom: number; alpha: number }
 
 for (const pixelRatio of [1, 1.25, 2]) {
-    test(`time-scale ease glyphs match the shared curve at pixel ratio ${pixelRatio}`, async ({
+    test(`time-scale curves and constant indicators match at pixel ratio ${pixelRatio}`, async ({
         page,
     }) => {
         await page.goto('/')
@@ -62,6 +62,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                         timeScale(0, 1, 'inQuad'),
                         timeScale(4, 2, 'outQuad'),
                         timeScale(8, 0.5, 'inStep'),
+                        timeScale(12, 0.5, 'linear'),
                     ],
                     slides: [],
                 },
@@ -175,28 +176,37 @@ for (const pixelRatio of [1, 1.25, 2]) {
                     canvas.height,
                 ])
 
-                // The shared path, rasterized as SVG in the same box.
+                // Independently rasterize curves and the padded equals sign as SVG.
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
                 svg.setAttribute('width', String(canvas.width))
                 svg.setAttribute('height', String(canvas.height))
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
                 const next = entities[entities.indexOf(entity) + 1]
+                const constant = !next || next.timeScale === entity.timeScale
                 path.setAttribute(
                     'd',
-                    easeGlyphPathD(
-                        entity.timeScaleEase,
-                        !!next && next.timeScale < entity.timeScale,
-                        box.left,
-                        box.top,
-                        box.width,
-                        box.height,
-                    ),
+                    constant
+                        ? [0.25, 0.75]
+                              .map(
+                                  (fraction) =>
+                                      `M ${box.left + 0.05 * scale * pixelRatio} ${box.top + fraction * box.height} L ${box.left + box.width - 0.05 * scale * pixelRatio} ${box.top + fraction * box.height}`,
+                              )
+                              .join(' ')
+                        : easeGlyphPathD(
+                              entity.timeScaleEase,
+                              !!next && next.timeScale < entity.timeScale,
+                              box.left,
+                              box.top,
+                              box.width,
+                              box.height,
+                          ),
                 )
                 path.setAttribute('fill', 'none')
                 path.setAttribute('stroke', '#ff0')
                 path.setAttribute('stroke-width', String(0.05 * scale * pixelRatio))
                 path.setAttribute('stroke-linecap', 'round')
                 path.setAttribute('stroke-linejoin', 'round')
+                if (constant) path.setAttribute('stroke-opacity', '0.7')
                 svg.append(path)
                 const url = URL.createObjectURL(
                     new Blob([new XMLSerializer().serializeToString(svg)], {
@@ -210,7 +220,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
                 reference.width = canvas.width
                 reference.height = canvas.height
                 const referenceContext = reference.getContext('2d')!
-                if (entity.timeScaleEase !== 'inStep') referenceContext.drawImage(image, 0, 0)
+                referenceContext.drawImage(image, 0, 0)
                 URL.revokeObjectURL(url)
 
                 results.push({
@@ -236,7 +246,7 @@ for (const pixelRatio of [1, 1.25, 2]) {
             return results
         }, pixelRatio)
 
-        const [rising, falling, step] = results
+        const [rising, falling, sameValue, last] = results
         // Rising in-quad: holds at the start, then sweeps right toward the next value.
         expect(rising!.quadrants.bottomLeft).toBeGreaterThan(0)
         expect(rising!.quadrants.topRight).toBeGreaterThan(0)
@@ -247,10 +257,13 @@ for (const pixelRatio of [1, 1.25, 2]) {
         expect(falling!.quadrants.topLeft).toBeGreaterThan(0)
         expect(falling!.quadrants.bottomLeft).toBe(0)
         expect(falling!.quadrants.topRight).toBe(0)
-        // A held step has no glyph: its value starts in the glyph's place.
-        expect(step!.text.left).toBeLessThan(step!.glyphRight)
+        // Equal values and the final change both have a visible, padded equals sign.
+        for (const result of [sameValue!, last!]) {
+            expect(result.glyph.alpha).toBeGreaterThan(0)
+            expect(result.glyph.right).toBeLessThan(result.glyphRight)
+        }
 
-        for (const result of [rising!, falling!]) {
+        for (const result of results) {
             for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
                 expect(
                     Math.abs(result.glyph[edge] - result.reference[edge]),

@@ -543,22 +543,37 @@ test('time-scale eases show their curve toward the next change in the group', ()
         ['L', 7.23, -10.17],
     ])
 
-    // Without a later change in its group, or toward the same value, the ease fades.
-    assert.equal(glyph(2).glyph?.alpha, 0.7)
-    assert.equal(glyph(3).glyph?.alpha, 0.7)
+    // Without a later change in its group, or toward the same value, show a padded equals sign.
+    const lastInGroup = glyph(2)
+    const sameValue = glyph(3)
+    assert.equal(lastInGroup.glyph?.alpha, 0.7)
+    assert.equal(sameValue.glyph?.alpha, 0.7)
+    assert.deepEqual(rounded(lastInGroup.glyph?.path), [
+        ['M', 7.28, -15.085],
+        ['L', 7.48, -15.085],
+        ['M', 7.28, -14.915],
+        ['L', 7.48, -14.915],
+    ])
+    assert.deepEqual(rounded(sameValue.glyph?.path), [
+        ['M', 7.28, -20.085],
+        ['L', 7.48, -20.085],
+        ['M', 7.28, -19.915],
+        ['L', 7.48, -19.915],
+    ])
 
     // Previews outside the chart have no known next change.
     canvas.strokes = []
     drawEvent(context, { ...entities[3]!, beat: 10 }, false)
     assert.equal(canvas.strokes[2]?.alpha, 1)
 
-    // A held step is the plain jump: its curve shows, faded, and the value keeps its column.
+    // The final held step also shows equals, and its value keeps the same column.
     const step = glyph(4)
     assert.equal(step.glyph?.alpha, 0.7)
     assert.deepEqual(rounded(step.glyph?.path), [
-        ['M', 7.23, -24.83],
-        ['L', 7.23, -25.17],
-        ['L', 7.53, -25.17],
+        ['M', 7.28, -25.085],
+        ['L', 7.48, -25.085],
+        ['M', 7.28, -24.915],
+        ['L', 7.48, -24.915],
     ])
     assert.ok(Math.abs(step.label!.x - 7.59) < 1e-9)
     canvas.strokes = []

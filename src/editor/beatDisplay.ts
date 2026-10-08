@@ -17,6 +17,7 @@ export const formatBeatPosition = (
     const beatText = fractional ? beat.toFixed(3) : `${beat}`
     if (display === 'beat') return beatText
     const position = beatToMeasure(bpms, chartBeat)
-    const measureText = `${position.measure}.${Number(position.beat.toFixed(3))}`
+    const measureBeat = position.beat.toFixed(3)
+    const measureText = `${position.measure}.${fractional ? measureBeat : Number(measureBeat)}`
     return display === 'both' ? `${measureText} (${beatText})` : measureText
 }

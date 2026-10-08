@@ -48,10 +48,10 @@ test('beat, measure and combined labels match the one-based display examples', (
 })
 
 test('fractional labels that round up to a measure start show that measure', () => {
-    assert.equal(formatBeatPosition(bpms, 3.9999, 'measure', true), '2.1')
-    assert.equal(formatBeatPosition(bpms, 3.9999, 'both', true), '2.1 (5.000)')
+    assert.equal(formatBeatPosition(bpms, 3.9999, 'measure', true), '2.1.000')
+    assert.equal(formatBeatPosition(bpms, 3.9999, 'both', true), '2.1.000 (5.000)')
     assert.equal(formatBeatPosition(bpms, 3.9994, 'measure', true), '1.4.999')
-    assert.equal(formatBeatPosition(bpms, 7.99996, 'measure', true), '3.1')
+    assert.equal(formatBeatPosition(bpms, 7.99996, 'measure', true), '3.1.000')
 })
 
 test('every BPM change starts a new measure even when its meter or tempo is unchanged', () => {
