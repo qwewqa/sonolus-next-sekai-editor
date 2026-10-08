@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { i18n } from '../../i18n'
 import BaseField from './BaseField.vue'
+import { useFieldUsage } from './fieldUsage'
 import ToggleSwitch from './ToggleSwitch.vue'
 
 defineProps<{
@@ -9,6 +10,8 @@ defineProps<{
 }>()
 
 const modelValue = defineModel<boolean | undefined>({ required: true })
+// Only a value several objects share can be mixed; one always set, as the brush's, is a switch.
+const mixable = !!useFieldUsage()
 // The shown value, also on hover where it truncates.
 const shown = computed(() =>
     modelValue.value === undefined
@@ -21,13 +24,13 @@ const shown = computed(() =>
 
 <template>
     <BaseField :label>
-        <!-- A checkbox named by its row, mixed while values differ: ARIA has no mixed switch. -->
+        <!-- Named by its row; a checkbox where it can be mixed, as ARIA has no mixed switch. -->
         <template #default="{ textId }">
             <div class="form-field-toggle group">
                 <input
                     class="w-full rounded-full bg-button px-4 py-1 text-left shadow-md outline-none transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent"
                     type="button"
-                    role="checkbox"
+                    :role="mixable ? 'checkbox' : 'switch'"
                     :aria-checked="modelValue ?? 'mixed'"
                     :aria-labelledby="textId"
                     :class="{ 'text-fg/80': modelValue === undefined }"

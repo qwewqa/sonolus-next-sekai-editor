@@ -717,6 +717,9 @@ test.describe('brush', () => {
             const row = tool(page).locator(`[data-brush-key="${key}"]`)
             await expect(row.locator('select'), key).toHaveCount(0)
             await expect(row.locator('.form-field-toggle input'), key).toHaveValue('Disabled')
+            // Brush values are never mixed, so they are switches, as in Settings.
+            await expect(row.getByRole('switch'), key).toHaveAttribute('aria-checked', 'false')
+            await expect(row.getByRole('checkbox'), key).toHaveCount(0)
         }
         const critical = tool(page).locator('[data-brush-key="isCritical"] input')
         await critical.click()
