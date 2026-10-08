@@ -1328,3 +1328,61 @@ test('Escape after a native undo back to the committed value closes the tool dia
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
 })
+
+test('a held Enter or Space on a toolbar tool repeats only the commands that repeat when held', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['flip'], ['undo'], ['flipVertical', 'combineNotes']]
+    })
+    await page.evaluate(() => {
+        const { history, store } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+    })
+    const undos = () =>
+        page.evaluate(() => {
+            const { history } = window.editorTest
+            let count = 0
+            while (history.canUndo.value) {
+                history.undoState()
+                count++
+            }
+            for (let i = 0; i < count; i++) history.redoState()
+            return count
+        })
+    const hold = async (key: string) => {
+        for (let i = 0; i < 5; i++) await page.keyboard.down(key)
+        await page.keyboard.up(key)
+    }
+    const flip = shown(page).and(page.getByTitle('Flip Horizontally', { exact: true }))
+    for (const key of ['Enter', ' ']) {
+        await flip.focus()
+        await hold(key)
+        await expect.poll(undos).toBe(1)
+        await page.keyboard.press('ControlOrMeta+z')
+        await expect.poll(undos).toBe(0)
+    }
+
+    // A flyout row acts once, and its group's tool takes the repeats.
+    await shown(page).nth(2).focus()
+    await page.keyboard.press('Enter')
+    const row = toolbar(page).locator(':scope > div > div > div button[title="Flip Vertically"]')
+    await row.focus()
+    await hold('Enter')
+    await expect.poll(undos).toBe(1)
+    await expect(toolbar(page).locator('[aria-expanded="true"]')).toHaveCount(0)
+
+    // Undo repeats; U flips twice to give it steps.
+    await page.keyboard.press('u')
+    await page.keyboard.press('u')
+    await expect.poll(undos).toBe(3)
+    await shown(page)
+        .and(page.getByTitle('Undo', { exact: true }))
+        .focus()
+    for (let i = 0; i < 3; i++) await page.keyboard.down('Enter')
+    await page.keyboard.up('Enter')
+    await expect.poll(undos).toBe(0)
+})

@@ -54,7 +54,7 @@ const movesFocus = (element: Element, key: string) =>
     /^(Arrow|Home$|End$)/.test(key) && element.matches('input[type="radio"], [role="toolbar"] *')
 
 // Only the commands Help lists repeat when held; the rest act once per press.
-const repeatsWhenHeld = new Set<CommandName>([
+export const repeatsWhenHeld = new Set<CommandName>([
     'scrollLeft',
     'scrollRight',
     'scrollUp',

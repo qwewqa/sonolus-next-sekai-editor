@@ -24,6 +24,7 @@ import { modals } from '../../modals'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { flyoutEscapes } from '../controls'
+import { repeatsWhenHeld } from '../controls/keyboard'
 import { isDragging } from '../controls/gestures/recognizers/drag'
 import { isCoarsePointer } from '../workspace'
 import type { ToolModalPane } from '../toolModals'
@@ -216,6 +217,12 @@ const onClickSub = (event: MouseEvent, index: number, name: CommandName) => {
     else show()
 }
 
+// A held key repeats only a command that repeats when held, and never opens a flyout.
+const onKeydownRepeat = (event: KeyboardEvent, name: CommandName, opens = false) => {
+    if (!event.repeat || (event.key !== 'Enter' && event.key !== ' ')) return
+    if (opens || !repeatsWhenHeld.has(name)) event.preventDefault()
+}
+
 const onOverBackdrop = (event: PointerEvent) => {
     if (event.pointerType !== 'mouse') return
 
@@ -331,6 +338,7 @@ onBeforeUnmount(() => {
                     v-bind="flyoutAttributes(i)"
                     @pointermove="onOverMain($event, i)"
                     @click="onClickMain($event, i, activeName)"
+                    @keydown="onKeydownRepeat($event, activeName, (toolbar[i]?.length ?? 0) > 1)"
                 />
 
                 <div
@@ -357,6 +365,7 @@ onBeforeUnmount(() => {
                         :check-column="hasValues(i)"
                         show-label
                         @click="onClickSub($event, i, name)"
+                        @keydown="onKeydownRepeat($event, name)"
                     />
                 </div>
             </div>
