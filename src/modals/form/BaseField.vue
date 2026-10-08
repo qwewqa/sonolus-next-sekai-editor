@@ -278,8 +278,12 @@ const fitCoverage = (nextFrame = false, force = false) => {
                 text.style.overflowWrap = 'normal'
             },
             () => {
+                // A word even a fraction wider than the box would break, so widths are sub-pixel.
+                const range = document.createRange()
+                range.selectNodeContents(text)
                 fits =
-                    text.scrollWidth <= text.clientWidth + 1 &&
+                    range.getBoundingClientRect().width <=
+                        text.getBoundingClientRect().width + 0.01 &&
                     text.scrollHeight <= Math.min(stackedHeight, text.clientHeight) + 1
             },
             () => {

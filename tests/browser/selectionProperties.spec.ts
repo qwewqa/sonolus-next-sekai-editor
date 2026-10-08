@@ -219,6 +219,45 @@ test.describe('mixed values', () => {
         await expect.poll(() => sameRow('Attached')).toBe(false)
     })
 
+    test('a label beside its coverage never breaks inside a word', async ({ page }) => {
+        test.setTimeout(60_000)
+        // Each dock width fits afresh; a word even a fraction too wide for its box breaks.
+        const breaks = (locale: string) =>
+            page.evaluate(async (locale) => {
+                const { settings } = window.editorTest
+                settings.locale = locale
+                const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+                const found: string[] = []
+                for (let width = 330; width <= 360; width++) {
+                    settings.rightDockWidth = width
+                    for (let i = 0; i < 3; i++) await frame()
+                    for (const text of document.querySelectorAll<HTMLElement>(
+                        '#properties-section-selection .form-field-inline:not(.form-field-stacked) .form-field-text',
+                    )) {
+                        const node = text.firstChild
+                        if (!(node instanceof Text)) continue
+                        const line = text.closest('.form-field-inline')
+                        if (!line || getComputedStyle(line).display !== 'grid') continue
+                        let start = 0
+                        for (const word of node.data.split(' ')) {
+                            const range = document.createRange()
+                            range.setStart(node, start)
+                            range.setEnd(node, start + word.length)
+                            const tops = new Set(
+                                [...range.getClientRects()].map((rect) => Math.round(rect.top)),
+                            )
+                            if (tops.size > 1) found.push(`${width} ${node.data}`)
+                            start += word.length + 1
+                        }
+                    }
+                }
+                return found
+            }, locale)
+        const found: Record<string, string[]> = {}
+        for (const locale of ['en', 'fr', 'tr', 'ko']) found[locale] = await breaks(locale)
+        expect(found).toEqual({ en: [], fr: [], tr: [], ko: [] })
+    })
+
     test('chips are one Tab stop, with arrows between them', async ({ page }) => {
         const chips = selection(page)
             .locator('.form-field')
