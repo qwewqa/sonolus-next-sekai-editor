@@ -3,7 +3,7 @@ import { replaceState, state } from '../../../../history'
 import { settings } from '../../../../settings'
 import { time } from '../../../../time'
 import { unlerp } from '../../../../utils/math'
-import { editorNavigation, getControlBounds } from '../../../navigation'
+import { getControlBounds } from '../../../navigation'
 import { tool, type Tool } from '../../../tools'
 import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
 import type { Modifiers } from '../pointer'
@@ -106,12 +106,10 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true
 
                 isDragging.value++
-                held = editorNavigation.value?.holdsEdgePanAtDragStart
-                    ? {
-                          x: holdIn((sx - bounds.x) / bounds.w),
-                          y: holdIn((sy - bounds.y) / bounds.h),
-                      }
-                    : {}
+                held = {
+                    x: holdIn((sx - bounds.x) / bounds.w),
+                    y: holdIn((sy - bounds.y) / bounds.h),
+                }
 
                 active = {
                     type: 'drag',

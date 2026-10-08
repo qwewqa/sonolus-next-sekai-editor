@@ -14,8 +14,6 @@ export type EditorNavigation = {
     positionAtPoint: (x: number, y: number) => { lane: number; beat: number; elevation: number }
     pasteAtPoint: (x: number, y: number, modifiers: Modifiers) => Promise<boolean>
     getContextMenuPoint?: () => { x: number; y: number }
-    /** A drag starting in an edge zone pans that way only once deeper than its start. */
-    holdsEdgePanAtDragStart?: boolean
 }
 
 export const editorNavigation = shallowRef<EditorNavigation>()
