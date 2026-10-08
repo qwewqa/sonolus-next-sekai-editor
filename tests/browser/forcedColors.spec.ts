@@ -648,15 +648,9 @@ test('focus rings on the current group keep a gap from its edge', async ({ page 
     const row = page.locator(
         '#workspace-panel-groups .manager-row-current:not(.manager-row-heading)',
     )
-    const buttons = row.locator('.manager-icon-button')
-    await expect(buttons.first()).toBeVisible()
-    const count = await buttons.count()
-    expect(count).toBeGreaterThan(1)
-    for (let index = 0; index < count; index++) {
-        const button = buttons.nth(index)
-        await focus(button)
-        // The ring's outer edge against the inner edge of the row's own edge, on each side.
-        const gap = await button.evaluate((element) => {
+    // The ring's outer edge against the inner edge of the row's own edge, on each side.
+    const gap = (control: Locator) =>
+        control.evaluate((element) => {
             const row = element.closest('.manager-row')!
             const ring = (element: Element) => {
                 const { outlineWidth, outlineOffset } = getComputedStyle(element)
@@ -673,8 +667,24 @@ test('focus rings on the current group keep a gap from its edge', async ({ page 
                 edge.bottom + inner - (box.bottom + outer),
             )
         })
-        expect(gap, `${await button.getAttribute('aria-label')}`).toBeGreaterThanOrEqual(2)
+    const buttons = row.locator('.manager-icon-button, .manager-name')
+    await expect(buttons.first()).toBeVisible()
+    const count = await buttons.count()
+    expect(count).toBeGreaterThan(1)
+    for (let index = 0; index < count; index++) {
+        const button = buttons.nth(index)
+        await focus(button)
+        expect(
+            await gap(button),
+            `${(await button.getAttribute('aria-label')) ?? (await button.textContent())}`,
+        ).toBeGreaterThanOrEqual(2)
     }
+    // The name field while renaming, which is always focused.
+    await focus(row.locator('.manager-name'))
+    await page.keyboard.press('F2')
+    const rename = row.locator('.manager-rename')
+    await expect(rename).toBeFocused()
+    expect(await gap(rename)).toBeGreaterThanOrEqual(2)
 })
 
 for (const colorScheme of ['light', 'dark'] as const)

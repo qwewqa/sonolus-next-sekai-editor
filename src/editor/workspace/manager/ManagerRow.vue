@@ -803,8 +803,10 @@ const onRenameBlur = (event: FocusEvent) => {
         outline-offset: -2px;
     }
 
-    /* Round buttons fill the target's height, so theirs sit further in, clear of its edge. */
-    .manager-row-current:not(.manager-row-heading) .manager-icon-button:focus-visible {
+    /* Round buttons and the name or its field fill the target's height, so theirs sit
+       further in, clear of its edge. */
+    .manager-row-current:not(.manager-row-heading)
+        :is(.manager-icon-button, .manager-name, .manager-rename):focus-visible {
         outline-offset: -4px;
     }
 }
