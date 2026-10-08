@@ -36,30 +36,22 @@ const cancelControls = (restoreTool = true) => {
 // Open toolbar flyouts' Escape handlers, run after a drag's and before any pane's or drawer's.
 export const flyoutEscapes = new Set<(event: KeyboardEvent) => void>()
 
-// Only a fresh Escape press cancels a drag; a held Escape's repeats do nothing.
-let swallowsEscape = false
+// One Escape press does one thing: a held Escape's repeats do nothing anywhere.
 const cancelDragOnEscape = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || event.isComposing) return
-    if (!isDragging.value && !(swallowsEscape && event.repeat)) {
-        swallowsEscape = false
+    if (!event.repeat && !isDragging.value) {
         for (const close of flyoutEscapes) close(event)
         return
     }
     event.preventDefault()
     event.stopImmediatePropagation()
-    swallowsEscape = true
     if (!event.repeat) cancelControls()
-}
-const releaseEscape = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') swallowsEscape = false
 }
 // Registered at load, so it runs before every other Escape handler.
 addEventListener('keydown', cancelDragOnEscape, true)
-addEventListener('keyup', releaseEscape, true)
 if (import.meta.hot) {
     import.meta.hot.dispose(() => {
         removeEventListener('keydown', cancelDragOnEscape, true)
-        removeEventListener('keyup', releaseEscape, true)
     })
 }
 

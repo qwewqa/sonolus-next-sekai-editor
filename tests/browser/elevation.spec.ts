@@ -311,6 +311,46 @@ test('Escape in the Beat field reverts typing first, then closes elevation mode'
     await expect(page.locator('.elevation-editor')).toHaveCount(0)
 })
 
+test('a held Escape closes only the hovered flyout, menu or typing, then leaves the pane open', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.mouseSecondaryTool = 'selectContextMenu'
+    })
+    await open(page)
+    const pane = page.locator('.elevation-editor')
+    const holdEscape = async () => {
+        await page.keyboard.down('Escape')
+        await page.keyboard.down('Escape')
+        await page.keyboard.down('Escape')
+        await page.keyboard.up('Escape')
+        await settle(page)
+    }
+    const group = page.locator('[data-editor-toolbar] button[aria-expanded]').last()
+    const box = (await group.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(group).toHaveAttribute('aria-expanded', 'true')
+    await holdEscape()
+    await expect(group).toHaveAttribute('aria-expanded', 'false')
+    await expect(pane).toBeVisible()
+
+    const empty = await at(page, 5, 1)
+    await page.mouse.click(empty.x, empty.y, { button: 'right' })
+    await expect(page.getByRole('menu')).toBeVisible()
+    await holdEscape()
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await expect(pane).toBeVisible()
+
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await beat.fill('9')
+    await holdEscape()
+    await expect(beat).toHaveValue('7')
+    await expect(pane).toBeVisible()
+    // The next press closes it.
+    await page.keyboard.press('Escape')
+    await expect(pane).toHaveCount(0)
+})
+
 test('the header fields keep their edge at rest and thicken it on focus in high contrast', async ({
     page,
 }) => {

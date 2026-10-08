@@ -67,6 +67,30 @@ test.describe('phone with a drawer', () => {
         // The selection survives: Escape closed the drawer rather than deselecting.
         expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toHaveLength(1)
     })
+
+    test('a held Escape that stops selecting groups leaves the drawer open', async ({ page }) => {
+        await boot(page, {
+            groupsPosition: 'right',
+            showSidebar: true,
+            panelRecency: ['groups', 'properties', 'preview', 'stages'],
+        })
+        const body = page.locator('[data-workspace-dock="right"] .workspace-dock-body')
+        const list = page.locator('#workspace-panel-groups .manager-list')
+        await page.getByRole('tab', { name: 'Groups', exact: true }).click()
+        await expect(body).toBeVisible()
+        await list.locator('.manager-name').first().focus()
+        await page.keyboard.press('ControlOrMeta+a')
+        await expect(list).toHaveClass(/manager-list-selecting/)
+        await page.keyboard.down('Escape')
+        await page.keyboard.down('Escape')
+        await page.keyboard.down('Escape')
+        await page.keyboard.up('Escape')
+        await expect(list).not.toHaveClass(/manager-list-selecting/)
+        await expect(body).toBeVisible()
+        // The next press closes it.
+        await page.keyboard.press('Escape')
+        await expect(body).toHaveCount(0)
+    })
 })
 
 test.describe('phone with a drawer being resized', () => {
