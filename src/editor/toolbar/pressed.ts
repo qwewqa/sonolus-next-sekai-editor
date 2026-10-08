@@ -1,6 +1,5 @@
 import { settings } from '../../settings'
 import type { CommandName } from '../commands'
-import { isElevationEditorOpen } from '../elevation/state'
 import { toolName, tools, type ToolName } from '../tools'
 import { defaultNotePropertiesPresetIndex } from '../tools/note'
 import { defaultSlidePropertiesPresetIndex } from '../tools/slide'
@@ -48,7 +47,8 @@ export const commandState = (
     name: CommandName,
     group: readonly CommandName[],
 ): CommandState | undefined => {
-    if (name === 'elevation') return tool(isElevationEditorOpen.value)
+    // The open editor shows itself, so its button takes no pressed look.
+    if (name === 'elevation') return undefined
     if (name === 'event') return tool(eventTools.includes(toolName.value))
 
     const preset = /^(note|slide)(\d+)$/.exec(name)

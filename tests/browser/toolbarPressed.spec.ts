@@ -57,11 +57,9 @@ test('the toolbar shows the tool in use as pressed', async ({ page }) => {
     await page.keyboard.press('f')
     await expect.poll(() => pressedTitles(page)).toEqual(['Select', ...values])
 
-    // The elevation editor is a mode beside the tool.
+    // The open elevation editor shows itself, so its button isn't pressed; its toolbar adds its own values.
     await run(page, 'elevation')
-    await expect
-        .poll(() => pressedTitles(page))
-        .toEqual(expect.arrayContaining(['Elevation Editor']))
+    await expect.poll(() => pressedTitles(page)).toEqual([...values, ...values])
     await run(page, 'elevation')
     await expect.poll(() => pressedTitles(page)).toEqual(['Select', ...values])
 })
@@ -634,9 +632,9 @@ test('the default toolbar’s faces follow the tool and values in use', async ({
     await run(page, 'stageMaskEvent')
     await expectFaces({})
     await run(page, 'elevation')
-    await expectFaces({ 4: 'Elevation Editor*', 9: 'Event' })
+    await expectFaces({ 9: 'Event' })
     await run(page, 'elevation')
-    await expectFaces({ 4: 'Flip Horizontally', 9: 'Event*' })
+    await expectFaces({ 9: 'Event*' })
     await page.keyboard.press('f')
     await expectFaces({ 3: 'Select*', 9: 'Event' })
 
