@@ -41,6 +41,19 @@ const props = defineProps<{ available?: CommandName[] }>()
 
 const toolbar = computed<CommandName[][]>(() => toolbarGroups(settings.toolbar, props.available))
 
+const isPressed = (name: CommandName, index: number) =>
+    isCommandPressed(name, toolbar.value[index] ?? [])
+const stateOf = (name: CommandName, index: number) => commandState(name, toolbar.value[index] ?? [])
+// A flyout with values gives every row the check column, so labels line up.
+const hasValues = (index: number) =>
+    toolbar.value[index]?.some((name) => stateOf(name, index)?.kind === 'value') ?? false
+
+const hasToolInUse = (index: number) =>
+    toolbar.value[index]?.some((name) => {
+        const state = stateOf(name, index)
+        return state?.kind === 'tool' && state.current
+    }) ?? false
+
 const activeNames = ref<CommandName[]>([])
 let temporary: Temporary = { displaced: [], inUse: [] }
 
@@ -54,8 +67,12 @@ watch(
         activeNames.value = toolbar.map(
             (commands, index) => kept?.[index] ?? commands[commands.length - 1] ?? 'select',
         )
+        // A group with a tool in use keeps a face it displaced before the change.
+        const before = previous ? temporary.displaced.filter((name) => name !== undefined) : []
         temporary = (previous ? undefined : temporaryByLayout.get(layout)) ?? {
-            displaced: [],
+            displaced: toolbar.map((group, index) =>
+                hasToolInUse(index) ? before.find((name) => group.includes(name)) : undefined,
+            ),
             inUse: [],
         }
         temporaryByLayout.set(layout, temporary)
@@ -66,19 +83,6 @@ watch(activeNames, (names) => shownByLayout.set(layoutOf(toolbar.value), [...nam
     deep: true,
     immediate: true,
 })
-
-const isPressed = (name: CommandName, index: number) =>
-    isCommandPressed(name, toolbar.value[index] ?? [])
-const stateOf = (name: CommandName, index: number) => commandState(name, toolbar.value[index] ?? [])
-// A flyout with values gives every row the check column, so labels line up.
-const hasValues = (index: number) =>
-    toolbar.value[index]?.some((name) => stateOf(name, index)?.kind === 'value') ?? false
-
-const hasToolInUse = (index: number) =>
-    toolbar.value[index]?.some((name) => {
-        const state = stateOf(name, index)
-        return state?.kind === 'tool' && state.current
-    }) ?? false
 
 // Values move a face only in a group whose states are all of one value family.
 const followsValues = (index: number) => {

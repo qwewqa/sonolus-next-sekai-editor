@@ -1128,3 +1128,28 @@ test('Escape over a hovered flyout closes a dialog opened over it', async ({ pag
         await expect(dialog).toHaveCount(0)
     }
 })
+
+test('a layout change while a tool shows over a face still returns the face', async ({ page }) => {
+    const layouts = [
+        [
+            ['paste', 'undo'],
+            ['eraser', 'select'],
+        ],
+        [['paste', 'undo'], ['select']],
+    ]
+    const setLayout = (layout: string[][]) =>
+        page.evaluate((layout) => {
+            window.editorTest.settings.toolbar = layout as never
+        }, layout)
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await setLayout(layouts[0]!)
+    await expectFace('Undo')
+    for (const layout of [layouts[1]!, layouts[0]!]) {
+        await page.keyboard.press('v')
+        await expectFace('Paste*')
+        await setLayout(layout)
+        await expectFace('Paste*')
+        await page.keyboard.press('f')
+        await expectFace('Undo')
+    }
+})
