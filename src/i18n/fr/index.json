@@ -59,7 +59,7 @@
       "six": "Limiter à ±6 voies",
       "custom": "Limite de voie personnalisée",
       "maximum": "Voie maximale (±)",
-      "limited": "Limite de voie : ±{0}",
+      "limited": "Limite de voie : ±{0}",
       "unlimited": "Sans limite de voie"
     },
     "laneDivisions": {
@@ -231,7 +231,7 @@
       "decrease": {
         "title": "Réduire la taille des notes"
       },
-      "changed": "Taille des notes modifiée : {0}"
+      "changed": "Taille des notes modifiée : {0}"
     },
     "offset": {
       "title": "Décalage",
@@ -344,7 +344,7 @@
       "title": "Arrêter"
     },
     "toggleVolume": {
-      "title": "Activer/désactiver le son : {0}",
+      "title": "Activer/désactiver le son : {0}",
       "toggled": "Son {0} activé/désactivé",
       "type": {
         "bgm": "Musique",
@@ -365,7 +365,7 @@
         "cycled": "Visibilité des objets modifiée"
       },
       "toggle": {
-        "title": "Visibilité : {0}",
+        "title": "Visibilité : {0}",
         "toggled": "Visibilité de {0} modifiée",
         "types": {
           "note": "Note",
@@ -382,19 +382,19 @@
     "zooms": {
       "zoomXIn": {
         "title": "Zoom avant sur l’axe X",
-        "zoomed": "Zoom avant sur l’axe X de 10 %"
+        "zoomed": "Zoom avant sur l’axe X de 10 %"
       },
       "zoomXOut": {
         "title": "Zoom arrière sur l’axe X",
-        "zoomed": "Zoom arrière sur l’axe X de 10 %"
+        "zoomed": "Zoom arrière sur l’axe X de 10 %"
       },
       "zoomYIn": {
         "title": "Zoom avant sur l’axe Y",
-        "zoomed": "Zoom avant sur l’axe Y de 10 %"
+        "zoomed": "Zoom avant sur l’axe Y de 10 %"
       },
       "zoomYOut": {
         "title": "Zoom arrière sur l’axe Y",
-        "zoomed": "Zoom arrière sur l’axe Y de 10 %"
+        "zoomed": "Zoom arrière sur l’axe Y de 10 %"
       }
     },
     "bpm": {
@@ -630,7 +630,7 @@
       "showOtherStages": "Afficher les autres scènes",
       "nameContrast": "Contraste des noms",
       "showOtherObjects": "Afficher les autres objets",
-      "deselectSwitchesToSelect": "Double désélection : outil Sélection",
+      "deselectSwitchesToSelect": "Double désélection : outil Sélection",
       "beatDisplay": {
         "title": "Affichage des temps",
         "beat": "Temps",
@@ -717,12 +717,12 @@
       "none": "Aucun objet sélectionné",
       "edited": "{0} objet modifié|{0} objets modifiés",
       "editedNotes": "{0} note modifiée|{0} notes modifiées",
-      "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
-      "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
+      "set": "{1} : {0} objet modifié|{1} : {0} objets modifiés",
+      "setNotes": "{1} : {0} note modifiée|{1} : {0} notes modifiées",
       "noChange": "Aucun changement",
-      "setBpm": "{1} : {0} changement de BPM modifié|{1} : {0} changements de BPM modifiés",
-      "setTimeScales": "{1} : {0} échelle de temps modifiée|{1} : {0} échelles de temps modifiées",
-      "setEvents": "{1} : {0} événement {2} modifié|{1} : {0} événements {2} modifiés"
+      "setBpm": "{1} : {0} changement de BPM modifié|{1} : {0} changements de BPM modifiés",
+      "setTimeScales": "{1} : {0} échelle de temps modifiée|{1} : {0} échelles de temps modifiées",
+      "setEvents": "{1} : {0} événement {2} modifié|{1} : {0} événements {2} modifiés"
     },
     "view": {
       "tool": "Outil",
@@ -942,11 +942,11 @@
     },
     "changes": {
       "title": "Modifications",
-      "message": "Les modifications apportées au niveau peuvent être perdues. Continuer ?"
+      "message": "Les modifications apportées au niveau peuvent être perdues. Continuer ?"
     },
     "dynamicStages": {
       "title": "Scènes dynamiques",
-      "message": "Cette fonctionnalité nécessite les scènes dynamiques. Voulez-vous les activer ?",
+      "message": "Cette fonctionnalité nécessite les scènes dynamiques. Voulez-vous les activer ?",
       "enabled": "Scènes dynamiques activées"
     }
   },
@@ -955,7 +955,7 @@
     "form": {
       "confirm": "Confirmer",
       "mixed": "Mixte",
-      "mixedValues": "Mixte : {0}",
+      "mixedValues": "Mixte : {0}",
       "listJoin": "{0}, {1}",
       "sentenceJoin": "{0}. {1}",
       "notSet": "Non défini",
@@ -1189,8 +1189,8 @@
         "pressCancel": "Appuyez sur une touche ou sur Échap pour annuler",
         "clear": "Cliquez à nouveau pour effacer ce raccourci",
         "unassigned": "Non attribué",
-        "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche.",
-        "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche.",
+        "reserved": "{0} est réservé au navigateur ou au système ; appuyez sur une autre touche.",
+        "altGraph": "{0} sert à taper des caractères sur de nombreux claviers ; appuyez sur une autre touche.",
         "alsoRuns": "Exécute aussi {0}",
         "browserReload": "Remplace le raccourci d’actualisation du navigateur",
         "browserFind": "Remplace le raccourci de recherche du navigateur",
@@ -1353,12 +1353,12 @@
       "forward": "Avancer de {0} ms",
       "holdBackward": "Maintenir pour reculer à {0}×",
       "holdForward": "Maintenir pour avancer à {0}×",
-      "stepSize": "Pas : {0} ms"
+      "stepSize": "Pas : {0} ms"
     }
   },
   "offscreenNotes": {
-    "left": "Notes hors écran à gauche : {0}",
-    "right": "Notes hors écran à droite : {0}"
+    "left": "Notes hors écran à gauche : {0}",
+    "right": "Notes hors écran à droite : {0}"
   },
   "workspace": {
     "panels": {
@@ -1449,7 +1449,7 @@
     "groups": {
       "deleteFolder": "Supprimer le dossier et ses groupes…",
       "deleteFolderTitle": "Supprimer le dossier et ses groupes",
-      "deleteFolderMessage": "Supprimer le dossier {0}, ses groupes ({1}) et leurs objets ({2}) ?",
+      "deleteFolderMessage": "Supprimer le dossier {0}, ses groupes ({1}) et leurs objets ({2}) ?",
       "renamed": "Groupe {0} renommé en {1}",
       "all": "Tous les groupes",
       "showAll": "Afficher tous les groupes",
@@ -1461,8 +1461,8 @@
       "deletedSelectedFolders": "Dossiers ({0}) et groupes ({1}) sélectionnés supprimés",
       "deleteSelectedTitle": "Supprimer les groupes",
       "deleteSelectedFoldersTitle": "Supprimer le dossier et les groupes|Supprimer les dossiers et les groupes",
-      "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?",
-      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les groupes ({1}) et leurs objets ({2}) ?",
+      "deleteSelectedMessage": "Supprimer les groupes sélectionnés ({0}) et leurs objets ({1}) ?",
+      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les groupes ({1}) et leurs objets ({2}) ?",
       "duplicated": "Groupe {0} dupliqué",
       "duplicatedSelected": "Groupe sélectionné ({0}) dupliqué|Groupes sélectionnés ({0}) dupliqués",
       "duplicatedSelectedFolders": "Dossiers ({0}) et groupes ({1}) sélectionnés dupliqués"
@@ -1470,7 +1470,7 @@
     "stages": {
       "deleteFolder": "Supprimer le dossier et ses scènes…",
       "deleteFolderTitle": "Supprimer le dossier et ses scènes",
-      "deleteFolderMessage": "Supprimer le dossier {0}, ses scènes ({1}) et leurs objets ({2}) ?",
+      "deleteFolderMessage": "Supprimer le dossier {0}, ses scènes ({1}) et leurs objets ({2}) ?",
       "renamed": "Scène {0} renommée en {1}",
       "all": "Toutes les scènes",
       "showAll": "Afficher toutes les scènes",
@@ -1484,8 +1484,8 @@
       "deletedSelectedFolders": "Dossiers ({0}) et scènes ({1}) sélectionnés supprimés",
       "deleteSelectedTitle": "Supprimer les scènes",
       "deleteSelectedFoldersTitle": "Supprimer le dossier et les scènes|Supprimer les dossiers et les scènes",
-      "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?",
-      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les scènes ({1}) et leurs objets ({2}) ?",
+      "deleteSelectedMessage": "Supprimer les scènes sélectionnées ({0}) et leurs objets ({1}) ?",
+      "deleteSelectedFoldersMessage": "Supprimer les dossiers sélectionnés ({0}), les scènes ({1}) et leurs objets ({2}) ?",
       "duplicated": "Scène {0} dupliquée",
       "duplicatedSelected": "Scène sélectionnée ({0}) dupliquée|Scènes sélectionnées ({0}) dupliquées",
       "duplicatedSelectedFolders": "Dossiers ({0}) et scènes ({1}) sélectionnés dupliqués"
