@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import { settings } from '../../settings'
 import { beginAudioPreviewInteraction } from '../audioPreview'
 import { zoomXIn } from '../commands/zooms/zoomXIn'
@@ -5,10 +6,17 @@ import { zoomXOut } from '../commands/zooms/zoomXOut'
 import { zoomYIn } from '../commands/zooms/zoomYIn'
 import { zoomYOut } from '../commands/zooms/zoomYOut'
 import { closeContextMenu, openContextMenu } from '../contextMenu'
-import { getControlBounds } from '../navigation'
+import { editorNavigation, getControlBounds } from '../navigation'
 import { cancelPreviewFollow, stopPlayer } from '../player'
 import { switchToolTo, tool, toolName, type ToolName } from '../tools'
-import { scrollViewXBy, scrollViewYBy, setViewHover, updateViewPointer, view } from '../view'
+import {
+    scrollViewXBy,
+    scrollViewYBy,
+    setViewHover,
+    updateViewPointer,
+    view,
+    viewBox,
+} from '../view'
 import { lockCursor, unlockCursor } from './cursor'
 import { gesture } from './gestures/gesture'
 import { drag, isDragging } from './gestures/recognizers/drag'
@@ -33,6 +41,8 @@ const toP = (event: MouseEvent) => ({
 let secondarySwitchBack: ToolName | undefined
 let switchingSecondaryTool = false
 let contextClick: { x: number; y: number } | undefined
+// The mouse rests over the chart, unpressed.
+let isHovering = false
 
 export const cancelMouseControls = (restoreTool = true) => {
     if (switchingSecondaryTool) return
@@ -46,6 +56,7 @@ export const cancelMouseControls = (restoreTool = true) => {
 }
 
 const mousedown = (event: MouseEvent) => {
+    isHovering = false
     closeContextMenu()
     // Selected page text would keep its native copy over the objects pressed after it.
     clearPageSelection()
@@ -106,6 +117,7 @@ const mousemove = (event: MouseEvent) => {
     if (mouseGesture.pointerCount) {
         mouseGesture.move([p])
     } else if (!isDragging.value) {
+        isHovering = true
         setViewHover(p.y)
         void tool.value.hover?.(p.x, p.y, p.modifiers)
     }
@@ -140,6 +152,7 @@ const mouseup = (event: MouseEvent) => {
 }
 
 const mouseleave = (event: MouseEvent) => {
+    isHovering = false
     contextClick = undefined
     mouseup(event)
 }
@@ -220,6 +233,15 @@ const wheel = (event: WheelEvent) => {
 
     event.preventDefault()
 }
+
+// Scrolling under a still mouse, as playback, the wheel or a pan does, moves what it hovers.
+watch([viewBox, () => view.x, () => view.y], () => {
+    if (!isHovering || view.isHoverHidden || editorNavigation.value) return
+    if (mouseGesture.pointerCount || isDragging.value) return
+    const { x, y, modifiers } = view.pointer
+    setViewHover(y)
+    void tool.value.hover?.(x, y, modifiers)
+})
 
 export const mouseControlListeners = {
     mousedown,

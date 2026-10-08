@@ -223,3 +223,56 @@ test('a slow mouse click still acts as a click', async ({ page }) => {
         .poll(() => page.evaluate(() => window.editorTest.snapshot().notes.length))
         .toBe(before + 1)
 })
+
+test('the hover line and preview follow a still mouse as the chart scrolls under it', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, settings } = window.editorTest
+        show(fixtures.interaction, 3)
+        settings.mouseSmoothScrolling = false
+    })
+    await page.keyboard.press('a')
+    const position = await page.evaluate(() => window.editorTest.point(-7, 6))
+    await page.mouse.move(position.x, position.y)
+    await settle(page)
+    const hover = () =>
+        page.evaluate(async () => {
+            const { view, appImport } = window.editorTest
+            const { yToTime } =
+                await appImport<typeof import('../../src/editor/view')>('/src/editor/view.ts')
+            return {
+                time: view.hoverTime,
+                pointer: yToTime(view.pointer.y),
+                hidden: view.isHoverHidden,
+                creating: window.editorTest.snapshot().creating.map(({ beat }) => beat),
+            }
+        })
+    const before = await hover()
+    expect(before.creating).toEqual([6])
+
+    // The wheel, then a jump as playback follow makes.
+    await page.mouse.wheel(0, -240)
+    await settle(page)
+    const wheeled = await hover()
+    expect(wheeled.time).not.toBeCloseTo(before.time)
+    expect(wheeled.time).toBeCloseTo(wheeled.pointer)
+    expect(wheeled.creating).not.toEqual([6])
+    await page.evaluate(() => {
+        window.editorTest.view.time += 1
+    })
+    await settle(page)
+    const followed = await hover()
+    expect(followed.time).toBeCloseTo(wheeled.time + 1)
+    expect(followed.time).toBeCloseTo(followed.pointer)
+    expect(followed.hidden).toBe(false)
+
+    // Away from the chart, nothing follows.
+    const bounds = await page.locator('.editor').boundingBox()
+    await page.mouse.move(position.x, bounds!.y + bounds!.height + 20)
+    await page.evaluate(() => {
+        window.editorTest.view.time += 1
+    })
+    await settle(page)
+    expect((await hover()).time).toBeCloseTo(followed.time)
+})
