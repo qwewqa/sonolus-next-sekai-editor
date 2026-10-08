@@ -36,7 +36,7 @@ const cancelControls = (restoreTool = true) => {
 // Open toolbar flyouts' Escape handlers, run after a drag's and before any pane's or drawer's.
 export const flyoutEscapes = new Set<(event: KeyboardEvent) => void>()
 
-// Escape during a drag only cancels it; its key repeats do nothing either.
+// Only a fresh Escape press cancels a drag; a held Escape's repeats do nothing.
 let swallowsEscape = false
 const cancelDragOnEscape = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || event.isComposing) return
@@ -47,9 +47,8 @@ const cancelDragOnEscape = (event: KeyboardEvent) => {
     }
     event.preventDefault()
     event.stopImmediatePropagation()
-    if (!isDragging.value) return
     swallowsEscape = true
-    cancelControls()
+    if (!event.repeat) cancelControls()
 }
 const releaseEscape = (event: KeyboardEvent) => {
     if (event.key === 'Escape') swallowsEscape = false

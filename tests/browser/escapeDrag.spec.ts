@@ -202,6 +202,40 @@ test('a held Escape that cancels a drag does nothing more as it repeats', async 
     expect(await selectedBeats(page)).toEqual([])
 })
 
+test('a held Escape never cancels a drag started while it is held', async ({ page }) => {
+    await command(page, 'select')
+    const start = await point(page, 1, 5)
+    const end = await point(page, 1, 6)
+    const move = async () => {
+        await select(page, [3, 5])
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(end.x, end.y, { steps: 8 })
+        await settle(page)
+        await expect(page.locator('.notification')).toHaveText('Moving 2 objects')
+    }
+    // Held after cancelling one drag, then held from before a drag.
+    for (const cancelFirst of [true, false]) {
+        if (cancelFirst) {
+            await move()
+            await page.keyboard.down('Escape')
+            await page.mouse.up()
+        } else {
+            await page.keyboard.down('Escape')
+        }
+        await settle(page)
+        await move()
+        await page.keyboard.down('Escape')
+        await settle(page)
+        await expect(page.locator('.notification')).toHaveText('Moving 2 objects')
+        await page.mouse.up()
+        await page.keyboard.up('Escape')
+        await settle(page)
+        expect((await snapshot(page)).notes.map(({ beat }) => beat)).toEqual([4, 6, 7, 9])
+        await command(page, 'undo')
+    }
+})
+
 test('a dialog opened mid-drag cancels the drag', async ({ page }) => {
     await command(page, 'select')
     for (const key of ['h', ',']) {
