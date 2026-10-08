@@ -24,7 +24,7 @@ import { getInStoreGrid } from '../store/grid'
 import { createTransaction, type Transaction } from '../transaction'
 import { connectorProperties } from './connectorProperties'
 import { isEditableEntity, type EditableEntity } from './editable'
-import { inStoredOrder } from './transformSelection'
+import { edit, inStoredOrder } from './transformSelection'
 
 const reverseSlideProperties = (source: State, selected: Set<EditableEntity>) => {
     const properties = new Map<NoteEntity, Partial<NoteObject>>()
@@ -106,19 +106,33 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
     }
     if (min === max) return source
 
-    const properties = reverseSlideProperties(source, new Set(entities))
+    const selectedSet = new Set(entities)
+    const properties = reverseSlideProperties(source, selectedSet)
     const transaction = createTransaction(source, { autoAddGroup: false })
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find((bpm) => bpm.beat === 0)
 
+    // On its own beat beside an unselected partner, it is edited in place and keeps its order.
+    const stays = (entity: EditableEntity) =>
+        entity.type !== 'note' &&
+        min + (max - entity.beat) === entity.beat &&
+        (getInStoreGrid(source.store.grid, entity.type, entity.beat) ?? []).some(
+            (other) =>
+                other.beat === entity.beat && sameTrack(entity, other) && !selectedSet.has(other),
+        )
+
     // Remove the entire selection first. Sequential moves can otherwise delete
     // each other's destination, particularly when swapping BPMs and events.
-    for (const entity of entities) remove(transaction, entity)
+    for (const entity of entities) if (!stays(entity)) remove(transaction, entity)
     // A same-beat pair stays a pair, its order mirrored as the jump now runs back.
     const ordered = inStoredOrder(source, entities, (entity) => entity, true)
     const eases = reverseEases(source, entities)
     const placed = new Map<Entity, number>()
     const flipped: Entity[] = []
     for (const entity of ordered) {
+        if (entity.type !== 'note' && stays(entity)) {
+            flipped.push(...edit(transaction, entity, eases.get(entity) ?? {}))
+            continue
+        }
         const beat = min + (max - entity.beat)
         if (entity.type !== 'note') {
             // Match the editor's move behavior: a timing point replaces an
@@ -127,10 +141,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
                 if (
                     other.beat === beat &&
                     placed.get(other) !== entity.beat &&
-                    (!('groupId' in entity) ||
-                        ('groupId' in other && other.groupId === entity.groupId)) &&
-                    (!('stageId' in entity) ||
-                        ('stageId' in other && other.stageId === entity.stageId))
+                    sameTrack(entity, other)
                 )
                     remove(transaction, other)
             }
@@ -152,6 +163,11 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
 
     return transaction.commit(flipped)
 }
+
+// The same group or stage, where the kind has one.
+const sameTrack = (entity: Entity, other: Entity) =>
+    (!('groupId' in entity) || ('groupId' in other && other.groupId === entity.groupId)) &&
+    (!('stageId' in entity) || ('stageId' in other && other.stageId === entity.stageId))
 
 const remove = (transaction: Transaction, entity: EditableEntity) => {
     switch (entity.type) {

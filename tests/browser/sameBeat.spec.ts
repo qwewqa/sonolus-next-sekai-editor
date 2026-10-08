@@ -810,6 +810,152 @@ test('flipping vertically mirrors event and time scale eases', async ({ page }) 
     expect(result.restored).toEqual(result.before)
 })
 
+test.describe('flipping vertically onto its own beat', () => {
+    /** Shows one track of `[beat, value, ease]` joints, flips the chosen ones, and undoes it. */
+    const flipTrack = (
+        page: Page,
+        kind: 'timeScale' | 'bpm' | 'stagePivotEventJoint',
+        joints: [number, number, string?][],
+        chosen: number[],
+    ) =>
+        page.evaluate(
+            async ({ kind, joints, chosen }) => {
+                const { show, fixtures, history, appImport } = window.editorTest
+                const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+                    '/src/editor/commands/index.ts',
+                )
+                const { serializeToLevelData } = await appImport<
+                    typeof import('../../src/levelData/serialize')
+                >('/src/levelData/serialize.ts')
+                const f = fixtures.events
+                show({
+                    ...f,
+                    bpms:
+                        kind === 'bpm'
+                            ? joints.map(([beat, bpm]) => ({ beat, bpm }))
+                            : [{ beat: 0, bpm: 120 }],
+                    timeScales:
+                        kind === 'timeScale'
+                            ? joints.map(([beat, timeScale, ease]) => ({
+                                  ...f.timeScales[0]!,
+                                  beat,
+                                  timeScale,
+                                  timeScaleEase: ease as never,
+                              }))
+                            : [],
+                    stagePivotEvents:
+                        kind === 'stagePivotEventJoint'
+                            ? joints.map(([beat, pivotLane, ease]) => ({
+                                  ...f.stagePivotEvents[0]!,
+                                  beat,
+                                  pivotLane,
+                                  eventEase: ease as never,
+                              }))
+                            : [],
+                })
+                const describe = (entity: Record<string, unknown>) =>
+                    [
+                        entity.beat,
+                        entity.timeScale ?? entity.bpm ?? entity.pivotLane,
+                        entity.timeScaleEase ?? entity.eventEase,
+                    ]
+                        .filter((part) => part !== undefined)
+                        .join(':')
+                // The track in stored order.
+                const track = () => {
+                    const entities = new Set<{ beat: number }>()
+                    for (const bucket of history.state.value.store.grid[kind].values())
+                        for (const entity of bucket) entities.add(entity)
+                    return [...entities].sort((a, b) => a.beat - b.beat)
+                }
+                const read = () => track().map((entity) => describe(entity as never))
+                const level = () => {
+                    const { store, groups, stages } = history.state.value
+                    return JSON.stringify(
+                        serializeToLevelData(1000, true, 0, store, groups, stages),
+                    )
+                }
+                const before = { track: read(), level: level() }
+                const entities = track()
+                const selected = chosen.map((index) => entities[index]!)
+                history.replaceState({
+                    ...history.state.value,
+                    selectedEntities: selected as never,
+                })
+                void commands.flipVertical.execute()
+                const flipped = read()
+                const selection = history.state.value.selectedEntities.map((entity) =>
+                    describe(entity as never),
+                )
+                history.undoState()
+                return {
+                    before: before.track,
+                    flipped,
+                    selection,
+                    undone: read(),
+                    undoExact: level() === before.level,
+                }
+            },
+            { kind, joints, chosen },
+        )
+
+    test('a time scale of a pair stays in place and keeps its partner', async ({ page }) => {
+        const result = await flipTrack(
+            page,
+            'timeScale',
+            [
+                [0, 1, 'inQuad'],
+                [2, 1, 'outSine'],
+                [2, 0, 'inCubic'],
+                [4, 2, 'linear'],
+            ],
+            [0, 2, 3],
+        )
+        // The pair keeps its order; the centre one still takes its mirrored ease.
+        expect(result.flipped).toEqual(['0:2:outCubic', '2:1:outSine', '2:0:outQuad', '4:1:linear'])
+        expect(result.selection.sort()).toEqual(['0:2:outCubic', '2:0:outQuad', '4:1:linear'])
+        expect(result.undone).toEqual(result.before)
+        expect(result.undoExact).toBe(true)
+    })
+
+    test('a stage pivot of a pair stays in place and keeps its partner', async ({ page }) => {
+        const joints: [number, number, string][] = [
+            [0, 0, 'inQuad'],
+            [2, -2, 'inQuad'],
+            [2, 3, 'outSine'],
+            [4, 1, 'linear'],
+        ]
+        const half = await flipTrack(page, 'stagePivotEventJoint', joints, [0, 2, 3])
+        expect(half.flipped).toEqual(['0:1:inSine', '2:-2:inQuad', '2:3:outQuad', '4:0:linear'])
+        expect(half.undone).toEqual(half.before)
+        expect(half.undoExact).toBe(true)
+
+        // A fully selected pair at the centre still mirrors its order.
+        const full = await flipTrack(page, 'stagePivotEventJoint', joints, [0, 1, 2, 3])
+        expect(full.flipped).toEqual(['0:1:inSine', '2:3:outQuad', '2:-2:outQuad', '4:0:linear'])
+        expect(full.undone).toEqual(full.before)
+        expect(full.undoExact).toBe(true)
+    })
+
+    test('a BPM of a pair stays in place and keeps its partner', async ({ page }) => {
+        const result = await flipTrack(
+            page,
+            'bpm',
+            [
+                [0, 120],
+                [1, 100],
+                [3, 150],
+                [3, 180],
+                [5, 200],
+            ],
+            [1, 3, 4],
+        )
+        expect(result.flipped).toEqual(['0:120', '1:200', '3:150', '3:180', '5:100'])
+        expect(result.undone).toEqual(result.before)
+        expect(result.undoExact).toBe(true)
+    })
+})
+
 /** A slide with a same-beat pair at beat 2, optionally a separator on its second. */
 const slidePair = (separator: boolean): Partial<NoteObject>[] => [
     { beat: 0, left: 0, connectorEase: 'inQuad' },

@@ -56,7 +56,11 @@ const remove = (transaction: Transaction, entity: TimingEntity) => {
     }
 }
 // Edits in place, so same-beat objects keep their order.
-const edit = (transaction: Transaction, entity: TimingEntity, object: EditableProperties) => {
+export const edit = (
+    transaction: Transaction,
+    entity: TimingEntity,
+    object: EditableProperties,
+) => {
     switch (entity.type) {
         case 'bpm':
             return editSelectedBpm(transaction, entity, object)
