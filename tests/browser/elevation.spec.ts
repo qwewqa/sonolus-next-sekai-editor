@@ -311,7 +311,9 @@ test('Escape in the Beat field reverts typing first, then closes elevation mode'
     await expect(page.locator('.elevation-editor')).toHaveCount(0)
 })
 
-test('the header fields keep their edge at rest in high contrast', async ({ page }) => {
+test('the header fields keep their edge at rest and thicken it on focus in high contrast', async ({
+    page,
+}) => {
     // High contrast drops their shadow; the transparent outline is painted instead.
     await page.emulateMedia({ forcedColors: 'active' })
     await open(page)
@@ -332,6 +334,20 @@ test('the header fields keep their edge at rest in high contrast', async ({ page
     )
     expect(edges.length).toBeGreaterThan(1)
     for (const edge of edges) expect(edge).toEqual({ style: 'solid', width: '2px', color: text })
+    // Keyboard focus thickens the edge inward, keeping its outer edge.
+    const field = page.locator('.elevation-field').first()
+    const ring = () =>
+        field.evaluate((element) => {
+            const { outlineWidth, outlineOffset } = getComputedStyle(element)
+            return {
+                width: outlineWidth,
+                outer: parseFloat(outlineWidth) + parseFloat(outlineOffset),
+            }
+        })
+    const rest = await ring()
+    await page.keyboard.press('Shift')
+    await field.focus()
+    expect(await ring()).toEqual({ ...rest, width: '4px' })
 })
 
 test('opening uses the selected note beat instead of the caret beat', async ({ page }) => {

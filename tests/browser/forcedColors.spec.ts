@@ -61,7 +61,7 @@ test('Selection chips show keyboard focus', async ({ page }) => {
     await focus(chip)
     expect(await outline(chip)).toEqual({
         style: 'solid',
-        width: '2px',
+        width: '4px',
         color: await highlight(page),
     })
 })
@@ -113,7 +113,7 @@ test('Preview Settings on/off fields show keyboard focus', async ({ page }) => {
     const edge = (await outline(field)).color
     await focus(input)
     const focused = await outline(field)
-    expect(focused).toEqual({ style: 'solid', width: '2px', color: await highlight(page) })
+    expect(focused).toEqual({ style: 'solid', width: '4px', color: await highlight(page) })
     expect(focused.color).not.toBe(edge)
 })
 
@@ -697,3 +697,72 @@ for (const colorScheme of ['light', 'dark'] as const)
         // Thicker, growing inward, so it keeps clear of the button beside it.
         expect(await ring()).toEqual({ style: 'solid', width: '4px', offset: '-4px' })
     })
+
+// The painted edge: its width, and how far its outer edge sits outside the box.
+const paintedEdge = (locator: Locator) =>
+    locator.evaluate((element) => {
+        const { outlineStyle, outlineWidth, outlineOffset } = getComputedStyle(element)
+        return {
+            style: outlineStyle,
+            width: outlineWidth,
+            outer: parseFloat(outlineWidth) + parseFloat(outlineOffset),
+        }
+    })
+
+// Focus thickens the 2px resting edge to 4px, inward from its outer edge.
+const expectThickerOnFocus = async (control: Locator, painted = control) => {
+    const page = control.page()
+    await expect(painted).toBeVisible()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    const rest = await paintedEdge(painted)
+    const name = await control.evaluate(
+        (element) => element.getAttribute('aria-label') ?? element.className,
+    )
+    expect(rest, name).toMatchObject({ style: 'solid', width: '2px' })
+    await focus(control)
+    expect(await paintedEdge(painted), name).toEqual({ ...rest, width: '4px' })
+}
+
+test('controls with a resting edge thicken it inward on keyboard focus', async ({ page }) => {
+    const properties = panel(page)
+    await expectThickerOnFocus(properties.locator('.form-field-mixed-value:enabled').first())
+    await expectThickerOnFocus(properties.locator('.form-field-row input[type="number"]').first())
+    await expectThickerOnFocus(properties.locator('.form-field-row select').first())
+    await expectThickerOnFocus(properties.getByRole('checkbox', { name: 'Critical', exact: true }))
+
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await page.keyboard.press('b')
+    await expectThickerOnFocus(properties.locator('.brush-add'))
+    await expectThickerOnFocus(properties.locator('.brush-pick'))
+
+    await page.locator('.panel-tab', { hasText: 'Groups' }).click()
+    const groups = page.locator('#workspace-panel-groups')
+    await expectThickerOnFocus(groups.locator('.manager-add'))
+    await expectThickerOnFocus(groups.locator('.manager-new-folder'))
+    await groups.getByRole('button', { name: 'Select Multiple' }).click()
+    await groups.locator('.manager-check').first().click()
+    await expectThickerOnFocus(groups.locator('.manager-selection-done'))
+    await expectThickerOnFocus(groups.locator('.manager-round').first())
+    await page.keyboard.press('Escape')
+
+    await page.evaluate(() => {
+        const { history, settings } = window.editorTest
+        history.replaceState({ ...history.state.value, isDynamicStages: false })
+        settings.showStages = true
+    })
+    await expectThickerOnFocus(page.locator('#workspace-panel-stages .manager-enable'))
+
+    await showPreviewSettings(page)
+    await expectThickerOnFocus(page.locator('.transport-button').first())
+    await expectThickerOnFocus(page.locator('.preview-settings-toggle'))
+    const toggle = page.getByRole('switch', { name: 'Show Hitboxes', exact: true })
+    await expectThickerOnFocus(toggle, toggle.locator('+ .preview-field'))
+    await expectThickerOnFocus(page.locator('select.preview-field').first())
+    await expectThickerOnFocus(page.locator('.preview-number').first())
+
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    await page.keyboard.press(',')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expectThickerOnFocus(dialog.locator('.key-field-button').first())
+})

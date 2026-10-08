@@ -131,6 +131,44 @@ html[data-app-inactive] *::after {
     outline-offset: -2px;
 }
 
+/* High contrast: keyboard focus thickens a control's 2px resting edge to 4px, inward from
+   its outer edge, so focus differs by more than colour. `html` outranks the edges' own rules. */
+@media (forced-colors: active) {
+    /* Most edges rest 2px outside the box; dialogs are not controls. */
+    html
+        :is(
+            .outline-none:where(:not(dialog, [role='dialog'])),
+            .preview-field,
+            .preview-number,
+            .transport-button,
+            .manager-selection-done,
+            .manager-new-folder,
+            .manager-round,
+            .form-field-mixed-value
+        ):focus-visible,
+    html .peer:focus-visible + .preview-field {
+        outline-width: 4px;
+        outline-offset: 0;
+    }
+
+    /* Edges inset 2px. */
+    html
+        :is(
+            .-outline-offset-2,
+            .transport-button,
+            .manager-selection-done,
+            .manager-new-folder,
+            .manager-round
+        ):focus-visible {
+        outline-offset: -4px;
+    }
+
+    /* Edges flush with the box. */
+    html .form-field-mixed-value:focus-visible {
+        outline-offset: -2px;
+    }
+}
+
 /* Menus' shared surface; edges and focus are outlines, which high contrast keeps. */
 @layer components {
     .popup-surface {

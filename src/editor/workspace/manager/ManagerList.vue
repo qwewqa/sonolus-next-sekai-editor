@@ -2054,7 +2054,7 @@ const folderEyeLabel = (item: FolderItem) =>
             >
                 <button
                     type="button"
-                    class="manager-selection-done pointer-events-auto flex min-w-0 items-center rounded-full bg-button p-0.5 pr-4 shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
+                    class="manager-selection-done pointer-events-auto flex min-w-0 items-center rounded-full bg-button p-0.5 pr-4 shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent"
                     :aria-label="selectionCount"
                     :title="i18n.workspace.manager.stopSelecting"
                     @click="onDone"
@@ -2183,7 +2183,7 @@ const folderEyeLabel = (item: FolderItem) =>
 /* A round companion to the Add pill, raised the same way. */
 .manager-new-folder,
 .manager-round {
-    @apply pointer-events-auto flex size-10 shrink-0 items-center justify-center rounded-full bg-button shadow-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:size-12;
+    @apply pointer-events-auto flex size-10 shrink-0 items-center justify-center rounded-full bg-button shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-fg active:bg-accent active:text-on-accent [@media(hover:hover)]:hover:shadow-accent [@media(pointer:coarse)]:size-12;
 }
 
 .manager-round {
