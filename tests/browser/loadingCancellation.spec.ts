@@ -312,7 +312,7 @@ test('cancelling preview generation during encoder loading prevents the download
     expect(await page.evaluate(() => window.loadingReview.downloadUrls)).toEqual([])
 })
 
-test('preview generation is unavailable until End follows Start and the fades fit', async ({
+test('preview generation is refused until End follows Start and the fades fit', async ({
     page,
 }) => {
     await page.evaluate(() => {
@@ -336,7 +336,7 @@ test('preview generation is unavailable until End follows Start and the fades fi
     // A click straight from the field commits it first and generates nothing.
     await field('End (s)').fill('0')
     await generate.click()
-    await expect(generate).toBeDisabled()
+    await expect(field('End (s)')).toBeFocused()
     await expect(page.getByRole('dialog')).toHaveCount(1)
     expect(await page.evaluate(() => window.loadingReview)).toMatchObject({
         completed: 0,
@@ -346,11 +346,16 @@ test('preview generation is unavailable until End follows Start and the fades fi
 
     await field('End (s)').fill('1.5')
     await field('End (s)').press('Tab')
-    await expect(generate).toBeDisabled()
     await expect(dialog.getByRole('alert')).toHaveText('Fades must fit between Start and End')
+    await generate.click()
+    await expect(field('Fade In (s)')).toBeFocused()
+    await expect(page.getByRole('dialog')).toHaveCount(1)
 
     await field('Fade Out (s)').fill('0.5')
     await field('Fade Out (s)').press('Tab')
-    await expect(generate).toBeEnabled()
     await expect(dialog.getByRole('alert')).toHaveCount(0)
+    expect(await page.evaluate(() => window.loadingReview)).toMatchObject({
+        completed: 0,
+        downloadUrls: [],
+    })
 })

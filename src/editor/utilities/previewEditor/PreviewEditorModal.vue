@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { computed, ref, provide } from 'vue'
+import { computed, ref, provide, useTemplateRef } from 'vue'
 import { bgm } from '../../../history/bgm'
 import { i18n } from '../../../i18n'
 import { showModal } from '../../../modals'
@@ -27,16 +27,27 @@ const fadeEnd = ref(1)
 // The preview stops at the end of the audio, fading out there.
 const clampedEnd = computed(() => Math.min(end.value, buffer.value?.duration ?? end.value))
 
-// Why Generate is unavailable, if it is.
-const problem = computed(() =>
+// The number fields, in order.
+const fieldOrder = ['start', 'end', 'fadeStart', 'fadeEnd'] as const
+type Field = (typeof fieldOrder)[number]
+
+// What stops Generate, if anything, and the field to fix.
+const problem = computed((): { message: string; field: Field } | undefined =>
     buffer.value && start.value >= buffer.value.duration
-        ? i18n.value.utilities.previewEditor.startPastEnd
+        ? { message: i18n.value.utilities.previewEditor.startPastEnd, field: 'start' }
         : end.value <= start.value
-          ? i18n.value.utilities.previewEditor.invalidRange
+          ? { message: i18n.value.utilities.previewEditor.invalidRange, field: 'end' }
           : fadeStart.value + fadeEnd.value > end.value - start.value
-            ? i18n.value.utilities.previewEditor.invalidFades
+            ? { message: i18n.value.utilities.previewEditor.invalidFades, field: 'fadeStart' }
             : undefined,
 )
+
+const fields = useTemplateRef<HTMLElement>('fields')
+const focusField = (field: Field) => {
+    fields.value
+        ?.querySelectorAll<HTMLInputElement>('input[type="number"]')
+        [fieldOrder.indexOf(field)]?.focus()
+}
 
 const onSelect = (file: File) => {
     void showModal(LoadingModal, {
@@ -59,6 +70,18 @@ const onSelect = (file: File) => {
 }
 
 const onGenerate = () => {
+    // Commits the field being typed in, as a blur would; an entry it refuses stays to fix.
+    const typing = document.activeElement
+    if (typing instanceof HTMLInputElement && fields.value?.contains(typing)) {
+        if (!typing.reportValidity()) return
+        typing.blur()
+    }
+
+    if (problem.value) {
+        focusField(problem.value.field)
+        return
+    }
+
     void showModal(LoadingModal, {
         title: () => i18n.value.utilities.previewEditor.title,
         async *task(signal: AbortSignal) {
@@ -137,7 +160,7 @@ const onGenerate = () => {
 
 <template>
     <BaseModal :title="i18n.utilities.previewEditor.title">
-        <div class="flex flex-col gap-3">
+        <div ref="fields" class="flex flex-col gap-3">
             <FileField
                 :label="i18n.utilities.previewEditor.bgm"
                 :value="buffer && formatTime(buffer.duration)"
@@ -172,14 +195,15 @@ const onGenerate = () => {
                 step="any"
             />
             <p v-if="buffer && problem" role="alert" class="text-sm text-danger">
-                {{ problem }}
+                {{ problem.message }}
             </p>
         </div>
 
         <div v-if="buffer" class="flex justify-end">
+            <!-- Pressing keeps the field focused, so its commit can't move Generate mid-click. -->
             <button
-                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg disabled:pointer-events-none disabled:opacity-40 [@media(pointer:coarse)]:h-11"
-                :disabled="!!problem"
+                class="h-9 min-w-24 max-w-full truncate rounded-full bg-accent px-4 text-on-accent shadow-md outline-none -outline-offset-2 transition-colors hover:shadow-accent focus-visible:ring-2 focus-visible:ring-fg active:bg-button active:text-fg [@media(pointer:coarse)]:h-11"
+                @mousedown.prevent
                 @click="onGenerate"
             >
                 {{ i18n.utilities.previewEditor.generate }}

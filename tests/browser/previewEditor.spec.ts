@@ -9,9 +9,9 @@ declare global {
 
 const sampleRate = 22050
 
-/** A 3 s, 440 Hz sine at half amplitude, as 16-bit mono WAV. */
-const tone = () => {
-    const length = sampleRate * 3
+/** A 440 Hz sine at half amplitude, 3 s by default, as 16-bit mono WAV. */
+const tone = (seconds = 3) => {
+    const length = sampleRate * seconds
     const wav = Buffer.alloc(44 + length * 2)
     wav.write('RIFF', 0)
     wav.writeUInt32LE(36 + length * 2, 4)
@@ -107,17 +107,74 @@ test('the last encoded chunk stops at End', async ({ page }) => {
     expect(tail).toBeLessThan(0.1)
 })
 
+/** Clicks Generate, expecting the message and focus on the field, and nothing generated. */
+const expectRefused = async (page: Page, message: string, field: number) => {
+    await page.evaluate(() => (window.encoded = []))
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'Generate' }).click()
+    await expect(dialog.getByRole('alert')).toHaveText(message)
+    await expect(dialog.locator('input[type="number"]').nth(field)).toBeFocused()
+    await expect(page.getByRole('dialog')).toHaveCount(1)
+    expect(await page.evaluate(() => window.encoded.length)).toBe(0)
+}
+
 test('a Start past the audio is refused', async ({ page }) => {
     await fill(page, [5])
-    const dialog = page.getByRole('dialog')
-    await expect(dialog.getByRole('alert')).toHaveText('Start is past the end of the audio')
-    await expect(dialog.getByRole('button', { name: 'Generate' })).toBeDisabled()
+    await expectRefused(page, 'Start is past the end of the audio', 0)
 })
 
 test('a Start exactly at the end of the audio is refused', async ({ page }) => {
     // The tone is 3 s long, so nothing would play.
     await fill(page, [3])
+    await expectRefused(page, 'Start is past the end of the audio', 0)
+})
+
+test('Generate checks a typed End and focuses it when End is not after Start', async ({ page }) => {
+    const end = page.getByRole('dialog').locator('input[type="number"]').nth(1)
+    await end.fill('0')
+    await expectRefused(page, 'End must be after Start', 1)
+    await expect(end).toHaveValue('0')
+})
+
+test('Generate refuses a typed entry the field does not accept', async ({ page }) => {
+    const end = page.getByRole('dialog').locator('input[type="number"]').nth(1)
+    await end.fill('-1')
+    await page.evaluate(() => (window.encoded = []))
+    await page.getByRole('dialog').getByRole('button', { name: 'Generate' }).click()
+    await expect(end).toBeFocused()
+    await expect(end).toHaveValue('-1')
+    await expect(page.getByRole('dialog')).toHaveCount(1)
+    expect(await page.evaluate(() => window.encoded.length)).toBe(0)
+})
+
+test('Fades that do not fit are refused, focusing Fade In', async ({ page }) => {
+    await fill(page, [0, 1.5])
+    await expectRefused(page, 'Fades must fit between Start and End', 2)
+})
+
+test('one Generate click fixes a shown range error and generates', async ({ page }) => {
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByRole('alert')).toHaveText('Start is past the end of the audio')
-    await expect(dialog.getByRole('button', { name: 'Generate' })).toBeDisabled()
+    const chooser = page.waitForEvent('filechooser')
+    await dialog.locator('input[type="button"]').click()
+    await (await chooser).setFiles({ name: 'tone.wav', mimeType: 'audio/wav', buffer: tone(60) })
+    await expect(dialog.locator('input[type="button"]').first()).toHaveValue(/^01:00/)
+
+    // Start 30, Tab, End 45, then one click.
+    const fields = dialog.locator('input[type="number"]')
+    await fields.nth(0).fill('30')
+    await fields.nth(0).press('Tab')
+    await expect(dialog.getByRole('alert')).toHaveText('End must be after Start')
+    await page.keyboard.type('45')
+
+    const button = dialog.getByRole('button', { name: 'Generate' })
+    const before = await button.boundingBox()
+    if (!before) throw new Error('Generate is not visible')
+    await page.evaluate(() => (window.encoded = []))
+    const downloading = page.waitForEvent('download')
+    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2)
+    await page.mouse.down()
+    // Generate stays under the pointer through the press.
+    expect(await button.boundingBox()).toEqual(before)
+    await page.mouse.up()
+    await downloading
 })
