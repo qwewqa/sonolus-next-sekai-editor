@@ -189,6 +189,11 @@ test('Turkish editor names all use Editör', () => {
         assert.doesNotMatch(text, /Düzenleyici/, key)
 })
 
+test('Turkish writes the beats unit one way, lower case as its other units', () => {
+    for (const [key, text] of Object.entries(read('tr')))
+        for (const [unit] of text.matchAll(/\(vuruş\w*\)/giu)) assert.equal(unit, '(vuruş)', key)
+})
+
 test('Korean show settings all end in 표시', () => {
     for (const [key, text] of Object.entries(read('ko')))
         if (/^settings\.editor\.show/.test(key)) assert.match(text, /표시$/, key)

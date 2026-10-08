@@ -1262,7 +1262,7 @@
         "label": "Boyut"
       },
       "skip": {
-        "label": "Atla (vuruşlar)"
+        "label": "Atla (vuruş)"
       },
       "stage": {
         "label": "Sahne"
@@ -1296,7 +1296,7 @@
         "label": "Y Kayması"
       },
       "yOffsetBeat": {
-        "label": "Y Kayması (Vuruş)"
+        "label": "Y Kayması (vuruş)"
       },
       "noteStyle": {
         "label": "Nota Rengi",
