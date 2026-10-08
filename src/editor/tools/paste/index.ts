@@ -76,13 +76,17 @@ let active:
           onlyType: EntityType | undefined
       }
     | undefined
+// Where the hover last read the clipboard.
+let readAt: { x: number; y: number } | undefined
 
 export const paste: Tool = {
     title: () => i18n.value.tools.paste.title,
     sidebar: PasteSidebar,
 
     hover(x, y, modifiers) {
-        void updateClipboard()
+        // Only a pointer move reads the clipboard; a scroll under a still pointer reuses what it read.
+        if (x !== readAt?.x || y !== readAt.y) void updateClipboard()
+        readAt = { x, y }
 
         const data = clipboardEntry.value?.data
         if (!data) return

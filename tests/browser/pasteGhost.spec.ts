@@ -233,3 +233,58 @@ test('the ghost is dropped once a paste lands or the tool changes', async ({ pag
     })
     expect(await hasGhost()).toBe(false)
 })
+
+test('the paste ghost follows a scroll under a still mouse without reading the clipboard again', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        let text = ''
+        const reads = { count: 0 }
+        Object.assign(window, { clipboardReads: reads })
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async (value: string) => {
+                text = value
+            },
+        })
+        Object.defineProperty(navigator.clipboard, 'readText', {
+            configurable: true,
+            value: async () => {
+                reads.count++
+                return text
+            },
+        })
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+    })
+    const reads = () =>
+        page.evaluate(
+            () => (window as never as { clipboardReads: { count: number } }).clipboardReads.count,
+        )
+    const ghostBeats = () =>
+        page.evaluate(() => window.editorTest.snapshot().creating.map(({ beat }) => beat))
+    const position = await point(page, 0, 6)
+    await page.mouse.move(position.x, position.y)
+    await page.keyboard.press('c')
+    await page.keyboard.press('v')
+    await page.mouse.move(position.x, position.y + 4)
+    await settle(page)
+    await expect.poll(reads).toBeGreaterThan(0)
+    const before = await reads()
+    const ghost = await ghostBeats()
+    expect(ghost.length).toBeGreaterThan(0)
+    for (let i = 0; i < 5; i++) {
+        await page.evaluate(() => {
+            window.editorTest.view.time += 0.5
+        })
+        await settle(page)
+    }
+    expect(await ghostBeats()).not.toEqual(ghost)
+    expect(await reads()).toBe(before)
+    // A real move reads it again.
+    await page.mouse.move(position.x, position.y - 4)
+    await expect.poll(reads).toBeGreaterThan(before)
+})
