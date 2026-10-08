@@ -145,12 +145,12 @@ const title = useTemplateRef<HTMLElement>('title')
 // The action names itself when the header has room and shows its icon otherwise.
 const iconOnly = ref(false)
 let context: CanvasRenderingContext2D | null | undefined
-// The header's width and font, read as it resizes, so a count change forces no layout.
+// The header's width and the title's font, read as it resizes, so a count change forces no layout.
 let room: { width: number; fontSize: string; fontFamily: string; rem: number } | undefined
 const readRoom = () => {
     const element = header.value
-    if (!element) return
-    const { fontSize, fontFamily } = getComputedStyle(element)
+    if (!element || !title.value) return
+    const { fontSize, fontFamily } = getComputedStyle(title.value)
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
     room = { width: element.clientWidth, fontSize, fontFamily, rem }
 }
@@ -165,10 +165,15 @@ const measure = () => {
         context.font = `${weight} ${fontSize} ${fontFamily}`
         return context.measureText(text).width
     }
-    const titleWidth = width(title.value.textContent, 'bold')
-    // Icon, gap and padding around the action's name.
-    const actionWidth = width(i18n.value.workspace.properties.selectOnly, 'normal') + 2.75 * rem
-    iconOnly.value = titleWidth + actionWidth + 0.5 * rem > available
+    // Only the kind's name is bold.
+    const tail = `\u00a0${props.count}${props.slides ? ` · ${slidesText.value}` : ''}`
+    const titleWidth = width(kindLabel.value, 'bold') + (props.kind ? width(tail, 'normal') : 0)
+    // Icon (0.875rem tall, 320:512), gap and padding around the action's name; its
+    // negative margin takes back the gap before it.
+    const actionWidth =
+        width(i18n.value.workspace.properties.selectOnly, 'normal') +
+        (0.875 * (320 / 512) + 0.375 + 1.5) * rem
+    iconOnly.value = titleWidth + actionWidth > available
 }
 
 let frame = 0

@@ -332,8 +332,9 @@ test.describe('kind blocks', () => {
 
     test('the select only action shows its name only when it fits', async ({ page }) => {
         await page.evaluate(async () => {
-            const { fixtures, show, history, store, nextTick } = window.editorTest
+            const { fixtures, show, history, store, settings, nextTick } = window.editorTest
             show(fixtures.events)
+            settings.rightDockWidth = 300
             history.replaceState({
                 ...history.state.value,
                 selectedEntities: [...store.getAllEntities()].filter(
@@ -345,11 +346,51 @@ test.describe('kind blocks', () => {
         const action = header(page, /^Time Scales/).getByRole('button')
         await expect(action).toHaveText('Select only')
         await expect(action).toHaveAccessibleName('Select only Time Scales (4)')
-        // French names it at greater length than the header has room for.
+        // French names it at greater length than a narrow header has room for.
         await page.evaluate(() => (window.editorTest.settings.locale = 'fr'))
         const french = header(page, /^Échelles de temps/).getByRole('button')
         await expect(french).toHaveText('')
         await expect(french).toHaveAccessibleName('Sélectionner seulement Échelles de temps (4)')
+    })
+
+    test('the select only action keeps its name while it fits beside the title', async ({
+        page,
+    }) => {
+        await showSlides(page, [[{ beat: 0 }, { beat: 1 }, { beat: 2 }], [{ beat: 3 }]])
+        await page.evaluate(async () => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) => entity.type === 'note' || entity.type === 'bpm',
+                ),
+            })
+            await nextTick()
+        })
+        await expect(header(page, /^Notes/).getByRole('button')).toHaveText('Select only')
+        // Widths the action gets wrong, by the title's and the named action's own widths.
+        const wrong = await header(page, /^Notes/).evaluate(async (element) => {
+            const { settings } = window.editorTest
+            const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+            const title = element.querySelector('h3')!
+            const named = element.querySelector('button')!.getBoundingClientRect().width
+            const clone = title.cloneNode(true) as HTMLElement
+            clone.style.cssText = 'position: absolute; white-space: nowrap'
+            element.append(clone)
+            const titleWidth = clone.getBoundingClientRect().width
+            clone.remove()
+            const found: number[] = []
+            for (let width = 240; width <= 320; width += 2) {
+                settings.rightDockWidth = width
+                for (let i = 0; i < 3; i++) await frame()
+                // The gap and the action's negative margin cancel out.
+                const fits = titleWidth + named <= element.clientWidth
+                const shown = !!element.querySelector('button span')
+                if (fits !== shown) found.push(width)
+            }
+            return found
+        })
+        expect(wrong).toEqual([])
     })
 })
 
