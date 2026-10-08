@@ -1172,6 +1172,53 @@ test('Escape over a hovered flyout closes a dialog opened over it', async ({ pag
     }
 })
 
+const chartFocused = (page: Page) =>
+    page.evaluate(() => document.activeElement?.matches('.chart-pane') ?? false)
+
+test('Escape over a hovered flyout with the chart focused closes only the flyout', async ({
+    page,
+}) => {
+    await page.mouse.click(700, 300)
+    await page.evaluate(() => {
+        const { history, store } = window.editorTest
+        const note = [...store.getAllEntities()].find((entity) => entity.type === 'note')!
+        history.replaceState({ ...history.state.value, selectedEntities: [note] })
+    })
+    expect(await chartFocused(page)).toBe(true)
+    await hoverFlyout(page)
+    await page.keyboard.press('Escape')
+    await expect(toolbar(page).locator(':scope > div > div > div button')).toHaveCount(0)
+    expect(
+        await page.evaluate(() => window.editorTest.history.state.value.selectedEntities.length),
+    ).toBe(1)
+    await expect(shown(page).nth(3)).toBeFocused()
+})
+
+test('an Escape already used elsewhere closes a hovered flyout and leaves focus', async ({
+    page,
+}) => {
+    // A listener ahead of the app's takes Escape while asked to.
+    await page.addInitScript(() =>
+        addEventListener(
+            'keydown',
+            (event) => {
+                if (event.key === 'Escape' && (window as { takeEscape?: boolean }).takeEscape)
+                    event.preventDefault()
+            },
+            true,
+        ),
+    )
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await page.mouse.click(700, 300)
+    expect(await chartFocused(page)).toBe(true)
+    await hoverFlyout(page)
+    await page.evaluate(() => ((window as { takeEscape?: boolean }).takeEscape = true))
+    await page.keyboard.press('Escape')
+    await expect(toolbar(page).locator(':scope > div > div > div button')).toHaveCount(0)
+    expect(await chartFocused(page)).toBe(true)
+})
+
 // A tool dialog unmounts the toolbar; closing it mounts the toolbar after the pane's own listeners.
 const remountToolbar = async (page: Page) => {
     await page.keyboard.press('b')

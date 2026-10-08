@@ -635,6 +635,67 @@ test('a drag near the list edge scrolls as fast at a low frame rate', async ({ p
     await page.mouse.up()
 })
 
+test('a drag at the list edge scrolls 480px a second, adding up small steps, with stalls capped', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1366, height: 600 })
+    await seedGroups(page, [
+        ['Default'],
+        ...Array.from({ length: 30 }, (_, i): [string] => [`Part ${i + 1}`]),
+    ])
+    // The edge scroll's frames run by hand, on a clock that moves only with them once frozen.
+    await page.evaluate(() => {
+        const probe = window as unknown as { freeze: () => void; frame: (ms: number) => void }
+        const request = window.requestAnimationFrame
+        const now = performance.now.bind(performance)
+        let clock: number | undefined
+        let pending: FrameRequestCallback | undefined
+        performance.now = () => clock ?? now()
+        window.requestAnimationFrame = (callback) => {
+            if (callback.name !== 'edgeScroll') return request(callback)
+            pending = callback
+            return -1
+        }
+        probe.freeze = () => (clock = now())
+        probe.frame = (ms) => {
+            clock = clock! + ms
+            const callback = pending
+            pending = undefined
+            callback?.(clock)
+        }
+    })
+    const list = panel(page).locator('.manager-entries')
+    const scrollTop = () => list.evaluate((element) => element.scrollTop)
+    const frame = async (ms: number, count = 1) => {
+        const before = await scrollTop()
+        for (let i = 0; i < count; i++)
+            await page.evaluate(
+                (ms) => (window as unknown as { frame: (ms: number) => void }).frame(ms),
+                ms,
+            )
+        return (await scrollTop()) - before
+    }
+    const bounds = (await list.boundingBox())!
+    const part = (await nameButton(panel(page), 'Part 1').boundingBox())!
+    await page.mouse.move(part.x + 60, part.y + part.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(part.x + 60, bounds.y + bounds.height - 40, { steps: 10 })
+    expect(await scrollTop()).toBe(0)
+    await page.evaluate(() => (window as unknown as { freeze: () => void }).freeze())
+    // Reaching the edge takes one 60 fps step: 8px.
+    await page.mouse.move(part.x + 60, bounds.y + bounds.height - 10)
+    expect(await scrollTop()).toBeCloseTo(8, 0)
+    // 50ms moves 24px.
+    expect(await frame(50)).toBeCloseTo(24, 0)
+    // A 500ms stall moves as 100ms would.
+    expect(await frame(500)).toBeCloseTo(48, 0)
+    // Steps under a pixel add up: ten 1ms frames move 4.8px.
+    const small = await frame(1, 10)
+    expect(small).toBeGreaterThanOrEqual(4)
+    expect(small).toBeLessThanOrEqual(5.5)
+    await page.mouse.up()
+})
+
 for (const { device, viewport, touch } of [
     { device: 'desktop', viewport: { width: 1600, height: 1000 }, touch: false },
     { device: 'phone', viewport: { width: 390, height: 844 }, touch: true },

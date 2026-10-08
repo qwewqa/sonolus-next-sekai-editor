@@ -119,6 +119,100 @@ test('a drag starting in the right pan zone keeps the view still until it goes d
     await page.mouse.up()
 })
 
+test('a drag starting in the top pan zone keeps the view still until it goes deeper', async ({
+    page,
+}) => {
+    await showNote(page, 0.125)
+    await settle(page)
+    const before = await viewTime(page)
+    const start = await point(page, 0, 8)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, start.y + 25, { steps: 3 })
+    await page.waitForTimeout(300)
+    expect(await viewTime(page)).toBe(before)
+    await page.mouse.move(start.x, start.y - 40, { steps: 3 })
+    await expect.poll(() => viewTime(page)).toBeGreaterThan(before)
+    await page.mouse.up()
+})
+
+test('a drag starting in the left pan zone keeps the view still until it goes deeper', async ({
+    page,
+}) => {
+    await showNote(page, 0.5)
+    // Lane 0 sits 12.5% across the chart.
+    const before = await page.evaluate(() => {
+        const { settings, view } = window.editorTest
+        settings.dragToPanY = false
+        settings.dragToPanX = true
+        settings.maxScrollX = 10
+        view.lane = settings.width * 0.375
+        return view.lane
+    })
+    await settle(page)
+    const viewLane = () => page.evaluate(() => window.editorTest.view.lane)
+    const start = await point(page, 0, 8)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 25, start.y, { steps: 3 })
+    await page.waitForTimeout(300)
+    expect(await viewLane()).toBe(before)
+    await page.mouse.move(start.x - 40, start.y, { steps: 3 })
+    await expect.poll(viewLane).toBeLessThan(before)
+    await page.mouse.up()
+})
+
+test('a drag that leaves its bottom start zone pans from the zone edge on return', async ({
+    page,
+}) => {
+    await showNote(page, 0.875)
+    await settle(page)
+    const start = await point(page, 0, 8)
+    const at = (fraction: number) =>
+        page.evaluate((fraction) => {
+            const { view } = window.editorTest
+            return view.y + view.h * fraction
+        }, fraction)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, await at(0.5), { steps: 5 })
+    await settle(page)
+    const before = await viewTime(page)
+    // Shallower than the start, but inside the zone.
+    await page.mouse.move(start.x, await at(0.84), { steps: 3 })
+    await expect.poll(() => viewTime(page)).toBeLessThan(before)
+    await page.mouse.up()
+})
+
+test('a drag that leaves its right start zone pans from the zone edge on return', async ({
+    page,
+}) => {
+    await showNote(page, 0.5)
+    await page.evaluate(() => {
+        const { settings, view } = window.editorTest
+        settings.dragToPanY = false
+        settings.dragToPanX = true
+        settings.maxScrollX = 10
+        view.lane = -settings.width * 0.375
+    })
+    await settle(page)
+    const viewLane = () => page.evaluate(() => window.editorTest.view.lane)
+    const start = await point(page, 0, 8)
+    const at = (fraction: number) =>
+        page.evaluate((fraction) => {
+            const { view } = window.editorTest
+            return view.x + view.w * fraction
+        }, fraction)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(await at(0.5), start.y, { steps: 5 })
+    await settle(page)
+    const before = await viewLane()
+    await page.mouse.move(await at(0.84), start.y, { steps: 3 })
+    await expect.poll(viewLane).toBeGreaterThan(before)
+    await page.mouse.up()
+})
+
 test.describe('with touch', () => {
     test.use({ hasTouch: true })
 

@@ -99,6 +99,10 @@ test('a resize cut at the limit keeps its fixed edge exact', () => {
     }
 })
 
+test('a resize past both limits moves an edge already past the left limit in', () => {
+    assert.deepEqual(constrainLaneObject({ left: -8, size: 17 }, 6, true), { left: -6, size: 12 })
+})
+
 test('former default toolbar moves elevation to transforms and inserts lane limits after divisions', () => {
     const groups = [
         [

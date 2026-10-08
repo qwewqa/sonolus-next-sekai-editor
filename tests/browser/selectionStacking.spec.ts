@@ -169,3 +169,47 @@ test('a mixed range too long for its pill goes below its label', async ({ page }
     await expect(beat).toHaveClass(/form-field-value-stacked/)
     await page.keyboard.press('Escape')
 })
+
+test('a field refits when only its mixed range changes', async ({ page }) => {
+    await open(page, 'fr', 260)
+    const select = (slide: number) =>
+        page.evaluate(async (slide) => {
+            const { history, store, nextTick } = window.editorTest
+            history.replaceState({
+                ...history.state.value,
+                selectedEntities: [...store.getAllEntities()].filter(
+                    (entity) =>
+                        entity.type === 'note' && entity.beat >= slide && entity.beat < slide + 20,
+                ),
+            })
+            await nextTick()
+        }, slide)
+    await page.evaluate(async () => {
+        const { history, nextTick, fixtures } = window.editorTest
+        // A short range on one slide, a long one on the other.
+        const chart = structuredClone(fixtures.interaction)
+        const [head] = chart.slides[0]!
+        chart.slides = [
+            [
+                { ...head!, beat: 1 },
+                { ...head!, beat: 2 },
+            ],
+            [
+                { ...head!, beat: 56 + 1 / 3 },
+                { ...head!, beat: 62.75 },
+            ],
+        ]
+        history.resetState(false, chart, 0, 'stacking.json')
+        await nextTick()
+    })
+    await select(0)
+    const beat = field(page, 'Temps')
+    await expect(beat.locator('input')).toHaveAttribute('placeholder', '2 … 3')
+    await expect(beat).not.toHaveClass(/form-field-value-stacked/)
+    // The same field, so only an update can refit it.
+    await beat.evaluate((element) => (element.dataset.kept = ''))
+    await select(50)
+    await expect(beat.locator('input')).toHaveAttribute('placeholder', '57.3333 … 63.75')
+    await expect(beat).toHaveAttribute('data-kept', '')
+    await expect(beat).toHaveClass(/form-field-value-stacked/)
+})
