@@ -335,7 +335,7 @@ test('refusals read in the chosen language', async ({ page }) => {
         ],
         [
             'chart.sus',
-            Buffer.from(sus.replace('#REQUEST "ticks_per_beat 480"\n', '')),
+            Buffer.from(sus.replace('ticks_per_beat 480', 'ticks_per_beat 1e999')),
             'Partition non valide : ticks par temps manquants ou inattendus',
         ],
     ] as const) {

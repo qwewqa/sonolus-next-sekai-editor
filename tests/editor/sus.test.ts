@@ -42,6 +42,37 @@ test('the last tick-resolution request still takes effect', () => {
     assert.equal(actual.tapNotes[0]?.tick, 3840)
 })
 
+test('a SUS without a tick-resolution request uses the spec default of 480', () => {
+    const baseline = parseSus([...header, '#00112:11'])
+    const withoutRequest = header.filter((line) => !line.includes('ticks_per_beat'))
+    assert.deepEqual(parseSus([...withoutRequest, '#00112:11']), baseline)
+    assert.deepEqual(
+        parseSus(['#REQUEST "enable_priority true"', ...withoutRequest, '#00112:11']),
+        baseline,
+    )
+})
+
+test('a malformed or nonfinite tick-resolution request is still refused', () => {
+    for (const value of ['abc', '0', '1e999', '-'])
+        assert.throws(
+            () =>
+                parseSus(
+                    header.map((line) =>
+                        line.includes('ticks_per_beat')
+                            ? `#REQUEST "ticks_per_beat ${value}"`
+                            : line,
+                    ),
+                ),
+            (error) => error instanceof ImportRefusal && error.reason === 'ticksPerBeat',
+            value,
+        )
+    // An unclosed request, which replaces the header's.
+    assert.throws(
+        () => parseSus([...header, '#REQUEST "ticks_per_beat 480']),
+        (error) => error instanceof ImportRefusal && error.reason === 'ticksPerBeat',
+    )
+})
+
 test('SUS bar lengths preserve the meter and zero-based tick positions', () => {
     const actual = parseSus([...header, '#00202:3', '#00402:2.5', '#00412:11'])
     assert.deepEqual(actual.meterChanges, [

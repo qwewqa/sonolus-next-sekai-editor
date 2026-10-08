@@ -177,7 +177,8 @@ const parse = (data: string[]) => {
 
 const getTicksPerBeat = (meta: Map<string, string>) => {
     const request = meta.get('REQUEST')
-    if (!request) return
+    // SUS v2.7 section 3 (#TILzz): a beat is 480 ticks by default.
+    if (request === undefined) return 480
 
     if (!request.startsWith('"ticks_per_beat ') || !request.endsWith('"')) return
 
