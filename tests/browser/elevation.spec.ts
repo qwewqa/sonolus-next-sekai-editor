@@ -399,6 +399,40 @@ test('Escape side by side deselects, then switches to Select as Deselect does', 
     await expect(page.locator('.elevation-editor')).toBeVisible()
 })
 
+test('Escape side by side keeps the Elevation tool, so closing returns the tool from before', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    await page.evaluate(() => {
+        window.editorTest.settings.elevationEditorSideBySide = 'allow'
+    })
+    await page.keyboard.press('a')
+    await open(page)
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    const tool = () =>
+        page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            return toolName.value
+        })
+    const empty = await at(page, 5, 1)
+    await page.mouse.move(empty.x, empty.y)
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        const notes = [...history.state.value.store.slides.note.values()].flat()
+        history.replaceState({ ...history.state.value, selectedEntities: notes })
+    })
+    await page.keyboard.press('Escape')
+    expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
+    await page.keyboard.press('Escape')
+    expect(await tool()).toBe('elevation')
+    await expect(page.locator('.notification')).toHaveText('Deselected all objects')
+    await page.keyboard.press('t')
+    await expect(page.locator('.elevation-editor')).toHaveCount(0)
+    expect(await tool()).toBe('note')
+})
+
 test('the header fields keep their edge at rest and thicken it on focus in high contrast', async ({
     page,
 }) => {
