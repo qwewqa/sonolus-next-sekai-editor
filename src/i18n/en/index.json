@@ -947,7 +947,7 @@
         "initialize": "Initialize",
         "autoSave": {
             "title": "Auto Save",
-            "importing": "Restoring level…",
+            "importing": "Restoring chart…",
             "failed": "Auto save could not store your latest changes. Browser storage may be full or unavailable. Please save your chart to a file before closing this tab.",
             "paused": "Auto save is paused in this tab. The editor will try to restore the unsaved chart from your last session the next time it starts.",
             "unreadable": {

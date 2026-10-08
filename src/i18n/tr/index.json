@@ -947,7 +947,7 @@
     "initialize": "Başlat",
     "autoSave": {
       "title": "Otomatik Kaydet",
-      "importing": "Seviye geri yükleniyor…",
+      "importing": "Harita geri yükleniyor…",
       "failed": "Otomatik kaydetme son değişikliklerinizi saklayamadı. Tarayıcı depolaması dolu veya kullanılamıyor olabilir. Bu sekmeyi kapatmadan önce haritanızı dosyaya kaydedin.",
       "paused": "Bu sekmede otomatik kaydetme duraklatıldı. Editör bir sonraki açılışta son oturumunuzdaki kaydedilmemiş haritayı geri yüklemeyi deneyecek.",
       "unreadable": {

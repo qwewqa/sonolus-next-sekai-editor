@@ -1168,7 +1168,7 @@ for (const { label, recovery } of [
         const other = await context.newPage()
         await holdLoadingUntilReleased(other)
         await other.goto('/')
-        await expect(other.getByRole('dialog')).toContainText('Restoring level')
+        await expect(other.getByRole('dialog')).toContainText('Restoring chart')
 
         // This tab saves a newer recovery while the other one loads.
         const newer = await writeNewer(page)
@@ -1198,7 +1198,7 @@ test("setting an unreadable recovery aside leaves another tab's newer one in pla
     const other = await context.newPage()
     await holdLoadingUntilReleased(other)
     await other.goto('/')
-    await expect(other.getByRole('dialog')).toContainText('Restoring level')
+    await expect(other.getByRole('dialog')).toContainText('Restoring chart')
 
     // This tab saves a newer recovery while the other one loads, and closes.
     const newer = await writeNewer(page)
@@ -1225,7 +1225,7 @@ test('closing the loading dialog before a recovery opens keeps the recovery', as
     await holdLoading(page)
     await reloadWith(page, { recovery: stored })
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('Restoring level')
+    await expect(dialog).toContainText('Restoring chart')
     await dialog.getByRole('button', { name: 'Close' }).click()
     // Says why auto save is off and when the chart comes back.
     await expect(dialog).toHaveText(
@@ -1262,7 +1262,7 @@ test('closing the loading dialog with only a set-aside recovery keeps auto save 
     await holdLoading(page)
     await reloadWith(page, { aside: earlier })
     const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('Restoring level')
+    await expect(dialog).toContainText('Restoring chart')
     await dialog.getByRole('button', { name: 'Close' }).click()
     // No notice: auto save cannot touch a set-aside recovery.
     await expect(dialog).toHaveCount(0)
