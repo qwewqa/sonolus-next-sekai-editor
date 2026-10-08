@@ -17,7 +17,8 @@ export const setRecoveryAside = (text: string): Exclude<UnreadableRecovery, 'ear
     } catch {
         return 'inPlace'
     }
-    storageRemove('autoSave.levelData')
+    // Another tab's newer recovery may have replaced it meanwhile.
+    if (storageGetText('autoSave.levelData') === text) storageRemove('autoSave.levelData')
     return 'aside'
 }
 

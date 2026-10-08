@@ -1104,6 +1104,31 @@ for (const { label, recovery } of [
     })
 }
 
+test("setting an unreadable recovery aside leaves another tab's newer one in place", async ({
+    page,
+    context,
+}) => {
+    const stored = JSON.stringify(futureLevel)
+    await enableAutoSave(page)
+    await page.evaluate((stored) => {
+        localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', stored)
+    }, stored)
+
+    const other = await context.newPage()
+    await holdLoadingUntilReleased(other)
+    await other.goto('/')
+    await expect(other.getByRole('dialog')).toContainText('Restoring level')
+
+    // This tab saves a newer recovery while the other one loads, and closes.
+    const newer = await writeNewer(page)
+    await page.close()
+    await releaseLoading(other)
+    const dialog = other.getByRole('dialog')
+    await expect(dialog).toContainText('New changes will not replace this saved chart')
+    // The unreadable one is still kept aside, and the newer one stays.
+    expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: stored })
+})
+
 /** Holds the recovery loading dialog open before it parses, on the first start only. */
 const holdLoading = (page: Page) =>
     page.addInitScript(() => {
