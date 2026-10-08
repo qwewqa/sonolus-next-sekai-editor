@@ -546,3 +546,53 @@ test('side-by-side dialog buttons keep a gap between their edges', async ({ page
     const shortcuts = await edge('Reset Shortcuts')
     expect(shortcuts.left - settings.right).toBeGreaterThanOrEqual(6)
 })
+
+test('Select Multiple shows it is on, as the toolbar tool in use', async ({ page }) => {
+    const selected = await systemColor(page, 'Highlight')
+    const selectedText = await systemColor(page, 'HighlightText')
+    const toolbarSelect = page
+        .locator('[data-editor-toolbar]')
+        .getByTitle('Select', { exact: true })
+    const look = (locator: Locator) =>
+        locator.evaluate((element) => {
+            const { backgroundColor, color } = getComputedStyle(element)
+            return { background: backgroundColor, color }
+        })
+    const inUse = await look(toolbarSelect)
+    expect(inUse).toEqual({ background: selected, color: selectedText })
+    const expectOn = async (scope: Locator) => {
+        const mode = scope.getByRole('button', { name: 'Select Multiple' })
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+        expect((await look(mode)).background).not.toBe(selected)
+        await mode.click()
+        await expect(mode).toHaveAttribute('aria-pressed', 'true')
+        await page.mouse.move(0, 0)
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+        await expect.poll(() => look(mode)).toEqual(inUse)
+        expect(await fills(mode, 'path')).toEqual(
+            expect.arrayContaining([selectedText]) as unknown as string[],
+        )
+        // Focus rings it in its text colour, inside its fill.
+        await focus(mode)
+        expect(await outline(mode)).toEqual({ style: 'solid', width: '2px', color: selectedText })
+        await mode.click()
+        await expect(mode).toHaveAttribute('aria-pressed', 'false')
+    }
+
+    await page.locator('.panel-tab', { hasText: 'Groups' }).click()
+    await expectOn(page.locator('#workspace-panel-groups'))
+
+    // The dialog Manage Groups opens when the panel is off.
+    await page.evaluate(async () => {
+        const { appImport } = window.editorTest
+        const { showModal } =
+            await appImport<typeof import('../../src/modals')>('/src/modals/index.ts')
+        const { default: modal } = await appImport<
+            typeof import('../../src/editor/commands/manageGroups/manageGroups/ManageGroupsModal.vue')
+        >('/src/editor/commands/manageGroups/manageGroups/ManageGroupsModal.vue')
+        void showModal(modal, {})
+    })
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expectOn(dialog)
+})

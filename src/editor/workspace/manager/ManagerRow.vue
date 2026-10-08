@@ -604,6 +604,21 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply bg-fg text-header;
 }
 
+/* High contrast selects it, as the toolbar's tool in use, with focus an inner ring on its fill. */
+@media (forced-colors: active) {
+    .manager-icon-button.manager-icon-button-pressed {
+        forced-color-adjust: none;
+        background-color: Highlight;
+        color: HighlightText;
+        box-shadow: none;
+    }
+
+    .manager-icon-button.manager-icon-button-pressed:focus-visible {
+        outline-color: HighlightText;
+        outline-offset: -6px;
+    }
+}
+
 /* Selected rows while selecting; the target keeps its white pill, ringed. */
 .manager-row-selected:not(.manager-row-current) {
     @apply bg-accent/40;
