@@ -1,5 +1,5 @@
 import { inject, type InjectionKey } from 'vue'
-import { PLAIN_PADDING } from './leadFit'
+import { CHEVRON_CLEARANCE, PLAIN_PADDING } from './leadFit'
 
 /** Fields whose value would truncate beside the label take the row below it. */
 export const stackLongValuesKey: InjectionKey<boolean> = Symbol('stackLongValues')
@@ -33,7 +33,9 @@ export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
     const left = control.closest('.form-field-select-leading')
         ? Math.min(padding, PLAIN_PADDING)
         : padding
-    const room = control.clientWidth - left - parseFloat(style.paddingRight)
+    // A field select's value also keeps clear of its chevron.
+    const clearance = control.closest('.form-field-select') ? CHEVRON_CLEARANCE : 0
+    const room = control.clientWidth - left - parseFloat(style.paddingRight) - clearance
     return (
         Math.max(...[text, ...others].map((text) => measure.measureText(text).width)) > room + 0.5
     )

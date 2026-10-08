@@ -399,6 +399,36 @@ for (const width of [336, 260]) {
     })
 }
 
+test('a select value beside its label keeps clear of the chevron, or goes below', async ({
+    page,
+}) => {
+    await open(page, { rightDockWidth: 260 })
+    await select(page, 'note', [0, 1])
+    // The value's end, then the chevron's start, for each select still beside its label.
+    const gaps = () =>
+        panel(page)
+            .locator('.form-field:not(.form-field-value-stacked) .form-field-select')
+            .evaluateAll((wrappers) =>
+                wrappers
+                    .filter((wrapper) => wrapper.getClientRects().length)
+                    .map((wrapper) => {
+                        const value = wrapper.querySelector('.select-value > span')!
+                        const range = document.createRange()
+                        range.selectNodeContents(value)
+                        const end = range.getBoundingClientRect().right
+                        const chevron = wrapper
+                            .querySelector('.form-field-select-icon svg')!
+                            .getBoundingClientRect().left
+                        return { value: value.textContent, gap: chevron - end }
+                    }),
+            )
+    // At 260, All Groups fits its room exactly, so it goes below its label.
+    await expect(field(page, 'Current Group')).toHaveClass(/form-field-value-stacked/)
+    const shown = await gaps()
+    expect(shown.length).toBeGreaterThan(3)
+    for (const { value, gap } of shown) expect(gap, value).toBeGreaterThanOrEqual(7.5)
+})
+
 test('a value glyph gives way only when that lets the value fit', async ({ page }) => {
     await open(page, { rightDockWidth: 336 })
     // Every select with a glyph: hidden only if the value then fits, kept if it
@@ -417,7 +447,8 @@ test('a value glyph gives way only when that lets the value fit', async ({ page 
                         context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
                         const value = select.selectedOptions[0]!.textContent.trim()
                         const need = context.measureText(value).width
-                        const room = select.clientWidth - parseFloat(style.paddingRight)
+                        // The value keeps 4px clear of the chevron past the padding.
+                        const room = select.clientWidth - parseFloat(style.paddingRight) - 4
                         return {
                             value,
                             shown: getComputedStyle(lead).display !== 'none',

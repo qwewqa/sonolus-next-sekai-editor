@@ -3,6 +3,8 @@ import { onBeforeUnmount, onMounted, onUpdated, ref, type Ref } from 'vue'
 // Room a select gives its value, as BaseField's styles set it (px).
 const LEAD_PADDING = 30
 export const PLAIN_PADDING = 16
+// Room a field select's value keeps clear of the chevron, past its padding (px).
+export const CHEVRON_CLEARANCE = 4
 
 let context: CanvasRenderingContext2D | null | undefined
 
@@ -29,7 +31,7 @@ export const useLeadFit = (wrapper: Ref<HTMLElement | null>) => {
         if (!context) return
         context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
         const need = context.measureText(select.selectedOptions[0]?.textContent.trim() ?? '').width
-        const room = select.clientWidth - parseFloat(style.paddingRight)
+        const room = select.clientWidth - parseFloat(style.paddingRight) - CHEVRON_CLEARANCE
         leadless.value = need > room - LEAD_PADDING + 0.5 && need <= room - PLAIN_PADDING + 0.5
     }
     const refit = () => {

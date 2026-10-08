@@ -462,11 +462,12 @@ for (const width of [336, 260]) {
         await page.keyboard.press('b')
         await panel(page).getByRole('button', { name: 'Pick from Selection' }).click()
         const layout = await panel(page).evaluate((panel) => {
+            // Values stacked below their labels take the full row instead.
             const lefts = (selector: string) => [
                 ...new Set(
                     [
                         ...panel.querySelectorAll(
-                            `${selector} .form-field-row > :not(.form-field-label)`,
+                            `${selector} .form-field:not(.form-field-value-stacked) .form-field-row > :not(.form-field-label)`,
                         ),
                     ].map((control) => Math.round(control.getBoundingClientRect().left)),
                 ),
