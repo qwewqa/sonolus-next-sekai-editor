@@ -6,11 +6,17 @@ import { unlerp } from '../../../../utils/math'
 import { getControlBounds } from '../../../navigation'
 import { clearNotification, notification } from '../../../notification'
 import { tool, type Tool } from '../../../tools'
-import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
+import { scrollViewXBy, scrollViewYBy, view, viewBox } from '../../../view'
 import type { Modifiers } from '../pointer'
 import type { Recognizer } from './recognizer'
 
 export const isDragging = ref(0)
+
+// Counts view moves the chart's own view box doesn't show, such as another pane's scroll.
+const paneMoves = ref(0)
+export const notifyPaneMoved = () => {
+    paneMoves.value++
+}
 
 // An edge zone's inner bounds, moved to a held start point inside it.
 const panZone = (held: number | undefined) => ({
@@ -34,6 +40,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
               state: (typeof state)['value']
               // The last notice the drag posted, if any.
               notice?: number
+              pointer: { x: number; y: number; modifiers: Modifiers }
           }
         | {
               type: 'scroll'
@@ -86,15 +93,25 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             }
         }
 
-        if (active?.type === 'drag') {
-            const before = notification.value.id
-            active.tool.dragUpdate?.(x, y, modifiers)
-            if (notification.value.id !== before) active.notice = notification.value.id
-        }
+        if (active?.type === 'drag') updateDrag(x, y, modifiers)
 
         if (!updated) {
             update = undefined
         }
+    })
+
+    const updateDrag = (x: number, y: number, modifiers: Modifiers) => {
+        if (active?.type !== 'drag') return
+        const before = notification.value.id
+        active.tool.dragUpdate?.(x, y, modifiers)
+        if (notification.value.id !== before) active.notice = notification.value.id
+    }
+
+    // A scroll or zoom under a still pointer, as keys make, moves where the drag lands.
+    watch([viewBox, paneMoves], () => {
+        if (active?.type !== 'drag' || update) return
+        const { x, y, modifiers } = active.pointer
+        updateDrag(x, y, modifiers)
     })
 
     return {
@@ -126,6 +143,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                     state: startState,
                     notice:
                         notification.value.id !== noticeBefore ? notification.value.id : undefined,
+                    pointer: { x, y, modifiers },
                 }
                 update = {
                     x,
@@ -157,6 +175,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                         y: p.y,
                         modifiers: p.modifiers,
                     }
+                    active.pointer = update
                 } else {
                     isDragging.value--
                     const completed = active.tool

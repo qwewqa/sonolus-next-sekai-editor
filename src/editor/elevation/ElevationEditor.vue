@@ -32,6 +32,7 @@ import { activateEditorNavigation, controlsForNavigation, useCanvasCursor } from
 import { cancelMouseControls } from '../controls/mouse'
 import { cancelTouchControls } from '../controls/touch'
 import type { Modifiers } from '../controls/gestures/pointer'
+import { notifyPaneMoved } from '../controls/gestures/recognizers/drag'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { closeContextMenu, contextMenu } from '../contextMenu'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
@@ -714,6 +715,8 @@ const onKeydown = (event: KeyboardEvent) => {
     if (!isElevationSideBySide.value) closeElevationEditor()
     else selectAt(undefined, { ctrl: false, shift: false })
 }
+// Its scroll and zoom move where a drag in it lands.
+watch([() => elevationViewport.center, () => elevationViewport.scale], notifyPaneMoved)
 watch([() => elevationBounds.w, () => elevationBounds.h], () => {
     cancelMouseControls()
     cancelTouchControls()

@@ -2092,3 +2092,21 @@ test('an elevation drag that leaves the pane continues and lands only on release
     await page.mouse.up()
     expect(await notes(page)).toEqual(moved)
 })
+
+test('a key scroll mid-drag moves the elevation preview to where the drop lands', async ({
+    page,
+}) => {
+    await open(page)
+    const start = await point(page)
+    await mouseDrag(page, start, await displacement(page, 0, 0.5))
+    const shown = async () => (await rows(page)).map(({ elevation }) => elevation)
+    const before = await shown()
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowUp')
+    await page.waitForTimeout(500)
+    await settle(page)
+    const during = await shown()
+    expect(during).not.toEqual(before)
+    await page.mouse.up()
+    await settle(page)
+    expect(await shown()).toEqual(during)
+})

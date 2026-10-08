@@ -476,3 +476,39 @@ test('play, stop and jumps do nothing during a drag', async ({ page }) => {
     expect(await drag([' ', 'Backspace', 'Home', 'End'])).toEqual(moved)
     expect(await undoCount(page)).toBe(1)
 })
+
+test('a key scroll or zoom mid-drag moves the preview to where the drop lands', async ({
+    page,
+    context,
+}) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await command(page, 'select')
+    await select(page, [3])
+    await command(page, 'copy')
+    await command(page, 'paste')
+    const start = await point(page, 0, 6)
+    const ghost = () =>
+        page.evaluate(() =>
+            window.editorTest
+                .snapshot()
+                .creating.filter(({ type }) => type === 'note')
+                .map(({ beat, left }) => ({ beat, left })),
+        )
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 30, start.y - 30, { steps: 6 })
+    await settle(page)
+    const before = await ghost()
+    for (const key of ['ArrowUp', 'ArrowUp', 'PageUp', '=']) await page.keyboard.press(key)
+    await page.waitForTimeout(500)
+    await settle(page)
+    const shown = await ghost()
+    expect(shown).not.toEqual(before)
+    const notes = (await snapshot(page)).notes
+    await page.mouse.up()
+    await settle(page)
+    const pasted = (await snapshot(page)).notes
+        .filter((note) => !notes.some((old) => old.beat === note.beat && old.left === note.left))
+        .map(({ beat, left }) => ({ beat, left }))
+    expect(pasted).toEqual(shown)
+})
