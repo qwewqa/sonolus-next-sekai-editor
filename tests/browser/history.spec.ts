@@ -243,7 +243,10 @@ for (const how of ['undoes an edit it never saved', 'undoes a saved edit', 'turn
             .toEqual({ filename: 'named-chart', size: 3 })
     })
 
-test("hiding a tab writes its recovery back over another tab's", async ({ page, context }) => {
+test("hiding an unchanged tab leaves another tab's newer recovery in place", async ({
+    page,
+    context,
+}) => {
     await editNamedChart(page)
     await expect.poll(() => recovery(page)).toMatchObject({ filename: 'named-chart' })
     const other = await context.newPage()
@@ -272,8 +275,14 @@ test("hiding a tab writes its recovery back over another tab's", async ({ page, 
         editSelectedEditableEntities({ size: 4 })
     })
     await expect.poll(() => recovery(page)).toMatchObject({ filename: 'other-chart' })
+    // The last edit wins: hiding writes nothing, and this tab's next edit writes its own.
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')))
-    expect(await recovery(page)).toMatchObject({ filename: 'named-chart' })
+    expect(await recovery(page)).toMatchObject({ filename: 'other-chart' })
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.pushState(() => 'edit', { ...history.state.value, initialLife: 990 })
+    })
+    await expect.poll(() => recovery(page)).toMatchObject({ filename: 'named-chart' })
 })
 
 test('restored autosave retains its filename and warns before close until reset clean', async ({
@@ -1115,15 +1124,81 @@ test("a tab that only restored a recovery leaves another tab's newer one in plac
     await c.waitForTimeout(200)
     expect(await slot(c)).toBe(newer)
 
-    // Once it has written its own, it writes it back as before.
+    // Nor once it has written its own: the last edit wins.
     await setLife(c, 980)
     await expect.poll(() => slot(c)).not.toBe(newer)
     const own = await slot(c)
     await setLife(b, 970)
     await expect.poll(() => slot(b)).not.toBe(own)
+    const last = await slot(b)
     await hidePage(c)
-    await expect.poll(() => slot(c)).toBe(own)
+    await c.waitForTimeout(200)
+    expect(await slot(c)).toBe(last)
 })
+
+for (const { label, crash } of [
+    { label: 'both tabs close', crash: false },
+    { label: 'the original tab closes and the other crashes', crash: true },
+])
+    test(`work continued in a tab that restored it survives when ${label}`, async ({
+        page,
+        context,
+    }) => {
+        const lifeOf = (tab: Page) =>
+            tab.evaluate(async () => {
+                const pathname = '/src/history/index.ts'
+                const url =
+                    performance
+                        .getEntriesByType('resource')
+                        .map((entry) => entry.name)
+                        .find((name) => new URL(name).pathname === pathname) ?? pathname
+                const { state } = (await import(url)) as typeof import('../../src/history')
+                return state.value.initialLife
+            })
+        const slot = async (tab: Page) => (await unreadableStores(tab)).recovery
+        await enableAutoSave(page)
+        await editOpenChart(page)
+        await expect.poll(() => slot(page)).not.toBeNull()
+        const original = await slot(page)
+
+        // Another tab restores it, and the user continues there.
+        const other = await context.newPage()
+        if (crash)
+            // A crash runs none of its unload or hide handlers.
+            await other.addInitScript(() => {
+                const add = EventTarget.prototype.addEventListener
+                EventTarget.prototype.addEventListener = function (type, ...rest) {
+                    if (['pagehide', 'beforeunload', 'visibilitychange'].includes(type)) return
+                    add.call(this, type, ...rest)
+                }
+            })
+        await other.goto('/')
+        await expect.poll(() => lifeOf(other)).toBe(990)
+        await expect(other.getByRole('dialog')).toHaveCount(0)
+        await other.evaluate(async () => {
+            const pathname = '/src/history/index.ts'
+            const url =
+                performance
+                    .getEntriesByType('resource')
+                    .map((entry) => entry.name)
+                    .find((name) => new URL(name).pathname === pathname) ?? pathname
+            const { pushState, state } = (await import(url)) as typeof import('../../src/history')
+            pushState(() => 'edit', { ...state.value, initialLife: 980 })
+        })
+        await expect.poll(() => slot(other)).not.toBe(original)
+
+        for (const tab of crash ? [page, other] : [other, page]) {
+            tab.on('dialog', (dialog) => void dialog.accept())
+            const closed = tab.waitForEvent('close')
+            if (tab !== other || !crash) await hidePage(tab)
+            await tab.close({ runBeforeUnload: tab !== other || !crash })
+            await closed
+        }
+
+        const reopened = await context.newPage()
+        await reopened.goto('/')
+        await expect.poll(() => lifeOf(reopened)).toBe(980)
+    })
 
 /** Holds the recovery loading dialog open before it parses, until released. */
 const holdLoadingUntilReleased = (page: Page) =>
