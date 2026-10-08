@@ -27,8 +27,12 @@
         html:not([data-native-lists]) select::picker(select) {
             box-sizing: border-box;
             inline-size: max-content;
-            min-inline-size: max(anchor-size(self-inline), min(12rem, calc(100vw - 1rem)));
-            max-inline-size: calc(100vw - 1rem);
+            /* --list-room: the room in its dock, from selectLists.ts. */
+            min-inline-size: max(
+                anchor-size(self-inline),
+                min(12rem, calc(100vw - 1rem), var(--list-room, 100vw))
+            );
+            max-inline-size: min(calc(100vw - 1rem), var(--list-room, 100vw));
             max-block-size: calc(var(--viewport-height) - 1rem);
             margin-block: 0.25rem;
             padding: 0.25rem;
@@ -49,6 +53,11 @@
                 flip-inline,
                 flip-block flip-inline;
             position-try-order: most-block-size;
+        }
+
+        /* Grows from the select's end edge, where its dock has more room that way. */
+        html[data-list-toward='start']:not([data-native-lists]) select::picker(select) {
+            position-area: block-end span-inline-start;
         }
 
         html:not([data-native-lists]) select option:not([hidden]) {

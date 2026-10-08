@@ -88,8 +88,29 @@ const step = (select: HTMLSelectElement, key: string) => {
     select.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
+/** Keeps a list about to open within its dock: toward the side with room, and no wider. */
+const fitList = (select: HTMLSelectElement) => {
+    const root = document.documentElement
+    const dock = select.closest('.workspace-dock-body')?.getBoundingClientRect()
+    if (!dock) {
+        root.style.removeProperty('--list-room')
+        delete root.dataset.listToward
+        return
+    }
+    const anchor = select.getBoundingClientRect()
+    const end = dock.right - anchor.left
+    const start = anchor.right - dock.left
+    // The list's least width, 12rem in selectLists.css.
+    const width = 12 * parseFloat(getComputedStyle(root).fontSize)
+    const toStart = end < width && start > end
+    root.style.setProperty('--list-room', `${toStart ? start : end}px`)
+    if (toStart) root.dataset.listToward = 'start'
+    else delete root.dataset.listToward
+}
+
 const onKeydown = (event: KeyboardEvent) => {
     if (hold(event)) return
+    if (event.target instanceof HTMLSelectElement) fitList(event.target)
     // A closed shared list steps, one change each; Apple arrows open it where scripts can.
     const select = event.target
     if (
@@ -119,6 +140,7 @@ const onPointerDown = (event: PointerEvent) => {
     const select = document.querySelector('select:open')
     if (select && !(event.target instanceof Node && select.contains(event.target)))
         swallowPress(event)
+    else if (!select && event.target instanceof HTMLSelectElement) fitList(event.target)
 }
 
 /** Installs before the app mounts, ahead of its components' listeners but not module-level ones. */

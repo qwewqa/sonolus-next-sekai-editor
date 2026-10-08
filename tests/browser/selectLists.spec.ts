@@ -628,3 +628,33 @@ test('the elevation header select looks the same with either list', async ({ pag
     await expect(header).toBeVisible()
     expect(await bothWays(page, () => header.screenshot())).toBe(0)
 })
+
+for (const width of [1920, 1280])
+    test(`an open list stays within its dock, at ${width}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1080 })
+        await boot(page, sidebar)
+        await selectNotes(page, [0])
+        const dock = (await panel(page)
+            .locator('xpath=ancestor::*[contains(@class, "workspace-dock-body")]')
+            .boundingBox())!
+        for (const name of ['Group', 'Note Color']) {
+            const select = field(panel(page), name)
+            await select.scrollIntoViewIfNeeded()
+            await select.click()
+            expect(await isOpen(select)).toBe(true)
+            // The list's edges, from its rows and its padding.
+            const list = await select.evaluate((element) => {
+                const rows = [...element.querySelectorAll('option')]
+                    .map((option) => option.getBoundingClientRect())
+                    .filter(({ height }) => height > 0)
+                const padding = parseFloat(getComputedStyle(element, '::picker(select)').padding)
+                return {
+                    left: Math.min(...rows.map(({ left }) => left)) - padding,
+                    right: Math.max(...rows.map(({ right }) => right)) + padding,
+                }
+            })
+            expect(list.left).toBeGreaterThanOrEqual(dock.x)
+            expect(list.right).toBeLessThanOrEqual(dock.x + dock.width)
+            await page.keyboard.press('Escape')
+        }
+    })
