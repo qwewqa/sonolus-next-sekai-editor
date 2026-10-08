@@ -955,3 +955,20 @@ test('undo during typing in a field stays in the field', async ({ page }) => {
         await page.evaluate(() => window.editorTest.snapshot().notes.map((note) => note.left)),
     ).toEqual([5])
 })
+
+test('undo after a native undo back to the committed value goes to the chart', async ({ page }) => {
+    await showSlides(page, [[{ beat: 1, left: 3 }]])
+    const left = () =>
+        page.evaluate(() => window.editorTest.snapshot().notes.map((note) => note.left))
+    const lane = control(page, 'Lane')
+    await lane.fill('5')
+    await lane.press('Enter')
+    await expect.poll(left).toEqual([5])
+    await lane.pressSequentially('7')
+    await lane.press('ControlOrMeta+z')
+    await expect(lane).toHaveValue('5')
+    expect(await left()).toEqual([5])
+    await lane.press('ControlOrMeta+z')
+    await expect.poll(left).toEqual([3])
+    await expect(lane).toHaveValue('3')
+})
