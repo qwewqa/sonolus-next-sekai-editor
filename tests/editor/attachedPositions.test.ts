@@ -142,3 +142,23 @@ test('attached notes export clean lanes when their time fraction carries float n
     )!
     assert.deepEqual([left, size], [-0.5, 3])
 })
+
+test('attached notes take the middle of a slide shorter than the engine resolves', () => {
+    // At 120 BPM, under 2e-6 beats is under 1e-6 s, which the engine treats as no span.
+    const place = (gap: number) => {
+        const state = createState(
+            {
+                ...chart([{ beat: 0, bpm: 120 }]),
+                slides: [
+                    [note(1, -3), note(1 + gap / 4, 0, { isAttached: true }), note(1 + gap, 5)],
+                ],
+            },
+            0,
+        )
+        assert.ok(Math.abs(center(state) - engineCenter(state)) < 1e-9)
+        return center(state)
+    }
+    assert.equal(place(1e-7), 1)
+    assert.equal(place(1e-6), 1)
+    assert.ok(Math.abs(place(3e-6) - -1) < 1e-9)
+})

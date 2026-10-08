@@ -16,14 +16,12 @@ const attachFraction = (bpms: BpmIntegral[], head: number, tail: number, beat: n
     // Entries repeating the tempo in effect don't change it.
     const s = bpms[i - 1]?.s
     while ((bpms[i]?.x ?? Infinity) < tail && bpms[i]?.s === s) i++
-    if ((bpms[i]?.x ?? Infinity) >= tail)
-        return head === tail ? 0.5 : clamp(unlerp(head, tail, beat))
-
     const tHead = beatToTime(bpms, head)
     const tTail = beatToTime(bpms, tail)
-    return Math.abs(tTail - tHead) < 1e-6
-        ? 0.5
-        : clamp(unlerp(tHead, tTail, beatToTime(bpms, beat)))
+    // The engine takes the middle of a span under 1e-6 s.
+    if (Math.abs(tTail - tHead) < 1e-6) return 0.5
+    if ((bpms[i]?.x ?? Infinity) >= tail) return clamp(unlerp(head, tail, beat))
+    return clamp(unlerp(tHead, tTail, beatToTime(bpms, beat)))
 }
 
 export const rebuildSlide = (
