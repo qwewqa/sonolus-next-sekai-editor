@@ -187,9 +187,19 @@ export const useAutoSave = () => {
                 resetState(true, earlier.chart, earlier.offset, earlier.filename)
                 savedState = state.value
                 notify(() => i18n.value.history.autoSave.unreadable.restored)
-                unreadable = restoreAside(aside, primary || data === undefined ? undefined : data)
-                // A failed move leaves the one restored above, still this tab's.
+                // Moved back only over what this tab read; another tab's newer one stays, and it stays aside.
+                const replaced = storageGetText(key) !== data
+                if (!replaced)
+                    unreadable = restoreAside(
+                        aside,
+                        primary || data === undefined ? undefined : data,
+                    )
+                // A failed move leaves the one restored above, still this tab's; a skipped one, none.
                 if (storageGetText(key) !== written) adopt(aside)
+                if (replaced) {
+                    restoring = false
+                    return
+                }
             }
         }
 

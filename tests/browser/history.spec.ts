@@ -972,6 +972,138 @@ test("a tab that restored an older recovery leaves another tab's newer one in pl
     expect((await unreadableStores(other)).recovery).toBe(newer)
 })
 
+/** Turns auto save on in this tab, which starts with nothing to restore, so it writes freely. */
+const enableAutoSave = (page: Page) =>
+    page.evaluate(() => {
+        const { settings } = window.editorTest
+        settings.autoSaveDelay = 0
+        settings.autoSave = true
+    })
+
+/** Saves a newer recovery from this tab and returns it. */
+const writeNewer = async (page: Page) => {
+    const before = (await unreadableStores(page)).recovery
+    await page.evaluate(() => {
+        const { history, fixtures } = window.editorTest
+        history.resetState(false, fixtures.interaction, 0, 'newer-chart')
+        history.pushState(() => 'edit', { ...history.state.value, initialLife: 997 })
+    })
+    await expect.poll(async () => (await unreadableStores(page)).recovery).not.toBe(before)
+    return (await unreadableStores(page)).recovery
+}
+
+/** Edits the open chart in place. */
+const editOpenChart = (page: Page) =>
+    page.evaluate(async () => {
+        const pathname = '/src/history/index.ts'
+        const url =
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => entry.name)
+                .find((name) => new URL(name).pathname === pathname) ?? pathname
+        const { pushState, state } = (await import(url)) as typeof import('../../src/history')
+        pushState(() => 'edit', { ...state.value, initialLife: 990 })
+    })
+
+test("restoring an earlier recovery leaves another tab's newer one in place", async ({
+    page,
+    context,
+}) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    const last = readableRecovery('last-chart', 90)
+    await enableAutoSave(page)
+    await page.evaluate(
+        ({ earlier, last }) => {
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', last)
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', earlier)
+        },
+        { earlier, last },
+    )
+
+    // The other tab restores the last session and asks about the earlier one.
+    const other = await context.newPage()
+    await other.goto('/')
+    const dialog = other.getByRole('dialog')
+    await expect(dialog).toContainText('can now restore an unsaved chart')
+
+    // Meanwhile this tab saves a newer recovery and closes.
+    const newer = await writeNewer(page)
+    await page.close()
+
+    await dialog.getByRole('button', { name: 'Restore' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(other)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+    // Restored in the editor only: both stay stored, and hiding it unchanged writes nothing.
+    expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: earlier })
+    await hidePage(other)
+    await other.waitForTimeout(200)
+    expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: earlier })
+    // Its next edit writes as usual.
+    await editOpenChart(other)
+    await expect.poll(async () => (await unreadableStores(other)).recovery).not.toBe(newer)
+    expect((await unreadableStores(other)).aside).toBe(earlier)
+})
+
+/** Holds the recovery loading dialog open before it parses, until released. */
+const holdLoadingUntilReleased = (page: Page) =>
+    page.addInitScript(() => {
+        const held: TimerHandler[] = []
+        const setTimeout = window.setTimeout
+        window.setTimeout = ((handler: TimerHandler, delay?: number, ...rest: unknown[]) => {
+            if (delay !== 50 || 'releaseLoading' in window)
+                return setTimeout(handler, delay, ...rest)
+            held.push(handler)
+            return 0
+        }) as typeof window.setTimeout
+        Object.defineProperty(window, 'heldLoading', { value: held })
+    })
+
+const releaseLoading = (page: Page) =>
+    page.evaluate(() => {
+        Object.defineProperty(window, 'releaseLoading', { value: true })
+        for (const handler of (window as unknown as { heldLoading: (() => void)[] }).heldLoading)
+            handler()
+    })
+
+for (const { label, recovery } of [
+    { label: 'no recovery', recovery: undefined },
+    { label: 'an unreadable recovery', recovery: JSON.stringify(futureLevel) },
+]) {
+    test(`restoring an earlier recovery over ${label} leaves another tab's newer one in place`, async ({
+        page,
+        context,
+    }) => {
+        const earlier = readableRecovery('earlier-chart', 150)
+        await enableAutoSave(page)
+        await page.evaluate(
+            ({ earlier, recovery }) => {
+                if (recovery)
+                    localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', recovery)
+                localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', earlier)
+            },
+            { earlier, recovery },
+        )
+
+        const other = await context.newPage()
+        await holdLoadingUntilReleased(other)
+        await other.goto('/')
+        await expect(other.getByRole('dialog')).toContainText('Restoring level')
+
+        // This tab saves a newer recovery while the other one loads.
+        const newer = await writeNewer(page)
+        await releaseLoading(other)
+        await expect.poll(() => openChart(other)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+        await expect(other.getByRole('dialog')).toHaveCount(0)
+        expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: earlier })
+        await hidePage(other)
+        await other.waitForTimeout(200)
+        expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: earlier })
+        await editOpenChart(other)
+        await expect.poll(async () => (await unreadableStores(other)).recovery).not.toBe(newer)
+        expect((await unreadableStores(other)).aside).toBe(earlier)
+    })
+}
+
 /** Holds the recovery loading dialog open before it parses, on the first start only. */
 const holdLoading = (page: Page) =>
     page.addInitScript(() => {
