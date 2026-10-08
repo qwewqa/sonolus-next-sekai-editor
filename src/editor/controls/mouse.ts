@@ -146,6 +146,8 @@ const mouseup = (event: MouseEvent) => {
         secondarySwitchBack = undefined
     }
     if (!mouseGesture.pointerCount) unlockCursor()
+    // A release over the chart rests there again; leaving it does not.
+    if (event.type === 'mouseup' && !mouseGesture.pointerCount) isHovering = true
 
     if (showMenu) openContextMenu(p.x, p.y)
     event.preventDefault()

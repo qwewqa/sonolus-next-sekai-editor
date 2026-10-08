@@ -276,3 +276,56 @@ test('the hover line and preview follow a still mouse as the chart scrolls under
     await settle(page)
     expect((await hover()).time).toBeCloseTo(followed.time)
 })
+
+test('the hover line and preview follow a still mouse after a click or a drag', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, settings } = window.editorTest
+        show(fixtures.interaction, 3)
+        settings.mouseSmoothScrolling = false
+    })
+    const hover = () =>
+        page.evaluate(async () => {
+            const { view, appImport } = window.editorTest
+            const { yToTime } =
+                await appImport<typeof import('../../src/editor/view')>('/src/editor/view.ts')
+            return {
+                time: view.hoverTime,
+                pointer: yToTime(view.pointer.y),
+                creating: window.editorTest.snapshot().creating.length,
+            }
+        })
+    const scroll = async () => {
+        await page.evaluate(() => {
+            window.editorTest.view.time += 1
+        })
+        await settle(page)
+        const after = await hover()
+        expect(after.time).toBeCloseTo(after.pointer)
+        return after
+    }
+
+    // A click places a note, and the next one's preview follows.
+    await page.keyboard.press('a')
+    const position = await page.evaluate(() => window.editorTest.point(-7, 6))
+    await page.mouse.move(position.x, position.y)
+    await page.mouse.down()
+    await page.mouse.up()
+    await settle(page)
+    expect((await scroll()).creating).toBe(1)
+
+    // A drag's release, then the wheel.
+    await page.keyboard.press('f')
+    const start = await page.evaluate(() => window.editorTest.point(-7, 4))
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 80, start.y - 80, { steps: 8 })
+    await page.mouse.up()
+    await settle(page)
+    await page.mouse.wheel(0, -240)
+    await settle(page)
+    const wheeled = await hover()
+    expect(wheeled.time).toBeCloseTo(wheeled.pointer)
+    await scroll()
+})
