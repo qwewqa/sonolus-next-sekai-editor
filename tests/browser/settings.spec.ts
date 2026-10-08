@@ -786,7 +786,7 @@ test('Auto Save Delay sits under Auto Save, and Beat Display with the display ro
 }) => {
     const labels = await page.getByRole('dialog').locator('.form-field-text').allTextContents()
     const at = (label: string) => labels.indexOf(label)
-    expect(at('Auto Save Delay (s)')).toBe(at('Auto Save') + 1)
+    expect(at('Auto Save Delay (s)')).toBe(at('Auto Save') + 1)
     expect(at('Waveform Visualization')).toBe(at('Beat Display') + 1)
 })
 

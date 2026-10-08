@@ -606,7 +606,7 @@
       "locale": "Dil",
       "elevationSideBySide": "Yükseklik Editörünü Yan Yana Göster",
       "autoSave": "Otomatik Kaydet",
-      "autoSaveDelay": "Otomatik Kaydetme Gecikmesi (sn)",
+      "autoSaveDelay": "Otomatik Kaydetme Gecikmesi (sn)",
       "waveformVisualization": {
         "title": "Dalga Formu Görselleştirmesi",
         "off": "Kapalı",
@@ -614,7 +614,7 @@
         "volume": "Ses",
         "changed": "Dalga formu görselleştirmesi değiştirildi. Değişikliğin uygulanması için arka plan müziği dosyasını tekrar seçin."
       },
-      "maxScrollX": "En Fazla X Kaydırması (şerit)",
+      "maxScrollX": "En Fazla X Kaydırması (şerit)",
       "zeroWidthNotes": {
         "title": "Sıfır Genişlikli Notalar",
         "off": "Kapalı",
@@ -653,16 +653,16 @@
     },
     "play": {
       "title": "Oynat",
-      "bgmVolume": "Arka Plan Müziği Sesi (%)",
-      "sfxVolume": "Ses Efekti Sesi (%)",
+      "bgmVolume": "Arka Plan Müziği Sesi (%)",
+      "sfxVolume": "Ses Efekti Sesi (%)",
       "startPosition": {
         "title": "Başlangıç Konumu",
         "view": "Görünüm",
         "cursor": "İmleç"
       },
       "follow": "Takip Et",
-      "followPosition": "Pozisyonu Takip Et (%)",
-      "previewDuration": "Önizleme Süresi (ms)"
+      "followPosition": "Pozisyonu Takip Et (%)",
+      "previewDuration": "Önizleme Süresi (ms)"
     },
     "preview": {
       "title": "Önizleme",
@@ -704,7 +704,7 @@
     },
     "touch": {
       "title": "Dokunma",
-      "quickScrollZone": "Hızlı Kaydırma Alanı (%)",
+      "quickScrollZone": "Hızlı Kaydırma Alanı (%)",
       "scrollInertia": "Kaydırma Ataleti",
       "longPressContextMenu": "Bağlam Menüsü İçin Uzun Bas"
     },

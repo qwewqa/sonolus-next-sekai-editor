@@ -606,7 +606,7 @@
       "locale": "Langue",
       "elevationSideBySide": "Éditeur d’élévation côte à côte",
       "autoSave": "Sauvegarde automatique",
-      "autoSaveDelay": "Délai de la sauvegarde automatique (s)",
+      "autoSaveDelay": "Délai de la sauvegarde automatique (s)",
       "waveformVisualization": {
         "title": "Visualisation de la forme d’onde",
         "off": "Désactivée",
@@ -614,7 +614,7 @@
         "volume": "Volume",
         "changed": "Le mode de visualisation de la forme d’onde a changé. Rechargez le fichier audio pour appliquer ce changement."
       },
-      "maxScrollX": "Défilement horizontal maximal (voies)",
+      "maxScrollX": "Défilement horizontal maximal (voies)",
       "zeroWidthNotes": {
         "title": "Notes de largeur nulle",
         "off": "Désactivé",
@@ -653,16 +653,16 @@
     },
     "play": {
       "title": "Lecture",
-      "bgmVolume": "Volume de la musique (%)",
-      "sfxVolume": "Volume des effets sonores (%)",
+      "bgmVolume": "Volume de la musique (%)",
+      "sfxVolume": "Volume des effets sonores (%)",
       "startPosition": {
         "title": "Position de départ",
         "view": "Vue",
         "cursor": "Curseur"
       },
       "follow": "Suivre",
-      "followPosition": "Suivre la position (%)",
-      "previewDuration": "Durée de l’aperçu (ms)"
+      "followPosition": "Suivre la position (%)",
+      "previewDuration": "Durée de l’aperçu (ms)"
     },
     "preview": {
       "title": "Aperçu",
@@ -704,7 +704,7 @@
     },
     "touch": {
       "title": "Tactile",
-      "quickScrollZone": "Zone de défilement rapide (%)",
+      "quickScrollZone": "Zone de défilement rapide (%)",
       "scrollInertia": "Inertie de défilement",
       "longPressContextMenu": "Appui long pour le menu contextuel"
     },

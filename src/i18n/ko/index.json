@@ -606,7 +606,7 @@
       "locale": "언어",
       "elevationSideBySide": "높이 편집기 나란히 표시",
       "autoSave": "자동 저장",
-      "autoSaveDelay": "자동 저장 주기 (초)",
+      "autoSaveDelay": "자동 저장 주기 (초)",
       "waveformVisualization": {
         "title": "파형 시각화",
         "off": "꺼짐",
@@ -614,7 +614,7 @@
         "volume": "음량",
         "changed": "변경된 파형 설정을 적용하려면 BGM 파일을 다시 불러와야 합니다."
       },
-      "maxScrollX": "최대 스크롤 X (레인)",
+      "maxScrollX": "최대 스크롤 X (레인)",
       "zeroWidthNotes": {
         "title": "너비 0 노트",
         "off": "꺼짐",
@@ -653,16 +653,16 @@
     },
     "play": {
       "title": "플레이",
-      "bgmVolume": "배경음 음량 (%)",
-      "sfxVolume": "효과음 음량 (%)",
+      "bgmVolume": "배경음 음량 (%)",
+      "sfxVolume": "효과음 음량 (%)",
       "startPosition": {
         "title": "재생 시작 위치",
         "view": "현재 화면",
         "cursor": "커서 위치"
       },
       "follow": "따라가기",
-      "followPosition": "따라가기 위치 (%)",
-      "previewDuration": "미리보기 시간 (밀리초)"
+      "followPosition": "따라가기 위치 (%)",
+      "previewDuration": "미리보기 시간 (밀리초)"
     },
     "preview": {
       "title": "미리보기",
@@ -704,7 +704,7 @@
     },
     "touch": {
       "title": "터치",
-      "quickScrollZone": "빠른 스크롤 영역 (%)",
+      "quickScrollZone": "빠른 스크롤 영역 (%)",
       "scrollInertia": "스크롤 관성",
       "longPressContextMenu": "길게 눌러 컨텍스트 메뉴 열기"
     },
