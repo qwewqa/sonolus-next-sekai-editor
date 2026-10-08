@@ -7,6 +7,13 @@ export const unlerp = (a: number, b: number, x: number) => (x - a) / (b - a)
 export const remap = (a: number, b: number, c: number, d: number, x: number) =>
     lerp(c, d, unlerp(a, b, x))
 
+// The engine's safe_unlerp: spans under 1e-6 take a fixed fraction.
+export const safeUnlerp = (a: number, b: number, x: number, fallback = 0.5) =>
+    Math.abs(a - b) < 1e-6 ? fallback : unlerp(a, b, x)
+
+export const safeUnlerpClamped = (a: number, b: number, x: number, fallback = 0.5) =>
+    Math.abs(a - b) < 1e-6 ? fallback : clamp(unlerp(a, b, x))
+
 export const align = (value: number, division = 1) => Math.round(value * division) / division
 
 // Snaps values within rounding error of the grid; values off the grid stay.

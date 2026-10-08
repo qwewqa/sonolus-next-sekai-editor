@@ -473,3 +473,33 @@ test('fake connector crosses follow the drawn body', () => {
         [...corner(2 * n - 1), ...corner(n - 1)],
     ])
 })
+
+test('a guide segment under 1e-6 s takes its middle alpha, as the engine does', () => {
+    const { context, fills, gradients, renderer } = fixture()
+    // At 150 BPM, these beats a float step apart share one time.
+    context.state.bpms = calculateBpms([{ x: 0, y: 0, s: 0.4 }])
+    const head = note(22 / 3, 0, 2, { connectorType: 'guide', connectorGuideAlpha: 1 })
+    const tail = note(7.333333333333334, 0, 2, { connectorGuideAlpha: 0.2 })
+    renderer.draw(context, toConnectorEntity(head, tail, head, tail, head, tail), false)
+    assert.equal(gradients.length, 0)
+    assert.equal(fills.length, 1)
+    assert.equal(fills[0]!.alpha, 0.6 * 0.5)
+})
+
+test('connectors with ends at one time draw finite geometry for every ease', () => {
+    for (const connectorEase of [
+        'linear',
+        'inQuad',
+        'inOutQuad',
+        'outElastic',
+        'inStep',
+    ] as const) {
+        const { context, fills, renderer } = fixture()
+        context.state.bpms = calculateBpms([{ x: 0, y: 0, s: 0.4 }])
+        const head = note(22 / 3, 0, 2, { connectorEase, connectorIsFake: true })
+        const tail = note(7.333333333333334, 4, 4)
+        renderer.draw(context, toConnectorEntity(head, tail, head, tail, head, tail), false)
+        const values = fills.flatMap(({ path }) => path.commands.flatMap(([, ...xs]) => xs))
+        assert.ok(values.every(Number.isFinite), connectorEase)
+    }
+})

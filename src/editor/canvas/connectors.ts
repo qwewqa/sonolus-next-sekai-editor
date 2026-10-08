@@ -9,7 +9,7 @@ import {
 } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
 import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
-import { clamp, lerp, remap, unlerp } from '../../utils/math'
+import { clamp, lerp, remap, safeUnlerp, safeUnlerpClamped } from '../../utils/math'
 import { isConnectorVisible } from '../entities/visibility'
 import { connectorColors } from '../utils/connectorColors'
 import { blendOverChart } from './nameColors'
@@ -60,8 +60,8 @@ const appendEase = (
     ups: number,
     edges: Path2D | undefined,
 ) => {
-    const pHead = unlerp(attachHead.time, attachTail.time, tHead)
-    const pTail = unlerp(attachHead.time, attachTail.time, tTail)
+    const pHead = safeUnlerp(attachHead.time, attachTail.time, tHead, 0)
+    const pTail = safeUnlerp(attachHead.time, attachTail.time, tTail, 1)
     const qHead = ease(connectorEase, pHead)
     const qTail = ease(connectorEase, pTail)
     const qMid = connectorEase === 'inQuad' ? pHead * pTail : 1 - (1 - pHead) * (1 - pTail)
@@ -104,8 +104,8 @@ const appendCurve = (
     )
     const points = sampleEase(
         connectorEase,
-        unlerp(attachHead.time, attachTail.time, tHead),
-        unlerp(attachHead.time, attachTail.time, tTail),
+        safeUnlerp(attachHead.time, attachTail.time, tHead, 0),
+        safeUnlerp(attachHead.time, attachTail.time, tTail, 1),
         CURVE_TOLERANCE / Math.max(span, CURVE_TOLERANCE),
     ).map((p) => {
         const q = ease(connectorEase, p)
@@ -177,12 +177,9 @@ const appendStep = (
         return
     }
 
-    const p = unlerp(attachHead.time, attachTail.time, (tHead + tTail) / 2)
+    const p = safeUnlerp(attachHead.time, attachTail.time, (tHead + tTail) / 2, 0.5)
     appendConstant(path, at(ease(connectorEase, p)), tHead * ups, tTail * ups, edges, regions)
 }
-
-const safeUnlerp = (a: number, b: number, x: number, fallback: number) =>
-    Math.abs(a - b) < 1e-6 ? fallback : unlerp(a, b, x)
 
 // Like the engine, ease each piece between its own ends; steps hold one value per piece.
 const appendAttachedPiece = (
@@ -339,10 +336,10 @@ const createGraphic = (
             regions,
         )
     const pieceEase = attached ? undefined : attachHead.connectorEase
+    const pHead = safeUnlerp(tAttachHead, tAttachTail, tHead, 0)
+    const pTail = safeUnlerp(tAttachHead, tAttachTail, tTail, 1)
     // Every unattached ease but a step draws one eased stretch, compound quads included.
     if (pieceEase && !isStepEase(pieceEase)) {
-        const pHead = safeUnlerp(tAttachHead, tAttachTail, tHead, 0)
-        const pTail = safeUnlerp(tAttachHead, tAttachTail, tTail, 1)
         regions.push({
             yHead,
             yTail,
@@ -361,10 +358,10 @@ const createGraphic = (
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (pieceEase) {
         case 'linear': {
-            const lHead = remap(tAttachHead, tAttachTail, first.left, last.left, tHead)
-            const lTail = remap(tAttachHead, tAttachTail, first.left, last.left, tTail)
-            const sHead = remap(tAttachHead, tAttachTail, first.size, last.size, tHead)
-            const sTail = remap(tAttachHead, tAttachTail, first.size, last.size, tTail)
+            const lHead = lerp(first.left, last.left, pHead)
+            const lTail = lerp(first.left, last.left, pTail)
+            const sHead = lerp(first.size, last.size, pHead)
+            const sTail = lerp(first.size, last.size, pTail)
             path.moveTo(lHead, yHead)
             path.lineTo(lTail, yTail)
             path.lineTo(lTail + sTail, yTail)
@@ -428,22 +425,15 @@ const createGraphic = (
     if (segmentHead.connectorType === 'guide') {
         const tSegmentHead = beatToTime(bpms, segmentHead.beat)
         const tSegmentTail = beatToTime(bpms, segmentTail.beat)
-        headAlpha =
-            remap(
-                tSegmentHead,
-                tSegmentTail,
+        // As the engine does, a segment under 1e-6 s takes its middle alpha.
+        const alphaAt = (time: number) =>
+            lerp(
                 segmentHead.connectorGuideAlpha,
                 segmentTail.connectorGuideAlpha,
-                tHead,
+                safeUnlerpClamped(tSegmentHead, tSegmentTail, time),
             ) * 0.5
-        tailAlpha =
-            remap(
-                tSegmentHead,
-                tSegmentTail,
-                segmentHead.connectorGuideAlpha,
-                segmentTail.connectorGuideAlpha,
-                tTail,
-            ) * 0.5
+        headAlpha = alphaAt(tHead)
+        tailAlpha = alphaAt(tTail)
     } else {
         headAlpha = tailAlpha = 0.8
     }
