@@ -16,6 +16,7 @@ import { addNote } from '../../../state/mutations/slides/note'
 import { editSelectedNote } from '../../../state/operations/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { shiftComputed } from '../../../utils/math'
 import { constrainLaneObject, minimumNoteSize } from '../../laneLimits'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
@@ -204,7 +205,10 @@ export const note: Tool = {
                 active = {
                     type: 'edit',
                     entity,
-                    lane: entity.left + (lane >= entity.left + entity.size / 2 ? 0 : entity.size),
+                    lane: shiftComputed(
+                        entity.left,
+                        lane >= entity.left + entity.size / 2 ? 0 : entity.size,
+                    ),
                 }
             }
         }

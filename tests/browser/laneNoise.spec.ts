@@ -138,3 +138,31 @@ test('paste offsets leave clean lanes', async ({ page }) => {
         { left: -0.2, size: 0.1 },
     ])
 })
+
+test('values an edit leaves where they were stay exact', async ({ page }) => {
+    const left = 1.5000000000000309
+    const size = 2.0000000000000004
+    // A resize keeps its fixed edge.
+    await page.keyboard.press('f')
+    await seed(page, left, size)
+    await selectAll(page)
+    await drag(page, 3.4, 4.4)
+    expect(await note(page)).toEqual({ left, size: 3 })
+    // A paste at the copied lane keeps the lane.
+    await seed(page, left, size)
+    const pasted = await page.evaluate(async () => {
+        const { appImport, store } = window.editorTest
+        const { toMovedNoteObject } = await appImport<
+            typeof import('../../src/editor/tools/paste/index')
+        >('/src/editor/tools/paste/index.ts')
+        const entity = [...store.getAllEntities()].find((e) => e.type === 'note')!
+        const { left, size } = toMovedNoteObject(entity as never, 2.5, 2.5, 5, false)
+        return { left, size }
+    })
+    expect(pasted).toEqual({ left, size })
+    // A flip that maps a lane onto itself keeps it.
+    await seed(page, -1.0000000000000002, 2.0000000000000004)
+    await selectAll(page)
+    await page.keyboard.press('u')
+    expect(await note(page)).toEqual({ left: -1.0000000000000002, size: 2.0000000000000004 })
+})

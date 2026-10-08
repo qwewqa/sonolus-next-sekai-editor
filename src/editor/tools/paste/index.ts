@@ -57,7 +57,7 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import type { StoreSlides } from '../../../state/store/slides'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
-import { alignComputed } from '../../../utils/math'
+import { alignComputed, shiftComputed } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { constrainLaneObject } from '../../laneLimits'
@@ -544,7 +544,7 @@ const toMovedTimeScaleObject = (
             onlyType === 'timeScale'
                 ? flip
                     ? alignComputed(-entity.editorLane + alignLane(startLane) + alignLane(lane))
-                    : alignComputed(entity.editorLane - alignLane(startLane) + alignLane(lane))
+                    : shiftComputed(entity.editorLane, alignLane(lane) - alignLane(startLane))
                 : entity.editorLane,
     })
 
@@ -562,7 +562,7 @@ const toMovedCameraEventObject = (
             ? alignComputed(
                   -(entity.cameraLeft + entity.cameraSize) + alignLane(startLane) + alignLane(lane),
               )
-            : alignComputed(entity.cameraLeft - alignLane(startLane) + alignLane(lane)),
+            : shiftComputed(entity.cameraLeft, alignLane(lane) - alignLane(startLane)),
         cameraZoomTargetLane: flip ? -entity.cameraZoomTargetLane : entity.cameraZoomTargetLane,
         cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
     })
@@ -582,7 +582,7 @@ const toMovedStageMaskEventObject = (
             ? alignComputed(
                   -(entity.maskLeft + entity.maskSize) + alignLane(startLane) + alignLane(lane),
               )
-            : alignComputed(entity.maskLeft - alignLane(startLane) + alignLane(lane)),
+            : shiftComputed(entity.maskLeft, alignLane(lane) - alignLane(startLane)),
     })
 
 const toMovedStagePivotEventObject = (
@@ -598,7 +598,7 @@ const toMovedStagePivotEventObject = (
         beat,
         pivotLane: flip
             ? alignComputed(-entity.pivotLane + alignLane(startLane) + alignLane(lane))
-            : alignComputed(entity.pivotLane - alignLane(startLane) + alignLane(lane)),
+            : shiftComputed(entity.pivotLane, alignLane(lane) - alignLane(startLane)),
     })
 
 const toMovedStageStyleEventObject = (
@@ -617,7 +617,7 @@ const toMovedStageStyleEventObject = (
             onlyType === 'stageStyleEventJoint'
                 ? flip
                     ? alignComputed(-entity.editorLane + alignLane(startLane) + alignLane(lane))
-                    : alignComputed(entity.editorLane - alignLane(startLane) + alignLane(lane))
+                    : shiftComputed(entity.editorLane, alignLane(lane) - alignLane(startLane))
                 : entity.editorLane,
         leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
         rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
@@ -637,7 +637,7 @@ const toMovedStageTransformEventObject = (
         rotation: flip ? -entity.rotation : entity.rotation,
         xTranslation: flip
             ? alignComputed(-entity.xTranslation + alignLane(startLane) + alignLane(lane))
-            : alignComputed(entity.xTranslation - alignLane(startLane) + alignLane(lane)),
+            : shiftComputed(entity.xTranslation, alignLane(lane) - alignLane(startLane)),
     })
 
 const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
@@ -668,7 +668,7 @@ export const toMovedNoteObject = (
                 ? alignComputed(
                       -(entity.left + entity.size) + alignLane(startLane) + alignLane(lane),
                   )
-                : alignComputed(entity.left - alignLane(startLane) + alignLane(lane)),
+                : shiftComputed(entity.left, alignLane(lane) - alignLane(startLane)),
             flickDirection: flip
                 ? flippedFlickDirections[entity.flickDirection]
                 : entity.flickDirection,

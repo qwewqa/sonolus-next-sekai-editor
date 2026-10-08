@@ -71,6 +71,7 @@ import {
     type TransactionOptions,
 } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
+import { shiftComputed } from '../../utils/math'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
 import { notify } from '../notification'
 import { hitOffscreenIndicator, selectOffscreenNotes } from '../offscreenIndicators'
@@ -541,8 +542,10 @@ const toMovedCameraEventObject = (
 ): CameraEventObject => {
     if (focus.type === 'cameraEventJoint' && isSelectResize(onlyType, focus, startLane)) {
         const [cameraLeft, cameraSize] = resize(
-            entity.cameraLeft +
-                (startLane >= focus.cameraLeft + focus.cameraSize / 2 ? 0 : entity.cameraSize),
+            shiftComputed(
+                entity.cameraLeft,
+                startLane >= focus.cameraLeft + focus.cameraSize / 2 ? 0 : entity.cameraSize,
+            ),
             lane,
             6,
             24,
@@ -583,8 +586,10 @@ const toMovedStageMaskEventObject = (
 ): StageMaskEventObject => {
     if (focus.type === 'stageMaskEventJoint' && isSelectResize(onlyType, focus, startLane)) {
         const [maskLeft, maskSize] = resize(
-            entity.maskLeft +
-                (startLane >= focus.maskLeft + focus.maskSize / 2 ? 0 : entity.maskSize),
+            shiftComputed(
+                entity.maskLeft,
+                startLane >= focus.maskLeft + focus.maskSize / 2 ? 0 : entity.maskSize,
+            ),
             lane,
             0,
             Number.POSITIVE_INFINITY,
@@ -679,7 +684,7 @@ const toMovedNoteObject = (
         const isLeft = startLane >= focus.left + focus.size / 2
 
         const [left, size] = resize(
-            entity.left + (isLeft ? 0 : entity.size),
+            shiftComputed(entity.left, isLeft ? 0 : entity.size),
             entity.left + (isLeft ? entity.size : 0) + (lane - startLane),
             minimumNoteSize(entity.noteType),
             Number.POSITIVE_INFINITY,

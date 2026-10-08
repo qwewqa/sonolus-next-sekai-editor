@@ -15,6 +15,7 @@ import { addCameraEventJoint } from '../../../../state/mutations/events/camera'
 import { editSelectedCameraEvent } from '../../../../state/operations/events/camera'
 import { createTransaction, type Transaction } from '../../../../state/transaction'
 import { interpolate } from '../../../../utils/interpolate'
+import { shiftComputed } from '../../../../utils/math'
 import { constrainLaneObject } from '../../../laneLimits'
 import { notify } from '../../../notification'
 import { isSidebarVisible, revealPropertiesSection } from '../../../sidebars'
@@ -215,9 +216,10 @@ export const cameraEvent: Tool = {
                 active = {
                     type: 'edit',
                     entity,
-                    lane:
-                        entity.cameraLeft +
-                        (lane >= entity.cameraLeft + entity.cameraSize / 2 ? 0 : entity.cameraSize),
+                    lane: shiftComputed(
+                        entity.cameraLeft,
+                        lane >= entity.cameraLeft + entity.cameraSize / 2 ? 0 : entity.cameraSize,
+                    ),
                 }
             }
         } else {

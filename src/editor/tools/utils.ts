@@ -1,6 +1,6 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
-import { alignComputed, clamp } from '../../utils/math'
+import { alignComputed, clamp, shiftComputed } from '../../utils/math'
 import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
@@ -20,10 +20,8 @@ export const offset = (startLane: number, lane: number, anchor = startLane) =>
     snappedOffset(startLane, lane, anchor, view.laneDivision, view.laneSnapping)
 
 // A lane moved by the drag's offset, without float noise; unmoved, it stays exact.
-export const moveLane = (value: number, startLane: number, lane: number, anchor?: number) => {
-    const delta = offset(startLane, lane, anchor)
-    return delta === 0 ? value : alignComputed(value + delta)
-}
+export const moveLane = (value: number, startLane: number, lane: number, anchor?: number) =>
+    shiftComputed(value, offset(startLane, lane, anchor))
 
 export const getLaneAnchor = (entity: Entity) => {
     switch (entity.type) {
@@ -62,8 +60,8 @@ export const resize = (
     const edge = startEdge + offset(startEdge, lane, startEdge)
     const size = clamp(alignComputed(Math.abs(edge - anchor)), min, max)
 
-    // Edges come from sums, so both values drop their float noise.
-    return [alignComputed(anchor - (lane >= anchor ? 0 : size)), size] as const
+    // The fixed edge stays as given; callers snap one that is a sum.
+    return [lane >= anchor ? anchor : alignComputed(anchor - size), size] as const
 }
 
 export const hitEntitiesAtPoint = <T extends EntityType>(

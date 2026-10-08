@@ -71,6 +71,12 @@ const flippedFlickDirections: Record<FlickDirection, FlickDirection> = {
     downRight: 'downLeft',
 }
 
+// A flipped left edge without float noise; one the flip maps onto itself stays exact.
+const flipLeft = (left: number, size: number) => {
+    const flipped = -(left + size)
+    return flipped === left ? left : alignComputed(flipped)
+}
+
 const flips: {
     [T in Entity as T['type']]: Flip<T> | undefined
 } = {
@@ -82,14 +88,14 @@ const flips: {
     }),
 
     cameraEventJoint: (entities, entity) => ({
-        cameraLeft: alignComputed(-(entity.cameraLeft + entity.cameraSize)),
+        cameraLeft: flipLeft(entity.cameraLeft, entity.cameraSize),
         cameraZoomTargetLane: -entity.cameraZoomTargetLane,
         cameraRotation: -entity.cameraRotation,
     }),
     cameraEventConnection: undefined,
 
     stageMaskEventJoint: (entities, entity) => ({
-        maskLeft: alignComputed(-(entity.maskLeft + entity.maskSize)),
+        maskLeft: flipLeft(entity.maskLeft, entity.maskSize),
     }),
     stageMaskEventConnection: undefined,
 
@@ -114,7 +120,7 @@ const flips: {
     stageTransformEventConnection: undefined,
 
     note: (entities, entity) => ({
-        left: alignComputed(-(entity.left + entity.size)),
+        left: flipLeft(entity.left, entity.size),
         flickDirection: flippedFlickDirections[entity.flickDirection],
     }),
     connector: undefined,

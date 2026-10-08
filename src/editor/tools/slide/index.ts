@@ -16,6 +16,7 @@ import { toNoteEntity, type NoteEntity } from '../../../state/entities/slides/no
 import { addNote, replaceNote } from '../../../state/mutations/slides/note'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
+import { shiftComputed } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
 import { constrainLaneObject, minimumNoteSize } from '../../laneLimits'
 import { notify } from '../../notification'
@@ -206,7 +207,10 @@ export const slide: Tool = {
                 active = {
                     type: 'edit',
                     entity,
-                    lane: entity.left + (lane >= entity.left + entity.size / 2 ? 0 : entity.size),
+                    lane: shiftComputed(
+                        entity.left,
+                        lane >= entity.left + entity.size / 2 ? 0 : entity.size,
+                    ),
                 }
             }
         }

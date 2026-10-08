@@ -22,7 +22,7 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
 import { createTransaction } from '../../state/transaction'
-import { alignComputed, alignNear, clamp } from '../../utils/math'
+import { alignComputed, alignNear, clamp, shiftComputed } from '../../utils/math'
 import { createNameLayer, placeNames } from '../canvas/names'
 import { createNoteRenderer } from '../canvas/notes'
 import { createFrameScheduler } from '../canvas/surface'
@@ -541,7 +541,7 @@ const controls: Pick<
             deltaLane: 0,
             deltaElevation: 0,
             resizing,
-            anchor: xToLane(x) < row.lane ? row.note.left + row.note.size : row.note.left,
+            anchor: shiftComputed(row.note.left, xToLane(x) < row.lane ? row.note.size : 0),
             movingEdge: xToLane(x) < row.lane ? row.note.left : row.note.left + row.note.size,
         }
         return true

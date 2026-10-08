@@ -18,6 +18,10 @@ export const alignNear = (value: number, division = 1) => {
 // Snaps the float noise of a lane or size computed from others; keeps 1/256 and 1/100 steps.
 export const alignComputed = (value: number) => alignNear(value, 6400)
 
+// A value shifted by delta, without float noise; unshifted, it stays exact.
+export const shiftComputed = (value: number, delta: number) =>
+    delta === 0 ? value : alignComputed(value + delta)
+
 /** Equal up to floating-point noise; NaN equals NaN. */
 export const nearlyEqual = (a: number, b: number, epsilon = 1e-9) =>
     Object.is(a, b) || Math.abs(a - b) <= epsilon

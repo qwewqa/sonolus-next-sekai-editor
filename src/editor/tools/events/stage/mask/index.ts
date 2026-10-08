@@ -16,6 +16,7 @@ import { addStageMaskEventJoint } from '../../../../../state/mutations/events/st
 import { editSelectedStageMaskEvent } from '../../../../../state/operations/events/stage/mask'
 import { createTransaction, type Transaction } from '../../../../../state/transaction'
 import { interpolate } from '../../../../../utils/interpolate'
+import { shiftComputed } from '../../../../../utils/math'
 import { constrainLaneObject } from '../../../../laneLimits'
 import { notify } from '../../../../notification'
 import { revealAuthoringTarget } from '../../../../scope'
@@ -214,9 +215,10 @@ export const stageMaskEvent: Tool = {
                 active = {
                     type: 'edit',
                     entity,
-                    lane:
-                        entity.maskLeft +
-                        (lane >= entity.maskLeft + entity.maskSize / 2 ? 0 : entity.maskSize),
+                    lane: shiftComputed(
+                        entity.maskLeft,
+                        lane >= entity.maskLeft + entity.maskSize / 2 ? 0 : entity.maskSize,
+                    ),
                 }
             }
         } else {
