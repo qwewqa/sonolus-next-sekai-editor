@@ -30,7 +30,14 @@ export const prepareSurface = (
     if (canvas.height !== h) canvas.height = h
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    clearSurface(ctx, w, h)
+    // 'copy', not clearSurface: destination-out here stalls SwiftShader in playback under a resting mouse; the preview overlay keeps it for its stale outlines.
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.save()
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'copy'
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)'
+    ctx.fillRect(0, 0, w, h)
+    ctx.restore()
     const scale = width / bounds.w
     // CSS dimensions and DPR can both be fractional. Use the actual backing
     // dimensions so browser scaling keeps the scene aligned with pointer and
