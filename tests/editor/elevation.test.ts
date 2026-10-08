@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+    elevationGridDivision,
     layoutElevationNotes,
     sameBeat,
     snapElevation,
@@ -26,6 +27,27 @@ const viewport = {
     elevationCenter: 2.5,
     elevationScale: 100,
 }
+
+test('grid lines follow the elevation snap, thinned to stay readable', () => {
+    // Each snap step while lines stay at least 7.5px apart.
+    assert.equal(elevationGridDivision(120, 8), 8)
+    assert.equal(elevationGridDivision(120, 16), 16)
+    assert.equal(elevationGridDivision(120, 2), 2)
+    // Too dense: halved, so lines still fall on snap points.
+    assert.equal(elevationGridDivision(120, 64), 16)
+    assert.equal(elevationGridDivision(40, 8), 4)
+    assert.equal(elevationGridDivision(20, 8), 2)
+    assert.equal(elevationGridDivision(5, 8), 1)
+    assert.equal(elevationGridDivision(5, 1), 1)
+    // Snap off keeps the zoom-based lines.
+    assert.equal(elevationGridDivision(60, 0), 8)
+    assert.equal(elevationGridDivision(30, 0), 4)
+    assert.equal(elevationGridDivision(29, 0), 1)
+    // The default snap matches the zoom-based lines down to 30px per unit.
+    for (const scale of [30, 45, 59, 60, 90, 200]) {
+        assert.equal(elevationGridDivision(scale, 8), elevationGridDivision(scale, 0), `${scale}`)
+    }
+})
 
 test('overlapping notes stay at their actual elevation', () => {
     const layout = layoutElevationNotes([note(1, 0), note(2, 0), note(3, 0)], viewport)

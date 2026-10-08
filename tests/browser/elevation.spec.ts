@@ -235,6 +235,35 @@ test('elevation mode replaces the chart and closes back to the previous tool', a
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('the elevation grid lines follow the elevation snap', async ({ page }) => {
+    await open(page)
+    // The brightness of the canvas row at an elevation; notes draw the same in both runs.
+    const rowAt = (elevation: number, snap: 1 | 2) =>
+        page.evaluate(
+            async ({ elevation, snap }) => {
+                window.editorTest.settings.elevationSnap = snap as never
+                await window.editorTest.nextTick()
+                await new Promise<void>((resolve) =>
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+                )
+                const canvas = document.querySelector<HTMLCanvasElement>('.elevation-canvas')!
+                const ratio = canvas.width / canvas.getBoundingClientRect().width
+                const y = Math.round(
+                    window.elevationTest.scene.elevationLayout.value.yAt(elevation) * ratio,
+                )
+                const data = canvas.getContext('2d')!.getImageData(0, y, canvas.width, 1).data
+                let sum = 0
+                for (let i = 0; i < data.length; i += 4)
+                    sum += data[i]! + data[i + 1]! + data[i + 2]!
+                return sum
+            },
+            { elevation, snap },
+        )
+    // A half step has a line only when the snap has one there; whole units always do.
+    expect(await rowAt(0.5, 2)).toBeGreaterThan(await rowAt(0.5, 1))
+    expect(await rowAt(1, 2)).toBe(await rowAt(1, 1))
+})
+
 test('only exact-beat notes appear and all editor filters still apply', async ({ page }) => {
     await page.evaluate(() => {
         const { history } = window.editorTest

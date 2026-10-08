@@ -59,7 +59,13 @@ import { scopeLookup } from '../scope'
 import { isScopeReduced } from '../scopeRules'
 import { dockKeysAttribute, isInWorkspaceDock } from '../workspace'
 import { alignLane, view, focusViewAtBeat } from '../view'
-import { snapElevation, sameBeat, type ElevationNote, type ElevationRow } from './layout'
+import {
+    elevationGridDivision,
+    snapElevation,
+    sameBeat,
+    type ElevationNote,
+    type ElevationRow,
+} from './layout'
 import {
     createElevationNote,
     elevationNoteMinimum,
@@ -810,6 +816,7 @@ watchEffect(() => {
     const showGroupName = settings.showGroupName
     const showStageName = settings.showStageName
     const nameContrast = settings.nameContrast
+    const elevationSnap = settings.elevationSnap
     // Axis labels move right of any left badges, which would cover them.
     const leftBadges = offscreenGroups.value.filter(({ side }) => side === 'left')
     const axisLabelLeft = leftBadges.length
@@ -832,7 +839,7 @@ watchEffect(() => {
         ctx.lineWidth = 1
         const min = layout.elevationCenter - layout.height / 2 / layout.elevationScale
         const max = layout.elevationCenter + layout.height / 2 / layout.elevationScale
-        const division = layout.elevationScale >= 60 ? 8 : layout.elevationScale >= 30 ? 4 : 1
+        const division = elevationGridDivision(layout.elevationScale, elevationSnap)
         ctx.save()
         ctx.textAlign = axisLabelLeft === undefined ? 'right' : 'left'
         ctx.textBaseline = 'alphabetic'
