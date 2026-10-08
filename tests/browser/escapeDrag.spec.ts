@@ -363,3 +363,89 @@ test.describe('touch', () => {
         ).toEqual([undefined, undefined])
     })
 })
+
+test.describe('a drag that leaves the chart pane', () => {
+    const pane = async (page: Page) => (await page.locator('.editor').first().boundingBox())!
+
+    test('continues outside and lands only on release', async ({ page }) => {
+        await command(page, 'select')
+        const start = await point(page, 1, 5)
+        const end = await point(page, 3, 6)
+        const drag = async (outside?: { x: number; y: number }) => {
+            await select(page, [3, 5])
+            await page.mouse.move(start.x, start.y)
+            await page.mouse.down()
+            await page.mouse.move(end.x, end.y, { steps: 8 })
+            if (outside) {
+                await page.mouse.move(outside.x, outside.y, { steps: 4 })
+                await settle(page)
+                await expect(page.locator('.notification')).toHaveText('Moving 2 objects')
+                expect(await undoCount(page)).toBe(0)
+                await page.mouse.move(end.x, end.y, { steps: 4 })
+            }
+            await page.mouse.up()
+            await settle(page)
+            return (await snapshot(page)).notes
+        }
+        const moved = await drag()
+        await command(page, 'undo')
+        const box = await pane(page)
+        expect(await drag({ x: box.x + box.width + 60, y: end.y })).toEqual(moved)
+        await expect(page.locator('.notification')).toHaveText('Moved 2 objects')
+        expect(await undoCount(page)).toBe(1)
+    })
+
+    test('cancels on Escape outside, and its release does nothing', async ({ page }) => {
+        await command(page, 'select')
+        await select(page, [3, 5])
+        const box = await pane(page)
+        await cancelDrag(page, [1, 5], [3, 6], async () => {
+            await page.mouse.move(box.x + box.width + 60, (await point(page, 3, 6)).y)
+            await settle(page)
+        })
+    })
+
+    test('a paste drag pans past the top edge and pastes at the edge on release', async ({
+        page,
+        context,
+    }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+        await page.evaluate(() => {
+            window.editorTest.settings.dragToPanY = true
+        })
+        await command(page, 'select')
+        await select(page, [3])
+        await command(page, 'copy')
+        await command(page, 'paste')
+        const start = await point(page, 0, 6)
+        const box = await pane(page)
+        const time = () => page.evaluate(() => window.editorTest.view.time)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(start.x, start.y - 40, { steps: 4 })
+        const before = await time()
+        await page.mouse.move(start.x, box.y - 30, { steps: 4 })
+        await expect.poll(time).toBeGreaterThan(before + 1)
+        expect(await undoCount(page)).toBe(0)
+        expect((await snapshot(page)).notes).toHaveLength(4)
+        await page.mouse.up()
+        await settle(page)
+        expect(await undoCount(page)).toBe(1)
+        expect((await snapshot(page)).notes).toHaveLength(5)
+    })
+
+    test('a release outside the window lands the drag', async ({ page }) => {
+        await command(page, 'select')
+        await select(page, [3, 5])
+        const start = await point(page, 1, 5)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(start.x + 80, start.y, { steps: 8 })
+        const viewport = page.viewportSize()!
+        await page.mouse.move(viewport.width + 40, start.y, { steps: 4 })
+        await page.mouse.up()
+        await settle(page)
+        expect(await undoCount(page)).toBe(1)
+        expect(await page.evaluate(() => window.editorTest.view.selection)).toBeUndefined()
+    })
+})

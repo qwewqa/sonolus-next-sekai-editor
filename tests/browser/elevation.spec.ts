@@ -2068,3 +2068,27 @@ test('a drag starting near the bottom edge keeps the grid still until it goes de
     await expect.poll(async () => (await viewport()).center).toBeLessThan(before.center)
     await page.mouse.up()
 })
+
+test('an elevation drag that leaves the pane continues and lands only on release', async ({
+    page,
+}) => {
+    await open(page)
+    const before = await notes(page)
+    const start = await point(page)
+    const delta = await displacement(page, 2, 0.25)
+    await mouseDrag(page, start, delta)
+    await page.mouse.up()
+    const moved = await notes(page)
+    expect(moved).not.toEqual(before)
+    await page.keyboard.press('z')
+    expect(await notes(page)).toEqual(before)
+
+    const box = (await page.locator('.elevation-canvas').boundingBox())!
+    await mouseDrag(page, start, delta)
+    await page.mouse.move(start.x + delta.x, box.y - 30, { steps: 4 })
+    await settle(page)
+    expect(await notes(page)).toEqual(before)
+    await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 4 })
+    await page.mouse.up()
+    expect(await notes(page)).toEqual(moved)
+})

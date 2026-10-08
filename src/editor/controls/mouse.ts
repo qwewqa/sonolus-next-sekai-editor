@@ -1,5 +1,6 @@
 import { watch } from 'vue'
 import { settings } from '../../settings'
+import { clamp } from '../../utils/math'
 import { beginAudioPreviewInteraction } from '../audioPreview'
 import { zoomXIn } from '../commands/zooms/zoomXIn'
 import { zoomXOut } from '../commands/zooms/zoomXOut'
@@ -27,16 +28,43 @@ const mouseGesture = gesture(drag(false), tap(Infinity))
 
 export const hasMouseControls = () => mouseGesture.pointerCount > 0
 
-const toP = (event: MouseEvent) => ({
-    id: 1,
-    x: event.clientX,
-    y: event.clientY,
-    modifiers: {
-        // Cmd plays Ctrl's part on Apple platforms, where Ctrl+click is a right click.
-        ctrl: event.ctrlKey || event.metaKey,
-        shift: event.shiftKey,
-    },
-})
+// The pane a press started in; the press follows the mouse outside it until release.
+let pressedPane: Element | undefined
+// The event the window listeners already handled for the press.
+let tracked: Event | undefined
+const isTracked = (event: Event) => event === tracked && event.currentTarget !== window
+
+const toP = (event: MouseEvent) => {
+    // Outside its pane, a press stays at the pane's edge.
+    const rect = pressedPane?.getBoundingClientRect()
+    return {
+        id: 1,
+        x: rect ? clamp(event.clientX, rect.left, rect.right) : event.clientX,
+        y: rect ? clamp(event.clientY, rect.top, rect.bottom) : event.clientY,
+        modifiers: {
+            // Cmd plays Ctrl's part on Apple platforms, where Ctrl+click is a right click.
+            ctrl: event.ctrlKey || event.metaKey,
+            shift: event.shiftKey,
+        },
+    }
+}
+
+const trackMove = (event: MouseEvent) => {
+    tracked = event
+    // A release the page never saw ends the press.
+    if (event.buttons) mousemove(event)
+    else mouseup(event)
+}
+const trackUp = (event: MouseEvent) => {
+    tracked = event
+    mouseup(event)
+}
+const stopTracking = () => {
+    if (!pressedPane) return
+    pressedPane = undefined
+    removeEventListener('mousemove', trackMove, true)
+    removeEventListener('mouseup', trackUp, true)
+}
 
 let secondarySwitchBack: ToolName | undefined
 let switchingSecondaryTool = false
@@ -49,6 +77,7 @@ export const cancelMouseControls = (restoreTool = true) => {
     contextClick = undefined
     closeContextMenu()
     mouseGesture.cancel()
+    stopTracking()
     unlockCursor()
     const previous = secondarySwitchBack
     secondarySwitchBack = undefined
@@ -103,12 +132,18 @@ const mousedown = (event: MouseEvent) => {
     // The press point is where dragStart decides; keep its cursor until release.
     if (!mouseGesture.pointerCount) lockCursor(tool.value.cursor?.(p.x, p.y) ?? 'default')
 
+    if (!pressedPane && event.currentTarget instanceof Element) {
+        pressedPane = event.currentTarget
+        addEventListener('mousemove', trackMove, true)
+        addEventListener('mouseup', trackUp, true)
+    }
     mouseGesture.start([p])
 
     event.preventDefault()
 }
 
 const mousemove = (event: MouseEvent) => {
+    if (isTracked(event)) return
     const p = toP(event)
     updateViewPointer(p)
     if (contextClick && Math.hypot(p.x - contextClick.x, p.y - contextClick.y) > 20)
@@ -126,6 +161,8 @@ const mousemove = (event: MouseEvent) => {
 }
 
 const mouseup = (event: MouseEvent) => {
+    if (isTracked(event)) return
+    const pane = pressedPane
     const p = toP(event)
     updateViewPointer(p)
 
@@ -145,9 +182,14 @@ const mouseup = (event: MouseEvent) => {
         switchToolTo(secondarySwitchBack)
         secondarySwitchBack = undefined
     }
-    if (!mouseGesture.pointerCount) unlockCursor()
-    // A release over the chart rests there again; leaving it does not.
-    if (event.type === 'mouseup' && !mouseGesture.pointerCount) isHovering = true
+    if (!mouseGesture.pointerCount) {
+        unlockCursor()
+        stopTracking()
+        // A release over the chart rests there again; leaving it does not.
+        const over = pane ?? event.currentTarget
+        if (event.type === 'mouseup' && over instanceof Element && event.target instanceof Node)
+            isHovering = over.contains(event.target)
+    }
 
     if (showMenu) openContextMenu(p.x, p.y)
     event.preventDefault()
@@ -156,7 +198,8 @@ const mouseup = (event: MouseEvent) => {
 const mouseleave = (event: MouseEvent) => {
     isHovering = false
     contextClick = undefined
-    mouseup(event)
+    // A press continues outside the pane; only its release lands it.
+    if (!pressedPane) mouseup(event)
 }
 
 const wheel = (event: WheelEvent) => {
