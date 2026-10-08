@@ -1062,3 +1062,69 @@ test.describe('on a phone', () => {
         expect(await checked.evaluate((row) => row.contains(document.activeElement))).toBe(false)
     })
 })
+
+// A flyout opened by hovering leaves Escape to the field, rename or dialog that has focus.
+const hoverFlyout = async (page: Page) => {
+    await shown(page).nth(3).hover()
+    await expect(toolbar(page).locator(':scope > div > div > div button').first()).toBeVisible()
+}
+
+test('Escape over a hovered flyout reverts the typing in a focused field', async ({ page }) => {
+    await page.evaluate(() => {
+        const { history, fixtures, settings } = window.editorTest
+        settings.toolbar = [['undo'], ['redo'], ['open'], ['eraser', 'select']]
+        settings.showSidebar = true
+        history.resetState(false, structuredClone(fixtures.notes), 0, 'toolbar.json')
+    })
+    await page.mouse.click(700, 300)
+    await page.keyboard.press('ControlOrMeta+a')
+    const lefts = () =>
+        page.evaluate(() => window.editorTest.snapshot().notes.map((note) => note.left))
+    const before = await lefts()
+    const lane = page
+        .locator('#properties-section-selection label')
+        .filter({ has: page.getByText('Lane', { exact: true }) })
+        .locator('input')
+    const shownText = await lane.inputValue()
+    await lane.click()
+    await page.keyboard.type('7')
+    await hoverFlyout(page)
+    await page.keyboard.press('Escape')
+    await expect(toolbar(page).locator(':scope > div > div > div button')).toHaveCount(0)
+    await expect(lane).toBeFocused()
+    await expect(lane).toHaveValue(shownText)
+    expect(await lefts()).toEqual(before)
+})
+
+test('Escape over a hovered flyout cancels a rename', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.showGroups = true
+    })
+    const panel = page.locator('#workspace-panel-groups')
+    const names = () =>
+        page.evaluate(() =>
+            [...window.editorTest.history.state.value.groups.values()].map(({ name }) => name),
+        )
+    const before = await names()
+    await panel.locator('.manager-entry .manager-name').last().focus()
+    await page.keyboard.press('F2')
+    await expect(panel.locator('.manager-rename')).toBeFocused()
+    await page.keyboard.type('Renamed')
+    await hoverFlyout(page)
+    await page.keyboard.press('Escape')
+    await expect(panel.locator('.manager-rename')).toHaveCount(0)
+    expect(await names()).toEqual(before)
+    await expect(panel.locator('.manager-entry .manager-name').last()).toBeFocused()
+})
+
+test('Escape over a hovered flyout closes a dialog opened over it', async ({ page }) => {
+    await page.mouse.click(700, 300)
+    for (const key of [',', 'h']) {
+        await hoverFlyout(page)
+        await page.keyboard.press(key)
+        const dialog = page.locator('dialog[open]')
+        await expect(dialog).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toHaveCount(0)
+    }
+})

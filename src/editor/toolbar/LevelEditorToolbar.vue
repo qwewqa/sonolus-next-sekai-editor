@@ -20,6 +20,7 @@ import {
     useTemplateRef,
     watch,
 } from 'vue'
+import { modals } from '../../modals'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { isDragging } from '../controls/gestures/recognizers/drag'
@@ -263,6 +264,18 @@ watch([room, short], place)
 // Escape closes an open flyout and returns focus to its tool.
 const onKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || activeIndex.value === -1) return
+    // Escape stays with a focused field, row or dialog; a hovered flyout just closes.
+    const active = document.activeElement
+    if (
+        event.defaultPrevented ||
+        modals.length ||
+        (active !== document.body &&
+            !root.value?.contains(active) &&
+            !active?.matches('.chart-pane'))
+    ) {
+        activeIndex.value = -1
+        return
+    }
     event.preventDefault()
     event.stopImmediatePropagation()
     const group = groups.value[activeIndex.value]
