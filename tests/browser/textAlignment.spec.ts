@@ -253,6 +253,8 @@ test('a split name draws each pixel once where a trace box and its diamond overl
             ctx,
             scale: 40,
             pixelRatio: 1,
+            // Wide enough that the name is never cut.
+            bounds: { l: -20, r: 25, t: -20, b: 20, w: 45, h: 40 },
             ups: 1,
             fontFamily: 'sans-serif',
             fontMiddle: 0.25,

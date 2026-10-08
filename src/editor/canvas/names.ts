@@ -1,6 +1,6 @@
 import type { Entity } from '../../state/entities'
 import { nameColorOn } from './nameColors'
-import { drawText, measureText } from './text'
+import { drawText, measureText, normalizeSvgText } from './text'
 import type { EditorDrawContext } from './types'
 
 type Box = { l: number; r: number; t: number; b: number }
@@ -134,6 +134,40 @@ const measureName = (context: EditorDrawContext, text: string, size: number) => 
     return width
 }
 
+const ellipsis = '…'
+const graphemes = new Intl.Segmenter()
+
+/** Cuts a name at the pane's side with an ellipsis; none when even that has no room. */
+const fitName = <T extends Omit<NameRequest, 'owner' | 'highlighted' | 'alpha'>>(
+    context: EditorDrawContext,
+    name: T,
+): T | undefined => {
+    const box = nameBox(name, measureName(context, name.text, name.size))
+    const { l, r } = context.bounds
+    if (box.l >= l && box.r <= r) return name
+    // Keep the start unless only the start runs past.
+    const keepStart = box.r > r
+    const from = Math.max(box.l, l)
+    const room = (keepStart ? r : box.r) - from
+    const parts = [...graphemes.segment(normalizeSvgText(name.text))].map(({ segment }) => segment)
+    const cut = (count: number) =>
+        keepStart
+            ? parts.slice(0, count).join('') + ellipsis
+            : ellipsis + parts.slice(parts.length - count).join('')
+    const fits = (count: number) => measureText(context, cut(count), name.size) <= room
+    if (!fits(0)) return
+    let low = 0
+    let high = parts.length - 1
+    while (low < high) {
+        const mid = Math.ceil((low + high) / 2)
+        if (fits(mid)) low = mid
+        else high = mid - 1
+    }
+    return keepStart
+        ? { ...name, text: cut(low), x: from, align: 'left' }
+        : { ...name, text: cut(low), x: box.r, align: 'right' }
+}
+
 /** Records a fill names may lie over, when the frame places names. */
 export const markFill = (context: EditorDrawContext, fill: NameFill) => {
     context.names?.fills.push(fill)
@@ -157,9 +191,11 @@ export const drawName = (
     body: NameFill[] = [],
 ) => {
     if (!context.names) {
-        const name = { text, x, y, color, size, align }
-        if (!body.length) drawText(context, text, x, y, color, size, align)
-        else drawSplitName(context, name, nameBox(name, measureName(context, text, size)), body)
+        const name = fitName(context, { text, x, y, color, size, align })
+        if (!name) return
+        if (!body.length) drawText(context, name.text, name.x, y, color, size, name.align)
+        else
+            drawSplitName(context, name, nameBox(name, measureName(context, name.text, size)), body)
         return
     }
     const alpha = context.ctx.globalAlpha
@@ -170,10 +206,12 @@ export const drawName = (
 export const placeNames = (context: EditorDrawContext, { names, fills }: NameLayer) => {
     const { ctx } = context
     ctx.save()
-    for (const name of [
+    for (const queued of [
         ...names.filter(({ highlighted }) => !highlighted),
         ...names.filter(({ highlighted }) => highlighted),
     ]) {
+        const name = fitName(context, queued)
+        if (!name) continue
         ctx.globalAlpha = name.alpha
         if (!context.nameContrast) {
             drawText(context, name.text, name.x, name.y, name.color, name.size, name.align)

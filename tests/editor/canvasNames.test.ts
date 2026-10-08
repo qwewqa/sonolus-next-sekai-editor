@@ -78,6 +78,7 @@ const recordingContext = (nameContrast = true) => {
         ctx,
         scale: 10,
         pixelRatio: 1,
+        bounds: { l: -50, r: 50, t: -50, b: 50, w: 100, h: 100 },
         fontFamily: 'sans-serif',
         fontMiddle: 0.25,
         nameContrast,
@@ -310,9 +311,11 @@ test('names are measured once per font and zoom, and again after a font loads', 
     clearNameWidths()
     frame(20)
     assert.equal(measured, 6)
-    // Without contrast, names draw whole and need no width.
+    // Without contrast, names are still measured to fit the pane.
     frame(30, false)
-    assert.equal(measured, 6)
+    assert.equal(measured, 8)
+    frame(30, false)
+    assert.equal(measured, 8)
 })
 
 test('canvases at different fonts and zooms keep their measured names', () => {
@@ -361,4 +364,34 @@ test('canvases at different fonts and zooms keep their measured names', () => {
     frame('system-ui', 40)
     frame('serif', 40)
     assert.equal(measured, 10)
+})
+
+test('a name that would run past the pane edge is cut with an ellipsis at that edge', () => {
+    const owner = { type: 'note' } as Entity
+    // Each glyph is 0.1 lane wide; the pane spans -50 to 50.
+    const frame = (text: string, x: number, align: CanvasTextAlign, nameContrast: boolean) => {
+        const { context, texts } = recordingContext(nameContrast)
+        const layer = createNameLayer()
+        layer.names.push({
+            owner,
+            highlighted: true,
+            text,
+            x,
+            y: 0,
+            color: '#0aa',
+            size: 0.4,
+            align,
+            alpha: 1,
+        })
+        placeNames(context, layer)
+        return texts.map(({ text }) => text)
+    }
+    for (const nameContrast of [false, true]) {
+        assert.deepEqual(frame('Long group name', 49, 'start', nameContrast), ['Long…'])
+        assert.deepEqual(frame('Long stage name', -49, 'end', nameContrast), ['…name'])
+        assert.deepEqual(frame('Long group name', 50, 'center', nameContrast), ['Long g…'])
+        // No room even for the ellipsis: nothing.
+        assert.deepEqual(frame('Long group name', 49.95, 'start', nameContrast), [])
+        assert.deepEqual(frame('Short', 0, 'center', nameContrast), ['Short'])
+    }
 })

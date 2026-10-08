@@ -313,6 +313,7 @@ test("a note's stage and group names keep a gap between them", (t) => {
         ctx: makeCanvasContext(),
         scale: 40,
         pixelRatio: 1,
+        bounds: { l: -12, r: 12, t: -10, b: 10, w: 24, h: 20 },
         ups: -2,
         recentlyActive: false,
         showStageName: true,
