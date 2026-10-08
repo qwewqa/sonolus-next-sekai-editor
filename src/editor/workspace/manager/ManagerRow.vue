@@ -560,6 +560,18 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply pointer-events-none absolute -bottom-3.5 -left-2 -right-2 h-1 rounded-t-full bg-fg;
 }
 
+/* High contrast drops the pill and the bar: the target gets an inset edge, the bar the text colour. */
+@media (forced-colors: active) {
+    .manager-row-current:not(.manager-row-heading) {
+        outline: 2px solid transparent;
+        outline-offset: -2px;
+    }
+
+    .manager-row-heading.manager-row-current .manager-label-box::after {
+        background-color: CanvasText;
+    }
+}
+
 /* A dragged row lifts above its neighbors. */
 .manager-row-dragging {
     @apply bg-button shadow-lg ring-1 ring-fg/15;
@@ -756,5 +768,13 @@ const onRenameBlur = (event: FocusEvent) => {
 
 .manager-row.manager-row-dragging .manager-slot .manager-meta {
     visibility: visible;
+}
+
+/* High contrast: focus rings sit inside their control, clear of the target's edge;
+   last so it outranks the controls' own focus rules. */
+@media (forced-colors: active) {
+    .manager-row :focus-visible {
+        outline-offset: -2px;
+    }
 }
 </style>

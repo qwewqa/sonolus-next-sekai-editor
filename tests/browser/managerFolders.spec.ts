@@ -1026,6 +1026,54 @@ test('the folder line and its target mark keep showing in high contrast', async 
     expect(await line('Fill', '::after')).toBe(text)
 })
 
+test('the current row keeps a mark in high contrast', async ({ page }) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse']])
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = 1002 as never
+    })
+    const edge = (name: string) =>
+        entryRow(page, name).evaluate((element) => {
+            const { outlineStyle, outlineWidth, outlineColor, outlineOffset } =
+                getComputedStyle(element)
+            return `${outlineStyle} ${outlineWidth} ${outlineColor} ${outlineOffset}`
+        })
+    const allBar = () =>
+        panel(page)
+            .locator('.manager-row-heading.manager-row-current .manager-label-box')
+            .evaluate((element) => getComputedStyle(element, '::after').backgroundColor)
+    // Normal mode keeps the pill alone.
+    await expect(entryRow(page, 'Fill')).toHaveClass(/manager-row-current/)
+    expect(await edge('Fill')).toMatch(/^none /)
+
+    await page.emulateMedia({ forcedColors: 'active' })
+    const text = await page.evaluate(() => {
+        const probe = document.createElement('span')
+        probe.style.color = 'CanvasText'
+        document.body.append(probe)
+        const { color } = getComputedStyle(probe)
+        probe.remove()
+        return color
+    })
+    // The pill's background goes, so the target gets an inset edge in the text colour.
+    expect(await edge('Fill')).toBe(`solid 2px ${text} -2px`)
+    expect(await edge('Lead')).toMatch(/^none /)
+    // A focus ring sits inside its control, clear of that edge.
+    await page.keyboard.press('Shift')
+    await nameButton(panel(page), 'Fill').focus()
+    expect(
+        await nameButton(panel(page), 'Fill').evaluate((element) => [
+            element.matches(':focus-visible'),
+            getComputedStyle(element).outlineOffset,
+        ]),
+    ).toEqual([true, '-2px'])
+
+    // All's bar takes the text colour.
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = undefined
+    })
+    expect(await allBar()).toBe(text)
+})
+
 test.describe('touch', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
