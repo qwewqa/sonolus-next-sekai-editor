@@ -1,4 +1,5 @@
 import type { LevelData, LevelDataEntity } from '@sonolus/core'
+import { ImportRefusal } from '../chart/refusal'
 import type { UscObject } from '../usc/objects/schema'
 import type { Usc } from '../usc/schema'
 
@@ -107,7 +108,7 @@ export const chcyToUsc = (levelData: LevelData): Usc['usc'] => {
     const number = (entity: ChcyEntity, name: string, fallback?: number) => {
         const result = value(entity, name) ?? fallback
         if (result === undefined || !Number.isFinite(result))
-            throw new Error(`Invalid level: ${entity.archetype} has no ${name}`)
+            throw new ImportRefusal('missingValue', entity.archetype, name)
         return result
     }
     const ref = (entity: ChcyEntity, name: string) => {
@@ -164,8 +165,7 @@ export const chcyToUsc = (levelData: LevelData): Usc['usc'] => {
         const head = ref(entity, 'head')
         const tail = ref(entity, 'tail')
         const start = ref(entity, 'start')
-        if (!head || !tail || !start)
-            throw new Error(`Invalid level: ${entity.archetype} has a missing note`)
+        if (!head || !tail || !start) throw new ImportRefusal('missingNote', entity.archetype)
         const connector: Connector = {
             entity,
             head,

@@ -1,5 +1,6 @@
 import type { LevelDataEntity } from '@sonolus/core'
 import { getOptionalRef } from '..'
+import { ImportRefusal } from '../../../refusal'
 
 export const getEventRefs = (entities: LevelDataEntity[], archetype: string) => {
     const refs = new Map<string, LevelDataEntity>()
@@ -23,11 +24,11 @@ export const parseEvents = <T>(
     const visited = new Set<string>()
     let ref: string | undefined = firstRef
     while (ref) {
-        if (visited.has(ref)) throw new Error(`Invalid level: cyclic event ref "${ref}"`)
+        if (visited.has(ref)) throw new ImportRefusal('cyclicEventRef', ref)
         visited.add(ref)
 
         const entity = refs.get(ref)
-        if (!entity) throw new Error(`Invalid level: ref "${ref}" not found`)
+        if (!entity) throw new ImportRefusal('refNotFound', ref)
 
         objects.push(getObject(entity))
 

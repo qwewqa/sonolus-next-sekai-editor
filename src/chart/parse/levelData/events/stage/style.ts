@@ -4,6 +4,7 @@ import { parseStageEvents } from '.'
 import { getEventRefs } from '..'
 import { getOptionalValue, getValue, type ParseCtx } from '../..'
 import { easeFromValue } from '../../../../../ease'
+import { ImportRefusal } from '../../../../refusal'
 import type { StageId } from '../../../../stages'
 import { beatSchema } from '../../schemas'
 import { eventEaseSchema } from '../schemas'
@@ -13,8 +14,7 @@ export const parseStageStyleEventsToChart = (
     firstRefs: Map<StageId, string>,
 ) => {
     if (!firstRefs.size) return
-    if (!chart.isDynamicStages)
-        throw new Error('Invalid level: dynamic stage features used but not enabled')
+    if (!chart.isDynamicStages) throw new ImportRefusal('dynamicStages')
 
     const refs = getEventRefs(entities, 'StageStyleChange')
 

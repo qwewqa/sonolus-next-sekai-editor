@@ -3,6 +3,7 @@ import Type from 'typebox'
 import { getEventRefs, parseEvents } from '.'
 import { getOptionalValue, getValue, type ParseCtx } from '..'
 import { easeFromValue } from '../../../../ease'
+import { ImportRefusal } from '../../../refusal'
 import { beatSchema } from '../schemas'
 import { eventEaseSchema } from './schemas'
 
@@ -11,8 +12,7 @@ export const parseCameraEventsToChart = (
     firstRef: string | undefined,
 ) => {
     if (!firstRef) return
-    if (!chart.isDynamicStages)
-        throw new Error('Invalid level: dynamic stage features used but not enabled')
+    if (!chart.isDynamicStages) throw new ImportRefusal('dynamicStages')
 
     const refs = getEventRefs(entities, 'CameraChange')
 

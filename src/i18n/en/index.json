@@ -245,7 +245,32 @@
             "importedChcy": "Imported Chart Cyanvas level",
             "importedUsc": "Imported USC chart",
             "importedSus": "Imported SUS chart",
-            "unsupported": "Unsupported file. Open level data, a Chart Cyanvas level, or a USC or SUS chart."
+            "unsupported": "Unsupported file. Open level data, a Chart Cyanvas level, or a USC or SUS chart.",
+            "invalidLevel": "Invalid level: {0}",
+            "invalidChart": "Invalid chart: {0}",
+            "refusals": {
+                "dynamicStages": "dynamic stage features used but not enabled",
+                "cyclicEventRef": "cyclic event ref \"{0}\"",
+                "cyclicSlideRef": "cyclic slide ref \"{0}\"",
+                "refNotFound": "ref \"{0}\" not found",
+                "dataNotFound": "data {0} not found",
+                "dataNoValue": "data {0} has no value",
+                "dataNoRef": "data {0} has no ref",
+                "unknownValue": "unknown value for {0}",
+                "invalidValue": "invalid value for {0}",
+                "groupNotFound": "time scale group {0} not found",
+                "initialBpm": "initial BPM not found",
+                "negativeBeat": "negative beat",
+                "negativeNoteSize": "negative note size",
+                "invalidBpm": "BPM must be positive and finite",
+                "missingValue": "{0} has no {1}",
+                "missingNote": "{0} has a missing note",
+                "ticksPerBeat": "missing or unexpected ticks per beat",
+                "offset": "unexpected offset",
+                "timeScaleChange": "unexpected time scale change",
+                "meter": "invalid meter",
+                "missingMeter": "no meter for measure {0}"
+            }
         },
         "paste": {
             "title": "Paste",

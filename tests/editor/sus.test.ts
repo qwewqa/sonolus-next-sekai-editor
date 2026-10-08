@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { ImportRefusal } from '../../src/chart/refusal'
 import { parseSus } from '../../src/sus/parse'
 
 const header = [
@@ -53,7 +54,10 @@ test('SUS bar lengths preserve the meter and zero-based tick positions', () => {
 
 test('SUS rejects nonpositive and nonfinite meters', () => {
     for (const value of ['0', '-1', 'Infinity', 'NaN']) {
-        assert.throws(() => parseSus([...header, `#00202:${value}`]), /Invalid meter/)
+        assert.throws(
+            () => parseSus([...header, `#00202:${value}`]),
+            (error) => error instanceof ImportRefusal && error.reason === 'meter',
+        )
     }
 })
 

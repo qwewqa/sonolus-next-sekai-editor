@@ -30,7 +30,7 @@ for (const names of [['a'], ['a', 'b']]) {
         }, names)
 
         expect(result.visits).toBe(names.length)
-        expect(result.error).toContain('Invalid level: cyclic event ref "a"')
+        expect(result.error).toContain('cyclic event ref "a"')
     })
 }
 
@@ -99,7 +99,7 @@ for (const names of [['a'], ['a', 'b']]) {
             }
         }, names)
 
-        expect(result).toContain(`Invalid level: cyclic slide ref "a"`)
+        expect(result).toContain(`cyclic slide ref "a"`)
     })
 }
 

@@ -4,6 +4,7 @@ import type { Command } from '..'
 import { parseLevelDataChart } from '../../../chart/parse/levelData'
 import { parseSusChart } from '../../../chart/parse/sus'
 import { parseUscChart } from '../../../chart/parse/usc'
+import { ImportRefusal } from '../../../chart/refusal'
 import { validateChart } from '../../../chart/validate'
 import { chcyToUsc, isChcyLevelData } from '../../../chcy/convert'
 import { checkState, resetState } from '../../../history'
@@ -14,6 +15,7 @@ import LoadingModal from '../../../modals/LoadingModal.vue'
 import { parseSus } from '../../../sus/parse'
 import { parseUsc } from '../../../usc/parse'
 import { getFilename, pickFileForOpen } from '../../../utils/file'
+import { interpolateRaw } from '../../../utils/interpolate'
 import { timeout } from '../../../utils/promise'
 import { notify } from '../../notification'
 import { changeBgm } from '../bgm/index.ts'
@@ -91,6 +93,7 @@ export const open: Command = {
                 } catch (error) {
                     // A file its format's schema refuses is one the editor cannot read.
                     if (error instanceof AssertError) throw new UnsupportedFileError()
+                    if (error instanceof ImportRefusal) throw new RefusedFileError(type, error)
                     throw error
                 }
 
@@ -128,6 +131,20 @@ const tryImport = (buffer: ArrayBuffer) => {
 class UnsupportedFileError extends Error {
     constructor() {
         super(i18n.value.commands.open.unsupported)
+    }
+}
+
+// SUS, USC and Chart Cyanvas files are charts rather than levels.
+class RefusedFileError extends Error {
+    constructor(type: 'levelData' | 'chcy' | 'usc' | 'sus', refusal: ImportRefusal) {
+        const { open } = i18n.value.commands
+        super(
+            interpolateRaw(
+                type === 'levelData' ? open.invalidLevel : open.invalidChart,
+                interpolateRaw(open.refusals[refusal.reason], ...refusal.params),
+            ),
+            { cause: refusal },
+        )
     }
 }
 

@@ -11,6 +11,7 @@ import {
     noteStyles,
     noteStyleValueSchema,
 } from '../../noteStyle'
+import { ImportRefusal } from '../../refusal'
 import type { StageId } from '../../stages'
 import { beatSchema } from './schemas'
 
@@ -53,7 +54,7 @@ export const parseSlidesToChart = ({
 
         const nextSlide = slides.get(nextName)
         // Each note has one next, so reaching its own slide again is a loop.
-        if (nextSlide === slide) throw new Error(`Invalid level: cyclic slide ref "${nextName}"`)
+        if (nextSlide === slide) throw new ImportRefusal('cyclicSlideRef', nextName)
         if (nextSlide) {
             slide.push(...nextSlide)
 
@@ -72,7 +73,7 @@ export const parseSlidesToChart = ({
             slide
                 .map((name) => {
                     const entity = refs.get(name)
-                    if (!entity) throw new Error(`Invalid level: ref "${name}" not found`)
+                    if (!entity) throw new ImportRefusal('refNotFound', name)
 
                     return {
                         entity,

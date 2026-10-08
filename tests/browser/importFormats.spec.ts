@@ -250,17 +250,17 @@ test('a file picked after a garbage collection still opens', async ({ page }) =>
 })
 
 // Level data refuses these, so the editor could not reopen its own file.
-const invalidBpm = 'Invalid level: BPM must be positive and finite'
+const invalidBpm = 'Invalid chart: BPM must be positive and finite'
 const single = usc.usc.objects[2]!
 for (const [label, objects, message] of [
-    ['a negative note beat', [{ ...single, beat: -5 }], 'Invalid level: negative beat'],
+    ['a negative note beat', [{ ...single, beat: -5 }], 'Invalid chart: negative beat'],
     [
         'a negative time scale beat',
         [{ type: 'timeScaleGroup', changes: [{ beat: -1, timeScale: 2 }] }],
-        'Invalid level: negative beat',
+        'Invalid chart: negative beat',
     ],
-    ['a negative BPM beat', [{ type: 'bpm', beat: -2, bpm: 90 }], 'Invalid level: negative beat'],
-    ['a negative note size', [{ ...single, size: -3 }], 'Invalid level: negative note size'],
+    ['a negative BPM beat', [{ type: 'bpm', beat: -2, bpm: 90 }], 'Invalid chart: negative beat'],
+    ['a negative note size', [{ ...single, size: -3 }], 'Invalid chart: negative note size'],
     ['a zero BPM', [{ type: 'bpm', beat: 2, bpm: 0 }], invalidBpm],
     ['a negative BPM', [{ type: 'bpm', beat: 2, bpm: -60 }], invalidBpm],
 ] as const)
@@ -274,13 +274,13 @@ for (const [label, objects, message] of [
 
 test('a SUS with a negative beat is refused', async ({ page }) => {
     await open(page, 'chart.sus', Buffer.from(`${sus}\n#TIL00: "0'-480:2"`))
-    await expect(page.getByRole('dialog')).toContainText('Invalid level: negative beat')
+    await expect(page.getByRole('dialog')).toContainText('Invalid chart: negative beat')
     await expect(page.getByRole('dialog')).not.toContainText('Error:')
     expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
 })
 
-test('level data with a value its format refuses names it, and is refused', async ({ page }) => {
-    // The editor's own level data for the USC chart.
+// The editor's own level data for the USC chart, with one value replaced.
+const levelWithValue = async (page: Page) => {
     await open(page, 'chart.usc', Buffer.from(JSON.stringify(usc)))
     await expect(page.locator('.notification')).toHaveText('Imported USC chart')
     const level = await page.evaluate(async () => {
@@ -298,7 +298,7 @@ test('level data with a value its format refuses names it, and is refused', asyn
         const { store, groups, stages } = state.value
         return serializeToLevelData(1000, false, 0, store, groups, stages)
     })
-    const withValue = (name: string, value: unknown) => {
+    return (name: string, value: unknown) => {
         const copy = structuredClone(level)
         const item = copy.entities
             .flatMap((entity) => entity.data)
@@ -307,15 +307,47 @@ test('level data with a value its format refuses names it, and is refused', asyn
         Object.assign(item, { value })
         return gzipSync(JSON.stringify(copy))
     }
+}
+
+test('level data with a value its format refuses names it, and is refused', async ({ page }) => {
+    const withValue = await levelWithValue(page)
     for (const [name, value, message] of [
-        ['connectorEase', 99, 'Invalid level: unknown connector ease'],
-        ['#BEAT', -1, 'Invalid level: invalid beat'],
+        ['connectorEase', 99, 'Invalid level: unknown value for connectorEase'],
+        ['#BEAT', -1, 'Invalid level: invalid value for #BEAT'],
     ] as const) {
         await page.reload()
         await expect(page.locator('canvas.editor-chart')).toBeVisible()
         await open(page, 'level-data', withValue(name, value))
         await expect(page.getByRole('dialog')).toContainText(message)
         await expect(page.getByRole('dialog')).not.toContainText('Unsupported')
+        expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+    }
+})
+
+test('refusals read in the chosen language', async ({ page }) => {
+    const withValue = await levelWithValue(page)
+    const dialog = page.getByRole('dialog')
+    for (const [name, buffer, message] of [
+        [
+            'level-data',
+            withValue('connectorEase', 99),
+            'Niveau non valide : valeur inconnue pour connectorEase',
+        ],
+        [
+            'chart.sus',
+            Buffer.from(sus.replace('#REQUEST "ticks_per_beat 480"\n', '')),
+            'Partition non valide : ticks par temps manquants ou inattendus',
+        ],
+    ] as const) {
+        await page.reload()
+        await expect(page.locator('canvas.editor-chart')).toBeVisible()
+        await page.evaluate(async () => {
+            const { settings } = await import('/src/settings.ts')
+            settings.locale = 'fr'
+        })
+        await open(page, name, buffer)
+        await expect(dialog).toContainText(message)
+        await expect(dialog).not.toContainText('Invalid')
         expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
     }
 })
@@ -468,23 +500,23 @@ for (const [label, edit, message] of [
         'an infinite time scale',
         (chart: string) => `${chart}
 #TIL00: "0'480:1e999"`,
-        'Unexpected time scale change',
+        'Invalid chart: unexpected time scale change',
     ],
     [
         'an infinite offset',
         (chart: string) => chart.replace('#WAVEOFFSET 0', '#WAVEOFFSET 1e999'),
-        'Unexpected offset',
+        'Invalid chart: unexpected offset',
     ],
     [
         'an infinite tick resolution',
         (chart: string) => chart.replace('ticks_per_beat 480', 'ticks_per_beat 1e999'),
-        'Missing or unexpected ticks per beat',
+        'Invalid chart: missing or unexpected ticks per beat',
     ],
     // A beat no number holds, from a section shift past any measure.
     [
         'an infinite measure',
         (chart: string) => chart.replace('#00112:11', '#MEASUREBS 1e999\n#00112:11'),
-        'Invalid level: invalid beat',
+        'Invalid chart: invalid value for beat',
     ],
 ] as const)
     test(`a SUS with ${label} is refused`, async ({ page }) => {

@@ -2,6 +2,7 @@ import type { Chart } from '../..'
 import { settings } from '../../../settings'
 import type { UscObject } from '../../../usc/objects/schema'
 import { addToGroups } from '../../groups'
+import { ImportRefusal } from '../../refusal'
 import { addDefaultStageToStages, type Stages } from '../../stages'
 
 export const parseUscChart = (objects: UscObject[]) => {
@@ -30,7 +31,7 @@ export const parseUscChart = (objects: UscObject[]) => {
 
     const getGroupId = (index: number) => {
         const id = groupIds[index]
-        if (!id) throw new Error(`Invalid level: group ${index} not found`)
+        if (!id) throw new ImportRefusal('groupNotFound', index)
 
         return id
     }

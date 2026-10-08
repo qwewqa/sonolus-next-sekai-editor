@@ -11,6 +11,7 @@ import {
     type Folders,
 } from '../../folders'
 import { addToGroups, type GroupId, type GroupObject } from '../../groups'
+import { ImportRefusal } from '../../refusal'
 import { addDefaultStageToStages, addToStages, type StageId, type StageObject } from '../../stages'
 import { parseBpmsToChart } from './bpm'
 import { parseCameraEventsToChart } from './events/camera'
@@ -92,7 +93,7 @@ export const parseLevelDataChart = (
         getGroupId(entity) {
             const ref = getRef(entity, '#TIMESCALE_GROUP')
             const id = groupIds[ref]
-            if (!id) throw new Error(`Invalid level: ref "${ref}" not found`)
+            if (!id) throw new ImportRefusal('refNotFound', ref)
 
             return id
         },
@@ -107,14 +108,14 @@ export const parseLevelDataChart = (
         getStageId(entity) {
             const ref = getOptionalRef(entity, 'stage')
             if (chart.isDynamicStages) {
-                if (ref === undefined) throw new Error(`Invalid level: data stage not found`)
+                if (ref === undefined) throw new ImportRefusal('dataNotFound', 'stage')
 
                 const id = stageIds[ref]
-                if (!id) throw new Error(`Invalid level: ref "${ref}" not found`)
+                if (!id) throw new ImportRefusal('refNotFound', ref)
 
                 return id
             } else {
-                if (ref !== undefined) throw new Error(`Invalid level: ref "${ref}" not found`)
+                if (ref !== undefined) throw new ImportRefusal('refNotFound', ref)
 
                 return defaultStageId
             }
@@ -180,11 +181,7 @@ const assertValue: <T extends Type.TSchema>(
 ) => asserts value is Type.Static<T> = (name, schema, value) => {
     if (Value.Check(schema, value)) return
     const isChoice = Type.IsUnion(schema) && schema.anyOf.every((option) => Type.IsLiteral(option))
-    const words = name
-        .replace(/^#/, '')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .toLowerCase()
-    throw new Error(`Invalid level: ${isChoice ? 'unknown' : 'invalid'} ${words}`)
+    throw new ImportRefusal(isChoice ? 'unknownValue' : 'invalidValue', name)
 }
 
 export const getValue = <T extends Type.TSchema>(
@@ -193,8 +190,8 @@ export const getValue = <T extends Type.TSchema>(
     schema: T,
 ) => {
     const data = entity.data.find((data) => data.name === name)
-    if (!data) throw new Error(`Invalid level: data ${name} not found`)
-    if (!('value' in data)) throw new Error(`Invalid level: data ${name} has no value`)
+    if (!data) throw new ImportRefusal('dataNotFound', name)
+    if (!('value' in data)) throw new ImportRefusal('dataNoValue', name)
 
     assertValue(name, schema, data.value)
     return data.value
@@ -215,8 +212,8 @@ export const getOptionalValue = <T extends Type.TSchema>(
 
 export const getRef = (entity: LevelDataEntity, name: string) => {
     const data = entity.data.find((data) => data.name === name)
-    if (!data) throw new Error(`Invalid level: data ${name} not found`)
-    if (!('ref' in data)) throw new Error(`Invalid level: data ${name} has no ref`)
+    if (!data) throw new ImportRefusal('dataNotFound', name)
+    if (!('ref' in data)) throw new ImportRefusal('dataNoRef', name)
 
     return data.ref
 }

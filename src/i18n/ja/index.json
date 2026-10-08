@@ -245,7 +245,32 @@
       "importedChcy": "Chart Cyanvas の譜面をインポートしました",
       "importedUsc": "USC 譜面をインポートしました",
       "importedSus": "SUS 譜面をインポートしました",
-      "unsupported": "対応していないファイルです。レベルデータ、Chart Cyanvas の譜面、USC または SUS 譜面を開いてください。"
+      "unsupported": "対応していないファイルです。レベルデータ、Chart Cyanvas の譜面、USC または SUS 譜面を開いてください。",
+      "invalidLevel": "無効なレベル：{0}",
+      "invalidChart": "無効な譜面：{0}",
+      "refusals": {
+        "dynamicStages": "動的ステージが無効なのに動的ステージの機能を使用しています",
+        "cyclicEventRef": "イベントの参照「{0}」が循環しています",
+        "cyclicSlideRef": "スライドの参照「{0}」が循環しています",
+        "refNotFound": "参照「{0}」が見つかりません",
+        "dataNotFound": "データ {0} が見つかりません",
+        "dataNoValue": "データ {0} に値がありません",
+        "dataNoRef": "データ {0} に参照がありません",
+        "unknownValue": "{0} の値が不明です",
+        "invalidValue": "{0} の値が無効です",
+        "groupNotFound": "ハイスピードグループ {0} が見つかりません",
+        "initialBpm": "初期 BPM が見つかりません",
+        "negativeBeat": "拍が負の値です",
+        "negativeNoteSize": "ノーツの幅が負の値です",
+        "invalidBpm": "BPM は正の有限の値である必要があります",
+        "missingValue": "{0} に {1} がありません",
+        "missingNote": "{0} のノーツが見つかりません",
+        "ticksPerBeat": "1 拍あたりの tick 数がないか、想定外の値です",
+        "offset": "オフセットが想定外の値です",
+        "timeScaleChange": "ハイスピード変化が想定外の値です",
+        "meter": "拍子が無効です",
+        "missingMeter": "小節 {0} の拍子がありません"
+      }
     },
     "paste": {
       "title": "ペースト",

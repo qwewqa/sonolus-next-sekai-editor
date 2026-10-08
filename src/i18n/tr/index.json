@@ -245,7 +245,32 @@
       "importedChcy": "Chart Cyanvas seviyesi içe aktarıldı",
       "importedUsc": "USC çizelgesi içe aktarıldı",
       "importedSus": "SUS çizelgesi içe aktarıldı",
-      "unsupported": "Desteklenmeyen dosya. Seviye verisi, Chart Cyanvas seviyesi ya da USC veya SUS çizelgesi açın."
+      "unsupported": "Desteklenmeyen dosya. Seviye verisi, Chart Cyanvas seviyesi ya da USC veya SUS çizelgesi açın.",
+      "invalidLevel": "Geçersiz seviye: {0}",
+      "invalidChart": "Geçersiz çizelge: {0}",
+      "refusals": {
+        "dynamicStages": "dinamik sahneler etkin değilken dinamik sahne özellikleri kullanılıyor",
+        "cyclicEventRef": "döngüsel olay referansı \"{0}\"",
+        "cyclicSlideRef": "döngüsel kaydırma referansı \"{0}\"",
+        "refNotFound": "\"{0}\" referansı bulunamadı",
+        "dataNotFound": "{0} verisi bulunamadı",
+        "dataNoValue": "{0} verisinin değeri yok",
+        "dataNoRef": "{0} verisinin referansı yok",
+        "unknownValue": "{0} için bilinmeyen değer",
+        "invalidValue": "{0} için geçersiz değer",
+        "groupNotFound": "{0} zaman ölçeği grubu bulunamadı",
+        "initialBpm": "başlangıç BPM’i bulunamadı",
+        "negativeBeat": "negatif vuruş",
+        "negativeNoteSize": "negatif nota boyutu",
+        "invalidBpm": "BPM pozitif ve sonlu olmalıdır",
+        "missingValue": "{0} içinde {1} yok",
+        "missingNote": "{0} içinde eksik nota var",
+        "ticksPerBeat": "vuruş başına tick sayısı eksik veya beklenmedik",
+        "offset": "beklenmedik zaman kayması",
+        "timeScaleChange": "beklenmedik zaman ölçeği değişikliği",
+        "meter": "geçersiz ölçü",
+        "missingMeter": "{0}. ölçünün ölçü değeri yok"
+      }
     },
     "paste": {
       "title": "Yapıştır",

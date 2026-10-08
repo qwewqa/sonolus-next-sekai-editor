@@ -1,3 +1,5 @@
+import { ImportRefusal } from '../chart/refusal'
+
 type Line = [string, string]
 
 type MeasureChange = [number, number]
@@ -54,12 +56,11 @@ export const parseSus = (data: string[]): Sus => {
 
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const offset = -+(meta.get('WAVEOFFSET') || '0')
-    if (!Number.isFinite(offset)) throw new Error('Unexpected offset')
+    if (!Number.isFinite(offset)) throw new ImportRefusal('offset')
 
     const ticksPerBeat = getTicksPerBeat(meta)
     // Beats divide by it; an infinite one gives NaN ticks.
-    if (!ticksPerBeat || !Number.isFinite(ticksPerBeat))
-        throw new Error('Missing or unexpected ticks per beat')
+    if (!ticksPerBeat || !Number.isFinite(ticksPerBeat)) throw new ImportRefusal('ticksPerBeat')
 
     const barLengths = getBarLengths(lines, measureChanges)
 
@@ -198,7 +199,7 @@ const getBarLengths = (lines: Line[], measureChanges: MeasureChange[]) => {
         if (Number.isNaN(measure)) continue
 
         const length = +data
-        if (!Number.isFinite(length) || length <= 0) throw new Error('Invalid meter')
+        if (!Number.isFinite(length) || length <= 0) throw new ImportRefusal('meter')
         barLengths.push({ measure, length })
     }
 
@@ -224,7 +225,7 @@ const getToTick = (barLengths: BarLengthObject[], ticksPerBeat: number): ToTick 
 
     return (measure, p, q) => {
         const bar = bars.find((bar) => measure >= bar.measure)
-        if (!bar) throw new Error('Unexpected missing bar')
+        if (!bar) throw new ImportRefusal('missingMeter', measure)
 
         return (
             bar.ticks +
@@ -246,8 +247,7 @@ const toBpmChanges = (
     }))
 
 const toTimeScaleChanges = ([, data]: Line, toTick: ToTick) => {
-    if (!data.startsWith('"') || !data.endsWith('"'))
-        throw new Error('Unexpected time scale changes')
+    if (!data.startsWith('"') || !data.endsWith('"')) throw new ImportRefusal('timeScaleChange')
 
     return data
         .slice(1, -1)
@@ -267,7 +267,7 @@ const toTimeScaleChanges = ([, data]: Line, toTick: ToTick) => {
             const timeScale = +r!
 
             if (!Number.isFinite(measure) || !Number.isFinite(tick) || !Number.isFinite(timeScale))
-                throw new Error('Unexpected time scale change')
+                throw new ImportRefusal('timeScaleChange')
 
             return {
                 tick: toTick(measure, 0, 1) + tick,

@@ -245,7 +245,32 @@
       "importedChcy": "已匯入 Chart Cyanvas 關卡",
       "importedUsc": "已匯入 USC 譜面",
       "importedSus": "已匯入 SUS 譜面",
-      "unsupported": "不支援的檔案。請開啟關卡資料、Chart Cyanvas 關卡，或 USC、SUS 譜面。"
+      "unsupported": "不支援的檔案。請開啟關卡資料、Chart Cyanvas 關卡，或 USC、SUS 譜面。",
+      "invalidLevel": "無效的關卡：{0}",
+      "invalidChart": "無效的譜面：{0}",
+      "refusals": {
+        "dynamicStages": "使用了動態舞台功能，但未啟用動態舞台",
+        "cyclicEventRef": "事件參照 \"{0}\" 形成循環",
+        "cyclicSlideRef": "滑條參照 \"{0}\" 形成循環",
+        "refNotFound": "找不到參照 \"{0}\"",
+        "dataNotFound": "找不到資料 {0}",
+        "dataNoValue": "資料 {0} 沒有值",
+        "dataNoRef": "資料 {0} 沒有參照",
+        "unknownValue": "{0} 的值未知",
+        "invalidValue": "{0} 的值無效",
+        "groupNotFound": "找不到時間倍率圖層 {0}",
+        "initialBpm": "找不到初始 BPM",
+        "negativeBeat": "節拍為負數",
+        "negativeNoteSize": "音符尺寸為負數",
+        "invalidBpm": "BPM 必須是有限的正數",
+        "missingValue": "{0} 沒有 {1}",
+        "missingNote": "{0} 缺少音符",
+        "ticksPerBeat": "每拍 tick 數缺失或異常",
+        "offset": "偏移異常",
+        "timeScaleChange": "時間倍率變化異常",
+        "meter": "每小節拍數無效",
+        "missingMeter": "第 {0} 小節沒有每小節拍數"
+      }
     },
     "paste": {
       "title": "貼上",

@@ -245,7 +245,32 @@
       "importedChcy": "Niveau Chart Cyanvas importé",
       "importedUsc": "Partition USC importée",
       "importedSus": "Partition SUS importée",
-      "unsupported": "Fichier non pris en charge. Ouvrez des données de niveau, un niveau Chart Cyanvas, ou une partition USC ou SUS."
+      "unsupported": "Fichier non pris en charge. Ouvrez des données de niveau, un niveau Chart Cyanvas, ou une partition USC ou SUS.",
+      "invalidLevel": "Niveau non valide : {0}",
+      "invalidChart": "Partition non valide : {0}",
+      "refusals": {
+        "dynamicStages": "fonctionnalités de scènes dynamiques utilisées sans être activées",
+        "cyclicEventRef": "référence d’événement circulaire \"{0}\"",
+        "cyclicSlideRef": "référence de slide circulaire \"{0}\"",
+        "refNotFound": "référence \"{0}\" introuvable",
+        "dataNotFound": "donnée {0} introuvable",
+        "dataNoValue": "la donnée {0} n’a pas de valeur",
+        "dataNoRef": "la donnée {0} n’a pas de référence",
+        "unknownValue": "valeur inconnue pour {0}",
+        "invalidValue": "valeur non valide pour {0}",
+        "groupNotFound": "groupe d’échelle de temps {0} introuvable",
+        "initialBpm": "BPM initial introuvable",
+        "negativeBeat": "temps négatif",
+        "negativeNoteSize": "taille de note négative",
+        "invalidBpm": "le BPM doit être positif et fini",
+        "missingValue": "{0} n’a pas de {1}",
+        "missingNote": "il manque une note à {0}",
+        "ticksPerBeat": "ticks par temps manquants ou inattendus",
+        "offset": "décalage inattendu",
+        "timeScaleChange": "changement d’échelle de temps inattendu",
+        "meter": "temps par mesure non valide",
+        "missingMeter": "aucun temps par mesure pour la mesure {0}"
+      }
     },
     "paste": {
       "title": "Coller",
