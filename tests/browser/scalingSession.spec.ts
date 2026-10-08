@@ -393,6 +393,28 @@ test('cancelled touch scaling restores its starting draft without adding history
     await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
 })
 
+test('Escape during a scaling drag cancels only the drag and keeps the scaling open', async ({
+    page,
+}) => {
+    await open(page)
+    const before = (await summary(page)).draft.map((note) => note.beat)
+    const start = await chartPoint(page, 1, 5)
+    const end = await chartPoint(page, 1, 7)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(end.x, end.y, { steps: 5 })
+    await settle(page)
+    expect((await summary(page)).draft.map((note) => note.beat)).toEqual([3, 7, 8])
+    await page.keyboard.press('Escape')
+    await settle(page)
+    await page.mouse.up()
+    await settle(page)
+    await expect(panel(page)).toBeVisible()
+    expect((await summary(page)).draft.map((note) => note.beat)).toEqual(before)
+    expect((await summary(page)).canUndo).toBe(false)
+    await panel(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+})
+
 test('a replacement chart cancels scaling and cannot receive the old selection draft', async ({
     page,
 }) => {
