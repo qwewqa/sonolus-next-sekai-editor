@@ -990,6 +990,8 @@ onMounted(() => {
     )
     navigation = {
         bounds: elevationBounds,
+        // The fitted range sits in the pan zones, so a drag from it keeps the grid still.
+        holdsEdgePanAtDragStart: true,
         scrollY: (pixels) => {
             viewportAdjusted = true
             closeContextMenu()

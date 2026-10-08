@@ -1927,3 +1927,45 @@ test('Ctrl+Z in the Beat field showing its committed beat undoes the last edit',
     await expect.poll(canUndo).toBe(false)
     await expect(beat).toHaveValue('5')
 })
+
+test('a drag starting near the bottom edge keeps the grid still until it goes deeper', async ({
+    page,
+}) => {
+    await page.evaluate(() => (window.editorTest.settings.dragToPanY = true))
+    await open(page)
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await beat.fill('9')
+    await beat.press('Enter')
+    await expect.poll(async () => (await rows(page)).map((row) => row.elevation)).toEqual([0])
+    await settle(page)
+    const viewport = () =>
+        page.evaluate(() => ({ ...window.elevationTest.viewport.elevationViewport }))
+    const before = await viewport()
+    const start = await point(page)
+    const box = (await page.locator('.elevation-canvas').boundingBox())!
+    // Elevation 0 sits in the bottom pan zone.
+    expect(start.y - box.y).toBeGreaterThan(box.height * 0.8)
+
+    // The drag starts and holds inside the zone: nothing pans.
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, start.y - 25, { steps: 3 })
+    await page.waitForTimeout(300)
+    await settle(page)
+    expect(await viewport()).toEqual(before)
+    await page.mouse.move(start.x, start.y - 2 * before.scale, { steps: 5 })
+    await settle(page)
+    await page.mouse.up()
+    expect(await viewport()).toEqual(before)
+    await expect.poll(async () => (await notes(page)).map((note) => note.elevation)).toContain(2)
+
+    // Deeper than its start, a drag pans as before.
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(async () => (await rows(page)).map((row) => row.elevation)).toEqual([0])
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, start.y - 25, { steps: 3 })
+    await page.mouse.move(start.x, Math.min(start.y + 30, box.y + box.height - 2), { steps: 3 })
+    await expect.poll(async () => (await viewport()).center).toBeLessThan(before.center)
+    await page.mouse.up()
+})

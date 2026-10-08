@@ -3,13 +3,21 @@ import { replaceState, state } from '../../../../history'
 import { settings } from '../../../../settings'
 import { time } from '../../../../time'
 import { unlerp } from '../../../../utils/math'
-import { getControlBounds } from '../../../navigation'
+import { editorNavigation, getControlBounds } from '../../../navigation'
 import { tool, type Tool } from '../../../tools'
 import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
 import type { Modifiers } from '../pointer'
 import type { Recognizer } from './recognizer'
 
 export const isDragging = ref(0)
+
+// An edge zone's inner bounds, moved to a held start point inside it.
+const panZone = (held: number | undefined) => ({
+    low: Math.min(0.2, held ?? 1),
+    high: Math.max(0.8, held ?? 0),
+})
+// A point inside an edge zone, else none.
+const holdIn = (p: number) => (p < 0.2 || p > 0.8 ? p : undefined)
 
 export const drag = (quickScroll: boolean): Recognizer<1> => {
     const updates: {
@@ -39,6 +47,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
               modifiers: Modifiers
           }
         | undefined
+    // Where a drag started inside an edge zone; it pans that way only from deeper.
+    let held: { x?: number; y?: number } = {}
 
     watch(time, ({ delta }) => {
         if (!update) return
@@ -49,22 +59,26 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
 
         if (settings.dragToPanX) {
             const px = (x - bounds.x) / bounds.w
-            if (px < 0.2) {
-                scrollViewXBy(-unlerp(0.2, 0, px) * bounds.w * delta)
+            if (holdIn(px) === undefined) held.x = undefined
+            const { low, high } = panZone(held.x)
+            if (px < low) {
+                scrollViewXBy(-unlerp(low, 0, px) * bounds.w * delta)
                 updated++
-            } else if (px > 0.8) {
-                scrollViewXBy(unlerp(0.8, 1, px) * bounds.w * delta)
+            } else if (px > high) {
+                scrollViewXBy(unlerp(high, 1, px) * bounds.w * delta)
                 updated++
             }
         }
 
         if (settings.dragToPanY) {
             const py = (y - bounds.y) / bounds.h
-            if (py < 0.2) {
-                scrollViewYBy(unlerp(0.2, 0, py) * bounds.h * delta)
+            if (holdIn(py) === undefined) held.y = undefined
+            const { low, high } = panZone(held.y)
+            if (py < low) {
+                scrollViewYBy(unlerp(low, 0, py) * bounds.h * delta)
                 updated++
-            } else if (py > 0.8) {
-                scrollViewYBy(-unlerp(0.8, 1, py) * bounds.h * delta)
+            } else if (py > high) {
+                scrollViewYBy(-unlerp(high, 1, py) * bounds.h * delta)
                 updated++
             }
         }
@@ -92,6 +106,12 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true
 
                 isDragging.value++
+                held = editorNavigation.value?.holdsEdgePanAtDragStart
+                    ? {
+                          x: holdIn((sx - bounds.x) / bounds.w),
+                          y: holdIn((sy - bounds.y) / bounds.h),
+                      }
+                    : {}
 
                 active = {
                     type: 'drag',
