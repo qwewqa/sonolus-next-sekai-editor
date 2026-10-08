@@ -88,9 +88,10 @@ const description = computed(() => {
     )
 })
 
-// A label that would clamp first drops its glyph, then takes back the room the
-// control's 10rem minimum claims; one observer serves every field. Where asked,
-// as in Settings, a value that would truncate beside its label goes below it.
+// A label longer than two lines first drops its glyph, then takes back the room
+// the control's 10rem minimum claims, then wraps in full; one observer serves
+// every field. Where asked, as in Settings, a value that would truncate beside its
+// label goes below it.
 const slots = useSlots()
 const labelRow = useTemplateRef<HTMLElement>('labelRow')
 const fieldRoot = useTemplateRef<HTMLElement>('fieldRoot')
@@ -98,7 +99,8 @@ const stackLongValues = useStackLongValues()
 const stackLongWords = useStackLongWords()
 let frame = 0
 
-const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
+const overTwoLines = (text: HTMLElement) =>
+    text.clientHeight > parseFloat(getComputedStyle(text).lineHeight) * 2 + 1
 const controlOf = () =>
     row.value?.querySelector<HTMLSelectElement | HTMLButtonElement | HTMLInputElement>(
         ':scope > select, :scope > button, :scope > input[type="button"], :scope > input[type="number"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
@@ -116,12 +118,9 @@ const fitLabel = () => {
     const text = element?.querySelector<HTMLElement>('.form-field-text')
     if (!element || !text) return
     element.classList.remove('form-field-iconless', 'form-field-label-roomy')
-    text.classList.remove('form-field-text-dense')
     fieldRoot.value?.classList.remove('form-field-value-stacked')
-    // Japanese wraps by phrase only where that doesn't clamp the label.
-    if (clamped(text)) text.classList.add('form-field-text-dense')
-    if (slots.icon && clamped(text)) element.classList.add('form-field-iconless')
-    if (clamped(text)) element.classList.add('form-field-label-roomy')
+    if (slots.icon && overTwoLines(text)) element.classList.add('form-field-iconless')
+    if (overTwoLines(text)) element.classList.add('form-field-label-roomy')
     const control = controlOf()
     fittedValue = shownValue(control)
     // An on/off value is measured at its longer state, so a click doesn't move the row.
@@ -135,9 +134,6 @@ const fitLabel = () => {
         (stackLongWords && !text.matches(':lang(ja)') && wordOverflows(text))
     )
         fieldRoot.value?.classList.add('form-field-value-stacked')
-    // A label still clamped shows in full on hover.
-    if (clamped(text)) text.title = props.label
-    else text.removeAttribute('title')
 }
 const refitLabel = () => {
     cancelAnimationFrame(frame)
@@ -608,25 +604,15 @@ watchEffect(
     color: #30334d;
 }
 
-/* Long labels wrap to at most two lines rather than pushing the field down. */
+/* Labels wrap in full; a word too long for its line still breaks. */
 .form-field-text {
-    display: -webkit-box;
     overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
     line-height: 1.25;
     overflow-wrap: anywhere;
 }
 
 .form-field-unit {
     white-space: nowrap;
-}
-
-/* Korean keeps its word breaks; a word too long for its line still breaks. */
-.form-field-text.form-field-text-dense:not(:lang(ko)) {
-    word-break: normal;
-    line-break: auto;
 }
 
 /* Label and control share a row once the control keeps a usable width. */
@@ -712,7 +698,7 @@ watchEffect(
     white-space: normal;
 }
 
-/* A label that would otherwise clamp keeps the control to 9rem. */
+/* A label longer than two lines keeps the control to 9rem. */
 @container (min-width: 19rem) and (max-width: 31.99rem) {
     .form-field-label.form-field-label-roomy {
         width: min(max(calc(45% - 0.375rem), 11rem), calc(100% - 9rem));

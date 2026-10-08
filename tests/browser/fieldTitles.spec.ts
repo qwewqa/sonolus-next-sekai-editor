@@ -74,9 +74,9 @@ test('on/off values carry the shown value as their hover title, as selects do', 
     await expect.poll(async () => (await toggles(page))[0]?.title).toBe('Etkin')
 })
 
-test('a clamped label carries its full text as its hover title', async ({ page }) => {
+test('labels too long for two lines wrap in full instead of clamping', async ({ page }) => {
     await open(page)
-    // Event fields, such as "Alignement vertical du zoom", clamp at this dock.
+    // Event fields, such as "Alignement vertical du zoom", once clamped at this dock.
     await page.evaluate(async () => {
         const { history, store, nextTick, fixtures, show } = window.editorTest
         show(fixtures.events, 3)
@@ -87,14 +87,24 @@ test('a clamped label carries its full text as its hover title', async ({ page }
         })
         await nextTick()
     })
+    const lineCounts = () =>
+        panel(page)
+            .locator('.form-field-text')
+            .evaluateAll((texts) =>
+                texts
+                    .filter((text) => text.getClientRects().length)
+                    .map((text) => ({
+                        text: text.textContent,
+                        lines: Math.round(
+                            text.clientHeight / parseFloat(getComputedStyle(text).lineHeight),
+                        ),
+                    })),
+            )
     await expect
-        .poll(async () => (await labels(page)).filter(({ clamped }) => clamped).length)
+        .poll(async () => (await lineCounts()).filter(({ lines }) => lines > 2).length)
         .toBeGreaterThan(0)
-    for (const { text, clamped, title } of await labels(page))
-        expect(title, text ?? '').toBe(clamped ? text : null)
-
-    // A wider dock unclamps it and drops the title.
-    await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 480))
-    await expect.poll(async () => (await labels(page)).filter(({ title }) => title).length).toBe(0)
-    for (const { clamped } of await labels(page)) expect(clamped).toBe(false)
+    for (const { text, clamped, title } of await labels(page)) {
+        expect(clamped, text ?? '').toBe(false)
+        expect(title, text ?? '').toBe(null)
+    }
 })
