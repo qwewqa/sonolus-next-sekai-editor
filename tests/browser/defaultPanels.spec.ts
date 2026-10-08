@@ -162,6 +162,16 @@ test('dismissing a drawer saves the default too', async ({ page }) => {
     })
 })
 
+for (const [disabled, open] of [
+    ['stages', 'Groups'],
+    ['groups', 'Stages'],
+] as const)
+    test(`${open} opens by default with ${disabled} disabled`, async ({ page }) => {
+        await boot(page, { width: 1600, height: 1000 }, { [`${disabled}Position`]: 'disabled' })
+        await expect(tab(page, 'left', 'Preview')).toHaveAttribute('aria-selected', 'true')
+        await expect(tab(page, 'left', open)).toHaveAttribute('aria-selected', 'true')
+    })
+
 test('a saved choice wins over the default', async ({ page }) => {
     await boot(page, { width: 1600, height: 1000 }, { showGroups: false, showStages: true })
     await expectShown(page, 'left', { Preview: true, Groups: false, Stages: true })

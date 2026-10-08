@@ -81,13 +81,19 @@ const dragTail = async (page: Page) => {
     await page.mouse.move(start.x, (start.y + end.y) / 2)
     await page.mouse.move(end.x, end.y)
     await settle(page)
-    const ghost = await page.evaluate(() =>
-        window.editorTest.view.entities.creating.flatMap((entity) =>
-            entity.type === 'note'
-                ? [{ beat: entity.beat, left: entity.left, isAttached: entity.isAttached }]
-                : [],
-        ),
-    )
+    const ghost = await page.evaluate(() => {
+        const { creating } = window.editorTest.view.entities
+        return {
+            notes: creating.flatMap((entity) =>
+                entity.type === 'note'
+                    ? [{ beat: entity.beat, left: entity.left, isAttached: entity.isAttached }]
+                    : [],
+            ),
+            others: creating.flatMap((entity) =>
+                entity.type === 'note' ? [] : [[entity.type, entity.beat]],
+            ),
+        }
+    })
     await page.mouse.up()
     await settle(page)
     return ghost
@@ -139,7 +145,7 @@ test('a Select move that would start before beat 0 moves the whole slide, as its
     page,
 }) => {
     await seedSlide(page, false)
-    expect(brief(await dragTail(page))).toEqual(moved)
+    expect(brief((await dragTail(page)).notes)).toEqual(moved)
     const { notes, slides, reparsed } = await result(page)
     expect(brief(notes)).toEqual(moved)
     expect(slides).toBe(1)
@@ -151,7 +157,10 @@ test('the beat-0 BPM stays put in a Select move earlier and does not stop the re
     page,
 }) => {
     await seedSlide(page, true)
-    expect(brief(await dragTail(page))).toEqual(moved)
+    const ghost = await dragTail(page)
+    expect(brief(ghost.notes)).toEqual(moved)
+    // Nor does the ghost show it below 0.
+    expect(ghost.others).toEqual([])
     const { notes, slides, bpms } = await result(page)
     expect(brief(notes)).toEqual(moved)
     expect(slides).toBe(1)
@@ -165,7 +174,7 @@ test('beat-0 time scales, a pair too, stay put in a Select move earlier and do n
         [0, 2],
         [0, 0.5],
     ])
-    expect(brief(await dragTail(page))).toEqual(moved)
+    expect(brief((await dragTail(page)).notes)).toEqual(moved)
     const { notes, slides, bpms, reparsedTimeScales } = await result(page)
     expect(brief(notes)).toEqual(moved)
     expect(slides).toBe(1)
@@ -179,9 +188,46 @@ test('beat-0 time scales, a pair too, stay put in a Select move earlier and do n
 
 test('a time scale after beat 0 still stops a Select move at beat 0', async ({ page }) => {
     await seedSlide(page, false, [[0.5, 3]])
-    expect(brief(await dragTail(page))).toEqual(
+    expect(brief((await dragTail(page)).notes)).toEqual(
         moved.map((note) => ({ ...note, beat: note.beat + 0.5 })),
     )
     const { timeScales } = await result(page)
     expect(timeScales).toEqual([[0, 3]])
+})
+
+test('a Select move later keeps the beat-0 BPM and adds its tempo at the new beat', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { show, fixtures, history, store, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            { ...fixtures.interaction, timeScales: [], slides: [[{ ...base, beat: 2, left: -4 }]] },
+            1.5,
+        )
+        view.snapping = 'absolute'
+        view.division = 4
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note' || (entity.type === 'bpm' && entity.beat === 0),
+            ),
+        })
+    })
+    // Grabbed by the BPM.
+    const start = await point(page, 6.5, 0)
+    const end = await point(page, 6.5, 1)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, (start.y + end.y) / 2)
+    await page.mouse.move(end.x, end.y)
+    await settle(page)
+    await page.mouse.up()
+    await settle(page)
+    const { notes, bpms } = await result(page)
+    expect(notes.map(({ beat }) => beat)).toEqual([3])
+    expect(bpms).toEqual([
+        { beat: 0, bpm: 120 },
+        { beat: 1, bpm: 120 },
+    ])
 })

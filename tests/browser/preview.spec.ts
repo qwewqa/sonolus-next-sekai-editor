@@ -230,7 +230,8 @@ for (const failure of [
         const preview = page.locator('.preview')
         await expect(preview.getByText('The preview skin could not be loaded.')).toBeVisible()
         await preview.getByText('Error Details').click()
-        await expect(preview.getByText(failure.detail)).toBeVisible()
+        // The message alone, with no Error: prefix.
+        await expect(preview.getByText(failure.detail, { exact: true })).toBeVisible()
         await page.route('**/resource/skin.scp*', (route) =>
             route.fulfill({ body: resource('skins') }),
         )

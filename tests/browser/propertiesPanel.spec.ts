@@ -788,6 +788,87 @@ test('the Brush keeps its place in the panel while brushing selects notes', asyn
     await brushKeepsToolSection(page, true)
 })
 
+test('a wheel over the panel releases the Brush, as a click does', async ({ page }) => {
+    await open(page)
+    await brushKeepsToolSection(page, false)
+    const scroller = panel(page).locator('.properties-scroller')
+    const box = (await scroller.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.wheel(0, -1)
+    // A smaller selection then leaves no blank room below.
+    await page.evaluate(async () => {
+        const { history, store, nextTick } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((entity) => entity.type === 'bpm'),
+        })
+        await nextTick()
+    })
+    await expect
+        .poll(() =>
+            scroller.evaluate((element) => {
+                const view = element.querySelector('[data-properties-section="view"]')!
+                const blank =
+                    element.getBoundingClientRect().bottom - view.getBoundingClientRect().bottom
+                return element.scrollTop > 0 && blank > 1
+            }),
+        )
+        .toBe(false)
+})
+
+test('brushing with the Brush below view leaves the panel scrolled as it was', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 600 })
+    await open(page)
+    const chart = (await page.locator('canvas.editor-chart').boundingBox())!
+    const toolbarTop = (await page.locator('[data-editor-toolbar] button').first().boundingBox())!.y
+    const y = (Math.max(chart.y, 0) + toolbarTop) / 2
+    // Four notes in a row, with them and the BPM selected so the Brush starts below view.
+    await page.evaluate(async (y) => {
+        const { show, fixtures, point, nextTick, history, store } = window.editorTest
+        show({ ...fixtures.interaction, slides: [] }, 3)
+        const beat = (point(0, 0).y - y) / (point(0, 0).y - point(0, 1).y)
+        const note = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [-7, -3, 1, 5].map((left) => [{ ...note, beat, left, size: 2 }]),
+            },
+            3,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'note' || entity.type === 'bpm',
+            ),
+        })
+        const { switchToolTo } = await import('/src/editor/tools/index.ts')
+        switchToolTo('brush')
+        await nextTick()
+    }, y)
+    await expect(panel(page).getByRole('tablist')).toHaveCount(0)
+    const scroller = panel(page).locator('.properties-scroller')
+    const below = await scroller.evaluate((element) => {
+        element.scrollTop = 60
+        const tool = element.querySelector('[data-properties-section="tool"]')!
+        return tool.getBoundingClientRect().top >= element.getBoundingClientRect().bottom
+    })
+    expect(below).toBe(true)
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+
+    const start = { x: (await page.evaluate(() => window.editorTest.point(-8, 0))).x, y: y - 12 }
+    const end = { x: (await page.evaluate(() => window.editorTest.point(8, 0))).x, y: y + 12 }
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(end.x, end.y, { steps: 6 })
+    await page.mouse.up()
+    await expect
+        .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
+        .toBe(4)
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    // Holding the Brush out of view would pull the panel back to its top.
+    expect(await scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+})
+
 test('dragging the thumb after brushing keeps its size until release', async ({ page }) => {
     await open(page)
     await brushKeepsToolSection(page, false)
@@ -996,55 +1077,84 @@ for (const width of [260, 336, 480])
         expect(paddings[1]).toBe('0px')
     })
 
+/**
+ * Brushes empty space with the panel scrolled the given distance from its end,
+ * after a Brush of the given number of properties, which emptying the selection
+ * moves. Returns where the Selection's message ended up.
+ */
+const brushEmptiesSelection = async (page: Page, count: number, fromEnd: number) => {
+    const scroller = panel(page).locator('.properties-scroller')
+    await page.evaluate(async (count) => {
+        const { history, store, nextTick, show, fixtures } = window.editorTest
+        show(fixtures.interaction, 3)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        const { switchToolTo } = await import('/src/editor/tools/index.ts')
+        switchToolTo('brush')
+        const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+        const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+        brushProperties.value = Object.fromEntries(
+            brushFields
+                .filter((field) => typeof field.brush?.initial === 'boolean')
+                .slice(0, count)
+                .map((field) => [field.key, field.brush!.initial]),
+        )
+        await nextTick()
+    }, count)
+    await expect(panel(page).getByText('Brush Properties', { exact: true })).toBeVisible()
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    const held = await scroller.evaluate((element, fromEnd) => {
+        element.scrollTop = element.scrollHeight - element.clientHeight - fromEnd
+        const tool = element.querySelector('[data-properties-section="tool"]')!
+        return tool.getBoundingClientRect().top - element.getBoundingClientRect().top
+    }, fromEnd)
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+
+    // Empty space, clear of the notes and the toolbar.
+    const empty = await page.evaluate(() => window.editorTest.point(-5, 4.5))
+    await page.mouse.click(empty.x, empty.y)
+    await expect
+        .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
+        .toBe(0)
+    await page.evaluate(() => new Promise(requestAnimationFrame))
+    return scroller.evaluate((element, held) => {
+        const box = element.getBoundingClientRect()
+        const origin = box.top - element.scrollTop
+        const tool = element.querySelector('[data-properties-section="tool"]')!
+        const section = element.querySelector('[data-properties-section="selection"]')!
+        const header = section.querySelector('h2')!
+        const body = section.querySelector('#properties-section-selection')!
+        const start = body.getBoundingClientRect().top - origin - header.offsetHeight
+        const end = section.getBoundingClientRect().bottom - origin
+        // Where the Brush would keep its place.
+        const kept = element.scrollTop + tool.getBoundingClientRect().top - box.top - held
+        const clipped = kept > start && kept < end - header.offsetHeight
+        const nearer = kept - start <= end - kept ? start : end
+        return {
+            clipped:
+                body.getBoundingClientRect().top < header.getBoundingClientRect().bottom - 0.5 &&
+                body.getBoundingClientRect().bottom > header.getBoundingClientRect().bottom + 0.5,
+            // Clipped there, it shows whole or scrolls away, whichever is nearer.
+            misplaced: Math.abs(element.scrollTop - Math.max(0, clipped ? nearer : kept)) >= 1,
+            scrolledAway: clipped && nearer === end,
+            kept,
+            window: [(start + end) / 2, end - header.offsetHeight],
+        }
+    }, held)
+}
+
 test('brushing that empties the selection leaves none of it under its header', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await open(page)
-    const scroller = panel(page).locator('.properties-scroller')
     // Brushes of every height, so the selection's edge lands anywhere in view.
     for (let count = 0; count <= 10; count++) {
-        await page.evaluate(async (count) => {
-            const { history, store, nextTick, show, fixtures } = window.editorTest
-            show(fixtures.interaction, 3)
-            history.replaceState({
-                ...history.state.value,
-                selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
-            })
-            const { switchToolTo } = await import('/src/editor/tools/index.ts')
-            switchToolTo('brush')
-            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
-            const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
-            brushProperties.value = Object.fromEntries(
-                brushFields
-                    .filter((field) => typeof field.brush?.initial === 'boolean')
-                    .slice(0, count)
-                    .map((field) => [field.key, field.brush!.initial]),
-            )
-            await nextTick()
-        }, count)
-        await expect(panel(page).getByText('Brush Properties', { exact: true })).toBeVisible()
-        await page.evaluate(() => new Promise(requestAnimationFrame))
-        await scroller.evaluate((element) => (element.scrollTop = element.scrollHeight))
-        await page.evaluate(() => new Promise(requestAnimationFrame))
-
-        // Empty space, clear of the notes and the toolbar.
-        const empty = await page.evaluate(() => window.editorTest.point(-5, 4.5))
-        await page.mouse.click(empty.x, empty.y)
-        await expect
-            .poll(() => page.evaluate(() => window.editorTest.snapshot().selected.length))
-            .toBe(0)
-        await page.evaluate(() => new Promise(requestAnimationFrame))
-        const layout = await panel(page).evaluate((panel) => {
-            const header = panel
-                .querySelector('[data-properties-section="selection"] > h2')!
-                .getBoundingClientRect()
-            const body = panel
-                .querySelector('#properties-section-selection')!
-                .getBoundingClientRect()
-            return {
-                clipped: body.top < header.bottom - 0.5 && body.bottom > header.bottom + 0.5,
-            }
+        const { clipped, misplaced } = await brushEmptiesSelection(page, count, 0)
+        expect({ clipped, misplaced }, `${count} properties`).toEqual({
+            clipped: false,
+            misplaced: false,
         })
-        expect(layout, `${count} properties`).toEqual({ clipped: false })
     }
 })
 
@@ -1066,4 +1176,25 @@ test('a mixed on/off field is a mixed switch named by its row', async ({ page })
     await expect(
         panel(page).getByRole('switch', { name: 'Critical', exact: true }),
     ).toHaveAttribute('aria-checked', 'false')
+})
+
+test('brushing that empties the selection scrolls it away when that is nearer', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await open(page)
+    // Scrolled back so the Brush's place falls between the message's middle and its
+    // header's reach, where scrolling it away moves the Brush less than showing it.
+    const { kept, window } = await brushEmptiesSelection(page, 10, 0)
+    const target = (window[0]! + window[1]!) / 2
+    const { clipped, misplaced, scrolledAway } = await brushEmptiesSelection(
+        page,
+        10,
+        kept - target,
+    )
+    expect({ clipped, misplaced, scrolledAway }).toEqual({
+        clipped: false,
+        misplaced: false,
+        scrolledAway: true,
+    })
 })

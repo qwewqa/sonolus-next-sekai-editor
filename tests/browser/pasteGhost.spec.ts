@@ -137,18 +137,15 @@ test('a dragged ghost follows the drag and the beat 0 shift', async ({ page }) =
     expect(await landed(page)).toEqual(shown.notes.map(({ beat, left }) => ({ beat, left })))
 })
 
-test('a pasted BPM change times the ghost as the paste does', async ({ page }) => {
-    await page.evaluate(() => {
+/** The slide copied with the BPM change at 3.5 among the given BPMs, hovering a paste at beat 5. */
+const hoverPasteWithBpm = async (page: Page, bpms: { beat: number; bpm: number }[]) => {
+    await page.evaluate((bpms) => {
         const { show, fixtures, history, store } = window.editorTest
         const base = fixtures.interaction.slides[0]![0]!
         show(
             {
                 ...fixtures.interaction,
-                bpms: [
-                    { beat: 0, bpm: 120 },
-                    { beat: 3.5, bpm: 30 },
-                    { beat: 5, bpm: 120 },
-                ],
+                bpms,
                 slides: [
                     [
                         { ...base, beat: 2, left: -4, size: 2 },
@@ -167,7 +164,7 @@ test('a pasted BPM change times the ghost as the paste does', async ({ page }) =
                     entity.type === 'note' || (entity.type === 'bpm' && entity.beat === 3.5),
             ),
         })
-    })
+    }, bpms)
     const hover = await point(page, -3, 2)
     await page.mouse.move(hover.x, hover.y)
     await settle(page)
@@ -176,12 +173,36 @@ test('a pasted BPM change times the ghost as the paste does', async ({ page }) =
     const target = await point(page, -3, 5)
     await page.mouse.move(target.x, target.y)
     await settle(page)
+    return target
+}
+
+// The attached tick lands by the pasted tempo, not the chart's.
+const expectLandedAsShown = async (page: Page, target: { x: number; y: number }) => {
     const shown = await ghost(page)
     await page.mouse.click(target.x, target.y)
     const pasted = await landed(page)
     expect(pasted.map(({ beat }) => beat)).toEqual(shown.notes.map(({ beat }) => beat))
-    // The attached tick lands by the pasted tempo, not the chart's.
     for (const [i, note] of pasted.entries()) expect(shown.notes[i]!.left).toBeCloseTo(note.left, 6)
+}
+
+const bpms = [
+    { beat: 0, bpm: 120 },
+    { beat: 3.5, bpm: 30 },
+    { beat: 5, bpm: 120 },
+]
+
+test('a pasted BPM change times the ghost as the paste does', async ({ page }) => {
+    await expectLandedAsShown(page, await hoverPasteWithBpm(page, bpms))
+})
+
+test('a BPM pasted onto a same-beat pair times the ghost as the paste does', async ({ page }) => {
+    // It lands at 5.5, replacing the first of the pair and following the second.
+    const target = await hoverPasteWithBpm(page, [
+        ...bpms,
+        { beat: 5.5, bpm: 90 },
+        { beat: 5.5, bpm: 200 },
+    ])
+    await expectLandedAsShown(page, target)
 })
 
 test('the ghost is dropped once a paste lands or the tool changes', async ({ page }) => {

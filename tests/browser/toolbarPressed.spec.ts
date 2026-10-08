@@ -438,6 +438,9 @@ test('division and lane groups show the value in use on their face', async ({ pa
     await expectFace(1, '1/2 Lane Division')
     await page.evaluate(() => (window.editorTest.view.laneDivision = 5))
     await expectFace(1, 'Custom Lane Division', '1/5')
+    // Two digits fit, as 1/16 does.
+    await page.evaluate(() => (window.editorTest.view.laneDivision = 24))
+    await expectFace(1, 'Custom Lane Division', '1/24')
     await run(page, 'laneLimitSix')
     await expectFace(2, 'Limit to ±6 Lanes')
     await page.evaluate(() => (window.editorTest.settings.maxLane = 12))
