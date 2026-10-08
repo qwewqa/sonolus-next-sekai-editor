@@ -806,6 +806,33 @@ test('held elevation, brush and flip keys act once while undo repeats', async ({
     expect(counts).toEqual({ elevation: 1, brush: 1, flip: 1, flipVertical: 1, undo: 4 })
 })
 
+test('held Combine Notes and Make Vertical keys act once', async ({ page }) => {
+    const counts = await page.evaluate(async () => {
+        const { appImport, settings } = window.editorTest
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const shortcuts = settings.keyboardShortcuts
+        const counts = { combineNotes: 0, makeVertical: 0 }
+        for (const [name, key] of [
+            ['combineNotes', shortcuts.combineNotes!],
+            ['makeVertical', 'q'],
+        ] as const) {
+            const execute = commands[name].execute
+            commands[name].execute = () => {
+                counts[name]++
+            }
+            settings.keyboardShortcuts = { [name]: key }
+            for (const repeat of [false, true, true, true])
+                dispatchEvent(new KeyboardEvent('keydown', { key, repeat, bubbles: true }))
+            commands[name].execute = execute
+        }
+        settings.keyboardShortcuts = shortcuts
+        return counts
+    })
+    expect(counts).toEqual({ combineNotes: 1, makeVertical: 1 })
+})
+
 test('shortcut chips use the locale’s key names', async ({ page }) => {
     await page.evaluate(() => {
         const { settings, history, store } = window.editorTest

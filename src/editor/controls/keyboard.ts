@@ -53,48 +53,28 @@ const isInToolDialog = (element: Element | null) => !!element?.closest('[data-to
 const movesFocus = (element: Element, key: string) =>
     /^(Arrow|Home$|End$)/.test(key) && element.matches('input[type="radio"], [role="toolbar"] *')
 
-// Commands that toggle or cycle state act once per press, not on key repeat.
-const ignoresRepeat = new Set<CommandName>([
-    'play',
-    'stop',
-    'toggleBgmVolume',
-    'toggleSfxVolume',
-    'snapping',
-    'laneSnapping',
-    'cycleVisibilities',
-    'noteVisibility',
-    'bpmVisibility',
-    'timeScaleVisibility',
-    'cameraEventVisibility',
-    'stageMaskEventVisibility',
-    'stagePivotEventVisibility',
-    'stageStyleEventVisibility',
-    'stageTransformEventVisibility',
-    'fullscreen',
-    'elevation',
-    'openContextMenu',
-    // A flip reverses itself, so held, the result would depend on the repeat count.
-    'flip',
-    'flipVertical',
-    // Pressed again, tools cycle their presets or kinds, or open their dialog.
-    'note',
-    'note0',
-    'note1',
-    'note2',
-    'note3',
-    'slide',
-    'slide0',
-    'slide1',
-    'slide2',
-    'slide3',
-    'slide4',
-    'event',
-    'cameraEvent',
-    'stageMaskEvent',
-    'stagePivotEvent',
-    'stageStyleEvent',
-    'stageTransformEvent',
-    'brush',
+// Only the commands Help lists repeat when held; the rest act once per press.
+const repeatsWhenHeld = new Set<CommandName>([
+    'scrollLeft',
+    'scrollRight',
+    'scrollUp',
+    'scrollDown',
+    'scrollPageUp',
+    'scrollPageDown',
+    'zoomXIn',
+    'zoomXOut',
+    'zoomYIn',
+    'zoomYOut',
+    'undo',
+    'redo',
+    'increaseNoteSize',
+    'decreaseNoteSize',
+    'speedUp',
+    'speedDown',
+    'groupPrev',
+    'groupNext',
+    'stagePrev',
+    'stageNext',
 ])
 
 const onKeydown = (event: KeyboardEvent) => {
@@ -131,7 +111,7 @@ const onKeydown = (event: KeyboardEvent) => {
     )
         return
     for (const name of names) {
-        if (event.repeat && ignoresRepeat.has(name)) continue
+        if (event.repeat && !repeatsWhenHeld.has(name)) continue
         void commands[name].execute()
     }
     if (!names.length) return
