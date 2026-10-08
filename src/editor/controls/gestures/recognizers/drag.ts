@@ -107,12 +107,23 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
         if (notification.value.id !== before) active.notice = notification.value.id
     }
 
-    // A scroll or zoom under a still pointer, as keys make, moves where the drag lands.
-    watch([viewBox, paneMoves], () => {
-        if (active?.type !== 'drag' || update) return
-        const { x, y, modifiers } = active.pointer
-        updateDrag(x, y, modifiers)
-    })
+    // A scroll, zoom or snapping change under a still pointer moves where the drag lands.
+    watch(
+        [
+            viewBox,
+            paneMoves,
+            () => view.division,
+            () => view.snapping,
+            () => view.laneDivision,
+            () => view.laneSnapping,
+            () => settings.elevationSnap,
+        ],
+        () => {
+            if (active?.type !== 'drag' || update) return
+            const { x, y, modifiers } = active.pointer
+            updateDrag(x, y, modifiers)
+        },
+    )
 
     return {
         count: 1,

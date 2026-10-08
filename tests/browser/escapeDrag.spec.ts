@@ -512,3 +512,38 @@ test('a key scroll or zoom mid-drag moves the preview to where the drop lands', 
         .map(({ beat, left }) => ({ beat, left }))
     expect(pasted).toEqual(shown)
 })
+
+test('a division change mid-drag moves the preview to where the drop lands', async ({ page }) => {
+    await command(page, 'select')
+    const ghost = () =>
+        page.evaluate(() =>
+            window.editorTest.snapshot().creating.map(({ beat, left }) => ({ beat, left })),
+        )
+    const drag = async (to: [number, number], change: () => Promise<void>) => {
+        await select(page, [5])
+        const start = await point(page, 1, 5)
+        const end = await point(page, ...to)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(end.x, end.y, { steps: 8 })
+        await settle(page)
+        const before = await ghost()
+        expect(before).toHaveLength(1)
+        await change()
+        await settle(page)
+        const shown = await ghost()
+        expect(shown).not.toEqual(before)
+        await page.mouse.up()
+        await settle(page)
+        const moved = (await snapshot(page)).selected.map(({ beat, left }) => ({ beat, left }))
+        expect(moved).toEqual(shown)
+        await command(page, 'undo')
+    }
+    // A beat between the 1/4 and 1/3 lines, then a lane between whole and half lanes.
+    await drag([1, 5.6], () => command(page, 'division3'))
+    await drag([1.4, 5], () =>
+        page.evaluate(() => {
+            window.editorTest.view.laneDivision = 2
+        }),
+    )
+})

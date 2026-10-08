@@ -105,8 +105,8 @@ type MoveActive = {
     focus: Entity
     entities: Entity[]
     onlyType: EntityType | undefined
-    lastLane?: number
-    lastBeatOffset?: number
+    // The pointer and lane snapping the preview was last built for.
+    last?: string
 }
 
 let active:
@@ -285,9 +285,9 @@ export const select: Tool = {
                 const lane = xToLane(x)
                 const beatOffset = toMoveBeatOffset(active, yToBeatOffset(y, active.focus.beat))
 
-                if (active.lastLane === lane && active.lastBeatOffset === beatOffset) break
-                active.lastLane = lane
-                active.lastBeatOffset = beatOffset
+                const last = `${lane} ${beatOffset} ${view.laneDivision} ${view.laneSnapping}`
+                if (active.last === last) break
+                active.last = last
 
                 const creating: Entity[] = []
                 let focusBeat = active.focus.beat
