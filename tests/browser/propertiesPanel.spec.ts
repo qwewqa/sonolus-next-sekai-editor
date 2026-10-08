@@ -1158,7 +1158,7 @@ test('brushing that empties the selection leaves none of it under its header', a
     }
 })
 
-test('a mixed on/off field is a mixed switch named by its row', async ({ page }) => {
+test('a mixed on/off field is a mixed checkbox named by its row', async ({ page }) => {
     await open(page, { propertiesConnectorExpanded: true })
     await page.evaluate(async () => {
         const { show, fixtures, history, store, nextTick } = window.editorTest
@@ -1171,11 +1171,13 @@ test('a mixed on/off field is a mixed switch named by its row', async ({ page })
         })
         await nextTick()
     })
-    const fake = panel(page).getByRole('switch', { name: 'Slide Fake', exact: true })
+    const fake = panel(page).getByRole('checkbox', { name: 'Slide Fake', exact: true })
     await expect(fake).toHaveAttribute('aria-checked', 'mixed')
     await expect(
-        panel(page).getByRole('switch', { name: 'Critical', exact: true }),
+        panel(page).getByRole('checkbox', { name: 'Critical', exact: true }),
     ).toHaveAttribute('aria-checked', 'false')
+    // Every Properties toggle can be mixed, so none is a switch.
+    await expect(panel(page).getByRole('switch')).toHaveCount(0)
 })
 
 test('brushing that empties the selection scrolls it away when that is nearer', async ({
