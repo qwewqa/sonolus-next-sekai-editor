@@ -52,11 +52,23 @@ export const getScaleBounds = (entity: EditableEntity, axis: ScaleAxis) => {
     return { min, max: min + size }
 }
 
-// Computed lanes and sizes lose their float noise; values left as they were stay exact.
-const scaleSize = (size: number, factor: number) =>
-    factor === 1 ? size : alignComputed(size * factor)
-const alignWidth = (axis: ScaleAxis, value: number, result: number) =>
-    axis === 'width' && result !== value ? alignComputed(result) : result
+// Computed sizes lose their float noise, but never down to 0; unscaled ones stay exact.
+const scaleSize = (size: number, factor: number) => {
+    if (factor === 1) return size
+    const scaled = size * factor
+    const aligned = alignComputed(scaled)
+    return aligned === 0 && scaled > 0 ? scaled : aligned
+}
+// Computed lanes lose their float noise after the order check, so noise twins may meet; unmoved ones stay exact.
+const alignWidth = (axis: ScaleAxis, values: Map<EditableEntity, number>) =>
+    axis === 'width'
+        ? new Map(
+              [...values].map(([entity, result]) => {
+                  const value = getScaleValue(entity, axis)
+                  return [entity, result === value ? result : alignComputed(result)] as const
+              }),
+          )
+        : values
 
 export const getScaleProperties = (
     entity: EditableEntity,
@@ -178,13 +190,15 @@ export const getScaledSelectionValues = (
     const entities = getScaleEntities(selected, axis, source)
     const pivot = anchor ?? getScalePivot(entities, axis, source)
     if (pivot === undefined || !Number.isFinite(pivot)) return
-    const values = transformValues(
+    const transformed = transformValues(
         entities,
         axis,
-        (value) => alignWidth(axis, value, pivot + (value - pivot) * factor),
+        (value) => pivot + (value - pivot) * factor,
         source,
     )
-    if (axis === 'width' && values && !validWidthValues(values, factor)) return
+    if (!transformed) return
+    const values = alignWidth(axis, transformed)
+    if (axis === 'width' && !validWidthValues(values, factor)) return
     return values
 }
 
@@ -212,13 +226,15 @@ export const getTranslatedSelectionValues = (
     source?: State,
 ): Map<EditableEntity, number> | undefined => {
     if (!Number.isFinite(delta) || delta === 0) return
-    const values = transformValues(
+    const transformed = transformValues(
         getScaleEntities(selected, axis, source),
         axis,
-        (value) => alignWidth(axis, value, value + delta),
+        (value) => value + delta,
         source,
     )
-    if (axis === 'width' && values && !validWidthValues(values, 1)) return
+    if (!transformed) return
+    const values = alignWidth(axis, transformed)
+    if (axis === 'width' && !validWidthValues(values, 1)) return
     return values
 }
 
