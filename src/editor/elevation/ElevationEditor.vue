@@ -710,11 +710,8 @@ const onKeydown = (event: KeyboardEvent) => {
         closeContextMenu()
         return
     }
-    if (drag || marquee || adding) {
-        cancelMouseControls()
-        cancelTouchControls()
-        cancel()
-    } else if (!isElevationSideBySide.value) closeElevationEditor()
+    // A drag's Escape only cancels it, before this runs.
+    if (!isElevationSideBySide.value) closeElevationEditor()
     else selectAt(undefined, { ctrl: false, shift: false })
 }
 watch([() => elevationBounds.w, () => elevationBounds.h], () => {

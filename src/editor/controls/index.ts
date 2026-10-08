@@ -32,6 +32,33 @@ const cancelControls = (restoreTool = true) => {
     view.entities = { hovered: [], creating: [] }
 }
 
+// Escape during a drag only cancels it; its key repeats do nothing either.
+let swallowsEscape = false
+const cancelDragOnEscape = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || event.isComposing) return
+    if (!isDragging.value && !(swallowsEscape && event.repeat)) {
+        swallowsEscape = false
+        return
+    }
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    if (!isDragging.value) return
+    swallowsEscape = true
+    cancelControls()
+}
+const releaseEscape = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') swallowsEscape = false
+}
+// Registered at load, so it runs before every other Escape handler.
+addEventListener('keydown', cancelDragOnEscape, true)
+addEventListener('keyup', releaseEscape, true)
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        removeEventListener('keydown', cancelDragOnEscape, true)
+        removeEventListener('keyup', releaseEscape, true)
+    })
+}
+
 // Hidden objects, by type, group or stage, must not stay selected: keyboard
 // commands, properties and scaling act on the selection. Dimmed objects stay
 // selected (for example after moving notes to an unfocused group). This only

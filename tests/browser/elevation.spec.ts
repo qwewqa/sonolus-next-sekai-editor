@@ -484,6 +484,68 @@ test('body drags edit lane and snapped elevation live with one undo step', async
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('Escape cancels move and paste drags only, and their release does nothing', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async () => undefined,
+        })
+        Object.defineProperty(navigator.clipboard, 'readText', {
+            configurable: true,
+            value: async () => '',
+        })
+        const { history } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()].flat(),
+        })
+    })
+    await page.keyboard.press('c')
+    await open(page)
+    const selected = () =>
+        page.evaluate(() =>
+            window.editorTest.history.state.value.selectedEntities.map(({ beat }) => beat),
+        )
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...history.state.value.store.slides.note.values()]
+                .flat()
+                .filter(({ beat }) => beat === 6),
+        })
+    })
+    const initial = await notes(page)
+    const notice = () =>
+        page.evaluate(() => document.querySelector('.notification')?.textContent?.trim() ?? null)
+    const expectCancelled = async (before: string | null) => {
+        await page.keyboard.press('Escape')
+        await settle(page)
+        expect([null, before]).toContain(await notice())
+        expect(await page.evaluate(() => window.editorTest.snapshot().creating)).toEqual([])
+        await page.mouse.move(10, 10, { steps: 4 })
+        await page.mouse.up()
+        await settle(page)
+        // The pane stays open and the selection stays.
+        await expect(page.locator('.elevation-canvas')).toBeVisible()
+        expect(await selected()).toEqual([6])
+        expect(await notes(page)).toEqual(initial)
+        expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+    }
+    let before = await notice()
+    await mouseDrag(page, await point(page), await displacement(page, 2, 0.5))
+    await expectCancelled(before)
+    await page.keyboard.press('v')
+    before = await notice()
+    await mouseDrag(page, await at(page, -5, 1.5), await displacement(page, 2, 0.5))
+    expect(
+        (await page.evaluate(() => window.editorTest.snapshot().creating)).length,
+    ).toBeGreaterThan(0)
+    await expectCancelled(before)
+})
+
 test('a drag the lane limit holds in place adds no undo step', async ({ page }) => {
     await open(page)
     const initial = await notes(page)
