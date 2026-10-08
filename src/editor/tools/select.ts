@@ -73,7 +73,7 @@ import {
 import { interpolate } from '../../utils/interpolate'
 import { shiftComputed } from '../../utils/math'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
-import { notify } from '../notification'
+import { clearNotification, notify } from '../notification'
 import { hitOffscreenIndicator, selectOffscreenNotes } from '../offscreenIndicators'
 import { isEntityInScope } from '../scope'
 import {
@@ -377,6 +377,8 @@ export const select: Tool = {
                         hovered: [],
                         creating: [],
                     }
+                    // Its "Moving" notice no longer holds.
+                    clearNotification()
                     break
                 }
                 const moved = moveEntities(state.value, active, lane, beatOffset)

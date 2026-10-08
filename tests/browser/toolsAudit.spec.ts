@@ -225,9 +225,12 @@ test('dragging notes back to where they started adds no undo step', async ({ pag
         await page.mouse.move(away.x, away.y, { steps: 6 })
         await settle(page)
         expect((await snapshot(page)).creating).not.toEqual([])
+        await expect(page.locator('.notification')).toHaveText('Moving 1 object')
         await page.mouse.move(start.x, start.y, { steps: 6 })
         await page.mouse.up()
         await settle(page)
+        // Nothing moved, so nothing is left saying it is moving.
+        await expect(page.locator('.notification')).toHaveCount(0)
     }
     // The body, then the right edge, of the note at lane 3 (3..5), beat 7.
     await there([4, 7], [6, 8])
@@ -239,6 +242,7 @@ test('dragging notes back to where they started adds no undo step', async ({ pag
 
     // A real move still commits once.
     await drag(page, [4, 7], [4, 8])
+    await expect(page.locator('.notification')).toHaveText('Moved 1 object')
     expect(await beats(page)).toEqual([3, 5, 8, 9])
     expect(await undoCount(page)).toBe(1)
 })

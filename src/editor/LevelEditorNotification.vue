@@ -19,7 +19,7 @@ const top = computed(() => hasToolModal(props.pane))
         :style="{ top: `${inset ?? 0}px` }"
     >
         <div
-            v-if="notification"
+            v-if="notification.message"
             :key="notification.id"
             class="notification whitespace-break-spaces rounded-full px-6 py-2 text-center"
         >
