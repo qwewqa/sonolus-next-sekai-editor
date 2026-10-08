@@ -54,8 +54,8 @@ export const renameGroup = (groupId: GroupId, value: string) => {
     notify(message)
 }
 
-export const openGroupProperties = (groupId: GroupId) => {
-    void showModal(GroupPropertiesModal, {
+export const openGroupProperties = async (groupId: GroupId) => {
+    await showModal(GroupPropertiesModal, {
         groupId,
     })
 }

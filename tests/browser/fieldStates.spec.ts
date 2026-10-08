@@ -218,7 +218,7 @@ test('the name field of a rename dialog keeps its edge at rest in high contrast'
     await page.evaluate(async () => {
         const { openGroupProperties } = await import('/src/editor/workspace/manager/groups.ts')
         const { groups } = window.editorTest.history.state.value
-        openGroupProperties([...groups.keys()][0]!)
+        void openGroupProperties([...groups.keys()][0]!)
     })
     const name = page.getByRole('dialog').getByRole('textbox', { name: 'Name' })
     await expect(name).toBeVisible()

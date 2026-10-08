@@ -62,7 +62,8 @@ export type ManagerModel<T> = {
     remove: (id: T) => void
     /** Deletes entries, and the given folders, whose members are among them, as one step. */
     removeMany: (ids: ReadonlySet<T>, folders?: ReadonlySet<FolderId>) => void
-    openProperties: (id: T) => void
+    /** Opens an entry's Properties dialog, settling once it closes. */
+    openProperties: (id: T) => Promise<void>
     /** The object field that assigns notes and events to entries. */
     owner: OwnerKey
     folders: FolderOps<T>

@@ -1604,7 +1604,11 @@ const run = async (key: RowKey, action: string, keyboard: boolean, anchor: HTMLE
             focusIn(key, '.manager-check')
             return
         case 'properties':
-            if (key.type === 'entry') props.model.openProperties(key.id)
+            if (key.type !== 'entry') return
+            await props.model.openProperties(key.id)
+            // The inline button hides once focus leaves its row, so focus can't return to it.
+            if (keyboard && !rowOf(key)?.contains(document.activeElement))
+                focusIn(key, '.manager-name')
             return
         case 'duplicate':
             await duplicateRow(key)

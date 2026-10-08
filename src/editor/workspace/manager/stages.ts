@@ -62,8 +62,8 @@ export const renameStage = (stageId: StageId, value: string) => {
     notify(message)
 }
 
-export const openStageProperties = (stageId: StageId) => {
-    void showModal(StagePropertiesModal, {
+export const openStageProperties = async (stageId: StageId) => {
+    await showModal(StagePropertiesModal, {
         stageId,
     })
 }

@@ -1634,3 +1634,26 @@ test('Select Objects leaves out objects of hidden types', async ({ page }) => {
     expect(count).toBe(0)
     expect(await selected()).toEqual(['bpm', 'bpm'])
 })
+
+test('closing Properties opened from a row’s inline button returns focus to the row', async ({
+    page,
+}) => {
+    await seedGroups(page, ['Default', 'Other group'])
+    const panel = await openGroups(page)
+    const name = nameButton(panel, 'Other group')
+    const dialog = page.locator('dialog[open]')
+    for (const byButton of [false, true]) {
+        await name.focus()
+        await page.keyboard.press('Tab')
+        await expect(
+            entryRow(panel, 'Other group').locator('.manager-inline-properties'),
+        ).toBeFocused()
+        await page.keyboard.press('Enter')
+        await expect(dialog).toContainText('Group Properties')
+        if (byButton)
+            await dialog.getByRole('button', { name: 'Close', exact: true }).press('Enter')
+        else await page.keyboard.press('Escape')
+        await expect(dialog).toHaveCount(0)
+        await expect(name).toBeFocused()
+    }
+})
