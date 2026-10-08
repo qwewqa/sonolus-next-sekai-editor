@@ -184,6 +184,11 @@ test('Japanese units take half-width parentheses', () => {
         assert.doesNotMatch(text, /（[^{}）]*）$/, key)
 })
 
+test('Turkish editor names all use Editör', () => {
+    for (const [key, text] of Object.entries(read('tr')))
+        assert.doesNotMatch(text, /Düzenleyici/, key)
+})
+
 test('Korean show settings all end in 표시', () => {
     for (const [key, text] of Object.entries(read('ko')))
         if (/^settings\.editor\.show/.test(key)) assert.match(text, /표시$/, key)
