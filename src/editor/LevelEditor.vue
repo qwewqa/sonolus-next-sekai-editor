@@ -275,7 +275,7 @@ const stageCount = computed(() =>
                     <LevelEditorCanvas />
                 </template>
                 <LevelEditorNotification pane="main" />
-                <LevelEditorToolbar v-if="!hasToolModal('main')" />
+                <LevelEditorToolbar v-if="!hasToolModal('main')" pane="main" />
                 <EditorToolModalHost pane="main" />
             </div>
             <div

@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { CommandName as Name } from '../commands'
 
-// Each layout's shown members, kept while a tool dialog hides the toolbar.
+// Each pane and layout's shown members, kept while a tool dialog hides the toolbar.
 const shownByLayout = new Map<string, Name[]>()
-// Each layout's faces a tool in use displaced until it ends, and groups with a tool in use.
+// Each pane and layout's faces a tool in use displaced until it ends, and groups with a tool in use.
 type Temporary = { displaced: (Name | undefined)[]; inUse: boolean[] }
 const temporaryByLayout = new Map<string, Temporary>()
 const layoutOf = (toolbar: Name[][]) => toolbar.map((group) => group.join(',')).join('|')
@@ -25,6 +25,7 @@ import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
 import { isDragging } from '../controls/gestures/recognizers/drag'
 import { isCoarsePointer } from '../workspace'
+import type { ToolModalPane } from '../toolModals'
 import { vScrollEdges } from '../../directives/scrollEdges'
 import LevelEditorToolbarTool from './LevelEditorToolbarTool.vue'
 import {
@@ -37,9 +38,10 @@ import {
 } from './layout'
 import { commandState, isCommandPressed } from './pressed'
 
-const props = defineProps<{ available?: CommandName[] }>()
+const props = defineProps<{ pane: ToolModalPane; available?: CommandName[] }>()
 
 const toolbar = computed<CommandName[][]>(() => toolbarGroups(settings.toolbar, props.available))
+const keyOf = (toolbar: CommandName[][]) => `${props.pane}:${layoutOf(toolbar)}`
 
 const isPressed = (name: CommandName, index: number) =>
     isCommandPressed(name, toolbar.value[index] ?? [])
@@ -63,23 +65,23 @@ watch(
         const layout = layoutOf(toolbar)
         if (previous && layoutOf(previous) === layout) return
         // A remount keeps the members shown before; a new layout starts from the defaults.
-        const kept = previous ? undefined : shownByLayout.get(layout)
+        const kept = previous ? undefined : shownByLayout.get(keyOf(toolbar))
         activeNames.value = toolbar.map(
             (commands, index) => kept?.[index] ?? commands[commands.length - 1] ?? 'select',
         )
         // A group with a tool in use keeps a face it displaced before the change.
         const before = previous ? temporary.displaced.filter((name) => name !== undefined) : []
-        temporary = (previous ? undefined : temporaryByLayout.get(layout)) ?? {
+        temporary = (previous ? undefined : temporaryByLayout.get(keyOf(toolbar))) ?? {
             displaced: toolbar.map((group, index) =>
                 hasToolInUse(index) ? before.find((name) => group.includes(name)) : undefined,
             ),
             inUse: [],
         }
-        temporaryByLayout.set(layout, temporary)
+        temporaryByLayout.set(keyOf(toolbar), temporary)
     },
     { immediate: true },
 )
-watch(activeNames, (names) => shownByLayout.set(layoutOf(toolbar.value), [...names]), {
+watch(activeNames, (names) => shownByLayout.set(keyOf(toolbar.value), [...names]), {
     deep: true,
     immediate: true,
 })

@@ -1153,3 +1153,28 @@ test('a layout change while a tool shows over a face still returns the face', as
         await expectFace('Undo')
     }
 })
+
+test('the elevation toolbar returns its own faces beside the main toolbar', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['paste', 'undo'],
+            ['eraser', 'select'],
+        ]
+    })
+    await page.mouse.click(700, 300)
+    await page.keyboard.press('t')
+    await expect(toolbar(page)).toHaveCount(2)
+    const bothFaces = () =>
+        toolbar(page).evaluateAll((bars) =>
+            bars.map((bar) =>
+                bar.querySelector(':scope > div > div > button')?.getAttribute('title'),
+            ),
+        )
+    await expect.poll(bothFaces).toEqual(['Undo', 'Undo'])
+    for (let i = 0; i < 2; i++) {
+        await page.keyboard.press('v')
+        await expect.poll(bothFaces).toEqual(['Paste', 'Paste'])
+        await page.keyboard.press('f')
+        await expect.poll(bothFaces).toEqual(['Undo', 'Undo'])
+    }
+})

@@ -1065,7 +1065,11 @@ onUnmounted(() => {
             pane="elevation"
             :inset="headerHeight"
         />
-        <LevelEditorToolbar v-if="!hasToolModal('elevation')" :available="availableCommands" />
+        <LevelEditorToolbar
+            v-if="!hasToolModal('elevation')"
+            pane="elevation"
+            :available="availableCommands"
+        />
         <EditorToolModalHost pane="elevation" />
         <div
             ref="header"
