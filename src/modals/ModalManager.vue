@@ -38,7 +38,10 @@ const vOpen = {
         const focusVisible = !byPointer
         el.toggleAttribute('autofocus', focusDialog)
         el.showModal()
+        const opened = document.activeElement
         setTimeout(() => {
+            // Focus moved since opening, by a click or key; it stays there.
+            if (document.activeElement !== opened) return
             if (focusDialog) {
                 el.focus({ preventScroll: true })
                 return

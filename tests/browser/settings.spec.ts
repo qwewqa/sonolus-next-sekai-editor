@@ -13,6 +13,8 @@ test.beforeEach(async ({ page }) => {
     await page.evaluate(installEditorFixture)
     await page.keyboard.press(',')
     await expect(page.getByRole('dialog')).toBeVisible()
+    // The deferred first-field focus has run, so it can't take a later focus.
+    await expect(page.getByRole('dialog').locator('select').first()).toBeFocused()
 })
 
 test('shortcut capture preserves the old binding until replaced or cleared', async ({ page }) => {
@@ -260,6 +262,7 @@ test.describe('on Apple devices', () => {
         await page.evaluate(installEditorFixture)
         await page.keyboard.press(',')
         await expect(page.getByRole('dialog')).toBeVisible()
+        await expect(page.getByRole('dialog').locator('select').first()).toBeFocused()
     })
 
     test('chords show menu symbols and Cmd chords the system keeps are refused', async ({

@@ -87,6 +87,49 @@ test.describe('dialogs', () => {
         expect(await calls()).toEqual(['SELECT:true'])
     })
 
+    test('a focus moved before the deferred first-field focus runs stays put', async ({ page }) => {
+        // Hold the timer queued right after showModal, as a busy main thread can.
+        await page.addInitScript(() => {
+            const held = window as unknown as { releaseOpenFocus?: () => Promise<void> }
+            const showModal = HTMLDialogElement.prototype.showModal
+            const setTimer = window.setTimeout
+            let opening = false
+            HTMLDialogElement.prototype.showModal = function () {
+                showModal.call(this)
+                opening = true
+                queueMicrotask(() => (opening = false))
+            }
+            window.setTimeout = ((handler: TimerHandler, ...rest: unknown[]) => {
+                if (!opening || typeof handler !== 'function')
+                    return setTimer(handler, ...(rest as [number]))
+                opening = false
+                held.releaseOpenFocus = () =>
+                    new Promise((resolve) =>
+                        setTimer(() => {
+                            ;(handler as () => void)()
+                            resolve()
+                        }),
+                    )
+                return 0
+            }) as typeof setTimeout
+        })
+        await boot(page)
+        await page.mouse.click(400, 300)
+        await page.keyboard.press(',')
+        const dialog = page.getByRole('dialog')
+        await expect(dialog).toBeVisible()
+        const save = dialog
+            .locator('.form-field')
+            .filter({ has: page.locator('[data-icon-column]') })
+            .first()
+            .getByRole('button')
+        await save.focus()
+        await page.evaluate(() =>
+            (window as unknown as { releaseOpenFocus: () => Promise<void> }).releaseOpenFocus(),
+        )
+        await expect(save).toBeFocused()
+    })
+
     test('closing by a button returns focus where it came from, as Escape does', async ({
         page,
     }) => {
