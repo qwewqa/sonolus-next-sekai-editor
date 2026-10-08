@@ -28,6 +28,8 @@ export const resyncRadios = async (event: Event, value: () => unknown) => {
 /** Reverts an input to its value after a rejected entry, such as blank or out of range. */
 export const resyncInput = async (event: Event, text: () => string) => {
     const input = event.currentTarget as HTMLInputElement
+    // A validating form keeps the entry, so its validation blocks the submit.
+    if (input.form && !input.form.noValidate) return
     await nextTick()
     if (input.value !== text()) input.value = text()
 }

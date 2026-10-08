@@ -238,3 +238,60 @@ test('the name field of a rename dialog keeps its edge at rest in high contrast'
         }),
     ).toEqual({ style: 'solid', width: '2px', color: text })
 })
+
+test('a form dialog stays open on an invalid number and changes nothing', async ({ page }) => {
+    const dialog = page.getByRole('dialog')
+    const read = () =>
+        page.evaluate(async () => {
+            const { history, settings, view, appImport } = window.editorTest
+            const { notification } = await appImport<
+                typeof import('../../src/editor/notification')
+            >('/src/editor/notification.ts')
+            const { initialLife, bgm } = history.state.value
+            return {
+                division: view.division,
+                maxLane: settings.maxLane,
+                customMaxLane: settings.customMaxLane,
+                initialLife,
+                offset: bgm.offset,
+                notice: notification.value.id,
+                canUndo: history.canUndo.value,
+            }
+        })
+    const open = (name: string) =>
+        page.evaluate(async (name) => {
+            const { commands } = await import('/src/editor/commands/index.ts')
+            void commands[name as keyof typeof commands].execute()
+        }, name)
+    const before = await read()
+    for (const [command, label, value] of [
+        ['divisionCustom', 'Division', '0'],
+        ['laneLimitCustom', 'Maximum Lane (±)', '-3'],
+        ['properties', 'Initial Life', '-5'],
+        ['properties', 'Initial Life', '1.5'],
+        ['bgm', 'Offset (ms)', ''],
+    ] as const) {
+        for (const submit of ['click', 'Enter'] as const) {
+            const context = `${command} ${value || 'blank'} ${submit}`
+            await open(command)
+            const field = dialog.getByRole('spinbutton', { name: label, exact: true })
+            await field.fill(value)
+            if (submit === 'click') await dialog.getByRole('button', { name: 'Confirm' }).click()
+            else await field.press('Enter')
+            // The native message shows on the field, which keeps the entry.
+            await expect(dialog, context).toBeVisible()
+            await expect(field, context).toBeFocused()
+            await expect(field, context).toHaveValue(value)
+            expect(
+                await field.evaluate((input: HTMLInputElement) => input.validationMessage),
+                context,
+            ).not.toBe('')
+            expect(await read(), context).toEqual(before)
+            // Escape reverts the entry, then closes.
+            await page.keyboard.press('Escape')
+            await expect(dialog, context).toBeVisible()
+            await page.keyboard.press('Escape')
+            await expect(dialog, context).toHaveCount(0)
+        }
+    }
+})
