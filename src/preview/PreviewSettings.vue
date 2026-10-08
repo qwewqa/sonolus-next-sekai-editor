@@ -7,6 +7,7 @@ import { optionName } from '../modals/form/fieldUsage'
 import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
 import { holdsTyping, resyncInput, revertOnEscape, trackTypedText } from '../modals/form/resync'
 import { isApplePlatform, isCommandChord, matchBindings } from '../editor/controls/bindings'
+import { isTextEntry } from '../editor/controls/keyboard'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { getPanelPosition, setPanelPosition, workspaceDockAttribute } from '../editor/workspace'
@@ -272,10 +273,10 @@ let isPointerChange = false
 const onPointerDown = () => {
     isPointerInput = true
 }
-// Undo and redo in a number field showing its value reach the editor, as in docks.
+// Undo and redo reach the editor from fields showing their value and other controls, as in docks.
 const passesHistory = (event: KeyboardEvent) =>
     event.target instanceof Element &&
-    !holdsTyping(event.target) &&
+    (!isTextEntry(event.target) || !holdsTyping(event.target)) &&
     isCommandChord(event) &&
     matchBindings(settings.keyboardShortcuts, event, isApplePlatform()).names.some(
         (name) => name === 'undo' || name === 'redo',

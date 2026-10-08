@@ -14,7 +14,7 @@ import {
 } from './bindings'
 import { clearPageSelection } from './pageSelection'
 
-const isTextEntry = (target: EventTarget | null) =>
+export const isTextEntry = (target: EventTarget | null) =>
     target instanceof HTMLTextAreaElement ||
     (target instanceof HTMLInputElement &&
         !['button', 'checkbox', 'radio', 'range', 'color', 'file'].includes(target.type)) ||

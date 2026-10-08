@@ -2781,3 +2781,34 @@ test('Ctrl+Z in a preview number field showing its value undoes the last edit', 
     await expect(speed).toHaveValue(shown)
     await expect(speed).toBeFocused()
 })
+
+test('Ctrl+Z and Ctrl+Y on preview sliders, switches and selects reach the editor', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { history, fixtures, store, appImport } = window.editorTest
+        history.resetState(false, structuredClone(fixtures.notes), 0, 'undo.json')
+        const { editSelectedEditableEntities } = await appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        editSelectedEditableEntities({ isCritical: true })
+    })
+    const canUndo = () => page.evaluate(() => window.editorTest.history.canUndo.value)
+    const panel = page.locator('.preview-controls')
+    for (const control of [
+        panel.locator('input[type="range"]').first(),
+        panel.getByRole('switch').first(),
+        panel.locator('select').first(),
+    ]) {
+        await control.focus()
+        await page.keyboard.press('ControlOrMeta+z')
+        await expect.poll(canUndo).toBe(false)
+        await page.keyboard.press('ControlOrMeta+y')
+        await expect.poll(canUndo).toBe(true)
+        await expect(control).toBeFocused()
+    }
+})
