@@ -604,6 +604,16 @@ const onRenameBlur = (event: FocusEvent) => {
     @apply bg-fg text-header;
 }
 
+/* Its fill hides the usual ring, so focus is an inner ring of its icon's colour, as on the
+   toolbar's tool in use. */
+@media not (forced-colors: active) {
+    .manager-icon-button-pressed:focus-visible:not(:active) {
+        box-shadow:
+            inset 0 0 0 2px theme('colors.fg'),
+            inset 0 0 0 4px theme('colors.header');
+    }
+}
+
 /* High contrast selects it, as the toolbar's tool in use, with focus an inner ring on its fill. */
 @media (forced-colors: active) {
     .manager-icon-button.manager-icon-button-pressed {

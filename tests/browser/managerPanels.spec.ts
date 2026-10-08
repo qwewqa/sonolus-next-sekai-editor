@@ -1657,3 +1657,30 @@ test('closing Properties opened from a row’s inline button returns focus to th
         await expect(name).toBeFocused()
     }
 })
+
+test('the pressed Select Multiple shows keyboard focus as an inner ring on its fill', async ({
+    page,
+}) => {
+    await seedGroups(page, ['Default', 'Lead'])
+    const panel = await openGroups(page)
+    const mode = panel.getByRole('button', { name: 'Select Multiple' })
+    await mode.click()
+    await expect(mode).toHaveAttribute('aria-pressed', 'true')
+    await page.mouse.move(0, 0)
+    await page.keyboard.press('Shift')
+    await mode.focus()
+    expect(await mode.evaluate((element) => element.matches(':focus-visible'))).toBe(true)
+    // Colours transition.
+    await mode.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)))
+    // A ring in the icon's colour shows against the fill.
+    const { fill, rings, icon } = await mode.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+            fill: style.backgroundColor,
+            rings: style.boxShadow.match(/rgba?\([^)]*\)/g) ?? [],
+            icon: style.color,
+        }
+    })
+    expect(icon).not.toBe(fill)
+    expect(rings).toContain(icon)
+})
