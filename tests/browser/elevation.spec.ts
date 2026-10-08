@@ -520,8 +520,11 @@ test('Escape cancels move and paste drags only, and their release does nothing',
     const initial = await notes(page)
     const notice = () =>
         page.evaluate(() => document.querySelector('.notification')?.textContent?.trim() ?? null)
-    const expectCancelled = async (before: string | null) => {
-        await page.keyboard.press('Escape')
+    const expectCancelled = async (before: string | null, held = false) => {
+        // Held, its repeats must not close the pane either.
+        await page.keyboard.down('Escape')
+        if (held) await page.keyboard.down('Escape')
+        await page.keyboard.up('Escape')
         await settle(page)
         expect([null, before]).toContain(await notice())
         expect(await page.evaluate(() => window.editorTest.snapshot().creating)).toEqual([])
@@ -536,7 +539,7 @@ test('Escape cancels move and paste drags only, and their release does nothing',
     }
     let before = await notice()
     await mouseDrag(page, await point(page), await displacement(page, 2, 0.5))
-    await expectCancelled(before)
+    await expectCancelled(before, true)
     await page.keyboard.press('v')
     before = await notice()
     await mouseDrag(page, await at(page, -5, 1.5), await displacement(page, 2, 0.5))
