@@ -31,9 +31,10 @@ export const offset: Tool = {
     dragEnd(x, y) {
         bgmOffsetDelta.value = 0
 
-        const offset = align(bgm.value.offset + activeTime - yToTime(y), 1000)
-        // A drop back where it started changes nothing.
-        if (offset === bgm.value.offset) return
+        // A drop back where it started keeps the offset exact.
+        const delta = activeTime - yToTime(y)
+        const offset = align(bgm.value.offset + delta, 1000)
+        if (!delta || offset === bgm.value.offset) return
 
         pushState(() => i18n.value.tools.offset.changed, {
             ...state.value,
