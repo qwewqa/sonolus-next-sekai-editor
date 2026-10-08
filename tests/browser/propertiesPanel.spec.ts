@@ -631,6 +631,24 @@ test('a View value too long beside its label goes below it, as in Settings', asy
     await expect(field('Outil')).toHaveClass(stacked)
 })
 
+test('a Tool value too long beside its label goes below it, as in View', async ({ page }) => {
+    await open(page, { locale: 'ko', rightDockWidth: 260 })
+    await page.evaluate(async () => {
+        const { appImport, nextTick } = window.editorTest
+        const tools = await appImport<typeof import('../../src/editor/tools')>(
+            '/src/editor/tools/index.ts',
+        )
+        tools.switchToolTo('slide')
+        await nextTick()
+    })
+    const field = (label: string) =>
+        panel(page)
+            .locator('#properties-section-tool .form-field')
+            .filter({ has: page.locator('.form-field-text').getByText(label, { exact: true }) })
+    await expect(field('속성 복사')).toHaveClass(/form-field-value-stacked/)
+    await expect(field('노트 유형')).not.toHaveClass(/form-field-value-stacked/)
+})
+
 test('selects show their value on hover', async ({ page }) => {
     await open(page)
     await page.evaluate(() => window.editorTest.show(window.editorTest.fixtures.notes, 3))
