@@ -811,15 +811,15 @@ test('flipping vertically mirrors event and time scale eases', async ({ page }) 
 })
 
 test.describe('flipping vertically onto its own beat', () => {
-    /** Shows one track of `[beat, value, ease]` joints, flips the chosen ones, and undoes it. */
+    /** Shows one track of `[beat, value, ease]` joints, flips the chosen ones each round, and undoes them. */
     const flipTrack = (
         page: Page,
         kind: 'timeScale' | 'bpm' | 'stagePivotEventJoint',
         joints: [number, number, string?][],
-        chosen: number[],
+        rounds: number[][],
     ) =>
         page.evaluate(
-            async ({ kind, joints, chosen }) => {
+            async ({ kind, joints, rounds }) => {
                 const { show, fixtures, history, appImport } = window.editorTest
                 const { commands } = await appImport<typeof import('../../src/editor/commands')>(
                     '/src/editor/commands/index.ts',
@@ -876,27 +876,30 @@ test.describe('flipping vertically onto its own beat', () => {
                     )
                 }
                 const before = { track: read(), level: level() }
-                const entities = track()
-                const selected = chosen.map((index) => entities[index]!)
-                history.replaceState({
-                    ...history.state.value,
-                    selectedEntities: selected as never,
-                })
-                void commands.flipVertical.execute()
-                const flipped = read()
+                const flips: string[][] = []
+                for (const chosen of rounds) {
+                    const entities = track()
+                    history.replaceState({
+                        ...history.state.value,
+                        selectedEntities: chosen.map((index) => entities[index]!) as never,
+                    })
+                    void commands.flipVertical.execute()
+                    flips.push(read())
+                }
                 const selection = history.state.value.selectedEntities.map((entity) =>
                     describe(entity as never),
                 )
-                history.undoState()
+                for (let i = 0; i < rounds.length; i++) history.undoState()
                 return {
                     before: before.track,
-                    flipped,
+                    flips,
+                    flipped: flips.at(-1)!,
                     selection,
                     undone: read(),
                     undoExact: level() === before.level,
                 }
             },
-            { kind, joints, chosen },
+            { kind, joints, rounds },
         )
 
     test('a time scale of a pair stays in place and keeps its partner', async ({ page }) => {
@@ -909,7 +912,7 @@ test.describe('flipping vertically onto its own beat', () => {
                 [2, 0, 'inCubic'],
                 [4, 2, 'linear'],
             ],
-            [0, 2, 3],
+            [[0, 2, 3]],
         )
         // The pair keeps its order; the centre one still takes its mirrored ease.
         expect(result.flipped).toEqual(['0:2:outCubic', '2:1:outSine', '2:0:outQuad', '4:1:linear'])
@@ -925,13 +928,13 @@ test.describe('flipping vertically onto its own beat', () => {
             [2, 3, 'outSine'],
             [4, 1, 'linear'],
         ]
-        const half = await flipTrack(page, 'stagePivotEventJoint', joints, [0, 2, 3])
+        const half = await flipTrack(page, 'stagePivotEventJoint', joints, [[0, 2, 3]])
         expect(half.flipped).toEqual(['0:1:inSine', '2:-2:inQuad', '2:3:outQuad', '4:0:linear'])
         expect(half.undone).toEqual(half.before)
         expect(half.undoExact).toBe(true)
 
         // A fully selected pair at the centre still mirrors its order.
-        const full = await flipTrack(page, 'stagePivotEventJoint', joints, [0, 1, 2, 3])
+        const full = await flipTrack(page, 'stagePivotEventJoint', joints, [[0, 1, 2, 3]])
         expect(full.flipped).toEqual(['0:1:inSine', '2:3:outQuad', '2:-2:outQuad', '4:0:linear'])
         expect(full.undone).toEqual(full.before)
         expect(full.undoExact).toBe(true)
@@ -948,12 +951,46 @@ test.describe('flipping vertically onto its own beat', () => {
                 [3, 180],
                 [5, 200],
             ],
-            [1, 3, 4],
+            [[1, 3, 4]],
         )
         expect(result.flipped).toEqual(['0:120', '1:200', '3:150', '3:180', '5:100'])
         expect(result.undone).toEqual(result.before)
         expect(result.undoExact).toBe(true)
     })
+
+    // Centres whose flipped beat is off by float noise.
+    for (const division of [3, 6, 480])
+        test(`a pair centred on a 1/${division} beat keeps its exact beat`, async ({ page }) => {
+            const [low, centre, high] = [1, 2, 3].map((step) => step / division) as [
+                number,
+                number,
+                number,
+            ]
+            const result = await flipTrack(
+                page,
+                'timeScale',
+                [
+                    [low, 1, 'linear'],
+                    [centre, 5, 'linear'],
+                    [centre, 6, 'linear'],
+                    [high, 2, 'linear'],
+                ],
+                // One half, then the other, then the whole pair.
+                [
+                    [0, 2, 3],
+                    [0, 1, 3],
+                    [0, 1, 2, 3],
+                ],
+            )
+            // Nothing lost, the pair in order, and every beat exact.
+            expect(result.flips).toEqual([
+                [`${low}:2:linear`, `${centre}:5:linear`, `${centre}:6:linear`, `${high}:1:linear`],
+                [`${low}:1:linear`, `${centre}:5:linear`, `${centre}:6:linear`, `${high}:2:linear`],
+                [`${low}:2:linear`, `${centre}:6:linear`, `${centre}:5:linear`, `${high}:1:linear`],
+            ])
+            expect(result.undone).toEqual(result.before)
+            expect(result.undoExact).toBe(true)
+        })
 })
 
 /** A slide with a same-beat pair at beat 2, optionally a separator on its second. */

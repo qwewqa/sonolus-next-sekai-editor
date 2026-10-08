@@ -1,6 +1,7 @@
 import type { State } from '..'
 import type { NoteObject } from '../../chart/note'
 import { complementEase, type Ease, type TimeScaleEase } from '../../ease'
+import { nearlyEqual } from '../../utils/math'
 import type { Entity } from '../entities'
 import type { NoteEntity } from '../entities/slides/note'
 import { addBpm, removeBpm } from '../mutations/bpm'
@@ -111,10 +112,13 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
     const transaction = createTransaction(source, { autoAddGroup: false })
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find((bpm) => bpm.beat === 0)
 
+    // The centre, within float noise far below any beat grid, keeps its exact beat.
+    const flippedBeat = (entity: EditableEntity) =>
+        nearlyEqual(min + max, 2 * entity.beat) ? entity.beat : min + (max - entity.beat)
     // On its own beat beside an unselected partner, it is edited in place and keeps its order.
     const stays = (entity: EditableEntity) =>
         entity.type !== 'note' &&
-        min + (max - entity.beat) === entity.beat &&
+        flippedBeat(entity) === entity.beat &&
         (getInStoreGrid(source.store.grid, entity.type, entity.beat) ?? []).some(
             (other) =>
                 other.beat === entity.beat && sameTrack(entity, other) && !selectedSet.has(other),
@@ -133,7 +137,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
             flipped.push(...edit(transaction, entity, eases.get(entity) ?? {}))
             continue
         }
-        const beat = min + (max - entity.beat)
+        const beat = flippedBeat(entity)
         if (entity.type !== 'note') {
             // Match the editor's move behavior: a timing point replaces an
             // occupied destination in its own group/stage, never another lane.
