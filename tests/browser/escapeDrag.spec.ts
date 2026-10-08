@@ -202,6 +202,70 @@ test('a held Escape that cancels a drag does nothing more as it repeats', async 
     expect(await selectedBeats(page)).toEqual([])
 })
 
+test('a dialog opened mid-drag cancels the drag', async ({ page }) => {
+    await command(page, 'select')
+    for (const key of ['h', ',']) {
+        await select(page, [3, 5])
+        const notes = (await snapshot(page)).notes
+        const start = await point(page, 1, 5)
+        const end = await point(page, 3, 6)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(end.x, end.y, { steps: 8 })
+        await settle(page)
+        await expect(page.locator('.notification')).toHaveText('Moving 2 objects')
+        await page.keyboard.press(key)
+        const dialog = page.locator('dialog[open]')
+        await expect(dialog).toBeVisible()
+        await settle(page)
+        await expectIdle(page, null)
+        expect(await selectedBeats(page)).toEqual([3, 5])
+        await page.mouse.up()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toHaveCount(0)
+        await settle(page)
+        expect((await snapshot(page)).notes).toEqual(notes)
+        expect(await selectedBeats(page)).toEqual([3, 5])
+        expect(await undoCount(page)).toBe(0)
+    }
+})
+
+test('a paste drag whose release asks to enable dynamic stages still pastes', async ({
+    page,
+    context,
+}) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.evaluate(async () => {
+        const { show, fixtures, history, store, nextTick } = window.editorTest
+        show({ ...fixtures.events, isDynamicStages: true }, 3)
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (entity) => entity.type === 'stageMaskEventJoint',
+            ),
+        })
+        await nextTick()
+    })
+    await command(page, 'copy')
+    await page.evaluate(() => {
+        const { show, fixtures } = window.editorTest
+        show(fixtures.interaction, 3)
+    })
+    await command(page, 'paste')
+    const start = await point(page, 0, 11)
+    const end = await point(page, 2, 12)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(end.x, end.y, { steps: 8 })
+    await page.mouse.up()
+    const dialog = page.locator('dialog[open]')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
+    await expect(page.locator('.notification')).toHaveText('Pasted 4 objects')
+    expect(await undoCount(page)).toBe(2)
+})
+
 test('Escape with no drag still deselects', async ({ page }) => {
     await command(page, 'select')
     await select(page, [3, 5])
