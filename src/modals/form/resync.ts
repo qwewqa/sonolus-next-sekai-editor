@@ -33,7 +33,7 @@ export const resyncInput = async (event: Event, text: () => string) => {
 }
 
 // Unparseable text in a number input reads as empty.
-const isTyped = (input: HTMLInputElement, text: string) =>
+export const isTyped = (input: HTMLInputElement, text: string) =>
     input.value !== text || input.validity.badInput
 
 /** Escape reverts typed text the input hasn't committed; otherwise it passes on. */

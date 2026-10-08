@@ -1178,3 +1178,32 @@ test('the elevation toolbar returns its own faces beside the main toolbar', asyn
         await expect.poll(bothFaces).toEqual(['Undo', 'Undo'])
     }
 })
+
+test('Escape after a native undo back to the committed value closes the tool dialog', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { settings, appImport } = window.editorTest
+        settings.propertiesPosition = 'disabled'
+        const { toolName } = await appImport<typeof import('../../src/editor/tools/state')>(
+            '/src/editor/tools/state.ts',
+        )
+        toolName.value = 'bpm'
+    })
+    const dialog = page.locator('.editor-tool-modal')
+    const field = dialog
+        .locator('label')
+        .filter({ has: page.getByText('BPM', { exact: true }) })
+        .locator('input')
+    const point = await page.evaluate(() => window.editorTest.point(0, 2))
+    await page.mouse.click(point.x, point.y)
+    await expect(dialog).toBeVisible()
+    const shown = await field.inputValue()
+    await field.focus()
+    await page.keyboard.press('End')
+    await page.keyboard.type('5')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(field).toHaveValue(shown)
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+})

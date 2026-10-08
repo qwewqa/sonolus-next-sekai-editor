@@ -14,7 +14,7 @@ import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 import { isUnset, mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
-import { trackTypedText } from './resync'
+import { isTyped, trackTypedText } from './resync'
 
 defineProps<{
     label: string
@@ -93,6 +93,11 @@ const cancel = async () => {
 // Escape reverts an uncommitted edit; otherwise it reaches the dialog or panel.
 const onEscape = (event: KeyboardEvent) => {
     if (!dirty) return
+    // Text a native undo returned to its committed value passes Escape on.
+    if (input.value && !isTyped(input.value, committed)) {
+        void cancel()
+        return
+    }
     event.stopPropagation()
     event.preventDefault()
     void cancel()
