@@ -423,6 +423,8 @@ const toNoteObject = (
     if (archetype1 === 'AnchorNote') {
         object.noteType = 'anchor'
         object.flickDirection = 'none'
+        // No critical anchor in level data; its hidden pre-set follows its connector, as on import.
+        object.isCritical = object.connectorActiveIsCritical
 
         return object
     } else if (archetype1 === 'DamageNote') {

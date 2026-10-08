@@ -102,3 +102,92 @@ for (const names of [['a'], ['a', 'b']]) {
         expect(result).toContain(`Invalid level: cyclic slide ref "a"`)
     })
 }
+
+test('anchors keep their critical pre-set through level data, from their connector', async ({
+    page,
+}) => {
+    await page.goto('/')
+    const result = await page.evaluate(async () => {
+        const { createState } = await import('/src/state/index.ts')
+        const { serializeToLevelData } = await import('/src/levelData/serialize.ts')
+        const { parseLevelDataChart } = await import('/src/chart/parse/levelData/index.ts')
+        const note = (beat: number, extra: Record<string, unknown>) => ({
+            groupId: 1,
+            stageId: 1,
+            beat,
+            noteType: 'default',
+            isAttached: false,
+            left: 0,
+            size: 2,
+            isCritical: false,
+            flickDirection: 'none',
+            isFake: false,
+            noteStyle: 'default',
+            connectorStyle: 'default',
+            sfx: 'default',
+            isConnectorSeparator: false,
+            connectorType: 'active',
+            connectorEase: 'linear',
+            connectorIsFake: false,
+            connectorActiveIsCritical: false,
+            connectorGuideAlpha: 1,
+            connectorLayer: 'top',
+            connectorIsPassThrough: false,
+            connectorPresentation: 'default',
+            elevation: 0,
+            ...extra,
+        })
+        const slide = (critical: boolean) =>
+            [0, 1, 2].map((beat) =>
+                note(beat + (critical ? 4 : 0), {
+                    isCritical: critical,
+                    connectorActiveIsCritical: critical,
+                    ...(beat === 1 ? { noteType: 'anchor' } : {}),
+                }),
+            )
+        const state = createState(
+            {
+                initialLife: 1000,
+                isDynamicStages: false,
+                bpms: [{ beat: 0, bpm: 120 }],
+                groups: new Map([[1, { name: 'Group' }]]),
+                stages: new Map([
+                    [
+                        1,
+                        {
+                            name: 'Stage',
+                            isFromStart: true,
+                            isUntilEnd: true,
+                            generateSimLines: 'global',
+                        },
+                    ],
+                ]),
+                cameraEvents: [],
+                stageMaskEvents: [],
+                stagePivotEvents: [],
+                stageStyleEvents: [],
+                stageTransformEvents: [],
+                timeScales: [],
+                slides: [slide(false), slide(true)],
+            } as never,
+            0,
+        )
+        const { entities } = serializeToLevelData(
+            state.initialLife,
+            state.isDynamicStages,
+            0,
+            state.store,
+            state.groups,
+            state.stages,
+        )
+        return parseLevelDataChart(entities)
+            .slides.flat()
+            .filter((note) => note.noteType === 'anchor')
+            .map(({ beat, isCritical }) => ({ beat, isCritical }))
+            .sort((a, b) => a.beat - b.beat)
+    })
+    expect(result).toEqual([
+        { beat: 1, isCritical: false },
+        { beat: 5, isCritical: true },
+    ])
+})
