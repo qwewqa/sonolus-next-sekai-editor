@@ -1076,6 +1076,55 @@ test("restoring an earlier recovery leaves another tab's newer one in place", as
     expect((await unreadableStores(other)).aside).toBe(earlier)
 })
 
+test("a tab that only restored a recovery leaves another tab's newer one in place", async ({
+    page,
+    context,
+}) => {
+    const setLife = (tab: Page, initialLife: number) =>
+        tab.evaluate(async (initialLife) => {
+            const pathname = '/src/history/index.ts'
+            const url =
+                performance
+                    .getEntriesByType('resource')
+                    .map((entry) => entry.name)
+                    .find((name) => new URL(name).pathname === pathname) ?? pathname
+            const { pushState, state } = (await import(url)) as typeof import('../../src/history')
+            if (initialLife) pushState(() => 'edit', { ...state.value, initialLife })
+            return state.value.initialLife
+        }, initialLife)
+    const slot = async (tab: Page) => (await unreadableStores(tab)).recovery
+    await enableAutoSave(page)
+    await setLife(page, 999)
+    await expect.poll(() => slot(page)).not.toBeNull()
+    await page.close()
+
+    // Both reopen with the last session, as after a crash.
+    const b = await context.newPage()
+    await b.goto('/')
+    await expect.poll(() => setLife(b, 0)).toBe(999)
+    const c = await context.newPage()
+    await c.goto('/')
+    await expect.poll(() => setLife(c, 0)).toBe(999)
+    await expect(c.getByRole('dialog')).toHaveCount(0)
+
+    const before = await slot(b)
+    await setLife(b, 990)
+    await expect.poll(() => slot(b)).not.toBe(before)
+    const newer = await slot(b)
+    await hidePage(c)
+    await c.waitForTimeout(200)
+    expect(await slot(c)).toBe(newer)
+
+    // Once it has written its own, it writes it back as before.
+    await setLife(c, 980)
+    await expect.poll(() => slot(c)).not.toBe(newer)
+    const own = await slot(c)
+    await setLife(b, 970)
+    await expect.poll(() => slot(b)).not.toBe(own)
+    await hidePage(c)
+    await expect.poll(() => slot(c)).toBe(own)
+})
+
 /** Holds the recovery loading dialog open before it parses, until released. */
 const holdLoadingUntilReleased = (page: Page) =>
     page.addInitScript(() => {

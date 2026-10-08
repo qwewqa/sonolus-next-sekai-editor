@@ -37,9 +37,13 @@ export const useAutoSave = () => {
     let savedState: State | undefined
     // The recovery this tab wrote or restored; tabs share the one slot.
     let written: string | undefined
+    // Whether this tab has written its own state since it last restored one.
+    let ownsEdits = false
     // Owned only while the slot still holds what this tab restored; another tab may have written since.
-    const adopt = (restored: string | undefined) =>
-        (written = storageGetText(key) === restored ? restored : undefined)
+    const adopt = (restored: string | undefined) => {
+        written = storageGetText(key) === restored ? restored : undefined
+        ownsEdits = false
+    }
     // Read as text so damaged JSON still counts as a recovery to keep.
     const data = storageGetText(key)
     const initialAside = storageGetText(unreadableRecoveryKey)
@@ -57,16 +61,20 @@ export const useAutoSave = () => {
                 if (written !== undefined && storageGetText(key) === written) storageRemove(key)
                 savedState = undefined
                 written = undefined
+                ownsEdits = false
                 return
             }
+            const stored = storageGetText(key)
             if (
                 savedState &&
                 hasSameChartData(savedState, current) &&
                 savedState.initialLife === current.initialLife &&
                 savedState.bgm.offset === current.bgm.offset &&
                 (savedState.filename ?? savedState.bgm.filename) === filename.value &&
-                // Written again when another tab removed or replaced it; an unowned slot waits for an edit.
-                (written === undefined || storageGetText(key) === written)
+                // Written back when another tab removed it, or replaced one this tab wrote; an unowned slot waits for an edit.
+                (written === undefined ||
+                    stored === written ||
+                    (stored !== undefined && !ownsEdits))
             )
                 return
 
@@ -90,6 +98,7 @@ export const useAutoSave = () => {
             storageSetText(key, text)
             savedState = current
             written = text
+            ownsEdits = true
             errorReported = false
         } catch (error) {
             console.error('Failed to save chart recovery:', error)
