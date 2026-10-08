@@ -106,20 +106,6 @@ export const timeScale: Tool = {
                     if (isSidebarVisible.value) {
                         // An explicit edit gesture on the selection shows its properties.
                         revealPropertiesSection('selection')
-                        editMoveOrReplace(
-                            entity,
-                            constrainLaneObject({
-                                groupId: entity.groupId,
-                                beat: entity.beat,
-                                editorLane: entity.editorLane,
-                                timeScale: entity.timeScale,
-                                skip: entity.skip,
-                                timeScaleTransition: entity.timeScaleTransition,
-                                // A tap toggles hiding notes and keeps the ease.
-                                timeScaleEase: entity.timeScaleEase,
-                                hideNotes: !entity.hideNotes,
-                            }),
-                        )
                     } else {
                         void showToolModal(SelectionPropertiesModal, { kind: 'timeScale' })
                     }

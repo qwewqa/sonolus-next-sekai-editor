@@ -564,7 +564,9 @@ test('saved presets with legacy eases migrate without losing other properties', 
     ])
 })
 
-test('tapping a selected time scale toggles hiding notes and keeps its ease', async ({ page }) => {
+test('tapping a selected time scale reveals properties without changing notes or history', async ({
+    page,
+}) => {
     await page.addInitScript(installCanvasCounters)
     await page.goto('/')
     await expect(page.locator('canvas.editor-chart')).toBeVisible()
@@ -617,9 +619,22 @@ test('tapping a selected time scale toggles hiding notes and keeps its ease', as
         await page.evaluate(() => window.editorTest.nextTick())
     }
     await tap()
-    expect(await timeScale()).toEqual(['outCubic', true])
+    expect(await timeScale()).toEqual(['outCubic', false])
     await tap()
     expect(await timeScale()).toEqual(['outCubic', false])
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+
+    // Hide Notes remains an explicit property edit, and further taps keep that value.
+    const hideNotes = page.getByLabel('Hide Notes', { exact: true })
+    await expect(hideNotes).toHaveValue('Disabled')
+    await hideNotes.click()
+    expect(await timeScale()).toEqual(['outCubic', true])
+    await tap()
+    await tap()
+    expect(await timeScale()).toEqual(['outCubic', true])
+    await page.evaluate(() => window.editorTest.history.undoState())
+    expect(await timeScale()).toEqual(['outCubic', false])
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
 // Engines before v2.15 accept only NONE (0) among steps for time scales.
