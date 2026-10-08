@@ -1018,6 +1018,45 @@ for (const width of [260, 336])
         expect(stacked).toBeGreaterThan(0)
     })
 
+test('brush labels past two lines keep clear of their remove button', async ({ page }) => {
+    let roomy = 0
+    for (const locale of ['fr', 'tr']) {
+        await page.goto('/')
+        await open(page, {
+            locale,
+            rightDockWidth: 336,
+            propertiesCollapsed: ['selection'],
+            propertiesSection: 'tool',
+        })
+        await page.keyboard.press('b')
+        await page.evaluate(async () => {
+            const { brushProperties } = await import('/src/editor/tools/brush/index.ts')
+            const { brushFields } = await import('/src/editor/workspace/properties/fields.ts')
+            brushProperties.value = Object.fromEntries(
+                brushFields.map((field) => [field.key, field.brush!.initial]),
+            )
+        })
+        await expect(panel(page).locator('.brush-row').first()).toBeVisible()
+        await page.waitForTimeout(100)
+        const rows = await panel(page)
+            .locator('.brush-row:has(> .form-field:first-child .form-field-label-roomy)')
+            .evaluateAll((rows) =>
+                rows.map((row) => {
+                    const range = document.createRange()
+                    range.selectNodeContents(row.querySelector('.form-field-text')!)
+                    const remove = row.querySelector('.brush-remove')!.getBoundingClientRect()
+                    return {
+                        label: range.toString(),
+                        clear: range.getBoundingClientRect().right <= remove.left + 0.5,
+                    }
+                }),
+            )
+        roomy += rows.length
+        for (const row of rows) expect(row, locale).toEqual({ label: row.label, clear: true })
+    }
+    expect(roomy).toBeGreaterThan(0)
+})
+
 test('brush labels too narrow for a word take the line above their value', async ({ page }) => {
     for (const locale of ['en', 'fr', 'ko', 'tr']) {
         await page.goto('/')

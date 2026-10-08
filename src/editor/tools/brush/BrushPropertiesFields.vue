@@ -292,6 +292,14 @@ const clear = () => {
     }
 }
 
+/* A label past two lines takes 1rem more, as BaseField's roomy rule gives it. */
+@container (min-width: 19rem) and (max-width: 31.99rem) {
+    .brush-row:has(> .form-field:first-child:not(.form-field-value-stacked) .form-field-label-roomy)
+        .brush-remove {
+        --label-w: min(max(calc(45cqw - 0.375rem), 11rem), calc(100cqw - 9rem));
+    }
+}
+
 @container (min-width: 32rem) {
     .brush-remove,
     .brush-row :deep(.form-field-label) {
