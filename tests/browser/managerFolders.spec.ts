@@ -1165,7 +1165,7 @@ test('the current row keeps a mark in high contrast', async ({ page }) => {
             element.matches(':focus-visible'),
             getComputedStyle(element).outlineOffset,
         ]),
-    ).toEqual([true, '-2px'])
+    ).toEqual([true, '-4px'])
 
     // All's bar takes the text colour.
     await page.evaluate(() => {
