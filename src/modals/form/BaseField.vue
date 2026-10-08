@@ -580,9 +580,11 @@ watchEffect(
     transition-duration: 150ms;
 }
 
+/* Tabular digits keep its width as counts change, which the fit relies on. */
 .form-field-coverage-chip {
     background-color: transparent;
     color: rgb(68 68 102 / 0.8);
+    font-variant-numeric: tabular-nums;
 }
 
 /* Fingers get a real target. */

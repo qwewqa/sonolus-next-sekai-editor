@@ -258,6 +258,30 @@ test.describe('mixed values', () => {
         expect(found).toEqual({ en: [], fr: [], tr: [], ko: [] })
     })
 
+    test('coverage keeps its width as only its digits change, whatever the font', async ({
+        page,
+    }) => {
+        // Fonts whose default digits differ in width, as Segoe UI Variable's do, or kern, as Arial's.
+        await page.addStyleTag({
+            content: 'body { font-family: "Segoe UI Variable Text", Arial !important }',
+        })
+        const chip = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText('Attached', { exact: true }) })
+            .locator('.form-field-coverage-chip')
+        await expect(chip).toHaveText('1 of 5')
+        const widths = (numeric: string) =>
+            chip.evaluate((element, numeric) => {
+                element.style.fontVariantNumeric = numeric
+                return ['11 of 15', '44 of 45', '88 of 85'].map((text) => {
+                    element.textContent = text
+                    return element.getBoundingClientRect().width
+                })
+            }, numeric)
+        test.skip(new Set(await widths('normal')).size === 1, 'No font with proportional digits')
+        expect(new Set(await widths('')).size).toBe(1)
+    })
+
     test('chips are one Tab stop, with arrows between them', async ({ page }) => {
         const chips = selection(page)
             .locator('.form-field')
