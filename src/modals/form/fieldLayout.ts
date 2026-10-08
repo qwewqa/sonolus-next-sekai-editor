@@ -26,7 +26,7 @@ export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
         control instanceof HTMLSelectElement
             ? (control.selectedOptions[0]?.textContent.trim() ?? '')
             : control instanceof HTMLInputElement
-              ? control.value
+              ? control.value || control.placeholder
               : control.textContent.trim()
     // A leading glyph gives way before the value moves, so its room counts.
     const padding = parseFloat(style.paddingLeft)

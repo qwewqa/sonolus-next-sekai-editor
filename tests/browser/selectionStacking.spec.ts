@@ -128,3 +128,44 @@ test('brush values stack too, with remove kept on the label line', async ({ page
         ),
     ).toBeLessThan(4)
 })
+
+test('a mixed range too long for its pill goes below its label', async ({ page }) => {
+    await open(page, 'fr', 260)
+    await page.evaluate(async () => {
+        const { history, store, nextTick, fixtures } = window.editorTest
+        // Beats far apart, with fractions, as a long selection shows them.
+        const chart = structuredClone(fixtures.interaction)
+        chart.slides = chart.slides.map(([head], index) => [
+            { ...head!, beat: 56 + 1 / 3 + index },
+            { ...head!, beat: 62.75 + index },
+        ])
+        history.resetState(false, chart, 0, 'stacking.json')
+        await nextTick()
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        await nextTick()
+    })
+    const beat = field(page, 'Temps')
+    await expect(beat.locator('input')).toHaveAttribute('placeholder', /^\d+\.3333 … \d+\.75$/)
+    await expect(beat).toHaveClass(/form-field-value-stacked/)
+    const fits = await beat.locator('input').evaluate((input: HTMLInputElement) => {
+        const style = getComputedStyle(input)
+        const context = document.createElement('canvas').getContext('2d')!
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+        const room =
+            input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+        return context.measureText(input.placeholder).width <= room
+    })
+    expect(fits).toBe(true)
+
+    // The row holds still while a value is typed.
+    await beat.locator('input').click()
+    await page.keyboard.type('5')
+    await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    )
+    await expect(beat).toHaveClass(/form-field-value-stacked/)
+    await page.keyboard.press('Escape')
+})

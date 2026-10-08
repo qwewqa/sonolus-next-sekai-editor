@@ -16,6 +16,7 @@ import { i18n } from '../../i18n'
 import { interpolateRaw } from '../../utils/interpolate'
 import { useStackLongValues, useStackLongWords, valueOverflows, wordOverflows } from './fieldLayout'
 import { cancelFit, queueFit } from './fitBatch'
+import { holdsTyping } from './resync'
 import { observeWidth, unobserveWidth } from './widthObserver'
 import { formatNumber, mixedValues, useFieldUsage, type MixedValue } from './fieldUsage'
 
@@ -96,13 +97,13 @@ let frame = 0
 const clamped = (text: HTMLElement) => text.scrollHeight > text.clientHeight + 1
 const controlOf = () =>
     row.value?.querySelector<HTMLSelectElement | HTMLButtonElement | HTMLInputElement>(
-        ':scope > select, :scope > button, :scope > input[type="button"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
+        ':scope > select, :scope > button, :scope > input[type="button"], :scope > input[type="number"], :scope > .form-field-select > select, :scope > .form-field-toggle > input',
     )
 const shownValue = (control: ReturnType<typeof controlOf>) =>
     control instanceof HTMLSelectElement
         ? control.selectedOptions[0]?.textContent
         : control instanceof HTMLInputElement
-          ? control.value
+          ? control.value || control.placeholder
           : control?.textContent
 // The value the label was last fitted beside; updates that keep it need no fit.
 let fittedValue: string | undefined
@@ -147,7 +148,11 @@ onMounted(() => {
 watch(() => props.label, fitLabel, { flush: 'post' })
 // A value can change without a change event, as a shortcut's capture prompt does.
 onUpdated(() => {
-    if (stackLongValues && shownValue(controlOf()) !== fittedValue) refitLabel()
+    const control = controlOf()
+    // Typed numbers refit on commit, so the row holds still while typing.
+    if (control instanceof HTMLInputElement && control.type === 'number' && holdsTyping(control))
+        return
+    if (stackLongValues && shownValue(control) !== fittedValue) refitLabel()
 })
 
 onBeforeUnmount(() => {
