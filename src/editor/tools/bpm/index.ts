@@ -217,6 +217,7 @@ export const bpm: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
+                    notify(interpolate(() => i18n.value.tools.bpm.selected, '1'))
                     void revealSelectionProperties()
                 } else {
                     const object: BpmObject = {

@@ -279,6 +279,7 @@ export const timeScale: Tool = {
                     }
                     focusEntityAtBeat(entity.beat)
 
+                    notify(interpolate(() => i18n.value.tools.timeScale.selected, '1'))
                     void revealSelectionProperties()
                 } else {
                     const object: TimeScaleObject = constrainLaneObject({

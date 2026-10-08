@@ -261,3 +261,42 @@ test('time scale drag previews preserve hidden notes and replace only the matchi
     expect(result.undone).toEqual(result.original)
     expect(result.canUndoAfterUndo).toBe(false)
 })
+
+test('an add drag released on an existing BPM change or time scale selects it as a tap does', async ({
+    page,
+}) => {
+    const settle = () => page.evaluate(() => window.editorTest.nextTick())
+    const point = (lane: number, beat: number) =>
+        page.evaluate(({ lane, beat }) => window.editorTest.point(lane, beat), { lane, beat })
+    const count = () => page.evaluate(() => window.editorTest.store.getAllEntities().size)
+    const notice = page.locator('.notification')
+    for (const [key, name] of [
+        ['q', 'BPM change'],
+        ['w', 'time scale'],
+    ] as const) {
+        await page.keyboard.press(key)
+        const existing = await point(4, 6)
+        await page.mouse.click(existing.x, existing.y)
+        await settle()
+        await expect(notice).toHaveText(`Added 1 ${name}`)
+        const entities = await count()
+        // Closes its properties dialog.
+        await page.keyboard.press('Escape')
+        const start = await point(4, 8)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(existing.x, existing.y, { steps: 8 })
+        await settle()
+        await expect(notice).toHaveText(`Adding 1 ${name}`)
+        await page.mouse.up()
+        await settle()
+        // The notice a tap on it posts.
+        await expect(notice).toHaveText(`Selected 1 ${name}`)
+        expect(await count()).toBe(entities)
+        expect(
+            await page.evaluate(() =>
+                window.editorTest.history.state.value.selectedEntities.map(({ beat }) => beat),
+            ),
+        ).toEqual([6])
+    }
+})
