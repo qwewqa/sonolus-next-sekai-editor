@@ -494,6 +494,23 @@ test('the offset tool drags the BGM offset and undoes', async ({ page }) => {
     expect(await offset()).toBe(before)
 })
 
+test('an offset drop that changes nothing adds no undo step or notice', async ({ page }) => {
+    await run(page, 'offset')
+    const offset = () => page.evaluate(() => window.editorTest.history.state.value.bgm.offset)
+    const before = await offset()
+    const start = await point(page, 0, 4)
+    const away = await point(page, 0, 6)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(away.x, away.y, { steps: 6 })
+    await page.mouse.move(start.x, start.y, { steps: 6 })
+    await page.mouse.up()
+    await settle(page)
+    expect(await offset()).toBe(before)
+    await expect(page.locator('.notification')).not.toHaveText('Changed BGM offset')
+    expect(await undoCount(page)).toBe(0)
+})
+
 test('note, slide, BPM, time scale and event tools place with the mouse', async ({ page }) => {
     await page.evaluate(() => {
         const { fixtures, show } = window.editorTest
