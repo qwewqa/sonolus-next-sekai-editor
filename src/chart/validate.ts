@@ -20,4 +20,12 @@ export const validateChart = (chart: Chart) => {
     if (notes.some(({ size }) => size < 0)) throw new Error('Invalid level: negative note size')
     if (chart.bpms.some(({ bpm }) => !(bpm > 0 && Number.isFinite(bpm))))
         throw new Error('Invalid level: BPM must be positive and finite')
+    // NaN and infinities save as null.
+    for (const object of objects) {
+        for (const [name, value] of Object.entries(object)) {
+            if (typeof value !== 'number' || Number.isFinite(value)) continue
+            const words = name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
+            throw new Error(`Invalid level: invalid ${words}`)
+        }
+    }
 }

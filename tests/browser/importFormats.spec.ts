@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { gzipSync } from 'node:zlib'
+import { readFileSync } from 'node:fs'
+import { gunzipSync, gzipSync } from 'node:zlib'
 
 // Chart Cyanvas level data as its servers serve it (gzipped JSON with named
 // entities), e.g. https://cc.milkbun.org/.
@@ -459,4 +460,188 @@ test('Chart Cyanvas attached ticks after a BPM change export clean lanes and siz
     expect(values).toHaveLength(14)
     // At most 9 decimals: no float noise.
     for (const value of values) expect(String(value)).toMatch(/^-?\d+(\.\d{1,9})?$/)
+})
+
+// These would save as null, so the editor could not reopen its own file.
+for (const [label, edit, message] of [
+    [
+        'an infinite time scale',
+        (chart: string) => `${chart}
+#TIL00: "0'480:1e999"`,
+        'Unexpected time scale change',
+    ],
+    [
+        'an infinite offset',
+        (chart: string) => chart.replace('#WAVEOFFSET 0', '#WAVEOFFSET 1e999'),
+        'Unexpected offset',
+    ],
+    [
+        'an infinite tick resolution',
+        (chart: string) => chart.replace('ticks_per_beat 480', 'ticks_per_beat 1e999'),
+        'Missing or unexpected ticks per beat',
+    ],
+    // A beat no number holds, from a section shift past any measure.
+    [
+        'an infinite measure',
+        (chart: string) => chart.replace('#00112:11', '#MEASUREBS 1e999\n#00112:11'),
+        'Invalid level: invalid beat',
+    ],
+] as const)
+    test(`a SUS with ${label} is refused`, async ({ page }) => {
+        await open(page, 'chart.sus', Buffer.from(edit(sus)))
+        await expect(page.getByRole('dialog')).toContainText(message)
+        expect(await notes(page)).toEqual({ notes: 0, offset: 0 })
+    })
+
+// The header plus a guide with one note and no end.
+const guideSus = [...sus.split('\n').slice(0, 12), '#00194a:13', '#00112:13'].join('\n')
+// Taps, flicks, slides, guides (one of them a single note), BPM and time scale changes.
+const richSus = [
+    '#TITLE "Regression"',
+    '#ARTIST "Test"',
+    '#DESIGNER "Test"',
+    '#DIFFICULTY 0',
+    '#PLAYLEVEL 1',
+    '#SONGID "reg"',
+    '#WAVE "reg.mp3"',
+    '#WAVEOFFSET 0.5',
+    '#REQUEST "ticks_per_beat 480"',
+    '#00002:4',
+    '#BPM01:120',
+    '#BPM02:180',
+    '#00008:01',
+    '#00308:02',
+    `#TIL00:"0'0:1.0, 1'960:2.0, 3'0:0.5"`,
+    '#HISPEED 00',
+    '#00112:13002400',
+    '#00116:1300',
+    '#00156:1300',
+    '#0011a:2400',
+    '#0015a:3400',
+    '#00118:13',
+    '#00158:40',
+    '#00230a:13000000',
+    '#00232a:00003300',
+    '#00234a:00000000',
+    '#00334a:23',
+    '#00232a:0000',
+    '#00252:0020',
+    '#00230b:1400',
+    '#00330b:2400',
+    '#00290c:1200',
+    '#00294c:0022',
+    '#00396c:23',
+    '#00410:1300',
+    '#00450:6000',
+    '#00413:1213141516',
+    '#00418:5300',
+    '#00458:1300',
+    '#00510:31',
+    '#00413:0000',
+].join('\n')
+
+for (const [label, chart] of [
+    ['a one-note guide', guideSus],
+    ['a one-note guide among other notes', richSus],
+] as const)
+    test(`a SUS with ${label} saves, reopens and restores`, async ({ page }) => {
+        await open(page, 'chart.sus', Buffer.from(chart))
+        await expect(page.locator('.notification')).toHaveText('Imported SUS chart')
+        const imported = (await notes(page)).notes
+
+        await page.evaluate(() => {
+            // The download path, as in browsers without the File System Access API.
+            Object.defineProperty(window, 'showSaveFilePicker', {
+                configurable: true,
+                value: undefined,
+            })
+        })
+        const downloading = page.waitForEvent('download')
+        await page.keyboard.press('p')
+        const saved = readFileSync((await (await downloading).path())!)
+        expect(gunzipSync(saved).toString()).not.toContain('null')
+
+        await open(page, 'saved', saved)
+        await expect(page.locator('.notification')).toHaveText('Opened level')
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+        expect((await notes(page)).notes).toBe(imported)
+
+        // Edit so auto save writes a recovery, then restore it.
+        await page.evaluate(async () => {
+            const urls = new Map(
+                performance
+                    .getEntriesByType('resource')
+                    .map((entry) => [new URL(entry.name).pathname, entry.name]),
+            )
+            const appImport = <T>(pathname: string): Promise<T> =>
+                import(urls.get(pathname) ?? pathname)
+            const { settings } =
+                await appImport<typeof import('../../src/settings')>('/src/settings.ts')
+            const { state, replaceState } =
+                await appImport<typeof import('../../src/history/index')>('/src/history/index.ts')
+            const { editSelectedEditableEntities } = await appImport<
+                typeof import('../../src/editor/sidebars/default/index')
+            >('/src/editor/sidebars/default/index.ts')
+            settings.autoSaveDelay = 0
+            settings.autoSave = true
+            const note = [...state.value.store.slides.note.values()].flat()[0]!
+            replaceState({ ...state.value, selectedEntities: [note] })
+            editSelectedEditableEntities({ size: note.size + 1 })
+        })
+        await expect
+            .poll(() =>
+                page.evaluate(() =>
+                    localStorage.getItem('sonolus-next-sekai-editor.autoSave.levelData'),
+                ),
+            )
+            .not.toBeNull()
+        await page.reload()
+        await expect.poll(async () => (await notes(page)).notes).toBe(imported)
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+    })
+
+test('level data with a null guide alpha, as older editors saved, opens with alpha 1', async ({
+    page,
+}) => {
+    await open(page, 'chart.sus', Buffer.from(guideSus))
+    await expect(page.locator('.notification')).toHaveText('Imported SUS chart')
+    const level = await page.evaluate(async () => {
+        const urls = new Map(
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => [new URL(entry.name).pathname, entry.name]),
+        )
+        const appImport = <T>(pathname: string): Promise<T> =>
+            import(urls.get(pathname) ?? pathname)
+        const { state } =
+            await appImport<typeof import('../../src/history/index')>('/src/history/index.ts')
+        const { serializeToLevelData } = await appImport<
+            typeof import('../../src/levelData/serialize')
+        >('/src/levelData/serialize.ts')
+        const { store, groups, stages } = state.value
+        return serializeToLevelData(1000, false, 0, store, groups, stages)
+    })
+    // Every alpha null, as the one-note guide's NaN saved.
+    const text = JSON.stringify(level).replace(/("segmentAlpha","value":)[^}]+/g, '$1null')
+    expect(text).toContain('"segmentAlpha","value":null')
+
+    await page.reload()
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    await open(page, 'level-data', gzipSync(text))
+    await expect(page.locator('.notification')).toHaveText('Opened level')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    const alphas = await page.evaluate(async () => {
+        const urls = new Map(
+            performance
+                .getEntriesByType('resource')
+                .map((entry) => [new URL(entry.name).pathname, entry.name]),
+        )
+        const { state } = (await import(
+            urls.get('/src/history/index.ts') ?? '/src/history/index.ts'
+        )) as typeof import('../../src/history/index')
+        return [...state.value.store.slides.note.values()]
+            .flat()
+            .map((note) => note.connectorGuideAlpha)
+    })
+    expect(alphas).toEqual([1, 1])
 })

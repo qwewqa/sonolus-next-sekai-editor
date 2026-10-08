@@ -197,8 +197,9 @@ export const parseSusChart = (sus: Sus) => {
             const isCritical =
                 connectorType === 'active' && (slideCriticalMod || criticalMods.has(key))
             const connectorEase = easeMods.get(key) ?? 'linear'
+            // A one-note guide keeps the head's alpha, 1.
             const connectorGuideAlpha =
-                connectorType === 'guide'
+                connectorType === 'guide' && slide.notes.length > 1
                     ? ((slide.notes.length - 1 - i) / (slide.notes.length - 1)) * 1 +
                       (i / (slide.notes.length - 1)) * 0.2
                     : 1

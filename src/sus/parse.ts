@@ -54,10 +54,12 @@ export const parseSus = (data: string[]): Sus => {
 
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const offset = -+(meta.get('WAVEOFFSET') || '0')
-    if (Number.isNaN(offset)) throw new Error('Unexpected offset')
+    if (!Number.isFinite(offset)) throw new Error('Unexpected offset')
 
     const ticksPerBeat = getTicksPerBeat(meta)
-    if (!ticksPerBeat) throw new Error('Missing or unexpected ticks per beat')
+    // Beats divide by it; an infinite one gives NaN ticks.
+    if (!ticksPerBeat || !Number.isFinite(ticksPerBeat))
+        throw new Error('Missing or unexpected ticks per beat')
 
     const barLengths = getBarLengths(lines, measureChanges)
 
@@ -264,7 +266,7 @@ const toTimeScaleChanges = ([, data]: Line, toTick: ToTick) => {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const timeScale = +r!
 
-            if (Number.isNaN(measure) || Number.isNaN(tick) || Number.isNaN(timeScale))
+            if (!Number.isFinite(measure) || !Number.isFinite(tick) || !Number.isFinite(timeScale))
                 throw new Error('Unexpected time scale change')
 
             return {
