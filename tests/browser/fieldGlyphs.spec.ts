@@ -249,9 +249,7 @@ test('keyboard shortcuts show each command icon before its name', async ({ page 
     await expect(timeScale.getByRole('button')).not.toHaveAccessibleName(/TS/)
 })
 
-test('a shortcut icon gives way before its name would clamp, and returns with room', async ({
-    page,
-}) => {
+test('a shortcut icon stays beside a name that wraps to three lines', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await open(page)
     await page.evaluate(async () => {
@@ -263,16 +261,19 @@ test('a shortcut icon gives way before its name would clamp, and returns with ro
             has: page.locator('.form-field-text').getByText(name, { exact: true }),
         })
     const long = row('Toggle Stage Transform Event Visibility')
-    await expect(long.locator('.form-field-icon')).toBeHidden()
-    await expect(row('Save').locator('.form-field-icon')).toBeVisible()
+    const text = long.locator('.form-field-text')
+    // Three lines, so the name has no room to spare beside its icon.
     expect(
-        await long
-            .locator('.form-field-text')
-            .evaluate((text) => text.scrollHeight <= text.clientHeight + 1),
+        await text.evaluate(
+            (text) => text.clientHeight > parseFloat(getComputedStyle(text).lineHeight) * 2 + 1,
+        ),
     ).toBe(true)
-
-    await page.setViewportSize({ width: 1600, height: 1000 })
     await expect(long.locator('.form-field-icon')).toBeVisible()
+    expect(await text.evaluate((text) => text.scrollHeight <= text.clientHeight + 1)).toBe(true)
+    // Its name starts in the column every other name does.
+    const left = (field: ReturnType<typeof row>) =>
+        field.locator('.form-field-text').evaluate((text) => text.getBoundingClientRect().left)
+    expect(await left(long)).toBeCloseTo(await left(row('Save')), 0)
 })
 
 test('wide text icons keep clear of their names in the shortcut list and flyouts', async ({

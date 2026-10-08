@@ -214,14 +214,13 @@ for (const locale of ['en', 'fr', 'ja', 'ko', 'tr', 'zhs', 'zht']) {
             await page.keyboard.press(',')
             const dialog = page.getByRole('dialog')
             await expect(dialog).toBeVisible()
-            // Shortcut names drop their icons rather than clamp.
+            // Shortcut names wrap beside their icons, which all stay.
             expect(await clipped()).toEqual([])
             const icons = page.getByRole('dialog').locator('.form-field-icon')
             const shown = await icons.evaluateAll(
                 (icons) => icons.filter((icon) => icon.getClientRects().length).length,
             )
-            if (device === 'desktop') expect(shown).toBe(await icons.count())
-            else expect(shown).toBeGreaterThan(0)
+            expect(shown).toBe(await icons.count())
         })
     }
 }

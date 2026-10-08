@@ -111,7 +111,7 @@ test('Korean labels too long for two lines by word still break between words', a
         .poll(() =>
             lines(page, '스테이지 마스크 이벤트 표시 여부 전환', '.form-field-text', dialog),
         )
-        .toEqual(['스테이지 마스크 이벤트', '표시 여부 전환'])
+        .toEqual(['스테이지 마스크', '이벤트 표시 여부', '전환'])
 })
 
 for (const [locale, command, label] of [

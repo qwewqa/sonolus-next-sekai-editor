@@ -7,7 +7,6 @@ import {
     onUpdated,
     ref,
     useId,
-    useSlots,
     useTemplateRef,
     watch,
     watchEffect,
@@ -88,11 +87,9 @@ const description = computed(() => {
     )
 })
 
-// A label longer than two lines first drops its glyph, then takes back the room
-// the control's 10rem minimum claims, then wraps in full; one observer serves
-// every field. Where asked, as in Settings, a value that would truncate beside its
-// label goes below it.
-const slots = useSlots()
+// A label longer than two lines takes back the room the control's 10rem minimum
+// claims, then wraps in full; one observer serves every field. Where asked, as in
+// Settings, a value that would truncate beside its label goes below it.
 const labelRow = useTemplateRef<HTMLElement>('labelRow')
 const fieldRoot = useTemplateRef<HTMLElement>('fieldRoot')
 const stackLongValues = useStackLongValues()
@@ -117,9 +114,8 @@ const fitLabel = () => {
     const element = labelRow.value
     const text = element?.querySelector<HTMLElement>('.form-field-text')
     if (!element || !text) return
-    element.classList.remove('form-field-iconless', 'form-field-label-roomy')
+    element.classList.remove('form-field-label-roomy')
     fieldRoot.value?.classList.remove('form-field-value-stacked')
-    if (slots.icon && overTwoLines(text)) element.classList.add('form-field-iconless')
     if (overTwoLines(text)) element.classList.add('form-field-label-roomy')
     const control = controlOf()
     fittedValue = shownValue(control)
@@ -497,10 +493,6 @@ watchEffect(
     vertical-align: middle;
 }
 
-.form-field-iconless .form-field-icon {
-    display: none;
-}
-
 /* One full-width row under the label and control, so labels keep their width. */
 .form-field-mixed {
     display: flex;
@@ -563,10 +555,6 @@ watchEffect(
 /* Under a label with an icon, notes start with the label's text. */
 .form-field:has(.form-field-label > .form-field-icon) .form-field-notes {
     padding-left: 1.75rem;
-}
-
-.form-field:has(.form-field-iconless) .form-field-notes {
-    padding-left: 0;
 }
 
 /* Tinted pills read as actions; coverage is muted text, apart from the values. High
