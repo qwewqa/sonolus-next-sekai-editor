@@ -351,6 +351,54 @@ test('a held Escape closes only the hovered flyout, menu or typing, then leaves 
     await expect(pane).toHaveCount(0)
 })
 
+test('Escape side by side deselects, then switches to Select as Deselect does', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    await page.evaluate(() => {
+        window.editorTest.settings.elevationEditorSideBySide = 'allow'
+    })
+    await open(page)
+    await expect(page.locator('canvas.editor-chart')).toBeVisible()
+    const tool = () =>
+        page.evaluate(async () => {
+            const { toolName } = await window.editorTest.appImport<
+                typeof import('../../src/editor/tools/state')
+            >('/src/editor/tools/state.ts')
+            return toolName.value
+        })
+    const selectAll = () =>
+        page.evaluate(() => {
+            const { history } = window.editorTest
+            const notes = [...history.state.value.store.slides.note.values()].flat()
+            history.replaceState({ ...history.state.value, selectedEntities: notes })
+        })
+    const empty = await at(page, 5, 1)
+    await page.mouse.move(empty.x, empty.y)
+    const toast = page.locator('.notification')
+
+    await page.keyboard.press('g')
+    await selectAll()
+    await page.keyboard.press('Escape')
+    expect((await page.evaluate(() => window.editorTest.snapshot())).selected).toEqual([])
+    await expect(toast).toHaveText('Deselected all objects')
+    expect(await tool()).toBe('eraser')
+    await page.keyboard.press('Escape')
+    expect(await tool()).toBe('select')
+    await expect(toast).toHaveText('Switched to Select tool')
+    await expect(page.locator('.elevation-editor')).toBeVisible()
+
+    // With the setting off, the tool stays.
+    await page.evaluate(() => {
+        window.editorTest.settings.deselectSwitchesToSelect = false
+    })
+    await page.keyboard.press('b')
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Escape')
+    expect(await tool()).toBe('brush')
+    await expect(page.locator('.elevation-editor')).toBeVisible()
+})
+
 test('the header fields keep their edge at rest and thicken it on focus in high contrast', async ({
     page,
 }) => {

@@ -52,6 +52,7 @@ import ChevronIcon from '../workspace/ChevronIcon.vue'
 import CloseIcon from '../workspace/CloseIcon.vue'
 import { hasToolModal, showToolModal } from '../toolModals'
 import type { CommandName } from '../commands'
+import { deselect } from '../commands/deselect'
 import { fromDisplayedBeat, toDisplayedBeat } from '../beatDisplay'
 import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/utils'
 import { scopeLookup } from '../scope'
@@ -712,8 +713,9 @@ const onKeydown = (event: KeyboardEvent) => {
         return
     }
     // A drag's Escape only cancels it, before this runs.
+    // Side by side, it runs Deselect, so a second press switches to Select as on the chart.
     if (!isElevationSideBySide.value) closeElevationEditor()
-    else selectAt(undefined, { ctrl: false, shift: false })
+    else void deselect.execute()
 }
 // Its scroll and zoom move where a drag in it lands.
 watch([() => elevationViewport.center, () => elevationViewport.scale], notifyPaneMoved)
