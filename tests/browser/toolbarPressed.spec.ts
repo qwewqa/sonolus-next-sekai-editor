@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { installCanvasCounters, installEditorFixture } from './editorFixture'
 
 test.beforeEach(async ({ page }) => {
@@ -1170,6 +1170,84 @@ test('Escape over a hovered flyout closes a dialog opened over it', async ({ pag
         await page.keyboard.press('Escape')
         await expect(dialog).toHaveCount(0)
     }
+})
+
+// A tool dialog unmounts the toolbar; closing it mounts the toolbar after the pane's own listeners.
+const remountToolbar = async (page: Page) => {
+    await page.keyboard.press('b')
+    await page.keyboard.press('b')
+    await expect(page.locator('[data-tool-dialog]')).toHaveCount(1)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-tool-dialog]')).toHaveCount(0)
+    await page.keyboard.press('f')
+}
+
+const hoverFirstFlyout = async (page: Page, bar: Locator) => {
+    const box = (await bar.locator('button').first().boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 })
+    await expect(bar.locator('[aria-expanded="true"]')).toHaveCount(1)
+}
+
+test('one Escape over a hovered elevation flyout closes only the flyout, after a tool dialog', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show, settings, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show({ ...fixtures.interaction, slides: [[{ ...base, beat: 6, elevation: 2 }]] }, 3)
+        view.cursorTime = 3
+        settings.elevationEditorSideBySide = 'disallow'
+        settings.toolbar = [
+            ['flip', 'combineNotes'],
+            ['select', 'eraser'],
+        ]
+    })
+    await page.keyboard.press('t')
+    const pane = page.locator('.elevation-editor')
+    await expect(pane).toBeVisible()
+    await remountToolbar(page)
+    const canvas = (await pane.locator('.elevation-canvas').boundingBox())!
+    await page.mouse.click(canvas.x + 30, canvas.y + canvas.height / 2)
+    const bar = pane.locator('[data-editor-toolbar]')
+    await hoverFirstFlyout(page, bar)
+    await page.keyboard.press('Escape')
+    await expect(bar.locator('[aria-expanded="true"]')).toHaveCount(0)
+    await expect(pane).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(pane).toHaveCount(0)
+})
+
+test.describe('drawer', () => {
+    test.use({ viewport: { width: 390, height: 900 } })
+
+    test('one Escape over a hovered flyout closes only the flyout, after a tool dialog', async ({
+        page,
+    }) => {
+        await page.evaluate(() => {
+            const { settings } = window.editorTest
+            settings.toolbar = [
+                ['flip', 'combineNotes'],
+                ['select', 'eraser'],
+            ]
+            settings.groupsPosition = 'left'
+            settings.showGroups = false
+            settings.showSidebar = false
+        })
+        await page.mouse.click(200, 300)
+        await remountToolbar(page)
+        const bar = toolbar(page)
+        await hoverFirstFlyout(page, bar)
+        // Opened with the mouse still, the drawer leaves the flyout open under it.
+        await page.keyboard.press('e')
+        const drawer = page.locator('[data-workspace-dock="left"] .workspace-dock-body')
+        await expect(drawer).toBeVisible()
+        await expect(bar.locator('[aria-expanded="true"]')).toHaveCount(1)
+        await page.keyboard.press('Escape')
+        await expect(bar.locator('[aria-expanded="true"]')).toHaveCount(0)
+        await expect(drawer).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(drawer).toHaveCount(0)
+    })
 })
 
 test('a layout change while a tool shows over a face still returns the face', async ({ page }) => {

@@ -32,12 +32,16 @@ const cancelControls = (restoreTool = true) => {
     view.entities = { hovered: [], creating: [] }
 }
 
+// Open toolbar flyouts' Escape handlers, run after a drag's and before any pane's or drawer's.
+export const flyoutEscapes = new Set<(event: KeyboardEvent) => void>()
+
 // Escape during a drag only cancels it; its key repeats do nothing either.
 let swallowsEscape = false
 const cancelDragOnEscape = (event: KeyboardEvent) => {
     if (event.key !== 'Escape' || event.isComposing) return
     if (!isDragging.value && !(swallowsEscape && event.repeat)) {
         swallowsEscape = false
+        for (const close of flyoutEscapes) close(event)
         return
     }
     event.preventDefault()

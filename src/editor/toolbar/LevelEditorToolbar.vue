@@ -23,6 +23,7 @@ import {
 import { modals } from '../../modals'
 import { settings } from '../../settings'
 import { commands, type CommandName } from '../commands'
+import { flyoutEscapes } from '../controls'
 import { isDragging } from '../controls/gestures/recognizers/drag'
 import { isCoarsePointer } from '../workspace'
 import type { ToolModalPane } from '../toolModals'
@@ -291,10 +292,10 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 onMounted(() => {
-    window.addEventListener('keydown', onKeydown, true)
+    flyoutEscapes.add(onKeydown)
 })
 onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown, true)
+    flyoutEscapes.delete(onKeydown)
 })
 </script>
 
