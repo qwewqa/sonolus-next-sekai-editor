@@ -12,6 +12,8 @@ import {
     isCommandChord,
     matchBindings,
 } from './bindings'
+import { isDragging } from './gestures/recognizers/drag'
+import { hasMouseControls } from './mouse'
 import { clearPageSelection } from './pageSelection'
 
 export const isTextEntry = (target: EventTarget | null) =>
@@ -77,6 +79,9 @@ export const repeatsWhenHeld = new Set<CommandName>([
     'stageNext',
 ])
 
+// Playback and jumps would move the view under a press; only edge scroll moves it then.
+const movesViewUnderPress = new Set<CommandName>(['play', 'stop', 'jumpUp', 'jumpDown'])
+
 const onKeydown = (event: KeyboardEvent) => {
     if (isBlockingModalOpen.value || pressesButton(event)) return
     // An open tool dialog takes Escape.
@@ -110,8 +115,10 @@ const onKeydown = (event: KeyboardEvent) => {
         String(getSelection() ?? '').trim() !== ''
     )
         return
+    const pressing = isDragging.value > 0 || hasMouseControls()
     for (const name of names) {
         if (event.repeat && !repeatsWhenHeld.has(name)) continue
+        if (pressing && movesViewUnderPress.has(name)) continue
         void commands[name].execute()
     }
     if (!names.length) return

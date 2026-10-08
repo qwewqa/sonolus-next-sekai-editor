@@ -449,3 +449,30 @@ test.describe('a drag that leaves the chart pane', () => {
         expect(await page.evaluate(() => window.editorTest.view.selection)).toBeUndefined()
     })
 })
+
+test('play, stop and jumps do nothing during a drag', async ({ page }) => {
+    await command(page, 'select')
+    const start = await point(page, 1, 5)
+    const end = await point(page, 3, 6)
+    const drag = async (keys: string[]) => {
+        await select(page, [3, 5])
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(end.x, end.y, { steps: 8 })
+        await settle(page)
+        const time = await page.evaluate(() => window.editorTest.view.time)
+        for (const key of keys) {
+            await page.keyboard.press(key)
+            await settle(page)
+            await expect(page.locator('.notification')).toHaveText('Moving 2 objects')
+            expect(await page.evaluate(() => window.editorTest.view.time)).toBe(time)
+        }
+        await page.mouse.up()
+        await settle(page)
+        return (await snapshot(page)).notes
+    }
+    const moved = await drag([])
+    await command(page, 'undo')
+    expect(await drag([' ', 'Backspace', 'Home', 'End'])).toEqual(moved)
+    expect(await undoCount(page)).toBe(1)
+})
