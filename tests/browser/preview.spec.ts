@@ -2728,3 +2728,37 @@ test.describe('preview panel lifecycle', () => {
         expect(await page.evaluate(() => window.previewTest.bitmaps)).toBe(2)
     })
 })
+
+test('Ctrl+Z in a preview number field showing its value undoes the last edit', async ({
+    page,
+}) => {
+    await page.evaluate(async () => {
+        const { history, fixtures, store, appImport } = window.editorTest
+        history.resetState(false, structuredClone(fixtures.notes), 0, 'undo.json')
+        const { editSelectedEditableEntities } = await appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        editSelectedEditableEntities({ isCritical: true })
+    })
+    const canUndo = () => page.evaluate(() => window.editorTest.history.canUndo.value)
+    expect(await canUndo()).toBe(true)
+    const speed = page
+        .locator('.preview-controls')
+        .getByRole('spinbutton', { name: 'Note Speed', exact: true })
+    const shown = await speed.inputValue()
+    await speed.focus()
+    // Typing keeps its native undo.
+    await page.keyboard.press('End')
+    await page.keyboard.type('1')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(speed).toHaveValue(shown)
+    expect(await canUndo()).toBe(true)
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(canUndo).toBe(false)
+    await expect(speed).toHaveValue(shown)
+    await expect(speed).toBeFocused()
+})

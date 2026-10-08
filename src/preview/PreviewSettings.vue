@@ -5,7 +5,8 @@ import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
 import { valueOverflows, wordOverflows } from '../modals/form/fieldLayout'
 import { optionName } from '../modals/form/fieldUsage'
 import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
-import { resyncInput, revertOnEscape } from '../modals/form/resync'
+import { holdsTyping, resyncInput, revertOnEscape, trackTypedText } from '../modals/form/resync'
+import { isApplePlatform, isCommandChord, matchBindings } from '../editor/controls/bindings'
 import ToggleSwitch from '../modals/form/ToggleSwitch.vue'
 import { vScrollEdges } from '../directives/scrollEdges'
 import { getPanelPosition, setPanelPosition, workspaceDockAttribute } from '../editor/workspace'
@@ -39,6 +40,8 @@ const header = useTemplateRef<HTMLButtonElement>('header')
 const controls = useTemplateRef<HTMLDivElement>('controls')
 const controlsBody = useTemplateRef<HTMLDivElement>('controlsBody')
 const placement = useTemplateRef<HTMLSelectElement>('placement')
+const noteSpeedInput = useTemplateRef<HTMLInputElement>('noteSpeedInput')
+const renderScaleInput = useTemplateRef<HTMLInputElement>('renderScaleInput')
 const id = useId()
 
 const toggles = computed(
@@ -242,6 +245,9 @@ const numberField = (
     })
 const noteSpeedField = numberField('previewNoteSpeed', previewNoteSpeed)
 const renderScaleField = numberField('previewRenderScale', previewRenderScale)
+// Showing their values, Ctrl+Z and Ctrl+Y go to the editor.
+trackTypedText(noteSpeedInput, () => `${settings.previewNoteSpeed}`)
+trackTypedText(renderScaleInput, () => `${settings.previewRenderScale}`)
 const positionField = computed({
     get: () => getPanelPosition('preview'),
     set: (position: PanelPosition) => {
@@ -260,7 +266,17 @@ let isPointerChange = false
 const onPointerDown = () => {
     isPointerInput = true
 }
+// Undo and redo in a number field showing its value reach the editor, as in docks.
+const passesHistory = (event: KeyboardEvent) =>
+    event.target instanceof Element &&
+    !holdsTyping(event.target) &&
+    isCommandChord(event) &&
+    matchBindings(settings.keyboardShortcuts, event, isApplePlatform()).names.some(
+        (name) => name === 'undo' || name === 'redo',
+    )
+
 const onKeydown = (event: KeyboardEvent) => {
+    if (!passesHistory(event)) event.stopPropagation()
     isPointerInput = false
     if (event.key === 'Tab') onFormTab(event)
     if (event.key !== 'Escape' || event.defaultPrevented) return
@@ -325,7 +341,7 @@ const onPlacementChange = () => {
             :inert="!expanded"
             role="group"
             :aria-label="i18n.preview.settings"
-            @keydown.stop="onKeydown"
+            @keydown="onKeydown"
             @pointerdown.capture="onPointerDown"
             @change.capture="onChange"
             @contextmenu.prevent
@@ -364,6 +380,7 @@ const onPlacementChange = () => {
                             :step="previewNoteSpeed.sliderStep"
                         />
                         <input
+                            ref="noteSpeedInput"
                             v-model.lazy="noteSpeedField"
                             class="preview-number"
                             type="number"
@@ -453,6 +470,7 @@ const onPlacementChange = () => {
                             :step="previewRenderScale.step"
                         />
                         <input
+                            ref="renderScaleInput"
                             v-model.lazy="renderScaleField"
                             class="preview-number"
                             type="number"

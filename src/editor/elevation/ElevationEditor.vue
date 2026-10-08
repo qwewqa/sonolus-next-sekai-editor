@@ -13,7 +13,7 @@ import {
 } from '../offscreenIndicators'
 import { groupOffscreenNotes, offscreenBadgeHitWidth } from '../offscreenNotes'
 import { modals } from '../../modals'
-import { resyncInput, revertOnEscape } from '../../modals/form/resync'
+import { resyncInput, revertOnEscape, trackTypedText } from '../../modals/form/resync'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
 import type { State } from '../../state'
@@ -684,6 +684,8 @@ const beatField = computed({
             changeBeat(fromDisplayedBeat(value))
     },
 })
+// Showing its committed beat, Ctrl+Z and Ctrl+Y go to the editor.
+trackTypedText(beatInput, () => `${beatField.value}`)
 // Pointer clicks on header buttons return keyboard shortcuts to the editor, as in docks.
 const blurAfterPointer = (event: MouseEvent) => {
     if (event.detail > 0 && event.target instanceof Element) event.target.closest('button')?.blur()

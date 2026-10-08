@@ -1892,3 +1892,38 @@ test('names draw after every row, overlapping, with selected rows on top', async
     })
     expect(names(contrast)).toEqual(['Side stage', 'Center'])
 })
+
+test('Ctrl+Z in the Beat field showing its committed beat undoes the last edit', async ({
+    page,
+}) => {
+    await open(page)
+    await page.evaluate(async () => {
+        const { history, store, appImport } = window.editorTest
+        const { editSelectedEditableEntities } = await appImport<
+            typeof import('../../src/editor/sidebars/default')
+        >('/src/editor/sidebars/default/index.ts')
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter((e) => e.type === 'note'),
+        })
+        editSelectedEditableEntities({ isCritical: true })
+    })
+    const canUndo = () => page.evaluate(() => window.editorTest.history.canUndo.value)
+    expect(await canUndo()).toBe(true)
+    const beat = page.getByRole('spinbutton', { name: 'Beat', exact: true })
+    await beat.click()
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.type('5')
+    await page.keyboard.press('Enter')
+    await expect(beat).toHaveValue('5')
+    await expect(beat).toBeFocused()
+    // Typing keeps its native undo.
+    await page.keyboard.press('End')
+    await page.keyboard.type('6')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(beat).toHaveValue('5')
+    expect(await canUndo()).toBe(true)
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(canUndo).toBe(false)
+    await expect(beat).toHaveValue('5')
+})
