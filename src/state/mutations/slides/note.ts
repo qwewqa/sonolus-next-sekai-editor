@@ -10,11 +10,9 @@ export const addNote = (
     object: NoteObject,
 ) => {
     const note = toNoteEntity(slideId, object)
+    store.noteDrafts.add(note)
     addToStoreGrid(store.grid, note, note.beat)
     addToGroup(note.groupId)
-
-    const notes = store.slides.note.get(slideId)
-    store.slides.note.set(slideId, notes ? [...notes, note] : [note])
     store.markDirty(slideId)
 
     return [note]
@@ -25,37 +23,18 @@ export const replaceNote = (
     note: NoteEntity,
     object: NoteObject,
 ) => {
-    removeFromStoreGrid(store.grid, note, note.beat)
-
     const newNote = toNoteEntity(note.slideId, object)
+    store.noteDrafts.replace(note, newNote)
+    removeFromStoreGrid(store.grid, note, note.beat)
     addToStoreGrid(store.grid, newNote, newNote.beat)
     addToGroup(newNote.groupId)
-
-    const notes = store.slides.note.get(note.slideId)
-    if (!notes) throw new Error('Unexpected notes not found')
-
-    const newNotes = [...notes]
-    newNotes[notes.indexOf(note)] = newNote
-
-    store.slides.note.set(note.slideId, newNotes)
     store.markDirty(note.slideId)
 
     return [newNote]
 }
 
 export const removeNote = ({ store }: Transaction, note: NoteEntity) => {
+    store.noteDrafts.remove(note)
     removeFromStoreGrid(store.grid, note, note.beat)
-
-    const notes = store.slides.note.get(note.slideId)
-    if (!notes) throw new Error('Unexpected notes not found')
-
-    const newNotes = [...notes]
-    newNotes.splice(notes.indexOf(note), 1)
-
-    if (newNotes.length) {
-        store.slides.note.set(note.slideId, newNotes)
-    } else {
-        store.slides.note.delete(note.slideId)
-    }
     store.markDirty(note.slideId)
 }

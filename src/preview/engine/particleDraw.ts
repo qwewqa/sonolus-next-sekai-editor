@@ -1,5 +1,6 @@
 import type { PreviewRenderer, ZKey } from '../gl'
 import type { ParticleEffect, ParticleExpression, ParticleProperty } from '../particle'
+import { createFrameCache } from './frameCache'
 import { clamp, lerp, lerpVec, unlerp, vec, type Quad, type Vec } from './math'
 
 export const PARTICLE_LAYER = 100
@@ -28,33 +29,54 @@ export const hashSeed = (...values: number[]) => {
 type Values = Partial<Record<string, number>>
 
 const buildRandomValues = (rng: () => number): Values => {
-    const values: Values = { c: 1 }
-    for (let i = 1; i <= 8; i++) {
-        const r = rng()
-        values[`r${i}`] = r
-        values[`sinr${i}`] = Math.sin(2 * Math.PI * r)
-        values[`cosr${i}`] = Math.cos(2 * Math.PI * r)
+    const r1 = rng()
+    const r2 = rng()
+    const r3 = rng()
+    const r4 = rng()
+    const r5 = rng()
+    const r6 = rng()
+    const r7 = rng()
+    const r8 = rng()
+    // Keep a fixed property layout: adding these inputs dynamically can put
+    // every retained seed into the JavaScript engine's larger dictionary form.
+    return {
+        c: 1,
+        r1,
+        sinr1: Math.sin(2 * Math.PI * r1),
+        cosr1: Math.cos(2 * Math.PI * r1),
+        r2,
+        sinr2: Math.sin(2 * Math.PI * r2),
+        cosr2: Math.cos(2 * Math.PI * r2),
+        r3,
+        sinr3: Math.sin(2 * Math.PI * r3),
+        cosr3: Math.cos(2 * Math.PI * r3),
+        r4,
+        sinr4: Math.sin(2 * Math.PI * r4),
+        cosr4: Math.cos(2 * Math.PI * r4),
+        r5,
+        sinr5: Math.sin(2 * Math.PI * r5),
+        cosr5: Math.cos(2 * Math.PI * r5),
+        r6,
+        sinr6: Math.sin(2 * Math.PI * r6),
+        cosr6: Math.cos(2 * Math.PI * r6),
+        r7,
+        sinr7: Math.sin(2 * Math.PI * r7),
+        cosr7: Math.cos(2 * Math.PI * r7),
+        r8,
+        sinr8: Math.sin(2 * Math.PI * r8),
+        cosr8: Math.cos(2 * Math.PI * r8),
     }
-    return values
 }
 
 // A particle's random inputs depend only on its seed, not on animation time or
 // layout. Reuse them across frames and bound retention while seeking/playing.
-const randomValues = new Map<number, Values>()
-const RANDOM_VALUES_LIMIT = 1024
-const getRandomValues = (seed: number) => {
-    const key = seed | 0
-    let values = randomValues.get(key)
-    if (!values) {
-        values = buildRandomValues(mulberry32(key))
-        if (randomValues.size >= RANDOM_VALUES_LIMIT) {
-            const oldest = randomValues.keys().next().value
-            if (oldest !== undefined) randomValues.delete(oldest)
-        }
-        randomValues.set(key, values)
-    }
-    return values
+// One shared cap also bounds unusually large custom effects. The frame cache
+// protects admitted seeds from same-frame overflow and releases stale seeds.
+const randomValues = createFrameCache(16384, (seed) => buildRandomValues(mulberry32(seed)))
+export const beginParticleFrame = () => {
+    randomValues.beginFrame()
 }
+const getRandomValues = (seed: number) => randomValues.get(seed | 0)
 
 // Loaded particle expressions are immutable. Keep their original summation
 // order, including for transforms whose coordinate inputs change every frame.
@@ -121,7 +143,7 @@ export const drawParticleEffect = (
 
     for (const [groupIndex, group] of effect.groups.entries()) {
         for (let occurrence = 0; occurrence < group.count; occurrence++) {
-            const values = getRandomValues(hashSeed(seed, groupIndex * 131 + occurrence))
+            let values: Values | undefined
 
             for (const particle of group.particles) {
                 if (!particle.sprite) continue
@@ -130,6 +152,8 @@ export const drawParticleEffect = (
                 if (loop && p < particle.start) p++
                 const end = particle.start + particle.duration
                 if (p < particle.start || p > end) continue
+
+                values ??= getRandomValues(hashSeed(seed, groupIndex * 131 + occurrence))
 
                 const frac = particle.duration > 0 ? unlerp(particle.start, end, p) : 1
 

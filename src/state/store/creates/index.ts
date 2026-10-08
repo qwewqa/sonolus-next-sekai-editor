@@ -1,6 +1,7 @@
 import type { Store } from '..'
 import type { Chart } from '../../../chart'
 import type { BpmIntegral } from '../../integrals/bpms'
+import { createStoreGridOwnership } from '../grid'
 import { createStoreBpms } from './bpm'
 import { createStoreCameraEvents } from './events/camera'
 import { createStoreStageMaskEvents } from './events/stage/mask'
@@ -48,17 +49,21 @@ export const createStore = (chart: Chart, bpms?: BpmIntegral[]) => {
         },
     }
 
-    createStoreBpms(store, chart)
-    createStoreTimeScales(store, chart)
+    const ownership = createStoreGridOwnership(store.grid)
+    try {
+        createStoreBpms(store, chart)
+        createStoreTimeScales(store, chart)
 
-    createStoreCameraEvents(store, chart)
+        createStoreCameraEvents(store, chart)
+        createStoreStageMaskEvents(store, chart)
+        createStoreStagePivotEvents(store, chart)
+        createStoreStageStyleEvents(store, chart)
+        createStoreStageTransformEvents(store, chart)
 
-    createStoreStageMaskEvents(store, chart)
-    createStoreStagePivotEvents(store, chart)
-    createStoreStageStyleEvents(store, chart)
-    createStoreStageTransformEvents(store, chart)
-
-    createStoreSlides(store, chart, bpms)
+        createStoreSlides(store, chart, bpms)
+    } finally {
+        ownership.release()
+    }
 
     return store
 }

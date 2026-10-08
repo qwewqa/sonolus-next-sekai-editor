@@ -72,7 +72,13 @@ import {
     type PreviewNote,
 } from './model'
 import { drawNote, drawSlideNoteHead, getNoteSelectionLine, getNoteSpriteSet } from './note'
-import { LANE_PARTICLE_LAYER, PARTICLE_LAYER, drawParticleEffect, hashSeed } from './particleDraw'
+import {
+    LANE_PARTICLE_LAYER,
+    PARTICLE_LAYER,
+    beginParticleFrame,
+    drawParticleEffect,
+    hashSeed,
+} from './particleDraw'
 import { drawSimLine } from './simLine'
 import { findSlideConnector } from './slide'
 import {
@@ -194,6 +200,7 @@ export const renderPreviewFrame = (
         layout: createLayout(viewport, camera, chart.isDynamicStages),
     }
 
+    beginParticleFrame()
     renderer.begin(width, height, displayWidth / displayHeight)
     const draw = renderer.draw
     const selectedDraw = (source?: object, stage?: number): PreviewRenderer['draw'] => {

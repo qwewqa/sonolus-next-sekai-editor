@@ -4,6 +4,38 @@ export type StoreGrid = {
     [T in EntityType]: Map<number, Set<EntityOfType<T>>>
 }
 
+// Sets read from an earlier state stay shared until their first write. A transaction
+// can then update its own buckets without copying them again for every entity.
+const bucketOwners = new WeakMap<StoreGrid, WeakSet<object>>()
+
+export const createStoreGridOwnership = (grid: StoreGrid) => {
+    bucketOwners.set(grid, new WeakSet())
+
+    return {
+        reset() {
+            bucketOwners.set(grid, new WeakSet())
+        },
+        release() {
+            bucketOwners.delete(grid)
+        },
+    }
+}
+
+const writableBucket = <T extends EntityType>(
+    grid: StoreGrid,
+    type: T,
+    key: number,
+    entities = grid[type].get(key),
+) => {
+    const owned = bucketOwners.get(grid)
+    if (entities && owned?.has(entities)) return entities
+
+    const bucket = new Set(entities)
+    grid[type].set(key, bucket)
+    owned?.add(bucket)
+    return bucket
+}
+
 export const beatToKey = (beat: number) => Math.floor(beat)
 
 export const getInStoreGrid = <T extends EntityType>(grid: StoreGrid, type: T, beat: number) => {
@@ -20,7 +52,7 @@ export const addToStoreGrid = <T extends EntityType>(
     toBeat = fromBeat,
 ) => {
     for (let key = Math.floor(fromBeat); key <= Math.floor(toBeat); key++) {
-        grid[entity.type].set(key, new Set(grid[entity.type].get(key)).add(entity))
+        writableBucket(grid, entity.type, key).add(entity)
     }
 }
 
@@ -39,10 +71,7 @@ export const removeFromStoreGrid = <T extends EntityType>(
         if (entities.size === 1) {
             grid[entity.type].delete(key)
         } else {
-            const newEntities = new Set(entities)
-            newEntities.delete(entity)
-
-            grid[entity.type].set(key, newEntities)
+            writableBucket(grid, entity.type, key, entities).delete(entity)
         }
     }
 }
@@ -59,9 +88,10 @@ export const replaceInStoreGrid = <T extends EntityType>(
         const entities = grid[entity.type].get(key)
         if (!entities?.has(entity)) continue
 
-        grid[entity.type].set(
-            key,
-            new Set([...entities].map((other) => (other === entity ? replacement : other))),
+        const bucket = new Set(
+            [...entities].map((other) => (other === entity ? replacement : other)),
         )
+        grid[entity.type].set(key, bucket)
+        bucketOwners.get(grid)?.add(bucket)
     }
 }

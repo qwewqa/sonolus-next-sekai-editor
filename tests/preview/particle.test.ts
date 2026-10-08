@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import test from 'node:test'
 import type { Quad } from '../../src/preview/engine/math'
-import { drawParticleEffect } from '../../src/preview/engine/particleDraw'
+import { beginParticleFrame, drawParticleEffect } from '../../src/preview/engine/particleDraw'
 import type { PreviewRenderer, ZKey } from '../../src/preview/gl'
 import type {
     ParticleEffect,
@@ -176,6 +176,33 @@ test('revisiting particle frames stays deterministic after changes and many othe
     assert.deepEqual(capture(effect, 0.375, -1), frozenFirst)
     assert.deepEqual(first, frozenFirst, 'later frames must not mutate previous draws')
     assert.equal(digest(first), goldenCases[1]?.expected)
+})
+
+test('dense frames and oversized effects retain identical draws after seeks and eviction', () => {
+    const dense = () => {
+        beginParticleFrame()
+        const draws: ReturnType<typeof capture> = []
+        for (let seed = 0; seed < 5000; seed++) {
+            draws.push(...capture(effect, 0.375, seed))
+        }
+        return digest(draws)
+    }
+    const first = dense()
+    assert.equal(dense(), first)
+
+    // An unrelated seek fills both generations with different seeds, including
+    // overflow. Returning to the original frame must preserve every draw.
+    beginParticleFrame()
+    for (let seed = -10000; seed < -5000; seed++) capture(effect, 0.625, seed, alternateLayout)
+    beginParticleFrame()
+    for (let seed = 10000; seed < 15000; seed++) capture(effect, 0.5, seed)
+    assert.equal(dense(), first)
+    for (const entry of goldenCases) {
+        assert.equal(
+            digest(capture(effect, entry.progress, entry.seed, entry.layout)),
+            entry.expected,
+        )
+    }
 })
 
 test('particle windows wrap only when looping and include both endpoints', () => {
