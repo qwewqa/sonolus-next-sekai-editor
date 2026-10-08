@@ -13,7 +13,9 @@ const top = computed(() => hasToolModal(props.pane))
 </script>
 
 <template>
+    <!-- Announced politely; the region stays mounted so each notice is read. -->
     <div
+        role="status"
         class="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-2"
         :class="top ? 'items-start pt-4' : 'items-center'"
         :style="{ top: `${inset ?? 0}px` }"
