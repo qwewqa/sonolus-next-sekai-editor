@@ -434,7 +434,7 @@
       "title": "{0}",
       "switched": "已切換到 {0} 工具",
       "modal": {
-        "title": "預設 {0} 屬性"
+        "title": "預設{0}屬性"
       }
     },
     "openContextMenu": {
@@ -901,10 +901,10 @@
       "moved": "已移動 {0} 個{1}事件",
       "selected": "已選取 {0} 個{1}事件",
       "modal": {
-        "title": "{0} 屬性"
+        "title": "{0}屬性"
       },
       "sidebar": {
-        "title": "預設 {0} 屬性"
+        "title": "預設{0}屬性"
       }
     }
   },
