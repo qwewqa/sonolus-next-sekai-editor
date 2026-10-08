@@ -18,6 +18,7 @@ declare global {
             restore?: () => void
             contextRequests?: boolean[]
         }
+        labelMeasures: number
     }
 }
 
@@ -1870,6 +1871,24 @@ test('a preview setting value that would truncate goes below its label', async (
     await expect(body).toHaveCount(0)
     await dock(width)
     await expect(body).toHaveCount(1)
+})
+
+test('a preview settings refit measures each label once', async ({ page }) => {
+    await settle(page)
+    const labels = await page.locator('.preview-controls .preview-setting-label').count()
+    await page.evaluate(() => {
+        const measure = Element.prototype.getBoundingClientRect
+        window.labelMeasures = 0
+        Element.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('preview-setting-label')) window.labelMeasures++
+            return measure.call(this)
+        }
+    })
+    // Chinese breaks between any characters, so no label takes more room or stacks.
+    await page.evaluate(() => (window.editorTest.settings.locale = 'zhs'))
+    await settle(page)
+    // Its box, then its longest word.
+    expect(await page.evaluate(() => window.labelMeasures)).toBe(labels * 2)
 })
 
 test('preview options share persisted settings with the main options menu', async ({ page }) => {

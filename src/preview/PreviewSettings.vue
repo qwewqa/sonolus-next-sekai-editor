@@ -156,25 +156,31 @@ watch([controls, controlsBody], ([element, body], _previous, onCleanup) => {
 // is measured at its longer state, so a click doesn't move the row.
 let fitFrame = 0
 // Labels are measured again only when the width or language changes, as that
-// forces layouts; values are measured on every update.
-let labelsFit = false
+// forces layouts; values are measured on every update. The width they were fitted at, or 0.
+let labelsWidth = 0
 const labelStacked = new WeakSet<HTMLElement>()
 const fitRows = () => {
     const body = controlsBody.value
     if (!body) return
     const { enabled, disabled } = i18n.value.modals.form.toggle
     const rows = [...body.querySelectorAll<HTMLElement>('.preview-setting')]
-    if (!labelsFit) {
-        labelsFit = true
+    // Hidden, as during playback, the rows keep their fit for when they show again.
+    const width = rows[0]?.getBoundingClientRect().width
+    if (!width) return
+    if (width !== labelsWidth) {
+        labelsWidth = width
         const labels = rows.map((row) => row.querySelector<HTMLElement>('.preview-setting-label'))
         body.classList.remove('preview-controls-roomy')
         for (const row of rows) row.classList.remove('preview-setting-stacked')
-        // One column for every row keeps the controls' edges aligned.
-        if (labels.some((label) => label && wordOverflows(label)))
+        // One column for every row keeps the controls' edges aligned. Its room only
+        // widens labels, so only those that overflowed are measured again.
+        let overflowing = labels.filter((label) => label && wordOverflows(label))
+        if (overflowing.length) {
             body.classList.add('preview-controls-roomy')
+            overflowing = overflowing.filter((label) => label && wordOverflows(label))
+        }
         rows.forEach((row, index) => {
-            const label = labels[index]
-            if (label && wordOverflows(label)) labelStacked.add(row)
+            if (overflowing.includes(labels[index] ?? null)) labelStacked.add(row)
             else labelStacked.delete(row)
         })
     }
@@ -194,16 +200,16 @@ const refitRows = () => {
     fitFrame = requestAnimationFrame(fitRows)
 }
 const refitLabels = () => {
-    labelsFit = false
+    labelsWidth = 0
     refitRows()
 }
 watch(
     controlsBody,
     (body, _previous, onCleanup) => {
         if (!body) return
-        labelsFit = false
+        labelsWidth = 0
         fitRows()
-        observeWidth(body, refitLabels)
+        observeWidth(body, refitRows)
         onCleanup(() => {
             unobserveWidth(body)
             cancelAnimationFrame(fitFrame)
