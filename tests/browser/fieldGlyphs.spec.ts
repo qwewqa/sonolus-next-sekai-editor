@@ -276,6 +276,42 @@ test('a shortcut icon stays beside a name that wraps to three lines', async ({ p
     expect(await left(long)).toBeCloseTo(await left(row('Save')), 0)
 })
 
+test('a shortcut name with a word too long beside its icon takes the full row', async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 320, height: 640 })
+    await open(page, { locale: 'fr' })
+    await page.evaluate(async () => {
+        const { commands } = await import('/src/editor/commands/index.ts')
+        void commands.settings.execute()
+    })
+    const row = (name: string) =>
+        page.locator('dialog[open] .form-field').filter({
+            has: page.locator('.form-field-text').getByText(name, { exact: true }),
+        })
+    // "horizontalement" doesn't fit beside the icon and the binding.
+    const long = row('Retourner horizontalement')
+    await expect(long).toHaveClass(/form-field-value-stacked/)
+    await expect(long.locator('.form-field-icon')).toBeVisible()
+    const words = await long.locator('.form-field-text').evaluate((text) => {
+        const node = text.firstChild!
+        const range = document.createRange()
+        let start = 0
+        return node.textContent!.split(' ').map((word) => {
+            range.setStart(node, start)
+            range.setEnd(node, start + word.length)
+            start += word.length + 1
+            return range.getClientRects().length
+        })
+    })
+    expect(words.every((lines) => lines === 1)).toBe(true)
+    await expect(row('Lire')).not.toHaveClass(/form-field-value-stacked/)
+
+    // With room, it sits beside its binding again.
+    await page.setViewportSize({ width: 1600, height: 1000 })
+    await expect(long).not.toHaveClass(/form-field-value-stacked/)
+})
+
 test('wide text icons keep clear of their names in the shortcut list and flyouts', async ({
     page,
 }) => {

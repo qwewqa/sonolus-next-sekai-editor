@@ -13,7 +13,7 @@ import {
 import { isComposingKey } from '../../utils/composition'
 import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
-import { stackLongValuesKey } from './fieldLayout'
+import { stackLongValuesKey, stackLongWordsKey } from './fieldLayout'
 
 const props = defineProps<{
     label: string
@@ -24,6 +24,8 @@ const modelValue = defineModel<string | undefined>({ required: true })
 
 // The button stays under the pointer through capture; long text wraps in place.
 provide(stackLongValuesKey, false)
+// A name with a word too long to sit beside its icon takes the full row.
+provide(stackLongWordsKey, true)
 
 const isActive = ref(false)
 // The name reads the binding or prompt after the label.
