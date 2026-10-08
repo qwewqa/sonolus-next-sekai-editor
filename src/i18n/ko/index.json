@@ -221,7 +221,7 @@
       },
       "switched": "#{0} 노트 도구로 변경됨",
       "modal": {
-        "title": "노트 기본 속성"
+        "title": "기본 노트 속성"
       }
     },
     "noteSizes": {
@@ -334,7 +334,7 @@
       },
       "switched": "#{0} 슬라이드 도구로 변경됨",
       "modal": {
-        "title": "슬라이드 기본 속성"
+        "title": "기본 슬라이드 속성"
       }
     },
     "snapping": {
@@ -841,7 +841,7 @@
         "title": "노트 속성"
       },
       "sidebar": {
-        "title": "노트 기본 속성"
+        "title": "기본 노트 속성"
       }
     },
     "offset": {
@@ -876,7 +876,7 @@
         "title": "노트 속성"
       },
       "sidebar": {
-        "title": "슬라이드 기본 속성"
+        "title": "기본 슬라이드 속성"
       }
     },
     "timeScale": {
