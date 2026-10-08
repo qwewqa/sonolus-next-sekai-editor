@@ -337,6 +337,46 @@ test('a drop that changes nothing adds no undo step in the BPM, time scale and e
     }
 })
 
+test('a Select drag of an attached tick along its lane adds no undo step', async ({ page }) => {
+    // The slide places the tick, so its lane cannot change.
+    const tick = await page.evaluate(() => {
+        const { fixtures, history, show, store } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        const note = (beat: number, left: number, extra = {}) => ({
+            ...base,
+            beat,
+            left,
+            size: 2,
+            ...extra,
+        })
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [
+                    [
+                        note(2, -4),
+                        note(3, 0, { noteType: 'default', isAttached: true }),
+                        note(4, 2),
+                    ],
+                ],
+            },
+            1.5,
+        )
+        const entity = [...store.getAllEntities()].find(
+            (entity) => entity.type === 'note' && entity.isAttached,
+        )!
+        history.replaceState({ ...history.state.value, selectedEntities: [entity] })
+        return entity.type === 'note' ? entity.left + entity.size / 2 : 0
+    })
+    await settle(page)
+    await command(page, 'select')
+    const before = await snapshot(page)
+    await drag(page, [tick, 3], [tick + 3, 3])
+    await expect(page.locator('.notification')).toHaveCount(0)
+    expect(await undoCount(page)).toBe(0)
+    expect((await snapshot(page)).notes).toEqual(before.notes)
+})
+
 test('flip mirrors the selection and supports undo', async ({ page }) => {
     await command(page, 'select')
     await click(page, 4, 7)

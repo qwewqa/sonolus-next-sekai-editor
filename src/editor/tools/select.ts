@@ -64,6 +64,7 @@ import {
 } from '../../state/mutations/events/stage/transform'
 import { replaceNote } from '../../state/mutations/slides/note'
 import { addTimeScale, removeTimeScale, replaceTimeScale } from '../../state/mutations/timeScale'
+import { editChanges } from '../../state/operations/properties/plan'
 import { getInStoreGrid } from '../../state/store/grid'
 import {
     createTransaction,
@@ -500,13 +501,10 @@ const isUnmoved = (active: MoveActive, lane: number, beatOffset: number) =>
             entity.beat + beatOffset,
             active.focus,
         )
-        return (
-            !moved ||
-            Object.entries(moved).every(
-                ([key, value]) =>
-                    typeof value === 'object' || entity[key as keyof Entity] === value,
-            )
-        )
+        if (!moved) return true
+        // Hitboxes are rebuilt for the preview; only the values matter.
+        const values = Object.entries(moved).filter(([, value]) => typeof value !== 'object')
+        return !editChanges(state.value.store, entity, Object.fromEntries(values))
     })
 
 const toMovedBpmObject = (entity: BpmEntity, beat: number): BpmObject => ({
