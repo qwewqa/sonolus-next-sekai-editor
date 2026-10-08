@@ -4,6 +4,7 @@ import { settings } from '../../../../settings'
 import { time } from '../../../../time'
 import { unlerp } from '../../../../utils/math'
 import { getControlBounds } from '../../../navigation'
+import { clearNotification, notification } from '../../../notification'
 import { tool, type Tool } from '../../../tools'
 import { scrollViewXBy, scrollViewYBy, view } from '../../../view'
 import type { Modifiers } from '../pointer'
@@ -31,6 +32,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
               id: number
               tool: Tool
               state: (typeof state)['value']
+              // The last notice the drag posted, if any.
+              notice?: number
           }
         | {
               type: 'scroll'
@@ -83,7 +86,11 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
             }
         }
 
-        if (active?.type === 'drag') active.tool.dragUpdate?.(x, y, modifiers)
+        if (active?.type === 'drag') {
+            const before = notification.value.id
+            active.tool.dragUpdate?.(x, y, modifiers)
+            if (notification.value.id !== before) active.notice = notification.value.id
+        }
 
         if (!updated) {
             update = undefined
@@ -103,6 +110,7 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 // Tools hold one drag; another input's drag leaves this press inert.
                 if (isDragging.value) return true
                 const startState = state.value
+                const noticeBefore = notification.value.id
                 if (!tool.value.dragStart?.(sx, sy, modifiers)) return true
 
                 isDragging.value++
@@ -116,6 +124,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                     id,
                     tool: tool.value,
                     state: startState,
+                    notice:
+                        notification.value.id !== noticeBefore ? notification.value.id : undefined,
                 }
                 update = {
                     x,
@@ -180,6 +190,8 @@ export const drag = (quickScroll: boolean): Recognizer<1> => {
                 active = undefined
                 update = undefined
                 cancelled.tool.dragCancel?.()
+                // Its own notice, such as "Moving", no longer holds.
+                if (notification.value.id === cancelled.notice) clearNotification()
                 // Selection tools update the current selection while dragging.
                 // Restore it only if no committed edit/reset replaced the store.
                 if (

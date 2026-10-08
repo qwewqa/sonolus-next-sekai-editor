@@ -247,6 +247,31 @@ test('dragging notes back to where they started adds no undo step', async ({ pag
     expect(await undoCount(page)).toBe(1)
 })
 
+test('a drag cancelled before its drop takes its Moving notice with it', async ({ page }) => {
+    for (const [tool, notice] of [
+        ['select', 'Moving 1 object'],
+        ['note', 'Moving 1 note'],
+    ] as const) {
+        await command(page, tool)
+        const start = await point(page, 4, 7)
+        const away = await point(page, 6, 8)
+        await page.mouse.move(start.x, start.y)
+        await page.mouse.down()
+        await page.mouse.move(away.x, away.y, { steps: 6 })
+        await settle(page)
+        await expect(page.locator('.notification')).toHaveText(notice)
+        // Leaving the window cancels the drag.
+        await page.evaluate(() => dispatchEvent(new Event('blur')))
+        await settle(page)
+        await expect(page.locator('.notification')).toHaveCount(0)
+        await page.mouse.up()
+        await page.evaluate(() => dispatchEvent(new Event('focus')))
+        await settle(page)
+        expect(await beats(page)).toEqual([3, 5, 7, 9])
+        expect(await undoCount(page)).toBe(0)
+    }
+})
+
 test('flip mirrors the selection and supports undo', async ({ page }) => {
     await command(page, 'select')
     await click(page, 4, 7)
