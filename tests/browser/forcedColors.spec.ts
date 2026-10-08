@@ -546,6 +546,32 @@ test('raised buttons and segment tracks keep their edge, as fields do', async ({
     await expectEdges(dialog.getByRole('button', { name: /^(Reset Settings|Reset Shortcuts)$/ }))
 })
 
+test('Clipboard History entries keep their edge and show keyboard focus', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { appImport, nextTick } = window.editorTest
+        const { commands } = await appImport<typeof import('../../src/editor/commands')>(
+            '/src/editor/commands/index.ts',
+        )
+        const { switchToolTo } = await appImport<typeof import('../../src/editor/tools')>(
+            '/src/editor/tools/index.ts',
+        )
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+            configurable: true,
+            value: async () => undefined,
+        })
+        await commands.copy.execute()
+        switchToolTo('paste')
+        await nextTick()
+    })
+    const entry = panel(page).locator('#properties-section-tool button').last()
+    await expect(entry).toBeVisible()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+    const text = await systemColor(page, 'CanvasText')
+    expect(await outline(entry)).toEqual({ style: 'solid', width: '2px', color: text })
+    await focus(entry)
+    expect((await outline(entry)).width).toBe('4px')
+})
+
 test('side-by-side dialog buttons keep a gap between their edges', async ({ page }) => {
     await page.keyboard.press(',')
     const dialog = page.getByRole('dialog')
