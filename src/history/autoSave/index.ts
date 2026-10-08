@@ -145,7 +145,7 @@ export const useAutoSave = () => {
     /** Offers an unreadable recovery; true once it is discarded. */
     const offerUnreadable = async (text: string, kept: UnreadableRecovery) => {
         if (!(await showModal(UnreadableRecoveryModal, { text, kept }))) return false
-        removeRecovery(kept)
+        removeRecovery(kept, text)
         return true
     }
 
@@ -191,7 +191,7 @@ export const useAutoSave = () => {
         if (aside !== undefined && earlier) {
             // Restoring it must not silently replace a recovery just restored; it may go instead.
             const choice = isDirty.value ? await showModal(RestorableRecoveryModal, {}) : 'restore'
-            if (choice === 'discard') removeRecovery('earlier')
+            if (choice === 'discard') removeRecovery('earlier', aside)
             if (choice === 'restore') {
                 resetState(true, earlier.chart, earlier.offset, earlier.filename)
                 savedState = state.value

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { gunzipSync, gzipSync } from 'node:zlib'
 import { parseAutoSave } from '../../src/history/autoSave/parse'
@@ -1208,6 +1208,91 @@ test("setting an unreadable recovery aside leaves another tab's newer one in pla
     await expect(dialog).toContainText('New changes will not replace this saved chart')
     // The unreadable one is still kept aside, and the newer one stays.
     expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: stored })
+})
+
+/** Opens two tabs that both read the stored unreadable recovery, and sets it aside in the first. */
+const openTwoOnUnreadable = async (page: Page, context: BrowserContext) => {
+    const stored = JSON.stringify(futureLevel)
+    await enableAutoSave(page)
+    await page.evaluate((stored) => {
+        localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', stored)
+    }, stored)
+    const [first, second] = [await context.newPage(), await context.newPage()]
+    for (const tab of [first, second]) {
+        await holdLoadingUntilReleased(tab)
+        await tab.goto('/')
+        await expect(tab.getByRole('dialog')).toContainText('Restoring chart')
+    }
+    await releaseLoading(first)
+    const dialog = first.getByRole('dialog')
+    await expect(dialog).toContainText('New changes will not replace this saved chart')
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    await expect(dialog).toHaveCount(0)
+    return { stored, first, second }
+}
+
+test('a tab that read the unreadable recovery another tab set aside saves its own edits', async ({
+    page,
+    context,
+}) => {
+    const { stored, first, second } = await openTwoOnUnreadable(page, context)
+    await first.close()
+    await releaseLoading(second)
+    const dialog = second.getByRole('dialog')
+    // The same one, already aside: nothing waits behind it.
+    await expect(dialog).toContainText('New changes will not replace this saved chart')
+    await expect(dialog).not.toContainText('An earlier chart is also saved')
+    expect(await unreadableStores(second)).toEqual({ recovery: null, aside: stored })
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    await expect(dialog).toHaveCount(0)
+    await editOpenChart(second)
+    await expect.poll(async () => (await unreadableStores(second)).recovery).not.toBeNull()
+    expect((await unreadableStores(second)).aside).toBe(stored)
+})
+
+test("discarding the unreadable recovery another tab set aside leaves that tab's newer one", async ({
+    page,
+    context,
+}) => {
+    const { first, second } = await openTwoOnUnreadable(page, context)
+    await editOpenChart(first)
+    await expect.poll(async () => (await unreadableStores(first)).recovery).not.toBeNull()
+    const newer = (await unreadableStores(first)).recovery
+    await first.close()
+    await releaseLoading(second)
+    const dialog = second.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'Discard' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await unreadableStores(second)).toEqual({ recovery: newer, aside: null })
+})
+
+test("discarding a waiting unreadable recovery leaves another tab's newer one in its place", async ({
+    page,
+    context,
+}) => {
+    const earlier = '{"earlier'
+    const later = '{"later'
+    await enableAutoSave(page)
+    await page.evaluate(
+        ({ earlier, later }) => {
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.unreadable', earlier)
+            localStorage.setItem('sonolus-next-sekai-editor.autoSave.levelData', later)
+        },
+        { earlier, later },
+    )
+    const other = await context.newPage()
+    await other.goto('/')
+    const dialog = other.getByRole('dialog')
+    await expect(dialog).toContainText('still cannot restore')
+    await dialog.getByRole('button', { name: 'OK' }).click()
+    await expect(dialog).toContainText('An earlier chart is also saved')
+
+    // This tab saves a newer recovery over the waiting one, and closes.
+    const newer = await writeNewer(page)
+    await page.close()
+    await dialog.getByRole('button', { name: 'Discard' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await unreadableStores(other)).toEqual({ recovery: newer, aside: earlier })
 })
 
 /** Holds the recovery loading dialog open before it parses, on the first start only. */

@@ -11,11 +11,15 @@ export type UnreadableRecovery = 'aside' | 'inPlace' | 'waiting' | 'earlier'
 
 /** Sets the stored recovery aside, never over an earlier one. */
 export const setRecoveryAside = (text: string): Exclude<UnreadableRecovery, 'earlier'> => {
-    if (storageGetText(unreadableRecoveryKey) !== undefined) return 'waiting'
-    try {
-        storageSetText(unreadableRecoveryKey, text)
-    } catch {
-        return 'inPlace'
+    const aside = storageGetText(unreadableRecoveryKey)
+    // Another tab that read the same one may have set it aside already.
+    if (aside !== text) {
+        if (aside !== undefined) return 'waiting'
+        try {
+            storageSetText(unreadableRecoveryKey, text)
+        } catch {
+            return 'inPlace'
+        }
     }
     // Another tab's newer recovery may have replaced it meanwhile.
     if (storageGetText('autoSave.levelData') === text) storageRemove('autoSave.levelData')
@@ -60,11 +64,11 @@ export const restoreAside = (
     return 'aside'
 }
 
-/** Removes a recovery the user discarded. */
-export const removeRecovery = (kept: UnreadableRecovery) => {
-    storageRemove(
-        kept === 'aside' || kept === 'earlier' ? unreadableRecoveryKey : 'autoSave.levelData',
-    )
+/** Removes a recovery the user discarded, unless another tab has replaced it since. */
+export const removeRecovery = (kept: UnreadableRecovery, text: string) => {
+    const key =
+        kept === 'aside' || kept === 'earlier' ? unreadableRecoveryKey : 'autoSave.levelData'
+    if (storageGetText(key) === text) storageRemove(key)
 }
 
 /**
