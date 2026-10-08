@@ -391,7 +391,7 @@
       },
       "toggle": {
         "title": "Visibilité : {0}",
-        "toggled": "Visibilité de {0} modifiée",
+        "toggled": "Visibilité modifiée : {0}",
         "types": {
           "note": "Note",
           "cameraEvent": "Événement de caméra",
@@ -901,7 +901,7 @@
       "moved": "{0} événement {1} déplacé|{0} événements {1} déplacés",
       "selected": "{0} événement {1} sélectionné|{0} événements {1} sélectionnés",
       "modal": {
-        "title": "Propriétés de {0}"
+        "title": "Propriétés : {0}"
       },
       "sidebar": {
         "title": "Propriétés par défaut : {0}"
