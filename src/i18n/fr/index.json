@@ -434,7 +434,7 @@
       "title": "{0}",
       "switched": "Outil {0} activé",
       "modal": {
-        "title": "Propriétés par défaut de {0}"
+        "title": "Propriétés par défaut : {0}"
       }
     },
     "openContextMenu": {
@@ -904,7 +904,7 @@
         "title": "Propriétés de {0}"
       },
       "sidebar": {
-        "title": "Propriétés par défaut de {0}"
+        "title": "Propriétés par défaut : {0}"
       }
     }
   },
