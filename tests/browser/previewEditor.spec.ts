@@ -113,3 +113,11 @@ test('a Start past the audio is refused', async ({ page }) => {
     await expect(dialog.getByRole('alert')).toHaveText('Start is past the end of the audio')
     await expect(dialog.getByRole('button', { name: 'Generate' })).toBeDisabled()
 })
+
+test('a Start exactly at the end of the audio is refused', async ({ page }) => {
+    // The tone is 3 s long, so nothing would play.
+    await fill(page, [3])
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('alert')).toHaveText('Start is past the end of the audio')
+    await expect(dialog.getByRole('button', { name: 'Generate' })).toBeDisabled()
+})

@@ -166,3 +166,44 @@ test('values an edit leaves where they were stay exact', async ({ page }) => {
     await page.keyboard.press('u')
     expect(await note(page)).toEqual({ left: -1.0000000000000002, size: 2.0000000000000004 })
 })
+
+test('Flip gives clean camera and mask lanes on the grid', async ({ page }) => {
+    await page.evaluate(async () => {
+        const { fixtures, show, history, store, nextTick } = window.editorTest
+        const { cameraEvents, stageMaskEvents } = fixtures.events
+        show(
+            {
+                ...fixtures.events,
+                slides: [],
+                cameraEvents: [{ ...cameraEvents[0]!, cameraLeft: 0.1, cameraSize: 6.3 }],
+                stageMaskEvents: [{ ...stageMaskEvents[0]!, maskLeft: 0.1, maskSize: 0.2 }],
+            },
+            3,
+        )
+        history.replaceState({
+            ...history.state.value,
+            selectedEntities: [...store.getAllEntities()].filter(
+                (e) => e.type === 'cameraEventJoint' || e.type === 'stageMaskEventJoint',
+            ),
+        })
+        await nextTick()
+    })
+    await page.keyboard.press('u')
+    // -(0.1 + 6.3) is -6.3999999999999995, and -(0.1 + 0.2) is -0.30000000000000004.
+    expect(
+        await page.evaluate(() => {
+            const entities = [...window.editorTest.store.getAllEntities()]
+            const camera = entities.find((e) => e.type === 'cameraEventJoint')!
+            const mask = entities.find((e) => e.type === 'stageMaskEventJoint')!
+            return [camera.cameraLeft, mask.maskLeft]
+        }),
+    ).toEqual([-6.4, -0.3])
+})
+
+test('select drags of a left edge leave clean lanes', async ({ page }) => {
+    await page.keyboard.press('f')
+    // The right edge stays at 1.8; 1.8 - 1.2 is 0.6000000000000001.
+    await seed(page, 0.7, 1.1)
+    await drag(page, 0.75, 0.65)
+    expect(await note(page)).toEqual({ left: 0.6, size: 1.2 })
+})

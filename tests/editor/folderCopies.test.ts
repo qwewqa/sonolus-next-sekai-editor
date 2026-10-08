@@ -32,7 +32,7 @@ test('numbered names continue the sequence as Add does', () => {
 
 test('only "#" and plain digits count as numbered, exactly at any size', () => {
     assert.equal(numberedName(['#1', '#3', 'Lead']), '#4')
-    for (const name of ['#1e21', '#1e+21', '#0x10', '# 3', '#-2', '#1.5', '#'])
+    for (const name of ['#1e21', '#1e+21', '#0x10', '# 3', '#-2', '#1.5', '#', 'Verse#3'])
         assert.equal(numberedName([name]), '#1', name)
     assert.equal(numberedName(['#9007199254740993']), '#9007199254740994')
     assert.equal(numberedName(['#99999999999999999999999']), '#100000000000000000000000')

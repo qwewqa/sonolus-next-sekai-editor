@@ -108,7 +108,8 @@ watch(
                 activeNames.value[index] = restored
                 continue
             }
-            const candidates = tools.length || !followsValues(index) ? tools : names
+            // A group with a tool never follows values.
+            const candidates = followsValues(index) ? names : tools
             const shown = activeNames.value[index]
             const name = candidates[candidates.length - 1]
             if (!name || !shown || candidates.includes(shown)) continue

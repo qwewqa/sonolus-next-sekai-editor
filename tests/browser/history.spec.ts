@@ -907,6 +907,38 @@ test('a set-aside recovery that now opens trades places with one that does not',
     expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
 })
 
+test('a set-aside recovery that fails to move back keeps the last session’s recovery with this tab', async ({
+    page,
+}) => {
+    const earlier = readableRecovery('earlier-chart', 150)
+    const last = readableRecovery('last-chart', 90)
+    // Storage refuses the move once.
+    await page.addInitScript((earlier) => {
+        const setItem = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key, value) {
+            if (key.endsWith('.autoSave.levelData') && value === earlier) {
+                Storage.prototype.setItem = setItem
+                throw new DOMException('Storage is full', 'QuotaExceededError')
+            }
+            return setItem.call(this, key, value)
+        }
+    }, earlier)
+    await reloadWith(page, { recovery: last, aside: earlier })
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'Restore' }).click()
+    await expect(dialog).toHaveCount(0)
+    expect(await openChart(page)).toEqual({ filename: 'earlier-chart', bpm: 150 })
+    expect(await unreadableStores(page)).toEqual({ recovery: last, aside: earlier })
+    // Removed by another tab, it is written back, as this tab's own.
+    await page.evaluate(() => {
+        const key = 'sonolus-next-sekai-editor.autoSave.levelData'
+        localStorage.removeItem(key)
+        dispatchEvent(new StorageEvent('storage', { key, newValue: null }))
+    })
+    await expect.poll(async () => (await unreadableStores(page)).recovery).not.toBeNull()
+    expect(await unreadableStores(page)).toMatchObject({ aside: earlier })
+})
+
 test("a tab that restored an older recovery leaves another tab's newer one in place", async ({
     page,
     context,

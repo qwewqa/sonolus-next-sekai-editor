@@ -158,7 +158,43 @@ test('attached notes take the middle of a slide shorter than the engine resolves
         assert.ok(Math.abs(center(state) - engineCenter(state)) < 1e-9)
         return center(state)
     }
+    // A same-beat head and tail.
+    assert.equal(place(0), 1)
     assert.equal(place(1e-7), 1)
     assert.equal(place(1e-6), 1)
     assert.ok(Math.abs(place(3e-6) - -1) < 1e-9)
+})
+
+test('attached notes are stored with clean lanes', () => {
+    // A fifth of the way along, lerp(-4, 3, 0.2) is -2.5999999999999996.
+    const state = createState(
+        {
+            ...chart([{ beat: 0, bpm: 120 }]),
+            slides: [[note(0, -3), note(1, 0, { isAttached: true }), note(5, 4)]],
+        },
+        0,
+    )
+    assert.deepEqual([attached(state).left, attached(state).size], [-2.6, 2])
+})
+
+test('materialized attached notes drop the float noise a kept tick carries', () => {
+    // Within 1e-9 of its place, a tick keeps its stored size.
+    const state = createState(
+        {
+            ...chart([{ beat: 0, bpm: 60 }]),
+            slides: [
+                [
+                    note(3, -3),
+                    { ...note(4, 0, { isAttached: true }), left: -0.5, size: 3.0000000000000004 },
+                    { ...note(5, 0), left: 3, size: 4 },
+                ],
+            ],
+        },
+        0,
+    )
+    assert.equal(attached(state).size, 3.0000000000000004)
+    const { left, size } = getMaterializedNotePositions(state, [attached(state)]).get(
+        attached(state),
+    )!
+    assert.deepEqual([left, size], [-0.5, 3])
 })

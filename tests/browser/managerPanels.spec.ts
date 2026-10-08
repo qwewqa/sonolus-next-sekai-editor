@@ -586,6 +586,27 @@ test('a rename keeps the typed name while its row and list update', async ({ pag
     expect((await groupState(page)).names).toEqual(['Default', 'Typed more', 'Third'])
 })
 
+test('Ctrl+Z in a rename stays with the field, even before any typing', async ({ page }) => {
+    await seedGroups(page, ['Default', 'Other group', 'Third'])
+    const panel = await openGroups(page)
+    const input = panel.locator('.manager-rename')
+    await nameButton(panel, 'Third').focus()
+    await page.keyboard.press('F2')
+    await page.keyboard.type('Lead')
+    await page.keyboard.press('Enter')
+    expect((await groupState(page)).names).toEqual(['Default', 'Other group', 'Lead'])
+
+    // The rename edits a draft, so the editor's undo never runs from it.
+    await nameButton(panel, 'Other group').focus()
+    await page.keyboard.press('F2')
+    await expect(input).toHaveValue('Other group')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(input).toBeFocused()
+    expect((await groupState(page)).names).toEqual(['Default', 'Other group', 'Lead'])
+    await page.keyboard.press('Escape')
+    expect((await groupState(page)).names).toEqual(['Default', 'Other group', 'Lead'])
+})
+
 test('a rename leaves Enter and Escape to an IME conversion', async ({ page }) => {
     await seedGroups(page, ['Default', 'Other group', 'Third'])
     const panel = await openGroups(page)

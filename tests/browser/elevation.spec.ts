@@ -549,6 +549,28 @@ test('Escape cancels move and paste drags only, and their release does nothing',
     await expectCancelled(before)
 })
 
+test('body drags by tenths of a lane leave clean lanes', async ({ page }) => {
+    await page.evaluate(() => {
+        const { fixtures, show, view } = window.editorTest
+        const base = fixtures.interaction.slides[0]![0]!
+        show(
+            {
+                ...fixtures.interaction,
+                slides: [[{ ...base, beat: 6, left: 0.1, size: 2, elevation: 2 }]],
+            },
+            3,
+        )
+        view.cursorTime = 3
+        view.laneDivision = 10
+        view.laneSnapping = 'relative'
+    })
+    await open(page)
+    await mouseDrag(page, await point(page), await displacement(page, 1.1, 0))
+    await page.mouse.up()
+    // 0.1 + 1.1 is 1.2000000000000002.
+    await expect.poll(async () => (await notes(page))[0]?.left).toBe(1.2)
+})
+
 test('a drag the lane limit holds in place adds no undo step', async ({ page }) => {
     await open(page)
     const initial = await notes(page)

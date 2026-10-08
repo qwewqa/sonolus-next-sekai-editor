@@ -861,6 +861,49 @@ test('a pick over a tool’s temporary face becomes the face', async ({ page }) 
     await expectFace('Paste')
 })
 
+test('a tool picked over a temporary face leaves no face to return to', async ({ page }) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['select', 'eraser', 'deselect']]
+    })
+    const expectFace = (face: string) => expect.poll(async () => (await faces(page))[0]).toBe(face)
+    await page.keyboard.press('a')
+    await expectFace('Select')
+    // Deselect brings Select into use, which shows over it until it ends.
+    await pickAt(page, 0, 'Deselect')
+    await expectFace('Select*')
+    // A tool picked over it holds the face, leaving nothing to return to.
+    await pickAt(page, 0, 'Eraser')
+    await expectFace('Eraser*')
+    await page.keyboard.press('f')
+    await expectFace('Select*')
+    await page.keyboard.press('a')
+    await expectFace('Select')
+})
+
+test('a member moved out of its group while its dialog is open leaves the face', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [
+            ['divisionCustom', 'division4'],
+            ['select', 'note'],
+        ]
+    })
+    await expect
+        .poll(async () => (await faces(page)).slice(0, 2))
+        .toEqual(['1/4 Division*', 'Select*'])
+    await pickAt(page, 0, 'Custom Division')
+    const field = page.getByRole('spinbutton', { name: 'Division', exact: true })
+    await expect(field).toBeVisible()
+    await page.evaluate(() => {
+        window.editorTest.settings.toolbar = [['undo', 'redo'], ['division4']]
+    })
+    await field.fill('7')
+    await page.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expect(field).toHaveCount(0)
+    await expect.poll(async () => (await faces(page)).slice(0, 2)).toEqual(['Redo', '1/4 Division'])
+})
+
 test('a mixed group shows its tool in use over any value', async ({ page }) => {
     await page.evaluate(() => {
         window.editorTest.settings.toolbar = [['note', 'select', 'division4']]
