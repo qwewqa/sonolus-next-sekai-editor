@@ -19,6 +19,7 @@ declare global {
             contextRequests?: boolean[]
         }
         labelMeasures: number
+        labelsSetAtReads: number[]
     }
 }
 
@@ -1889,6 +1890,33 @@ test('a preview settings refit measures each label once', async ({ page }) => {
     await settle(page)
     // Its box, then its longest word.
     expect(await page.evaluate(() => window.labelMeasures)).toBe(labels * 2)
+})
+
+test('a preview settings refit reads every label before it sets any, so layout runs once a pass', async ({
+    page,
+}) => {
+    await settle(page)
+    const labels = await page.locator('.preview-controls .preview-setting-label').count()
+    // How many labels are set to their longest word at each label read.
+    await page.evaluate(() => {
+        const measure = Element.prototype.getBoundingClientRect
+        window.labelsSetAtReads = []
+        Element.prototype.getBoundingClientRect = function () {
+            if (this.classList.contains('preview-setting-label'))
+                window.labelsSetAtReads.push(
+                    [...document.querySelectorAll<HTMLElement>('.preview-setting-label')].filter(
+                        (label) => label.style.width === 'min-content',
+                    ).length,
+                )
+            return measure.call(this)
+        }
+    })
+    await page.evaluate(() => (window.editorTest.settings.locale = 'zhs'))
+    await settle(page)
+    expect(await page.evaluate(() => window.labelsSetAtReads)).toEqual([
+        ...Array<number>(labels).fill(0),
+        ...Array<number>(labels).fill(labels),
+    ])
 })
 
 test('preview options share persisted settings with the main options menu', async ({ page }) => {

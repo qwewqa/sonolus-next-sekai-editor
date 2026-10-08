@@ -41,14 +41,28 @@ export const valueOverflows = (control: HTMLElement, others: string[] = []) => {
     )
 }
 
-/** Whether a label's longest word or phrase is wider than its box, so would break inside. */
-export const wordOverflows = (label: HTMLElement) => {
-    const { width, overflowWrap, flexShrink } = label.style
-    const room = label.getBoundingClientRect().width
+/**
+ * Whether each label's longest word or phrase is wider than its box, so would break
+ * inside. All are read, then all set, then all read again, so layout runs twice in all.
+ */
+export const wordsOverflow = (labels: HTMLElement[]) => {
+    const measured = labels.map((label) => {
+        const { width, overflowWrap, flexShrink } = label.style
+        const room = label.getBoundingClientRect().width
+        return { label, style: { width, overflowWrap, flexShrink }, room, longest: 0 }
+    })
     // At min-content width, unshrunk, a label is as wide as its longest unbreakable part.
-    Object.assign(label.style, { width: 'min-content', overflowWrap: 'normal', flexShrink: '0' })
-    const longest = label.getBoundingClientRect().width
-    Object.assign(label.style, { width, overflowWrap, flexShrink })
+    for (const { label } of measured)
+        Object.assign(label.style, {
+            width: 'min-content',
+            overflowWrap: 'normal',
+            flexShrink: '0',
+        })
+    for (const entry of measured) entry.longest = entry.label.getBoundingClientRect().width
+    for (const { label, style } of measured) Object.assign(label.style, style)
     // A word even a fraction wider than the box breaks.
-    return longest > room + 0.01
+    return measured.map(({ room, longest }) => longest > room + 0.01)
 }
+
+/** Whether a label's longest word or phrase is wider than its box, so would break inside. */
+export const wordOverflows = (label: HTMLElement) => wordsOverflow([label]).includes(true)

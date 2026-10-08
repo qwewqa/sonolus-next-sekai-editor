@@ -2,7 +2,7 @@
 import { computed, nextTick, onUpdated, useId, useTemplateRef, watch, type StyleValue } from 'vue'
 import SettingsIcon from '../editor/commands/settings/SettingsIcon.vue'
 import ChevronIcon from '../editor/workspace/ChevronIcon.vue'
-import { valueOverflows, wordOverflows } from '../modals/form/fieldLayout'
+import { valueOverflows, wordsOverflow } from '../modals/form/fieldLayout'
 import { optionName } from '../modals/form/fieldUsage'
 import { observeWidth, unobserveWidth } from '../modals/form/widthObserver'
 import { holdsTyping, resyncInput, revertOnEscape, trackTypedText } from '../modals/form/resync'
@@ -165,7 +165,8 @@ const fitRows = () => {
     if (!body) return
     const { enabled, disabled } = i18n.value.modals.form.toggle
     const rows = [...body.querySelectorAll<HTMLElement>('.preview-setting')]
-    // Hidden, as during playback, the rows keep their fit for when they show again.
+    // Nothing to fit without a width. The form unmounts during playback and behind another
+    // phone tab, so mounting again refits it in full.
     const width = rows[0]?.getBoundingClientRect().width
     if (!width) return
     if (width !== labelsWidth) {
@@ -175,26 +176,30 @@ const fitRows = () => {
         for (const row of rows) row.classList.remove('preview-setting-stacked')
         // One column for every row keeps the controls' edges aligned. Its room only
         // widens labels, so only those that overflowed are measured again.
-        let overflowing = labels.filter((label) => label && wordOverflows(label))
+        const overflowingOf = (labels: HTMLElement[]) => {
+            const overflows = wordsOverflow(labels)
+            return labels.filter((_, index) => overflows[index])
+        }
+        let overflowing = overflowingOf(labels.filter((label) => label !== null))
         if (overflowing.length) {
             body.classList.add('preview-controls-roomy')
-            overflowing = overflowing.filter((label) => label && wordOverflows(label))
+            overflowing = overflowingOf(overflowing)
         }
         rows.forEach((row, index) => {
-            if (overflowing.includes(labels[index] ?? null)) labelStacked.add(row)
+            const label = labels[index]
+            if (label && overflowing.includes(label)) labelStacked.add(row)
             else labelStacked.delete(row)
         })
     }
-    for (const row of rows) {
-        if (labelStacked.has(row)) {
-            row.classList.add('preview-setting-stacked')
-            continue
-        }
-        row.classList.remove('preview-setting-stacked')
+    // Values are all read before any row stacks, so layout runs once.
+    for (const row of rows) row.classList.toggle('preview-setting-stacked', labelStacked.has(row))
+    const valueStacked = rows.filter((row) => {
+        if (labelStacked.has(row)) return false
         const control = row.querySelector<HTMLElement>('.preview-toggle, select.preview-field')
         const others = control instanceof HTMLSelectElement ? [] : [enabled, disabled]
-        if (control && valueOverflows(control, others)) row.classList.add('preview-setting-stacked')
-    }
+        return !!control && valueOverflows(control, others)
+    })
+    for (const row of valueStacked) row.classList.add('preview-setting-stacked')
 }
 const refitRows = () => {
     cancelAnimationFrame(fitFrame)
