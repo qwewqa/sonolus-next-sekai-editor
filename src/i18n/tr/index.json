@@ -464,8 +464,8 @@
         "dragSecondary": "Sağ tıklayıp sürükleyerek ikincil aracı kullanın.",
         "scrollY": "Dikey kaydırma için tekerleği çevirin.",
         "scrollX": "Yatay kaydırma için Shift tuşuyla birlikte tekerlek kaydırması yapın.",
-        "zoomY": "Dikey yakınlaştırma için CTRL tuşuyla birlikte tekerleği kaydırın.",
-        "zoomX": "Yatay yakınlaştırma için CTRL ve Shift tuşlarıyla tekerlek kaydırması yapın."
+        "zoomY": "Dikey yakınlaştırma için Ctrl tuşuyla birlikte tekerleği kaydırın.",
+        "zoomX": "Yatay yakınlaştırma için Ctrl ve Shift tuşlarıyla tekerlek kaydırması yapın."
       },
       "keyboard": {
         "title": "Klavye",
@@ -474,11 +474,11 @@
       },
       "selectTool": {
         "title": "Seçim Aracı",
-        "select": "1 nesne seçmek ve Üst üste gelen nesneler arasında geçiş yapmak için nesnelere dokunun.",
+        "select": "1 nesne seçmek ve üst üste gelen nesneler arasında geçiş yapmak için nesnelere dokunun.",
         "deselect": "Tüm nesnelerin seçimini kaldırmak için boş alana dokunun.",
         "move": "Birden fazla nesneyi taşımak için nesneleri sürükleyin.",
         "selectMultiple": "Birden fazla nesneyi seçmek için boş alanı sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun."
       },
       "eraserTool": {
@@ -505,7 +505,7 @@
         "edit": "Düzenlemek için 1 notaya dokunun.",
         "add": "Eklemek için boş alana dokunun.",
         "move": "1 notayı taşımak için sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Nota aracına geçin."
       },
@@ -516,7 +516,7 @@
         "add": "Eklemek için boş alana dokunun.",
         "connect": "Bir nota seçiliyken bağlamak için boş alana dokunun.",
         "move": "1 notayı taşımak için sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "shift": "Aynı kaydırmadaki diğer notaları dahil etmek için Shift tuşunu basılı tutun.",
         "properties": "Ön ayarı veya varsayılan Özellikleri değiştirmek için tekrar Kaydırma aracına geçin."
       },
@@ -536,7 +536,7 @@
         "edit": "Düzenlemek için 1 BPM değişikliğine dokunun.",
         "add": "Eklemek için boş alana dokunun.",
         "move": "Taşımak için 1 BPM değişikliğini sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın."
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın."
       },
       "timeScaleTool": {
         "title": "Zaman Ölçeği Aracı",
@@ -544,7 +544,7 @@
         "edit": "Düzenlemek için 1 zaman ölçeğine dokunun.",
         "add": "Eklemek için boş alana dokunun.",
         "move": "Taşımak için 1 zaman ölçeğini sürükleyin.",
-        "ctrl": "Seçime nesne eklemek için CTRL tuşunu kullanın.",
+        "ctrl": "Seçime nesne eklemek için Ctrl tuşunu kullanın.",
         "markers": "Elmas işaretçiler Kaydırma geçişini kullanır. Noktalı çizgilerdeki içi boş işaretçiler notaları gizler.",
         "ease": "Eğri, gruptaki bir sonraki değişikliğe geçişi gösterir."
       },
