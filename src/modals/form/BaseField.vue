@@ -643,7 +643,7 @@ watchEffect(
 }
 
 /* Narrow docks and drawers: the control takes half the row (at least 6.25rem),
-   leaving labels such as "Flick Direction" one line; longer ones clamp. */
+   leaving labels such as "Flick Direction" one line; longer ones wrap. */
 @container (min-width: 13.5rem) and (max-width: 18.99rem) {
     .form-field-row {
         display: grid;
