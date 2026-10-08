@@ -734,6 +734,8 @@ const onBulkDelete = async (keyboard = false) => {
             return key?.type === 'entry' ? ids.has(key.id) : !!key && folderIds.has(key.id)
         },
     )
+    // The Delete that opened the prompt must not refocus by its row's old index.
+    keyFocus = undefined
     props.model.removeMany(ids, folderIds)
     stopSelecting()
     if (!keyboard) return

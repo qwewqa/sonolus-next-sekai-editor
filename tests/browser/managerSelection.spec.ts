@@ -654,6 +654,34 @@ test('a keyboard delete of the selection leaves focus on the row in its place', 
     await expect(nameButton(manager, 'Verse')).toBeFocused()
 })
 
+test('a delete confirmed before timers run still focuses the row in its place', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    const list = panel(page)
+    const dialog = page.locator('dialog')
+    await nameButton(list, 'Bass').focus()
+    await page.keyboard.press('Shift+ArrowDown')
+    // Input runs ahead of zero-delay timers, as under load.
+    await page.evaluate(() => {
+        const original = window.setTimeout
+        Object.assign(window, { originalSetTimeout: original })
+        window.setTimeout = ((handler: TimerHandler, delay?: number, ...rest: unknown[]) =>
+            original(handler, delay ? delay : 500, ...rest)) as typeof window.setTimeout
+    })
+    await page.keyboard.press('Delete')
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).press('Enter')
+    await page.evaluate(() => {
+        window.setTimeout = (
+            window as unknown as { originalSetTimeout: typeof setTimeout }
+        ).originalSetTimeout
+    })
+    expect(await tree(page)).toBe('Default Other [Verse: Lead Fill] [Outro: Pad]')
+    await expect(nameButton(list, 'Outro')).toBeFocused()
+    await page.waitForTimeout(600)
+    await expect(nameButton(list, 'Outro')).toBeFocused()
+})
+
 test('closing the delete prompt by a button returns focus to the row', async ({ page }) => {
     await seedGroups(page, seed)
     const list = panel(page)
