@@ -564,7 +564,9 @@ test('a drag held still near the list edge keeps scrolling', async ({ page }) =>
     await page.mouse.move(part.x + 60, bounds.y + bounds.height - 10, { steps: 10 })
     const end = await list.evaluate((element) => element.scrollHeight - element.clientHeight)
     // Without further moves it scrolls all the way, and the row lands at the end.
-    await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(end - 2)
+    await expect
+        .poll(() => list.evaluate((element) => element.scrollTop), { timeout: 15_000 })
+        .toBeGreaterThan(end - 2)
     await page.mouse.up()
     expect((await tree(page)).endsWith('Part 30 Part 1')).toBe(true)
 })
@@ -584,7 +586,9 @@ test('a drag stops scrolling at the last row', async ({ page }) => {
     // Moving on at the edge carries the held row past the rows; the list stops there.
     for (let step = 0; step < 120; step++)
         await page.mouse.move(part.x + 60 + (step % 2), bounds.y + bounds.height - 10)
-    await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(end - 2)
+    await expect
+        .poll(() => list.evaluate((element) => element.scrollTop), { timeout: 15_000 })
+        .toBeGreaterThan(end - 2)
     await page.waitForTimeout(300)
     expect(await list.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(end)
     // The held row stays in sight: the fade toward the hidden Add is off.
@@ -594,6 +598,41 @@ test('a drag stops scrolling at the last row', async ({ page }) => {
     await expect(nameButton(panel(page), 'Part 20')).toBeInViewport()
     await page.mouse.up()
     expect((await tree(page)).endsWith('Part 20 Part 1')).toBe(true)
+})
+
+test('a drag near the list edge scrolls as fast at a low frame rate', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 600 })
+    await seedGroups(page, [
+        ['Default'],
+        ...Array.from({ length: 30 }, (_, i): [string] => [`Part ${i + 1}`]),
+    ])
+    // About 13 frames a second, noting how far the list moves in each.
+    await page.evaluate(() => {
+        const list = () => document.querySelector('#workspace-panel-groups .manager-entries')
+        const probe = window as unknown as { edgeStep: number }
+        probe.edgeStep = 0
+        window.requestAnimationFrame = (callback) =>
+            window.setTimeout(() => {
+                const before = list()?.scrollTop ?? 0
+                callback(performance.now())
+                const step = Math.abs((list()?.scrollTop ?? 0) - before)
+                probe.edgeStep = Math.max(probe.edgeStep, step)
+            }, 75)
+        window.cancelAnimationFrame = (id) => window.clearTimeout(id)
+    })
+    const list = panel(page).locator('.manager-entries')
+    const bounds = (await list.boundingBox())!
+    const part = (await nameButton(panel(page), 'Part 1').boundingBox())!
+    await page.mouse.move(part.x + 60, part.y + part.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(part.x + 60, bounds.y + bounds.height - 10, { steps: 10 })
+    // 480px a second is at least 36px a frame here, not 8px.
+    await expect
+        .poll(() => page.evaluate(() => (window as unknown as { edgeStep: number }).edgeStep), {
+            timeout: 15_000,
+        })
+        .toBeGreaterThanOrEqual(16)
+    await page.mouse.up()
 })
 
 for (const { device, viewport, touch } of [

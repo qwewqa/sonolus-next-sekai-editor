@@ -1118,21 +1118,40 @@ const follow = () => {
     scheduleExpand('into' in next.target ? next.target.into : undefined)
 }
 
-// Scroll the list while the pointer rests near its edges.
+// Scroll the list while the pointer rests near its edges, at any frame rate.
+const edgeScrollSpeed = 480 // px per second
 let pointerY = 0
 let scrollFrame = 0
+let scrollTime = 0
+let scrollPosition = 0
 
-const edgeScroll = () => {
+// Called with a frame time from requestAnimationFrame, else from a pointer move.
+const edgeScroll = (frameTime?: number) => {
+    const fromFrame = frameTime !== undefined
     scrollFrame = 0
     const container = list.value
     const current = drag.value
     if (!current?.started || !container) return
+    const now = performance.now()
+    // A run starts with one 60 fps step; a stalled frame doesn't jump.
+    const seconds = fromFrame ? Math.min(now - scrollTime, 100) / 1000 : 1 / 60
+    scrollTime = now
+    // Fractional steps add up; the list's own scrolling is taken as it is.
+    if (!fromFrame || Math.abs(container.scrollTop - scrollPosition) >= 1)
+        scrollPosition = container.scrollTop
     const bounds = container.getBoundingClientRect()
-    const step = pointerY < bounds.top + 24 ? -8 : pointerY > bounds.bottom - 24 ? 8 : 0
+    const direction = pointerY < bounds.top + 24 ? -1 : pointerY > bounds.bottom - 24 ? 1 : 0
+    const target = Math.max(
+        0,
+        Math.min(scrollPosition + direction * edgeScrollSpeed * seconds, current.scrollLimit),
+    )
+    if (target === scrollPosition) return
     const before = container.scrollTop
-    container.scrollTop = Math.max(0, Math.min(before + step, current.scrollLimit))
-    if (container.scrollTop === before) return
-    follow()
+    scrollPosition = target
+    container.scrollTop = target
+    if (container.scrollTop !== before) follow()
+    // Stops where the list can't scroll further.
+    if (Math.abs(container.scrollTop - target) >= 1) return
     scrollFrame = requestAnimationFrame(edgeScroll)
 }
 
