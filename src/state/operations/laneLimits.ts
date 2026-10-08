@@ -36,6 +36,22 @@ export const constrainLaneObject = <T extends EditableObject>(
             originalSize === undefined
                 ? 0
                 : Math.max(minimum, Math.min(availableSize ?? 0, Math.max(minimum, maxLane * 2)))
+        // A resize cut at the limit keeps its fixed edge; the size snaps only while it still fits.
+        if (
+            sizeKey &&
+            originalSize !== undefined &&
+            resizing &&
+            position + originalSize > maxLane &&
+            fittedSize === availableSize &&
+            position >= -maxLane &&
+            position <= maxLane
+        ) {
+            const aligned = alignComputed(fittedSize)
+            return {
+                ...object,
+                [sizeKey]: position + aligned <= maxLane ? aligned : fittedSize,
+            }
+        }
         // Fitted edges come from sums, so they drop their float noise; kept values stay exact.
         const size = fittedSize === originalSize ? fittedSize : alignComputed(fittedSize)
         const oversized = size > maxLane * 2

@@ -89,6 +89,16 @@ test('a fitted edge snaps only while the object stays within the limit', () => {
     })
 })
 
+test('a resize cut at the limit keeps its fixed edge exact', () => {
+    assert.deepEqual(constrainLaneObject({ left: 0.3, size: 8 }, 6, true), { left: 0.3, size: 5.7 })
+    for (const left of [0.1 + 0.2, 2.00000000001]) {
+        const fitted = constrainLaneObject({ left, size: 8 }, 6, true, 0.125)
+        assert.equal(fitted.left, left)
+        assert.ok(fitted.left + fitted.size <= 6)
+        assert.ok(Math.abs(fitted.left + fitted.size - 6) < 1e-9)
+    }
+})
+
 test('former default toolbar moves elevation to transforms and inserts lane limits after divisions', () => {
     const groups = [
         [
