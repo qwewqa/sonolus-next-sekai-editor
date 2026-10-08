@@ -2,6 +2,7 @@ import { easeFunctionOf, easeMode, easeTypeOf, mergeEases, type Ease } from '../
 import type { i18n } from '../../../i18n'
 import type { EntityType } from '../../../state/entities'
 import type { EditableObject } from '../../../state/operations/editable'
+import { withoutUnit } from '../../../utils/unitLabel'
 import type { BrushProperties } from '../../tools/brush'
 import type { Aggregate } from '../../utils/aggregate'
 import type { NoteFields } from '../../utils/noteFields'
@@ -645,8 +646,21 @@ const fields: PropertyField[] = [
 
 export const propertyFields: readonly PropertyField[] = fields
 
-export const fieldLabel = (field: PropertyField, t: Localization, qualified: boolean) =>
-    (qualified ? field.qualifiedLabel?.(t) : undefined) ?? field.label(t)
+/**
+ * A field's name; qualified, as in a notice or Brush's Remove, without its unit,
+ * unless only the unit tells it from another field, as Y Offset (beats).
+ */
+export const fieldLabel = (field: PropertyField, t: Localization, qualified: boolean) => {
+    const label = field.label(t)
+    if (!qualified) return label
+    const named = field.qualifiedLabel?.(t)
+    if (named !== undefined) return named
+    const short = withoutUnit(label)
+    const taken = fields.some(
+        (other) => other !== field && [other.label(t), withoutUnit(other.label(t))].includes(short),
+    )
+    return taken ? label : short
+}
 
 export const propertyField = new Map(fields.map((field) => [field.key, field]))
 

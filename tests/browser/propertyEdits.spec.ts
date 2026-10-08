@@ -155,6 +155,9 @@ test.describe('edit labels', () => {
         await select('timeScale')
         await edit(page, { hideNotes: true })
         await expect(page.locator('.notification')).toHaveText('Set Hide Notes on 3 time scales')
+        // Without the label's unit.
+        await edit(page, { skip: 1 })
+        await expect(page.locator('.notification')).toHaveText('Set Skip on 4 time scales')
         await select('cameraEventJoint')
         await edit(page, { cameraZoom: 2 })
         await expect(page.locator('.notification')).toHaveText('Set Camera Zoom on 4 camera events')

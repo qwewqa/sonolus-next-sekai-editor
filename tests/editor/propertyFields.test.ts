@@ -401,3 +401,12 @@ test('fields of several kinds close the selection under General', () => {
 test('a brushed time scale ease starts from None, which writes NONE', () => {
     assert.equal(propertyField.get('timeScaleEase')?.brush?.initial, 'none')
 })
+
+test('qualified names drop a unit, unless only it tells two fields apart', () => {
+    const qualified = (key: string, locale = 'en') =>
+        fieldLabel(propertyField.get(key as never)!, messages(locale), true)
+    assert.equal(qualified('skip'), 'Skip')
+    assert.equal(qualified('yOffsetBeat'), 'Y Offset (beats)')
+    assert.equal(qualified('leftBorderStyle'), 'Border Style (Left)')
+    for (const locale of locales) assert.doesNotMatch(qualified('skip', locale), /[(（]/, locale)
+})
