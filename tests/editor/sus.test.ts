@@ -118,3 +118,12 @@ test('mixed-case SUS channels connect notes without merging stream types', () =>
         },
     ])
 })
+
+test('a malformed time scale segment is refused', () => {
+    for (const segment of ['abc', "0'480", "0'"])
+        assert.throws(
+            () => parseSus([...header, `#TIL00: "${segment}"`]),
+            (error) => error instanceof ImportRefusal && error.reason === 'timeScaleChange',
+            segment,
+        )
+})

@@ -257,8 +257,8 @@ const toTimeScaleChanges = ([, data]: Line, toTick: ToTick) => {
         .filter((segment) => !!segment)
         .map((segment) => {
             const [l, rest] = segment.split("'")
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const [m, r] = rest!.split(':')
+            if (rest === undefined) throw new ImportRefusal('timeScaleChange')
+            const [m, r] = rest.split(':')
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const measure = +l!

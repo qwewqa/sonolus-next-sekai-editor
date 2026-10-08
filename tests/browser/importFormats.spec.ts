@@ -503,6 +503,12 @@ for (const [label, edit, message] of [
         'Invalid chart: unexpected time scale change',
     ],
     [
+        'a malformed time scale segment',
+        (chart: string) => `${chart}
+#TIL00: "abc"`,
+        'Invalid chart: unexpected time scale change',
+    ],
+    [
         'an infinite offset',
         (chart: string) => chart.replace('#WAVEOFFSET 0', '#WAVEOFFSET 1e999'),
         'Invalid chart: unexpected offset',
