@@ -219,6 +219,56 @@ test.describe('mixed values', () => {
         await expect.poll(() => sameRow('Attached')).toBe(false)
     })
 
+    test('a long value beside coverage goes below its label at full width, also after a resize', async ({
+        page,
+    }) => {
+        await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 336))
+        // Lane covers the two free notes, and their range is long.
+        await showSlides(page, [
+            [
+                { beat: 0, left: -5.9375 },
+                { beat: 1, isAttached: true },
+                { beat: 2, left: 5.4375 },
+            ],
+        ])
+        await expect(control(page, 'Lane')).toHaveAttribute('placeholder', '-5.9375 … 5.4375')
+        const lane = selection(page)
+            .locator('.form-field')
+            .filter({ has: page.getByText(/^(Lane|Voie)$/) })
+        const layout = () =>
+            lane.evaluate((field) => {
+                const input = field.querySelector('input')!.getBoundingClientRect()
+                const chip = field.querySelector('.form-field-mixed')!.getBoundingClientRect()
+                return {
+                    stacked: field.classList.contains('form-field-value-stacked'),
+                    width: Math.round(input.width - field.getBoundingClientRect().width),
+                    chipBelow: chip.top >= input.bottom,
+                }
+            })
+        const stacked = { stacked: true, width: 0, chipBelow: true }
+        // Shown at 336, it takes the full row below its label, the chip under it.
+        await expect.poll(layout, 'fresh').toEqual(stacked)
+        for (const [locale, width] of [
+            ['en', 336],
+            ['en', 360],
+            ['fr', 336],
+        ] as const) {
+            await page.evaluate(
+                ([locale, width]) =>
+                    Object.assign(window.editorTest.settings, { locale, rightDockWidth: width }),
+                [locale, width] as const,
+            )
+            await expect.poll(layout, `${locale} ${width}`).toEqual(stacked)
+        }
+        // Resizing from a dock wide enough to keep it inline refits it.
+        await page.evaluate(() =>
+            Object.assign(window.editorTest.settings, { locale: 'en', rightDockWidth: 420 }),
+        )
+        await expect.poll(async () => (await layout()).stacked).toBe(false)
+        await page.evaluate(() => (window.editorTest.settings.rightDockWidth = 336))
+        await expect.poll(layout).toEqual(stacked)
+    })
+
     test('a label beside its coverage never breaks inside a word', async ({ page }) => {
         test.setTimeout(60_000)
         // Each dock width fits afresh; a word even a fraction too wide for its box breaks.

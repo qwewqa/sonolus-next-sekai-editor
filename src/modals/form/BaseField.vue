@@ -138,7 +138,7 @@ const refitLabel = () => {
 
 onMounted(() => {
     fitLabel()
-    if (row.value) observeWidth(row.value, refitLabel)
+    if (fieldRoot.value) observeWidth(fieldRoot.value, refitLabel)
 })
 
 watch(() => props.label, fitLabel, { flush: 'post' })
@@ -152,7 +152,7 @@ onUpdated(() => {
 })
 
 onBeforeUnmount(() => {
-    if (row.value) unobserveWidth(row.value)
+    if (fieldRoot.value) unobserveWidth(fieldRoot.value)
     cancelAnimationFrame(frame)
 })
 
@@ -506,7 +506,7 @@ watchEffect(
 
 /* Coverage alone sits in the label's column, leaving the control where it is. */
 @container (min-width: 19rem) {
-    .form-field-inline:not(.form-field-stacked) {
+    .form-field:not(.form-field-value-stacked) > .form-field-inline:not(.form-field-stacked) {
         display: grid;
         grid-template-columns:
             minmax(0, 1fr) auto
@@ -514,22 +514,31 @@ watchEffect(
         align-items: center;
     }
 
-    .form-field-inline:not(.form-field-stacked) > .form-field-row {
+    .form-field:not(.form-field-value-stacked)
+        > .form-field-inline:not(.form-field-stacked)
+        > .form-field-row {
         display: contents;
     }
 
-    .form-field-inline:not(.form-field-stacked) .form-field-label {
+    .form-field:not(.form-field-value-stacked)
+        > .form-field-inline:not(.form-field-stacked)
+        .form-field-label {
         grid-area: 1 / 1;
         width: auto;
         min-width: 0;
     }
 
-    .form-field-inline:not(.form-field-stacked) > .form-field-row > :not(.form-field-label) {
+    .form-field:not(.form-field-value-stacked)
+        > .form-field-inline:not(.form-field-stacked)
+        > .form-field-row
+        > :not(.form-field-label) {
         grid-area: 1 / 3;
     }
 
     /* The usual 12px label gap before the control, and half that after the label. */
-    .form-field-inline:not(.form-field-stacked) > .form-field-mixed {
+    .form-field:not(.form-field-value-stacked)
+        > .form-field-inline:not(.form-field-stacked)
+        > .form-field-mixed {
         grid-area: 1 / 2;
         margin-left: 0.375rem;
         margin-right: 0.75rem;
@@ -540,7 +549,7 @@ watchEffect(
 }
 
 @container (min-width: 32rem) {
-    .form-field-inline:not(.form-field-stacked) {
+    .form-field:not(.form-field-value-stacked) > .form-field-inline:not(.form-field-stacked) {
         grid-template-columns: minmax(0, 1fr) auto calc(40% - 0.75rem);
     }
 }
