@@ -258,11 +258,14 @@ const transformValues = (
                 ((transformed < 0 && value >= 0) || !Number.isSafeInteger(Math.floor(transformed))))
         )
             return
+        // Distinct lanes may meet by rounding alone; distinct beats and elevations may not.
         if (
             previousValue !== undefined &&
             value > previousValue &&
             previousTransformed !== undefined &&
-            transformed <= previousTransformed
+            (axis === 'width'
+                ? transformed < previousTransformed
+                : transformed <= previousTransformed)
         )
             return
         values.set(entity, transformed)

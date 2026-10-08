@@ -145,6 +145,24 @@ test('width checks run on the plain results, so float noise never refuses them',
     })
 })
 
+test('width lanes one float step apart may meet when scaled or moved', () => {
+    const pivot = { ...source('note', 0), left: -7.1, size: 1 }
+    const lower = { ...source('note', 1), left: -1, size: 1 }
+    const upper = { ...source('note', 2), left: -0.9999999999999999, size: 1 }
+    for (const [factor, lane] of [
+        [0.75, -2.525],
+        [0.5, -4.05],
+        [2, 5.1],
+    ] as const) {
+        const values = getScaledSelectionValues([pivot, lower, upper], 'width', factor)
+        assert.deepEqual([values?.get(lower), values?.get(upper)], [lane, lane])
+    }
+    const noisy = { ...source('note', 0), left: 0.1 + 0.2, size: 1 }
+    const clean = { ...source('note', 1), left: 0.3, size: 1 }
+    const translated = getTranslatedSelectionValues([noisy, clean], 'width', 0.25)
+    assert.deepEqual([...translated!.values()], [0.55, 0.55])
+})
+
 test('scaling can anchor either endpoint while preserving ties', () => {
     const first = source('note', 3, 1)
     const middle = source('note', 5, 3)
