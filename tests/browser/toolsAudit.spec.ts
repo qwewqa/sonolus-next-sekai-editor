@@ -191,6 +191,15 @@ test('the brush applies its properties to a clicked note and a dragged box', asy
     expect(await undoCount(page)).toBe(2)
 })
 
+for (const tool of ['eraser', 'brush'] as const)
+    test(`an empty ${tool} box takes its progress notice with it`, async ({ page }) => {
+        await command(page, tool)
+        await drag(page, [7, 3.5], [10, 4.5])
+        await expect(page.locator('.notification')).toHaveCount(0)
+        expect(await beats(page)).toEqual([3, 5, 7, 9])
+        expect(await undoCount(page)).toBe(0)
+    })
+
 test('generate slide notes fills a slide at the division; a lone note adds no undo step', async ({
     page,
 }) => {

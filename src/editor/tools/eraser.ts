@@ -14,7 +14,7 @@ import { removeNote } from '../../state/mutations/slides/note'
 import { removeTimeScale } from '../../state/mutations/timeScale'
 import { createTransaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
-import { notify } from '../notification'
+import { clearNotification, notify } from '../notification'
 import {
     focusEntityAtBeat,
     focusViewAtBeat,
@@ -200,6 +200,8 @@ export const remove = (
             hovered: [],
             creating: [],
         }
+        // An empty box's progress notice no longer holds.
+        clearNotification()
         return
     }
 

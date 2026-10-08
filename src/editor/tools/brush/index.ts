@@ -27,7 +27,7 @@ import { i18n } from '../../../i18n'
 import type { Entity } from '../../../state/entities'
 import { planEdit } from '../../../state/operations/properties/plan'
 import { interpolate } from '../../../utils/interpolate'
-import { notify } from '../../notification'
+import { clearNotification, notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
 import {
     focusEntityAtBeat,
@@ -227,6 +227,8 @@ export const applyBrushToEntities = (entities: Entity[]) => {
             hovered: [],
             creating: [],
         }
+        // An empty box's progress notice no longer holds.
+        clearNotification()
         return
     }
 
