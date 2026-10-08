@@ -315,22 +315,20 @@ test('a drop that changes nothing adds no undo step in any tool and keeps redo',
     expect(await beats(page)).toEqual([3, 5, 7, 10])
 })
 
-test('a drop that changes nothing adds no undo step in the BPM, time scale and event tools', async ({
-    page,
-}) => {
-    await page.evaluate(() => {
-        const { fixtures, show } = window.editorTest
-        show({ ...fixtures.interaction, isDynamicStages: true }, 3)
-    })
-    for (const [tool, beat] of [
-        ['bpm', 10],
-        ['timeScale', 10.5],
-        ['cameraEvent', 11.5],
-        ['stageMaskEvent', 12],
-        ['stagePivotEvent', 12.5],
-        ['stageStyleEvent', 13],
-        ['stageTransformEvent', 13.5],
-    ] as const) {
+for (const [tool, beat] of [
+    ['bpm', 10],
+    ['timeScale', 10.5],
+    ['cameraEvent', 11.5],
+    ['stageMaskEvent', 12],
+    ['stagePivotEvent', 12.5],
+    ['stageStyleEvent', 13],
+    ['stageTransformEvent', 13.5],
+] as const) {
+    test(`a drop that changes nothing adds no undo step in the ${tool} tool`, async ({ page }) => {
+        await page.evaluate(() => {
+            const { fixtures, show } = window.editorTest
+            show({ ...fixtures.interaction, isDynamicStages: true }, 3)
+        })
         await page.evaluate((beat) => (window.editorTest.view.time = beat / 2), beat)
         await settle(page)
         await run(page, tool)
@@ -343,8 +341,8 @@ test('a drop that changes nothing adds no undo step in the BPM, time scale and e
         await dragAndReturn(page, [0, beat], [2, beat + 0.25])
         await expect(page.locator('.notification'), tool).toHaveCount(0)
         expect(await undoCount(page), tool).toBe(before)
-    }
-})
+    })
+}
 
 test('a Select drag of an attached tick along its lane adds no undo step', async ({ page }) => {
     // The slide places the tick, so its lane cannot change.
