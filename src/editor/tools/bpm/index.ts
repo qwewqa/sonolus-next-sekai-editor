@@ -18,7 +18,7 @@ import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { focusEntityAtBeat, setViewHover, snapYToBeat, view, yToValidBeat } from '../../view'
 import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
-import { hitEntitiesAtPoint } from '../utils'
+import { commitDrop, hitEntitiesAtPoint } from '../utils'
 
 let active:
     | {
@@ -239,7 +239,7 @@ export const bpm: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                editMoveOrReplace(active.entity, {
+                commitDrop(editMoveOrReplace, active.entity, {
                     beat,
                     bpm: active.entity.bpm,
                     meter: active.entity.meter,

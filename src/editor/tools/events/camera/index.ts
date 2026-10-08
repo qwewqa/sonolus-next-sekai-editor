@@ -31,6 +31,7 @@ import {
 } from '../../../view'
 import SelectionPropertiesModal from '../../../workspace/properties/SelectionPropertiesModal.vue'
 import {
+    commitDrop,
     hitEntitiesAtPoint,
     isRangeResizeStart,
     moveLane,
@@ -375,7 +376,8 @@ export const cameraEvent: Tool = {
                         (active.lane === active.entity.cameraLeft ? active.entity.cameraSize : 0),
                 )
 
-                edit(
+                commitDrop(
+                    edit,
                     active.entity,
                     constrainLaneObject(
                         {
@@ -391,7 +393,8 @@ export const cameraEvent: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(
+                commitDrop(
+                    move,
                     active.entity,
                     constrainLaneObject({
                         ...active.entity,

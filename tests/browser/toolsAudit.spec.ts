@@ -272,6 +272,71 @@ test('a drag cancelled before its drop takes its Moving notice with it', async (
     }
 })
 
+/** Drags from a point away and back, dropping where it started, by moving or resizing. */
+const dragAndReturn = async (page: Page, from: [number, number], via: [number, number]) => {
+    const start = await point(page, ...from)
+    const away = await point(page, ...via)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(away.x, away.y, { steps: 6 })
+    await settle(page)
+    await expect(page.locator('.notification')).toHaveText(/^(Moving|Editing) /)
+    await page.mouse.move(start.x, start.y, { steps: 6 })
+    await page.mouse.up()
+    await settle(page)
+}
+
+test('a drop that changes nothing adds no undo step in any tool and keeps redo', async ({
+    page,
+}) => {
+    // A move to undo, so redo is available.
+    await command(page, 'note')
+    await drag(page, [-1, 9], [-1, 10])
+    expect(await beats(page)).toEqual([3, 5, 7, 10])
+    await command(page, 'undo')
+    // The note tool, then the slide tool.
+    for (const tool of [undefined, 'slide'] as const) {
+        if (tool) await command(page, tool)
+        await dragAndReturn(page, [4, 7], [6, 8])
+        await expect(page.locator('.notification')).toHaveCount(0)
+        expect(await beats(page)).toEqual([3, 5, 7, 9])
+        expect(await undoCount(page)).toBe(0)
+    }
+    await command(page, 'redo')
+    expect(await beats(page)).toEqual([3, 5, 7, 10])
+})
+
+test('a drop that changes nothing adds no undo step in the BPM, time scale and event tools', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { fixtures, show } = window.editorTest
+        show({ ...fixtures.interaction, isDynamicStages: true }, 3)
+    })
+    for (const [tool, beat] of [
+        ['bpm', 10],
+        ['timeScale', 10.5],
+        ['cameraEvent', 11.5],
+        ['stageMaskEvent', 12],
+        ['stagePivotEvent', 12.5],
+        ['stageStyleEvent', 13],
+        ['stageTransformEvent', 13.5],
+    ] as const) {
+        await page.evaluate((beat) => (window.editorTest.view.time = beat / 2), beat)
+        await settle(page)
+        await run(page, tool)
+        await settle(page)
+        await click(page, 0, beat)
+        const dialog = page.locator('dialog[open], .editor-tool-modal')
+        if (await dialog.count()) await dialog.press('Escape')
+        await expect(dialog).toHaveCount(0)
+        const before = await undoCount(page)
+        await dragAndReturn(page, [0, beat], [2, beat + 0.25])
+        await expect(page.locator('.notification'), tool).toHaveCount(0)
+        expect(await undoCount(page), tool).toBe(before)
+    }
+})
+
 test('flip mirrors the selection and supports undo', async ({ page }) => {
     await command(page, 'select')
     await click(page, 4, 7)

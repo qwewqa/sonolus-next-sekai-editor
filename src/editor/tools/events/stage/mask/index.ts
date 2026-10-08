@@ -33,6 +33,7 @@ import {
 } from '../../../../view'
 import SelectionPropertiesModal from '../../../../workspace/properties/SelectionPropertiesModal.vue'
 import {
+    commitDrop,
     hitEntitiesAtPoint,
     isRangeResizeStart,
     moveLane,
@@ -374,7 +375,8 @@ export const stageMaskEvent: Tool = {
                         (active.lane === active.entity.maskLeft ? active.entity.maskSize : 0),
                 )
 
-                edit(
+                commitDrop(
+                    edit,
                     active.entity,
                     constrainLaneObject(
                         {
@@ -390,7 +392,8 @@ export const stageMaskEvent: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(
+                commitDrop(
+                    move,
                     active.entity,
                     constrainLaneObject({
                         ...active.entity,

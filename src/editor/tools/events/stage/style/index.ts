@@ -35,7 +35,7 @@ import {
     yToValidBeat,
 } from '../../../../view'
 import SelectionPropertiesModal from '../../../../workspace/properties/SelectionPropertiesModal.vue'
-import { hitEntitiesAtPoint } from '../../../utils'
+import { commitDrop, hitEntitiesAtPoint } from '../../../utils'
 import StageStyleEventSidebar from './StageStyleEventSidebar.vue'
 
 type DefaultStageStyleEventProperties = {
@@ -301,7 +301,8 @@ export const stageStyleEvent: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(
+                commitDrop(
+                    move,
                     active.entity,
                     constrainLaneObject({
                         ...active.entity,

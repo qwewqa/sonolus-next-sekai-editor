@@ -1,9 +1,11 @@
 import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
+import { editChanges } from '../../state/operations/properties/plan'
 import { alignComputed, clamp, shiftComputed } from '../../utils/math'
 import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
+import { clearNotification } from '../notification'
 import { isEntityInScope } from '../scope'
 import { snappedOffset } from '../snapping'
 import { view, xToLane, yToTime, type Selection } from '../view'
@@ -22,6 +24,20 @@ export const offset = (startLane: number, lane: number, anchor = startLane) =>
 // A lane moved by the drag's offset, without float noise; unmoved, it stays exact.
 export const moveLane = (value: number, startLane: number, lane: number, anchor?: number) =>
     shiftComputed(value, offset(startLane, lane, anchor))
+
+/** Commits a drop; one that changes nothing adds no undo step, and its notice goes. */
+export const commitDrop = <E extends Entity, O extends object>(
+    commit: (entity: E, object: O) => void,
+    entity: E,
+    object: O,
+) => {
+    if (editChanges(store.value, entity, object)) {
+        commit(entity, object)
+        return
+    }
+    view.entities = { hovered: [], creating: [] }
+    clearNotification()
+}
 
 export const getLaneAnchor = (entity: Entity) => {
     switch (entity.type) {

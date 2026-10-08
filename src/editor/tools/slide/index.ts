@@ -35,6 +35,7 @@ import {
 } from '../../view'
 import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
 import {
+    commitDrop,
     hitEntitiesAtPoint,
     isNoteResizeStart,
     isVisible,
@@ -328,7 +329,8 @@ export const slide: Tool = {
                         (active.lane === active.entity.left ? active.entity.size : 0),
                 )
 
-                edit(
+                commitDrop(
+                    edit,
                     active.entity,
                     constrainLaneObject(
                         {
@@ -344,7 +346,8 @@ export const slide: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                move(
+                commitDrop(
+                    move,
                     active.entity,
                     constrainLaneObject({
                         ...active.entity,

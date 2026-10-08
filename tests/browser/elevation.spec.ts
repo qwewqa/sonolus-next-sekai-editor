@@ -484,6 +484,18 @@ test('body drags edit lane and snapped elevation live with one undo step', async
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('a drag the lane limit holds in place adds no undo step', async ({ page }) => {
+    await open(page)
+    const initial = await notes(page)
+    // The note already ends at the limit, so a drag to the right changes nothing.
+    await page.evaluate(() => (window.editorTest.settings.maxLane = 2))
+    await mouseDrag(page, await point(page), await displacement(page, 2, 0))
+    await page.mouse.up()
+    await settle(page)
+    expect(await notes(page)).toEqual(initial)
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+})
+
 test('edge drags resize while preserving beat and elevation; snapping is adjustable', async ({
     page,
 }) => {

@@ -21,6 +21,7 @@ import { hasSameChartData } from '../../state/data'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
+import { editChanges } from '../../state/operations/properties/plan'
 import { createTransaction } from '../../state/transaction'
 import { alignComputed, alignNear, clamp, shiftComputed } from '../../utils/math'
 import { createNameLayer, placeNames } from '../canvas/names'
@@ -278,42 +279,38 @@ const cancel = () => {
     creating.value = []
     selection.value = undefined
 }
+const editedObject = (active: NonNullable<typeof drag>, note: NoteEntity) => {
+    const [left, size] = active.resizing
+        ? resize(
+              active.anchor,
+              active.movingEdge + active.deltaLane,
+              minimumNoteSize(note.noteType),
+              Number.POSITIVE_INFINITY,
+              active.movingEdge,
+          )
+        : [
+              active.deltaLane === 0 ? note.left : alignComputed(note.left + active.deltaLane),
+              note.size,
+          ]
+    return constrainLaneObject(
+        {
+            noteType: note.noteType,
+            left,
+            size,
+            elevation: note.elevation + active.deltaElevation,
+        },
+        {
+            enabled:
+                note === active.row.note && (active.deltaLane !== 0 || active.deltaElevation !== 0),
+            resizing: active.resizing,
+        },
+    )
+}
 const edit = (active: NonNullable<typeof drag>) => {
     const transaction = createTransaction(active.source, { autoAddGroup: false })
     const replacements = new Map(
         active.targets.flatMap((note) => {
-            const [left, size] = active.resizing
-                ? resize(
-                      active.anchor,
-                      active.movingEdge + active.deltaLane,
-                      minimumNoteSize(note.noteType),
-                      Number.POSITIVE_INFINITY,
-                      active.movingEdge,
-                  )
-                : [
-                      active.deltaLane === 0
-                          ? note.left
-                          : alignComputed(note.left + active.deltaLane),
-                      note.size,
-                  ]
-            const replacement = editSelectedNote(
-                transaction,
-                note,
-                constrainLaneObject(
-                    {
-                        noteType: note.noteType,
-                        left,
-                        size,
-                        elevation: note.elevation + active.deltaElevation,
-                    },
-                    {
-                        enabled:
-                            note === active.row.note &&
-                            (active.deltaLane !== 0 || active.deltaElevation !== 0),
-                        resizing: active.resizing,
-                    },
-                ),
-            )[0]
+            const replacement = editSelectedNote(transaction, note, editedObject(active, note))[0]
             return replacement ? [[note, replacement] as const] : []
         }),
     )
@@ -650,7 +647,14 @@ const controls: Pick<
         }
         const active = drag
         cancel()
-        if (active && (active.deltaLane || active.deltaElevation))
+        // A drop that changes nothing adds no undo step.
+        if (
+            active &&
+            (active.deltaLane || active.deltaElevation) &&
+            active.targets.some((note) =>
+                editChanges(active.source.store, note, editedObject(active, note)),
+            )
+        )
             pushState(() => i18n.value.elevation.history, edit(active))
     },
     dragCancel: cancel,

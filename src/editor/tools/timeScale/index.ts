@@ -33,7 +33,7 @@ import {
     yToValidBeat,
 } from '../../view'
 import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
-import { hitEntitiesAtPoint, isVisible } from '../utils'
+import { commitDrop, hitEntitiesAtPoint, isVisible } from '../utils'
 
 let active:
     | {
@@ -309,7 +309,8 @@ export const timeScale: Tool = {
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
 
-                editMoveOrReplace(
+                commitDrop(
+                    editMoveOrReplace,
                     active.entity,
                     constrainLaneObject({
                         groupId: active.entity.groupId,
