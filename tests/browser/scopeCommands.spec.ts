@@ -359,7 +359,7 @@ for (const kind of ['groups', 'stages'] as const) {
         for (const eye of await panel.locator('.manager-eye').all()) await expect(eye).toBeEnabled()
     })
 
-    test(`${kind} folder, All and bulk eyes toggle saved visibility while the selected entry stays visible`, async ({
+    test(`${kind} folder, All and bulk eyes update saved choices while the selected entry stays visible`, async ({
         page,
     }) => {
         await page.evaluate(async (kind) => {
@@ -429,6 +429,155 @@ for (const kind of ['groups', 'stages'] as const) {
         await panel.locator('.manager-all .manager-name').click()
         expect((await scope(page, kind)).visibility[selected]).toBe('hidden')
         expect((await scope(page, kind)).visibility[third]).toBe('full')
+    })
+
+    test(`${kind} All and folder eyes hide when every entry is effectively visible even if the focused entry is saved hidden`, async ({
+        page,
+    }) => {
+        await page.evaluate(async (kind) => {
+            const { history, settings, appImport } = window.editorTest
+            const current = history.state.value
+            const key = kind === 'groups' ? 'groups' : 'stages'
+            const folderKey = kind === 'groups' ? 'groupFolders' : 'stageFolders'
+            history.replaceState({
+                ...current,
+                [key]: new Map(
+                    [...current[key]].map(([id, entry]) => [
+                        id,
+                        { ...entry, folderId: 9000 as never },
+                    ]),
+                ),
+                [folderKey]: new Map([[9000 as never, { name: 'Collection', index: 0 }]]),
+            })
+            if (kind === 'groups') settings.showOtherGroups = true
+            else settings.showOtherStages = true
+            const { groupScope, stageScope } =
+                await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+            const scope = (kind === 'groups' ? groupScope : stageScope) as typeof groupScope
+            scope.setShown(2 as never, false)
+            scope.focus(2 as never)
+        }, kind)
+        const panel = await openManager(page, kind)
+        const selected = kind === 'groups' ? 'Other group' : 'Side stage'
+        const all = kind === 'groups' ? 'All Groups' : 'All Stages'
+        const saved = () =>
+            page.evaluate(async (kind) => {
+                const { groupScope, stageScope } =
+                    await window.editorTest.appImport<typeof import('../../src/editor/scope')>(
+                        '/src/editor/scope.ts',
+                    )
+                const scope = (kind === 'groups' ? groupScope : stageScope) as typeof groupScope
+                return [1, 2, 3].map((id) => scope.isShownInAll(id as never))
+            }, kind)
+        expect(await saved()).toEqual([true, false, true])
+        await expect(
+            panel.getByRole('button', { name: 'Hide Collection', exact: true }),
+        ).toBeEnabled()
+        await panel.getByRole('button', { name: `Hide ${all}`, exact: true }).click()
+        expect(await saved()).toEqual([false, false, false])
+        expect((await scope(page, kind)).visibility[selected]).toBe('full')
+        await panel.getByRole('button', { name: `Show ${all}`, exact: true }).click()
+        expect(await saved()).toEqual([true, true, true])
+        await page.evaluate(async (kind) => {
+            const { groupScope, stageScope } =
+                await window.editorTest.appImport<typeof import('../../src/editor/scope')>(
+                    '/src/editor/scope.ts',
+                )
+            ;(kind === 'groups' ? groupScope : stageScope).setSomeShown([2 as never], false)
+        }, kind)
+        await panel.getByRole('button', { name: 'Hide Collection', exact: true }).click()
+        expect(await saved()).toEqual([false, false, false])
+        await expect(panel.locator('.manager-folder-row .manager-eye mask')).toHaveCount(1)
+        // A partial collection shows every member; one visible member is not enough to hide.
+        await panel.getByRole('button', { name: 'Show Collection', exact: true }).click()
+        expect(await saved()).toEqual([true, true, true])
+        await page.evaluate((kind) => {
+            if (kind === 'groups') window.editorTest.settings.showOtherGroups = false
+            else window.editorTest.settings.showOtherStages = false
+        }, kind)
+        await expect(panel.getByRole('button', { name: `Show ${all}`, exact: true })).toBeDisabled()
+        await expect(
+            panel.getByRole('button', { name: 'Show Collection', exact: true }),
+        ).toBeDisabled()
+        expect(await saved()).toEqual([true, true, true])
+    })
+
+    test(`${kind} a folder containing only the selected entry disables its eye while bulk editing its saved choice stays available`, async ({
+        page,
+    }) => {
+        await page.evaluate(async (kind) => {
+            const { history, settings, appImport } = window.editorTest
+            const current = history.state.value
+            const key = kind === 'groups' ? 'groups' : 'stages'
+            const folderKey = kind === 'groups' ? 'groupFolders' : 'stageFolders'
+            history.replaceState({
+                ...current,
+                [key]: new Map(
+                    [...current[key]].map(([id, entry]) => [
+                        id,
+                        id === 2 ? { ...entry, folderId: 9000 as never } : entry,
+                    ]),
+                ),
+                [folderKey]: new Map([[9000 as never, { name: 'Only Selected', index: 0 }]]),
+            })
+            if (kind === 'groups') settings.showOtherGroups = true
+            else settings.showOtherStages = true
+            const { groupScope, stageScope } =
+                await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+            const scope = (kind === 'groups' ? groupScope : stageScope) as typeof groupScope
+            scope.setShown(2 as never, false)
+            scope.focus(2 as never)
+        }, kind)
+        const panel = await openManager(page, kind)
+        const selected = kind === 'groups' ? 'Other group' : 'Side stage'
+        await expect(
+            panel.getByRole('button', { name: 'Hide Only Selected', exact: true }),
+        ).toBeDisabled()
+        await expect(panel.locator('.manager-all .manager-eye')).toBeEnabled()
+        await nameButton(panel, selected).click({ modifiers: ['Control'] })
+        const bar = panel.locator('.manager-selection-bar')
+        await bar.getByRole('button', { name: 'Show Selected', exact: true }).click()
+        await bar.getByRole('button', { name: 'Hide Selected', exact: true }).click()
+        expect((await scope(page, kind)).visibility[selected]).toBe('full')
+        await panel.locator('.manager-selection-done').click()
+        await expect(
+            panel.getByRole('button', { name: 'Hide Only Selected', exact: true }),
+        ).toBeDisabled()
+        await panel.locator('.manager-all .manager-name').click()
+        expect((await scope(page, kind)).visibility[selected]).toBe('hidden')
+        await panel.getByRole('button', { name: 'Show Only Selected', exact: true }).click()
+        expect((await scope(page, kind)).visibility[selected]).toBe('full')
+    })
+
+    test(`${kind} All eye is disabled for a singleton selected chart and reenabled when returning to All`, async ({
+        page,
+    }) => {
+        await page.evaluate(async (kind) => {
+            const { history, fixtures, settings, appImport } = window.editorTest
+            const chart = structuredClone(fixtures.interaction)
+            chart.isDynamicStages = true
+            chart.groups = new Map([[1 as never, { name: 'Only Group' }]])
+            const stage = [...chart.stages.values()][0]!
+            chart.stages = new Map([[1 as never, { ...stage, name: 'Only Stage' }]])
+            chart.slides = chart.slides.map((notes) =>
+                notes.map((note) => ({ ...note, groupId: 1 as never, stageId: 1 as never })),
+            )
+            history.resetState(false, chart)
+            if (kind === 'groups') settings.showOtherGroups = true
+            else settings.showOtherStages = true
+            const { groupScope, stageScope } =
+                await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+            const scope = (kind === 'groups' ? groupScope : stageScope) as typeof groupScope
+            scope.setShown(1 as never, false)
+            scope.focus(1 as never)
+        }, kind)
+        const panel = await openManager(page, kind)
+        const all = kind === 'groups' ? 'All Groups' : 'All Stages'
+        await expect(panel.getByRole('button', { name: `Hide ${all}`, exact: true })).toBeDisabled()
+        await panel.locator('.manager-all .manager-name').click()
+        await expect(panel.getByRole('button', { name: `Show ${all}`, exact: true })).toBeEnabled()
+        await panel.getByRole('button', { name: `Show ${all}`, exact: true }).click()
+        await expect(panel.getByRole('button', { name: `Hide ${all}`, exact: true })).toBeEnabled()
     })
 
     test(`${kind} isolation guards all visibility APIs and deleting its target restores saved masks through undo`, async ({

@@ -149,7 +149,7 @@ for (const [device, options] of Object.entries(viewports)) {
                 panel.getByRole('button', { name: 'Hide Other group', exact: true }),
             ).toBeDisabled()
             await expect(
-                panel.getByRole('button', { name: 'Hide All Groups', exact: true }),
+                panel.getByRole('button', { name: 'Show All Groups', exact: true }),
             ).toBeDisabled()
             expect((await groupState(page)).visibility).toEqual({})
             await expect(panel.locator('.manager-all .manager-meta')).toHaveText('1/3')

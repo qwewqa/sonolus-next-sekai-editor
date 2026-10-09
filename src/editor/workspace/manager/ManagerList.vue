@@ -74,11 +74,12 @@ const focused = computed(() => props.model.focused())
 const counts = computed(() => ownedCounts(props.model.owner))
 
 const allShown = computed(() => scope.value.shownCount.value === scope.value.totalCount.value)
-// Bulk actions edit saved choices; the eye indicators still show effective visibility.
+// State eyes follow effective visibility. Explicit bulk and solo actions use saved choices.
+// A set containing only the focus cannot change its visible state, so its eye is disabled.
+const canToggleAll = computed(() => entries.value.some(({ id }) => scope.value.canSetShown(id)))
 const savedShownCount = computed(
     () => entries.value.filter(({ id }) => scope.value.isShownInAll(id)).length,
 )
-const savedAllShown = computed(() => savedShownCount.value === scope.value.totalCount.value)
 
 const label = (template: string, ...values: string[]) => interpolateRaw(template, ...values)
 
@@ -106,8 +107,7 @@ const folderName = (id: FolderId) => folders.value.name(id)
 const folderCount = (item: FolderItem) =>
     item.members.reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
 const shownMembers = (item: FolderItem) => item.members.filter((id) => scope.value.isShown(id))
-const savedShownMembers = (item: FolderItem) =>
-    item.members.filter((id) => scope.value.isShownInAll(id))
+const canToggleFolder = (item: FolderItem) => item.members.some((id) => scope.value.canSetShown(id))
 const membersId = (id: FolderId) => `${uid}-folder-${String(id)}`
 
 /** The name a row shows, with its folder when another entry shares it. */
@@ -414,7 +414,8 @@ const onSelectAll = () => {
 }
 
 const onToggleAll = () => {
-    scope.value.setAllShown(!savedAllShown.value)
+    if (!canToggleAll.value) return
+    scope.value.setAllShown(!allShown.value)
 }
 
 const onSelect = (id: T) => {
@@ -442,10 +443,9 @@ const onToggle = (id: T, soloed: boolean) => {
 
 /** A folder's eye shows every member when any is hidden, else hides them all. */
 const onToggleFolder = (item: FolderItem, soloed: boolean) => {
-    if (!item.members.length) return
+    if (!canToggleFolder(item)) return
     if (soloed) solo(item.members)
-    else
-        scope.value.setSomeShown(item.members, savedShownMembers(item).length < item.members.length)
+    else scope.value.setSomeShown(item.members, shownMembers(item).length < item.members.length)
 }
 
 // Selecting entries and folders for bulk actions: view state of this list only.
@@ -1865,7 +1865,7 @@ const folderEyeLabel = (item: FolderItem) =>
     label(
         !item.members.length
             ? i18n.value.workspace.folders.empty
-            : savedShownMembers(item).length < item.members.length
+            : shownMembers(item).length < item.members.length
               ? i18n.value.workspace.manager.show
               : i18n.value.workspace.manager.hide,
         folderName(item.id),
@@ -1894,8 +1894,8 @@ const folderEyeLabel = (item: FolderItem) =>
                 :partial="scope.shownCount.value > 0 && !allShown"
                 :grip-space="hasGrip"
                 :muted="false"
-                :eye-label="savedAllShown ? strings.hideAll : strings.showAll"
-                :eye-disabled="!canSetVisibility"
+                :eye-label="allShown ? strings.hideAll : strings.showAll"
+                :eye-disabled="!canToggleAll"
                 :meta="allShown ? undefined : `${scope.shownCount.value}/${scope.totalCount.value}`"
                 :mode-label="i18n.workspace.manager.selectMultiple"
                 :mode-active="selecting"
@@ -1972,7 +1972,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                         ? `${folderEyeLabel(item)}\n${i18n.workspace.manager.soloHint}`
                                         : folderEyeLabel(item)
                                 "
-                                :eye-disabled="!canSetVisibility || !item.members.length"
+                                :eye-disabled="!canToggleFolder(item)"
                                 :meta="`${folderCount(item)}`"
                                 :meta-title="
                                     label(i18n.workspace.manager.objects, `${folderCount(item)}`)
