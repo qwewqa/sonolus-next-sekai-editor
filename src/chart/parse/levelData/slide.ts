@@ -21,6 +21,7 @@ export const parseSlidesToChart = ({
     getGroupId,
     getStageId,
     defaultGuideColors,
+    noteSources,
 }: ParseCtx) => {
     const refs = new Map<string, NoteEntity>()
     const slides = new Map<string, string[]>()
@@ -37,6 +38,7 @@ export const parseSlidesToChart = ({
                     true,
                     undefined,
                     defaultGuideColors.has(entity),
+                    noteSources,
                 ),
             ])
             continue
@@ -89,6 +91,7 @@ export const parseSlidesToChart = ({
                         i === slide.length - 1,
                         prevActiveHead,
                         defaultGuideColors.has(entity),
+                        noteSources,
                     )
 
                     if (i === 0 || object.isConnectorSeparator) {
@@ -374,6 +377,7 @@ const toNoteObject = (
     isLast: boolean,
     prevActiveHead: NoteObject | undefined,
     defaultGuideColor: boolean,
+    noteSources?: Map<NoteObject, LevelDataEntity>,
 ) => {
     const lane = getValue(entity, 'lane', laneSchema)
     const size = getValue(entity, 'size', sizeSchema)
@@ -418,6 +422,7 @@ const toNoteObject = (
             ],
     }
 
+    noteSources?.set(object, entity)
     const [isFake, archetype1] = startsWith(entity.archetype, 'Fake')
     object.isFake = isFake
 

@@ -19,7 +19,7 @@ export const pasteAtContextPosition = async (
     const source = state.value
     const lane = xToLane(x)
     const beat = timeToBeat(bpms.value, Math.max(0, yToTime(y)))
-    const { division, snapping } = view
+    const { division, snapping, layout } = view
     // A focus or visibility change while the clipboard is read invalidates the paste.
     const scope = scopeLookup.value
     try {
@@ -29,12 +29,18 @@ export const pasteAtContextPosition = async (
     }
 
     const data = clipboardEntry.value?.data
-    if (!hasSameChartData(source, state.value) || scopeLookup.value !== scope || !data) return false
+    if (
+        !hasSameChartData(source, state.value) ||
+        scopeLookup.value !== scope ||
+        (source.isDynamicStages && view.layout !== layout) ||
+        !data
+    )
+        return false
 
     const beatOffset =
         snapping === 'absolute'
             ? align(beat, division) - data.beat
             : align(beat - data.beat, division)
-    await pasteAtPosition(lane, beatOffset, modifiers)
+    await pasteAtPosition(lane, beatOffset, modifiers, { composed: true })
     return true
 }

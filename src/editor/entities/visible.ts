@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { keys } from '..'
 import { beatToTime } from '../../state/integrals/bpms'
 import { computedArray } from '../../utils/array'
+import { createComposedLayout } from '../composed'
 import { cullAllSceneEntities, sceneBpms, sceneState } from '../sceneState'
 import { scopeLookup } from '../scope'
 import { entityScopeVisibility } from '../scopeRules'
@@ -27,17 +28,23 @@ export const visibleSelectedEntities = computedArray(() => {
     const strokePadding = view.w > 0 ? bounds.w / view.w : 0
     const unitsPerSecond = ups.value
     const integrals = sceneBpms.value
+    const composed =
+        view.layout === 'composed' && sceneState.value.isDynamicStages
+            ? createComposedLayout(sceneState.value)
+            : undefined
 
-    return culledEntities.value.filter(
-        (entity) =>
+    return culledEntities.value.filter((entity) => {
+        const hitbox = composed?.hitbox(entity) ?? entity.hitbox
+        return (
             selected.has(entity) &&
-            entity.hitbox &&
+            hitbox &&
             entityScopeVisibility(entity, scope) !== 'hidden' &&
             isHitboxInView(
-                entity.hitbox,
-                beatToTime(integrals, entity.hitbox.beat) * unitsPerSecond,
+                hitbox,
+                beatToTime(integrals, hitbox.beat) * unitsPerSecond,
                 bounds,
                 strokePadding,
-            ),
-    )
+            )
+        )
+    })
 })

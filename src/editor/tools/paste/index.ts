@@ -18,6 +18,8 @@ import { checkDynamicStages, isDynamicStages } from '../../../history/dynamicSta
 import { defaultGroupId, groups } from '../../../history/groups'
 import { defaultStageId, stages } from '../../../history/stages'
 import { i18n } from '../../../i18n'
+import { settings } from '../../../settings'
+import type { State } from '../../../state'
 import type { Entity, EntityType } from '../../../state/entities'
 import { toBpmEntity, type BpmEntity } from '../../../state/entities/bpm'
 import {
@@ -57,8 +59,10 @@ import { getInStoreGrid } from '../../../state/store/grid'
 import type { StoreSlides } from '../../../state/store/slides'
 import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
-import { alignComputed, shiftComputed } from '../../../utils/math'
+import { align, alignComputed, shiftComputed } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
+import { createComposedLayout } from '../../composed'
+import { inverseAffine } from '../../composedPointer'
 import type { Modifiers } from '../../controls/gestures/pointer'
 import { constrainLaneObject } from '../../laneLimits'
 import { notify } from '../../notification'
@@ -74,6 +78,7 @@ let active:
           beat: number
           entities: Entity[]
           onlyType: EntityType | undefined
+          anchor: ClipboardChart['anchor']
       }
     | undefined
 // Where the hover last read the clipboard.
@@ -98,14 +103,25 @@ export const paste: Tool = {
         const lane = xToLane(x)
         const beatOffset = toPasteBeatOffset(landing(entities), yToBeatOffset(y, data.beat))
 
-        showGhost(entities, onlyType, data.lane, lane, beatOffset, modifiers.shift)
+        showGhost(
+            entities,
+            onlyType,
+            data.lane,
+            lane,
+            beatOffset,
+            modifiers.shift,
+            data.anchor,
+            data.beat,
+        )
     },
 
     async tap(x, y, modifiers) {
         const data = clipboardEntry.value?.data
         if (!data) return
 
-        await pasteAtPosition(xToLane(x), yToBeatOffset(y, data.beat), modifiers)
+        await pasteAtPosition(xToLane(x), yToBeatOffset(y, data.beat), modifiers, {
+            composed: true,
+        })
     },
 
     cursor() {
@@ -125,6 +141,7 @@ export const paste: Tool = {
             beat: data.beat,
             entities,
             onlyType: getOnlyEntityType(entities),
+            anchor: data.anchor,
         }
 
         const lane = xToLane(x)
@@ -133,7 +150,16 @@ export const paste: Tool = {
             yToBeatOffset(y, active.beat),
         )
 
-        showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
+        showGhost(
+            active.entities,
+            active.onlyType,
+            active.lane,
+            lane,
+            beatOffset,
+            modifiers.shift,
+            active.anchor,
+            active.beat,
+        )
 
         return true
     },
@@ -147,7 +173,16 @@ export const paste: Tool = {
             yToBeatOffset(y, active.beat),
         )
 
-        showGhost(active.entities, active.onlyType, active.lane, lane, beatOffset, modifiers.shift)
+        showGhost(
+            active.entities,
+            active.onlyType,
+            active.lane,
+            lane,
+            beatOffset,
+            modifiers.shift,
+            active.anchor,
+            active.beat,
+        )
     },
 
     async dragEnd(x, y, modifiers) {
@@ -163,6 +198,23 @@ export const paste: Tool = {
             landing(active.entities),
             yToBeatOffset(y, active.beat),
         )
+
+        if (isComposedPaste()) {
+            finishPaste(
+                buildComposedPaste(
+                    active.entities,
+                    active.onlyType,
+                    active.lane,
+                    lane,
+                    beatOffset,
+                    modifiers.shift,
+                    active.anchor,
+                    active.beat,
+                ),
+            )
+            active = undefined
+            return
+        }
 
         const selectedEntities: Entity[] = []
         for (const entity of active.entities) {
@@ -211,15 +263,21 @@ let ghost:
           pastedBpms: BpmObject[]
           entities: Entity[]
           infos: StoreSlides['info']
+          state?: State
       }
     | undefined
+let composedGhostKeys: unknown[] | undefined
 
 /** The ghost's slides, for drawing their notes as they'll land. */
 export const pasteGhostInfos = () => ghost?.infos
 
+/** Includes the pasted events that determine a composed ghost's stage positions. */
+export const pasteGhostState = () => ghost?.state
+
 /** Drops the ghost once it no longer shows. */
 export const clearPasteGhost = () => {
     ghost = undefined
+    composedGhostKeys = undefined
 }
 
 const isSameSlides = (a: NoteObject[][], b: NoteObject[][]) =>
@@ -266,7 +324,57 @@ const showGhost = (
     lane: number,
     beatOffset: number,
     flip: boolean,
+    anchorIndex?: number,
+    anchorBeat = 0,
 ) => {
+    if (isComposedPaste()) {
+        const keys = [
+            state.value,
+            entities,
+            startLane,
+            lane,
+            beatOffset,
+            flip,
+            anchorIndex,
+            anchorBeat,
+            view.groupId,
+            view.stageId,
+            settings.maxLane,
+            view.laneDivision,
+        ]
+        if (ghost?.state && composedGhostKeys?.every((key, index) => key === keys[index])) {
+            view.entities = { hovered: [], creating: ghost.entities }
+            return
+        }
+        const result = buildComposedPaste(
+            entities,
+            onlyType,
+            startLane,
+            lane,
+            beatOffset,
+            flip,
+            anchorIndex,
+            anchorBeat,
+        )
+        const notes = result.selectedEntities.filter((entity) => entity.type === 'note')
+        const ids = new Set(notes.map((note) => note.slideId))
+        const creating = [
+            ...[...ids].flatMap((id) => result.store.slides.connector.get(id) ?? []),
+            ...result.selectedEntities,
+        ]
+        ghost = {
+            slides: [],
+            bpms: result.bpms,
+            pastedBpms: [],
+            entities: creating,
+            infos: result.store.slides.info,
+            state: result,
+        }
+        composedGhostKeys = keys
+        view.entities = { hovered: [], creating }
+        return
+    }
+    if (ghost?.state) clearPasteGhost()
     const creating: Entity[] = []
     const slides = new Map<SlideId, NoteObject[]>()
     const pastedBpms: BpmObject[] = []
@@ -365,6 +473,8 @@ export const toPasteBeatOffset = (entities: readonly { beat: number }[], beatOff
     entities.reduce((offset, entity) => Math.max(offset, -entity.beat), beatOffset)
 
 export type PastePositionOptions = {
+    /** The main chart canvas supplies display lanes; elevation keeps its own mapping. */
+    composed?: boolean
     notesOnly?: boolean
     mapNote?: (entity: NoteEntity, beat: number) => Partial<NoteObject>
 }
@@ -390,6 +500,22 @@ export const pasteAtPosition = async (
 
     const onlyType = getOnlyEntityType(entities)
     const shiftedOffset = toPasteBeatOffset(landing(entities), beatOffset)
+
+    if (options.composed && isComposedPaste()) {
+        finishPaste(
+            buildComposedPaste(
+                entities,
+                onlyType,
+                data.lane,
+                lane,
+                shiftedOffset,
+                modifiers.shift,
+                data.anchor,
+                data.beat,
+            ),
+        )
+        return
+    }
 
     const selectedEntities: Entity[] = []
     for (const entity of entities) {
@@ -433,7 +559,222 @@ export const pasteAtPosition = async (
     notify(interpolate(() => i18n.value.tools.paste.pasted, `${selectedEntities.length}`))
 }
 
-type ClipboardChart = { chart: Chart; source?: ClipboardData['source'] }
+type ClipboardChart = {
+    chart: Chart
+    source?: ClipboardData['source']
+    anchor?: number
+}
+
+const isComposedPaste = () => view.layout === 'composed' && isDynamicStages.value
+
+// Notes and their controls share one authored translation. Probe the complete
+// prospective paste so moving its pivot/translation also moves the grabbed note.
+const buildComposedPaste = (
+    entities: Entity[],
+    onlyType: EntityType | undefined,
+    startLane: number,
+    lane: number,
+    beatOffset: number,
+    flip: boolean,
+    anchorIndex?: number,
+    anchorBeat = 0,
+) => {
+    const notes = entities.filter((entity) => entity.type === 'note')
+    if (!notes.length) {
+        const transaction = createTransaction(state.value)
+        const selected: Entity[] = []
+        for (const entity of entities) {
+            const added = pastes[entity.type]?.(
+                transaction,
+                onlyType,
+                entity as never,
+                startLane,
+                lane,
+                entity.beat + beatOffset,
+                flip,
+                selected,
+            )
+            if (added) selected.push(...added)
+        }
+        return transaction.commit(selected)
+    }
+    const focus =
+        (anchorIndex === undefined ? undefined : notes[anchorIndex]) ??
+        [...notes].sort(
+            (a, b) =>
+                Math.abs(a.beat - anchorBeat) - Math.abs(b.beat - anchorBeat) ||
+                Math.abs(a.left + a.size / 2 - startLane) -
+                    Math.abs(b.left + b.size / 2 - startLane),
+        )[0]
+    if (!focus) return state.value
+    const focusIndex = notes.indexOf(focus)
+    const pasteAtDelta = (delta: number, limited = false) =>
+        pasteAuthored(entities, startLane, beatOffset, flip, delta, limited)
+    // These probes must neither snap nor clamp: either changes the response slope.
+    const base = pasteAtDelta(0)
+    const target = base.selectedEntities.filter((entity) => entity.type === 'note')[focusIndex]
+    if (!target) return base
+    const layout = createComposedLayout(base)
+    const position = layout.notePosition(target)
+    const probe = pasteAtDelta(1)
+    const probeTarget = probe.selectedEntities.filter((entity) => entity.type === 'note')[
+        focusIndex
+    ]
+    if (!probeTarget) return base
+    const sourceLeft = flip ? 2 * startLane - focus.left - focus.size : focus.left
+    const grasp = startLane - sourceLeft
+    const solved = inverseAffine(
+        lane - grasp,
+        { input: 0, output: position.left },
+        { input: 1, output: createComposedLayout(probe).notePosition(probeTarget).left },
+    )
+    // A cancelled response cannot follow the pointer; retain the baseline instead
+    // of inventing a different translation for the note and its stage controls.
+    if (solved === undefined) return pasteAtDelta(0, true)
+    const phase = layout.gridOffset(target.stageId, target.beat)
+    const snappedLeft = phase + align(target.left + solved - phase, view.laneDivision)
+    const delta = snappedLeft - target.left
+    return pasteAtDelta(delta, true)
+}
+
+/** The same raw edit for every pasted position, with limits only at publication. */
+const pasteAuthored = (
+    entities: Entity[],
+    anchor: number,
+    beatOffset: number,
+    flip: boolean,
+    delta: number,
+    limited: boolean,
+) => {
+    const transaction = createTransaction(state.value)
+    const selected: Entity[] = []
+    const move = (left: number, size = 0) =>
+        limited
+            ? flip
+                ? alignComputed(2 * anchor - left - size + delta)
+                : shiftComputed(left, delta)
+            : (flip ? 2 * anchor - left - size : left) + delta
+    for (const entity of entities) {
+        const common = { ...entity, beat: entity.beat + beatOffset }
+        const stageId =
+            'stageId' in entity ? (view.stageId ?? entity.stageId) : defaultStageId.value
+        const limit = <T extends Parameters<typeof constrainLaneObject>[0]>(object: T) =>
+            constrainLaneObject(object, { enabled: limited })
+        let added: Entity[] | undefined
+        switch (entity.type) {
+            case 'bpm':
+            case 'timeScale':
+                // Mixed selections keep the time-scale editor lane, as in Basic.
+                added = pastes[entity.type]?.(
+                    transaction,
+                    undefined,
+                    entity as never,
+                    0,
+                    0,
+                    common.beat,
+                    false,
+                    selected,
+                )
+                break
+            case 'note':
+                added = addNote(
+                    transaction,
+                    entity.slideId,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        stageId,
+                        groupId: view.groupId ?? entity.groupId,
+                        left: move(entity.left, entity.size),
+                        flickDirection: flip
+                            ? flippedFlickDirections[entity.flickDirection]
+                            : entity.flickDirection,
+                    }),
+                )
+                break
+            case 'cameraEventJoint':
+                added = addCameraEventJoint(
+                    transaction,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        cameraLeft: move(entity.cameraLeft, entity.cameraSize),
+                        cameraRotation: flip ? -entity.cameraRotation : entity.cameraRotation,
+                        cameraZoomTargetLane: flip
+                            ? -entity.cameraZoomTargetLane
+                            : entity.cameraZoomTargetLane,
+                    }),
+                )
+                break
+            case 'stageMaskEventJoint':
+                added = addStageMaskEventJoint(
+                    transaction,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        stageId,
+                        maskLeft: move(entity.maskLeft, entity.maskSize),
+                    }),
+                )
+                break
+            case 'stagePivotEventJoint':
+                added = addStagePivotEventJoint(
+                    transaction,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        stageId,
+                        pivotLane: move(entity.pivotLane),
+                    }),
+                )
+                break
+            case 'stageStyleEventJoint':
+                added = addStageStyleEventJoint(
+                    transaction,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        stageId,
+                        leftBorderStyle: flip ? entity.rightBorderStyle : entity.leftBorderStyle,
+                        rightBorderStyle: flip ? entity.leftBorderStyle : entity.rightBorderStyle,
+                    }),
+                )
+                break
+            case 'stageTransformEventJoint':
+                added = addStageTransformEventJoint(
+                    transaction,
+                    limit({
+                        ...entity,
+                        beat: common.beat,
+                        stageId,
+                        xTranslation: move(entity.xTranslation),
+                        rotation: flip ? -entity.rotation : entity.rotation,
+                    }),
+                )
+                break
+            case 'cameraEventConnection':
+            case 'stageMaskEventConnection':
+            case 'stagePivotEventConnection':
+            case 'stageStyleEventConnection':
+            case 'stageTransformEventConnection':
+            case 'connector':
+                break
+        }
+        if (added) selected.push(...added)
+    }
+    return transaction.commit(selected)
+}
+
+const finishPaste = (result: State) => {
+    const message = interpolate(
+        () => i18n.value.tools.paste.pasted,
+        `${result.selectedEntities.length}`,
+    )
+    pushState(message, result)
+    view.entities = { hovered: [], creating: [] }
+    clearPasteGhost()
+    notify(message)
+}
 
 // Pastes into the copying chart keep their own groups and stages; others map by position.
 const mapIds = <T extends number>(

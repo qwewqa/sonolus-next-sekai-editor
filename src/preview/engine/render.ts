@@ -4,9 +4,23 @@ import { getStyledParticle } from '../particle'
 import type { PreviewSkin } from '../skin'
 import { getStyledSkin } from '../skin'
 import { layoutBackground } from './background'
-import { attachEasedFrac } from './chart'
-import { ConnectorVisualState, drawConnector, type ConnectorEndpoint } from './connector'
+import { attachEasedFrac, attachFrac } from './chart'
+import {
+    ConnectorVisualState,
+    drawConnector,
+    type ConnectorEndpoint,
+    type ElevationConnectorTransform,
+} from './connector'
 import type { PreviewFrameContext } from './context'
+import {
+    blendElevationTransform,
+    effectiveNoteElevation,
+    noteElevationTransform,
+    noteTransformAtElevation,
+    previewGuideAlphaFraction,
+    sameAuthoredBeat,
+    usesLocalElevationEase,
+} from './elevation'
 import {
     CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
     MAX_HIT_EFFECT_DURATION,
@@ -290,10 +304,6 @@ export const renderPreviewFrame = (
         return basicVisualLane(note)
     }
 
-    // sekai/lib/note.py get_attach_frac
-    const attachFrac = (note: PreviewNote, head: PreviewNote, tail: PreviewNote) =>
-        safeUnlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
-
     const basicYOffset = (note: PreviewNote) =>
         note.stageIndex >= 0 ? (stageProps[note.stageIndex]?.yOffset ?? 0) : 0
 
@@ -345,6 +355,22 @@ export const renderPreviewFrame = (
 
     const visualStageTransform = (note: PreviewNote): StageTransform => {
         if (note.isAttached && note.attachHead && note.attachTail) {
+            if (sameAuthoredBeat(note.attachHead, note.attachTail)) {
+                return blendElevationTransform(
+                    context.layout,
+                    currentLayoutTransform(context.layout),
+                    noteElevationTransform(
+                        stageProps[note.attachHead.stageIndex],
+                        note.attachHead.elevation,
+                    ),
+                    noteElevationTransform(
+                        stageProps[note.attachTail.stageIndex],
+                        note.attachTail.elevation,
+                    ),
+                    attachEasedFrac(note),
+                    attachFrac(note),
+                )
+            }
             return blendStageTransform(
                 basicStageTransform(note.attachHead),
                 basicStageTransform(note.attachTail),
@@ -377,12 +403,17 @@ export const renderPreviewFrame = (
         if (note.isAttached && note.attachHead && note.attachTail) {
             const head = note.attachHead
             const tail = note.attachTail
+            if (sameAuthoredBeat(head, tail)) {
+                return !hasReached(head.targetTime)
+                    ? lerp(basicProgress(head), basicProgress(tail), attachFrac(note, head, tail))
+                    : 1
+            }
             const headProgress = !hasReached(head.targetTime) ? basicProgress(head) : 1
             const tailProgress = basicProgress(tail)
             const headFrac = !hasReached(head.targetTime)
                 ? 0
                 : safeUnlerpClamped(head.targetTime, tail.targetTime, now)
-            const frac = safeUnlerpClamped(head.targetTime, tail.targetTime, note.targetTime)
+            const frac = attachFrac(note, head, tail)
             return lerp(headProgress, tailProgress, safeUnlerpClamped(headFrac, 1, frac))
         }
         return basicProgress(note)
@@ -507,6 +538,22 @@ export const renderPreviewFrame = (
         held = false,
     ): StageTransform => {
         if (note.isAttached && note.attachHead && note.attachTail) {
+            if (sameAuthoredBeat(note.attachHead, note.attachTail)) {
+                return blendElevationTransform(
+                    context.layout,
+                    currentLayoutTransform(context.layout),
+                    noteElevationTransform(
+                        stagePropsAtTime(note.attachHead.stageIndex, t, held),
+                        note.attachHead.elevation,
+                    ),
+                    noteElevationTransform(
+                        stagePropsAtTime(note.attachTail.stageIndex, t, held),
+                        note.attachTail.elevation,
+                    ),
+                    attachEasedFrac(note),
+                    attachFrac(note),
+                )
+            }
             return blendStageTransform(
                 basicStageTransformAt(context, note.attachHead, t, held),
                 basicStageTransformAt(context, note.attachTail, t, held),
@@ -651,6 +698,34 @@ export const renderPreviewFrame = (
             }
         }
 
+        let elevationTransform: ElevationConnectorTransform | undefined
+        if (
+            sameAuthoredBeat(head, tail) &&
+            !(
+                !head.isAttached &&
+                !tail.isAttached &&
+                head.stageIndex === tail.stageIndex &&
+                (head.elevation ?? 0) === (tail.elevation ?? 0)
+            )
+        ) {
+            if (usesLocalElevationEase(head, tail)) {
+                headEndpoint.easeFrac = 0
+                tailEndpoint.easeFrac = 1
+            }
+            const propsAt = (stageIndex: number) => stageProps[stageIndex]
+            const first = effectiveNoteElevation(head, propsAt)
+            const last = effectiveNoteElevation(tail, propsAt)
+            const camera = currentLayoutTransform(context.layout)
+            elevationTransform = (geometryFrac, linearFrac) => {
+                const elevation = lerp(first, last, linearFrac)
+                return blendStageTransform(
+                    noteTransformAtElevation(context.layout, camera, head, propsAt, elevation),
+                    noteTransformAtElevation(context.layout, camera, tail, propsAt, elevation),
+                    geometryFrac,
+                )
+            }
+        }
+
         drawConnector(
             context,
             selectedDraw(connector.source),
@@ -671,6 +746,13 @@ export const renderPreviewFrame = (
             connector.fullScreen,
             connector.throughJudgeLine,
             leftLimit ? head.targetTime : undefined,
+            elevationTransform,
+            sameAuthoredBeat(segmentHead, segmentTail)
+                ? [
+                      previewGuideAlphaFraction(head, segmentHead, segmentTail) ?? 0,
+                      previewGuideAlphaFraction(tail, segmentHead, segmentTail) ?? 1,
+                  ]
+                : undefined,
         )
     }
 

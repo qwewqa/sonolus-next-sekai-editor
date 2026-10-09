@@ -13,7 +13,7 @@ import { isScenePreview, sceneState } from '../sceneState'
 import { scopeLookup } from '../scope'
 import { bgmOffsetDelta } from '../tools/offset'
 import { tool, tools } from '../tools'
-import { pasteGhostInfos } from '../tools/paste'
+import { pasteGhostInfos, pasteGhostState } from '../tools/paste'
 import { isVisible } from '../tools/utils'
 import { hoveredEntities, isViewRecentlyActive, view, viewBox } from '../view'
 import OffscreenNoteIndicators from '../OffscreenNoteIndicators.vue'
@@ -30,6 +30,8 @@ import { createFrameScheduler, prepareSurface } from './surface'
 import { FIGURE_MIDDLE, measureFigureMiddle, measureTextMiddle } from './text'
 import type { EdgeLabelYs, EditorDrawContext } from './types'
 import { createWaveformRenderer } from './waveform'
+import { createComposedLayout } from '../composed'
+import { createStageSurface } from './stageSurface'
 
 const container = useTemplateRef('container')
 const { cursor, cursorListeners } = useCanvasCursor(() => undefined)
@@ -46,6 +48,12 @@ const chartFrame = createFrameScheduler()
 const overlayFrame = createFrameScheduler()
 const notes = createNoteRenderer()
 const connectors = createConnectorRenderer()
+const stages = createStageSurface()
+const composed = computed(() =>
+    view.layout === 'composed' && sceneState.value.isDynamicStages
+        ? createComposedLayout(sceneState.value)
+        : undefined,
+)
 const waveform = createWaveformRenderer(() => waveformVersion.value++)
 let creatingCanvas: HTMLCanvasElement | undefined
 
@@ -73,12 +81,14 @@ const hoveredSet = computed(() => new Set(hoveredEntities.value))
 const offscreenGroups = computed(() => {
     const bounds = viewBox.value
     const scale = view.w / bounds.w
-    const notes = orderedEntities.value.flatMap(({ entity, highlighted, opacity }) =>
-        entity.type === 'note'
+    const notes = orderedEntities.value.flatMap(({ entity, highlighted, opacity }) => {
+        const position =
+            entity.type === 'note' ? (composed.value?.notePosition(entity) ?? entity) : undefined
+        return entity.type === 'note' && position
             ? [
                   {
-                      left: (entity.left - bounds.l) * scale,
-                      right: (entity.left + entity.size - bounds.l) * scale,
+                      left: (position.left - bounds.l) * scale,
+                      right: (position.left + position.size - bounds.l) * scale,
                       y:
                           (beatToTime(sceneState.value.bpms, entity.beat) * bounds.ups - bounds.t) *
                           scale,
@@ -88,8 +98,8 @@ const offscreenGroups = computed(() => {
                       target: isVisible(entity) ? entity : undefined,
                   },
               ]
-            : [],
-    )
+            : []
+    })
     // Clear of the range labels in the corners.
     return groupOffscreenNotes(notes, view.w, 0, view.h, RANGE_LABEL_HEIGHT)
 })
@@ -111,6 +121,7 @@ const contextInputs = computed(() => ({
     bounds: viewBox.value,
     ups: viewBox.value.ups,
     state: sceneState.value,
+    composed: composed.value,
     defaultGroupId: defaultGroupId.value,
     showStageName: settings.showStageName,
     showGroupName: settings.showGroupName,
@@ -220,6 +231,7 @@ watchEffect(
             }
             const context = { ...base, names: createNameLayer() }
             waveform.draw(context, currentWaveform, offset, currentTimes)
+            stages.draw(context, inputs.width, inputs.height, currentBeats, scope, laneDivision)
             drawGrid(
                 context,
                 currentBeats,
@@ -234,8 +246,8 @@ watchEffect(
             ctx.save()
             ctx.strokeStyle = '#fff'
             ctx.beginPath()
-            ctx.moveTo(-7, cursor * inputs.ups)
-            ctx.lineTo(7, cursor * inputs.ups)
+            ctx.moveTo(inputs.composed ? inputs.bounds.l : -7, cursor * inputs.ups)
+            ctx.lineTo(inputs.composed ? inputs.bounds.r : 7, cursor * inputs.ups)
             ctx.stroke()
             ctx.restore()
             drawEventInfinities(context, visibilities, scope, showOtherObjects)
@@ -263,6 +275,8 @@ watchEffect(
         const selected = visibleSelectedEntities.value
         const selection = view.selection
         const hover = view.isHoverHidden ? undefined : view.hoverTime
+        const ghostState =
+            inputs.composed && tool.value === tools.paste ? pasteGhostState() : undefined
         overlayFrame.schedule((timestamp) => {
             notes.beginFrame(timestamp)
             const ctx = prepareSurface(
@@ -287,6 +301,8 @@ watchEffect(
                 if (creatingContext) {
                     const context = {
                         ...inputs,
+                        state: ghostState ?? inputs.state,
+                        composed: ghostState ? createComposedLayout(ghostState) : inputs.composed,
                         ctx: creatingContext,
                         slideInfos: tool.value === tools.paste ? pasteGhostInfos() : undefined,
                     }
@@ -311,7 +327,8 @@ watchEffect(
             ctx.setLineDash([6 / inputs.scale, 4 / inputs.scale])
             ctx.globalAlpha = 0.5
             for (const entities of [hovered, selected]) {
-                for (const { hitbox } of entities) {
+                for (const entity of entities) {
+                    const hitbox = inputs.composed?.hitbox(entity) ?? entity.hitbox
                     if (!hitbox) continue
                     ctx.strokeRect(
                         hitbox.lane - hitbox.w - 0.1,
@@ -333,8 +350,8 @@ watchEffect(
             }
             if (hover !== undefined) {
                 ctx.beginPath()
-                ctx.moveTo(-6, hover * inputs.ups)
-                ctx.lineTo(6, hover * inputs.ups)
+                ctx.moveTo(inputs.composed ? inputs.bounds.l : -6, hover * inputs.ups)
+                ctx.lineTo(inputs.composed ? inputs.bounds.r : 6, hover * inputs.ups)
                 ctx.stroke()
             }
             ctx.restore()
@@ -362,6 +379,7 @@ const updateFont = () => {
 const restoreContext = () => {
     notes.clear()
     connectors.clear()
+    stages.clear()
     // A restored surface has lost its pixels even if chart time is paused.
     redrawVersion.value++
 }
@@ -377,6 +395,7 @@ onUnmounted(() => {
     overlayFrame.cancel()
     notes.clear()
     connectors.clear()
+    stages.clear()
     waveform.clear()
     if (creatingCanvas) creatingCanvas.width = creatingCanvas.height = 1
     window.removeEventListener('resize', updatePixelRatio)

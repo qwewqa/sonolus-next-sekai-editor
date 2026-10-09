@@ -11,8 +11,9 @@ import { allowsSimLine, getNoteRole, type NoteRole } from '../../state/entities/
 import { findIntegral } from '../../state/integrals'
 import { beatToTime } from '../../state/integrals/bpms'
 import type { StoreSlides } from '../../state/store/slides'
+import { previewAttachmentFrac } from './elevation'
 import { FlickDirection, type CameraChange, type FlickDirectionValue } from './layout'
-import { ease, lerp, unlerpClamped, type EaseTypeValue } from './math'
+import { ease, lerp, type EaseTypeValue } from './math'
 import {
     ConnectorKind,
     NoteKind,
@@ -350,6 +351,7 @@ export const createPreviewChartBuilder = () => {
                     const groupIndex = groupIndexes.get(note.groupId) ?? 0
                     const previewNote: PreviewNote = {
                         source: note,
+                        beat: note.beat,
                         kind: noteKinds[role][isFlick ? 1 : 0],
                         elevation: note.elevation,
                         style: note.noteStyle,
@@ -562,20 +564,10 @@ export const createPreviewChartBuilder = () => {
 export const buildPreviewChart = (state: State, noteSpeed: number) =>
     createPreviewChartBuilder()(state, noteSpeed)
 
-export const attachEasedFrac = (note: PreviewNote) => {
-    if (!note.attachHead || !note.attachTail) return 0
+export const attachFrac = previewAttachmentFrac
 
-    return ease(
-        note.attachHead.connectorEase,
-        Math.abs(note.attachTail.targetTime - note.attachHead.targetTime) < 1e-6
-            ? 0.5
-            : unlerpClamped(
-                  note.attachHead.targetTime,
-                  note.attachTail.targetTime,
-                  note.targetTime,
-              ),
-    )
-}
+export const attachEasedFrac = (note: PreviewNote) =>
+    note.attachHead && note.attachTail ? ease(note.attachHead.connectorEase, attachFrac(note)) : 0
 
 const judgeLineColors: Record<JudgmentLineColor, number> = {
     neutral: 0,

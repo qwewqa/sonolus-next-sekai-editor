@@ -4,9 +4,12 @@ import { cullAllEntities, hitAllEntities, hitEntities } from '../history/store'
 import { isToolModalOpen } from '../modals'
 import { getPreviewState } from '../preview/edit'
 import type { EntityType } from '../state/entities'
+import { view } from './view'
 
 export const sceneState = computed(() =>
-    isToolModalOpen.value ? getPreviewState(state.value) : state.value,
+    isToolModalOpen.value || (view.layout === 'composed' && state.value.isDynamicStages)
+        ? getPreviewState(state.value)
+        : state.value,
 )
 export const sceneBpms = computed(() => sceneState.value.bpms)
 export const isScenePreview = computed(() => sceneState.value !== state.value)

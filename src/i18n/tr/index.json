@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "Bağlam Menüsünü Aç"
+    },
+    "editorLayout": {
+      "title": "Editör Düzeni",
+      "basic": "Temel düzene geçildi",
+      "composed": "Birleşik düzene geçildi"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "Göreceli"
       },
       "group": "Geçerli Grup",
-      "stage": "Geçerli Sahne"
+      "stage": "Geçerli Sahne",
+      "layout": {
+        "label": "Düzen",
+        "basic": "Temel",
+        "composed": "Birleşik"
+      }
     }
   },
   "statusBar": {

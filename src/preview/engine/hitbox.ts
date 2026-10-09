@@ -3,7 +3,15 @@ import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import type { ZKey } from '../gl'
 import type { PreviewSkin, Sprite } from '../skin'
-import { attachEasedFrac } from './chart'
+import { attachEasedFrac, attachFrac } from './chart'
+import {
+    blendElevationTransform,
+    effectiveNoteElevation,
+    noteElevationTransform,
+    noteTransformAtElevation,
+    sameAuthoredBeat,
+    usesLocalElevationEase,
+} from './elevation'
 import { getZAlt, type Layer } from './layer'
 import {
     approachAtTilt,
@@ -201,6 +209,7 @@ export const getHiddenTickHitboxes = (chain: PreviewNoteChain): HitboxNote[] => 
         const attachHead = getNote(tick.attachHead)
         const attachTail = getNote(tick.attachTail)
         const note: PreviewNote = {
+            beat,
             style: 'default',
             kind: NoteKind.hideTick,
             isCritical: false,
@@ -422,12 +431,23 @@ export const inputGeometry = (context: GeometryContext, note: PreviewNote): Inpu
     return {
         lane: lerp(head.lane, tail.lane, easedFrac),
         mask: interpolateVisualMasks(head.mask, tail.mask, easedFrac),
-        yOffset: lerp(
-            head.yOffset,
-            tail.yOffset,
-            safeUnlerpClamped(attachHead.targetTime, attachTail.targetTime, note.targetTime),
-        ),
-        transform: blendStageTransform(head.transform, tail.transform, easedFrac),
+        yOffset: lerp(head.yOffset, tail.yOffset, attachFrac(note)),
+        transform: sameAuthoredBeat(attachHead, attachTail)
+            ? blendElevationTransform(
+                  context.viewport,
+                  context.layout,
+                  noteElevationTransform(
+                      stageGeometry(context, attachHead.stageIndex)?.props,
+                      attachHead.elevation,
+                  ),
+                  noteElevationTransform(
+                      stageGeometry(context, attachTail.stageIndex)?.props,
+                      attachTail.elevation,
+                  ),
+                  easedFrac,
+                  attachFrac(note),
+              )
+            : blendStageTransform(head.transform, tail.transform, easedFrac),
     }
 }
 
@@ -500,14 +520,10 @@ export const computeNoteHitbox = (context: GeometryContext, hitbox: HitboxNote) 
     geometryHitbox(context, inputGeometry(context, hitbox.note), hitbox.note.size, hitbox.leniency)
 
 const headEaseFrac = (note: PreviewNote) =>
-    note.isAttached && note.attachHead && note.attachTail
-        ? safeUnlerpClamped(note.attachHead.targetTime, note.attachTail.targetTime, note.targetTime)
-        : 0
+    note.isAttached && note.attachHead && note.attachTail ? attachFrac(note) : 0
 
 const tailEaseFrac = (note: PreviewNote) =>
-    note.isAttached && note.attachHead && note.attachTail
-        ? safeUnlerpClamped(note.attachHead.targetTime, note.attachTail.targetTime, note.targetTime)
-        : 1
+    note.isAttached && note.attachHead && note.attachTail ? attachFrac(note) : 1
 
 // Attached notes connect with their attachment head's ease (BaseNote.preprocess).
 const connectorEase = (note: PreviewNote) =>
@@ -521,8 +537,9 @@ export const computeSlideInputBounds = (
     tail: PreviewNote,
     leniency: number,
 ): Quad => {
-    const headFrac = headEaseFrac(head)
-    const tailFrac = tailEaseFrac(tail)
+    const localElevationEase = usesLocalElevationEase(head, tail)
+    const headFrac = localElevationEase ? 0 : headEaseFrac(head)
+    const tailFrac = localElevationEase ? 1 : tailEaseFrac(tail)
     const inputFrac = safeUnlerpClamped(head.targetTime, tail.targetTime, context.time)
     const interpFrac = connectorInterpFrac(
         easeType,
@@ -533,17 +550,29 @@ export const computeSlideInputBounds = (
     )
     const headGeometry = inputGeometry(context, head)
     const tailGeometry = inputGeometry(context, tail)
+    let transform: StageTransform
+    if (sameAuthoredBeat(head, tail)) {
+        const propsAt = (stageIndex: number) => stageGeometry(context, stageIndex)?.props
+        const elevation = lerp(
+            effectiveNoteElevation(head, propsAt),
+            effectiveNoteElevation(tail, propsAt),
+            inputFrac,
+        )
+        transform = blendStageTransform(
+            noteTransformAtElevation(context.viewport, context.layout, head, propsAt, elevation),
+            noteTransformAtElevation(context.viewport, context.layout, tail, propsAt, elevation),
+            interpFrac,
+        )
+    } else {
+        transform = blendStageTransform(headGeometry.transform, tailGeometry.transform, interpFrac)
+    }
     return geometryHitbox(
         context,
         {
             lane: lerp(headGeometry.lane, tailGeometry.lane, interpFrac),
             mask: interpolateVisualMasks(headGeometry.mask, tailGeometry.mask, interpFrac),
             yOffset: lerp(headGeometry.yOffset, tailGeometry.yOffset, inputFrac),
-            transform: blendStageTransform(
-                headGeometry.transform,
-                tailGeometry.transform,
-                interpFrac,
-            ),
+            transform,
         },
         Math.max(lerp(head.size, tail.size, interpFrac), 0),
         leniency,

@@ -156,8 +156,36 @@ const artworkFixture = (t: TestContext, scale = 40, pixelRatio = 1) => {
             }),
             false,
         )
-    return { renderer, canvases, draw, images: () => images }
+    return { context, renderer, canvases, draw, images: () => images }
 }
+
+test('composed notes use projected artwork coordinates while explicit elevation positions stay local', (t) => {
+    const { context, renderer } = artworkFixture(t)
+    const calls: number[][] = []
+    context.ctx.drawImage = ((_image: unknown, ...values: number[]) =>
+        calls.push(values)) as typeof context.ctx.drawImage
+    let projections = 0
+    context.composed = {
+        notePosition: () => {
+            projections++
+            return { left: 7, size: 2 }
+        },
+    } as unknown as NonNullable<EditorDrawContext['composed']>
+    const entity = note(2, {
+        size: 2,
+        left: -1,
+        noteStyle: 'default',
+        flickDirection: 'none',
+        isCritical: false,
+        isFake: false,
+    })
+    renderer.draw(context, entity, false)
+    renderer.draw(context, entity, false, 1, { left: -1, y: -2.3 })
+    assert.equal(projections, 1)
+    assert.equal(calls[0]![0]! - calls[1]![0]!, 8)
+    assert.equal(calls[0]![1], calls[1]![1])
+    assert.equal(entity.left, -1)
+})
 
 test('dense unique note widths reuse cached artwork instead of allocating every frame', (t) => {
     const { renderer, canvases, draw, images } = artworkFixture(t)

@@ -23,7 +23,11 @@ export type Selection = {
     timeMax: number
 }
 
+export type EditorLayout = 'basic' | 'composed'
+
 export const view = shallowReactive({
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    layout: 'basic' as EditorLayout,
     time: 0,
     hoverTime: 0,
     // Touch has no hover; it shows the marker only while dragging.

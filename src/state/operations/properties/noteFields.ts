@@ -41,7 +41,8 @@ export const noteFieldsOf = (infos: readonly SlideInfo[], info: SlideInfo): Note
     const isSegmentHead = (isFirst || note.isConnectorSeparator) && !isLast
 
     return {
-        elevation: isFirst || isLast || !note.isAttached,
+        elevation:
+            isFirst || isLast || !note.isAttached || info.attachHead.beat === info.attachTail.beat,
         noteStyle: note.noteType !== 'anchor',
         connectorStyle: isSegmentHead,
         isAttached: !isFirst && !isLast,

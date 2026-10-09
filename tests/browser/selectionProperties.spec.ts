@@ -1083,6 +1083,9 @@ test('undo just after a committed edit undoes it in the chart, not only in the f
     await lane.fill('5')
     await lane.press('Enter')
     await expect.poll(left).toEqual([5])
+    await expect(lane).not.toBeFocused()
+    // Re-entering a field with its committed value still passes history keys to the chart.
+    await lane.focus()
     await expect(lane).toBeFocused()
     await lane.press('ControlOrMeta+z')
     await expect.poll(left).toEqual([3])

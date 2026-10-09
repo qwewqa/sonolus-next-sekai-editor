@@ -6,6 +6,7 @@ import { attachEasedFrac, createPreviewChartBuilder } from '../../preview/engine
 import type { PreviewNote } from '../../preview/engine/model'
 import { getStageProps } from '../../preview/engine/stage'
 import { settings } from '../../settings'
+import { sameBeatAttachmentFraction } from '../../state/entities/slides/attachment'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { scopeLookup } from '../scope'
@@ -75,9 +76,18 @@ export const elevationNotes = computed(() => {
             const head = basic(compiled.attachHead)
             const tail = basic(compiled.attachTail)
             const frac = attachEasedFrac(compiled)
+            const elevationFrac =
+                (compiled.attachHead.source &&
+                    compiled.attachTail.source &&
+                    sameBeatAttachmentFraction(
+                        compiled.attachHead.source,
+                        compiled.attachTail.source,
+                        note,
+                    )) ??
+                frac
             position = {
                 lane: head.lane + (tail.lane - head.lane) * frac,
-                elevation: head.elevation + (tail.elevation - head.elevation) * frac,
+                elevation: head.elevation + (tail.elevation - head.elevation) * elevationFrac,
             }
         }
         notes.push({

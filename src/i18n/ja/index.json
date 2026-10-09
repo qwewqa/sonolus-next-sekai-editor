@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "コンテキストメニューを開く"
+    },
+    "editorLayout": {
+      "title": "エディターのレイアウト",
+      "basic": "基本レイアウトに切り替えました",
+      "composed": "合成レイアウトに切り替えました"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "相対"
       },
       "group": "現在のグループ",
-      "stage": "現在のステージ"
+      "stage": "現在のステージ",
+      "layout": {
+        "label": "レイアウト",
+        "basic": "基本",
+        "composed": "合成"
+      }
     }
   },
   "statusBar": {

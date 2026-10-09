@@ -47,8 +47,8 @@ export const commandState = (
     name: CommandName,
     group: readonly CommandName[],
 ): CommandState | undefined => {
-    // The open editor shows itself, so its button takes no pressed look.
-    if (name === 'elevation') return undefined
+    // The view shows these modes itself; their actions never force a group face.
+    if (name === 'elevation' || name === 'editorLayout') return undefined
     if (name === 'event') return tool(eventTools.includes(toolName.value))
 
     const preset = /^(note|slide)(\d+)$/.exec(name)

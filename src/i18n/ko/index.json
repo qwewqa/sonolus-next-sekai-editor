@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "상황별 메뉴 열기"
+    },
+    "editorLayout": {
+      "title": "편집기 레이아웃",
+      "basic": "기본 레이아웃으로 전환했습니다",
+      "composed": "합성 레이아웃으로 전환했습니다"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "상대"
       },
       "group": "현재 그룹",
-      "stage": "현재 스테이지"
+      "stage": "현재 스테이지",
+      "layout": {
+        "label": "레이아웃",
+        "basic": "기본",
+        "composed": "합성"
+      }
     }
   },
   "statusBar": {

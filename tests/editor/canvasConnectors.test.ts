@@ -112,6 +112,59 @@ const fixture = () => {
     return { context, ctx, fills, strokes, gradients, renderer: createConnectorRenderer() }
 }
 
+test('collapsed same-beat guide pieces do not create degenerate time-canvas gradients', () => {
+    const { context, fills, gradients, renderer } = fixture()
+    Object.assign(context.state, { store: { slides: { info: new Map() } } })
+    const head = note(2, 0, 2, { elevation: 0, connectorType: 'guide', connectorGuideAlpha: 0 })
+    const middle = note(2, 1, 2, { elevation: 1 })
+    const tail = note(2, 4, 2, { elevation: 4, connectorGuideAlpha: 1 })
+    renderer.draw(context, toConnectorEntity(middle, tail, head, tail, head, tail), false)
+    assert.equal(gradients.length, 0)
+    assert.equal(fills.length, 0, 'the time canvas omits zero-height ribbons')
+})
+
+test('composed connectors follow stage curves, split jumps and invalidate cached geometry', () => {
+    const { context, fills, strokes, renderer } = fixture()
+    const first = note(0, 0, 2, { connectorIsFake: true })
+    const last = note(4, 0, 2)
+    const entity = toConnectorEntity(first, last, first, last, first, last)
+    const composed = (shift: number) =>
+        ({
+            stages: new Map([[first.stageId, { breakpoints: [2] }]]),
+            connectorPosition: (
+                _entity: unknown,
+                beat: number,
+                options: { rightLimit?: boolean } = {},
+            ) => ({
+                left:
+                    shift + beat * beat + (beat > 2 || (beat === 2 && options.rightLimit) ? 5 : 0),
+                size: 2,
+            }),
+        }) as unknown as NonNullable<EditorDrawContext['composed']>
+    context.composed = composed(0)
+    renderer.draw(context, entity, false)
+    const initial = fills[0]!.path
+    assert.deepEqual(
+        initial.commands.filter(([command]) => command === 'M'),
+        [
+            ['M', 0, -0],
+            ['M', 9, -2],
+        ],
+    )
+    assert.ok(initial.commands.some(([command, x, y]) => command === 'L' && x === 4 && y === -2))
+    assert.ok(initial.commands.some(([command, x, y]) => command === 'L' && x === 21 && y === -4))
+    assert.ok(strokes.some(({ style }) => style === '#f44'))
+    renderer.draw(context, entity, false)
+    assert.equal(fills[1]!.path, initial)
+    context.composed = composed(10)
+    renderer.draw(context, entity, false)
+    assert.notEqual(fills[2]!.path, initial)
+    assert.deepEqual(fills[2]!.path.commands[0], ['M', 10, -0])
+    context.composed = undefined
+    renderer.draw(context, entity, false)
+    assert.deepEqual(fills[3]!.path.commands[0], ['M', 0, -0])
+})
+
 test('Canvas eased connectors preserve partial-segment quadratic geometry', () => {
     const { context, fills, strokes, renderer } = fixture()
     const first = note(0, 0, 2, { connectorEase: 'inQuad' })

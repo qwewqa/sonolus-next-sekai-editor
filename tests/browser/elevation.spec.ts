@@ -2182,8 +2182,9 @@ test('Ctrl+Z in the Beat field showing its committed beat undoes the last edit',
     await page.keyboard.type('5')
     await page.keyboard.press('Enter')
     await expect(beat).toHaveValue('5')
-    await expect(beat).toBeFocused()
-    // Typing keeps its native undo.
+    await expect(beat).not.toBeFocused()
+    // Enter finishes the edit. Re-entering the field still keeps typing's native undo.
+    await beat.focus()
     await page.keyboard.press('End')
     await page.keyboard.type('6')
     await page.keyboard.press('ControlOrMeta+z')

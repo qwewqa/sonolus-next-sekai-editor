@@ -4,6 +4,7 @@ import { replaceState, state } from '../../history'
 import { isBlockingModalOpen } from '../../modals'
 import { hasSameChartData } from '../../state/data'
 import type { EntityType } from '../../state/entities'
+import { isComposingKey } from '../../utils/composition'
 import { cancelScalingSession, scalingSession } from '../commands/scaleSelection/session'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { isEntityShown, scopeLookup } from '../scope'
@@ -36,9 +37,19 @@ const cancelControls = (restoreTool = true) => {
 // Open toolbar flyouts' Escape handlers, run after a drag's and before any pane's or drawer's.
 export const flyoutEscapes = new Set<(event: KeyboardEvent) => void>()
 
+// Resize handles keep the previously focused control, so their pointer gestures
+// must own Escape before the active pane or focused control receives it.
+export const resizeEscapes = new Set<() => void>()
+
 // One Escape press does one thing: a held Escape's repeats do nothing anywhere.
 const cancelDragOnEscape = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || event.isComposing) return
+    if (event.key !== 'Escape' || isComposingKey(event)) return
+    if (resizeEscapes.size) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        if (!event.repeat) for (const cancel of resizeEscapes) cancel()
+        return
+    }
     if (!event.repeat && !isDragging.value) {
         for (const close of flyoutEscapes) close(event)
         return
@@ -68,6 +79,19 @@ const deselectHidden = () => {
 }
 
 export const useControlLifecycle = () => {
+    watch(
+        () => view.layout,
+        () => {
+            // Ordinary charts have identical geometry in both layouts.
+            if (!state.value.isDynamicStages) return
+            // Geometry changes invalidate an in-progress placement, drag or resize.
+            cancelControls()
+            if (scalingSession.value) cancelScalingSession()
+            view.scrollingX = undefined
+            view.scrollingY = undefined
+        },
+        { flush: 'sync' },
+    )
     watch(
         [tool, state],
         ([currentTool, currentState], [previousTool, previousState]) => {

@@ -439,6 +439,11 @@
         },
         "openContextMenu": {
             "title": "Open Context Menu"
+        },
+        "editorLayout": {
+            "title": "Editor Layout",
+            "basic": "Switched to Basic layout",
+            "composed": "Switched to Composed layout"
         }
     },
     "help": {
@@ -757,7 +762,12 @@
                 "relative": "Relative"
             },
             "group": "Current Group",
-            "stage": "Current Stage"
+            "stage": "Current Stage",
+            "layout": {
+                "label": "Layout",
+                "basic": "Basic",
+                "composed": "Composed"
+            }
         }
     },
     "statusBar": {

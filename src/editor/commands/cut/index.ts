@@ -26,7 +26,7 @@ import { interpolate } from '../../../utils/interpolate'
 import { editorNavigation } from '../../navigation'
 import { notify } from '../../notification'
 import { view, xToLane, yToValidBeat } from '../../view'
-import { clipboardSource, getSlides } from '../copy'
+import { clipboardSource, getClipboardAnchor, getComposedClipboardOffset, getSlides } from '../copy'
 import CutIcon from './CutIcon.vue'
 
 export const cut: Command = {
@@ -71,9 +71,13 @@ export const cut: Command = {
 
         const position = editorNavigation.value?.positionAtPoint(view.pointer.x, view.pointer.y)
         setClipboardData({
-            lane: position?.lane ?? xToLane(view.pointer.x),
+            lane:
+                position?.lane ??
+                xToLane(view.pointer.x) -
+                    getComposedClipboardOffset(entities, view.pointer.x, view.pointer.y),
             beat: position?.beat ?? yToValidBeat(view.pointer.y),
             entities: copiedEntities,
+            anchor: getClipboardAnchor(entities, copiedEntities),
             ...serializeEditorMetadata(copiedEntities, copiedStore),
             source: clipboardSource(),
         })

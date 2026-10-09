@@ -3,6 +3,7 @@ import { alignComputed, clamp, lerp, nearlyEqual, unlerp } from '../../../utils/
 import { bisect } from '../../../utils/ordered'
 import type { Entity } from '../../entities'
 import type { SlideId } from '../../entities/slides'
+import { sameBeatAttachmentFraction } from '../../entities/slides/attachment'
 import { toConnectorEntity, type ConnectorEntity } from '../../entities/slides/connector'
 import { toNoteEntity, type NoteEntity } from '../../entities/slides/note'
 import { beatToTime, type BpmIntegral } from '../../integrals/bpms'
@@ -148,7 +149,8 @@ export const rebuildSlide = (
 
         const x = ease(
             head.connectorEase,
-            attachFraction(bpms, head.beat, tail.beat, rawInfo.note.beat),
+            sameBeatAttachmentFraction(head, tail, rawInfo.note) ??
+                attachFraction(bpms, head.beat, tail.beat, rawInfo.note.beat),
         )
 
         // Overshooting eases may shrink a note past zero width; keep its center.

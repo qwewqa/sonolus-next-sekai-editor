@@ -13,7 +13,12 @@ import {
 } from '../offscreenIndicators'
 import { groupOffscreenNotes, offscreenBadgeHitWidth } from '../offscreenNotes'
 import { modals } from '../../modals'
-import { resyncInput, revertOnEscape, trackTypedText } from '../../modals/form/resync'
+import {
+    confirmOnEnter,
+    resyncInput,
+    revertOnEscape,
+    trackTypedText,
+} from '../../modals/form/resync'
 import { clearPreviewEdit, setPreviewEdit } from '../../preview/edit'
 import { settings } from '../../settings'
 import type { State } from '../../state'
@@ -21,8 +26,10 @@ import { hasSameChartData } from '../../state/data'
 import type { NoteEntity } from '../../state/entities/slides/note'
 import { beatToTime } from '../../state/integrals/bpms'
 import { editSelectedNote } from '../../state/operations/note'
+import { getNoteFieldsIn } from '../../state/operations/properties/noteFields'
 import { editChanges } from '../../state/operations/properties/plan'
 import { createTransaction } from '../../state/transaction'
+import { isComposingKey } from '../../utils/composition'
 import { alignComputed, alignNear, clamp, shiftComputed } from '../../utils/math'
 import { createNameLayer, placeNames } from '../canvas/names'
 import { createNoteRenderer } from '../canvas/notes'
@@ -84,6 +91,7 @@ import {
 import { elevationBounds, elevationViewport, fitElevationViewport } from './viewport'
 import { drawElevationConnections, getElevationConnections } from './connections'
 import SelectValue from '../../modals/form/SelectValue.vue'
+import { inverseAttachedElevation, type AttachedElevationDrag } from './drag'
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const container = useTemplateRef<HTMLElement>('container')
@@ -251,6 +259,7 @@ let drag:
           resizing: boolean
           anchor: number
           movingEdge: number
+          attachment?: AttachedElevationDrag
       }
     | undefined
 let marquee: { x: number; y: number; selected: State['selectedEntities'] } | undefined
@@ -288,6 +297,8 @@ const cancel = () => {
     selection.value = undefined
 }
 const editedObject = (active: NonNullable<typeof drag>, note: NoteEntity) => {
+    if (!getNoteFieldsIn(active.source.store, note).left)
+        return { elevation: note.elevation + active.deltaElevation }
     const [left, size] = active.resizing
         ? resize(
               active.anchor,
@@ -396,7 +407,13 @@ const resolveDrag = (x: number, y: number) => {
         return { type: 'add' } as const
     if (!row || ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value))
         return { type: 'marquee', row } as const
-    if (row.attached) return { type: 'select', row } as const
+    if (row.attached)
+        return {
+            type: getNoteFieldsIn(elevationState.value.store, row.note).elevation
+                ? 'move'
+                : 'select',
+            row,
+        } as const
     return {
         type: isNoteResizeStart({ left: row.lane - row.size / 2, size: row.size }, xToLane(x))
             ? 'resize'
@@ -529,7 +546,9 @@ const controls: Pick<
         if (!state.value.selectedEntities.includes(row.note)) selectAt(row, modifiers)
         if (target.type === 'select') return false
         const eligible = new Set(
-            elevationNotes.value.filter((item) => !item.attached).map((item) => item.note),
+            elevationNotes.value
+                .filter((item) => getNoteFieldsIn(state.value.store, item.note).elevation)
+                .map((item) => item.note),
         )
         const resizing = target.type === 'resize'
         drag = {
@@ -548,6 +567,23 @@ const controls: Pick<
             resizing,
             anchor: shiftComputed(row.note.left, xToLane(x) < row.lane ? row.note.size : 0),
             movingEdge: xToLane(x) < row.lane ? row.note.left : row.note.left + row.note.size,
+        }
+        if (row.attached) {
+            const info = state.value.store.slides.info
+                .get(row.note.slideId)
+                ?.find((info) => info.note === row.note)
+            if (info) {
+                const { attachHead: head, attachTail: tail } = info
+                drag.attachment = {
+                    head: head.elevation,
+                    tail: tail.elevation,
+                    note: row.note.elevation,
+                    headStage: getElevationStageProps(head.stageId, elevationBeat.value).elevation,
+                    tailStage: getElevationStageProps(tail.stageId, elevationBeat.value).elevation,
+                    headMoves: drag.targets.includes(head),
+                    tailMoves: drag.targets.includes(tail),
+                }
+            }
         }
         return true
     },
@@ -600,18 +636,23 @@ const controls: Pick<
             return
         }
         if (!drag) return
-        const deltaLane = offset(
-            drag.lane,
-            xToLane(x),
-            drag.resizing ? drag.movingEdge : drag.row.note.left,
-        )
+        const deltaLane = drag.attachment
+            ? 0
+            : offset(drag.lane, xToLane(x), drag.resizing ? drag.movingEdge : drag.row.note.left)
         const delta = yToElevation(y) - drag.elevation
-        const deltaElevation = drag.resizing
+        const displayedDelta = drag.resizing
             ? 0
             : view.snapping === 'relative'
               ? snapElevation(delta, settings.elevationSnap)
               : snapElevation(drag.row.elevation + delta, settings.elevationSnap) -
                 drag.row.elevation
+        const deltaElevation = drag.attachment
+            ? inverseAttachedElevation(
+                  drag.attachment,
+                  drag.row.elevation + displayedDelta,
+                  drag.deltaElevation,
+              )
+            : displayedDelta
         if (deltaLane === drag.deltaLane && deltaElevation === drag.deltaElevation) return
         drag.deltaLane = deltaLane
         drag.deltaElevation = deltaElevation
@@ -704,7 +745,7 @@ const blurAfterPointer = (event: MouseEvent) => {
 }
 const onKeydown = (event: KeyboardEvent) => {
     // An open drawer takes Escape first.
-    if (modals.length || event.defaultPrevented) return
+    if (modals.length || event.defaultPrevented || isComposingKey(event)) return
     if (editorNavigation.value !== navigation) return
     if (event.key !== 'Escape') return
     // The Beat field reverts uncommitted typing first.
@@ -788,6 +829,7 @@ const connections = computed(() => {
         [...slideIds].map((id) => connectorStore.value.get(id) ?? []),
         view.visibilities.connector,
         elevationState.value.bpms,
+        elevationState.value.store.slides.info,
     )
 })
 
@@ -1125,6 +1167,7 @@ onUnmounted(() => {
                                 :aria-label="i18n.elevation.beat"
                                 @change="resyncInput($event, () => `${beatField}`)"
                                 @keydown.esc="revertOnEscape($event, `${beatField}`)"
+                                @keydown.enter="confirmOnEnter"
                         /></label>
                         <button
                             type="button"

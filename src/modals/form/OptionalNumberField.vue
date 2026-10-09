@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, type Ref } from 'vue'
 import BaseField from './BaseField.vue'
-import { resyncInput, revertOnEscape, trackTypedText } from './resync'
+import { confirmOnEnter, resyncInput, revertOnEscape, trackTypedText } from './resync'
 import { i18n } from '../../i18n'
 import { useEmptyLabel } from './emptyLabel'
 
@@ -47,6 +47,7 @@ const onFocus = (event: FocusEvent) => {
             @focus="onFocus"
             @change="resyncInput($event, () => `${modelValue ?? ''}`)"
             @keydown.esc="revertOnEscape($event, `${modelValue ?? ''}`)"
+            @keydown.enter="confirmOnEnter"
         />
     </BaseField>
 </template>

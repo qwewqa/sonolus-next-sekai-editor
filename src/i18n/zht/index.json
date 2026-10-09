@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "開啟上下文選單"
+    },
+    "editorLayout": {
+      "title": "編輯器配置",
+      "basic": "已切換至基本配置",
+      "composed": "已切換至合成配置"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "相對"
       },
       "group": "目前圖層",
-      "stage": "目前舞台"
+      "stage": "目前舞台",
+      "layout": {
+        "label": "配置",
+        "basic": "基本",
+        "composed": "合成"
+      }
     }
   },
   "statusBar": {

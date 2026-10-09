@@ -9,10 +9,31 @@ const formerSelection = [
 ]
 
 const formerView = ['zoomXIn', 'zoomXOut', 'zoomYIn', 'zoomYOut', 'elevation']
+const formerTransforms = [
+    'elevation',
+    'scaleWidth',
+    'scaleElevation',
+    'scaleBeat',
+    'makeVertical',
+    'combineNotes',
+    'splitHold',
+    'flipVertical',
+    'flip',
+]
 const matches = (group: unknown[], names: string[]) =>
     group.length === names.length && group.every((name, index) => name === names[index])
 
-export const migrateToolbar = (groups: unknown[][]) => {
+export const migrateToolbar = (groups: unknown[][], addEditorLayout = true) => {
+    const migrated = migrateElevation(groups)
+    if (!addEditorLayout) return migrated
+    // Add the new mode only to the previous default group; customized groups stay intact.
+    if (migrated.some((group) => group.includes('editorLayout'))) return migrated
+    const index = migrated.findIndex((group) => matches(group, formerTransforms))
+    if (index === -1) return migrated
+    return migrated.map((group, i) => (i === index ? ['editorLayout', ...group] : group))
+}
+
+const migrateElevation = (groups: unknown[][]) => {
     const sourceIndex = groups.findIndex(
         (group) => matches(group, formerSelection) || matches(group, formerView),
     )

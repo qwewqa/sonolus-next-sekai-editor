@@ -1,5 +1,7 @@
+import type { LevelDataEntity } from '@sonolus/core'
 import { computed, markRaw, ref } from 'vue'
 import type { Chart } from '../chart'
+import type { NoteObject } from '../chart/note'
 import { parseLevelDataChart } from '../chart/parse/levelData'
 import { parseClipboardData } from './data/parse'
 import type { ClipboardData } from './data/schema'
@@ -12,6 +14,8 @@ type ClipboardEntry = {
         beat: number
         chart: Chart
         source?: ClipboardData['source']
+        /** Anchor index in the parsed, flattened note list. */
+        anchor?: number
     }
 }
 
@@ -76,7 +80,12 @@ let i = 0
 const getClipboardEntry = (text: string): ClipboardEntry => {
     try {
         const data = parseClipboardData(JSON.parse(text))
-        const chart = parseLevelDataChart(data.entities, data.defaultGuideColors)
+        const anchorEntity = data.anchor === undefined ? undefined : data.entities[data.anchor]
+        const noteSources = anchorEntity ? new Map<NoteObject, LevelDataEntity>() : undefined
+        const chart = parseLevelDataChart(data.entities, data.defaultGuideColors, noteSources)
+        const anchor = noteSources
+            ? chart.slides.flat().findIndex((note) => noteSources.get(note) === anchorEntity)
+            : -1
 
         return {
             name: `#${++i} (${
@@ -94,6 +103,7 @@ const getClipboardEntry = (text: string): ClipboardEntry => {
                 beat: data.beat,
                 chart,
                 source: data.source,
+                anchor: anchor >= 0 ? anchor : undefined,
             },
         }
     } catch {

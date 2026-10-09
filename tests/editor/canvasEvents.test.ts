@@ -8,6 +8,7 @@ import { drawEvent, drawEventInfinities } from '../../src/editor/canvas/events'
 import { coveredLabelYs, drawGrid, timeScaleEdgeLabelYs } from '../../src/editor/canvas/grid'
 import { createNameLayer, placeNames } from '../../src/editor/canvas/names'
 import type { EditorDrawContext } from '../../src/editor/canvas/types'
+import { createComposedLayout } from '../../src/editor/composed'
 import { getPathD, getRangePathDs } from '../../src/editor/entities/events/path'
 import { createScopeLookup, fullScope } from '../../src/editor/scopeRules'
 import { createState } from '../../src/state'
@@ -172,6 +173,48 @@ const makeContext = (overrides: Partial<Chart> = {}) => {
     }
     return { canvas, context }
 }
+
+test('Composed grid keeps faint outer references and extends every horizontal guide to the pane', () => {
+    const inspect = (composed: boolean) => {
+        const { canvas, context } = makeContext()
+        context.scale = 40
+        if (composed) context.composed = createComposedLayout(context.state)
+        drawGrid(context, { min: 0, max: 4 }, { min: 0, max: 0 }, 4, 4)
+        return canvas.strokes.flatMap(({ path, alpha, width }) => {
+            const points = path as [string, number, number][]
+            return Array.from({ length: points.length / 2 }, (_, i) => ({
+                alpha,
+                width,
+                from: points[i * 2]!.slice(1),
+                to: points[i * 2 + 1]!.slice(1),
+            }))
+        })
+    }
+    const composed = inspect(true)
+    const vertical = composed.filter(({ from, to }) => from[0] === to[0])
+    assert.deepEqual(
+        vertical.map(({ from, alpha }) => [from[0], alpha]),
+        [
+            [-6, 0.12],
+            [6, 0.12],
+        ],
+    )
+    const horizontal = composed.filter(({ from, to }) => from[1] === to[1])
+    assert.ok(horizontal.length > 0)
+    assert.ok(horizontal.every(({ from, to }) => from[0] === -10 && to[0] === 10))
+    assert.ok(
+        horizontal.some(({ alpha, width }) => alpha === 0.4 && width === 2 / 40),
+        'Composed measures are thinner and less emphasized than the preview line',
+    )
+    const basic = inspect(false)
+    assert.ok(basic.some(({ alpha, width }) => alpha === 0.7 && width === 3 / 40))
+    assert.equal(basic.filter(({ from, to }) => from[0] === to[0]).length, 49)
+    assert.ok(
+        basic
+            .filter(({ from, to }) => from[1] === to[1])
+            .every(({ from, to }) => from[0] === -6 && to[0] === 6),
+    )
+})
 
 const mask = (beat: number): StageMaskEventJointEntity => ({
     type: 'stageMaskEventJoint',

@@ -281,6 +281,7 @@ const settingsProperties = {
                         'select',
                     ],
                     [
+                        'editorLayout',
                         'elevation',
                         'scaleWidth',
                         'scaleElevation',
@@ -594,6 +595,20 @@ const panelStateKeys = [
 ]
 
 const loadSetting = (key: string, defaultValue: unknown) => {
+    if (key === 'toolbar' && storageGet('toolbarEditorLayoutMigrated', false) !== true) {
+        const loaded = storageGet(key, defaultValue)
+        const migrated =
+            Array.isArray(loaded) && loaded.every(Array.isArray) ? migrateToolbar(loaded) : loaded
+        try {
+            // Persist the migrated group before marking it complete. Afterwards, removing
+            // the new action is a customization, even when it recreates the old default.
+            if (migrated !== loaded) storageSet(key, migrated)
+            storageSet('toolbarEditorLayoutMigrated', true)
+        } catch {
+            // Unavailable storage still allows the migrated toolbar in this tab.
+        }
+        return migrated
+    }
     if (
         (key === 'showGroups' || key === 'showStages') &&
         panelStateKeys.some((other) => storageGet(other, undefined) !== undefined)
@@ -617,7 +632,7 @@ const migrateSetting = (key: string, value: unknown) => {
     // An unreleased layout briefly saved a single preview side.
     if (key === 'previewPosition' && value === 'side') return 'left'
     if (key === 'toolbar' && Array.isArray(value) && value.every(Array.isArray))
-        return migrateToolbar(value)
+        return migrateToolbar(value, false)
     return (key === 'defaultNotePropertiesPresets' || key === 'defaultSlidePropertiesPresets') &&
         Array.isArray(value)
         ? value.map(migratePreset)

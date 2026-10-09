@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
+import { resizeEscapes } from '../controls'
 import { cancelMouseControls } from '../controls/mouse'
 import { cancelTouchControls } from '../controls/touch'
 
@@ -30,19 +31,15 @@ let drag: { pointerId: number; origin: number; element: HTMLElement } | undefine
 const coordinate = (event: PointerEvent) => (props.axis === 'x' ? event.clientX : event.clientY)
 
 const stop = () => {
-    window.removeEventListener('keydown', onWindowKeydown, true)
+    resizeEscapes.delete(cancel)
     if (drag?.element.hasPointerCapture(drag.pointerId))
         drag.element.releasePointerCapture(drag.pointerId)
     drag = undefined
     isDragging.value = false
 }
 
-// The handle does not take focus on pointerdown, so Escape during a drag would
-// otherwise reach the editor's shortcuts. Intercept it for the whole drag.
-const onWindowKeydown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || !drag) return
-    event.preventDefault()
-    event.stopPropagation()
+const cancel = () => {
+    if (!drag) return
     stop()
     emit('cancel')
 }
@@ -55,7 +52,7 @@ const onPointerDown = (event: PointerEvent) => {
     drag = { pointerId: event.pointerId, origin: coordinate(event), element }
     isDragging.value = true
     element.setPointerCapture(event.pointerId)
-    window.addEventListener('keydown', onWindowKeydown, true)
+    resizeEscapes.add(cancel)
     emit('start')
 }
 

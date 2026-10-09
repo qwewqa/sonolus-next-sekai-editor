@@ -2,6 +2,7 @@ import { hitAllEntities, hitEntities, store } from '../../history/store'
 import type { Entity, EntityType } from '../../state/entities'
 import { editChanges } from '../../state/operations/properties/plan'
 import { alignComputed, clamp, shiftComputed } from '../../utils/math'
+import { getComposedLayout } from '../composedView'
 import type { CanvasCursor } from '../controls/cursor'
 import type { Modifiers } from '../controls/gestures/pointer'
 import { editorNavigation } from '../navigation'
@@ -18,12 +19,17 @@ export const placementCursors: Record<'add' | 'edit' | 'move', CanvasCursor> = {
     move: 'move',
 }
 
-export const offset = (startLane: number, lane: number, anchor = startLane) =>
-    snappedOffset(startLane, lane, anchor, view.laneDivision, view.laneSnapping)
+export const offset = (startLane: number, lane: number, anchor = startLane, origin = 0) =>
+    snappedOffset(startLane, lane, anchor - origin, view.laneDivision, view.laneSnapping)
 
 // A lane moved by the drag's offset, without float noise; unmoved, it stays exact.
-export const moveLane = (value: number, startLane: number, lane: number, anchor?: number) =>
-    shiftComputed(value, offset(startLane, lane, anchor))
+export const moveLane = (
+    value: number,
+    startLane: number,
+    lane: number,
+    anchor?: number,
+    origin = 0,
+) => shiftComputed(value, offset(startLane, lane, anchor, origin))
 
 /** Commits a drop; one that changes nothing adds no undo step, and its notice goes. */
 export const commitDrop = <E extends Entity, O extends object>(
@@ -73,8 +79,9 @@ export const resize = (
     max = Number.POSITIVE_INFINITY,
     startEdge = anchor,
     original?: readonly [left: number, size: number],
+    origin = 0,
 ) => {
-    const shift = offset(startEdge, lane, startEdge)
+    const shift = offset(startEdge, lane, startEdge, origin)
     // An edge dragged back to its start keeps the values exactly.
     if (original && shift === 0) return original
     const edge = startEdge + shift
@@ -126,11 +133,16 @@ export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1
 const filterPointHits = <T extends Entity>(entities: T[], x: number, minimumNoteWidth: number) => {
     const hits = entities.filter(isVisible)
     const lane = xToLane(x)
-    const isDirectNote = (entity: T) =>
-        entity.type === 'note' &&
-        entity.hitbox &&
-        lane >= entity.hitbox.lane - Math.max(entity.hitbox.w, minimumNoteWidth / 2) &&
-        lane <= entity.hitbox.lane + Math.max(entity.hitbox.w, minimumNoteWidth / 2)
+    const composed = getComposedLayout()
+    const isDirectNote = (entity: T) => {
+        const hitbox = composed ? composed.hitbox(entity) : entity.hitbox
+        return (
+            entity.type === 'note' &&
+            hitbox &&
+            lane >= hitbox.lane - Math.max(hitbox.w, minimumNoteWidth / 2) &&
+            lane <= hitbox.lane + Math.max(hitbox.w, minimumNoteWidth / 2)
+        )
+    }
     return hits.some(isDirectNote)
         ? hits.filter((entity) => entity.type !== 'note' || isDirectNote(entity))
         : hits

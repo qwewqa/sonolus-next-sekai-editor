@@ -61,6 +61,7 @@ export type ConnectorLayerValue = 0 | 1 | 2 | 3
 
 export type PreviewNote = {
     source?: NoteEntity
+    beat?: number
     elevation?: number
     style: NoteStyle
     kind: NoteKindValue

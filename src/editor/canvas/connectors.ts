@@ -8,10 +8,13 @@ import {
     type Ease,
 } from '../../ease'
 import type { ConnectorEntity } from '../../state/entities/slides/connector'
-import { beatToTime, type BpmIntegral } from '../../state/integrals/bpms'
+import type { SlideInfos } from '../../state/entities/slides/hiddenTicks'
+import { beatToTime, timeToBeat, type BpmIntegral } from '../../state/integrals/bpms'
 import { clamp, lerp, remap, safeUnlerp, safeUnlerpClamped } from '../../utils/math'
 import { isConnectorVisible } from '../entities/visibility'
 import { connectorColors } from '../utils/connectorColors'
+import { guideElevationFraction } from '../utils/guideAlpha'
+import { sampleComposed } from './composedSampling'
 import { blendOverChart } from './nameColors'
 import { markFill } from './names'
 import type { EditorDrawContext } from './types'
@@ -28,6 +31,7 @@ type Region = {
 }
 
 type ConnectorGraphic = {
+    composed?: EditorDrawContext['composed']
     bpms: BpmIntegral[]
     ups: number
     path: Path2D
@@ -307,6 +311,8 @@ const createGraphic = (
     entity: ConnectorEntity,
     bpms: BpmIntegral[],
     ups: number,
+    composed?: EditorDrawContext['composed'],
+    infos?: SlideInfos,
 ): ConnectorGraphic => {
     const { attachHead, attachTail, head, tail, segmentHead, segmentTail } = entity
     const tAttachHead = beatToTime(bpms, attachHead.beat)
@@ -322,100 +328,153 @@ const createGraphic = (
     const last = { time: tAttachTail, left: attachTail.left, size: attachTail.size }
 
     const regions: Region[] = []
-    const attached = head.isAttached || tail.isAttached
-    if (attached)
-        appendAttachedPiece(
-            path,
-            first,
-            last,
-            tHead,
-            tTail,
-            attachHead.connectorEase,
-            ups,
-            edges,
-            regions,
-        )
-    const pieceEase = attached ? undefined : attachHead.connectorEase
-    const pHead = safeUnlerp(tAttachHead, tAttachTail, tHead, 0)
-    const pTail = safeUnlerp(tAttachHead, tAttachTail, tTail, 1)
-    // Every unattached ease but a step draws one eased stretch, compound quads included.
-    if (pieceEase && !isStepEase(pieceEase)) {
-        regions.push({
-            yHead,
-            yTail,
-            at: (u) => {
-                const q = ease(pieceEase, lerp(pHead, pTail, u))
-                const size = lerp(first.size, last.size, q)
-                return {
-                    left: lerp(first.left, last.left, q) + Math.min(size, 0) / 2,
-                    size: Math.max(size, 0),
+    const composedPoints: { left: number; size: number }[] = []
+    if (composed) {
+        const breaks = new Set([head.beat, tail.beat])
+        for (const note of [attachHead, attachTail]) {
+            for (const beat of composed.stages.get(note.stageId)?.breakpoints ?? []) {
+                if (head.beat < beat && beat < tail.beat) breaks.add(beat)
+            }
+        }
+        if (attachHead.connectorEase === 'inOutStep') {
+            const middle = timeToBeat(bpms, (tAttachHead + tAttachTail) / 2)
+            if (head.beat < middle && middle < tail.beat) breaks.add(middle)
+        }
+        for (const points of sampleComposed(
+            bpms,
+            [...breaks].sort((a, b) => a - b),
+            (beat, rightLimit) => composed.connectorPosition(entity, beat, { rightLimit }),
+        )) {
+            composedPoints.push(...points)
+            for (const [index, { left, time }] of points.entries()) {
+                if (index) {
+                    path.lineTo(left, time * ups)
+                    edges?.lineTo(left, time * ups)
+                } else {
+                    path.moveTo(left, time * ups)
+                    edges?.moveTo(left, time * ups)
                 }
-            },
-            straight: pieceEase === 'linear',
-        })
-    }
-    // Linear and quadratic eases are exact; the rest are sampled.
-    // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-    switch (pieceEase) {
-        case 'linear': {
-            const lHead = lerp(first.left, last.left, pHead)
-            const lTail = lerp(first.left, last.left, pTail)
-            const sHead = lerp(first.size, last.size, pHead)
-            const sTail = lerp(first.size, last.size, pTail)
-            path.moveTo(lHead, yHead)
-            path.lineTo(lTail, yTail)
-            path.lineTo(lTail + sTail, yTail)
-            path.lineTo(lHead + sHead, yHead)
+            }
+            for (const [index, { left, size, time }] of [...points].reverse().entries()) {
+                path.lineTo(left + size, time * ups)
+                if (index) edges?.lineTo(left + size, time * ups)
+                else edges?.moveTo(left + size, time * ups)
+            }
             path.closePath()
-            edges?.moveTo(lHead, yHead)
-            edges?.lineTo(lTail, yTail)
-            edges?.moveTo(lHead + sHead, yHead)
-            edges?.lineTo(lTail + sTail, yTail)
-            break
+            const first = points[0]
+            const last = points.at(-1)
+            if (!first || !last) continue
+            regions.push({
+                yHead: first.time * ups,
+                yTail: last.time * ups,
+                straight: false,
+                at: (u) =>
+                    u <= 0
+                        ? first
+                        : u >= 1
+                          ? last
+                          : composed.connectorPosition(
+                                entity,
+                                timeToBeat(bpms, lerp(first.time, last.time, u)),
+                            ),
+            })
         }
-        case 'inQuad':
-        case 'outQuad':
-            appendEase(path, first, last, tHead, tTail, pieceEase, ups, edges)
-            break
-        case 'inOutQuad':
-        case 'outInQuad': {
-            const middle = {
-                time: (tAttachHead + tAttachTail) / 2,
-                left: (first.left + last.left) / 2,
-                size: (first.size + last.size) / 2,
-            }
-            if (tHead < middle.time) {
-                appendEase(
-                    path,
-                    first,
-                    middle,
-                    tHead,
-                    Math.min(middle.time, tTail),
-                    pieceEase === 'inOutQuad' ? 'inQuad' : 'outQuad',
-                    ups,
-                    edges,
-                )
-            }
-            if (tTail > middle.time) {
-                appendEase(
-                    path,
-                    middle,
-                    last,
-                    Math.max(tHead, middle.time),
-                    tTail,
-                    pieceEase === 'inOutQuad' ? 'outQuad' : 'inQuad',
-                    ups,
-                    edges,
-                )
-            }
-            break
+    } else {
+        const attached = head.isAttached || tail.isAttached
+        if (attached)
+            appendAttachedPiece(
+                path,
+                first,
+                last,
+                tHead,
+                tTail,
+                attachHead.connectorEase,
+                ups,
+                edges,
+                regions,
+            )
+        const pieceEase = attached ? undefined : attachHead.connectorEase
+        const pHead = safeUnlerp(tAttachHead, tAttachTail, tHead, 0)
+        const pTail = safeUnlerp(tAttachHead, tAttachTail, tTail, 1)
+        // Every unattached ease but a step draws one eased stretch, compound quads included.
+        if (pieceEase && !isStepEase(pieceEase)) {
+            regions.push({
+                yHead,
+                yTail,
+                at: (u) => {
+                    const q = ease(pieceEase, lerp(pHead, pTail, u))
+                    const size = lerp(first.size, last.size, q)
+                    return {
+                        left: lerp(first.left, last.left, q) + Math.min(size, 0) / 2,
+                        size: Math.max(size, 0),
+                    }
+                },
+                straight: pieceEase === 'linear',
+            })
         }
-        case undefined:
-            break
-        default: {
-            if (isStepEase(pieceEase))
-                appendStep(path, first, last, tHead, tTail, pieceEase, ups, edges, regions)
-            else appendCurve(path, first, last, tHead, tTail, pieceEase, ups, edges)
+        // Linear and quadratic eases are exact; the rest are sampled.
+        // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
+        switch (pieceEase) {
+            case 'linear': {
+                const lHead = lerp(first.left, last.left, pHead)
+                const lTail = lerp(first.left, last.left, pTail)
+                const sHead = lerp(first.size, last.size, pHead)
+                const sTail = lerp(first.size, last.size, pTail)
+                path.moveTo(lHead, yHead)
+                path.lineTo(lTail, yTail)
+                path.lineTo(lTail + sTail, yTail)
+                path.lineTo(lHead + sHead, yHead)
+                path.closePath()
+                edges?.moveTo(lHead, yHead)
+                edges?.lineTo(lTail, yTail)
+                edges?.moveTo(lHead + sHead, yHead)
+                edges?.lineTo(lTail + sTail, yTail)
+                break
+            }
+            case 'inQuad':
+            case 'outQuad':
+                appendEase(path, first, last, tHead, tTail, pieceEase, ups, edges)
+                break
+            case 'inOutQuad':
+            case 'outInQuad': {
+                const middle = {
+                    time: (tAttachHead + tAttachTail) / 2,
+                    left: (first.left + last.left) / 2,
+                    size: (first.size + last.size) / 2,
+                }
+                if (tHead < middle.time) {
+                    appendEase(
+                        path,
+                        first,
+                        middle,
+                        tHead,
+                        Math.min(middle.time, tTail),
+                        pieceEase === 'inOutQuad' ? 'inQuad' : 'outQuad',
+                        ups,
+                        edges,
+                    )
+                }
+                if (tTail > middle.time) {
+                    appendEase(
+                        path,
+                        middle,
+                        last,
+                        Math.max(tHead, middle.time),
+                        tTail,
+                        pieceEase === 'inOutQuad' ? 'outQuad' : 'inQuad',
+                        ups,
+                        edges,
+                    )
+                }
+                break
+            }
+            case undefined:
+                break
+            default: {
+                if (isStepEase(pieceEase))
+                    appendStep(path, first, last, tHead, tTail, pieceEase, ups, edges, regions)
+                else appendCurve(path, first, last, tHead, tTail, pieceEase, ups, edges)
+            }
         }
     }
 
@@ -426,14 +485,19 @@ const createGraphic = (
         const tSegmentHead = beatToTime(bpms, segmentHead.beat)
         const tSegmentTail = beatToTime(bpms, segmentTail.beat)
         // As the engine does, a segment under 1e-6 s takes its middle alpha.
-        const alphaAt = (time: number) =>
+        const alphaAt = (time: number, note: typeof head) =>
             lerp(
                 segmentHead.connectorGuideAlpha,
                 segmentTail.connectorGuideAlpha,
-                safeUnlerpClamped(tSegmentHead, tSegmentTail, time),
+                (segmentHead.beat === segmentTail.beat
+                    ? guideElevationFraction(note, segmentHead, segmentTail, infos)
+                    : undefined) ?? safeUnlerpClamped(tSegmentHead, tSegmentTail, time),
             ) * 0.5
-        headAlpha = alphaAt(tHead)
-        tailAlpha = alphaAt(tTail)
+        headAlpha = alphaAt(tHead, head)
+        tailAlpha = alphaAt(tTail, tail)
+        // The time canvas collapses a same-beat ribbon to zero height. Its
+        // representative alpha is the mean; a degenerate gradient has no axis.
+        if (yHead === yTail) headAlpha = tailAlpha = (headAlpha + tailAlpha) / 2
     } else {
         headAlpha = tailAlpha = 0.8
     }
@@ -452,13 +516,18 @@ const createGraphic = (
             Math.abs(last.left + last.size - first.left - first.size),
         )
     const box = {
-        l: Math.min(first.left, last.left) - margin,
-        r: Math.max(first.left + first.size, last.left + last.size) + margin,
+        l: composedPoints.length
+            ? composedPoints.reduce((min, { left }) => Math.min(min, left), Infinity)
+            : Math.min(first.left, last.left) - margin,
+        r: composedPoints.length
+            ? composedPoints.reduce((max, { left, size }) => Math.max(max, left + size), -Infinity)
+            : Math.max(first.left + first.size, last.left + last.size) + margin,
         t: Math.min(yHead, yTail),
         b: Math.max(yHead, yTail),
     }
 
     return {
+        composed,
         bpms,
         ups,
         box,
@@ -494,8 +563,21 @@ export const createConnectorRenderer = () => {
 
             const { ctx, state, ups, scale } = context
             let graphic = graphics.get(entity)
-            if (graphic?.bpms !== state.bpms || graphic.ups !== ups) {
-                graphic = createGraphic(entity, state.bpms, ups)
+            if (
+                graphic?.bpms !== state.bpms ||
+                graphic.ups !== ups ||
+                graphic.composed !== context.composed
+            ) {
+                graphic = createGraphic(
+                    entity,
+                    state.bpms,
+                    ups,
+                    context.composed,
+                    entity.segmentHead.connectorType === 'guide' &&
+                        entity.segmentHead.beat === entity.segmentTail.beat
+                        ? state.store.slides.info.get(entity.head.slideId)
+                        : undefined,
+                )
                 graphics.set(entity, graphic)
             }
 

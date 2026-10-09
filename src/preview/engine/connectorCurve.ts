@@ -3,7 +3,7 @@ import { EaseType, clamp, ease, isStepEase, lerp, safeUnlerp, type EaseTypeValue
 
 // sekai/lib/connector.py connector_curve_detail and circular_connector_fracs.
 
-const CONNECTOR_CURVE_ERROR = 2 * (2.5 / 1080)
+export const CONNECTOR_CURVE_ERROR = 2 * (2.5 / 1080)
 
 const CURVE_BINS = 16
 const CURVE_BIN_SAMPLES = 16

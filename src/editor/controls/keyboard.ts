@@ -3,8 +3,9 @@ import { selectedEntities } from '../../history/selectedEntities'
 import { isBlockingModalOpen, isToolModalOpen } from '../../modals'
 import { holdsTyping } from '../../modals/form/resync'
 import { settings } from '../../settings'
+import { isComposingKey } from '../../utils/composition'
 import { commands, type CommandName } from '../commands'
-import { takesDockKeys } from '../workspace'
+import { drawerSide, takesDockKeys } from '../workspace'
 import {
     blocksDefault,
     isApplePlatform,
@@ -82,6 +83,24 @@ export const repeatsWhenHeld = new Set<CommandName>([
 // Playback and jumps would move the view under a press; only edge scroll moves it then.
 const movesViewUnderPress = new Set<CommandName>(['play', 'stop', 'jumpUp', 'jumpDown'])
 
+// Only controls with no local Escape action return it to chart selection. Keep
+// typing, manager rows, preview controls and elevation navigation in their owners.
+const returnsDeselect = (element: Element | null) => {
+    if (element?.closest('.properties-panel')) {
+        if (element instanceof HTMLSelectElement)
+            return CSS.supports('selector(:open)') && !element.matches(':open')
+        return (
+            element instanceof HTMLButtonElement ||
+            (element instanceof HTMLInputElement &&
+                ['button', 'checkbox', 'radio'].includes(element.type))
+        )
+    }
+    return (
+        element instanceof HTMLButtonElement &&
+        element.matches('.panel-rail [data-panel-tab], .panel-rail .panel-rail-toggle')
+    )
+}
+
 const onKeydown = (event: KeyboardEvent) => {
     if (isBlockingModalOpen.value || pressesButton(event)) return
     // An open tool dialog takes Escape.
@@ -90,6 +109,27 @@ const onKeydown = (event: KeyboardEvent) => {
     const commandChord = isCommandChord(event) && isCharacter(event.key)
     const active = document.activeElement
     const { names, exact } = matchBindings(settings.keyboardShortcuts, event, isApple)
+    // Bubble-phase only: field/menu/drawer/drag handlers keep first refusal. This
+    // exception enables just the bound Deselect action, never other Escape bindings.
+    if (
+        event.key === 'Escape' &&
+        !event.defaultPrevented &&
+        !event.repeat &&
+        !isComposingKey(event) &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !drawerSide.value &&
+        event.target === active &&
+        takesDockKeys(active) &&
+        returnsDeselect(active) &&
+        names.includes('deselect')
+    ) {
+        event.preventDefault()
+        void commands.deselect.execute()
+        return
+    }
     // A field showing its committed value passes undo and redo to the editor.
     const passesHistory =
         commandChord &&

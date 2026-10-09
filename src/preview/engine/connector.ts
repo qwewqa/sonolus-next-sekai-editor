@@ -1,6 +1,7 @@
 import type { ZKey } from '../gl'
 import type { PreviewSkin, Sprite } from '../skin'
 import { circularConnectorFracs, connectorCurveDetail } from './connectorCurve'
+import { elevationConnectorFracs } from './connectorElevation'
 import type { PreviewFrameContext } from './context'
 import {
     LAYER_ACTIVE_SLIDE_CONNECTOR_BOTTOM,
@@ -157,6 +158,7 @@ const CONNECTOR_CURVE_PIECE_THRESHOLD = 32
 const CONNECTOR_QUALITY = 1
 
 type DrawQuad = (layout: Quad, baseA: number, elevation: number) => void
+export type ElevationConnectorTransform = (interpFrac: number, linearFrac: number) => StageTransform
 
 const stageTransformsEqual = (a?: StageTransform, b?: StageTransform) =>
     a === b ||
@@ -195,6 +197,8 @@ export const drawConnector = (
     fullScreen: boolean,
     bypassTailTargetTimeCheck = false,
     fullScreenStartTime = head.targetTime,
+    elevationTransform?: ElevationConnectorTransform,
+    segmentAlphaFractions?: readonly [number, number],
 ) => {
     const transformsEqual = stageTransformsEqual(head.transform, tail.transform)
     if (fullScreen) {
@@ -211,7 +215,7 @@ export const drawConnector = (
             tail.visualProgress < context.layout.progressStart) ||
         (head.visualProgress > context.layout.progressCutoff &&
             tail.visualProgress > context.layout.progressCutoff) ||
-        (head.visualProgress === tail.visualProgress && transformsEqual)
+        (head.visualProgress === tail.visualProgress && transformsEqual && !elevationTransform)
     ) {
         return
     }
@@ -246,13 +250,15 @@ export const drawConnector = (
         lerp(
             segmentHeadAlpha,
             segmentTailAlpha,
-            safeUnlerpClamped(segmentHeadTargetTime, segmentTailTargetTime, head.targetTime),
+            segmentAlphaFractions?.[0] ??
+                safeUnlerpClamped(segmentHeadTargetTime, segmentTailTargetTime, head.targetTime),
         ) * headNoteAlpha
     const tailAlpha =
         lerp(
             segmentHeadAlpha,
             segmentTailAlpha,
-            safeUnlerpClamped(segmentHeadTargetTime, segmentTailTargetTime, tail.targetTime),
+            segmentAlphaFractions?.[1] ??
+                safeUnlerpClamped(segmentHeadTargetTime, segmentTailTargetTime, tail.targetTime),
         ) * tailNoteAlpha
 
     if (
@@ -323,7 +329,11 @@ export const drawConnector = (
     // Split in-out steps at the jump.
     let pieceCount = 1
     let splitFrac = 1
-    if (easeType === EaseType.inOutStep && head.easeFrac < 0.5 && 0.5 < tail.easeFrac) {
+    if (
+        easeType === EaseType.inOutStep &&
+        ((head.easeFrac < 0.5 && 0.5 < tail.easeFrac) ||
+            (elevationTransform && tail.easeFrac < 0.5 && 0.5 < head.easeFrac))
+    ) {
         pieceCount = 2
         splitFrac = (0.5 - head.easeFrac) / (tail.easeFrac - head.easeFrac)
     }
@@ -371,6 +381,12 @@ export const drawConnector = (
             lastPiece ? tailAlpha : lerp(headAlpha, tailAlpha, splitFrac),
             transformsEqual,
             constantInterpFrac,
+            elevationTransform &&
+                ((interpFrac, linearFrac) =>
+                    elevationTransform(
+                        interpFrac,
+                        lerp(firstPiece ? 0 : splitFrac, lastPiece ? 1 : splitFrac, linearFrac),
+                    )),
         )
     }
 }
@@ -578,7 +594,13 @@ const connectorSegmentCount = (
     )
 }
 
-type SegmentEnd = { lane: number; size: number; travel: number; interpFrac: number }
+type SegmentEnd = {
+    lane: number
+    size: number
+    travel: number
+    interpFrac: number
+    linearFrac: number
+}
 
 const drawConnectorDefault = (
     layout: PreviewLayout,
@@ -591,6 +613,7 @@ const drawConnectorDefault = (
     tailAlpha: number,
     transformsEqual: boolean,
     constantInterpFrac: number,
+    elevationTransform?: ElevationConnectorTransform,
 ) => {
     const headTransform = head.transform
     const tailTransform = tail.transform
@@ -601,11 +624,12 @@ const drawConnectorDefault = (
         clamp(head.visualProgress, layout.progressStart, layout.progressCutoff),
         clamp(tail.visualProgress, layout.progressStart, layout.progressCutoff),
         headTransform,
-        transformsEqual,
+        transformsEqual && !elevationTransform,
     )
     if (
         startVisualProgress === endVisualProgress &&
-        (transformsEqual || head.visualProgress !== tail.visualProgress)
+        (transformsEqual || head.visualProgress !== tail.visualProgress) &&
+        !elevationTransform
     )
         return
     const startFrac = safeUnlerpClamped(
@@ -641,7 +665,11 @@ const drawConnectorDefault = (
     const endAlpha = lerp(headAlpha, tailAlpha, endFrac)
     const alphaOption = getConnectorAlphaOption(kind)
     if (alphaOption <= 0 || Math.max(startAlpha, endAlpha) <= 0) return
-    if (connectorIsOffScreen(layout, startTravel, endTravel, headTransform, tailTransform)) return
+    if (
+        !elevationTransform &&
+        connectorIsOffScreen(layout, startTravel, endTravel, headTransform, tailTransform)
+    )
+        return
 
     let maskEnabled = false
     let sameMaskStage = false
@@ -675,9 +703,11 @@ const drawConnectorDefault = (
             stageTransformIsIdentity(headTransform) &&
             (transformsEqual || stageTransformIsIdentity(tailTransform))
         )
-    const constantTransform = hasTransform && transformsEqual
+    const constantTransform = hasTransform && transformsEqual && !elevationTransform
     const heterogeneousEndpoints =
-        (hasTransform && !constantTransform) || (maskEnabled && !sameMaskStage)
+        !!elevationTransform ||
+        (hasTransform && !constantTransform) ||
+        (maskEnabled && !sameMaskStage)
     const leftChange = tail.lane - tail.size - (head.lane - head.size)
     const rightChange = tail.lane + tail.size - (head.lane + head.size)
     let geometryDetail = heterogeneousEndpoints
@@ -696,7 +726,48 @@ const drawConnectorDefault = (
           )
     const quality = CONNECTOR_QUALITY
     let circularFracs: number[] = []
-    if (
+    if (elevationTransform) {
+        circularFracs = elevationConnectorFracs(
+            (fraction) => {
+                const linearFrac = lerp(startFrac, endFrac, fraction)
+                const interpFrac = interpFracAt(
+                    lerp(startEaseFrac, endEaseFrac, fraction),
+                    linearFrac,
+                )
+                const lane = lerp(head.lane, tail.lane, interpFrac)
+                const interpolatedSize = lerp(head.size, tail.size, interpFrac)
+                const size = interpolatedSize > 0 ? interpolatedSize : CONNECTOR_ZERO_SIZE_FALLBACK
+                const rawLeft = lane - size
+                const rawRight = lane + size
+                let left = rawLeft
+                let right = rawRight
+                if (headMask?.enabled && tailMask?.enabled) {
+                    const maskLeft = lerp(headMask.left, tailMask.left, interpFrac)
+                    const maskRight = lerp(headMask.right, tailMask.right, interpFrac)
+                    left = clamp(left, maskLeft, maskRight)
+                    right = clamp(right, maskLeft, maskRight)
+                }
+                const travel = approach(
+                    layout,
+                    lerp(startVisualProgress, endVisualProgress, fraction),
+                )
+                const stage = elevationTransform(interpFrac, linearFrac)
+                const transform = stageTransformToAffine(stage)
+                return {
+                    edges: [left, right, rawLeft, rawRight].map((edge) =>
+                        applyAffine(transform, perspectiveVec(layout, edge, 1, travel)),
+                    ),
+                    rotation: stage.sr,
+                }
+            },
+            quality,
+            Math.min(startAlpha, endAlpha) * alphaOption >= 1
+                ? 0
+                : (Math.abs(endAlpha - startAlpha) * alphaOption * quality) /
+                      (2 * CONNECTOR_ALPHA_ERROR),
+        )
+        geometryDetail = circularFracs.length / quality
+    } else if (
         easeType >= EaseType.inCirc &&
         easeType <= EaseType.outInCirc &&
         constantInterpFrac < 0 &&
@@ -720,6 +791,7 @@ const drawConnectorDefault = (
 
     if (
         geometryDetail * quality <= 1 &&
+        !elevationTransform &&
         headAlpha === tailAlpha &&
         (!hasTransform || constantTransform) &&
         !maskEnabled
@@ -771,18 +843,20 @@ const drawConnectorDefault = (
         )
     }
 
-    const transformAt = (interpFrac: number) =>
-        hasTransform
-            ? stageTransformToAffine(
-                  constantTransform
-                      ? headTransform
-                      : blendStageTransform(headTransform, tailTransform, interpFrac),
-              )
-            : undefined
+    const transformAt = (interpFrac: number, linearFrac: number) =>
+        elevationTransform
+            ? stageTransformToAffine(elevationTransform(interpFrac, linearFrac))
+            : hasTransform
+              ? stageTransformToAffine(
+                    constantTransform
+                        ? headTransform
+                        : blendStageTransform(headTransform, tailTransform, interpFrac),
+                )
+              : undefined
     const drawSegment = (start: SegmentEnd, end: SegmentEnd, baseA: number) => {
         if (baseA <= 0) return
-        const startTransform = transformAt(start.interpFrac)
-        const endTransform = transformAt(end.interpFrac)
+        const startTransform = transformAt(start.interpFrac, start.linearFrac)
+        const endTransform = transformAt(end.interpFrac, end.linearFrac)
         const edge = ({ lane, size, travel }: SegmentEnd, transform = startTransform) => {
             const left = perspectiveVec(layout, lane - size, 1, travel)
             const right = perspectiveVec(layout, lane + size, 1, travel)
@@ -837,6 +911,7 @@ const drawConnectorDefault = (
             )
             let previousTravel = start.travel
             let previousInterpFrac = start.interpFrac
+            let previousLinearFrac = start.linearFrac
             let previousFrac = 0
             for (const frac of splitFracs) {
                 if (frac <= previousFrac) continue
@@ -848,6 +923,7 @@ const drawConnectorDefault = (
                 )
                 const nextTravel = lerp(start.travel, end.travel, frac)
                 const nextInterpFrac = lerp(start.interpFrac, end.interpFrac, frac)
+                const nextLinearFrac = lerp(start.linearFrac, end.linearFrac, frac)
                 if (previous.maskedSize > 0 || next.maskedSize > 0) {
                     drawSegment(
                         {
@@ -855,12 +931,14 @@ const drawConnectorDefault = (
                             size: previous.size,
                             travel: previousTravel,
                             interpFrac: previousInterpFrac,
+                            linearFrac: previousLinearFrac,
                         },
                         {
                             lane: next.lane,
                             size: next.size,
                             travel: nextTravel,
                             interpFrac: nextInterpFrac,
+                            linearFrac: nextLinearFrac,
                         },
                         baseA,
                     )
@@ -869,26 +947,51 @@ const drawConnectorDefault = (
                 previous = next
                 previousTravel = nextTravel
                 previousInterpFrac = nextInterpFrac
+                previousLinearFrac = nextLinearFrac
             }
         } else {
-            const last = maskedConnectorExtentsByLimits(
-                start.lane,
-                start.size,
-                lerp(headMask.left, tailMask.left, start.interpFrac),
-                lerp(headMask.right, tailMask.right, start.interpFrac),
-            )
-            const next = maskedConnectorExtentsByLimits(
-                end.lane,
-                end.size,
-                lerp(headMask.left, tailMask.left, end.interpFrac),
-                lerp(headMask.right, tailMask.right, end.interpFrac),
-            )
-            if (last.maskedSize > 0 || next.maskedSize > 0) {
-                drawSegment(
-                    { ...start, lane: last.lane, size: last.size },
-                    { ...end, lane: next.lane, size: next.size },
-                    baseA,
+            // A narrow moving mask can intersect the segment even when both
+            // endpoints lie outside it. Split every linear clipping boundary.
+            const startMaskLeft = lerp(headMask.left, tailMask.left, start.interpFrac)
+            const startMaskRight = lerp(headMask.right, tailMask.right, start.interpFrac)
+            const endMaskLeft = lerp(headMask.left, tailMask.left, end.interpFrac)
+            const endMaskRight = lerp(headMask.right, tailMask.right, end.interpFrac)
+            const splitFracs = [1]
+            const addCrossing = (first: number, last: number) => {
+                if ((first < 0 && last > 0) || (first > 0 && last < 0))
+                    splitFracs.push(-first / (last - first))
+            }
+            for (const edge of [-1, 1]) {
+                const first = start.lane + edge * start.size
+                const last = end.lane + edge * end.size
+                addCrossing(first - startMaskLeft, last - endMaskLeft)
+                addCrossing(first - startMaskRight, last - endMaskRight)
+            }
+            addCrossing(startMaskRight - startMaskLeft, endMaskRight - endMaskLeft)
+            splitFracs.sort((a, b) => a - b)
+            const at = (fraction: number) => {
+                const clipped = maskedConnectorExtentsByLimits(
+                    lerp(start.lane, end.lane, fraction),
+                    lerp(start.size, end.size, fraction),
+                    lerp(startMaskLeft, endMaskLeft, fraction),
+                    lerp(startMaskRight, endMaskRight, fraction),
                 )
+                return {
+                    ...clipped,
+                    travel: lerp(start.travel, end.travel, fraction),
+                    interpFrac: lerp(start.interpFrac, end.interpFrac, fraction),
+                    linearFrac: lerp(start.linearFrac, end.linearFrac, fraction),
+                }
+            }
+            let previous = at(0)
+            let previousFrac = 0
+            for (const fraction of splitFracs) {
+                if (fraction <= previousFrac) continue
+                const next = at(fraction)
+                if (previous.maskedSize > 0 || next.maskedSize > 0)
+                    drawSegment(previous, next, baseA)
+                previous = next
+                previousFrac = fraction
             }
         }
     }
@@ -944,6 +1047,7 @@ const drawConnectorDefault = (
         size: startSize,
         travel: startTravel,
         interpFrac: startInterpFrac,
+        linearFrac: startFrac,
     }
     let lastAlpha = startAlpha
     const pieceSize = 1 / pieceCounts.length
@@ -966,6 +1070,7 @@ const drawConnectorDefault = (
                 size: lerp(head.size, tail.size, nextInterpFrac),
                 travel: approach(layout, lerp(startVisualProgress, endVisualProgress, segmentFrac)),
                 interpFrac: nextInterpFrac,
+                linearFrac: nextFrac,
             }
             const nextAlpha = lerp(headAlpha, tailAlpha, nextFrac)
             const baseA = clamp(((lastAlpha + nextAlpha) / 2) * alphaOption, 0, 1)

@@ -744,7 +744,7 @@ for (const axis of ['beat', 'elevation'] as const) {
     })
 }
 
-test('attached slide interiors translate selected elevation endpoints without rewriting authored attachment values', async ({
+test('time-based attached interiors translate selected elevation endpoints without rewriting authored attachment values', async ({
     page,
 }) => {
     await page.evaluate(() => {
@@ -755,9 +755,9 @@ test('attached slide interiors translate selected elevation endpoints without re
                 ...fixtures.interaction,
                 slides: [
                     [
-                        { ...base, beat: 3, left: -4, size: 2, elevation: 1 },
+                        { ...base, beat: 2, left: -4, size: 2, elevation: 1 },
                         { ...base, beat: 3, left: 0, size: 2, elevation: 0, isAttached: true },
-                        { ...base, beat: 3, left: 4, size: 2, elevation: 5 },
+                        { ...base, beat: 4, left: 4, size: 2, elevation: 5 },
                     ],
                 ],
             },
@@ -770,7 +770,27 @@ test('attached slide interiors translate selected elevation endpoints without re
     })
     await page.keyboard.press('t')
     await expect(page.locator('.elevation-canvas')).toBeVisible()
-    await open(page, 'elevation')
+    await page.evaluate(async () => {
+        const { appImport } = window.editorTest
+        const { elevationBeat } = await appImport<
+            typeof import('../../src/editor/elevation/state')
+        >('/src/editor/elevation/state.ts')
+        elevationBeat.value = 3
+    })
+    await settle(page)
+    const rowPoint = await page.evaluate(() => {
+        const row = window.scalingTest.scene.elevationLayout.value.rows.find((row) => row.attached)!
+        const bounds = document.querySelector('.elevation-canvas')!.getBoundingClientRect()
+        return { x: bounds.x + row.x, y: bounds.y + row.y }
+    })
+    await page.mouse.move(rowPoint.x, rowPoint.y)
+    await page.evaluate(async () => {
+        const { scaleElevation } = await window.editorTest.appImport<
+            typeof import('../../src/editor/commands/scaleSelection')
+        >('/src/editor/commands/scaleSelection/index.ts')
+        void scaleElevation.execute()
+    })
+    await expect(panel(page)).toBeVisible()
     const begun = await page.evaluate(async () => {
         const urls = new Map(
             performance

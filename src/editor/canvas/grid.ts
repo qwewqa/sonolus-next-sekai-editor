@@ -111,8 +111,20 @@ export const drawGrid = (
     ctx.save()
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 2 / scale
+    // Composed stages supply their own vertical guides. Retain the standard
+    // playfield edges only as faint references in the surrounding workspace.
+    const composed = !!context.composed
+    if (composed) {
+        ctx.globalAlpha = 0.12
+        ctx.beginPath()
+        for (const lane of [-6, 6]) {
+            ctx.moveTo(lane, Math.min(0, bounds.b))
+            ctx.lineTo(lane, bounds.t)
+        }
+        ctx.stroke()
+    }
     // Batch disjoint grid lines with the same opacity into a single stroke.
-    for (const alpha of [0.5, 0.25, 0.05]) {
+    for (const alpha of composed ? [] : [0.5, 0.25, 0.05]) {
         ctx.globalAlpha = alpha
         ctx.beginPath()
         for (let i = 1; i <= 13; i++) {
@@ -123,7 +135,7 @@ export const drawGrid = (
         ctx.stroke()
     }
 
-    if (laneDivision > 1 && scale / laneDivision >= 8 && laneDivision <= 32) {
+    if (!composed && laneDivision > 1 && scale / laneDivision >= 8 && laneDivision <= 32) {
         ctx.globalAlpha = 0.025
         ctx.beginPath()
         for (let i = -6 * laneDivision; i <= 6 * laneDivision; i++) {
@@ -137,6 +149,8 @@ export const drawGrid = (
 
     const min = Math.ceil(beats.min * division)
     const max = Math.floor(beats.max * division)
+    const left = composed ? bounds.l : -6
+    const right = composed ? bounds.r : 6
     const showMeasures = beatDisplay !== 'beat'
     if (max - min <= 100) {
         for (const isBeat of [false, true]) {
@@ -145,21 +159,21 @@ export const drawGrid = (
             for (let i = min; i <= max; i++) {
                 if ((i % division === 0) !== isBeat) continue
                 const y = beatToTime(state.bpms, i / division) * ups
-                ctx.moveTo(-6, y)
-                ctx.lineTo(6, y)
+                ctx.moveTo(left, y)
+                ctx.lineTo(right, y)
             }
             ctx.stroke()
         }
     }
 
     if (showMeasures) {
-        ctx.globalAlpha = 0.7
-        ctx.lineWidth = 3 / scale
+        ctx.globalAlpha = composed ? 0.4 : 0.7
+        ctx.lineWidth = (composed ? 2 : 3) / scale
         ctx.beginPath()
         for (const beat of getMeasureBeats(state.bpms, beats.min, beats.max)) {
             const y = beatToTime(state.bpms, beat) * ups
-            ctx.moveTo(-6, y)
-            ctx.lineTo(6, y)
+            ctx.moveTo(left, y)
+            ctx.lineTo(right, y)
         }
         ctx.stroke()
     }

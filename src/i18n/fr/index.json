@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "Ouvrir le menu contextuel"
+    },
+    "editorLayout": {
+      "title": "Disposition de l’éditeur",
+      "basic": "Disposition de base activée",
+      "composed": "Disposition composée activée"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "Relatif"
       },
       "group": "Groupe actuel",
-      "stage": "Scène actuelle"
+      "stage": "Scène actuelle",
+      "layout": {
+        "label": "Disposition",
+        "basic": "De base",
+        "composed": "Composée"
+      }
     }
   },
   "statusBar": {

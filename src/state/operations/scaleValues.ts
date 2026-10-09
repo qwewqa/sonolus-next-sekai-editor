@@ -12,6 +12,12 @@ export const getScaleEntities = (selected: Entity[], axis: ScaleAxis, source?: S
         if (entity.type === 'stageTransformEventJoint') return true
         if (entity.type !== 'note') return false
         if (!entity.isAttached) return true
+        if (axis === 'elevation') {
+            const info = source?.store.slides.info
+                .get(entity.slideId)
+                ?.find((info) => info.note === entity)
+            if (info?.attachHead.beat === info?.attachTail.beat && info) return true
+        }
         const slide = source?.store.slides.note.get(entity.slideId)
         return slide?.[0] === entity || slide?.at(-1) === entity
     })

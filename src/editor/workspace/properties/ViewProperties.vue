@@ -82,9 +82,26 @@ const snapping = computed({
         void commands.snapping.execute()
     },
 })
+
+const layout = computed({
+    get: () => view.layout,
+    set: (layout) => {
+        if (layout === view.layout) return
+        void commands.editorLayout.execute()
+    },
+})
 </script>
 
 <template>
+    <ChoiceField
+        v-if="isDynamicStages"
+        v-model="layout"
+        :label="i18n.sidebars.view.layout.label"
+        :options="[
+            [i18n.sidebars.view.layout.basic, 'basic'],
+            [i18n.sidebars.view.layout.composed, 'composed'],
+        ]"
+    />
     <SelectField v-model="tool" :label="i18n.sidebars.view.tool" :options="toolOptions" />
     <!-- The current group and stage, not the selection's: Selection sets ownership. -->
     <OptionalGroupField

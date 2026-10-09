@@ -14,7 +14,7 @@ import { interpolateRaw } from '../../utils/interpolate'
 import BaseField from './BaseField.vue'
 import { isUnset, mixedRange, useFieldUsage } from './fieldUsage'
 import { numberEditKey } from './numberEdit'
-import { isTyped, trackTypedText } from './resync'
+import { confirmOnEnter, isTyped, trackTypedText } from './resync'
 
 defineProps<{
     label: string
@@ -134,6 +134,7 @@ const onFocus = (event: FocusEvent) => {
             @change="onChange"
             @blur="onChange"
             @keydown.esc="onEscape"
+            @keydown.enter="confirmOnEnter"
         />
     </BaseField>
 </template>

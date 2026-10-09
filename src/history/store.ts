@@ -1,10 +1,11 @@
 import { computed } from 'vue'
 import { state } from '.'
+import { getComposedLayout } from '../editor/composedView'
 import { view } from '../editor/view'
 import { settings } from '../settings'
 import type { State } from '../state'
 import type { Entity, EntityOfType, EntityType } from '../state/entities'
-import { beatToTime, timeToBeat, type BpmIntegral } from '../state/integrals/bpms'
+import { beatToTime, timeToBeat } from '../state/integrals/bpms'
 import type { Store } from '../state/store'
 import { beatToKey } from '../state/store/grid'
 
@@ -83,7 +84,7 @@ export const hitEntities = <T extends EntityType>(
         timeMax,
         (minKey, maxKey) => cullEntities(type, minKey, maxKey, source.store),
         minimumNoteWidth,
-        source.bpms,
+        source,
     )
 
 export const hitAllEntities = (
@@ -101,7 +102,7 @@ export const hitAllEntities = (
         timeMax,
         (minKey, maxKey) => cullAllEntities(minKey, maxKey, source.store),
         minimumNoteWidth,
-        source.bpms,
+        source,
     )
 
 const hitEntitiesByGetter = <T extends Entity>(
@@ -111,8 +112,10 @@ const hitEntitiesByGetter = <T extends Entity>(
     timeMax: number,
     getEntities: (minKey: number, maxKey: number) => Set<T>,
     minimumNoteWidth: number,
-    integrals: BpmIntegral[],
+    source: State,
 ) => {
+    const integrals = source.bpms
+    const composed = getComposedLayout(source)
     const spu = view.w / settings.width / settings.pps
 
     // Include the tallest hitbox (BPM, h = 0.4) across beat-bucket boundaries.
@@ -120,7 +123,9 @@ const hitEntitiesByGetter = <T extends Entity>(
     const minKey = beatToKey(timeToBeat(integrals, Math.max(0, timeMin - 0.4 * spu)))
     const maxKey = beatToKey(timeToBeat(integrals, Math.max(0, timeMax + 0.4 * spu)))
 
-    return [...getEntities(minKey, maxKey)].filter(({ type, hitbox }) => {
+    return [...getEntities(minKey, maxKey)].filter((entity) => {
+        const { type } = entity
+        const hitbox = composed ? composed.hitbox(entity) : entity.hitbox
         if (!hitbox) return false
 
         const { lane } = hitbox

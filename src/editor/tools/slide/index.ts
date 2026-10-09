@@ -18,6 +18,12 @@ import { createTransaction, type Transaction } from '../../../state/transaction'
 import { interpolate } from '../../../utils/interpolate'
 import { shiftComputed } from '../../../utils/math'
 import { bisect } from '../../../utils/ordered'
+import {
+    getComposedGridOffset,
+    getComposedMoveOffset,
+    getComposedNoteOffset,
+    getComposedOffset,
+} from '../../composedView'
 import { constrainLaneObject, minimumNoteSize } from '../../laneLimits'
 import { notify } from '../../notification'
 import { revealAuthoringTarget } from '../../scope'
@@ -25,12 +31,12 @@ import { isSidebarVisible, revealPropertiesSection } from '../../sidebars'
 import { showToolModal } from '../../toolModals'
 import { quickEdit } from '../../utils/quickEdit'
 import {
+    alignLane,
     focusEntityAtBeat,
     setViewHover,
     snapYToBeat,
     view,
     xToLane,
-    xToValidLane,
     yToValidBeat,
 } from '../../view'
 import SelectionPropertiesModal from '../../workspace/properties/SelectionPropertiesModal.vue'
@@ -224,13 +230,20 @@ export const slide: Tool = {
 
         setViewHover(y)
 
-        const lane = xToLane(x)
-
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
                 const properties = getPropertiesFromSelection(beat)
-                const [left, size] = resize(active.lane, lane, minimumNoteSize(properties.noteType))
+                const lane = xToLane(x) - getComposedOffset(properties.stageId, beat)
+                const [left, size] = resize(
+                    active.lane,
+                    lane,
+                    minimumNoteSize(properties.noteType),
+                    Number.POSITIVE_INFINITY,
+                    active.lane,
+                    undefined,
+                    getComposedGridOffset(properties.stageId, beat),
+                )
 
                 view.entities = {
                     hovered: [],
@@ -253,6 +266,7 @@ export const slide: Tool = {
                 break
             }
             case 'edit': {
+                const lane = xToLane(x) - getComposedNoteOffset(active.entity)
                 const [left, size] = resize(
                     active.lane,
                     lane,
@@ -261,6 +275,7 @@ export const slide: Tool = {
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
                     [active.entity.left, active.entity.size],
+                    getComposedGridOffset(active.entity.stageId, active.entity.beat),
                 )
                 const object = constrainLaneObject(
                     { ...active.entity, left, size },
@@ -276,10 +291,17 @@ export const slide: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
+                const lane = xToLane(x) - getComposedMoveOffset(active.entity, beat)
                 const object = constrainLaneObject({
                     ...active.entity,
                     beat,
-                    left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
+                    left: moveLane(
+                        active.entity.left,
+                        active.lane,
+                        lane,
+                        active.entity.left,
+                        getComposedGridOffset(active.entity.stageId, beat),
+                    ),
                 })
 
                 view.entities = {
@@ -297,13 +319,20 @@ export const slide: Tool = {
         clearPreviewEdit()
         if (!active) return
 
-        const lane = xToLane(x)
-
         switch (active.type) {
             case 'add': {
                 const beat = yToValidBeat(y)
                 const properties = getPropertiesFromSelection(beat)
-                const [left, size] = resize(active.lane, lane, minimumNoteSize(properties.noteType))
+                const lane = xToLane(x) - getComposedOffset(properties.stageId, beat)
+                const [left, size] = resize(
+                    active.lane,
+                    lane,
+                    minimumNoteSize(properties.noteType),
+                    Number.POSITIVE_INFINITY,
+                    active.lane,
+                    undefined,
+                    getComposedGridOffset(properties.stageId, beat),
+                )
 
                 add(
                     getSelectedSlideId() ?? createSlideId(),
@@ -321,6 +350,7 @@ export const slide: Tool = {
                 break
             }
             case 'edit': {
+                const lane = xToLane(x) - getComposedNoteOffset(active.entity)
                 const [left, size] = resize(
                     active.lane,
                     lane,
@@ -329,6 +359,7 @@ export const slide: Tool = {
                     active.entity.left +
                         (active.lane === active.entity.left ? active.entity.size : 0),
                     [active.entity.left, active.entity.size],
+                    getComposedGridOffset(active.entity.stageId, active.entity.beat),
                 )
 
                 commitDrop(
@@ -347,6 +378,7 @@ export const slide: Tool = {
             }
             case 'move': {
                 const beat = snapYToBeat(y, active.entity.beat)
+                const lane = xToLane(x) - getComposedMoveOffset(active.entity, beat)
 
                 commitDrop(
                     move,
@@ -354,7 +386,13 @@ export const slide: Tool = {
                     constrainLaneObject({
                         ...active.entity,
                         beat,
-                        left: moveLane(active.entity.left, active.lane, lane, active.entity.left),
+                        left: moveLane(
+                            active.entity.left,
+                            active.lane,
+                            lane,
+                            active.entity.left,
+                            getComposedGridOffset(active.entity.stageId, beat),
+                        ),
                     }),
                 )
                 focusEntityAtBeat(beat)
@@ -450,7 +488,14 @@ const tryFind = (
         .filter(isVisible)
         .sort((a, b) => +selectedEntities.value.includes(b) - +selectedEntities.value.includes(a))
 
-    return hit ? [hit] : [undefined, yToValidBeat(y), xToValidLane(x)]
+    if (hit) return [hit]
+
+    const beat = yToValidBeat(y)
+    const properties = getPropertiesFromSelection(beat)
+    const origin = getComposedGridOffset(properties.stageId, beat)
+    const lane =
+        alignLane(xToLane(x) - getComposedOffset(properties.stageId, beat) - origin) + origin
+    return [undefined, beat, lane]
 }
 
 export const getSelectedSlideId = () => {
@@ -468,7 +513,7 @@ const resolveDrag = (x: number, y: number) => {
     const [entity, beat, lane] = tryFind(x, y)
     if (!entity) return { type: 'add', beat, lane } as const
 
-    const pointerLane = xToLane(x)
+    const pointerLane = xToLane(x) - getComposedNoteOffset(entity)
     return {
         type: isNoteResizeStart(entity, pointerLane) ? 'edit' : 'move',
         entity,

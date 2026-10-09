@@ -10,6 +10,7 @@ import { deleteSelection } from './deleteSelection'
 import { deselect } from './deselect'
 import { division } from './divisions'
 import { divisionCustom, laneDivisionCustom } from './divisions/custom'
+import { editorLayout } from './editorLayout'
 import { elevation } from './elevation'
 import { eraser } from './eraser'
 import { event } from './events'
@@ -112,6 +113,7 @@ export const commands = {
     eraser,
     brush,
     elevation,
+    editorLayout,
     flip,
     flipVertical,
     scaleBeat,

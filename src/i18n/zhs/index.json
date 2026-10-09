@@ -439,6 +439,11 @@
     },
     "openContextMenu": {
       "title": "打开上下文菜单"
+    },
+    "editorLayout": {
+      "title": "编辑器布局",
+      "basic": "已切换到基础布局",
+      "composed": "已切换到合成布局"
     }
   },
   "help": {
@@ -757,7 +762,12 @@
         "relative": "相对"
       },
       "group": "当前群组",
-      "stage": "当前舞台"
+      "stage": "当前舞台",
+      "layout": {
+        "label": "布局",
+        "basic": "基础",
+        "composed": "合成"
+      }
     }
   },
   "statusBar": {

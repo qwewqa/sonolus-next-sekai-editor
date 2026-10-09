@@ -1,3 +1,4 @@
+import type { LevelDataEntity } from '@sonolus/core'
 import type { Command } from '..'
 import { setClipboardData } from '../../../clipboard/index.ts'
 import { state } from '../../../history'
@@ -12,9 +13,12 @@ import { i18n } from '../../../i18n'
 import { serializeEditorMetadata } from '../../../levelData/editorMetadata'
 import { serializeToLevelDataEntities } from '../../../levelData/entities/serialize'
 import type { Entity, EntityOfType, EntityType } from '../../../state/entities'
+import type { NoteEntity } from '../../../state/entities/slides/note'
 import { inStoredOrder } from '../../../state/operations/transformSelection'
 import { createStore } from '../../../state/store/creates'
 import { interpolate } from '../../../utils/interpolate'
+import { createComposedLayout } from '../../composed'
+import { editorNavigation } from '../../navigation'
 import { notify } from '../../notification'
 import { hitAllEntitiesAtPoint } from '../../tools/utils'
 import { view, yToValidBeat } from '../../view'
@@ -60,8 +64,11 @@ export const copy: Command = {
             stages.value,
         )
 
+        const anchor = getAnchor(entities, view.pointer.x, view.pointer.y)
         setClipboardData({
-            ...getAnchor(entities, view.pointer.x, view.pointer.y),
+            lane: anchor.lane,
+            beat: anchor.beat,
+            anchor: getClipboardAnchor(entities, copiedEntities, anchor.note),
             entities: copiedEntities,
             ...serializeEditorMetadata(copiedEntities, copiedStore),
             source: clipboardSource(),
@@ -92,12 +99,41 @@ const getAnchor = (entities: Entity[], x: number, y: number) => {
         return {
             lane: note.left + note.size / 2,
             beat: note.beat,
+            note,
         }
 
     const entity = hitEntities[0] ?? sortedEntities[0]
     return {
         lane: 0,
         beat: entity?.beat ?? yToValidBeat(y),
+        note: undefined,
+    }
+}
+
+/** A cut keeps its free pointer anchor in both the authored and displayed layouts. */
+export const getComposedClipboardOffset = (entities: Entity[], x: number, y: number) => {
+    if (view.layout !== 'composed' || !state.value.isDynamicStages || editorNavigation.value)
+        return 0
+    const { note } = getAnchor(entities, x, y)
+    return note ? createComposedLayout(state.value).notePosition(note).left - note.left : 0
+}
+
+/** Keep the chosen note's identity even when raw lanes and beats overlap across stages. */
+export const getClipboardAnchor = (
+    entities: Entity[],
+    serialized: LevelDataEntity[],
+    note: NoteEntity | undefined = getAnchor(entities, view.pointer.x, view.pointer.y).note,
+) => {
+    if (!note) return
+    const ordinal = getSlides(entities).flat().indexOf(note)
+    let index = 0
+    for (const [entityIndex, entity] of serialized.entries()) {
+        if (
+            !entity.data.some((property) => property.name === '#TIMESCALE_GROUP') ||
+            !entity.data.some((property) => property.name === 'lane')
+        )
+            continue
+        if (index++ === ordinal) return entityIndex
     }
 }
 

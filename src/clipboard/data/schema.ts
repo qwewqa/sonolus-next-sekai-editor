@@ -6,6 +6,8 @@ export const clipboardDataSchema = Type.Object({
     lane: Type.Number(),
     beat: Type.Number({ minimum: 0 }),
     entities: levelDataEntitiesSchema,
+    /** Serialized note index identifying the grabbed anchor, without projecting chart data. */
+    anchor: Type.Optional(Type.Integer({ minimum: 0 })),
     ...editorMetadataSchema.properties,
     /** The copying chart and its group and stage ids, in the order the entities list them. */
     source: Type.Optional(

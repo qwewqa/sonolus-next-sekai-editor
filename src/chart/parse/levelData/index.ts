@@ -10,6 +10,7 @@ import {
     type Folders,
 } from '../../folders'
 import { addToGroups, type GroupId, type GroupObject } from '../../groups'
+import type { NoteObject } from '../../note'
 import { ImportRefusal } from '../../refusal'
 import { addDefaultStageToStages, addToStages, type StageId, type StageObject } from '../../stages'
 import { parseBpmsToChart } from './bpm'
@@ -29,6 +30,7 @@ export type ParseCtx = {
     chart: Chart
     entities: LevelDataEntity[]
     defaultGuideColors: ReadonlySet<LevelDataEntity>
+    noteSources?: Map<NoteObject, LevelDataEntity>
 
     /** The folder an entity's `editorFolder` ref names, if it exists. */
     getGroupFolderId: (entity: LevelDataEntity) => FolderId | undefined
@@ -52,6 +54,7 @@ export type ParseCtx = {
 export const parseLevelDataChart = (
     entities: LevelDataEntity[],
     defaultGuideColors: readonly number[] = [],
+    noteSources?: Map<NoteObject, LevelDataEntity>,
 ): Chart => {
     const chart: Chart = {
         initialLife: 1000,
@@ -85,6 +88,7 @@ export const parseLevelDataChart = (
         chart,
         entities,
         defaultGuideColors: new Set(defaultGuideColors.flatMap((index) => entities[index] ?? [])),
+        noteSources,
 
         getGroupFolderId: (entity) => folderIdOf(groupFolderIds, entity),
         getStageFolderId: (entity) => folderIdOf(stageFolderIds, entity),

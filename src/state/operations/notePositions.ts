@@ -2,6 +2,7 @@ import type { State } from '..'
 import { attachEasedFrac, buildPreviewChart } from '../../preview/engine/chart'
 import { getStageProps } from '../../preview/engine/stage'
 import { alignComputed } from '../../utils/math'
+import { sameBeatAttachmentFraction } from '../entities/slides/attachment'
 import type { NoteEntity } from '../entities/slides/note'
 
 export const getMaterializedNotePositions = (
@@ -34,6 +35,11 @@ export const getMaterializedNotePositions = (
         const tailStage = props(tail.stageIndex)
         const stage = props(compiled.stageIndex)
         const frac = attachEasedFrac(compiled)
+        const elevationFrac =
+            (head.source &&
+                tail.source &&
+                sameBeatAttachmentFraction(head.source, tail.source, note)) ??
+            frac
         const headLane = head.lane + headStage.pivotLane
         const tailLane = tail.lane + tailStage.pivotLane
         const headElevation = (head.elevation ?? 0) + headStage.elevation
@@ -43,7 +49,8 @@ export const getMaterializedNotePositions = (
                 headLane + (tailLane - headLane) * frac - stage.pivotLane - compiled.size,
             ),
             size: alignComputed(compiled.size * 2),
-            elevation: headElevation + (tailElevation - headElevation) * frac - stage.elevation,
+            elevation:
+                headElevation + (tailElevation - headElevation) * elevationFrac - stage.elevation,
         })
     }
     return positions

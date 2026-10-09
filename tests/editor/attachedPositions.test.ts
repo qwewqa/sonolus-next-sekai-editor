@@ -4,10 +4,17 @@ import type { Chart } from '../../src/chart'
 import type { GroupId } from '../../src/chart/groups'
 import type { NoteObject } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
+import { createComposedLayout } from '../../src/editor/composed'
 import { serializeToLevelData } from '../../src/levelData/serialize'
 import { attachEasedFrac, buildPreviewChart } from '../../src/preview/engine/chart'
 import { createState, type State } from '../../src/state'
+import { sameBeatAttachmentFraction } from '../../src/state/entities/slides/attachment'
+import { editSelectedNote } from '../../src/state/operations/note'
 import { getMaterializedNotePositions } from '../../src/state/operations/notePositions'
+import { getNoteFieldsIn } from '../../src/state/operations/properties/noteFields'
+import { scaleSelection } from '../../src/state/operations/scaleSelection'
+import { getScaleEntities } from '../../src/state/operations/scaleValues'
+import { createTransaction } from '../../src/state/transaction'
 
 const groupId = 1 as GroupId
 const stageId = 1 as StageId
@@ -197,4 +204,104 @@ test('materialized attached notes drop the float noise a kept tick carries', () 
         attached(state),
     )!
     assert.deepEqual([left, size], [-0.5, 3])
+})
+
+const elevationAttachment = (head = 0, own = 2, tail = 4, tailBeat = 2) =>
+    createState(
+        {
+            ...chart([{ beat: 0, bpm: 120 }]),
+            isDynamicStages: true,
+            slides: [
+                [
+                    note(2, 0, { elevation: head, size: 2, connectorEase: 'inQuad' }),
+                    note(2, 99, { elevation: own, isAttached: true }),
+                    note(tailBeat, 4, { elevation: tail, left: 2, size: 4 }),
+                ],
+            ],
+        },
+        0,
+    )
+
+test('same-beat attachments ease lanes and widths from each stored elevation', () => {
+    for (const [head, own, tail, fraction] of [
+        [0, 1, 4, 0.25],
+        [0, 2, 4, 0.5],
+        [4, 3, 0, 0.25],
+        [0, -1, 4, 0],
+        [0, 5, 4, 1],
+        [3, 3, 3, 0.5],
+        [3, 100, 3 + 1e-7, 0.5],
+    ]) {
+        const source = elevationAttachment(head, own, tail)
+        const tick = attached(source)
+        const eased = fraction! ** 2
+        assert.equal(tick.left + tick.size / 2, 4 * eased)
+        assert.equal(tick.size, 2 + 2 * eased)
+        assert.equal(tick.elevation, own)
+        assert.deepEqual(createComposedLayout(source).notePosition(tick), {
+            left: tick.left,
+            size: tick.size,
+        })
+        assert.equal(getNoteFieldsIn(source.store, tick).elevation, true)
+        assert.deepEqual(getScaleEntities([tick], 'width', source), [])
+        assert.deepEqual(getScaleEntities([tick], 'elevation', source), [tick])
+    }
+})
+
+test('elevation attachment domain requires exact authored beat equality', () => {
+    const source = elevationAttachment(0, 4, 4, 2 + 1e-7)
+    const tick = attached(source)
+    // A tiny but distinct time span keeps the existing midpoint-time fallback.
+    assert.equal(center(source), 1)
+    assert.equal(getNoteFieldsIn(source.store, tick).elevation, false)
+    assert.deepEqual(getScaleEntities([tick], 'elevation', source), [])
+    assert.equal(
+        sameBeatAttachmentFraction(
+            { beat: 2, elevation: 0 },
+            { beat: 2 + 1e-7, elevation: 4 },
+            tick,
+        ),
+        undefined,
+    )
+})
+
+test('editing or scaling stored elevation rebuilds attached geometry without detaching', () => {
+    const source = elevationAttachment()
+    const original = attached(source)
+    const transaction = createTransaction(source)
+    const selection = editSelectedNote(transaction, original, { elevation: 1 })
+    const edited = transaction.commit(selection)
+    assert.equal(center(edited), 0.25)
+    assert.equal(attached(edited).elevation, 1)
+    assert.equal(attached(edited).isAttached, true)
+    assert.equal(center(source), 1)
+    const head = [...edited.store.slides.note.values()][0]![0]!
+    const scaled = scaleSelection(edited, [head, attached(edited)], 'elevation', 2, 0)
+    assert.equal(center(scaled), 1)
+    assert.equal(attached(scaled).elevation, 2)
+    assert.equal(attached(scaled).isAttached, true)
+})
+
+test('same-beat materialization keeps effective elevation at the raw attachment fraction', () => {
+    const source = elevationAttachment(0, 1, 4)
+    const tick = attached(source)
+    const position = getMaterializedNotePositions(source, [tick]).get(tick)!
+    assert.equal(position.elevation, 1)
+    assert.equal(position.left + position.size / 2, 0.25)
+    assert.equal(position.size, 2.125)
+})
+
+test('stored attached elevation survives exact-to-distinct beat edits', () => {
+    const restored = elevationAttachment(0, 1, 4)
+    assert.equal(attached(restored).elevation, 1)
+    assert.equal(center(restored), 0.25)
+    const tail = [...restored.store.slides.note.values()][0]!.at(-1)!
+    const transaction = createTransaction(restored)
+    const selected = editSelectedNote(transaction, tail, { beat: 4 })
+    const distinct = transaction.commit(selected)
+    assert.equal(attached(distinct).elevation, 1)
+    assert.equal(center(distinct), 0)
+    assert.equal(getNoteFieldsIn(distinct.store, attached(distinct)).elevation, false)
+    // The immutable old snapshot keeps both its parameter and original derived lane.
+    assert.equal(center(restored), 0.25)
 })

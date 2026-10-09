@@ -5,8 +5,14 @@ import type { GroupId } from '../../src/chart/groups'
 import type { NoteObject } from '../../src/chart/note'
 import type { StageId } from '../../src/chart/stages'
 import { buildPreviewChart, createPreviewChartBuilder } from '../../src/preview/engine/chart'
+import type { Quad } from '../../src/preview/engine/math'
 import type { PreviewChart } from '../../src/preview/engine/model'
+import { renderPreviewFrame } from '../../src/preview/engine/render'
+import type { PreviewRenderer } from '../../src/preview/gl'
+import { resolveSkin } from '../../src/preview/skin'
 import { createState, type State } from '../../src/state'
+import { editSelectedNote } from '../../src/state/operations/note'
+import { createTransaction } from '../../src/state/transaction'
 
 const groupA = 1 as GroupId
 const groupB = 2 as GroupId
@@ -92,6 +98,136 @@ const chart = (): Chart => ({
 const equalToFreshBuild = (actual: PreviewChart, state: State, noteSpeed = speed) => {
     assert.deepEqual(actual, buildPreviewChart(state, noteSpeed))
 }
+
+test('live same-beat property edits and history restore match fresh preview frames and selected hitboxes', () => {
+    const raw = chart()
+    raw.slides[0] = [
+        note({
+            elevation: 0,
+            connectorType: 'guide',
+            connectorStyle: 'green',
+            connectorEase: 'inQuad',
+            connectorGuideAlpha: 0,
+        }),
+        note({ elevation: 1, isAttached: true, connectorType: 'guide', connectorStyle: 'green' }),
+        note({
+            elevation: 4,
+            left: 2,
+            connectorType: 'guide',
+            connectorStyle: 'green',
+            connectorGuideAlpha: 1,
+        }),
+    ]
+    const original = createState(raw, 0)
+    const slideId = original.store.slides.info.keys().next().value!
+    const build = createPreviewChartBuilder()
+    const sprite = { u0: 0, v0: 0, u1: 1, v1: 1 }
+    const skin = resolveSkin(() => sprite)
+    const frame = (compiled: PreviewChart, now: number, leftLimit: boolean) => {
+        const output: { quad: Quad; alpha: number; kind: string }[] = []
+        const renderer: PreviewRenderer = {
+            maxViewportSize: { width: 1600, height: 900 },
+            setTexture() {},
+            begin() {},
+            flush() {},
+            dispose() {},
+            isContextLost: () => false,
+            draw(_sprite, quad, _z, alpha) {
+                output.push({ quad, alpha, kind: 'sprite' })
+            },
+        }
+        renderPreviewFrame(
+            renderer,
+            skin,
+            compiled,
+            now,
+            1600,
+            900,
+            1600,
+            900,
+            speed,
+            false,
+            undefined,
+            {
+                objects: new Set(
+                    compiled.notes.flatMap((value) => (value.source ? [value.source] : [])),
+                ),
+                outline: (quad) => output.push({ quad, alpha: 1, kind: 'selected' }),
+            },
+            leftLimit,
+            true,
+        )
+        return output
+    }
+    const originalCompiled = build(original, speed)
+    const originalFrame = frame(originalCompiled, 1.8, false)
+    const verify = (state: State, label: string) => {
+        const cached = build(state, speed)
+        const fresh = buildPreviewChart(state, speed)
+        assert.deepEqual(cached, fresh, label)
+        for (const now of [1.8, 2, 2.01]) {
+            for (const leftLimit of [false, true]) {
+                assert.deepEqual(
+                    frame(cached, now, leftLimit),
+                    frame(fresh, now, leftLimit),
+                    `${label}/${now}/${leftLimit}`,
+                )
+            }
+        }
+        assert.deepEqual(
+            frame(originalCompiled, 1.8, false),
+            originalFrame,
+            `history mutated: ${label}`,
+        )
+    }
+    let state = original
+    const changes: [number, Partial<NoteObject>][] = [
+        [1, { isConnectorSeparator: true }],
+        [1, { connectorGuideAlpha: 0.2, connectorStyle: 'red' }],
+        [0, { connectorEase: 'outElastic', connectorGuideAlpha: 0.7 }],
+        [2, { elevation: 0 }],
+        [2, { elevation: -4 }],
+        [1, { elevation: -3, stageId: stageB, groupId: groupB }],
+        [2, { beat: 4 + 1e-7 }],
+        [2, { beat: 4 }],
+        [1, { isAttached: false }],
+        [1, { isAttached: true }],
+        [1, { connectorType: 'active', connectorIsPassThrough: true }],
+        [1, { connectorType: 'guide', connectorPresentation: 'fullscreen' }],
+        [1, { connectorPresentation: 'default', isConnectorSeparator: false }],
+    ]
+    for (const [index, change] of changes) {
+        const current = state.store.slides.info.get(slideId)![index]!.note
+        const transaction = createTransaction(state)
+        state = transaction.commit(editSelectedNote(transaction, current, change))
+        verify(state, JSON.stringify(change))
+    }
+    verify({ ...state, isDynamicStages: false }, 'disable dynamic stages')
+    verify(state, 'restore dynamic stages')
+    raw.timeScales[0]!.timeScale = -0.5
+    const reversedScroll = createState(raw, 0)
+    const changedScroll = {
+        ...state,
+        store: {
+            ...state.store,
+            grid: { ...state.store.grid, timeScale: reversedScroll.store.grid.timeScale },
+        },
+    }
+    verify(changedScroll, 'reverse inherited timescale')
+    verify(
+        {
+            ...changedScroll,
+            groups: new Map([
+                [groupB, { name: 'B', forceNoteSpeed: 5 }],
+                [groupA, { name: 'A' }],
+            ]),
+        },
+        'reorder groups and change speed',
+    )
+    verify(state, 'restore timescale and groups')
+    verify(original, 'undo complete edit sequence')
+    assert.equal(build(original, speed), build(original, speed))
+})
 
 test('chart cache ignores selection, audio, filename and wrapper-only history changes', () => {
     const source = createState(chart(), 0)

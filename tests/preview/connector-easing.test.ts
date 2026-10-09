@@ -78,6 +78,28 @@ const draw = (easeType: EaseTypeValue, from = head, to = tail) => {
 // Quads list the nearer edge first; the left edges trace the connector's left side.
 const leftEdges = (quads: Quad[]) => quads.map(({ bl, tl }) => [bl, tl] as const)
 
+test('different-stage masks retain narrow crossings between two outside samples', () => {
+    const quads = draw(
+        EaseType.linear,
+        {
+            ...head,
+            lane: -5.25,
+            size: 0.1,
+            mask: { enabled: true, left: -0.1, right: 0.1, stageIndex: 0 },
+        },
+        {
+            ...tail,
+            lane: 4.75,
+            size: 0.1,
+            mask: { enabled: true, left: -0.1, right: 0.1, stageIndex: 1 },
+        },
+    )
+    // The twenty-segment mixed-stage path samples lanes -.25 and .25,
+    // both outside the mask; their interior must still produce visible quads.
+    assert.ok(quads.length > 0)
+    assert.ok(quads.some((quad) => quad.bl.x < 0 && quad.br.x > 0))
+})
+
 const leftAt = (lane: number, progress: number) =>
     perspectiveVec(context.layout, lane - SIZE, 1, approach(context.layout, progress))
 

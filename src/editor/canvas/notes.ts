@@ -397,6 +397,14 @@ export const createNoteRenderer = () => {
             opacity = 1,
             position?: { left: number; y: number; size?: number },
         ) {
+            if (!position && context.composed) {
+                position = {
+                    ...context.composed.notePosition(entity, entity.beat, {
+                        slideInfos: context.slideInfos?.get(entity.slideId),
+                    }),
+                    y: beatToTime(context.state.bpms, entity.beat) * context.ups - 0.3,
+                }
+            }
             if (position?.size !== undefined && position.size !== entity.size)
                 entity = { ...entity, size: position.size, useInfoOf: entity.useInfoOf ?? entity }
             const { ctx, state, scale, recentlyActive } = context
