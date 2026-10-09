@@ -531,6 +531,43 @@ test('the selection hides, shows, solos and selects its objects', async ({ page 
     expect(await historyLength(page)).toBe(0)
 })
 
+test('bulk visibility stays locked during isolation and an open menu follows returning to All', async ({
+    page,
+}) => {
+    await seedGroups(page, seed)
+    await page.evaluate(() => {
+        window.editorTest.settings.showOtherGroups = false
+    })
+    const list = panel(page)
+    await row(list, 'Other').locator('.manager-eye').click()
+    await row(list, 'Pad').locator('.manager-eye').click()
+    const saved = (await state(page)).hidden
+    await nameButton(list, 'Other').click()
+    await nameButton(list, 'Default').click({ modifiers: ['ControlOrMeta'] })
+    await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
+    const bar = list.locator('.manager-selection-bar')
+    await expect(bar.getByRole('button', { name: 'Show Selected' })).toBeDisabled()
+    await bar.getByRole('button', { name: 'More Actions for Selection' }).click()
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem', { name: 'Show Selected' })).toBeDisabled()
+    await expect(menu.getByRole('menuitem', { name: 'Show Only Selected' })).toBeDisabled()
+    expect((await state(page)).hidden).toEqual(saved)
+
+    await page.evaluate(async () => {
+        const { groupScope } =
+            await window.editorTest.appImport<typeof import('../../src/editor/scope')>(
+                '/src/editor/scope.ts',
+            )
+        groupScope.focusAll()
+    })
+    await expect(menu.getByRole('menuitem', { name: 'Hide Selected' })).toBeEnabled()
+    await expect(menu.getByRole('menuitem', { name: 'Show Only Selected' })).toBeEnabled()
+    expect((await state(page)).hidden).toEqual(saved)
+    await menu.getByRole('menuitem', { name: 'Hide Selected' }).click()
+    expect((await state(page)).hidden).toEqual(['Other', 'Pad', 'Default', 'Bass'])
+    expect(await historyLength(page)).toBe(0)
+})
+
 test('deleting the selection confirms, removes all as one step, and stops selecting', async ({
     page,
 }) => {
@@ -1608,6 +1645,9 @@ test('Ctrl+A anywhere in the list selects every row, never switching tools', asy
 
 test('All Groups keeps the hidden state of deleted rows for undo', async ({ page }) => {
     await seedGroups(page, seed)
+    await page.evaluate(() => {
+        window.editorTest.settings.showOtherGroups = false
+    })
     const list = panel(page)
     await row(list, 'Bass').locator('.manager-eye').click()
     await row(list, 'Drums').locator('.manager-eye').click()
@@ -1615,13 +1655,17 @@ test('All Groups keeps the hidden state of deleted rows for undo', async ({ page
     await page.getByRole('menuitem', { name: 'Delete Group' }).click()
     await expect(nameButton(list, 'Bass')).toHaveCount(0)
 
+    // A hidden current row is temporarily shown without losing either saved hide.
+    await nameButton(list, 'Drums').click()
+    await expect(row(list, 'Drums').locator('.manager-eye')).toHaveAccessibleName('Hide Drums')
+
     await page.evaluate(async () => {
         const { groupAll } = await window.editorTest.appImport<
             typeof import('../../src/editor/commands/groups/groupAll')
         >('/src/editor/commands/groups/groupAll.ts')
         groupAll.execute()
     })
-    await expect(list.locator('.manager-all .manager-meta')).toHaveCount(0)
+    await expect(list.locator('.manager-all .manager-meta')).toHaveText('5/6')
     await undo(page)
-    expect((await state(page)).hidden).toEqual(['Bass'])
+    expect((await state(page)).hidden).toEqual(['Bass', 'Drums'])
 })

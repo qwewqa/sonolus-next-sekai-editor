@@ -120,8 +120,11 @@ for (const [device, options] of Object.entries(viewports)) {
             expect(tops.window).toBe(0)
         })
 
-        test('names set the authoring target and eyes change visibility only', async ({ page }) => {
+        test('names isolate the authoring target and All restores the saved eyes', async ({
+            page,
+        }) => {
             await seedGroups(page, ['Default', 'Other group', 'Third'])
+            await page.evaluate(() => (window.editorTest.settings.showOtherGroups = false))
             const panel = await openGroups(page)
             const all = panel.locator('.manager-all .manager-name')
             await expect(all).toHaveAttribute('aria-current', 'true')
@@ -138,10 +141,24 @@ for (const [device, options] of Object.entries(viewports)) {
             await press(nameButton(panel, 'Other group'))
             expect((await groupState(page)).focus).toBe('Other group')
 
-            // The eye hides an entry without changing the target.
+            // The isolated axis disables every eye and leaves the All mask untouched.
+            await expect(
+                panel.getByRole('button', { name: 'Show Third', exact: true }),
+            ).toBeDisabled()
+            await expect(
+                panel.getByRole('button', { name: 'Hide Other group', exact: true }),
+            ).toBeDisabled()
+            await expect(
+                panel.getByRole('button', { name: 'Show All Groups', exact: true }),
+            ).toBeDisabled()
+            expect((await groupState(page)).visibility).toEqual({})
+            await expect(panel.locator('.manager-all .manager-meta')).toHaveText('1/3')
+            await press(all)
+
+            // The eye hides an entry in All without changing the target.
             await press(panel.getByRole('button', { name: 'Hide Third', exact: true }))
             let state = await groupState(page)
-            expect(state.focus).toBe('Other group')
+            expect(state.focus).toBeUndefined()
             expect(state.visibility).toEqual({ Third: 'hidden' })
             await expect(
                 panel.getByRole('button', { name: 'Show Third', exact: true }),
@@ -151,17 +168,17 @@ for (const [device, options] of Object.entries(viewports)) {
             )
             await expect(panel.locator('.manager-all .manager-meta')).toHaveText('2/3')
 
-            // All eye shows everything while keeping the target.
+            // All eye shows everything in All mode.
             await press(panel.getByRole('button', { name: 'Show All Groups', exact: true }))
             state = await groupState(page)
-            expect(state.focus).toBe('Other group')
+            expect(state.focus).toBeUndefined()
             expect(Object.values(state.visibility)).not.toContain('hidden')
             await expect(panel.locator('.manager-all .manager-meta')).toHaveCount(0)
 
-            // And hides everything while keeping the target.
+            // And hides everything while keeping All selected.
             await press(panel.getByRole('button', { name: 'Hide All Groups', exact: true }))
             state = await groupState(page)
-            expect(state.focus).toBe('Other group')
+            expect(state.focus).toBeUndefined()
             expect(state.visibility).toEqual({
                 Default: 'hidden',
                 'Other group': 'hidden',
@@ -169,15 +186,22 @@ for (const [device, options] of Object.entries(viewports)) {
             })
             await expect(panel.locator('.manager-all .manager-meta')).toHaveText('0/3')
 
-            // Selecting a hidden entry reveals it.
+            // Selecting a hidden entry isolates it without changing its saved hide.
             await press(nameButton(panel, 'Third'))
             state = await groupState(page)
             expect(state.focus).toBe('Third')
-            expect(state.visibility.Third).toBeUndefined()
+            expect(state.visibility.Third).toBe('hidden')
+            await expect(
+                panel.getByRole('button', { name: 'Hide Third', exact: true }),
+            ).toBeDisabled()
 
             // All clears the focus and is the only current row.
             await press(all)
             expect((await groupState(page)).focus).toBeUndefined()
+            expect((await groupState(page)).visibility.Third).toBe('hidden')
+            await expect(
+                panel.getByRole('button', { name: 'Show Third', exact: true }),
+            ).toBeEnabled()
             await expect(all).toHaveAttribute('aria-current', 'true')
             await expect(panel.locator('[aria-current]')).toHaveCount(1)
         })

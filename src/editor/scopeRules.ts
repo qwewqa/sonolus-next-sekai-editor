@@ -18,23 +18,12 @@ export const resolveScopeVisibility = <T>(
     override: ScopeOverride | undefined,
     showOthers: boolean,
 ): ScopeVisibility => {
+    // Isolation is temporary: saved All-view choices never override the focus.
+    if (!showOthers && focus !== undefined) return id === focus ? 'full' : 'hidden'
     if (override === 'hidden') return 'hidden'
     if (focus === undefined || focus === id) return 'full'
     if (override === 'shown' || showOthers) return 'dimmed'
     return 'hidden'
-}
-
-/**
- * Overrides after the show-others setting changes: turning it on clears every
- * hide and turning it off every explicit show, so the setting always shows.
- */
-export const followShowOthers = <T>(
-    overrides: ReadonlyMap<T, ScopeOverride>,
-    showOthers: boolean,
-): ReadonlyMap<T, ScopeOverride> => {
-    const contradicting: ScopeOverride = showOthers ? 'hidden' : 'shown'
-    if (![...overrides.values()].includes(contradicting)) return overrides
-    return new Map([...overrides].filter(([, override]) => override !== contradicting))
 }
 
 /** The entry Next (`1`) or Previous (`-1`) focuses; `undefined` is All, between the ends. */

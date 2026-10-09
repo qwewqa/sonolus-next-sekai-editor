@@ -151,6 +151,78 @@ test('hidden groups and stages are not drawn, hovered, selected or hit by the co
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
+test('group and stage isolation combine independently and All restores each saved mask', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.showOtherGroups = false
+        window.editorTest.settings.showOtherStages = false
+    })
+    // Select entries hidden in All: isolation must still show the selected one.
+    await setGroupShown(page, 2, false)
+    await setStageShown(page, 2, false)
+    await page.evaluate(() => window.scopeTest.groupScope.focus(2 as GroupId))
+    expect(await hoverAt(page, 1, 5)).toHaveLength(1)
+    expect(await hoverAt(page, -3, 3)).toEqual([])
+    await page.evaluate(() => window.scopeTest.stageScope.focus(2 as StageId))
+    expect(await hoverAt(page, 1, 5)).toEqual([])
+    expect(await hoverAt(page, 4, 7)).toEqual([])
+    // Clear only groups: group 1/stage 2 returns, group 2 stays hidden in All.
+    await page.evaluate(() => window.scopeTest.groupScope.focusAll())
+    expect(await hoverAt(page, 4, 7)).toHaveLength(1)
+    expect(await hoverAt(page, 1, 5)).toEqual([])
+    await page.evaluate(() => window.scopeTest.stageScope.focusAll())
+    expect(await hoverAt(page, 4, 7)).toEqual([])
+    expect(await hoverAt(page, 1, 5)).toEqual([])
+    expect(await hoverAt(page, -3, 3)).toHaveLength(1)
+    expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+})
+
+test('authoring in an isolated hidden group and stage preserves their All visibility choices', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        window.editorTest.settings.showOtherGroups = false
+        window.editorTest.settings.showOtherStages = false
+        window.scopeTest.groupScope.setShown(2 as GroupId, false)
+        window.scopeTest.stageScope.setShown(2 as StageId, false)
+        window.scopeTest.groupScope.focus(2 as GroupId)
+        window.scopeTest.stageScope.focus(2 as StageId)
+    })
+    await page.keyboard.press('a')
+    const target = await point(page, -6, 9)
+    await page.mouse.click(target.x, target.y)
+    await settle(page)
+    const result = await page.evaluate(() => {
+        const { store, view } = window.editorTest
+        const created = [...store.getAllEntities()].flatMap((entity) =>
+            entity.type === 'note' && entity.beat === 9 ? [[entity.groupId, entity.stageId]] : [],
+        )
+        const saved = [[...view.groupVisibility], [...view.stageVisibility]]
+        window.scopeTest.groupScope.focusAll()
+        window.scopeTest.stageScope.focusAll()
+        return {
+            created,
+            saved,
+            restored: [
+                window.scopeTest.groupScope.visibility(2 as GroupId),
+                window.scopeTest.stageScope.visibility(2 as StageId),
+            ],
+        }
+    })
+    expect(result).toEqual({
+        created: [[2, 2]],
+        saved: [[[2, 'hidden']], [[2, 'hidden']]],
+        restored: ['hidden', 'hidden'],
+    })
+    await page
+        .locator('[data-editor-toolbar]')
+        .first()
+        .getByRole('button', { name: 'Select', exact: true })
+        .click()
+    expect(await hoverAt(page, -6, 9)).toEqual([])
+})
+
 test('hiding during a mouse drag cancels the edit and editing recovers', async ({ page }) => {
     const original = await notes(page)
     const start = await point(page, 1, 5)
@@ -290,7 +362,7 @@ test('removed groups keep their visibility entries until a reset', async ({ page
         ])
     expect(await sizes()).toEqual([1, 1])
 
-    // Removing group 2 keeps its entry for an undo; disabling dynamic stages drops stage entries.
+    // Removing group 2 and disabling dynamic stages keep the saved masks for undo.
     await page.evaluate(() => {
         const { history } = window.editorTest
         const current = history.state.value
@@ -301,7 +373,18 @@ test('removed groups keep their visibility entries until a reset', async ({ page
         })
     })
     await settle(page)
-    expect(await sizes()).toEqual([1, 0])
+    expect(await sizes()).toEqual([1, 1])
+    expect(await page.evaluate(() => window.scopeTest.stageScope.visibility(2 as StageId))).toBe(
+        'full',
+    )
+    await page.evaluate(() => {
+        const { history } = window.editorTest
+        history.replaceState({ ...history.state.value, isDynamicStages: true })
+    })
+    await settle(page)
+    expect(await page.evaluate(() => window.scopeTest.stageScope.visibility(2 as StageId))).toBe(
+        'hidden',
+    )
 
     // A new chart starts clean.
     await page.evaluate(() => {
@@ -611,9 +694,9 @@ test('hiding a selected object deselects it so selection commands cannot reach i
 
 test('loading a chart clears visibility overrides and focus', async ({ page }) => {
     await page.evaluate(() => {
-        window.scopeTest.groupScope.focus(2 as GroupId)
         window.scopeTest.groupScope.setShown(1 as GroupId, false)
         window.scopeTest.stageScope.setShown(2 as StageId, false)
+        window.scopeTest.groupScope.focus(2 as GroupId)
     })
     // Load through history only: the fixture's `show` is not used, so nothing
     // else resets the view. Group and stage ids are reused across charts.
@@ -648,16 +731,38 @@ test('dimmed selections stay selected while hidden ones are dropped', async ({ p
     })
     await settle(page)
     expect((await snapshot(page)).selected).toEqual([{ type: 'note', beat: 5, left: 0, size: 2 }])
-
-    // Moving through groups with the commands keeps the selection too.
+    // Enabled Show Other Groups keeps selection through dimmed focus transitions.
     await page.evaluate(() => {
         window.scopeTest.groupScope.focus(undefined)
         window.scopeTest.groupScope.focus(2 as GroupId)
         window.scopeTest.groupScope.focus(1 as GroupId)
     })
     expect((await snapshot(page)).selected).toHaveLength(1)
-
     await setGroupShown(page, 2, false)
+    expect((await snapshot(page)).selected).toEqual([])
+})
+
+test('isolating another group drops hidden selections and returning to All does not reselect them', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        const { history, store } = window.editorTest
+        window.editorTest.settings.showOtherGroups = false
+        const selected = [...store.getAllEntities()].filter(
+            (entity) => entity.type === 'note' && entity.beat === 5,
+        )
+        history.replaceState({ ...history.state.value, selectedEntities: selected })
+        window.scopeTest.groupScope.focus(1 as GroupId)
+    })
+    await settle(page)
+    expect((await snapshot(page)).selected).toEqual([])
+
+    // Moving through groups and All never resurrects a dropped selection.
+    await page.evaluate(() => {
+        window.scopeTest.groupScope.focus(undefined)
+        window.scopeTest.groupScope.focus(2 as GroupId)
+        window.scopeTest.groupScope.focus(1 as GroupId)
+    })
     expect((await snapshot(page)).selected).toEqual([])
 })
 

@@ -31,7 +31,7 @@ const toolOptions = computed(() =>
 
 const groupId = computed({
     get: () => view.groupId,
-    // Focusing an entry also reveals it if it was hidden; All shows everything, as its command does.
+    // Focus isolates or reveals an entry; All restores its saved visibility choices.
     set: (id) => {
         if (id === undefined) groupScope.focusAll()
         else groupScope.focus(id)

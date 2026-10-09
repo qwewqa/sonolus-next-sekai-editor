@@ -220,6 +220,23 @@ for (const dimming of ['type', 'group'] as const) {
     })
 }
 
+test('isolating another group removes its notes from offscreen counts in both editors', async ({
+    page,
+}) => {
+    await page.keyboard.press('t')
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = 2 as typeof window.editorTest.view.groupId
+    })
+    await expect(page.locator('.offscreen-note-indicator')).toHaveCount(0)
+    await page.evaluate(() => {
+        window.editorTest.view.groupId = undefined
+    })
+    await expect(
+        page.locator('.editor-chart').locator('..').locator('.offscreen-note-indicator'),
+    ).toHaveCount(2)
+    await expect(page.locator('.elevation-editor .offscreen-note-indicator')).toHaveCount(2)
+})
+
 test('other tools ignore the badges', async ({ page }) => {
     const editor = page.locator('.editor-chart').locator('..')
     const right = editor.locator('[data-side="right"]')

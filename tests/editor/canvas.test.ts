@@ -134,7 +134,12 @@ test('group, stage and type filters remain independent and never bypass filterin
     const bpm = { type: 'bpm', beat: 0 } as Entity
     const timeScale = { type: 'timeScale', beat: 1, groupId: otherGroup } as Entity
     const entities = [matching, wrongGroup, wrongStage, wrongBoth, bpm, timeScale]
-    const base: VisibilityOptions = { groupId: group, stageId: stage }
+    const base: VisibilityOptions = {
+        groupId: group,
+        stageId: stage,
+        showOtherGroups: false,
+        showOtherStages: false,
+    }
     const ids = (options: VisibilityOptions) =>
         new Set(
             orderEntities(entities, new Set(entities), visibility(options)).map(
@@ -142,33 +147,43 @@ test('group, stage and type filters remain independent and never bypass filterin
             ),
         )
 
-    assert.deepEqual(ids({ ...base, showOtherGroups: false }), new Set([matching, wrongStage, bpm]))
     assert.deepEqual(
-        ids({ ...base, showOtherStages: false }),
+        ids({ groupId: group, showOtherGroups: false }),
+        new Set([matching, wrongStage, bpm]),
+    )
+    assert.deepEqual(
+        ids({ stageId: stage, showOtherStages: false }),
         new Set([matching, wrongGroup, bpm, timeScale]),
     )
-    assert.deepEqual(
-        ids({ ...base, showOtherGroups: false, showOtherStages: false }),
-        new Set([matching, bpm]),
-    )
+    assert.deepEqual(ids(base), new Set([matching, bpm]))
     assert.deepEqual(
         ids({
             ...base,
             visibilities: { ...allTypesVisible, note: false },
             showOtherObjects: false,
         }),
-        new Set([bpm, timeScale]),
+        new Set([bpm]),
     )
 
     const faded = orderEntities(
         entities,
         new Set(),
-        visibility({ ...base, visibilities: { ...allTypesVisible, note: false } }),
+        visibility({
+            ...base,
+            showOtherGroups: true,
+            showOtherStages: true,
+            visibilities: { ...allTypesVisible, note: false },
+        }),
+    )
+    assert.equal(
+        faded.find(({ entity }) => entity === matching)?.opacity,
+        0.25,
+        'type-hidden entities in the focused scope remain faded when other objects are shown',
     )
     assert.equal(
         faded.find(({ entity }) => entity === wrongBoth)?.opacity,
         0.25,
-        'multiple hidden classifications apply one group opacity, not multiplied fades',
+        'multiple hidden classifications apply one opacity instead of multiplying fades',
     )
 })
 

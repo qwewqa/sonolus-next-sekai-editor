@@ -129,32 +129,6 @@ watch([groups, () => view.groupId], () => {
     view.groupId = undefined
 })
 
-// Overrides of removed groups and stages stay, so an undo restores them; a reset
-// clears them all. Stage overrides are dropped while dynamic stages are disabled.
-watch(
-    [stages, isDynamicStages],
-    () => {
-        stageScope.pruneDisabled()
-    },
-    { immediate: true },
-)
-
-// Synchronous, so no scope snapshot pairs a new show-other setting with stale overrides.
-watch(
-    () => settings.showOtherGroups,
-    () => {
-        groupScope.followSetting()
-    },
-    { flush: 'sync' },
-)
-watch(
-    () => settings.showOtherStages,
-    () => {
-        stageScope.followSetting()
-    },
-    { flush: 'sync' },
-)
-
 watch([groups, () => brushProperties.value.groupId], () => {
     if (!brushProperties.value.groupId) return
     if (groups.value.has(brushProperties.value.groupId)) return

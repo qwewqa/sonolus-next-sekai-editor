@@ -47,7 +47,7 @@ export const view = shallowReactive({
 
     groupId: optional<GroupId>(),
     stageId: optional<StageId>(),
-    // Explicit editor-only visibility overrides; see scope.ts.
+    // Saved All-view visibility choices; isolation never modifies them. See scope.ts.
     groupVisibility: new Map() as ReadonlyMap<GroupId, ScopeOverride>,
     stageVisibility: new Map() as ReadonlyMap<StageId, ScopeOverride>,
 

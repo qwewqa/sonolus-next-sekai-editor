@@ -69,6 +69,7 @@ const folders = computed(() => props.model.folders)
 const tree = computed(() => folders.value.tree())
 const strings = computed(() => props.model.strings())
 const scope = computed(() => props.model.scope)
+const canSetVisibility = computed(() => scope.value.canSetVisibility.value)
 const focused = computed(() => props.model.focused())
 const counts = computed(() => ownedCounts(props.model.owner))
 
@@ -410,7 +411,7 @@ const onToggleAll = () => {
 }
 
 const onSelect = (id: T) => {
-    // Selecting the current target again changes nothing unless it is hidden.
+    // Isolation leaves saved All-view choices untouched, including a hidden target.
     if (focused.value === id && scope.value.isShown(id)) return
     scope.value.focus(id)
 }
@@ -1273,6 +1274,7 @@ const entryMenuItems = (id: T): ManagerMenuItem[] => {
             label: isOnlyShown([id]) ? strings.value.showAll : manager.solo,
             icon: VisibleIcon,
             separated: true,
+            disabled: !canSetVisibility.value,
         },
         {
             key: 'select',
@@ -1339,7 +1341,7 @@ const folderMenuItems = (item: FolderItem): ManagerMenuItem[] => {
             label: isOnlyShown(item.members) ? strings.value.showAll : manager.solo,
             icon: VisibleIcon,
             separated: true,
-            disabled: !item.members.length,
+            disabled: !canSetVisibility.value || !item.members.length,
         },
         {
             key: 'select',
@@ -1381,13 +1383,13 @@ const bulkMenuItems = (): ManagerMenuItem[] => {
             key: 'visibility',
             label: bulkHidden.value ? manager.showSelected : manager.hideSelected,
             icon: bulkHidden.value ? VisibleIcon : HiddenIcon,
-            disabled: !ids.length,
+            disabled: !canSetVisibility.value || !ids.length,
         },
         {
             key: 'solo',
             label: isOnlyShown(ids) ? strings.value.showAll : manager.soloSelected,
             icon: VisibleIcon,
-            disabled: !ids.length,
+            disabled: !canSetVisibility.value || !ids.length,
         },
         {
             key: 'select',
@@ -1753,6 +1755,7 @@ const entryProps = (id: T, name: string) => ({
             : entryTitle(id, name),
     current: focused.value === id,
     shown: scope.value.isShown(id),
+    eyeDisabled: !canSetVisibility.value,
     muted: !scope.value.isShown(id),
     eyeLabel: label(
         scope.value.isShown(id)
@@ -1884,6 +1887,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 :grip-space="hasGrip"
                 :muted="false"
                 :eye-label="allShown ? strings.hideAll : strings.showAll"
+                :eye-disabled="!canSetVisibility"
                 :meta="allShown ? undefined : `${scope.shownCount.value}/${scope.totalCount.value}`"
                 :mode-label="i18n.workspace.manager.selectMultiple"
                 :mode-active="selecting"
@@ -1960,7 +1964,7 @@ const folderEyeLabel = (item: FolderItem) =>
                                         ? `${folderEyeLabel(item)}\n${i18n.workspace.manager.soloHint}`
                                         : folderEyeLabel(item)
                                 "
-                                :eye-disabled="!item.members.length"
+                                :eye-disabled="!canSetVisibility || !item.members.length"
                                 :meta="`${folderCount(item)}`"
                                 :meta-title="
                                     label(i18n.workspace.manager.objects, `${folderCount(item)}`)
@@ -2076,7 +2080,7 @@ const folderEyeLabel = (item: FolderItem) =>
                     v-if="barVisibility"
                     type="button"
                     class="manager-round manager-bulk-visibility"
-                    :disabled="!selectedIds.length"
+                    :disabled="!canSetVisibility || !selectedIds.length"
                     :aria-label="
                         bulkHidden
                             ? i18n.workspace.manager.showSelected

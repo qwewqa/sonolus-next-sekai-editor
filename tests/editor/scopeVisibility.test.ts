@@ -10,7 +10,6 @@ import {
     createScopeLookup,
     entityScopeIds,
     entityScopeVisibility,
-    followShowOthers,
     fullScope,
     isScopeReduced,
     resolveScopeVisibility,
@@ -49,46 +48,94 @@ const allTypes = new Proxy({} as Record<EntityType, boolean>, { get: () => true 
 const groupMask = (entries: [GroupId, ScopeOverride][]) => new Map(entries)
 const stageMask = (entries: [StageId, ScopeOverride][]) => new Map(entries)
 
-test('explicit hiding wins over focus and show-other settings', () => {
-    for (const focus of [undefined, groupA, groupB]) {
-        for (const showOthers of [true, false]) {
-            assert.equal(resolveScopeVisibility(groupA, focus, 'hidden', showOthers), 'hidden')
+test('Show Other off isolates focus regardless of masks; Show Other on preserves manual hiding and dimming', () => {
+    for (const override of [undefined, 'shown', 'hidden'] as const) {
+        for (const showOthers of [false, true]) {
+            assert.equal(
+                resolveScopeVisibility(groupA, undefined, override, showOthers),
+                override === 'hidden' ? 'hidden' : 'full',
+            )
         }
+        assert.equal(resolveScopeVisibility(groupA, groupA, override, false), 'full')
+        assert.equal(resolveScopeVisibility(groupA, groupB, override, false), 'hidden')
+        assert.equal(
+            resolveScopeVisibility(groupA, groupA, override, true),
+            override === 'hidden' ? 'hidden' : 'full',
+        )
+        assert.equal(
+            resolveScopeVisibility(groupA, groupB, override, true),
+            override === 'hidden' ? 'hidden' : 'dimmed',
+        )
     }
 })
 
-test('focus keeps its target fully visible and dims or hides the rest', () => {
-    assert.equal(resolveScopeVisibility(groupA, undefined, undefined, false), 'full')
-    assert.equal(resolveScopeVisibility(groupA, groupA, undefined, false), 'full')
-    assert.equal(resolveScopeVisibility(groupA, groupA, 'shown', false), 'full')
-    assert.equal(resolveScopeVisibility(groupB, groupA, undefined, true), 'dimmed')
-    assert.equal(resolveScopeVisibility(groupB, groupA, undefined, false), 'hidden')
-    // Showing an entry outside a restrictive focus reveals it without making it editable.
-    assert.equal(resolveScopeVisibility(groupB, groupA, 'shown', false), 'dimmed')
-})
-
-test('changing the show-others setting drops the overrides contradicting it', () => {
-    const overrides = groupMask([
+test('group and stage isolation leave saved All masks intact across every focus combination', () => {
+    const groupVisibility = groupMask([
         [groupA, 'hidden'],
         [groupB, 'shown'],
     ])
-    assert.deepEqual(followShowOthers(overrides, true), groupMask([[groupB, 'shown']]))
-    assert.deepEqual(followShowOthers(overrides, false), groupMask([[groupA, 'hidden']]))
+    const stageVisibility = stageMask([
+        [stageA, 'hidden'],
+        [stageB, 'shown'],
+    ])
+    const savedGroups = new Map(groupVisibility)
+    const savedStages = new Map(stageVisibility)
+    const all = () => createScopeLookup({ groupVisibility, stageVisibility })
+    const before = all()
+    assert.deepEqual(
+        [before.group(groupA), before.group(groupB), before.stage(stageA), before.stage(stageB)],
+        ['hidden', 'full', 'hidden', 'full'],
+    )
 
-    // Unfocused entries then follow the setting.
-    for (const showOthers of [true, false]) {
-        const next = followShowOthers(overrides, showOthers)
-        for (const id of [groupA, groupB]) {
-            assert.equal(
-                resolveScopeVisibility(id, groupC, next.get(id), showOthers),
-                showOthers ? 'dimmed' : 'hidden',
-            )
+    // Rows correspond to All, the hidden first entry, and the shown second entry.
+    const expected = {
+        false: [
+            ['hidden', 'full'],
+            ['full', 'hidden'],
+            ['hidden', 'full'],
+        ],
+        true: [
+            ['hidden', 'full'],
+            ['hidden', 'dimmed'],
+            ['hidden', 'full'],
+        ],
+    }
+    for (const showOtherGroups of [false, true]) {
+        for (const showOtherStages of [false, true]) {
+            for (const [groupIndex, groupId] of [undefined, groupA, groupB].entries()) {
+                for (const [stageIndex, stageId] of [undefined, stageA, stageB].entries()) {
+                    const focused = createScopeLookup({
+                        groupId,
+                        stageId,
+                        groupVisibility,
+                        stageVisibility,
+                        showOtherGroups,
+                        showOtherStages,
+                    })
+                    assert.deepEqual(
+                        [focused.group(groupA), focused.group(groupB)],
+                        expected[showOtherGroups ? 'true' : 'false'][groupIndex],
+                    )
+                    assert.deepEqual(
+                        [focused.stage(stageA), focused.stage(stageB)],
+                        expected[showOtherStages ? 'true' : 'false'][stageIndex],
+                    )
+                    assert.deepEqual(groupVisibility, savedGroups)
+                    assert.deepEqual(stageVisibility, savedStages)
+                }
+            }
         }
     }
-
-    // Nothing to drop keeps the same map, so the scope snapshot stays unchanged.
-    const unchanged = groupMask([[groupA, 'shown']])
-    assert.equal(followShowOthers(unchanged, true), unchanged)
+    const restored = all()
+    assert.deepEqual(
+        [
+            restored.group(groupA),
+            restored.group(groupB),
+            restored.stage(stageA),
+            restored.stage(stageB),
+        ],
+        ['hidden', 'full', 'hidden', 'full'],
+    )
 })
 
 test('next and previous step through the entries with all between the ends', () => {
@@ -104,11 +151,76 @@ test('next and previous step through the entries with all between the ends', () 
     assert.equal(stepFocus([], undefined, 1), undefined)
 })
 
+test('setting flips switch isolation and dimming without rewriting masks and reduce scope snapshots', () => {
+    const groupVisibility = groupMask([
+        [groupA, 'hidden'],
+        [groupB, 'shown'],
+    ])
+    const stageVisibility = stageMask([
+        [stageA, 'hidden'],
+        [stageB, 'shown'],
+    ])
+    const enabled = createScopeLookup({
+        groupId: groupA,
+        stageId: stageA,
+        groupVisibility,
+        stageVisibility,
+    })
+    assert.deepEqual(
+        [
+            enabled.group(groupA),
+            enabled.group(groupB),
+            enabled.stage(stageA),
+            enabled.stage(stageB),
+        ],
+        ['hidden', 'dimmed', 'hidden', 'dimmed'],
+    )
+    const isolated = createScopeLookup({
+        groupId: groupA,
+        stageId: stageA,
+        groupVisibility,
+        stageVisibility,
+        showOtherGroups: false,
+        showOtherStages: false,
+    })
+    assert.deepEqual(
+        [
+            isolated.group(groupA),
+            isolated.group(groupB),
+            isolated.stage(stageA),
+            isolated.stage(stageB),
+        ],
+        ['full', 'hidden', 'full', 'hidden'],
+    )
+    assert.equal(isScopeReduced(enabled, isolated), true)
+    // Turning Show Other back on hides the selected entry again if its saved eye was off.
+    assert.equal(isScopeReduced(isolated, enabled), true)
+    for (const showOtherGroups of [false, true]) {
+        for (const showOtherStages of [false, true]) {
+            const all = createScopeLookup({
+                groupVisibility,
+                stageVisibility,
+                showOtherGroups,
+                showOtherStages,
+            })
+            assert.deepEqual(
+                [all.group(groupA), all.group(groupB), all.stage(stageA), all.stage(stageB)],
+                ['hidden', 'full', 'hidden', 'full'],
+            )
+            assert.equal(all.inputs?.groupVisibility, groupVisibility)
+            assert.equal(all.inputs?.stageVisibility, stageVisibility)
+        }
+    }
+})
+
 test('scope lookups ignore stage visibility while dynamic stages are disabled', () => {
     const inputs: ScopeInputs = {
         stageId: stageA,
-        stageVisibility: stageMask([[stageB, 'hidden']]),
         showOtherStages: false,
+        stageVisibility: stageMask([
+            [stageA, 'hidden'],
+            [stageB, 'hidden'],
+        ]),
     }
     const dynamic = createScopeLookup({ ...inputs, isDynamicStages: true })
     assert.equal(dynamic.stage(stageA), 'full')
@@ -117,6 +229,10 @@ test('scope lookups ignore stage visibility while dynamic stages are disabled', 
     const disabled = createScopeLookup({ ...inputs, isDynamicStages: false })
     assert.equal(disabled.stage(stageA), 'full')
     assert.equal(disabled.stage(stageB), 'full')
+
+    const restored = createScopeLookup({ ...inputs, stageId: undefined, isDynamicStages: true })
+    assert.equal(restored.stage(stageA), 'hidden')
+    assert.equal(restored.stage(stageB), 'hidden')
 })
 
 test('scope combinators pick the least and most visible values', () => {
@@ -197,20 +313,20 @@ test('a connector stays drawn while either attachment endpoint is visible', () =
         'full',
     )
 
-    // Focus-only: an endpoint outside both focused axes is dimmed or hidden by settings.
+    // Isolation on both axes hides endpoints outside either focused membership.
     const focusedBoth = createScopeLookup({
         groupId: groupA,
         stageId: stageA,
         showOtherGroups: false,
-        showOtherStages: true,
+        showOtherStages: false,
     })
     assert.equal(
         entityScopeVisibility(connector(note(groupA, stageB), note(groupB, stageA)), focusedBoth),
-        'dimmed',
+        'hidden',
     )
 })
 
-test('ordering omits hidden scopes and fades dimmed ones without bypassing for selection', () => {
+test('ordering isolates scopes without allowing saved shows or selection to bypass focus', () => {
     const visible = note(groupA, stageA, 1)
     const hiddenGroup = note(groupB, stageA, 2)
     const hiddenStage = note(groupA, stageB, 3)
@@ -221,14 +337,13 @@ test('ordering omits hidden scopes and fades dimmed ones without bypassing for s
     const result = orderEntities(entities, new Set(entities), {
         scope: createScopeLookup({
             groupId: groupA,
+            showOtherGroups: false,
             groupVisibility: groupMask([
+                [groupA, 'hidden'],
                 [groupB, 'hidden'],
                 [groupC, 'shown'],
             ]),
             stageVisibility: stageMask([[stageB, 'hidden']]),
-            // Explicit hiding must win even when other groups and stages are shown.
-            showOtherGroups: false,
-            showOtherStages: true,
         }),
         visibilities: allTypes,
         showOtherObjects: true,
@@ -236,7 +351,6 @@ test('ordering omits hidden scopes and fades dimmed ones without bypassing for s
     assert.deepEqual(
         new Map(result.map(({ entity, opacity }) => [entity, opacity])),
         new Map<Entity, number>([
-            [revealed, 0.25],
             [bridge, 1],
             [visible, 1],
         ]),
@@ -255,9 +369,7 @@ test('ordering keeps hidden-type and hidden-scope fades as a single opacity', ()
 
 test('only scope changes that can hide something count as reductions', () => {
     const base: ScopeInputs = {
-        groupId: groupA,
         groupVisibility: groupMask([[groupB, 'hidden']]),
-        showOtherGroups: false,
     }
     const reduced = (next: ScopeInputs) =>
         isScopeReduced(createScopeLookup(base), createScopeLookup({ ...base, ...next }))
@@ -285,7 +397,9 @@ test('only scope changes that can hide something count as reductions', () => {
         true,
     )
     assert.equal(reduced({ groupId: groupB }), true)
-    assert.equal(reduced({ showOtherGroups: true }), true)
+    assert.equal(reduced({ stageId: stageB }), true)
+    assert.equal(reduced({ showOtherGroups: false }), true)
+    assert.equal(reduced({ showOtherStages: false }), true)
     assert.equal(reduced({ stageVisibility: stageMask([[stageA, 'hidden']]) }), true)
     assert.equal(isScopeReduced(undefined, createScopeLookup(base)), true)
     assert.equal(isScopeReduced(fullScope, createScopeLookup(base)), true)

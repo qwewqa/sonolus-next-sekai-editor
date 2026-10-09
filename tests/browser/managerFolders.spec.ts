@@ -446,6 +446,44 @@ test('the folder eye hides or shows all members, shows partial state and solos',
     expect(await visibility()).toEqual({})
 })
 
+test('isolating a hidden member locks folder visibility and restores its saved partial mask', async ({
+    page,
+}) => {
+    await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Fill', 'Verse'], ['Outro']])
+    await page.evaluate(() => {
+        window.editorTest.settings.showOtherGroups = false
+    })
+    const list = panel(page)
+    const folder = folderRow(page, 'Verse')
+    const eye = folder.locator('.manager-eye')
+    await entryRow(page, 'Lead').locator('.manager-eye').click()
+    await expect(eye).toHaveAccessibleName('Show Verse')
+
+    await nameButton(list, 'Lead').click()
+    await expect(entryRow(page, 'Lead').locator('.manager-eye')).toHaveAccessibleName('Hide Lead')
+    for (const name of ['Default', 'Fill', 'Outro'])
+        await expect(entryRow(page, name).locator('.manager-eye')).toHaveAccessibleName(
+            `Show ${name}`,
+        )
+    for (const button of await list.locator('.manager-eye').all())
+        await expect(button).toBeDisabled()
+    await expect(eye).toHaveAccessibleName('Show Verse')
+    await folder.getByRole('button', { name: 'More Actions for Verse' }).click()
+    await expect(page.getByRole('menuitem', { name: 'Show Only This', exact: true })).toBeDisabled()
+    await page.keyboard.press('Escape')
+
+    await list.locator('.manager-all .manager-name').click()
+    await expect(entryRow(page, 'Lead').locator('.manager-eye')).toHaveAccessibleName('Show Lead')
+    for (const name of ['Default', 'Fill', 'Outro'])
+        await expect(entryRow(page, name).locator('.manager-eye')).toHaveAccessibleName(
+            `Hide ${name}`,
+        )
+    await expect(eye).toBeEnabled()
+    await eye.click()
+    await expect(eye).toHaveAccessibleName('Hide Verse')
+    expect(await canUndo(page)).toBe(false)
+})
+
 test('groups move into and out of folders through the menu', async ({ page }) => {
     await seedGroups(page, [['Default'], ['Lead', 'Verse'], ['Bass'], ['Outro']])
     const menu = page.getByRole('menu')
