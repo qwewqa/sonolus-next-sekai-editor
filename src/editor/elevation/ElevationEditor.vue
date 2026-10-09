@@ -65,7 +65,7 @@ import { isNoteResizeStart, modifyEntities, offset, resize } from '../tools/util
 import { scopeLookup } from '../scope'
 import { isScopeReduced } from '../scopeRules'
 import { dockKeysAttribute, isInWorkspaceDock } from '../workspace'
-import { alignLane, view, focusViewAtBeat } from '../view'
+import { alignLane, view, focusViewAtBeat, hoveredEntities } from '../view'
 import {
     elevationGridDivision,
     snapElevation,
@@ -221,7 +221,7 @@ const offscreenGroups = computed(() => {
             right: row.x + row.w / 2,
             y: row.y,
             highlighted: selected.has(row.note),
-            opacity: row.attached ? 0.6 : 1,
+            opacity: 1,
             target: row.note,
         })),
         elevationBounds.w,
@@ -262,12 +262,19 @@ let drag:
           attachment?: AttachedElevationDrag
       }
     | undefined
-let marquee: { x: number; y: number; selected: State['selectedEntities'] } | undefined
+let marquee:
+    | {
+          x: number
+          y: number
+          selected: State['selectedEntities']
+          targets: State['selectedEntities']
+      }
+    | undefined
 
 const yToElevation = (y: number) =>
     elevationViewport.center +
     (elevationBounds.h / 2 - y + elevationBounds.y) / elevationViewport.scale
-const hit = (x: number, y: number, minimum = 1.5) => {
+const hitAll = (x: number, y: number, minimum = 1.5) => {
     const rows = elevationLayout.value.rows
     const matches = rows.filter(
         (row) =>
@@ -282,11 +289,12 @@ const hit = (x: number, y: number, minimum = 1.5) => {
             Math.max(row.w, minimum * elevationLayout.value.laneScale) / 2,
     )
     return (direct.length ? direct : matches).sort(
-        (a, b) =>
-            +elevationState.value.selectedEntities.includes(b.note) -
-                +elevationState.value.selectedEntities.includes(a.note) ||
-            Math.abs(a.y - y + elevationBounds.y) - Math.abs(b.y - y + elevationBounds.y),
-    )[0]
+        (a, b) => Math.abs(a.y - y + elevationBounds.y) - Math.abs(b.y - y + elevationBounds.y),
+    )
+}
+const hit = (x: number, y: number, minimum = 1.5) => {
+    const rows = hitAll(x, y, minimum)
+    return rows.find((row) => elevationState.value.selectedEntities.includes(row.note)) ?? rows[0]
 }
 const cancel = () => {
     if (drag) clearPreviewEdit()
@@ -339,13 +347,26 @@ const edit = (active: NonNullable<typeof drag>) => {
         ),
     )
 }
-const selectAt = (row: ElevationRow | undefined, modifiers: Modifiers) => {
-    const selected = state.value.selectedEntities
-    const targets = row ? modifyEntities([row.note], modifiers) : []
+const selectAt = (rows: ElevationRow[], modifiers: Modifiers, cycle = false, notesOnly = false) => {
+    const selected = notesOnly
+        ? state.value.selectedEntities.filter((entity) => entity.type === 'note')
+        : state.value.selectedEntities
+    if (modifiers.ctrl && !rows.length) return
+    const current = selected[0]
+    const index =
+        cycle && current && rows.length
+            ? (rows.findIndex((row) => row.note === current) + 1) % rows.length
+            : 0
+    const notes = modifiers.ctrl
+        ? rows.map((row) => row.note)
+        : rows[index]
+          ? [rows[index].note]
+          : []
+    const targets = modifyEntities(notes, modifiers)
     replaceState({
         ...state.value,
         selectedEntities: modifiers.ctrl
-            ? row && selected.includes(row.note)
+            ? targets.every((entity) => selected.includes(entity))
                 ? selected.filter((entity) => !targets.includes(entity))
                 : [...new Set([...selected, ...targets])]
             : targets,
@@ -391,12 +412,24 @@ const pasteAtPoint = async (x: number, y: number, modifiers: Modifiers) => {
     creating.value = []
     return true
 }
-const applyToVisibleSelection = (row: ElevationRow, modifiers: Modifiers) => {
-    const selected = state.value.selectedEntities
+const visibleTargets = (entities: State['selectedEntities']) => {
     const visible = new Set(elevationNotes.value.map((item) => item.note))
-    return modifyEntities(selected.includes(row.note) ? selected : [row.note], modifiers).filter(
+    return entities.filter(
         (entity): entity is NoteEntity => entity.type === 'note' && visible.has(entity),
     )
+}
+const isSecondaryTool = () => ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value)
+const secondaryTargets = (entities: State['selectedEntities'], modifiers: Modifiers) =>
+    visibleTargets(toolName.value === 'brush' ? modifyEntities(entities, modifiers) : entities)
+const applyToVisibleSelection = (rows: ElevationRow[], modifiers: Modifiers) => {
+    const selected = state.value.selectedEntities
+    const hits = rows.map((row) => row.note)
+    const targets = hits.some((note) => selected.includes(note))
+        ? selected
+        : toolName.value === 'eraser'
+          ? hits.slice(0, 1)
+          : hits
+    return secondaryTargets(targets, modifiers)
 }
 const resolveDrag = (x: number, y: number) => {
     // Pressing an off-screen badge box-selects.
@@ -440,7 +473,9 @@ const controls: Pick<
             view.entities = { hovered: modifyEntities(indicator.targets, modifiers), creating: [] }
             return
         }
-        hovered.value = hit(x, y, 0.5)?.note
+        const rows = hitAll(x, y, 0.5)
+        const row = hit(x, y, 0.5)
+        hovered.value = row?.note
         const position = positionAtPoint(x, y)
         if (!hovered.value && (toolName.value === 'note' || toolName.value === 'slide'))
             creating.value = ghostRows([
@@ -457,7 +492,16 @@ const controls: Pick<
             )
         else creating.value = []
         view.entities = {
-            hovered: hovered.value ? [hovered.value] : [],
+            hovered: isSecondaryTool()
+                ? applyToVisibleSelection(rows, modifiers)
+                : modifyEntities(
+                      toolName.value === 'note' || toolName.value === 'slide'
+                          ? row
+                              ? [row.note]
+                              : []
+                          : rows.map((row) => row.note),
+                      modifiers,
+                  ),
             creating: creating.value.map((row) => row.note),
         }
     },
@@ -468,20 +512,25 @@ const controls: Pick<
             return
         }
         const row = hit(x, y)
+        const rows = hitAll(x, y)
         if (toolName.value === 'paste') {
             void pasteAtPoint(x, y, modifiers)
             return
         }
         if (row && toolName.value === 'eraser') {
-            remove(applyToVisibleSelection(row, modifiers))
+            remove(applyToVisibleSelection(rows, modifiers))
             return
         }
         if (row && toolName.value === 'brush') {
-            applyBrushToEntities(applyToVisibleSelection(row, modifiers))
+            applyBrushToEntities(applyToVisibleSelection(rows, modifiers))
             return
         }
         if (row && toolName.value === 'generateSlideNotes') {
-            applyGeneratedSlideNotes(applyToVisibleSelection(row, modifiers))
+            applyGeneratedSlideNotes(applyToVisibleSelection(rows, modifiers))
+            return
+        }
+        if (isSecondaryTool()) {
+            selectAt([], { ctrl: false, shift: false })
             return
         }
         if (toolName.value === 'note' || toolName.value === 'slide') {
@@ -496,7 +545,11 @@ const controls: Pick<
                 creating.value = []
                 return
             }
-            if (!modifiers.ctrl && state.value.selectedEntities.includes(row.note)) {
+            const targets = modifyEntities([row.note], modifiers)
+            if (
+                !modifiers.ctrl &&
+                targets.every((note) => state.value.selectedEntities.includes(note))
+            ) {
                 if (isSidebarVisible.value) {
                     revealPropertiesSection('selection')
                     quickEdit(
@@ -509,8 +562,10 @@ const controls: Pick<
                     void showToolModal(SelectionPropertiesModal, { kind: 'note' })
                 return
             }
+            selectAt([row], modifiers, false, true)
+            return
         }
-        selectAt(row, modifiers)
+        selectAt(rows, modifiers, !modifiers.ctrl)
     },
     cursor(x, y) {
         const target = resolveDrag(x, y)
@@ -522,7 +577,7 @@ const controls: Pick<
             ? 'crosshair'
             : 'default'
     },
-    dragStart(x, y, modifiers) {
+    dragStart(x, y) {
         const target = resolveDrag(x, y)
         if (target.type === 'paste') return true
         if (target.type === 'add') {
@@ -539,11 +594,13 @@ const controls: Pick<
                 x: x - elevationBounds.x,
                 y: y - elevationBounds.y,
                 selected: state.value.selectedEntities,
+                targets: [],
             }
             return true
         }
         const { row } = target
-        if (!state.value.selectedEntities.includes(row.note)) selectAt(row, modifiers)
+        if (!state.value.selectedEntities.includes(row.note))
+            selectAt([row], { ctrl: false, shift: false })
         if (target.type === 'select') return false
         const eligible = new Set(
             elevationNotes.value
@@ -618,7 +675,7 @@ const controls: Pick<
                 h: Math.abs(y - elevationBounds.y - marquee.y),
             }
             selection.value = rect
-            const targets = elevationLayout.value.rows
+            const hits = elevationLayout.value.rows
                 .filter(
                     (row) =>
                         row.x + row.w / 2 >= rect.x &&
@@ -627,11 +684,16 @@ const controls: Pick<
                         row.y - 14 <= rect.y + rect.h,
                 )
                 .map((row) => row.note)
+            const targets = isSecondaryTool()
+                ? secondaryTargets(hits, modifiers)
+                : modifyEntities(hits, modifiers)
+            marquee.targets = targets
             replaceState({
                 ...state.value,
-                selectedEntities: modifiers.ctrl
-                    ? [...new Set([...marquee.selected, ...targets])]
-                    : targets,
+                selectedEntities:
+                    modifiers.ctrl && !isSecondaryTool()
+                        ? [...new Set([...marquee.selected, ...targets])]
+                        : targets,
             })
             return
         }
@@ -683,11 +745,7 @@ const controls: Pick<
             return
         }
         if (marquee && ['eraser', 'brush', 'generateSlideNotes'].includes(toolName.value)) {
-            const targets = state.value.selectedEntities.filter(
-                (entity): entity is NoteEntity =>
-                    entity.type === 'note' &&
-                    elevationNotes.value.some((row) => row.note === entity),
-            )
+            const targets = visibleTargets(marquee.targets)
             cancel()
             if (toolName.value === 'eraser') remove(targets)
             else if (toolName.value === 'brush') applyBrushToEntities(targets)
@@ -845,7 +903,7 @@ watchEffect(() => {
         (connection) => connection.connector.segmentHead.connectorLayer === 'over',
     )
     const selected = new Set(current.selectedEntities)
-    const hover = hovered.value
+    const hover = new Set(hoveredEntities.value)
     const ghosts = creating.value.map((row) => ({
         ...row,
         x: layout.xAt(row.lane),
@@ -960,30 +1018,35 @@ watchEffect(() => {
                 row.x + row.w / 2 + padding >= 0 &&
                 row.x - row.w / 2 - padding <= layout.width,
         )
-        for (const row of visibleRows) {
+        const ghostSet = new Set(ghosts)
+        const drawRow = (row: ElevationRow, opacity = 1) => {
             ctx.save()
             ctx.scale(layout.laneScale, layout.laneScale)
-            notes.draw(
-                context,
-                row.note,
-                selected.has(row.note) || row.note === hover,
-                ghosts.includes(row) ? 0.5 : row.attached ? 0.6 : 1,
-                {
-                    left: (row.x - row.w / 2) / layout.laneScale,
-                    y: row.y / layout.laneScale - 0.3,
-                    size: row.size,
-                },
-            )
+            notes.draw(context, row.note, selected.has(row.note) || hover.has(row.note), opacity, {
+                left: (row.x - row.w / 2) / layout.laneScale,
+                y: row.y / layout.laneScale - 0.3,
+                size: row.size,
+            })
             ctx.restore()
         }
+        for (const row of visibleRows) {
+            if (!ghostSet.has(row) && !selected.has(row.note)) drawRow(row)
+        }
         drawElevationConnections(ctx, aboveNotes)
+        // Selected notes and creating previews stay in front, as on the chart.
+        for (const row of visibleRows) {
+            if (!ghostSet.has(row) && selected.has(row.note)) drawRow(row)
+        }
+        for (const row of visibleRows) {
+            if (ghostSet.has(row)) drawRow(row, 0.5)
+        }
         // Names go over every row and connection, as on the chart.
         ctx.save()
         ctx.scale(layout.laneScale, layout.laneScale)
         placeNames(context, names)
         ctx.restore()
         for (const row of visibleRows) {
-            if (selected.has(row.note) || row.note === hover) {
+            if (selected.has(row.note) || hover.has(row.note)) {
                 // At least the 0.2-lane placeholder a zero-width note draws.
                 const w = Math.max(row.w, layout.laneScale * 0.2)
                 ctx.setLineDash([6, 4])
@@ -1060,11 +1123,11 @@ onMounted(() => {
             elevationViewport.scale = clamp(scale, 1, 1200)
         },
         hitPoint: (x, y, minimum) => {
-            const row = hit(x, y, minimum)
-            return row ? [row.note] : []
+            return hitAll(x, y, minimum).map((row) => row.note)
         },
         selectPoint: (x, y) => {
-            selectAt(hit(x, y), { ctrl: false, shift: false })
+            const row = hit(x, y)
+            selectAt(row ? [row] : [], { ctrl: false, shift: false })
         },
         positionAtPoint,
         pasteAtPoint,

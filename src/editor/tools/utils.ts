@@ -115,6 +115,21 @@ export const hitEntitiesAtPoint = <T extends EntityType>(
     )
 }
 
+// Point priority is independent of storage and drawing order; ties keep their order.
+const pointHitOrder: EntityType[] = [
+    'note',
+    'stageTransformEventJoint',
+    'stageStyleEventJoint',
+    'stagePivotEventJoint',
+    'stageMaskEventJoint',
+    'cameraEventJoint',
+    'timeScale',
+    'bpm',
+]
+
+export const comparePointHits = (a: Entity, b: Entity) =>
+    pointHitOrder.indexOf(a.type) - pointHitOrder.indexOf(b.type)
+
 export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1.5) => {
     if (editorNavigation.value) return editorNavigation.value.hitPoint(x, y, minimumNoteWidth)
     return filterPointHits(
@@ -127,7 +142,7 @@ export const hitAllEntitiesAtPoint = (x: number, y: number, minimumNoteWidth = 1
         ),
         x,
         minimumNoteWidth,
-    )
+    ).sort(comparePointHits)
 }
 
 const filterPointHits = <T extends Entity>(entities: T[], x: number, minimumNoteWidth: number) => {

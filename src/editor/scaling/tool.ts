@@ -27,7 +27,7 @@ import { elevationNotes } from '../elevation/scene'
 import { editorNavigation, type EditorNavigation } from '../navigation'
 import { hitAllSceneEntities, hitSceneEntities, sceneBpms, sceneState } from '../sceneState'
 import type { Tool } from '../tools'
-import { isNoteResizeStart, isVisible, offset } from '../tools/utils'
+import { comparePointHits, isNoteResizeStart, isVisible, offset } from '../tools/utils'
 import { view, xToLane, yToTime } from '../view'
 
 let dragBpms: BpmIntegral[] | undefined
@@ -122,32 +122,34 @@ const selectedEntitiesAtPoint = (x: number, y: number, minimumWidth: number) => 
                 yToTime(y - 10),
                 minimumWidth,
             )
-    return hits.filter((entity): entity is EditableEntity => {
-        const position =
-            entity.type === 'note' && composed
-                ? composed.notePosition(entity)
-                : entity.type === 'note'
-                  ? entity
-                  : undefined
-        return (
-            isEditableEntity(entity) &&
-            (axis === 'width' || entity.type === 'note') &&
-            isVisible(entity) &&
-            Number.isFinite(getScaleValue(entity, axis)) &&
-            (navigation !== undefined ||
-                entity.type !== 'note' ||
-                (position !== undefined &&
-                    lane >=
-                        position.left +
-                            position.size / 2 -
-                            Math.max(position.size, minimumWidth) / 2 &&
-                    lane <=
-                        position.left +
-                            position.size / 2 +
-                            Math.max(position.size, minimumWidth) / 2)) &&
-            getScalingBaselineEntity(entity) !== undefined
-        )
-    })
+    return hits
+        .filter((entity): entity is EditableEntity => {
+            const position =
+                entity.type === 'note' && composed
+                    ? composed.notePosition(entity)
+                    : entity.type === 'note'
+                      ? entity
+                      : undefined
+            return (
+                isEditableEntity(entity) &&
+                (axis === 'width' || entity.type === 'note') &&
+                isVisible(entity) &&
+                Number.isFinite(getScaleValue(entity, axis)) &&
+                (navigation !== undefined ||
+                    entity.type !== 'note' ||
+                    (position !== undefined &&
+                        lane >=
+                            position.left +
+                                position.size / 2 -
+                                Math.max(position.size, minimumWidth) / 2 &&
+                        lane <=
+                            position.left +
+                                position.size / 2 +
+                                Math.max(position.size, minimumWidth) / 2)) &&
+                getScalingBaselineEntity(entity) !== undefined
+            )
+        })
+        .sort(comparePointHits)
 }
 
 export const scalingTool: Tool = {
