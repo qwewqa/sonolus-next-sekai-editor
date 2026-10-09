@@ -12,7 +12,7 @@ export const groupPrev: Command = {
         is: GroupPrevIcon,
     },
 
-    // Reveals the previous entry; before the first one comes All, which shows everything.
+    // Focuses the previous entry; before the first one comes All, restoring saved visibility.
     execute() {
         const id = stepFocus([...groups.value.keys()], view.groupId, -1)
         if (id === undefined) groupScope.focusAll()

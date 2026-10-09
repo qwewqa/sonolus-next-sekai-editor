@@ -26,10 +26,11 @@ import { view } from './view'
  * - The focused entry (`view.groupId` / `view.stageId`) is both the authoring
  *   target for new objects and the editing scope. With Show Other disabled, a
  *   specific focus temporarily shows exactly that entry and locks visibility.
- *   With Show Other enabled, other entries are dimmed and controls remain usable.
+ *   With Show Other enabled, other entries are dimmed and their controls remain usable.
+ *   The focused entry is always fully visible and its individual eye is disabled.
  * - Explicit overrides show or hide individual entries in the All view.
- *   Isolation never modifies them, so returning to All restores prior choices.
- *   In Show Other mode, controls and focusing a hidden entry can still reveal it.
+ *   Focusing never modifies them, so leaving the focus restores prior choices.
+ *   In Show Other mode, bulk controls update saved choices even for the focus.
  *   They are transient view state: never saved, never in history, and never read by the preview,
  *   serialization, or the clipboard. Authoring never reads them either, so
  *   hiding an entry never reassigns newly created objects. Deleted entries and
@@ -82,20 +83,23 @@ const createScope = <T>(options: {
     const canSetVisibility = computed(
         () => options.isEnabled() && (options.showOthers() || options.getFocus() === undefined),
     )
+    const canSetShown = (id: T) => canSetVisibility.value && id !== options.getFocus()
 
     return {
         visibility,
         canSetVisibility,
+        canSetShown,
 
         isShown: (id: T) => visibility(id) !== 'hidden',
+        isShownInAll: (id: T) => options.getOverrides().get(id) !== 'hidden',
 
         /** Shows or hides one entry without changing the authoring target. */
         setShown(id: T, shown: boolean) {
-            if (!canSetVisibility.value) return
+            if (!canSetShown(id)) return
             options.setOverrides(withOverride(new Map(options.getOverrides()), id, shown))
         },
 
-        /** Shows or hides several entries as one change, e.g. a folder's members. */
+        /** Updates saved choices, including the temporarily visible focus, e.g. a folder's members. */
         setSomeShown(ids: readonly T[], shown: boolean) {
             if (!canSetVisibility.value) return
             const overrides = new Map(options.getOverrides())
@@ -129,17 +133,8 @@ const createScope = <T>(options: {
             options.setOverrides(overrides)
         },
 
-        /** Isolates an entry, or reveals it in Show Other mode; All restores saved choices. */
+        /** Temporarily reveals the focus; leaving it restores its saved choice. */
         focus(id: T | undefined) {
-            if (
-                options.showOthers() &&
-                id !== undefined &&
-                options.getOverrides().get(id) === 'hidden'
-            ) {
-                const overrides = new Map(options.getOverrides())
-                overrides.delete(id)
-                options.setOverrides(overrides)
-            }
             options.setFocus(id)
         },
 

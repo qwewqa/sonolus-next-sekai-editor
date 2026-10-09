@@ -12,7 +12,7 @@ export const groupNext: Command = {
         is: GroupNextIcon,
     },
 
-    // Reveals the next entry; past the last one comes All, which shows everything.
+    // Focuses the next entry; past the last one comes All, restoring saved visibility.
     execute() {
         const id = stepFocus([...groups.value.keys()], view.groupId, 1)
         if (id === undefined) groupScope.focusAll()

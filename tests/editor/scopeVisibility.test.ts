@@ -48,7 +48,7 @@ const allTypes = new Proxy({} as Record<EntityType, boolean>, { get: () => true 
 const groupMask = (entries: [GroupId, ScopeOverride][]) => new Map(entries)
 const stageMask = (entries: [StageId, ScopeOverride][]) => new Map(entries)
 
-test('Show Other off isolates focus regardless of masks; Show Other on preserves manual hiding and dimming', () => {
+test('focus is always full; Show Other controls unfocused entries while All follows saved masks', () => {
     for (const override of [undefined, 'shown', 'hidden'] as const) {
         for (const showOthers of [false, true]) {
             assert.equal(
@@ -58,10 +58,7 @@ test('Show Other off isolates focus regardless of masks; Show Other on preserves
         }
         assert.equal(resolveScopeVisibility(groupA, groupA, override, false), 'full')
         assert.equal(resolveScopeVisibility(groupA, groupB, override, false), 'hidden')
-        assert.equal(
-            resolveScopeVisibility(groupA, groupA, override, true),
-            override === 'hidden' ? 'hidden' : 'full',
-        )
+        assert.equal(resolveScopeVisibility(groupA, groupA, override, true), 'full')
         assert.equal(
             resolveScopeVisibility(groupA, groupB, override, true),
             override === 'hidden' ? 'hidden' : 'dimmed',
@@ -96,7 +93,7 @@ test('group and stage isolation leave saved All masks intact across every focus 
         ],
         true: [
             ['hidden', 'full'],
-            ['hidden', 'dimmed'],
+            ['full', 'dimmed'],
             ['hidden', 'full'],
         ],
     }
@@ -173,7 +170,7 @@ test('setting flips switch isolation and dimming without rewriting masks and red
             enabled.stage(stageA),
             enabled.stage(stageB),
         ],
-        ['hidden', 'dimmed', 'hidden', 'dimmed'],
+        ['full', 'dimmed', 'full', 'dimmed'],
     )
     const isolated = createScopeLookup({
         groupId: groupA,
@@ -193,7 +190,7 @@ test('setting flips switch isolation and dimming without rewriting masks and red
         ['full', 'hidden', 'full', 'hidden'],
     )
     assert.equal(isScopeReduced(enabled, isolated), true)
-    // Turning Show Other back on hides the selected entry again if its saved eye was off.
+    // Setting changes conservatively invalidate gestures, while both settings keep focus full.
     assert.equal(isScopeReduced(isolated, enabled), true)
     for (const showOtherGroups of [false, true]) {
         for (const showOtherStages of [false, true]) {
@@ -365,6 +362,44 @@ test('ordering keeps hidden-type and hidden-scope fades as a single opacity', ()
         showOtherObjects: true,
     })
     assert.equal(entry?.opacity, 0.25)
+})
+
+test('selected group and stage render fully with hidden saved eyes for every setting combination', () => {
+    const selected = note(groupA, stageA)
+    const otherGroup = note(groupB, stageA)
+    const otherStage = note(groupA, stageB)
+    const groupVisibility = groupMask([
+        [groupA, 'hidden'],
+        [groupB, 'hidden'],
+    ])
+    const stageVisibility = stageMask([
+        [stageA, 'hidden'],
+        [stageB, 'hidden'],
+    ])
+    const entities = [selected, otherGroup, otherStage]
+    for (const showOtherGroups of [false, true]) {
+        for (const showOtherStages of [false, true]) {
+            const inputs = { groupVisibility, stageVisibility, showOtherGroups, showOtherStages }
+            const focused = createScopeLookup({ ...inputs, groupId: groupA, stageId: stageA })
+            assert.equal(entityScopeVisibility(selected, focused), 'full')
+            assert.deepEqual(
+                orderEntities(entities, new Set(entities), {
+                    scope: focused,
+                    visibilities: allTypes,
+                    showOtherObjects: true,
+                }).map(({ entity, opacity }) => [entity, opacity]),
+                [[selected, 1]],
+            )
+            assert.deepEqual(
+                orderEntities(entities, new Set(entities), {
+                    scope: createScopeLookup(inputs),
+                    visibilities: allTypes,
+                    showOtherObjects: true,
+                }),
+                [],
+            )
+        }
+    }
 })
 
 test('only scope changes that can hide something count as reductions', () => {

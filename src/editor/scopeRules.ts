@@ -18,10 +18,11 @@ export const resolveScopeVisibility = <T>(
     override: ScopeOverride | undefined,
     showOthers: boolean,
 ): ScopeVisibility => {
-    // Isolation is temporary: saved All-view choices never override the focus.
-    if (!showOthers && focus !== undefined) return id === focus ? 'full' : 'hidden'
+    // Focus temporarily forces visibility without changing the saved All-view choice.
+    if (focus !== undefined && id === focus) return 'full'
+    if (!showOthers && focus !== undefined) return 'hidden'
     if (override === 'hidden') return 'hidden'
-    if (focus === undefined || focus === id) return 'full'
+    if (focus === undefined) return 'full'
     if (override === 'shown' || showOthers) return 'dimmed'
     return 'hidden'
 }

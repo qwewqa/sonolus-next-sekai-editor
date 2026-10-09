@@ -275,6 +275,31 @@ test('mask infinities preserve stage lifetime flags and hidden-stage behavior', 
     assert.equal(canvas.strokes.length, 2)
     assert.equal(canvas.strokes[0]?.alpha, 0.125)
 
+    const savedVisibility = new Map([[stageId, 'hidden' as const]])
+    for (const showOtherStages of [false, true]) {
+        canvas.strokes = []
+        drawEventInfinities(
+            context,
+            visibilities,
+            createScopeLookup({ stageId, stageVisibility: savedVisibility, showOtherStages }),
+            false,
+        )
+        assert.equal(
+            canvas.strokes.length,
+            2,
+            'a selected stage draws its infinity lines even with its saved eye hidden',
+        )
+        assert.equal(canvas.strokes[0]?.alpha, 0.5)
+        canvas.strokes = []
+        drawEventInfinities(
+            context,
+            visibilities,
+            createScopeLookup({ stageVisibility: savedVisibility, showOtherStages }),
+            false,
+        )
+        assert.equal(canvas.strokes.length, 0, 'All restores the saved hidden stage')
+    }
+
     context.state.stages.set(stageId, {
         name: 'Stage A',
         isFromStart: false,

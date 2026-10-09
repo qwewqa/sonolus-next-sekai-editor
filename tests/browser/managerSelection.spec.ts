@@ -546,10 +546,10 @@ test('bulk visibility stays locked during isolation and an open menu follows ret
     await nameButton(list, 'Default').click({ modifiers: ['ControlOrMeta'] })
     await nameButton(list, 'Bass').click({ modifiers: ['ControlOrMeta'] })
     const bar = list.locator('.manager-selection-bar')
-    await expect(bar.getByRole('button', { name: 'Show Selected' })).toBeDisabled()
+    await expect(bar.getByRole('button', { name: 'Hide Selected' })).toBeDisabled()
     await bar.getByRole('button', { name: 'More Actions for Selection' }).click()
     const menu = page.getByRole('menu')
-    await expect(menu.getByRole('menuitem', { name: 'Show Selected' })).toBeDisabled()
+    await expect(menu.getByRole('menuitem', { name: 'Hide Selected' })).toBeDisabled()
     await expect(menu.getByRole('menuitem', { name: 'Show Only Selected' })).toBeDisabled()
     expect((await state(page)).hidden).toEqual(saved)
 

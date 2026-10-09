@@ -149,7 +149,7 @@ for (const [device, options] of Object.entries(viewports)) {
                 panel.getByRole('button', { name: 'Hide Other group', exact: true }),
             ).toBeDisabled()
             await expect(
-                panel.getByRole('button', { name: 'Show All Groups', exact: true }),
+                panel.getByRole('button', { name: 'Hide All Groups', exact: true }),
             ).toBeDisabled()
             expect((await groupState(page)).visibility).toEqual({})
             await expect(panel.locator('.manager-all .manager-meta')).toHaveText('1/3')
@@ -671,7 +671,8 @@ test('alt-clicking an eye shows only that entry and toggles back', async ({ page
     let state = await groupState(page)
     expect(state.focus).toBe('Third')
     expect(hiddenNames(state)).toEqual(['Default', 'Third'])
-    await expect(panel.locator('.manager-all .manager-meta')).toHaveText('1/3')
+    await expect(panel.locator('.manager-all .manager-meta')).toHaveText('2/3')
+    await expect(panel.getByRole('button', { name: 'Hide Third', exact: true })).toBeDisabled()
 
     await panel.getByRole('button', { name: 'Hide Other group', exact: true }).click({
         modifiers: ['Alt'],

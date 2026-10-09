@@ -667,7 +667,8 @@ test('focus rings on the current group keep a gap from its edge', async ({ page 
                 edge.bottom + inner - (box.bottom + outer),
             )
         })
-    const buttons = row.locator('.manager-icon-button, .manager-name')
+    await expect(row.locator('.manager-eye')).toBeDisabled()
+    const buttons = row.locator('.manager-icon-button:not(:disabled), .manager-name')
     await expect(buttons.first()).toBeVisible()
     const count = await buttons.count()
     expect(count).toBeGreaterThan(1)

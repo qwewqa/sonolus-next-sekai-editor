@@ -178,50 +178,54 @@ test('group and stage isolation combine independently and All restores each save
     expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
 })
 
-test('authoring in an isolated hidden group and stage preserves their All visibility choices', async ({
-    page,
-}) => {
-    await page.evaluate(() => {
-        window.editorTest.settings.showOtherGroups = false
-        window.editorTest.settings.showOtherStages = false
-        window.scopeTest.groupScope.setShown(2 as GroupId, false)
-        window.scopeTest.stageScope.setShown(2 as StageId, false)
-        window.scopeTest.groupScope.focus(2 as GroupId)
-        window.scopeTest.stageScope.focus(2 as StageId)
+for (const showOthers of [false, true]) {
+    test(`authoring in a selected hidden group and stage preserves their All visibility choices (Show Other: ${showOthers})`, async ({
+        page,
+    }) => {
+        await page.evaluate((showOthers) => {
+            window.editorTest.settings.showOtherGroups = showOthers
+            window.editorTest.settings.showOtherStages = showOthers
+            window.scopeTest.groupScope.setShown(2 as GroupId, false)
+            window.scopeTest.stageScope.setShown(2 as StageId, false)
+            window.scopeTest.groupScope.focus(2 as GroupId)
+            window.scopeTest.stageScope.focus(2 as StageId)
+        }, showOthers)
+        await page.keyboard.press('a')
+        const target = await point(page, -6, 9)
+        await page.mouse.click(target.x, target.y)
+        await settle(page)
+        const result = await page.evaluate(() => {
+            const { store, view } = window.editorTest
+            const created = [...store.getAllEntities()].flatMap((entity) =>
+                entity.type === 'note' && entity.beat === 9
+                    ? [[entity.groupId, entity.stageId]]
+                    : [],
+            )
+            const saved = [[...view.groupVisibility], [...view.stageVisibility]]
+            window.scopeTest.groupScope.focusAll()
+            window.scopeTest.stageScope.focusAll()
+            return {
+                created,
+                saved,
+                restored: [
+                    window.scopeTest.groupScope.visibility(2 as GroupId),
+                    window.scopeTest.stageScope.visibility(2 as StageId),
+                ],
+            }
+        })
+        expect(result).toEqual({
+            created: [[2, 2]],
+            saved: [[[2, 'hidden']], [[2, 'hidden']]],
+            restored: ['hidden', 'hidden'],
+        })
+        await page
+            .locator('[data-editor-toolbar]')
+            .first()
+            .getByRole('button', { name: 'Select', exact: true })
+            .click()
+        expect(await hoverAt(page, -6, 9)).toEqual([])
     })
-    await page.keyboard.press('a')
-    const target = await point(page, -6, 9)
-    await page.mouse.click(target.x, target.y)
-    await settle(page)
-    const result = await page.evaluate(() => {
-        const { store, view } = window.editorTest
-        const created = [...store.getAllEntities()].flatMap((entity) =>
-            entity.type === 'note' && entity.beat === 9 ? [[entity.groupId, entity.stageId]] : [],
-        )
-        const saved = [[...view.groupVisibility], [...view.stageVisibility]]
-        window.scopeTest.groupScope.focusAll()
-        window.scopeTest.stageScope.focusAll()
-        return {
-            created,
-            saved,
-            restored: [
-                window.scopeTest.groupScope.visibility(2 as GroupId),
-                window.scopeTest.stageScope.visibility(2 as StageId),
-            ],
-        }
-    })
-    expect(result).toEqual({
-        created: [[2, 2]],
-        saved: [[[2, 'hidden']], [[2, 'hidden']]],
-        restored: ['hidden', 'hidden'],
-    })
-    await page
-        .locator('[data-editor-toolbar]')
-        .first()
-        .getByRole('button', { name: 'Select', exact: true })
-        .click()
-    expect(await hoverAt(page, -6, 9)).toEqual([])
-})
+}
 
 test('hiding during a mouse drag cancels the edit and editing recovers', async ({ page }) => {
     const original = await notes(page)

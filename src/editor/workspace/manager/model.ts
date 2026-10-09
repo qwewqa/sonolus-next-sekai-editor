@@ -13,8 +13,12 @@ export type ManagerEntry<T> = {
 export type ManagerScope<T> = {
     visibility: (id: T) => ScopeVisibility
     isShown: (id: T) => boolean
+    /** Saved visibility after leaving the focus. */
+    isShownInAll: (id: T) => boolean
     /** Manual visibility changes are unavailable while disabled or isolated. */
     canSetVisibility: Readonly<Ref<boolean>>
+    /** The focused entry's individual eye is always disabled. */
+    canSetShown: (id: T) => boolean
     setShown: (id: T, shown: boolean) => void
     /** Shows or hides several entries as one change, e.g. a folder's members. */
     setSomeShown: (ids: readonly T[], shown: boolean) => void

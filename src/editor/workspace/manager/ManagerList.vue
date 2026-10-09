@@ -74,6 +74,11 @@ const focused = computed(() => props.model.focused())
 const counts = computed(() => ownedCounts(props.model.owner))
 
 const allShown = computed(() => scope.value.shownCount.value === scope.value.totalCount.value)
+// Bulk actions edit saved choices; the eye indicators still show effective visibility.
+const savedShownCount = computed(
+    () => entries.value.filter(({ id }) => scope.value.isShownInAll(id)).length,
+)
+const savedAllShown = computed(() => savedShownCount.value === scope.value.totalCount.value)
 
 const label = (template: string, ...values: string[]) => interpolateRaw(template, ...values)
 
@@ -101,6 +106,8 @@ const folderName = (id: FolderId) => folders.value.name(id)
 const folderCount = (item: FolderItem) =>
     item.members.reduce((sum, id) => sum + (counts.value.get(id) ?? 0), 0)
 const shownMembers = (item: FolderItem) => item.members.filter((id) => scope.value.isShown(id))
+const savedShownMembers = (item: FolderItem) =>
+    item.members.filter((id) => scope.value.isShownInAll(id))
 const membersId = (id: FolderId) => `${uid}-folder-${String(id)}`
 
 /** The name a row shows, with its folder when another entry shares it. */
@@ -407,7 +414,7 @@ const onSelectAll = () => {
 }
 
 const onToggleAll = () => {
-    scope.value.setAllShown(!allShown.value)
+    scope.value.setAllShown(!savedAllShown.value)
 }
 
 const onSelect = (id: T) => {
@@ -416,11 +423,11 @@ const onSelect = (id: T) => {
     scope.value.focus(id)
 }
 
-/** Whether exactly these entries are shown. */
+/** Whether exactly these entries are saved as shown. */
 const isOnlyShown = (ids: readonly T[]) =>
     ids.length > 0 &&
-    scope.value.shownCount.value === ids.length &&
-    ids.every((id) => scope.value.isShown(id))
+    savedShownCount.value === ids.length &&
+    ids.every((id) => scope.value.isShownInAll(id))
 
 /** Shows only these entries, or everything again when they already are alone. */
 const solo = (ids: readonly T[]) => {
@@ -437,7 +444,8 @@ const onToggle = (id: T, soloed: boolean) => {
 const onToggleFolder = (item: FolderItem, soloed: boolean) => {
     if (!item.members.length) return
     if (soloed) solo(item.members)
-    else scope.value.setSomeShown(item.members, shownMembers(item).length < item.members.length)
+    else
+        scope.value.setSomeShown(item.members, savedShownMembers(item).length < item.members.length)
 }
 
 // Selecting entries and folders for bulk actions: view state of this list only.
@@ -658,7 +666,7 @@ const onBulkVisibility = () => {
     const ids = selectedIds.value
     scope.value.setSomeShown(
         ids,
-        ids.some((id) => !scope.value.isShown(id)),
+        ids.some((id) => !scope.value.isShownInAll(id)),
     )
 }
 
@@ -700,7 +708,7 @@ const measureBar = () => {
 watch([bar, width, isCoarse, selectionCount], measureBar, { flush: 'post' })
 onMounted(() => void document.fonts.ready.then(measureBar))
 
-const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.isShown(id)))
+const bulkHidden = computed(() => selectedIds.value.some((id) => !scope.value.isShownInAll(id)))
 
 /** Deletes the selection; keyboard focus moves to the row taking the first deleted row's place. */
 const onBulkDelete = async (keyboard = false) => {
@@ -1755,7 +1763,7 @@ const entryProps = (id: T, name: string) => ({
             : entryTitle(id, name),
     current: focused.value === id,
     shown: scope.value.isShown(id),
-    eyeDisabled: !canSetVisibility.value,
+    eyeDisabled: !scope.value.canSetShown(id),
     muted: !scope.value.isShown(id),
     eyeLabel: label(
         scope.value.isShown(id)
@@ -1857,7 +1865,7 @@ const folderEyeLabel = (item: FolderItem) =>
     label(
         !item.members.length
             ? i18n.value.workspace.folders.empty
-            : shownMembers(item).length < item.members.length
+            : savedShownMembers(item).length < item.members.length
               ? i18n.value.workspace.manager.show
               : i18n.value.workspace.manager.hide,
         folderName(item.id),
@@ -1886,7 +1894,7 @@ const folderEyeLabel = (item: FolderItem) =>
                 :partial="scope.shownCount.value > 0 && !allShown"
                 :grip-space="hasGrip"
                 :muted="false"
-                :eye-label="allShown ? strings.hideAll : strings.showAll"
+                :eye-label="savedAllShown ? strings.hideAll : strings.showAll"
                 :eye-disabled="!canSetVisibility"
                 :meta="allShown ? undefined : `${scope.shownCount.value}/${scope.totalCount.value}`"
                 :mode-label="i18n.workspace.manager.selectMultiple"
