@@ -333,7 +333,7 @@ export const cameraEvent: Tool = {
             const [replacement] = view.entities.creating
             if (replacement?.type === 'cameraEventJoint') {
                 setPreviewEdit(source, () => {
-                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    const transaction = createTransaction(source)
                     return transaction.commit(
                         editSelectedCameraEvent(transaction, entity, replacement),
                     )

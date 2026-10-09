@@ -150,7 +150,7 @@ export const transformSelection = (
     if (!changed.length) return source
     const stays = (entity: EditableEntity, object: EditableProperties) =>
         (object.beat ?? entity.beat) === entity.beat && !collides(entity, object)
-    const transaction = createTransaction(source, { autoAddGroup: false })
+    const transaction = createTransaction(source)
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(
         (entity) => entity.beat === 0,
     )

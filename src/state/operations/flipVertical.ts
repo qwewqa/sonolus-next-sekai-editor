@@ -109,7 +109,7 @@ export const flipVertical = (source: State, selected: Entity[]): State => {
 
     const selectedSet = new Set(entities)
     const properties = reverseSlideProperties(source, selectedSet)
-    const transaction = createTransaction(source, { autoAddGroup: false })
+    const transaction = createTransaction(source)
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find((bpm) => bpm.beat === 0)
 
     // The centre, within float noise far below any beat grid, keeps its exact beat.

@@ -282,7 +282,7 @@ const tryFind = (x: number, y: number): [BpmEntity] | [undefined, number] => {
 const previewMove = (entity: BpmEntity, object: BpmObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
-        const transaction = createTransaction(source, { autoAddGroup: false })
+        const transaction = createTransaction(source)
         return transaction.commit(applyBpmEdit(transaction, entity, object))
     }, [entity, object.beat, object.bpm, object.meter])
 }

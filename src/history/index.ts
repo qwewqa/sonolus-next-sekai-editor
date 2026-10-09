@@ -7,7 +7,6 @@ import { switchToolTo } from '../editor/tools'
 import { i18n } from '../i18n'
 import { showModal } from '../modals'
 import ConfirmModal from '../modals/ConfirmModal.vue'
-import { settings } from '../settings'
 import { createState, type State } from '../state'
 import { cleanupWaveform } from '../waveform'
 import { resetAutoSave } from './autoSave/index.ts'
@@ -16,7 +15,6 @@ import { notifyResetState } from './resetHooks'
 const createDefaultChart = (): Chart => {
     const groups: Groups = new Map()
     addToGroups(groups)
-    if (settings.autoAddGroup) addToGroups(groups)
 
     const stages: Stages = new Map()
     addDefaultStageToStages(stages)

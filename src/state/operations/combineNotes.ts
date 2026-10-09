@@ -65,7 +65,7 @@ export const combineNotes = (source: State, selected: Entity[]): State => {
                 .flatMap(({ notes }) => notes)
         })
 
-    const transaction = createTransaction(source, { autoAddGroup: false })
+    const transaction = createTransaction(source)
     for (const { note } of notes) removeNote(transaction, note)
 
     const slideId = createSlideId()

@@ -648,7 +648,6 @@
       },
       "dragToPanY": "拖动以纵向平移",
       "dragToPanX": "拖动以横向平移",
-      "autoAddGroup": "自动添加群组",
       "showGroupName": "显示群组名称",
       "showOtherGroups": "显示其他群组",
       "showStageName": "显示舞台名称",

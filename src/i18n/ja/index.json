@@ -648,7 +648,6 @@
       },
       "dragToPanY": "ドラッグ中の縦方向スクロール",
       "dragToPanX": "ドラッグ中の横方向スクロール",
-      "autoAddGroup": "グループを自動追加",
       "showGroupName": "グループ名を表示",
       "showOtherGroups": "他のグループを表示",
       "showStageName": "ステージ名を表示",

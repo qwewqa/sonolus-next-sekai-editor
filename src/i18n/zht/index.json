@@ -648,7 +648,6 @@
       },
       "dragToPanY": "拖曳以平移 Y",
       "dragToPanX": "拖曳以平移 X",
-      "autoAddGroup": "自動新增圖層",
       "showGroupName": "顯示圖層名稱",
       "showOtherGroups": "顯示其他圖層",
       "showStageName": "顯示舞台名稱",

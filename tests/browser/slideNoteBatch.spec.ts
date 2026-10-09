@@ -27,7 +27,7 @@ test('mixed note edits remain visible before commit and preserve equal-beat orde
         const [id, original] = [...source.store.slides.note][0]!
         const before = [...original]
         const sourceSnapshot = JSON.stringify(original)
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const replacement = replaceNote(tx, original[0]!, { ...original[0]!, left: -1 })[0]!
         const firstRead = tx.store.slides.note.get(id)!
         const firstReadCorrect = firstRead[0] === replacement && firstRead[1] === original[1]
@@ -108,7 +108,7 @@ test('large replacement and forward deletion batches retain source state and liv
         const buckets = Object.entries(source.store.grid).flatMap(([type, map]) =>
             [...map].map(([key, bucket]) => ({ type, key, bucket, contents: [...bucket] })),
         )
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const replacements = original.map(
             (note) => replaceNote(tx, note, { ...note, left: note.left + 0.5 })[0]!,
         )
@@ -193,7 +193,7 @@ test('recreated slides keep map order and canonical attached identities remain e
         const [otherId, unrelated] = entries[1]!
         const before = [...original]
         const sourceSnapshot = JSON.stringify(original)
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         for (const note of original) removeNote(tx, note)
         const deleted = !tx.store.slides.note.has(id)
         addNote(tx, id, { ...original[0]!, left: -2 })

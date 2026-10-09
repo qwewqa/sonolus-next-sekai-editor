@@ -4,7 +4,7 @@ import type { Entity } from '../../entities'
 import { addBpm } from '../../mutations/bpm'
 import type { Store } from '../../store'
 import { getInStoreGrid } from '../../store/grid'
-import { createTransaction, type Transaction, type TransactionOptions } from '../../transaction'
+import { createTransaction, type Transaction } from '../../transaction'
 import { editBpm, editSelectedBpm } from '../bpm'
 import { isEditableEntity, type EditableEntity, type EditableObject } from '../editable'
 import { editSelectedCameraEvent } from '../events/camera'
@@ -19,7 +19,7 @@ import { inStoredOrder } from '../transformSelection'
 import { noteFieldsApply } from './applicability'
 import { getNoteFieldsIn } from './noteFields'
 
-export type PlanOptions = TransactionOptions & {
+export type PlanOptions = {
     /** Edits only these selected objects; the rest stay selected unchanged. */
     only?: (entity: Entity) => boolean
     /** A lone object edits as its tool would, moving or replacing by beat. */
@@ -93,7 +93,7 @@ export const planEdit = (
     source: State,
     selected: Entity[],
     object: EditableObject,
-    { only, single = true, ...options }: PlanOptions = {},
+    { only, single = true }: PlanOptions = {},
 ) => {
     if (!isEditInRange(source, selected, object, only)) return { state: source, changed: [] }
     const changed = selected.filter(
@@ -102,7 +102,7 @@ export const planEdit = (
             (!only || only(entity)) &&
             editChanges(source.store, entity, object),
     )
-    const transaction = createTransaction(source, options)
+    const transaction = createTransaction(source)
     const editable = selected.filter(isEditableEntity)
     const lone = single && editable.length === 1 ? editable[0] : undefined
     const initialBpm = getInStoreGrid(source.store.grid, 'bpm', 0)?.find(

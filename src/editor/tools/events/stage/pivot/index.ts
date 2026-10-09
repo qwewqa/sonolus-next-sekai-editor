@@ -259,7 +259,7 @@ export const stagePivotEvent: Tool = {
             const [replacement] = view.entities.creating
             if (replacement?.type === 'stagePivotEventJoint') {
                 setPreviewEdit(source, () => {
-                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    const transaction = createTransaction(source)
                     return transaction.commit(
                         editSelectedStagePivotEvent(transaction, entity, replacement),
                     )

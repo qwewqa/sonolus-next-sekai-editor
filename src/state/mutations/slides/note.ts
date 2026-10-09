@@ -4,30 +4,20 @@ import { toNoteEntity, type NoteEntity } from '../../entities/slides/note'
 import { addToStoreGrid, removeFromStoreGrid } from '../../store/grid'
 import type { Transaction } from '../../transaction'
 
-export const addNote = (
-    { store, addToGroup }: Transaction,
-    slideId: SlideId,
-    object: NoteObject,
-) => {
+export const addNote = ({ store }: Transaction, slideId: SlideId, object: NoteObject) => {
     const note = toNoteEntity(slideId, object)
     store.noteDrafts.add(note)
     addToStoreGrid(store.grid, note, note.beat)
-    addToGroup(note.groupId)
     store.markDirty(slideId)
 
     return [note]
 }
 
-export const replaceNote = (
-    { store, addToGroup }: Transaction,
-    note: NoteEntity,
-    object: NoteObject,
-) => {
+export const replaceNote = ({ store }: Transaction, note: NoteEntity, object: NoteObject) => {
     const newNote = toNoteEntity(note.slideId, object)
     store.noteDrafts.replace(note, newNote)
     removeFromStoreGrid(store.grid, note, note.beat)
     addToStoreGrid(store.grid, newNote, newNote.beat)
-    addToGroup(newNote.groupId)
     store.markDirty(note.slideId)
 
     return [newNote]

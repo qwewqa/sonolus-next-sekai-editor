@@ -21,6 +21,8 @@ export const addToGroups = (
     name?: string,
     object: Omit<GroupObject, 'name'> = {},
 ) => {
+    // Restored charts can already contain the next id; adding must never replace a group.
+    while (groups.has(i as GroupId)) i++
     const id = i++ as GroupId
     // A blank name, e.g. from level data, gets a default like a missing one.
     if (!name?.trim()) name = undefined

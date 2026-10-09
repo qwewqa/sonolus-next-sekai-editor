@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 for (const name of ['select', 'note', 'slide'] as const) {
-    test(`${name} drafts reuse cached notes when the populated final group auto-expands on commit`, async ({
+    test(`${name} drafts and commits reuse groups and cached unchanged notes in the populated final group`, async ({
         page,
     }) => {
         const result = await page.evaluate(async (name) => {
@@ -19,7 +19,7 @@ for (const name of ['select', 'note', 'slide'] as const) {
                 (await import('/src/preview/edit.ts')) as typeof import('../../src/preview/edit')
             const { createPreviewChartBuilder } =
                 (await import('/src/preview/engine/chart.ts')) as typeof import('../../src/preview/engine/chart')
-            const { history, settings, view, fixtures, show, point } = window.editorTest
+            const { history, view, fixtures, show, point } = window.editorTest
             const first = fixtures.interaction.slides[0]![0]!
             show(
                 {
@@ -28,7 +28,6 @@ for (const name of ['select', 'note', 'slide'] as const) {
                 },
                 3,
             )
-            settings.autoAddGroup = true
             view.cursorTime = 2.25
             const tool = tools[name]
             const modifiers = { ctrl: false, shift: false }
@@ -58,6 +57,7 @@ for (const name of ['select', 'note', 'slide'] as const) {
             return {
                 during,
                 committedGroupCount: history.state.value.groups.size,
+                committedGroupsShared: history.state.value.groups === source.groups,
                 draftCleared: previewEdit.value === undefined,
             }
         }, name)
@@ -72,32 +72,33 @@ for (const name of ['select', 'note', 'slide'] as const) {
             sourceGroupCount: 1,
             cursor: 2.25,
         })
-        expect(result.committedGroupCount).toBe(2)
+        expect(result.committedGroupCount).toBe(1)
+        expect(result.committedGroupsShared).toBe(true)
         expect(result.draftCleared).toBe(true)
     })
 }
 
-test('property draft transactions preserve groups while committed property edits still auto-expand', async ({
+test('property draft and committed edits preserve the populated final group and its identity', async ({
     page,
 }) => {
     const result = await page.evaluate(async () => {
         const { planEdit } =
             (await import('/src/state/operations/properties/plan.ts')) as typeof import('../../src/state/operations/properties/plan')
-        const { history, settings, fixtures, show } = window.editorTest
+        const { history, fixtures, show } = window.editorTest
         const first = fixtures.interaction.slides[0]![0]!
         show({
             ...fixtures.interaction,
             groups: new Map([[first.groupId, { name: 'Populated last group' }]]),
         })
-        settings.autoAddGroup = true
         const source = history.state.value
         const entity = source.store.slides.note.values().next().value![0]!
-        const draft = planEdit(source, [entity], { left: -3 }, { autoAddGroup: false }).state
+        const draft = planEdit(source, [entity], { left: -3 }).state
         const committed = planEdit(source, [entity], { left: -3 }).state
         return {
             draftGroupsShared: draft.groups === source.groups,
             sourceGroupCount: source.groups.size,
             committedGroupCount: committed.groups.size,
+            committedGroupsShared: committed.groups === source.groups,
             draftLeft: draft.selectedEntities[0]?.type === 'note' && draft.selectedEntities[0].left,
             committedLeft:
                 committed.selectedEntities[0]?.type === 'note' &&
@@ -108,7 +109,8 @@ test('property draft transactions preserve groups while committed property edits
     expect(result).toEqual({
         draftGroupsShared: true,
         sourceGroupCount: 1,
-        committedGroupCount: 2,
+        committedGroupCount: 1,
+        committedGroupsShared: true,
         draftLeft: -3,
         committedLeft: -3,
         historyUnchanged: true,

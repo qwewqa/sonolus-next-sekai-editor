@@ -269,7 +269,7 @@ export const stageStyleEvent: Tool = {
             const [replacement] = view.entities.creating
             if (replacement?.type === 'stageStyleEventJoint') {
                 setPreviewEdit(source, () => {
-                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    const transaction = createTransaction(source)
                     return transaction.commit(
                         editSelectedStageStyleEvent(transaction, entity, replacement),
                     )

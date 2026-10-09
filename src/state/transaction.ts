@@ -1,6 +1,4 @@
 import type { State } from '.'
-import { addToGroups, type GroupId, type Groups } from '../chart/groups'
-import { settings } from '../settings'
 import { nearlyEqual } from '../utils/math'
 import type { Entity } from './entities'
 import type { SlideId } from './entities/slides'
@@ -12,12 +10,7 @@ import { createSlideNoteDrafts } from './store/slideNoteDrafts'
 
 export type Transaction = ReturnType<typeof createTransaction>
 
-export type TransactionOptions = { autoAddGroup?: boolean }
-
-export const createTransaction = (
-    state: State,
-    { autoAddGroup = true }: TransactionOptions = {},
-) => {
+export const createTransaction = (state: State) => {
     let currentState = state
     const grid = createMapObjectTransaction(state.store.grid)
     const gridOwnership = createStoreGridOwnership(grid.accessor)
@@ -26,9 +19,6 @@ export const createTransaction = (
     const slides = createMapObjectTransaction(state.store.slides)
     const noteDrafts = createSlideNoteDrafts(() => slides.accessor.note)
     const dirtySlideIds = new Set<SlideId>()
-
-    let lastGroup: GroupId | undefined
-    let groups: Groups | undefined
 
     let bpms: BpmIntegral[] | undefined
 
@@ -53,18 +43,6 @@ export const createTransaction = (
             markDirty(slideId: SlideId) {
                 dirtySlideIds.add(slideId)
             },
-        },
-
-        addToGroup: (groupId: GroupId) => {
-            // Speculative preview edits do not need the editor's trailing empty
-            // group. Preserve group identity so unchanged preview notes stay cached.
-            if (!autoAddGroup || !settings.autoAddGroup) return
-
-            lastGroup ??= [...currentState.groups.keys()].at(-1)
-            if (groupId !== lastGroup) return
-
-            groups = new Map(currentState.groups)
-            addToGroups(groups)
         },
 
         get bpms() {
@@ -133,7 +111,6 @@ export const createTransaction = (
                     },
                 },
                 bpms: bpms ?? currentState.bpms,
-                groups: groups ?? currentState.groups,
                 selectedEntities: selection,
             }
 
@@ -147,8 +124,6 @@ export const createTransaction = (
             gridOwnership.reset()
             dirtySlideIds.clear()
             bpms = undefined
-            groups = undefined
-            lastGroup = undefined
             return result
         },
     }

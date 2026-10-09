@@ -465,15 +465,8 @@ for (const tick of [false, true])
             const { editSelectedEditableEntities } = await appImport<
                 typeof import('../../src/editor/sidebars/default')
             >('/src/editor/sidebars/default/index.ts')
-            // The live preview runs the same plan with preview options.
-            const preview = planEdit(
-                history.state.value,
-                [bpm, last],
-                { beat: 4 },
-                {
-                    autoAddGroup: false,
-                },
-            ).state
+            // The live preview and committed edit run the same plan.
+            const preview = planEdit(history.state.value, [bpm, last], { beat: 4 }).state
             editSelectedEditableEntities({ beat: 4 })
             const beats = (bpms: { x: number }[]) => bpms.map((integral) => integral.x)
             return { preview: beats(preview.bpms), commit: beats(history.state.value.bpms) }

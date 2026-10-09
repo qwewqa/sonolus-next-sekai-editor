@@ -103,7 +103,6 @@ export const useEntitiesProperties = (
                 current,
                 () =>
                     planEdit(current, current.selectedEntities, object, {
-                        autoAddGroup: false,
                         only: scope,
                     }).state,
             )

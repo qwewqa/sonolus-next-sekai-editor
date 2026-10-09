@@ -2,7 +2,6 @@ import type { LevelDataEntity } from '@sonolus/core'
 import Type from 'typebox'
 import Value from 'typebox/value'
 import type { Chart } from '../..'
-import { settings } from '../../../settings'
 import {
     groupFolderArchetype,
     normalizeFolders,
@@ -137,7 +136,7 @@ export const parseLevelDataChart = (
     parseBpmsToChart(ctx)
 
     parseGroupsToChart(ctx)
-    while (chart.groups.size < (settings.autoAddGroup ? 2 : 1)) {
+    if (!chart.groups.size) {
         addToGroups(chart.groups)
     }
 

@@ -478,7 +478,7 @@ const edit = (entity: NoteEntity, object: Partial<WithEaseEdits<NoteObject>>) =>
 const previewEdit = (entity: NoteEntity, object: NoteObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
-        const transaction = createTransaction(source, { autoAddGroup: false })
+        const transaction = createTransaction(source)
         return transaction.commit(editSelectedNote(transaction, entity, object))
     }, [entity, object.beat, object.left, object.size])
 }

@@ -25,7 +25,7 @@ export const splitHold = (source: State, selected: Entity[]): State => {
     const slideIds = new Set([...cuts].map((note) => note.slideId))
     const notes = [...slideIds].flatMap((id) => source.store.slides.note.get(id) ?? [])
     const positions = getMaterializedNotePositions(source, notes)
-    const transaction = createTransaction(source, { autoAddGroup: false })
+    const transaction = createTransaction(source)
     const replacements = new Map<NoteEntity, NoteEntity>()
 
     for (const id of slideIds) {

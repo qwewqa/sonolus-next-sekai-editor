@@ -648,7 +648,6 @@
       },
       "dragToPanY": "드래그하여 Y축 이동",
       "dragToPanX": "드래그하여 X축 이동",
-      "autoAddGroup": "자동 그룹 추가",
       "showGroupName": "그룹 이름 표시",
       "showOtherGroups": "다른 그룹 표시",
       "showStageName": "스테이지 이름 표시",

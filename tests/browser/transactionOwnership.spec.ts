@@ -33,7 +33,7 @@ test('dense guide edits own crowded buckets while retaining source state and und
         const originalBuckets = Object.entries(source.store.grid).flatMap(([type, map]) =>
             [...map].map(([key, bucket]) => ({ type, key, bucket, contents: [...bucket] })),
         )
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const selection = [replaceNote(tx, notes[0]![0]!, { ...notes[0]![0]!, left: -3 })[0]!]
         const firstWrittenBucket = tx.store.grid.note.get(4)
         for (const array of notes.slice(1))
@@ -130,8 +130,8 @@ test('reused and forked transactions keep published maps, attached notes and BPM
                 selected: state.selectedEntities,
             })
         const sourceBefore = snapshot(source)
-        const tx = createTransaction(source, { autoAddGroup: false })
-        const fork = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
+        const fork = createTransaction(source)
         const selection = replaceNote(tx, originalNotes[0]!, { ...originalNotes[0]!, left: -2 })
         selection.push(originalNotes[1]!)
         const first = tx.commit(selection)
@@ -191,7 +191,7 @@ test('failed stale-note edits leave pending draft notes and grid contents unchan
         >('/src/state/mutations/slides/note.ts')
         const source = history.state.value
         const note = [...source.store.slides.note.values()][0]![0]!
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const replacement = replaceNote(tx, note, { ...note, left: note.left + 1 })[0]!
         const before = tx.store.grid.note.get(Math.floor(note.beat))!
         const contents = [...before]
@@ -246,7 +246,7 @@ test('same-beat BPM replacement retains bucket order through a second commit', a
         })
         const source = history.state.value
         const [a, b] = [...source.store.grid.bpm.get(4)!]
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const replacement = replaceBpm(tx, a!, { ...a!, bpm: 100 })[0]!
         const first = tx.commit([])
         replaceBpm(tx, b!, { ...b!, bpm: 200 })
@@ -280,7 +280,7 @@ test('retained note Maps expose staged edits and preserve committed native snaps
         const source = history.state.value
         const arrays = [...source.store.slides.note.values()]
         const [a, b, c] = arrays.map((notes) => notes[0]!)
-        const tx = createTransaction(source, { autoAddGroup: false })
+        const tx = createTransaction(source)
         const retained = tx.store.slides.note
         const iterator = retained.values()
         replaceNote(tx, a!, { ...a!, left: -10 })

@@ -315,7 +315,7 @@ const editedObject = (active: NonNullable<typeof drag>, note: NoteEntity) => {
     )
 }
 const edit = (active: NonNullable<typeof drag>) => {
-    const transaction = createTransaction(active.source, { autoAddGroup: false })
+    const transaction = createTransaction(active.source)
     const replacements = new Map(
         active.targets.flatMap((note) => {
             const replacement = editSelectedNote(transaction, note, editedObject(active, note))[0]

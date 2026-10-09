@@ -364,7 +364,7 @@ const tryFind = (x: number, y: number): [TimeScaleEntity] | [undefined, number, 
 const previewMove = (entity: TimeScaleEntity, object: TimeScaleObject) => {
     const source = state.value
     setPreviewEdit(source, () => {
-        const transaction = createTransaction(source, { autoAddGroup: false })
+        const transaction = createTransaction(source)
         return transaction.commit(applyTimeScaleEdit(transaction, entity, object))
     }, [entity, object.beat, object.editorLane])
 }

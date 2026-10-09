@@ -332,7 +332,7 @@ export const stageMaskEvent: Tool = {
             const [replacement] = view.entities.creating
             if (replacement?.type === 'stageMaskEventJoint') {
                 setPreviewEdit(source, () => {
-                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    const transaction = createTransaction(source)
                     return transaction.commit(
                         editSelectedStageMaskEvent(transaction, entity, replacement),
                     )

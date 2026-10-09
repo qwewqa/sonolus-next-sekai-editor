@@ -49,7 +49,7 @@ const chainOf = <T extends keyof typeof stageJoints>(state: State, type: T, stag
  * in source order so same-beat pairs keep theirs. Nothing existing changes.
  */
 export const duplicateOwned = (state: State, owners: OwnerCopies): State => {
-    const transaction: Transaction = createTransaction(state, { autoAddGroup: false })
+    const transaction: Transaction = createTransaction(state)
 
     if (owners.key === 'groupId') {
         for (const timeScale of gridEntities(state.store.grid, 'timeScale')) {

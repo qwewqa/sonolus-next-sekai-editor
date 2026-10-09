@@ -66,11 +66,7 @@ import { replaceNote } from '../../state/mutations/slides/note'
 import { addTimeScale, removeTimeScale, replaceTimeScale } from '../../state/mutations/timeScale'
 import { editChanges } from '../../state/operations/properties/plan'
 import { getInStoreGrid } from '../../state/store/grid'
-import {
-    createTransaction,
-    type Transaction,
-    type TransactionOptions,
-} from '../../state/transaction'
+import { createTransaction, type Transaction } from '../../state/transaction'
 import { interpolate } from '../../utils/interpolate'
 import { shiftComputed } from '../../utils/math'
 import { constrainLaneObject, minimumNoteSize } from '../laneLimits'
@@ -333,9 +329,7 @@ export const select: Tool = {
                 }
                 const source = state.value
                 const move = active
-                setPreviewEdit(source, () =>
-                    moveEntities(source, move, lane, beatOffset, { autoAddGroup: false }),
-                )
+                setPreviewEdit(source, () => moveEntities(source, move, lane, beatOffset))
                 focusEntityAtBeat(focusBeat)
                 break
             }
@@ -442,14 +436,8 @@ export const select: Tool = {
     },
 }
 
-const moveEntities = (
-    source: State,
-    active: MoveActive,
-    lane: number,
-    beatOffset: number,
-    options?: TransactionOptions,
-) => {
-    const transaction = createTransaction(source, options)
+const moveEntities = (source: State, active: MoveActive, lane: number, beatOffset: number) => {
+    const transaction = createTransaction(source)
     // Same-beat objects move in their stored order, so they keep it.
     const rank = (entity: Entity) =>
         getInStoreGrid(source.store.grid, entity.type, entity.beat)?.indexOf(entity) ?? 0

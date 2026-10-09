@@ -1,5 +1,4 @@
 import type { Chart } from '../..'
-import { settings } from '../../../settings.js'
 import type { Sus } from '../../../sus/parse.js'
 import { addToGroups, type Groups } from '../../groups.js'
 import type { NoteObject } from '../../note.js'
@@ -8,7 +7,6 @@ import { addDefaultStageToStages, type Stages } from '../../stages.js'
 export const parseSusChart = (sus: Sus) => {
     const groups: Groups = new Map()
     const [groupId] = addToGroups(groups)
-    if (settings.autoAddGroup) addToGroups(groups)
 
     const stages: Stages = new Map()
     const [stageId] = addDefaultStageToStages(stages)

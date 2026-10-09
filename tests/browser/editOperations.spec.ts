@@ -83,7 +83,7 @@ for (const scenario of cases) {
                 (await import('/src/editor/sidebars/default/index.ts')) as typeof import('../../src/editor/sidebars/default')
             const { notification } =
                 (await import('/src/editor/notification.ts')) as typeof import('../../src/editor/notification')
-            const { history, store, settings, view, fixtures, show } = window.editorTest
+            const { history, store, view, fixtures, show } = window.editorTest
             const timeScale: TimeScaleObject = {
                 groupId: 1 as GroupId,
                 beat: 2,
@@ -107,7 +107,6 @@ for (const scenario of cases) {
                     { ...timeScale, groupId: 2 as GroupId, beat: 4, timeScale: 3 },
                 ],
             })
-            settings.autoAddGroup = false
             const entity = [...store.getAllEntities()].find(
                 (entity) => entity.type === scenario.type && entity.beat === scenario.beat,
             )!
@@ -120,9 +119,7 @@ for (const scenario of cases) {
             const before = serialize(source)
             const cursor = view.cursorTime
             const notificationId = notification.value.id
-            const preview = planEdit(source, [entity], scenario.object, {
-                autoAddGroup: false,
-            }).state
+            const preview = planEdit(source, [entity], scenario.object).state
             const sourceUnchanged = history.state.value === source && serialize(source) === before
             const previewHasNoSideEffects =
                 !history.canUndo.value && notification.value.id === notificationId

@@ -259,7 +259,7 @@ export const stageTransformEvent: Tool = {
             const [replacement] = view.entities.creating
             if (replacement?.type === 'stageTransformEventJoint') {
                 setPreviewEdit(source, () => {
-                    const transaction = createTransaction(source, { autoAddGroup: false })
+                    const transaction = createTransaction(source)
                     return transaction.commit(
                         editSelectedStageTransformEvent(transaction, entity, replacement),
                     )

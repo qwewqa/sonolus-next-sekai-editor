@@ -98,7 +98,6 @@ const seed = (page: Page) =>
         view.stageVisibility = new Map()
         settings.showGroups = true
         settings.showStages = true
-        settings.autoAddGroup = true
     })
 
 /** The groups as a compact tree: `name` or `[Folder: a b]`. */

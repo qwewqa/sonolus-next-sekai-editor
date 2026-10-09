@@ -1,5 +1,4 @@
 import type { Chart } from '../..'
-import { settings } from '../../../settings'
 import type { UscObject } from '../../../usc/objects/schema'
 import { addToGroups } from '../../groups'
 import { ImportRefusal } from '../../refusal'
@@ -25,9 +24,9 @@ export const parseUscChart = (objects: UscObject[]) => {
     }
 
     const timeScaleGroups = objects.filter((object) => object.type === 'timeScaleGroup')
-    const groupIds = [
-        ...Array(Math.max(settings.autoAddGroup ? 2 : 1, timeScaleGroups.length)).keys(),
-    ].map(() => addToGroups(chart.groups)[0])
+    const groupIds = [...Array(Math.max(1, timeScaleGroups.length)).keys()].map(
+        () => addToGroups(chart.groups)[0],
+    )
 
     const getGroupId = (index: number) => {
         const id = groupIds[index]
