@@ -700,3 +700,186 @@ for (const showOtherGroups of [false, true]) {
         })
     }
 }
+
+for (const kind of ['groups', 'stages'] as const) {
+    for (const showOthers of [false, true]) {
+        test(`${kind} keyboard and toolbar All/Next/Previous preserve saved choices, aggregate eyes and singleton wrapping (Show Other: ${showOthers})`, async ({
+            page,
+        }) => {
+            await page.evaluate(
+                async ({ kind, showOthers }) => {
+                    const { history, settings, appImport } = window.editorTest
+                    const current = history.state.value
+                    const key = kind === 'groups' ? 'groups' : 'stages'
+                    const folderKey = kind === 'groups' ? 'groupFolders' : 'stageFolders'
+                    history.replaceState({
+                        ...current,
+                        [key]: new Map(
+                            [...current[key]].map(([id, entry]) => [
+                                id,
+                                { ...entry, folderId: 9000 as never },
+                            ]),
+                        ),
+                        [folderKey]: new Map([[9000 as never, { name: 'Collection', index: 0 }]]),
+                    })
+                    if (kind === 'groups') settings.showOtherGroups = showOthers
+                    else settings.showOtherStages = showOthers
+                    const { groupScope, stageScope } =
+                        await appImport<typeof import('../../src/editor/scope')>(
+                            '/src/editor/scope.ts',
+                        )
+                    const scope = (kind === 'groups' ? groupScope : stageScope) as typeof groupScope
+                    scope.setShown(2 as never, false)
+                },
+                { kind, showOthers },
+            )
+            const panel = await openManager(page, kind)
+            const [first, selected, last] =
+                kind === 'groups'
+                    ? ['Default', 'Other group', 'Third']
+                    : ['Center', 'Side stage', 'Back']
+            const [previous, next, allKey] = kind === 'groups' ? ['1', '2', '3'] : ['4', '5', '6']
+            const all = kind === 'groups' ? 'All Groups' : 'All Stages'
+            const saved = () =>
+                page.evaluate(
+                    (kind) =>
+                        [
+                            ...(kind === 'groups'
+                                ? window.editorTest.view.groupVisibility
+                                : window.editorTest.view.stageVisibility),
+                        ].sort(([a], [b]) => a - b),
+                    kind,
+                )
+            await press(page, next)
+            expect((await scope(page, kind)).focus).toBe(first)
+            await press(page, next)
+            expect(await scope(page, kind)).toEqual({
+                focus: selected,
+                visibility: {
+                    [first!]: showOthers ? 'dimmed' : 'hidden',
+                    [selected!]: 'full',
+                    [last!]: showOthers ? 'dimmed' : 'hidden',
+                },
+            })
+            expect(await saved()).toEqual([[2, 'hidden']])
+            await expect(
+                panel.getByRole('button', { name: `Hide ${selected}`, exact: true }),
+            ).toBeDisabled()
+            if (showOthers) {
+                await expect(
+                    panel.getByRole('button', { name: 'Hide Collection', exact: true }),
+                ).toBeEnabled()
+                await panel.getByRole('button', { name: `Hide ${all}`, exact: true }).click()
+                expect(await saved()).toEqual([
+                    [1, 'hidden'],
+                    [2, 'hidden'],
+                    [3, 'hidden'],
+                ])
+                expect((await scope(page, kind)).visibility[selected!]).toBe('full')
+            } else {
+                await expect(
+                    panel.getByRole('button', { name: `Show ${all}`, exact: true }),
+                ).toBeDisabled()
+                await expect(
+                    panel.getByRole('button', { name: 'Show Collection', exact: true }),
+                ).toBeDisabled()
+            }
+            const mask = await saved()
+            await press(page, next)
+            expect((await scope(page, kind)).focus).toBe(last)
+            expect((await scope(page, kind)).visibility[selected!]).toBe('hidden')
+            await press(page, previous)
+            expect((await scope(page, kind)).visibility[selected!]).toBe('full')
+            await press(page, previous)
+            expect((await scope(page, kind)).focus).toBe(first)
+            await press(page, previous)
+            const allState = await scope(page, kind)
+            expect(allState).toEqual({
+                focus: undefined,
+                visibility: {
+                    [first!]: showOthers ? 'hidden' : 'full',
+                    [selected!]: 'hidden',
+                    [last!]: showOthers ? 'hidden' : 'full',
+                },
+            })
+            await press(page, allKey)
+            await press(page, allKey)
+            expect(await scope(page, kind)).toEqual(allState)
+            await press(page, previous)
+            expect((await scope(page, kind)).focus).toBe(last)
+            await press(page, next)
+            expect(await scope(page, kind)).toEqual(allState)
+            expect(await saved()).toEqual(mask)
+
+            // Navigation follows the current manager order, including a hidden final entry.
+            await page.evaluate((kind) => {
+                const { history } = window.editorTest
+                const current = history.state.value
+                const key = kind === 'groups' ? 'groups' : 'stages'
+                history.replaceState({
+                    ...current,
+                    [key]: new Map(
+                        [3, 1, 2].map((id) => [id as never, current[key].get(id as never)!]),
+                    ),
+                })
+            }, kind)
+            for (const name of [last, first, selected]) {
+                await press(page, next)
+                expect((await scope(page, kind)).focus).toBe(name)
+                expect((await scope(page, kind)).visibility[name!]).toBe('full')
+            }
+            await press(page, next)
+            expect(await scope(page, kind)).toEqual(allState)
+            expect(await saved()).toEqual(mask)
+
+            // Standalone toolbar buttons dispatch the same actions as the shortcuts.
+            await page.evaluate((kind) => {
+                window.editorTest.settings.toolbar =
+                    kind === 'groups'
+                        ? [['groupPrev'], ['groupNext'], ['groupAll']]
+                        : [['stagePrev'], ['stageNext'], ['stageAll']]
+            }, kind)
+            const toolbar = page.locator('[data-editor-toolbar]').first()
+            const suffix = kind === 'groups' ? 'Group' : 'Stage'
+            await toolbar.getByTitle(`Next ${suffix}`, { exact: true }).click()
+            expect((await scope(page, kind)).focus).toBe(last)
+            await toolbar.getByTitle(`Previous ${suffix}`, { exact: true }).click()
+            expect(await scope(page, kind)).toEqual(allState)
+            await toolbar.getByTitle(all, { exact: true }).click()
+            expect(await saved()).toEqual(mask)
+
+            await page.evaluate(async (kind) => {
+                const { history, fixtures, appImport } = window.editorTest
+                const chart = structuredClone(fixtures.interaction)
+                chart.isDynamicStages = true
+                chart.groups = new Map([[1 as never, { name: 'Only Group' }]])
+                chart.stages = new Map([
+                    [1 as never, { ...[...chart.stages.values()][0]!, name: 'Only Stage' }],
+                ])
+                chart.slides = chart.slides.map((notes) =>
+                    notes.map((note) => ({ ...note, groupId: 1 as never, stageId: 1 as never })),
+                )
+                history.resetState(false, chart)
+                const { groupScope, stageScope } =
+                    await appImport<typeof import('../../src/editor/scope')>('/src/editor/scope.ts')
+                ;(kind === 'groups' ? groupScope : stageScope).setShown(1 as never, false)
+            }, kind)
+            for (const key of [next, previous]) {
+                await press(page, key)
+                expect((await scope(page, kind)).focus).toBe(
+                    kind === 'groups' ? 'Only Group' : 'Only Stage',
+                )
+                await expect(
+                    panel.getByRole('button', { name: `Hide ${all}`, exact: true }),
+                ).toBeDisabled()
+                await press(page, key)
+                expect((await scope(page, kind)).focus).toBeUndefined()
+                await expect(
+                    panel.getByRole('button', { name: `Show ${all}`, exact: true }),
+                ).toBeEnabled()
+                expect(await saved()).toEqual([[1, 'hidden']])
+            }
+            expect(await page.evaluate(() => window.editorTest.history.canUndo.value)).toBe(false)
+        })
+    }
+}

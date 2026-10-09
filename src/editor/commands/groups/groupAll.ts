@@ -9,7 +9,7 @@ export const groupAll: Command = {
         is: GroupAllIcon,
     },
 
-    // Clears the focus and every hide, so everything shows.
+    // Clears the focus, restoring saved visibility choices.
     execute() {
         groupScope.focusAll()
     },

@@ -10,7 +10,7 @@ export const stageAll: Command = {
         is: StageAllIcon,
     },
 
-    // Clears the focus and every hide, so everything shows.
+    // Clears the focus, restoring saved visibility choices.
     async execute() {
         if (!(await checkDynamicStages())) return
 
