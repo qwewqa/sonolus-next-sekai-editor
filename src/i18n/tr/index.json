@@ -1570,7 +1570,7 @@
   },
   "moved": {
     "title": "Editörün Yeni Adresi",
-    "message": "Editör artık nse.qwewqa.dev adresinde. Ayarlar ve kaydedilmemiş haritalar bu sitede kalır; geçmeden önce haritanızı kaydedin.",
+    "message": "Editör artık {0} adresinde. Ayarlar ve kaydedilmemiş haritalar bu sitede kalır; geçmeden önce haritanızı kaydedin.",
     "go": "nse.qwewqa.dev adresine git"
   }
 }

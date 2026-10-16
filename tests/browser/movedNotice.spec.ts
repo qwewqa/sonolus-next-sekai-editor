@@ -15,7 +15,12 @@ test('the old address points to the new one', async ({ page, baseURL }) => {
     await page.goto('http://next-sekai-editor-test.qwewqa.xyz/')
     const dialog = page.getByRole('dialog', { name: 'New Editor Address' })
     await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: 'Go to nse.qwewqa.dev' }).click()
+    await expect(dialog.getByRole('link', { name: 'nse.qwewqa.dev', exact: true })).toHaveAttribute(
+        'href',
+        'https://nse.qwewqa.dev/',
+    )
+    await expect(dialog).toContainText('The editor is now at nse.qwewqa.dev. Settings')
+    await dialog.getByRole('link', { name: 'Go to nse.qwewqa.dev' }).click()
     await expect(page).toHaveURL('https://nse.qwewqa.dev/')
 })
 
