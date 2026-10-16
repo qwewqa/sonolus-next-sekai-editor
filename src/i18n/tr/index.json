@@ -1567,5 +1567,10 @@
       "inSlides": "{0} kaydırmada",
       "valuesDiffer": "{0} değer farklı"
     }
+  },
+  "moved": {
+    "title": "Editörün Yeni Adresi",
+    "message": "Editör artık nse.qwewqa.dev adresinde. Ayarlar ve kaydedilmemiş haritalar bu sitede kalır; geçmeden önce haritanızı kaydedin.",
+    "go": "nse.qwewqa.dev adresine git"
   }
 }

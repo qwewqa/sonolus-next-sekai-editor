@@ -1567,5 +1567,10 @@
       "inSlides": "在 {0} 條滑條中",
       "valuesDiffer": "{0} 個值不同"
     }
+  },
+  "moved": {
+    "title": "編輯器新網址",
+    "message": "編輯器已移至 nse.qwewqa.dev。設定和未儲存的譜面會留在此網站，請在切換前儲存譜面。",
+    "go": "前往 nse.qwewqa.dev"
   }
 }

@@ -1567,5 +1567,10 @@
             "inSlides": "in {0} slide|in {0} slides",
             "valuesDiffer": "{0} value differs|{0} values differ"
         }
+    },
+    "moved": {
+        "title": "New Editor Address",
+        "message": "The editor is now at nse.qwewqa.dev. Settings and unsaved charts stay on this site, so save your chart before you switch.",
+        "go": "Go to nse.qwewqa.dev"
     }
 }

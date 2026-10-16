@@ -1567,5 +1567,10 @@
       "inSlides": "dans {0} slide|dans {0} slides",
       "valuesDiffer": "{0} valeur diffère|{0} valeurs diffèrent"
     }
+  },
+  "moved": {
+    "title": "Nouvelle adresse de l’éditeur",
+    "message": "L’éditeur est maintenant sur nse.qwewqa.dev. Les paramètres et les partitions non sauvegardées restent sur ce site : sauvegardez votre partition avant de changer.",
+    "go": "Aller sur nse.qwewqa.dev"
   }
 }

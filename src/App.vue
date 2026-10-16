@@ -16,6 +16,7 @@ import WorkspaceDock from './editor/workspace/WorkspaceDock.vue'
 import { languageTag } from './i18n/plural'
 import { modals } from './modals'
 import ModalManager from './modals/ModalManager.vue'
+import { showMovedNotice } from './moved'
 import { settings } from './settings'
 
 watch(
@@ -30,6 +31,7 @@ const root = useTemplateRef<HTMLDivElement>('root')
 
 keepPanelsAcrossShape()
 keepDefaultsAcrossDisplay()
+void showMovedNotice()
 
 // Text entry inside a dock may open an on-screen keyboard. Hold the shape used
 // for Auto placement until editing ends so the field stays where it is.
